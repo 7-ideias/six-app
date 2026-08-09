@@ -30,8 +30,7 @@ class OperationalProcedurePreviewMobileScreen extends StatefulWidget {
 class _OperationalProcedurePreviewMobileScreenState
     extends State<OperationalProcedurePreviewMobileScreen> {
   late ProcedureExecutionDraft _execution;
-  final ProcedureExecutionRules _executionRules =
-      const ProcedureExecutionRules();
+  final ProcedureExecutionRules _executionRules = ProcedureExecutionRules();
   final Set<String> _pendingItemIds = <String>{};
   bool _showSummary = false;
   ProcedureTrigger? _selectedTrigger;
@@ -98,14 +97,14 @@ class _OperationalProcedurePreviewMobileScreenState
             top: false,
             child: ListView(
               controller: scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
+              physics: AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
               children: <Widget>[
                 _PreviewHeader(
                   procedure: widget.procedure,
                   configuration: widget.configuration,
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 _TriggerSimulationPanel(
                   triggers: widget.procedure.triggers,
                   selectedTrigger: _selectedTrigger,
@@ -113,16 +112,16 @@ class _OperationalProcedurePreviewMobileScreenState
                     setState(() => _selectedTrigger = trigger);
                   },
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 AnimatedSwitcher(
                   duration:
                       reduceMotion
                           ? Duration.zero
-                          : const Duration(milliseconds: 220),
+                          : Duration(milliseconds: 220),
                   child:
                       _showSummary
                           ? OperationalProcedureExecutionSummary(
-                            key: const ValueKey<String>('summary'),
+                            key: ValueKey<String>('summary'),
                             completed: _completedCount,
                             total: _totalItems,
                             optionalPending: _optionalPendingCount,
@@ -179,10 +178,7 @@ class _OperationalProcedurePreviewMobileScreenState
             fallback:
                 'Este procedimento ainda não possui etapas para demonstrar.',
           ),
-          style: const TextStyle(
-            color: SixMobilePalette.mutedText,
-            height: 1.35,
-          ),
+          style: TextStyle(color: SixMobilePalette.mutedText, height: 1.35),
         ),
       );
     }
@@ -209,35 +205,32 @@ class _OperationalProcedurePreviewMobileScreenState
               validation.totalItems,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             stageProgress,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.mutedText,
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             stage.title,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.titleText,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
           ),
           if (stage.description.trim().isNotEmpty) ...<Widget>[
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               stage.description,
-              style: const TextStyle(
-                color: SixMobilePalette.mutedText,
-                height: 1.35,
-              ),
+              style: TextStyle(color: SixMobilePalette.mutedText, height: 1.35),
             ),
           ],
           if (_pendingItemIds.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Semantics(
               liveRegion: true,
               child: Text(
@@ -245,14 +238,14 @@ class _OperationalProcedurePreviewMobileScreenState
                   'procedimentos.previewPendingMessage',
                   fallback: 'Existem ações obrigatórias pendentes nesta etapa.',
                 ),
-                style: const TextStyle(
+                style: TextStyle(
                   color: SixMobilePalette.error,
                   fontWeight: FontWeight.w900,
                 ),
               ),
             ),
           ],
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           ...stage.items.map((ProcedureItem item) {
             return OperationalProcedureExecutionItem(
               item: item,
@@ -261,7 +254,7 @@ class _OperationalProcedurePreviewMobileScreenState
               onChanged: _updateResponse,
             );
           }),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Row(
             children: <Widget>[
               Expanded(
@@ -276,11 +269,11 @@ class _OperationalProcedurePreviewMobileScreenState
                                   _execution.currentStageIndex - 1,
                             );
                           }),
-                  icon: const Icon(Icons.arrow_back_rounded),
+                  icon: Icon(Icons.arrow_back_rounded),
                   label: Text(context.t('common.back', fallback: 'Voltar')),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: FilledButton.icon(
                   onPressed: _goNext,
@@ -308,7 +301,7 @@ class _OperationalProcedurePreviewMobileScreenState
               _executionRules.canSkip(
                 widget.configuration.enforcementMode,
               )) ...<Widget>[
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
               child: TextButton(
@@ -425,7 +418,7 @@ class _OperationalProcedurePreviewMobileScreenState
         ProcedureEnforcementMode.required) {
       final bool cancelSale = await _confirmRequiredCancellation();
       if (!cancelSale || !mounted) return;
-      Navigator.of(context).pop(const ProcedureFlowResult.cancelled());
+      Navigator.of(context).pop(ProcedureFlowResult.cancelled());
       return;
     }
 
@@ -441,7 +434,7 @@ class _OperationalProcedurePreviewMobileScreenState
       return;
     }
 
-    Navigator.of(context).pop(const ProcedureFlowResult.continueOperation());
+    Navigator.of(context).pop(ProcedureFlowResult.continueOperation());
   }
 
   Future<bool> _confirmRecommendedSkip() async {
@@ -589,20 +582,20 @@ class _TriggerSimulationPanel extends StatelessWidget {
                 'procedimentos.executionConfiguration',
                 fallback: 'Configuração de execução',
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.titleText,
                 fontWeight: FontWeight.w900,
                 fontSize: 16,
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             if (current == null)
               Text(
                 context.t(
                   'procedimentos.manualDemoExecution',
                   fallback: 'Execução manual de demonstração.',
                 ),
-                style: const TextStyle(
+                style: TextStyle(
                   color: SixMobilePalette.titleText,
                   fontWeight: FontWeight.w800,
                 ),
@@ -610,7 +603,7 @@ class _TriggerSimulationPanel extends StatelessWidget {
             else ...<Widget>[
               _TriggerPreviewLine(trigger: current),
               if (enabled.length > 1) ...<Widget>[
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -650,25 +643,25 @@ class _TriggerPreviewLine extends StatelessWidget {
         children: <Widget>[
           Text(
             operationTypeLabel(context, trigger.operationType),
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.titleText,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 3),
+          SizedBox(height: 3),
           Text(
             triggerMomentLabel(context, trigger.triggerMoment),
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.titleText,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 3),
+          SizedBox(height: 3),
           Text(
             '${activationModeLabel(context, trigger.activationMode)} • '
             '${enforcementModeLabel(context, trigger.enforcementMode)} • '
             '${triggerStatusLabel(context, trigger.enabled)}',
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.mutedText,
               fontWeight: FontWeight.w700,
             ),
@@ -705,20 +698,20 @@ class _PreviewHeader extends StatelessWidget {
             ),
           ),
           if (configuration.isOperational) ...<Widget>[
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               OperationalProcedureI18n.procedureSequence(
                 context,
                 configuration.procedureIndex,
                 configuration.totalProcedures,
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.heroSupportingText,
                 fontWeight: FontWeight.w800,
               ),
             ),
           ],
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Text(
             procedure.name.trim().isEmpty
                 ? context.t(
@@ -726,7 +719,7 @@ class _PreviewHeader extends StatelessWidget {
                   fallback: 'Procedimento sem nome',
                 )
                 : procedure.name,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.onPrimary,
               fontSize: 24,
               fontWeight: FontWeight.w900,
@@ -734,10 +727,10 @@ class _PreviewHeader extends StatelessWidget {
             ),
           ),
           if (procedure.description.trim().isNotEmpty) ...<Widget>[
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               procedure.description,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.heroSupportingText,
                 height: 1.35,
                 fontWeight: FontWeight.w700,
@@ -759,12 +752,12 @@ class _PreviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: SixMobilePalette.border),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: SixMobilePalette.navigationShadow,
             blurRadius: 10,
@@ -793,11 +786,11 @@ class _DiscardPreviewSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: SixMobilePalette.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+      padding: EdgeInsets.fromLTRB(16, 10, 16, 18),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -812,24 +805,21 @@ class _DiscardPreviewSheet extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.titleText,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             message,
-            style: const TextStyle(
-              color: SixMobilePalette.mutedText,
-              height: 1.35,
-            ),
+            style: TextStyle(color: SixMobilePalette.mutedText, height: 1.35),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Row(
             children: <Widget>[
               Expanded(
@@ -844,7 +834,7 @@ class _DiscardPreviewSheet extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: FilledButton(
                   onPressed: () => Navigator.of(context).pop(true),

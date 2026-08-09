@@ -7,6 +7,7 @@ import '../../core/config/app_config.dart';
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/dominio_models.dart';
+import '../../data/services/caixa/caixa_api_client.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
@@ -19,7 +20,16 @@ import 'atendimento_tecnico_editar_mobile_screen.dart';
 import 'atendimento_tecnico_mobile_screen.dart';
 
 class AtendimentosTecnicosMobileScreen extends StatefulWidget {
-  const AtendimentosTecnicosMobileScreen({super.key});
+  const AtendimentosTecnicosMobileScreen({
+    super.key,
+    this.service,
+    this.colaboradorApiClient,
+    this.caixaApiClient,
+  });
+
+  final AtendimentoTecnicoService? service;
+  final ColaboradorUsuarioApiClient? colaboradorApiClient;
+  final CaixaApiClient? caixaApiClient;
 
   @override
   State<AtendimentosTecnicosMobileScreen> createState() =>
@@ -30,18 +40,28 @@ class _AtendimentosTecnicosMobileScreenState
     extends State<AtendimentosTecnicosMobileScreen> {
   static const String _semTecnicoKey = '__sem_tecnico__';
 
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
-  static const Color _borderColor = SixMobilePalette.activeBorder;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _softSurfaceColor => SixMobilePalette.softNeutralSurface;
+  static Color get _softAccentSurfaceColor =>
+      SixMobilePalette.softAccentSurface;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _borderColor => SixMobilePalette.activeBorder;
+  static Color get _highlightedBorderColor =>
+      SixMobilePalette.highlightedBorder;
+  static Color get _onPrimaryColor => SixMobilePalette.onPrimary;
+  static Color get _onAccentColor => SixMobilePalette.onAccent;
+  static Color get _heroSupportingTextColor =>
+      SixMobilePalette.heroSupportingText;
+  static Color get _heroShadowColor => SixMobilePalette.heroShadow;
+  static Color get _cardShadowColor => SixMobilePalette.navigationShadow;
 
-  final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
-  final ColaboradorUsuarioApiClient _colaboradorApiClient =
-      HttpColaboradorUsuarioApiClient();
+  late final AtendimentoTecnicoService _service;
+  late final ColaboradorUsuarioApiClient _colaboradorApiClient;
   final TextEditingController _searchController = TextEditingController();
 
   late Future<_AtendimentosTecnicosMobileState> _future;
@@ -55,6 +75,9 @@ class _AtendimentosTecnicosMobileScreenState
   @override
   void initState() {
     super.initState();
+    _service = widget.service ?? AtendimentoTecnicoService();
+    _colaboradorApiClient =
+        widget.colaboradorApiClient ?? HttpColaboradorUsuarioApiClient();
     _future = _carregar();
     _searchController.addListener(_onSearchChanged);
   }
@@ -132,13 +155,13 @@ class _AtendimentosTecnicosMobileScreenState
       scrolledSurfaceOpacity: 0.70,
       leading: IconButton(
         tooltip: _t('common.back', 'Voltar'),
-        icon: const Icon(Icons.arrow_back_rounded),
+        icon: Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
       actions: <Widget>[
         IconButton(
           tooltip: _t('atendimentoTecnico.mobile.newFab', 'Novo atendimento'),
-          icon: const Icon(Icons.add_rounded),
+          icon: Icon(Icons.add_rounded),
           onPressed: _novoAtendimento,
         ),
       ],
@@ -179,45 +202,45 @@ class _AtendimentosTecnicosMobileScreenState
           onRefresh: _recarregar,
           child: ListView(
             controller: scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
+            physics: AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
             children: <Widget>[
               SixStaggeredEntry(
-                delay: const Duration(milliseconds: 60),
+                delay: Duration(milliseconds: 60),
                 child: _hero(filtrados, totalGeral: atendimentos.length),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               SixStaggeredEntry(
-                delay: const Duration(milliseconds: 120),
+                delay: Duration(milliseconds: 120),
                 child: _summaryGrid(filtrados),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               SixStaggeredEntry(
-                delay: const Duration(milliseconds: 180),
+                delay: Duration(milliseconds: 180),
                 child: _statusOverview(atendimentos),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               SixStaggeredEntry(
-                delay: const Duration(milliseconds: 220),
+                delay: Duration(milliseconds: 220),
                 child: _statusFilter(atendimentos),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               SixStaggeredEntry(
-                delay: const Duration(milliseconds: 260),
+                delay: Duration(milliseconds: 260),
                 child: _advancedFilters(atendimentos, state.tecnicos),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               SixStaggeredEntry(
-                delay: const Duration(milliseconds: 300),
+                delay: Duration(milliseconds: 300),
                 child: _searchBox(),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               _sectionTitle(
                 !_hasAnyFilter
                     ? 'Atendimentos recentes'
                     : 'Resultado do filtro',
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               if (filtrados.isEmpty)
                 _emptyState()
               else
@@ -228,7 +251,7 @@ class _AtendimentosTecnicosMobileScreenState
                     .entries
                     .map(
                       (entry) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                        padding: EdgeInsets.only(bottom: 12),
                         child: SixStaggeredEntry(
                           delay: Duration(milliseconds: 340 + entry.key * 45),
                           child: _atendimentoCard(
@@ -255,25 +278,25 @@ class _AtendimentosTecnicosMobileScreenState
       ),
       child: ListView(
         controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
         children: <Widget>[
           _loadingHeroSkeleton(),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _loadingSummaryGrid(),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _loadingStatusOverviewSkeleton(),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _loadingFilterSkeleton(),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _loadingSearchSkeleton(),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           const _AtendimentoSkeletonBlock(width: 168, height: 18, radius: 8),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           const _AtendimentoCardSkeleton(),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           const _AtendimentoCardSkeleton(),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           const _AtendimentoCardSkeleton(),
         ],
       ),
@@ -286,8 +309,8 @@ class _AtendimentosTecnicosMobileScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _iconBox(Icons.fact_check_outlined, size: 40),
-          const SizedBox(width: 12),
-          const Expanded(
+          SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -338,14 +361,14 @@ class _AtendimentosTecnicosMobileScreenState
 
   Widget _loadingSummaryCardSkeleton(IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _borderColor),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x0F000000),
+            color: _cardShadowColor,
             blurRadius: 14,
             offset: Offset(0, 6),
           ),
@@ -355,11 +378,11 @@ class _AtendimentosTecnicosMobileScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _iconBox(icon, size: 38),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           const _AtendimentoSkeletonBlock(width: 88, height: 12, radius: 7),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           const _AtendimentoSkeletonBlock(width: 58, height: 22, radius: 8),
-          const SizedBox(height: 7),
+          SizedBox(height: 7),
           const _AtendimentoSkeletonBlock(height: 11, radius: 7),
         ],
       ),
@@ -374,8 +397,8 @@ class _AtendimentosTecnicosMobileScreenState
           Row(
             children: <Widget>[
               _iconBox(Icons.flag_outlined, size: 42),
-              const SizedBox(width: 12),
-              const Expanded(
+              SizedBox(width: 12),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
@@ -390,7 +413,7 @@ class _AtendimentosTecnicosMobileScreenState
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           const _StatusOverviewSkeletonRow(),
           SizedBox(height: 10),
           const _StatusOverviewSkeletonRow(),
@@ -403,7 +426,7 @@ class _AtendimentosTecnicosMobileScreenState
 
   Widget _loadingFilterSkeleton() {
     return _card(
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _AtendimentoSkeletonBlock(width: 132, height: 16, radius: 8),
@@ -424,14 +447,14 @@ class _AtendimentosTecnicosMobileScreenState
 
   Widget _loadingSearchSkeleton() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _borderColor),
       ),
       child: Row(
-        children: const <Widget>[
+        children: <Widget>[
           Icon(Icons.search_rounded, color: _accentColor, size: 22),
           SizedBox(width: 10),
           Expanded(child: _AtendimentoSkeletonBlock(height: 14, radius: 8)),
@@ -449,7 +472,7 @@ class _AtendimentosTecnicosMobileScreenState
       onRefresh: _recarregar,
       child: ListView(
         controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
         children: <Widget>[
           _card(
@@ -457,8 +480,8 @@ class _AtendimentosTecnicosMobileScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 _iconBox(Icons.cloud_off_rounded),
-                const SizedBox(height: 14),
-                const Text(
+                SizedBox(height: 14),
+                Text(
                   'Não foi possível carregar os atendimentos',
                   style: TextStyle(
                     color: _titleTextColor,
@@ -466,18 +489,18 @@ class _AtendimentosTecnicosMobileScreenState
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 Text(
                   message,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: _mutedTextColor, height: 1.3),
+                  style: TextStyle(color: _mutedTextColor, height: 1.3),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 FilledButton.icon(
                   onPressed: _recarregar,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Tentar novamente'),
+                  icon: Icon(Icons.refresh_rounded),
+                  label: Text('Tentar novamente'),
                 ),
               ],
             ),
@@ -496,17 +519,17 @@ class _AtendimentosTecnicosMobileScreenState
         _statusSelecionado != null || _searchController.text.trim().isNotEmpty;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: <Color>[_primaryColor, _secondaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x260B1F3A),
+            color: _heroShadowColor,
             blurRadius: 22,
             offset: Offset(0, 12),
           ),
@@ -516,25 +539,25 @@ class _AtendimentosTecnicosMobileScreenState
         children: <Widget>[
           _iconBox(
             Icons.fact_check_outlined,
-            backgroundColor: const Color(0x1AFFFFFF),
-            foregroundColor: Colors.white,
+            backgroundColor: Color(0x1AFFFFFF),
+            foregroundColor: _onPrimaryColor,
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const Text(
+                Text(
                   'Dashboard técnico',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: _onPrimaryColor,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 Text(
                   filtrando
                       ? '${atendimentos.length} de $totalGeral atendimento(s) no filtro.'
@@ -543,8 +566,8 @@ class _AtendimentosTecnicosMobileScreenState
                       : '$pendentes atendimentos ainda precisam de atenção.',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFD7E3F5),
+                  style: TextStyle(
+                    color: _heroSupportingTextColor,
                     height: 1.35,
                   ),
                 ),
@@ -601,21 +624,21 @@ class _AtendimentosTecnicosMobileScreenState
 
   Widget _summaryCard(_SummaryItem item) {
     final Color background = item.highlight ? _primaryColor : _surfaceColor;
-    final Color foreground = item.highlight ? Colors.white : _titleTextColor;
+    final Color foreground = item.highlight ? _onPrimaryColor : _titleTextColor;
     final Color muted =
-        item.highlight ? const Color(0xFFD7E3F5) : _mutedTextColor;
+        item.highlight ? _heroSupportingTextColor : _mutedTextColor;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: item.highlight ? _primaryColor : _borderColor,
         ),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x0F000000),
+            color: _cardShadowColor,
             blurRadius: 14,
             offset: Offset(0, 6),
           ),
@@ -629,18 +652,16 @@ class _AtendimentosTecnicosMobileScreenState
             height: 38,
             decoration: BoxDecoration(
               color:
-                  item.highlight
-                      ? const Color(0x1AFFFFFF)
-                      : const Color(0xFFEFF6FF),
+                  item.highlight ? Color(0x1AFFFFFF) : _softAccentSurfaceColor,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
               item.icon,
               size: 20,
-              color: item.highlight ? Colors.white : _accentColor,
+              color: item.highlight ? _onPrimaryColor : _accentColor,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
             item.label,
             maxLines: 1,
@@ -651,9 +672,9 @@ class _AtendimentosTecnicosMobileScreenState
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           _animatedValue(item.value, foreground),
-          const SizedBox(height: 2),
+          SizedBox(height: 2),
           Text(
             item.helper,
             maxLines: 1,
@@ -692,8 +713,8 @@ class _AtendimentosTecnicosMobileScreenState
           Row(
             children: <Widget>[
               _iconBox(Icons.flag_outlined, size: 42),
-              const SizedBox(width: 12),
-              const Expanded(
+              SizedBox(width: 12),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
@@ -719,9 +740,9 @@ class _AtendimentosTecnicosMobileScreenState
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           if (status.isEmpty)
-            const Text(
+            Text(
               'Nenhum status para exibir.',
               style: TextStyle(color: _mutedTextColor),
             )
@@ -734,7 +755,7 @@ class _AtendimentosTecnicosMobileScreenState
 
   Widget _statusRow(_StatusCount item) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Row(
         children: <Widget>[
           Expanded(
@@ -742,23 +763,23 @@ class _AtendimentosTecnicosMobileScreenState
               item.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _titleTextColor,
                 fontWeight: FontWeight.w800,
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
+              color: _softAccentSurfaceColor,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: const Color(0xFFBFDBFE)),
+              border: Border.all(color: _highlightedBorderColor),
             ),
             child: Text(
               item.count.toString(),
-              style: const TextStyle(
+              style: TextStyle(
                 color: _accentColor,
                 fontWeight: FontWeight.w900,
               ),
@@ -775,7 +796,7 @@ class _AtendimentosTecnicosMobileScreenState
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
@@ -784,14 +805,14 @@ class _AtendimentosTecnicosMobileScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
+          Text(
             'Filtrar por status',
             style: TextStyle(
               color: _titleTextColor,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -802,10 +823,10 @@ class _AtendimentosTecnicosMobileScreenState
                   selected: _statusSelecionado == null,
                   onSelected: () => setState(() => _statusSelecionado = null),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 ...statuses.map(
                   (status) => Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                    padding: EdgeInsets.only(right: 8),
                     child: _statusChip(
                       label: status.label,
                       count: status.count,
@@ -837,10 +858,10 @@ class _AtendimentosTecnicosMobileScreenState
       label: Text('$label · $count'),
       onSelected: (_) => onSelected(),
       selectedColor: _accentColor,
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: _softSurfaceColor,
       side: BorderSide(color: selected ? _accentColor : _borderColor),
       labelStyle: TextStyle(
-        color: selected ? Colors.white : _primaryColor,
+        color: selected ? _onAccentColor : _titleTextColor,
         fontWeight: FontWeight.w900,
         fontSize: 12,
       ),
@@ -862,7 +883,7 @@ class _AtendimentosTecnicosMobileScreenState
         children: <Widget>[
           Row(
             children: <Widget>[
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Filtros do atendimento',
                   style: TextStyle(
@@ -874,8 +895,8 @@ class _AtendimentosTecnicosMobileScreenState
               if (_hasAnyFilter)
                 TextButton.icon(
                   onPressed: _limparFiltros,
-                  icon: const Icon(Icons.filter_alt_off_rounded, size: 17),
-                  label: const Text('Limpar'),
+                  icon: Icon(Icons.filter_alt_off_rounded, size: 17),
+                  label: Text('Limpar'),
                   style: TextButton.styleFrom(
                     foregroundColor: _accentColor,
                     visualDensity: VisualDensity.compact,
@@ -883,7 +904,7 @@ class _AtendimentosTecnicosMobileScreenState
                 ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _filterField(
             label: 'Data',
             value: _periodoFiltroLabel(),
@@ -891,7 +912,7 @@ class _AtendimentosTecnicosMobileScreenState
             active: _dataInicioFiltro != null || _dataFimFiltro != null,
             onTap: _abrirFiltroPeriodo,
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _filterField(
             label: 'Técnico responsável',
             value: _tecnicoFiltroLabel(tecnicos),
@@ -918,14 +939,14 @@ class _AtendimentosTecnicosMobileScreenState
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: 13, vertical: 12),
           decoration: BoxDecoration(
-            color: active ? const Color(0xFFEFF6FF) : const Color(0xFFF8FAFC),
+            color: active ? _softAccentSurfaceColor : _softSurfaceColor,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: active ? const Color(0xFFBFDBFE) : _borderColor,
+              color: active ? _highlightedBorderColor : _borderColor,
             ),
           ),
           child: Row(
@@ -934,9 +955,9 @@ class _AtendimentosTecnicosMobileScreenState
                 icon,
                 size: 38,
                 backgroundColor:
-                    active ? const Color(0xFFDCEBFF) : const Color(0xFFEFF6FF),
+                    active ? _softAccentSurfaceColor : _softSurfaceColor,
               ),
-              const SizedBox(width: 11),
+              SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -945,18 +966,18 @@ class _AtendimentosTecnicosMobileScreenState
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _mutedTextColor,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       value,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _titleTextColor,
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
@@ -965,11 +986,8 @@ class _AtendimentosTecnicosMobileScreenState
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: _accentColor,
-              ),
+              SizedBox(width: 8),
+              Icon(Icons.keyboard_arrow_down_rounded, color: _accentColor),
             ],
           ),
         ),
@@ -983,7 +1001,7 @@ class _AtendimentosTecnicosMobileScreenState
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x66000000),
+      barrierColor: Color(0x66000000),
       builder: (BuildContext context) {
         return _PeriodoFiltroMobileSheet(
           dataInicio: _dataInicioFiltro,
@@ -1005,7 +1023,7 @@ class _AtendimentosTecnicosMobileScreenState
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x66000000),
+      barrierColor: Color(0x66000000),
       builder: (BuildContext context) {
         return _TecnicoFiltroMobileSheet(
           tecnicos: tecnicos,
@@ -1025,32 +1043,29 @@ class _AtendimentosTecnicosMobileScreenState
       controller: _searchController,
       decoration: InputDecoration(
         hintText: 'Buscar por cliente, status, equipamento ou número',
-        prefixIcon: const Icon(Icons.search_rounded, color: _accentColor),
+        prefixIcon: Icon(Icons.search_rounded, color: _accentColor),
         suffixIcon:
             _searchController.text.trim().isEmpty
                 ? null
                 : IconButton(
                   onPressed: _searchController.clear,
-                  icon: const Icon(Icons.clear_rounded),
+                  icon: Icon(Icons.clear_rounded),
                 ),
         filled: true,
         fillColor: _surfaceColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: _borderColor),
+          borderSide: BorderSide(color: _borderColor),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: _borderColor),
+          borderSide: BorderSide(color: _borderColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: _accentColor, width: 1.4),
+          borderSide: BorderSide(color: _accentColor, width: 1.4),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 14,
-        ),
+        contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       ),
     );
   }
@@ -1072,13 +1087,13 @@ class _AtendimentosTecnicosMobileScreenState
         borderRadius: BorderRadius.circular(22),
         onTap: () => _abrirDetalhesAtendimento(atendimento, statusDisponiveis),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
             border: Border.all(color: _borderColor),
-            boxShadow: const <BoxShadow>[
+            boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Color(0x0F000000),
+                color: _cardShadowColor,
                 blurRadius: 14,
                 offset: Offset(0, 6),
               ),
@@ -1093,24 +1108,24 @@ class _AtendimentosTecnicosMobileScreenState
                     equipamento,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _titleTextColor,
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     '${atendimento.numero} • $cliente',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _mutedTextColor,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   Wrap(
                     spacing: 7,
                     runSpacing: 7,
@@ -1145,11 +1160,11 @@ class _AtendimentosTecnicosMobileScreenState
                     Row(
                       children: <Widget>[
                         _iconBox(Icons.devices_other_outlined, size: 44),
-                        const Spacer(),
+                        Spacer(),
                         detailsButton,
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     content,
                   ],
                 );
@@ -1159,9 +1174,9 @@ class _AtendimentosTecnicosMobileScreenState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   _iconBox(Icons.devices_other_outlined, size: 44),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(child: content),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   detailsButton,
                 ],
               );
@@ -1186,8 +1201,8 @@ class _AtendimentosTecnicosMobileScreenState
         style: IconButton.styleFrom(
           backgroundColor: SixMobilePalette.softAccentSurface,
           foregroundColor: _accentColor,
-          fixedSize: const Size(40, 40),
-          minimumSize: const Size(40, 40),
+          fixedSize: Size(40, 40),
+          minimumSize: Size(40, 40),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         tooltip: _t(
@@ -1196,7 +1211,7 @@ class _AtendimentosTecnicosMobileScreenState
         ),
         onPressed:
             () => _abrirDetalhesAtendimento(atendimento, statusDisponiveis),
-        icon: const Icon(Icons.add_rounded, size: 22),
+        icon: Icon(Icons.add_rounded, size: 22),
       ),
     );
   }
@@ -1210,7 +1225,7 @@ class _AtendimentosTecnicosMobileScreenState
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x66000000),
+      barrierColor: Color(0x66000000),
       builder: (BuildContext sheetContext) {
         return DraggableScrollableSheet(
           initialChildSize: 0.88,
@@ -1251,7 +1266,7 @@ class _AtendimentosTecnicosMobileScreenState
         statusDisponiveis.isNotEmpty && !_processandoAcao;
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: _backgroundColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -1259,24 +1274,24 @@ class _AtendimentosTecnicosMobileScreenState
         top: false,
         child: ListView(
           controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
+          padding: EdgeInsets.fromLTRB(18, 10, 18, 24),
           children: <Widget>[
             Center(
               child: Container(
                 width: 42,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFCBD5E1),
+                  color: _borderColor,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 _iconBox(Icons.devices_other_outlined, size: 42),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1285,19 +1300,19 @@ class _AtendimentosTecnicosMobileScreenState
                         equipamento,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: _titleTextColor,
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                           height: 1.15,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         '${atendimento.numero} • $cliente',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: _mutedTextColor,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -1310,11 +1325,11 @@ class _AtendimentosTecnicosMobileScreenState
                 IconButton(
                   tooltip: _t('common.close', 'Fechar'),
                   onPressed: () => Navigator.of(sheetContext).pop(),
-                  icon: const Icon(Icons.close_rounded),
+                  icon: Icon(Icons.close_rounded),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -1334,7 +1349,7 @@ class _AtendimentosTecnicosMobileScreenState
                   _alertChip('Entrega atrasada', Icons.warning_amber_rounded),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             _detailActions(
               sheetContext: sheetContext,
               atendimento: atendimento,
@@ -1342,7 +1357,7 @@ class _AtendimentosTecnicosMobileScreenState
               podeReceber: podeReceber,
               podeAlterarStatus: podeAlterarStatus,
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
             _detailSection(
               title: 'Resumo da ordem de serviço',
               icon: Icons.assignment_outlined,
@@ -1379,7 +1394,7 @@ class _AtendimentosTecnicosMobileScreenState
                   ),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             _detailSection(
               title: 'Equipamento e diagnóstico',
               icon: Icons.devices_other_outlined,
@@ -1404,7 +1419,7 @@ class _AtendimentosTecnicosMobileScreenState
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             _detailSection(
               title: 'Valores',
               icon: Icons.payments_outlined,
@@ -1458,13 +1473,13 @@ class _AtendimentosTecnicosMobileScreenState
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             _itemsSection(atendimento),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             _recebimentosSection(atendimento),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             _historicoStatusSection(atendimento, statusDisponiveis),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             _auditoriaSection(atendimento),
           ],
         ),
@@ -1571,19 +1586,19 @@ class _AtendimentosTecnicosMobileScreenState
             ? FilledButton.styleFrom(
               backgroundColor: _accentColor,
               foregroundColor: SixMobilePalette.onPrimary,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             )
             : OutlinedButton.styleFrom(
-              foregroundColor: _primaryColor,
-              side: const BorderSide(color: _borderColor),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              foregroundColor: _titleTextColor,
+              side: BorderSide(color: _borderColor),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             );
     final Widget child = Row(
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Icon(icon, size: 17),
-        const SizedBox(width: 7),
+        SizedBox(width: 7),
         Flexible(
           child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
         ),
@@ -1614,13 +1629,13 @@ class _AtendimentosTecnicosMobileScreenState
           Row(
             children: <Widget>[
               _iconBox(icon, size: 38),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: Text(
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _titleTextColor,
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
@@ -1629,7 +1644,7 @@ class _AtendimentosTecnicosMobileScreenState
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           ...children,
         ],
       ),
@@ -1639,7 +1654,7 @@ class _AtendimentosTecnicosMobileScreenState
   Widget _detailLine(String label, String? value, {Color? valueColor}) {
     final String display = _blankAsDash(value);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -1649,7 +1664,7 @@ class _AtendimentosTecnicosMobileScreenState
               label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _mutedTextColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
@@ -1657,7 +1672,7 @@ class _AtendimentosTecnicosMobileScreenState
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               display,
@@ -1681,7 +1696,7 @@ class _AtendimentosTecnicosMobileScreenState
     Color? valueColor,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -1691,7 +1706,7 @@ class _AtendimentosTecnicosMobileScreenState
               label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _mutedTextColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
@@ -1699,14 +1714,14 @@ class _AtendimentosTecnicosMobileScreenState
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child:
                 reduceMotion
                     ? _detailMoneyText(value, valueColor)
                     : TweenAnimationBuilder<double>(
                       tween: Tween<double>(begin: 0, end: value),
-                      duration: const Duration(milliseconds: 620),
+                      duration: Duration(milliseconds: 620),
                       curve: Curves.easeOutCubic,
                       builder: (
                         BuildContext context,
@@ -1742,7 +1757,7 @@ class _AtendimentosTecnicosMobileScreenState
       icon: Icons.inventory_2_outlined,
       children: <Widget>[
         if (atendimento.itens.isEmpty)
-          const Text(
+          Text(
             'Nenhum item vinculado.',
             style: TextStyle(color: _mutedTextColor),
           )
@@ -1773,7 +1788,7 @@ class _AtendimentosTecnicosMobileScreenState
       icon: Icons.receipt_long_outlined,
       children: <Widget>[
         if (atendimento.recebimentos.isEmpty)
-          const Text(
+          Text(
             'Nenhum recebimento lançado.',
             style: TextStyle(color: _mutedTextColor),
           )
@@ -1805,7 +1820,7 @@ class _AtendimentosTecnicosMobileScreenState
       icon: Icons.manage_history_rounded,
       children: <Widget>[
         if (atendimento.historicoStatus.isEmpty)
-          const Text(
+          Text(
             'Nenhuma mudança registrada.',
             style: TextStyle(color: _mutedTextColor),
           )
@@ -1842,7 +1857,7 @@ class _AtendimentosTecnicosMobileScreenState
       icon: Icons.fact_check_outlined,
       children: <Widget>[
         if (atendimento.historicoAuditoria.isEmpty)
-          const Text(
+          Text(
             'Nenhuma auditoria registrada.',
             style: TextStyle(color: _mutedTextColor),
           )
@@ -1871,9 +1886,9 @@ class _AtendimentosTecnicosMobileScreenState
     String? trailing,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: SixMobilePalette.softNeutralSurface,
           borderRadius: BorderRadius.circular(18),
@@ -1883,7 +1898,7 @@ class _AtendimentosTecnicosMobileScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             _iconBox(icon, size: 34),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1892,19 +1907,19 @@ class _AtendimentosTecnicosMobileScreenState
                     _blankAsDash(title),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _titleTextColor,
                       fontSize: 13,
                       fontWeight: FontWeight.w900,
                       height: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     _blankAsDash(subtitle),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _mutedTextColor,
                       fontSize: 12,
                       height: 1.25,
@@ -1914,15 +1929,15 @@ class _AtendimentosTecnicosMobileScreenState
               ),
             ),
             if (trailing != null) ...<Widget>[
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 96),
+                constraints: BoxConstraints(maxWidth: 96),
                 child: Text(
                   trailing,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _titleTextColor,
                     fontSize: 12,
                     fontWeight: FontWeight.w900,
@@ -1952,9 +1967,7 @@ class _AtendimentosTecnicosMobileScreenState
 
   Future<void> _novoAtendimento() async {
     await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (_) => const AtendimentoTecnicoMobileScreen(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => AtendimentoTecnicoMobileScreen()),
     );
 
     if (mounted) await _recarregar();
@@ -1980,6 +1993,7 @@ class _AtendimentosTecnicosMobileScreenState
           permitirParcial: true,
           observacaoInicial:
               'Recebimento realizado no atendimento técnico mobile.',
+          caixaApiClient: widget.caixaApiClient,
         );
 
     if (resultado == null || !mounted) return;
@@ -2100,7 +2114,7 @@ class _AtendimentosTecnicosMobileScreenState
           isScrollControlled: true,
           useSafeArea: true,
           backgroundColor: Colors.transparent,
-          barrierColor: const Color(0x66000000),
+          barrierColor: Color(0x66000000),
           builder: (BuildContext context) {
             return _StatusAtendimentoMobileSheet(
               atendimento: atendimento,
@@ -2135,8 +2149,8 @@ class _AtendimentosTecnicosMobileScreenState
       child: Column(
         children: <Widget>[
           _iconBox(Icons.search_off_rounded),
-          const SizedBox(height: 12),
-          const Text(
+          SizedBox(height: 12),
+          Text(
             'Nenhum atendimento encontrado',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -2144,8 +2158,8 @@ class _AtendimentosTecnicosMobileScreenState
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 5),
-          const Text(
+          SizedBox(height: 5),
+          Text(
             'Tente buscar por cliente, equipamento, status ou número.',
             textAlign: TextAlign.center,
             style: TextStyle(color: _mutedTextColor, height: 1.3),
@@ -2158,14 +2172,14 @@ class _AtendimentosTecnicosMobileScreenState
   Widget _card({required Widget child}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _borderColor),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x0F000000),
+            color: _cardShadowColor,
             blurRadius: 14,
             offset: Offset(0, 6),
           ),
@@ -2177,27 +2191,31 @@ class _AtendimentosTecnicosMobileScreenState
 
   Widget _iconBox(
     IconData icon, {
-    Color backgroundColor = const Color(0xFFEFF6FF),
-    Color foregroundColor = _accentColor,
+    Color? backgroundColor,
+    Color? foregroundColor,
     double size = 44,
   }) {
+    final Color resolvedBackgroundColor =
+        backgroundColor ?? _accentColor.withValues(alpha: 0.12);
+    final Color resolvedForegroundColor = foregroundColor ?? _accentColor;
+
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: resolvedBackgroundColor,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Icon(icon, color: foregroundColor, size: size * 0.52),
+      child: Icon(icon, color: resolvedForegroundColor, size: size * 0.52),
     );
   }
 
   Widget _chip(String label, IconData icon) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 180),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      constraints: BoxConstraints(maxWidth: 180),
+      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: _softSurfaceColor,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: _borderColor),
       ),
@@ -2205,13 +2223,13 @@ class _AtendimentosTecnicosMobileScreenState
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(icon, size: 13, color: _accentColor),
-          const SizedBox(width: 5),
+          SizedBox(width: 5),
           Flexible(
             child: Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _titleTextColor,
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
@@ -2224,26 +2242,26 @@ class _AtendimentosTecnicosMobileScreenState
   }
 
   Widget _alertChip(String label, IconData icon) {
-    const Color color = Color(0xFFDC2626);
+    final Color color = SixMobilePalette.error;
     return Container(
-      constraints: const BoxConstraints(maxWidth: 180),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      constraints: BoxConstraints(maxWidth: 180),
+      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFEBEE),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFFCA5A5)),
+        border: Border.all(color: SixMobilePalette.errorBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(icon, size: 13, color: color),
-          const SizedBox(width: 5),
+          SizedBox(width: 5),
           Flexible(
             child: Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: color,
                 fontSize: 11,
                 fontWeight: FontWeight.w900,
@@ -2258,7 +2276,7 @@ class _AtendimentosTecnicosMobileScreenState
   Widget _sectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         color: _titleTextColor,
         fontSize: 16,
         fontWeight: FontWeight.w900,
@@ -2649,12 +2667,12 @@ class _AtendimentoCardSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 14, 12, 12),
+      padding: EdgeInsets.fromLTRB(14, 14, 12, 12),
       decoration: BoxDecoration(
         color: SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: SixMobilePalette.border),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: SixMobilePalette.navigationShadow,
             blurRadius: 10,
@@ -2692,7 +2710,7 @@ class _AtendimentoCardSkeleton extends StatelessWidget {
           const Widget detailsButton = _AtendimentoSkeletonActionButton();
 
           if (constraints.maxWidth < 290) {
-            return const Column(
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Row(
@@ -2711,7 +2729,7 @@ class _AtendimentoCardSkeleton extends StatelessWidget {
             );
           }
 
-          return const Row(
+          return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               _AtendimentoSkeletonIconBox(
@@ -2735,7 +2753,7 @@ class _StatusOverviewSkeletonRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: <Widget>[
         Expanded(child: _AtendimentoSkeletonBlock(height: 14, radius: 8)),
         SizedBox(width: 10),
@@ -2758,7 +2776,7 @@ class _AtendimentoSkeletonActionButton extends StatelessWidget {
           color: SixMobilePalette.softAccentSurface,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.add_rounded,
           color: SixMobilePalette.accent,
           size: 22,
@@ -2816,7 +2834,7 @@ class _AtendimentoSkeletonBlockState extends State<_AtendimentoSkeletonBlock>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1120),
+      duration: Duration(milliseconds: 1120),
     );
     _pulse = CurvedAnimation(parent: _controller, curve: Curves.easeInOutCubic);
   }
@@ -2889,7 +2907,7 @@ class _AtendimentoSkeletonBlockState extends State<_AtendimentoSkeletonBlock>
                     alpha: 0.10 * progress,
                   ),
                   blurRadius: 8,
-                  offset: const Offset(0, 3),
+                  offset: Offset(0, 3),
                 ),
               ],
             ),
@@ -2966,12 +2984,12 @@ class _PeriodoFiltroMobileSheet extends StatefulWidget {
 }
 
 class _PeriodoFiltroMobileSheetState extends State<_PeriodoFiltroMobileSheet> {
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
-  static const Color _borderColor = SixMobilePalette.activeBorder;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _borderColor => SixMobilePalette.activeBorder;
 
   late DateTime? _inicio = widget.dataInicio;
   late DateTime? _fim = widget.dataFim;
@@ -2988,7 +3006,7 @@ class _PeriodoFiltroMobileSheetState extends State<_PeriodoFiltroMobileSheet> {
       expand: false,
       builder: (BuildContext context, ScrollController scrollController) {
         return Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: _backgroundColor,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
@@ -2996,24 +3014,24 @@ class _PeriodoFiltroMobileSheetState extends State<_PeriodoFiltroMobileSheet> {
             top: false,
             child: ListView(
               controller: scrollController,
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 22),
+              padding: EdgeInsets.fromLTRB(18, 10, 18, 22),
               children: <Widget>[
                 Center(
                   child: Container(
                     width: 42,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFCBD5E1),
+                      color: SixMobilePalette.activeBorder,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Row(
                   children: <Widget>[
                     _sheetIcon(Icons.event_outlined),
-                    const SizedBox(width: 12),
-                    const Expanded(
+                    SizedBox(width: 12),
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
@@ -3039,11 +3057,11 @@ class _PeriodoFiltroMobileSheetState extends State<_PeriodoFiltroMobileSheet> {
                     ),
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded),
+                      icon: Icon(Icons.close_rounded),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Wrap(
                   spacing: 9,
                   runSpacing: 9,
@@ -3062,7 +3080,7 @@ class _PeriodoFiltroMobileSheetState extends State<_PeriodoFiltroMobileSheet> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -3070,30 +3088,23 @@ class _PeriodoFiltroMobileSheetState extends State<_PeriodoFiltroMobileSheet> {
                     _shortcutChip('Hoje', () => _setPeriodo(now, now)),
                     _shortcutChip(
                       'Últimos 7 dias',
-                      () => _setPeriodo(
-                        now.subtract(const Duration(days: 6)),
-                        now,
-                      ),
+                      () => _setPeriodo(now.subtract(Duration(days: 6)), now),
                     ),
                     _shortcutChip(
                       'Próximos 7 dias',
-                      () => _setPeriodo(now, now.add(const Duration(days: 6))),
+                      () => _setPeriodo(now, now.add(Duration(days: 6))),
                     ),
                     _shortcutChip(
                       'Vencidos',
-                      () =>
-                          _setPeriodoAte(now.subtract(const Duration(days: 1))),
+                      () => _setPeriodoAte(now.subtract(Duration(days: 1))),
                     ),
                     _shortcutChip(
                       'Últimos 30 dias',
-                      () => _setPeriodo(
-                        now.subtract(const Duration(days: 29)),
-                        now,
-                      ),
+                      () => _setPeriodo(now.subtract(Duration(days: 29)), now),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Container(
                   decoration: BoxDecoration(
                     color: _surfaceColor,
@@ -3110,7 +3121,7 @@ class _PeriodoFiltroMobileSheetState extends State<_PeriodoFiltroMobileSheet> {
                     onDateChanged: _selecionarData,
                   ),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 Row(
                   children: <Widget>[
                     Expanded(
@@ -3122,10 +3133,10 @@ class _PeriodoFiltroMobileSheetState extends State<_PeriodoFiltroMobileSheet> {
                                 dataFim: null,
                               ),
                             ),
-                        child: const Text('Limpar'),
+                        child: Text('Limpar'),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     Expanded(
                       child: FilledButton.icon(
                         onPressed:
@@ -3135,8 +3146,8 @@ class _PeriodoFiltroMobileSheetState extends State<_PeriodoFiltroMobileSheet> {
                                 dataFim: _fim,
                               ),
                             ),
-                        icon: const Icon(Icons.check_rounded),
-                        label: const Text('Aplicar'),
+                        icon: Icon(Icons.check_rounded),
+                        label: Text('Aplicar'),
                       ),
                     ),
                   ],
@@ -3154,7 +3165,7 @@ class _PeriodoFiltroMobileSheetState extends State<_PeriodoFiltroMobileSheet> {
       width: 42,
       height: 42,
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: SixMobilePalette.softAccentSurface,
         borderRadius: BorderRadius.circular(15),
       ),
       child: Icon(icon, color: _accentColor),
@@ -3173,10 +3184,10 @@ class _PeriodoFiltroMobileSheetState extends State<_PeriodoFiltroMobileSheet> {
       label: Text('$label: $value'),
       onSelected: (_) => onTap(),
       selectedColor: _accentColor,
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: SixMobilePalette.softNeutralSurface,
       side: BorderSide(color: selected ? _accentColor : _borderColor),
       labelStyle: TextStyle(
-        color: selected ? Colors.white : _titleTextColor,
+        color: selected ? SixMobilePalette.onAccent : _titleTextColor,
         fontWeight: FontWeight.w900,
         fontSize: 12,
       ),
@@ -3187,9 +3198,9 @@ class _PeriodoFiltroMobileSheetState extends State<_PeriodoFiltroMobileSheet> {
     return ActionChip(
       label: Text(label),
       onPressed: onTap,
-      backgroundColor: const Color(0xFFF8FAFC),
-      side: const BorderSide(color: _borderColor),
-      labelStyle: const TextStyle(
+      backgroundColor: SixMobilePalette.softNeutralSurface,
+      side: BorderSide(color: _borderColor),
+      labelStyle: TextStyle(
         color: _titleTextColor,
         fontWeight: FontWeight.w800,
       ),
@@ -3246,12 +3257,12 @@ class _TecnicoFiltroMobileSheet extends StatefulWidget {
 }
 
 class _TecnicoFiltroMobileSheetState extends State<_TecnicoFiltroMobileSheet> {
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
-  static const Color _borderColor = SixMobilePalette.activeBorder;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _borderColor => SixMobilePalette.activeBorder;
 
   final TextEditingController _searchController = TextEditingController();
   String _filter = '';
@@ -3282,7 +3293,7 @@ class _TecnicoFiltroMobileSheetState extends State<_TecnicoFiltroMobileSheet> {
       builder: (BuildContext context, ScrollController scrollController) {
         final List<_TecnicoFiltroOption> tecnicos = _filtrados;
         return Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: _backgroundColor,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
@@ -3290,34 +3301,34 @@ class _TecnicoFiltroMobileSheetState extends State<_TecnicoFiltroMobileSheet> {
             top: false,
             child: Column(
               children: <Widget>[
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Container(
                   width: 42,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
+                    color: SixMobilePalette.activeBorder,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  padding: EdgeInsets.symmetric(horizontal: 18),
                   child: Row(
                     children: <Widget>[
                       Container(
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
+                          color: SixMobilePalette.softAccentSurface,
                           borderRadius: BorderRadius.circular(15),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.engineering_outlined,
                           color: _accentColor,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      const Expanded(
+                      SizedBox(width: 12),
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
@@ -3343,26 +3354,26 @@ class _TecnicoFiltroMobileSheetState extends State<_TecnicoFiltroMobileSheet> {
                       ),
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close_rounded),
+                        icon: Icon(Icons.close_rounded),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  padding: EdgeInsets.symmetric(horizontal: 18),
                   child: TextField(
                     controller: _searchController,
                     onChanged:
                         (String value) => setState(() => _filter = value),
                     decoration: InputDecoration(
                       hintText: 'Buscar técnico',
-                      prefixIcon: const Icon(Icons.search_rounded),
+                      prefixIcon: Icon(Icons.search_rounded),
                       suffixIcon:
                           _searchController.text.isEmpty
                               ? null
                               : IconButton(
-                                icon: const Icon(Icons.close_rounded),
+                                icon: Icon(Icons.close_rounded),
                                 onPressed: () {
                                   _searchController.clear();
                                   setState(() => _filter = '');
@@ -3372,27 +3383,24 @@ class _TecnicoFiltroMobileSheetState extends State<_TecnicoFiltroMobileSheet> {
                       fillColor: _surfaceColor,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: _borderColor),
+                        borderSide: BorderSide(color: _borderColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: _borderColor),
+                        borderSide: BorderSide(color: _borderColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(
-                          color: _accentColor,
-                          width: 1.4,
-                        ),
+                        borderSide: BorderSide(color: _accentColor, width: 1.4),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Expanded(
                   child: ListView.separated(
                     controller: scrollController,
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 22),
+                    padding: EdgeInsets.fromLTRB(18, 0, 18, 22),
                     itemBuilder: (BuildContext context, int index) {
                       if (index == 0) {
                         return _tecnicoItem(
@@ -3413,7 +3421,7 @@ class _TecnicoFiltroMobileSheetState extends State<_TecnicoFiltroMobileSheet> {
                         onTap: () => Navigator.of(context).pop(tecnico.key),
                       );
                     },
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    separatorBuilder: (_, __) => SizedBox(height: 10),
                     itemCount: tecnicos.length + 1,
                   ),
                 ),
@@ -3438,14 +3446,16 @@ class _TecnicoFiltroMobileSheetState extends State<_TecnicoFiltroMobileSheet> {
         borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.all(13),
+          padding: EdgeInsets.all(13),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFFEFF6FF) : _surfaceColor,
+            color:
+                selected ? SixMobilePalette.softAccentSurface : _surfaceColor,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: selected ? const Color(0xFFBFDBFE) : _borderColor,
+              color:
+                  selected ? SixMobilePalette.highlightedBorder : _borderColor,
               width: selected ? 1.2 : 1,
             ),
           ),
@@ -3455,23 +3465,23 @@ class _TecnicoFiltroMobileSheetState extends State<_TecnicoFiltroMobileSheet> {
                 radius: 21,
                 backgroundColor:
                     selected
-                        ? const Color(0xFFDCEBFF)
-                        : const Color(0xFFF1F5F9),
+                        ? SixMobilePalette.softAccentSurface
+                        : SixMobilePalette.iconSurface,
                 child: Icon(icon, color: _accentColor, size: 20),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _titleTextColor,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Icon(
                 selected
                     ? Icons.check_circle_rounded
@@ -3520,12 +3530,12 @@ class _StatusAtendimentoMobileSheet extends StatefulWidget {
 
 class _StatusAtendimentoMobileSheetState
     extends State<_StatusAtendimentoMobileSheet> {
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
-  static const Color _borderColor = SixMobilePalette.activeBorder;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _borderColor => SixMobilePalette.activeBorder;
 
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _observacaoController = TextEditingController();
@@ -3566,7 +3576,7 @@ class _StatusAtendimentoMobileSheetState
       builder: (BuildContext context, ScrollController scrollController) {
         final List<DominioOpcaoModel> status = _statusFiltrados;
         return Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: _backgroundColor,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
@@ -3574,27 +3584,27 @@ class _StatusAtendimentoMobileSheetState
             top: false,
             child: Column(
               children: <Widget>[
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Container(
                   width: 42,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
+                    color: SixMobilePalette.activeBorder,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  padding: EdgeInsets.symmetric(horizontal: 18),
                   child: Row(
                     children: <Widget>[
                       _sheetIcon(Icons.swap_horiz_rounded),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            const Text(
+                            Text(
                               'Mudar status',
                               style: TextStyle(
                                 color: _titleTextColor,
@@ -3602,12 +3612,12 @@ class _StatusAtendimentoMobileSheetState
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            const SizedBox(height: 3),
+                            SizedBox(height: 3),
                             Text(
                               '${widget.atendimento.numero} • Atual: ${widget.statusAtualLabel}',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: _mutedTextColor,
                                 fontSize: 12,
                                 height: 1.25,
@@ -3618,26 +3628,26 @@ class _StatusAtendimentoMobileSheetState
                       ),
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close_rounded),
+                        icon: Icon(Icons.close_rounded),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  padding: EdgeInsets.symmetric(horizontal: 18),
                   child: TextField(
                     controller: _searchController,
                     onChanged:
                         (String value) => setState(() => _filter = value),
                     decoration: InputDecoration(
                       hintText: 'Buscar status',
-                      prefixIcon: const Icon(Icons.search_rounded),
+                      prefixIcon: Icon(Icons.search_rounded),
                       suffixIcon:
                           _searchController.text.isEmpty
                               ? null
                               : IconButton(
-                                icon: const Icon(Icons.close_rounded),
+                                icon: Icon(Icons.close_rounded),
                                 onPressed: () {
                                   _searchController.clear();
                                   setState(() => _filter = '');
@@ -3647,27 +3657,24 @@ class _StatusAtendimentoMobileSheetState
                       fillColor: _surfaceColor,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: _borderColor),
+                        borderSide: BorderSide(color: _borderColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: _borderColor),
+                        borderSide: BorderSide(color: _borderColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(
-                          color: _accentColor,
-                          width: 1.4,
-                        ),
+                        borderSide: BorderSide(color: _accentColor, width: 1.4),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Expanded(
                   child: ListView.separated(
                     controller: scrollController,
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+                    padding: EdgeInsets.fromLTRB(18, 0, 18, 12),
                     itemBuilder: (BuildContext context, int index) {
                       final DominioOpcaoModel item = status[index];
                       return _statusItem(
@@ -3676,12 +3683,12 @@ class _StatusAtendimentoMobileSheetState
                         onTap: () => setState(() => _statusSelecionado = item),
                       );
                     },
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    separatorBuilder: (_, __) => SizedBox(height: 10),
                     itemCount: status.length,
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+                  padding: EdgeInsets.fromLTRB(18, 0, 18, 12),
                   child: TextField(
                     controller: _observacaoController,
                     minLines: 2,
@@ -3697,16 +3704,16 @@ class _StatusAtendimentoMobileSheetState
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+                  padding: EdgeInsets.fromLTRB(18, 0, 18, 18),
                   child: Row(
                     children: <Widget>[
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Cancelar'),
+                          child: Text('Cancelar'),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10),
                       Expanded(
                         child: FilledButton.icon(
                           onPressed:
@@ -3718,8 +3725,8 @@ class _StatusAtendimentoMobileSheetState
                                       observacao: _observacaoController.text,
                                     ),
                                   ),
-                          icon: const Icon(Icons.check_rounded),
-                          label: const Text('Aplicar'),
+                          icon: Icon(Icons.check_rounded),
+                          label: Text('Aplicar'),
                         ),
                       ),
                     ],
@@ -3738,7 +3745,7 @@ class _StatusAtendimentoMobileSheetState
       width: 42,
       height: 42,
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: SixMobilePalette.softAccentSurface,
         borderRadius: BorderRadius.circular(15),
       ),
       child: Icon(icon, color: _accentColor),
@@ -3757,14 +3764,16 @@ class _StatusAtendimentoMobileSheetState
         borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.all(13),
+          padding: EdgeInsets.all(13),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFFEFF6FF) : _surfaceColor,
+            color:
+                selected ? SixMobilePalette.softAccentSurface : _surfaceColor,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: selected ? const Color(0xFFBFDBFE) : _borderColor,
+              color:
+                  selected ? SixMobilePalette.highlightedBorder : _borderColor,
               width: selected ? 1.2 : 1,
             ),
           ),
@@ -3774,15 +3783,11 @@ class _StatusAtendimentoMobileSheetState
                 radius: 21,
                 backgroundColor:
                     selected
-                        ? const Color(0xFFDCEBFF)
-                        : const Color(0xFFF1F5F9),
-                child: const Icon(
-                  Icons.flag_outlined,
-                  color: _accentColor,
-                  size: 20,
-                ),
+                        ? SixMobilePalette.softAccentSurface
+                        : SixMobilePalette.iconSurface,
+                child: Icon(Icons.flag_outlined, color: _accentColor, size: 20),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -3791,17 +3796,17 @@ class _StatusAtendimentoMobileSheetState
                       _statusLabel(status),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _titleTextColor,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: 3),
                     Text(
                       status.codigo,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _mutedTextColor,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -3810,7 +3815,7 @@ class _StatusAtendimentoMobileSheetState
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Icon(
                 selected
                     ? Icons.check_circle_rounded

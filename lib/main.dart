@@ -41,13 +41,18 @@ import 'core/ui/app_feedback.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (kIsWeb) usePathUrlStrategy();
-  final prefs = await SharedPreferences.getInstance();
-  final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
+  final SharedPreferences? prefs = await _loadSharedPreferences();
+  final hasSeenOnboarding = prefs?.getBool('hasSeenOnboarding') ?? false;
+  final ThemeProvider themeProvider = await ThemeProvider.load(
+    enableLocalPersistence: !kIsWeb,
+    storage:
+        prefs == null ? null : SharedPreferencesThemePreferenceStorage(prefs),
+  );
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
         ChangeNotifierProvider(
           create:
               (_) => ProdutosListProvider<ProdutoModel>(
@@ -74,6 +79,15 @@ void main() async {
 
   if (!kIsWeb) {
     unawaited(FirebasePushNotificationService.initializeOnAppStart());
+  }
+}
+
+Future<SharedPreferences?> _loadSharedPreferences() async {
+  try {
+    return SharedPreferences.getInstance();
+  } catch (error, stackTrace) {
+    debugPrint('Erro ao inicializar SharedPreferences: $error\n$stackTrace');
+    return null;
   }
 }
 

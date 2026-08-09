@@ -23,10 +23,42 @@ import '../components/mobile_motion.dart';
 import 'operacoes_caixa_mobile_screen.dart';
 import 'produto_list_mobile_screen.dart';
 
+typedef PdvMobileProductSelectionLauncher = Future<dynamic> Function();
+typedef PdvMobileBarcodeScannerLauncher = Future<String?> Function();
+typedef PdvMobileBarcodeProductLoader =
+    Future<List<ProdutoModel>> Function(BuildContext context, String tipo);
+typedef PdvMobileCashOperationsLauncher = Future<void> Function();
+typedef PdvMobileCurrentUserIdProvider = Future<String?> Function();
+typedef PdvMobileCurrentUserNameProvider = String Function();
+typedef PdvMobileNowProvider = DateTime Function();
+
 class PdvMobileScreen extends StatefulWidget {
-  const PdvMobileScreen({super.key, this.vendaNaoLiquidada});
+  const PdvMobileScreen({
+    super.key,
+    this.vendaNaoLiquidada,
+    this.operacaoService,
+    this.caixaService,
+    this.vendaNaoLiquidadaApiClient,
+    this.productSelectionLauncher,
+    this.barcodeScannerLauncher,
+    this.barcodeProductLoader,
+    this.cashOperationsLauncher,
+    this.currentUserIdProvider,
+    this.currentUserNameProvider,
+    this.nowProvider,
+  });
 
   final VendaNaoLiquidadaModel? vendaNaoLiquidada;
+  final OperacaoService? operacaoService;
+  final CaixaService? caixaService;
+  final VendaNaoLiquidadaApiClient? vendaNaoLiquidadaApiClient;
+  final PdvMobileProductSelectionLauncher? productSelectionLauncher;
+  final PdvMobileBarcodeScannerLauncher? barcodeScannerLauncher;
+  final PdvMobileBarcodeProductLoader? barcodeProductLoader;
+  final PdvMobileCashOperationsLauncher? cashOperationsLauncher;
+  final PdvMobileCurrentUserIdProvider? currentUserIdProvider;
+  final PdvMobileCurrentUserNameProvider? currentUserNameProvider;
+  final PdvMobileNowProvider? nowProvider;
 
   @override
   State<PdvMobileScreen> createState() => _PdvMobileScreenState();
@@ -65,10 +97,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     _FormaPagamentoMobile('TIPO10', 'Outros', Icons.more_horiz_outlined),
   ];
 
-  final OperacaoService _operacaoService = OperacaoModule.operacaoService;
-  final CaixaService _caixaService = CaixaModule.caixaService;
-  final VendaNaoLiquidadaApiClient _vendaNaoLiquidadaApiClient =
-      VendaNaoLiquidadaApiClient();
+  late final OperacaoService _operacaoService;
+  late final CaixaService _caixaService;
+  late final VendaNaoLiquidadaApiClient _vendaNaoLiquidadaApiClient;
   final List<_VendaItemMobile> _itens = <_VendaItemMobile>[];
   final Set<String> _formasSelecionadas = <String>{};
   final Map<String, TextEditingController> _valorPorForma =
@@ -96,9 +127,23 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return color.withAlpha((opacity.clamp(0.0, 1.0) * 255).round());
   }
 
+  Color get _warningColor =>
+      Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFFF59E0B)
+          : const Color(0xFF92400E);
+
+  Color get _successColor =>
+      Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF34D399)
+          : const Color(0xFF047857);
+
   @override
   void initState() {
     super.initState();
+    _operacaoService = widget.operacaoService ?? OperacaoModule.operacaoService;
+    _caixaService = widget.caixaService ?? CaixaModule.caixaService;
+    _vendaNaoLiquidadaApiClient =
+        widget.vendaNaoLiquidadaApiClient ?? VendaNaoLiquidadaApiClient();
     final venda = widget.vendaNaoLiquidada;
     if (venda != null) {
       _itens.addAll(
@@ -202,12 +247,16 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Future<void> _abrirOperacoesCaixaMobile() async {
-    await Navigator.push<void>(
-      context,
-      MaterialPageRoute<void>(
-        builder: (_) => const OperacoesCaixaMobileScreen(),
-      ),
-    );
+    final PdvMobileCashOperationsLauncher? cashOperationsLauncher =
+        widget.cashOperationsLauncher;
+    if (cashOperationsLauncher != null) {
+      await cashOperationsLauncher();
+    } else {
+      await Navigator.push<void>(
+        context,
+        MaterialPageRoute<void>(builder: (_) => OperacoesCaixaMobileScreen()),
+      );
+    }
 
     if (!mounted) return;
     await _carregarSessaoCaixa();
@@ -309,6 +358,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Future<void> _abrirSelecaoProduto() async {
+    final PdvMobileProductSelectionLauncher? productSelectionLauncher =
+        widget.productSelectionLauncher;
+    final NavigatorState navigator = Navigator.of(context);
+
     if (!await _garantirCaixaAbertoParaVenda()) {
       return;
     }
@@ -316,16 +369,18 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       return;
     }
 
-    final dynamic result = await Navigator.push<dynamic>(
-      context,
-      MaterialPageRoute<dynamic>(
-        builder:
-            (_) => const ProdutolistMobileScreen(
-              isSelecao: true,
-              permitirSelecaoMultipla: true,
-            ),
-      ),
-    );
+    final dynamic result =
+        productSelectionLauncher != null
+            ? await productSelectionLauncher()
+            : await navigator.push<dynamic>(
+              MaterialPageRoute<dynamic>(
+                builder:
+                    (_) => ProdutolistMobileScreen(
+                      isSelecao: true,
+                      permitirSelecaoMultipla: true,
+                    ),
+              ),
+            );
 
     if (!mounted || result == null) return;
 
@@ -342,6 +397,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   Future<void> _abrirScannerCodigoBarras() async {
     if (_enviando || _buscandoCodigo) return;
+    final PdvMobileBarcodeScannerLauncher? barcodeScannerLauncher =
+        widget.barcodeScannerLauncher;
+    final NavigatorState navigator = Navigator.of(context);
+
     if (!await _garantirCaixaAbertoParaVenda()) {
       return;
     }
@@ -349,12 +408,14 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       return;
     }
 
-    final codigo = await Navigator.push<String>(
-      context,
-      MaterialPageRoute<String>(
-        builder: (_) => const _BarcodeScannerMobileScreen(),
-      ),
-    );
+    final String? codigo =
+        barcodeScannerLauncher != null
+            ? await barcodeScannerLauncher()
+            : await navigator.push<String>(
+              MaterialPageRoute<String>(
+                builder: (_) => const _BarcodeScannerMobileScreen(),
+              ),
+            );
 
     if (codigo == null || codigo.trim().isEmpty) return;
     await _buscarEAdicionarProdutoPorCodigo(codigo.trim());
@@ -365,12 +426,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
     setState(() => _buscandoCodigo = true);
     try {
-      List<ProdutoModel> produtos = <ProdutoModel>[];
-      await ProdutoHelper.retornarProdutosList(
-        context,
-        tipo: 'PRODUTO',
-        onSucesso: (lista) => produtos = lista,
-      );
+      final List<ProdutoModel> produtos =
+          await _carregarProdutosParaCodigoBarras();
 
       final codigoNormalizado = codigo.toLowerCase();
       ProdutoModel? encontrado;
@@ -396,6 +453,22 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     } finally {
       if (mounted) setState(() => _buscandoCodigo = false);
     }
+  }
+
+  Future<List<ProdutoModel>> _carregarProdutosParaCodigoBarras() async {
+    final PdvMobileBarcodeProductLoader? barcodeProductLoader =
+        widget.barcodeProductLoader;
+    if (barcodeProductLoader != null) {
+      return barcodeProductLoader(context, 'PRODUTO');
+    }
+
+    List<ProdutoModel> produtos = <ProdutoModel>[];
+    await ProdutoHelper.retornarProdutosList(
+      context,
+      tipo: 'PRODUTO',
+      onSucesso: (lista) => produtos = lista,
+    );
+    return produtos;
   }
 
   void _adicionarProdutoSelecionado(ProdutoModel produto) {
@@ -475,19 +548,19 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       setState(() => _destacarPagamento = true);
     }
 
-    await Future<void>.delayed(const Duration(milliseconds: 40));
+    await Future<void>.delayed(Duration(milliseconds: 40));
     final pagamentoContext = _pagamentoKey.currentContext;
     if (pagamentoContext != null && pagamentoContext.mounted) {
       await Scrollable.ensureVisible(
         pagamentoContext,
-        duration: const Duration(milliseconds: 520),
+        duration: Duration(milliseconds: 520),
         curve: Curves.easeOutCubic,
         alignment: 0.10,
       );
     }
 
     // _mostrarSnack('Selecione uma forma de pagamento ou use Receber depois.');
-    await Future<void>.delayed(const Duration(milliseconds: 1100));
+    await Future<void>.delayed(Duration(milliseconds: 1100));
     if (mounted) setState(() => _destacarPagamento = false);
   }
 
@@ -518,12 +591,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         return SafeArea(
           top: false,
           child: Container(
-            padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+            padding: EdgeInsets.fromLTRB(18, 12, 18, 18),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
-              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -533,7 +604,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   child: Container(
                     width: 46,
                     height: 5,
-                    margin: const EdgeInsets.only(bottom: 16),
+                    margin: EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.outlineVariant,
                       borderRadius: BorderRadius.circular(999),
@@ -543,7 +614,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                 Row(
                   children: <Widget>[
                     _modalIcon(Icons.schedule_send_outlined),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -565,27 +636,27 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: 18),
                 _buildResumoReceberDepois(),
-                const SizedBox(height: 18),
+                SizedBox(height: 18),
                 FilledButton.icon(
                   onPressed: () => Navigator.of(bottomSheetContext).pop(true),
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('Registrar para receber depois'),
+                  icon: Icon(Icons.check_circle_outline),
+                  label: Text('Registrar para receber depois'),
                   style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(50),
+                    minimumSize: Size.fromHeight(50),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 OutlinedButton.icon(
                   onPressed: () => Navigator.of(bottomSheetContext).pop(false),
-                  icon: const Icon(Icons.close_rounded),
-                  label: const Text('Voltar'),
+                  icon: Icon(Icons.close_rounded),
+                  label: Text('Voltar'),
                   style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(46),
+                    minimumSize: Size.fromHeight(46),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -621,9 +692,17 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         return;
       }
 
-      final idColaborador = await AuthService().getUserId() ?? '';
-      final nomeColaborador = _nomeColaboradorAtual();
-      final dataOperacao = DateTime.now();
+      final PdvMobileCurrentUserIdProvider? currentUserIdProvider =
+          widget.currentUserIdProvider;
+      final PdvMobileCurrentUserNameProvider? currentUserNameProvider =
+          widget.currentUserNameProvider;
+      final PdvMobileNowProvider? nowProvider = widget.nowProvider;
+      final idColaborador =
+          await (currentUserIdProvider?.call() ?? AuthService().getUserId()) ??
+          '';
+      final nomeColaborador =
+          currentUserNameProvider?.call() ?? _nomeColaboradorAtual();
+      final dataOperacao = nowProvider?.call() ?? DateTime.now();
       final input = OperacaoVendaInput(
         descricao:
             receberDepois
@@ -715,7 +794,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   Widget _buildResumoReceberDepois() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: SixMobilePalette.softAccentSurface,
         borderRadius: BorderRadius.circular(22),
@@ -723,7 +802,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       ),
       child: Row(
         children: <Widget>[
-          const Expanded(
+          Expanded(
             child: Text(
               'Valor em aberto',
               style: TextStyle(
@@ -734,7 +813,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           ),
           Text(
             _formatarValor(_total),
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.titleText,
               fontWeight: FontWeight.w900,
               fontSize: 18,
@@ -851,7 +930,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         IconButton(
           tooltip: _txt('pdv.openCashOperations', 'Operações de caixa'),
           onPressed: _busyOrLoadingSession ? null : _abrirOperacoesCaixaMobile,
-          icon: const Icon(Icons.point_of_sale_rounded),
+          icon: Icon(Icons.point_of_sale_rounded),
         ),
         IconButton(
           tooltip: 'Ler código',
@@ -859,7 +938,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               _enviando || _buscandoCodigo || !_caixaAbertoParaVenda
                   ? null
                   : _abrirScannerCodigoBarras,
-          icon: const Icon(Icons.qr_code_scanner_rounded),
+          icon: Icon(Icons.qr_code_scanner_rounded),
         ),
       ],
       bodyBuilder: (
@@ -871,12 +950,12 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           top: false,
           child: ListView(
             controller: scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
+            physics: AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.fromLTRB(16, topInset, 16, bottomPadding),
             children: <Widget>[
               SixStaggeredEntry(
                 duration: _entryDuration,
-                beginOffset: const Offset(0, 0.035),
+                beginOffset: Offset(0, 0.035),
                 child: AnimatedSwitcher(
                   duration: _stateTransitionDuration,
                   switchInCurve: Curves.easeOutCubic,
@@ -900,39 +979,39 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               SizedBox(height: temItens ? 12 : 10),
               if (!_caixaAbertoParaVenda) ...<Widget>[
                 SixStaggeredEntry(
-                  delay: const Duration(milliseconds: 40),
+                  delay: Duration(milliseconds: 40),
                   duration: _entryDuration,
-                  beginOffset: const Offset(0, 0.035),
+                  beginOffset: Offset(0, 0.035),
                   child: _buildCaixaObrigatorioNotice(),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
               ],
               SixStaggeredEntry(
-                delay: const Duration(milliseconds: 70),
+                delay: Duration(milliseconds: 70),
                 duration: _entryDuration,
-                beginOffset: const Offset(0, 0.035),
+                beginOffset: Offset(0, 0.035),
                 child: _buildQuickActionsCard(vendaIniciada: temItens),
               ),
               if (temItens) ...<Widget>[
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 240),
+                  duration: Duration(milliseconds: 240),
                   switchInCurve: Curves.easeOutCubic,
                   switchOutCurve: Curves.easeInCubic,
                   child: Column(
-                    key: const ValueKey<String>('pdv-content'),
+                    key: ValueKey<String>('pdv-content'),
                     children: <Widget>[
                       SixStaggeredEntry(
-                        delay: const Duration(milliseconds: 120),
+                        delay: Duration(milliseconds: 120),
                         duration: _entryDuration,
-                        beginOffset: const Offset(0, 0.035),
+                        beginOffset: Offset(0, 0.035),
                         child: _buildItensCard(),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       SixStaggeredEntry(
-                        delay: const Duration(milliseconds: 170),
+                        delay: Duration(milliseconds: 170),
                         duration: _entryDuration,
-                        beginOffset: const Offset(0, 0.035),
+                        beginOffset: Offset(0, 0.035),
                         child: _buildPagamentoCard(),
                       ),
                     ],
@@ -958,7 +1037,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   Widget _buildCaixaObrigatorioNotice() {
     final Color color =
-        _erroSessaoCaixa ? SixMobilePalette.error : const Color(0xFF92400E);
+        _erroSessaoCaixa ? SixMobilePalette.error : _warningColor;
     final String title =
         _carregandoSessaoCaixa
             ? _txt(
@@ -989,7 +1068,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _withAlpha(color, 0.08),
         borderRadius: BorderRadius.circular(22),
@@ -1007,7 +1086,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     : Icons.lock_open_rounded,
                 color: color,
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1021,12 +1100,12 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: 3),
                     Text(
                       message,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.mutedText,
                         height: 1.3,
                         fontWeight: FontWeight.w700,
@@ -1037,34 +1116,34 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             children: <Widget>[
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed:
                       _carregandoSessaoCaixa ? null : _carregarSessaoCaixa,
-                  icon: const Icon(Icons.refresh_rounded),
+                  icon: Icon(Icons.refresh_rounded),
                   label: Text(_txt('common.refresh', 'Atualizar')),
                   style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(44),
+                    minimumSize: Size.fromHeight(44),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: FilledButton.icon(
                   onPressed:
                       _busyOrLoadingSession ? null : _abrirOperacoesCaixaMobile,
-                  icon: const Icon(Icons.point_of_sale_rounded),
+                  icon: Icon(Icons.point_of_sale_rounded),
                   label: Text(
                     _txt('pdv.openCashOperations', 'Operações de caixa'),
                   ),
                   style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(44),
+                    minimumSize: Size.fromHeight(44),
                     backgroundColor: SixMobilePalette.accent,
                     foregroundColor: SixMobilePalette.onPrimary,
                     shape: RoundedRectangleBorder(
@@ -1105,7 +1184,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                       ? SixMobilePalette.navigationShadow
                       : _withAlpha(SixMobilePalette.primary, 0.06),
               blurRadius: vendaIniciada ? 16 : 22,
-              offset: const Offset(0, 9),
+              offset: Offset(0, 9),
             ),
           ],
         ),
@@ -1129,7 +1208,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                             compact: true,
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
                         Expanded(
                           child: _buildQuickActionButton(
                             label:
@@ -1150,7 +1229,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     _buildQuickActionButton(
                       label: _txt(
                         'pdv.openCashOperations',
@@ -1179,9 +1258,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
                     SixStaggeredEntry(
-                      delay: const Duration(milliseconds: 70),
+                      delay: Duration(milliseconds: 70),
                       duration: _entryDuration,
-                      beginOffset: const Offset(0, 0.035),
+                      beginOffset: Offset(0, 0.035),
                       child: _buildQuickActionButton(
                         label: 'Adicionar produto',
                         helper: 'Escolher no catálogo',
@@ -1193,11 +1272,11 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                         primary: true,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     SixStaggeredEntry(
-                      delay: const Duration(milliseconds: 140),
+                      delay: Duration(milliseconds: 140),
                       duration: _entryDuration,
-                      beginOffset: const Offset(0, 0.035),
+                      beginOffset: Offset(0, 0.035),
                       child: _buildQuickActionButton(
                         label:
                             _buscandoCodigo
@@ -1214,11 +1293,11 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                         loading: _buscandoCodigo,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     SixStaggeredEntry(
-                      delay: const Duration(milliseconds: 190),
+                      delay: Duration(milliseconds: 190),
                       duration: _entryDuration,
-                      beginOffset: const Offset(0, 0.035),
+                      beginOffset: Offset(0, 0.035),
                       child: _buildQuickActionButton(
                         label: _txt(
                           'pdv.openCashOperations',
@@ -1275,16 +1354,16 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     }
 
     return Container(
-      key: const ValueKey<String>('pdv-active-hero'),
-      padding: const EdgeInsets.all(16),
+      key: ValueKey<String>('pdv-active-hero'),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: <Color>[SixMobilePalette.primary, SixMobilePalette.secondary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(_cardRadius),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: SixMobilePalette.heroShadow,
             blurRadius: 18,
@@ -1314,7 +1393,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   color: SixMobilePalette.onPrimary,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1325,13 +1404,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                           : 'Venda no balcão',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.onPrimary,
                         fontSize: 17,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: 3),
                     Text(
                       !_caixaAbertoParaVenda
                           ? _txt(
@@ -1343,7 +1422,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                               : 'Revise itens e pagamento'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.heroSupportingText,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -1354,16 +1433,16 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _buildSessaoCaixaMobileChip(),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Row(
             children: <Widget>[
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    const Text(
+                    Text(
                       'Total da venda',
                       style: TextStyle(
                         color: SixMobilePalette.heroLabelText,
@@ -1371,10 +1450,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: 3),
                     _buildAnimatedCurrencyText(
                       _total,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.onPrimary,
                         fontSize: 27,
                         fontWeight: FontWeight.w900,
@@ -1384,10 +1463,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: _withAlpha(SixMobilePalette.onPrimary, 0.10),
                   borderRadius: BorderRadius.circular(16),
@@ -1395,7 +1471,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: <Widget>[
-                    const Text(
+                    Text(
                       'Itens',
                       style: TextStyle(
                         color: SixMobilePalette.heroLabelText,
@@ -1406,7 +1482,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     SixAnimatedNumberText(
                       key: ValueKey<String>('pdv-items-$_quantidadeItens'),
                       value: _quantidadeItens.toString(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.onPrimary,
                         fontSize: 19,
                         fontWeight: FontWeight.w900,
@@ -1424,9 +1500,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   Widget _buildInitialSaleHero() {
     return Container(
-      key: const ValueKey<String>('pdv-initial-hero'),
+      key: ValueKey<String>('pdv-initial-hero'),
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      padding: EdgeInsets.fromLTRB(20, 18, 20, 20),
       decoration: BoxDecoration(
         color: SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(_initialHeroRadius),
@@ -1435,27 +1511,27 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           BoxShadow(
             color: _withAlpha(SixMobilePalette.primary, 0.055),
             blurRadius: 24,
-            offset: const Offset(0, 10),
+            offset: Offset(0, 10),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           _buildMinimalShoppingIllustration(),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             _editandoVendaNaoLiquidada ? 'Venda em aberto' : 'Nova venda',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.titleText,
               fontSize: 28,
               fontWeight: FontWeight.w800,
               height: 1.08,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             _editandoVendaNaoLiquidada
                 ? 'Revise os itens antes de receber.'
@@ -1466,29 +1542,29 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                       'Abra o caixa para vender.',
                     )),
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.titleText,
               fontSize: 16,
               fontWeight: FontWeight.w800,
               height: 1.25,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           _buildSessaoCaixaMobileChip(),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             _editandoVendaNaoLiquidada
                 ? 'Escolha uma opção abaixo para continuar.'
                 : 'Escolha uma opção abaixo para começar.',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.mutedText,
               fontSize: 13,
               fontWeight: FontWeight.w600,
               height: 1.35,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
         ],
       ),
     );
@@ -1501,8 +1577,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        constraints: const BoxConstraints(maxWidth: double.infinity),
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+        constraints: BoxConstraints(maxWidth: double.infinity),
+        padding: EdgeInsets.symmetric(horizontal: 11, vertical: 7),
         decoration: BoxDecoration(
           color: view.backgroundColor,
           borderRadius: BorderRadius.circular(999),
@@ -1512,7 +1588,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Icon(view.icon, size: 15, color: view.foregroundColor),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Flexible(
               child: Text(
                 view.label,
@@ -1554,7 +1630,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
     final CaixaSessao? sessao = _sessaoCaixa;
     if (sessao == null) {
-      const Color warningColor = Color(0xFF92400E);
+      final Color warningColor = _warningColor;
       return _SessaoCaixaMobileView(
         label: l10n?.pdvCashSessionNotOpen ?? 'Sem sessão aberta',
         icon: Icons.point_of_sale_outlined,
@@ -1565,8 +1641,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     }
 
     final bool aberta = _sessaoCaixaAberta(sessao);
-    const Color successColor = Color(0xFF047857);
-    const Color warningColor = Color(0xFF92400E);
+    final Color successColor = _successColor;
+    final Color warningColor = _warningColor;
     final Color foreground = aberta ? successColor : warningColor;
 
     return _SessaoCaixaMobileView(
@@ -1647,7 +1723,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                 color: SixMobilePalette.surface,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: SixMobilePalette.activeBorder),
-                boxShadow: const <BoxShadow>[
+                boxShadow: <BoxShadow>[
                   BoxShadow(
                     color: SixMobilePalette.navigationShadow,
                     blurRadius: 10,
@@ -1655,7 +1731,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.shopping_bag_outlined,
                 color: SixMobilePalette.accent,
                 size: 26,
@@ -1671,7 +1747,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return TweenAnimationBuilder<double>(
       key: ValueKey<String>('pdv-currency-${value.toStringAsFixed(2)}'),
       tween: Tween<double>(begin: 0, end: value),
-      duration: const Duration(milliseconds: 620),
+      duration: Duration(milliseconds: 620),
       curve: Curves.easeOutCubic,
       builder: (BuildContext context, double animatedValue, Widget? child) {
         return Text(
@@ -1714,10 +1790,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         children: <Widget>[
           _buildFormasPagamentoAdaptativas(),
           if (_formasSelecionadas.isEmpty) ...<Widget>[
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             _buildPagamentoHint(),
           ] else ...<Widget>[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             ..._formasSelecionadas.map(_buildValorFormaField),
           ],
         ],
@@ -1733,7 +1809,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           children: linhas
               .map((linha) {
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.only(bottom: 8),
                   child: Row(
                     children: linha
                         .asMap()
@@ -1788,12 +1864,12 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   Widget _buildPillPagamento(_FormaPagamentoMobile forma) {
     final selecionado = _formasSelecionadas.contains(forma.codigo);
     return AnimatedScale(
-      duration: const Duration(milliseconds: 160),
+      duration: Duration(milliseconds: 160),
       curve: Curves.easeOutCubic,
       scale: selecionado ? 1.025 : 1,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        constraints: const BoxConstraints(minHeight: 40),
+        duration: Duration(milliseconds: 180),
+        constraints: BoxConstraints(minHeight: 40),
         decoration: BoxDecoration(
           color:
               selecionado
@@ -1812,10 +1888,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     BoxShadow(
                       color: _withAlpha(SixMobilePalette.accent, 0.18),
                       blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      offset: Offset(0, 4),
                     ),
                   ]
-                  : const <BoxShadow>[],
+                  : <BoxShadow>[],
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(999),
@@ -1824,7 +1900,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   ? null
                   : () => _alternarFormaPagamento(forma),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
@@ -1836,7 +1912,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                           ? SixMobilePalette.onPrimary
                           : SixMobilePalette.accent,
                 ),
-                const SizedBox(width: 5),
+                SizedBox(width: 5),
                 Flexible(
                   child: Text(
                     forma.titulo,
@@ -1888,8 +1964,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   Widget _buildPagamentoHint() {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      padding: const EdgeInsets.all(12),
+      duration: Duration(milliseconds: 220),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color:
             _destacarPagamento
@@ -1905,14 +1981,14 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       ),
       child: Row(
         children: <Widget>[
-          const Icon(Icons.touch_app_outlined, color: SixMobilePalette.accent),
-          const SizedBox(width: 10),
+          Icon(Icons.touch_app_outlined, color: SixMobilePalette.accent),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               _editandoVendaNaoLiquidada
                   ? 'Revise itens, quantidades e escolha uma forma para receber esta venda.'
                   : 'Toque em uma forma para receber agora ou use Receber depois para deixar a venda em aberto.',
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.mutedText,
                 height: 1.35,
                 fontWeight: FontWeight.w700,
@@ -1934,11 +2010,11 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return AnimatedScale(
       key: sectionKey,
       scale: destacar ? 1.015 : 1,
-      duration: const Duration(milliseconds: 180),
+      duration: Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        padding: const EdgeInsets.all(16),
+        duration: Duration(milliseconds: 220),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: SixMobilePalette.surface,
           borderRadius: BorderRadius.circular(_cardRadius),
@@ -1956,7 +2032,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                       ? _withAlpha(SixMobilePalette.accent, 0.18)
                       : SixMobilePalette.navigationShadow,
               blurRadius: destacar ? 18 : 12,
-              offset: const Offset(0, 6),
+              offset: Offset(0, 6),
             ),
           ],
         ),
@@ -1974,13 +2050,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   ),
                   child: Icon(icone, color: SixMobilePalette.accent, size: 19),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     titulo,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: SixMobilePalette.titleText,
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
@@ -1989,7 +2065,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             child,
           ],
         ),
@@ -1999,8 +2075,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   Widget _buildItemTile(_VendaItemMobile item) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: SixMobilePalette.softNeutralSurface,
         borderRadius: BorderRadius.circular(18),
@@ -2024,7 +2100,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               size: 21,
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2033,12 +2109,12 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   item.nome,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w900,
                     color: SixMobilePalette.titleText,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Wrap(
                   spacing: 8,
                   runSpacing: 4,
@@ -2054,7 +2130,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                       '${_formatarValor(item.valorUnitario)} un.',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.mutedText,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -2062,13 +2138,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Row(
                   children: <Widget>[
                     Expanded(
                       child: _buildStaticCurrencyText(
                         item.subtotal,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.titleText,
                           fontSize: 15,
                           fontWeight: FontWeight.w900,
@@ -2084,7 +2160,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                               : () => _alterarQuantidade(item, -1),
                     ),
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 180),
+                      duration: Duration(milliseconds: 180),
                       transitionBuilder: (
                         Widget child,
                         Animation<double> animation,
@@ -2105,7 +2181,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                         child: Text(
                           '${item.quantidade}',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: SixMobilePalette.titleText,
                             fontWeight: FontWeight.w900,
                           ),
@@ -2132,7 +2208,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   Widget _buildItemMetaChip(String label, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(999),
@@ -2142,10 +2218,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(icon, size: 12, color: SixMobilePalette.mutedText),
-          const SizedBox(width: 4),
+          SizedBox(width: 4),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.mutedText,
               fontSize: 11,
               fontWeight: FontWeight.w800,
@@ -2167,11 +2243,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       enabled: onTap != null,
       child: Material(
         color: SixMobilePalette.surface,
-        shape: const CircleBorder(
-          side: BorderSide(color: SixMobilePalette.border),
-        ),
+        shape: CircleBorder(side: BorderSide(color: SixMobilePalette.border)),
         child: InkWell(
-          customBorder: const CircleBorder(),
+          customBorder: CircleBorder(),
           onTap: onTap,
           child: SizedBox(
             width: 34,
@@ -2223,9 +2297,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     );
     _valorPorForma.putIfAbsent(codigo, () => TextEditingController());
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: SixMobilePalette.softNeutralSurface,
           borderRadius: BorderRadius.circular(18),
@@ -2237,13 +2311,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
             Row(
               children: <Widget>[
                 Icon(forma.icone, size: 19, color: SixMobilePalette.accent),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     forma.titulo,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: SixMobilePalette.titleText,
                       fontWeight: FontWeight.w900,
                     ),
@@ -2254,17 +2328,15 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                       _enviando || !_caixaAbertoParaVenda
                           ? null
                           : () => _preencherValorRestante(codigo),
-                  child: const Text('Completar'),
+                  child: Text('Completar'),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             TextField(
               controller: _valorPorForma[codigo],
               enabled: !_enviando && _caixaAbertoParaVenda,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 labelText: 'Valor recebido',
@@ -2289,8 +2361,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-        decoration: const BoxDecoration(
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
+        decoration: BoxDecoration(
           color: SixMobilePalette.surface,
           border: Border(top: BorderSide(color: SixMobilePalette.border)),
           boxShadow: <BoxShadow>[
@@ -2310,7 +2382,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      const Text(
+                      Text(
                         'Total',
                         style: TextStyle(
                           color: SixMobilePalette.mutedText,
@@ -2320,7 +2392,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                       ),
                       _buildAnimatedCurrencyText(
                         _total,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.titleText,
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
@@ -2330,10 +2402,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 7,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                   decoration: BoxDecoration(
                     color: SixMobilePalette.softNeutralSurface,
                     borderRadius: BorderRadius.circular(999),
@@ -2341,7 +2410,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   ),
                   child: Text(
                     '$_quantidadeItens item(ns)',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: SixMobilePalette.mutedText,
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
@@ -2350,13 +2419,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             FilledButton.icon(
               onPressed:
                   _enviando || !_caixaAbertoParaVenda ? null : _finalizarVenda,
               icon:
                   _enviando
-                      ? const SizedBox(
+                      ? SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
@@ -2376,13 +2445,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               style: FilledButton.styleFrom(
                 backgroundColor: SixMobilePalette.accent,
                 foregroundColor: SixMobilePalette.onPrimary,
-                minimumSize: const Size.fromHeight(50),
+                minimumSize: Size.fromHeight(50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Row(
               children: <Widget>[
                 Expanded(
@@ -2403,26 +2472,24 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: SixMobilePalette.primary,
-                      side: const BorderSide(color: SixMobilePalette.border),
-                      minimumSize: const Size.fromHeight(44),
+                      side: BorderSide(color: SixMobilePalette.border),
+                      minimumSize: Size.fromHeight(44),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: _enviando ? null : _cancelarVenda,
-                    icon: const Icon(Icons.close_rounded),
-                    label: const Text('Cancelar'),
+                    icon: Icon(Icons.close_rounded),
+                    label: Text('Cancelar'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: SixMobilePalette.error,
-                      side: const BorderSide(
-                        color: SixMobilePalette.errorBorder,
-                      ),
-                      minimumSize: const Size.fromHeight(44),
+                      side: BorderSide(color: SixMobilePalette.errorBorder),
+                      minimumSize: Size.fromHeight(44),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -2557,7 +2624,7 @@ class _PdvActionButtonState extends State<_PdvActionButton> {
                               : Icon(widget.icon, color: iconColor, size: 19),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -2576,7 +2643,7 @@ class _PdvActionButtonState extends State<_PdvActionButton> {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2),
                         Text(
                           widget.helper,
                           maxLines: 1,
@@ -2728,7 +2795,7 @@ class _BarcodeScannerMobileScreenState
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
-        title: const Text('Ler código de barras'),
+        title: Text('Ler código de barras'),
       ),
       body: Stack(
         children: <Widget>[
@@ -2760,12 +2827,12 @@ class _BarcodeScannerMobileScreenState
             right: 24,
             bottom: 34,
             child: Container(
-              padding: const EdgeInsets.all(14),
+              padding: EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: _PdvMobileScreenState._withAlpha(Colors.black, 0.58),
                 borderRadius: BorderRadius.circular(18),
               ),
-              child: const Text(
+              child: Text(
                 'Aponte a câmera para o código do produto.',
                 textAlign: TextAlign.center,
                 style: TextStyle(

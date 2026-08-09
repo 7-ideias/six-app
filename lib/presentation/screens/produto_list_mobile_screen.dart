@@ -43,8 +43,8 @@ class ProdutolistMobileScreen extends StatelessWidget {
               child: AbsorbPointer(
                 absorbing: provider.isLoading,
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  reverseDuration: const Duration(milliseconds: 140),
+                  duration: Duration(milliseconds: 180),
+                  reverseDuration: Duration(milliseconds: 140),
                   switchInCurve: Curves.easeOutCubic,
                   switchOutCurve: Curves.easeInCubic,
                   child:
@@ -52,7 +52,7 @@ class ProdutolistMobileScreen extends StatelessWidget {
                           ? _ProductCatalogLoadingOverlay(
                             label: _loadingLabel(context),
                           )
-                          : const SizedBox.shrink(
+                          : SizedBox.shrink(
                             key: ValueKey<String>('catalog-loading-hidden'),
                           ),
                 ),
@@ -84,11 +84,11 @@ class _ProductCatalogLoadingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      key: const ValueKey<String>('catalog-loading-visible'),
+      key: ValueKey<String>('catalog-loading-visible'),
       container: true,
       liveRegion: true,
       label: label,
-      child: const ColoredBox(
+      child: ColoredBox(
         color: SixMobilePalette.background,
         child: Center(
           child: SizedBox.square(

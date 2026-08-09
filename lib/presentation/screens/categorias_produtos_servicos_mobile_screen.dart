@@ -20,17 +20,17 @@ class CategoriasProdutosServicosMobileScreen extends StatefulWidget {
 
 class _CategoriasProdutosServicosMobileScreenState
     extends State<CategoriasProdutosServicosMobileScreen> {
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _softSurfaceColor = SixMobilePalette.softNeutralSurface;
-  static const Color _softAccentColor = SixMobilePalette.softAccentSurface;
-  static const Color _borderColor = SixMobilePalette.activeBorder;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
-  static const Color _errorColor = SixMobilePalette.error;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _softSurfaceColor => SixMobilePalette.softNeutralSurface;
+  static Color get _softAccentColor => SixMobilePalette.softAccentSurface;
+  static Color get _borderColor => SixMobilePalette.activeBorder;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _errorColor => SixMobilePalette.error;
   static const Color _successColor = Color(0xFF15803D);
   static const Color _serviceColor = Color(0xFF0EA5E9);
   static const Color _mixedColor = Color(0xFF7C3AED);
@@ -38,7 +38,7 @@ class _CategoriasProdutosServicosMobileScreenState
   late final CategoriaCatalogoApiClient _api;
   final TextEditingController _buscaController = TextEditingController();
 
-  List<CategoriaCatalogoModel> _categorias = const <CategoriaCatalogoModel>[];
+  List<CategoriaCatalogoModel> _categorias = <CategoriaCatalogoModel>[];
   bool _loading = false;
   String? _erro;
   String _busca = '';
@@ -417,9 +417,9 @@ class _CategoriasProdutosServicosMobileScreenState
       label: Text(label, overflow: TextOverflow.ellipsis),
       avatar:
           selected
-              ? const Icon(Icons.check_rounded, size: 16)
+              ? Icon(Icons.check_rounded, size: 16)
               : tipo == null
-              ? const Icon(Icons.tune_rounded, size: 16)
+              ? Icon(Icons.tune_rounded, size: 16)
               : null,
       side: BorderSide(color: selected ? _accentColor : _borderColor),
       selectedColor: _softAccentColor,
@@ -445,13 +445,13 @@ class _CategoriasProdutosServicosMobileScreenState
 
     return _entry(
       Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(14),
+        margin: EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: _surfaceColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: _borderColor),
-          boxShadow: const <BoxShadow>[
+          boxShadow: <BoxShadow>[
             BoxShadow(
               color: SixMobilePalette.navigationShadow,
               blurRadius: 12,
@@ -481,7 +481,7 @@ class _CategoriasProdutosServicosMobileScreenState
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,37 +490,34 @@ class _CategoriasProdutosServicosMobileScreenState
                         categoria.nome,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: _titleTextColor,
                           fontWeight: FontWeight.w900,
                           fontSize: 15.5,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      SizedBox(height: 3),
                       Text(
                         descricao,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: _mutedTextColor,
-                          height: 1.35,
-                        ),
+                        style: TextStyle(color: _mutedTextColor, height: 1.35),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 IconButton(
                   tooltip: context.t(
                     'catalogCategories.actions.open',
                     fallback: 'Ações',
                   ),
                   onPressed: _loading ? null : () => _abrirAcoes(categoria),
-                  icon: const Icon(Icons.more_vert_rounded),
+                  icon: Icon(Icons.more_vert_rounded),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -570,12 +567,12 @@ class _CategoriasProdutosServicosMobileScreenState
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _borderColor),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: SixMobilePalette.navigationShadow,
             blurRadius: 14,
@@ -588,20 +585,20 @@ class _CategoriasProdutosServicosMobileScreenState
         children: <Widget>[
           Text(
             context.t('catalogCategories.title', fallback: 'Categorias'),
-            style: const TextStyle(
+            style: TextStyle(
               color: _titleTextColor,
               fontWeight: FontWeight.w900,
               fontSize: 18,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             '$total ${context.t('catalogCategories.visibleCountSuffix', fallback: 'categoria(s) exibida(s)')}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: _mutedTextColor, fontSize: 12.5),
+            style: TextStyle(color: _mutedTextColor, fontSize: 12.5),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           TextField(
             controller: _buscaController,
             onChanged: (String value) => setState(() => _busca = value),
@@ -611,7 +608,7 @@ class _CategoriasProdutosServicosMobileScreenState
                 'catalogCategories.searchHint',
                 fallback: 'Buscar por nome ou descrição',
               ),
-              prefixIcon: const Icon(Icons.search_rounded),
+              prefixIcon: Icon(Icons.search_rounded),
               suffixIcon:
                   _busca.isEmpty
                       ? null
@@ -621,25 +618,25 @@ class _CategoriasProdutosServicosMobileScreenState
                           _buscaController.clear();
                           setState(() => _busca = '');
                         },
-                        icon: const Icon(Icons.close_rounded),
+                        icon: Icon(Icons.close_rounded),
                       ),
               filled: true,
               fillColor: _softSurfaceColor,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: _borderColor),
+                borderSide: BorderSide(color: _borderColor),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: _borderColor),
+                borderSide: BorderSide(color: _borderColor),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: _accentColor, width: 1.3),
+                borderSide: BorderSide(color: _accentColor, width: 1.3),
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -667,14 +664,12 @@ class _CategoriasProdutosServicosMobileScreenState
       onRefresh: _recarregar,
       child: ListView(
         controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 96),
         children: <Widget>[
           AnimatedSwitcher(
             duration:
-                reduceMotion
-                    ? Duration.zero
-                    : const Duration(milliseconds: 220),
+                reduceMotion ? Duration.zero : Duration(milliseconds: 220),
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
             child: _buildState(),
@@ -694,10 +689,10 @@ class _CategoriasProdutosServicosMobileScreenState
     }
 
     return Column(
-      key: const ValueKey<String>('catalog-categories-success'),
+      key: ValueKey<String>('catalog-categories-success'),
       children: <Widget>[
         _entry(_buildHeaderCard()),
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         if (_categoriasFiltradas.isEmpty)
           _buildEmptyState()
         else
@@ -710,7 +705,7 @@ class _CategoriasProdutosServicosMobileScreenState
 
   Widget _buildLoadingState() {
     return Semantics(
-      key: const ValueKey<String>('catalog-categories-loading'),
+      key: ValueKey<String>('catalog-categories-loading'),
       container: true,
       liveRegion: true,
       label: context.t(
@@ -720,7 +715,7 @@ class _CategoriasProdutosServicosMobileScreenState
       child: Column(
         children: <Widget>[
           _entry(_buildLoadingHeaderCard()),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           ...List<Widget>.generate(
             3,
             (int index) => _entry(
@@ -736,13 +731,13 @@ class _CategoriasProdutosServicosMobileScreenState
   Widget _buildLoadingHeaderCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _borderColor),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _SkeletonLine(width: 112, height: 18),
@@ -767,14 +762,14 @@ class _CategoriasProdutosServicosMobileScreenState
 
   Widget _buildLoadingCategoryCard() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _borderColor),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Icon(Icons.category_outlined, color: _accentColor, size: 28),
@@ -805,8 +800,8 @@ class _CategoriasProdutosServicosMobileScreenState
 
   Widget _buildErrorState() {
     return Container(
-      key: const ValueKey<String>('catalog-categories-error'),
-      padding: const EdgeInsets.fromLTRB(18, 24, 18, 24),
+      key: ValueKey<String>('catalog-categories-error'),
+      padding: EdgeInsets.fromLTRB(18, 24, 18, 24),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(16),
@@ -814,17 +809,17 @@ class _CategoriasProdutosServicosMobileScreenState
       ),
       child: Column(
         children: <Widget>[
-          const Icon(Icons.error_outline_rounded, color: _errorColor),
-          const SizedBox(height: 10),
+          Icon(Icons.error_outline_rounded, color: _errorColor),
+          SizedBox(height: 10),
           Text(
             _erro!,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: _titleTextColor, height: 1.35),
+            style: TextStyle(color: _titleTextColor, height: 1.35),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: _recarregar,
-            icon: const Icon(Icons.refresh_rounded),
+            icon: Icon(Icons.refresh_rounded),
             label: Text(
               context.t('common.tryAgain', fallback: 'Tentar novamente'),
             ),
@@ -836,9 +831,9 @@ class _CategoriasProdutosServicosMobileScreenState
 
   Widget _buildEmptyState() {
     return Container(
-      key: const ValueKey<String>('catalog-categories-empty'),
+      key: ValueKey<String>('catalog-categories-empty'),
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 22, 18, 22),
+      padding: EdgeInsets.fromLTRB(18, 22, 18, 22),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(16),
@@ -846,20 +841,20 @@ class _CategoriasProdutosServicosMobileScreenState
       ),
       child: Column(
         children: <Widget>[
-          const Icon(Icons.category_outlined, color: _mutedTextColor),
-          const SizedBox(height: 10),
+          Icon(Icons.category_outlined, color: _mutedTextColor),
+          SizedBox(height: 10),
           Text(
             context.t(
               'catalogCategories.empty.title',
               fallback: 'Nenhuma categoria encontrada.',
             ),
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: _titleTextColor,
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             _busca.isEmpty && _filtroTipo == null
                 ? context.t(
@@ -872,7 +867,7 @@ class _CategoriasProdutosServicosMobileScreenState
                   fallback: 'Ajuste a busca ou os filtros para ver resultados.',
                 ),
             textAlign: TextAlign.center,
-            style: const TextStyle(color: _mutedTextColor, height: 1.35),
+            style: TextStyle(color: _mutedTextColor, height: 1.35),
           ),
         ],
       ),
@@ -904,14 +899,14 @@ class _CategoriasProdutosServicosMobileScreenState
         scrolledSurfaceOpacity: 0.70,
         leading: IconButton(
           tooltip: context.t('common.back', fallback: 'Voltar'),
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.of(context).pop(_houveMudanca),
         ),
         actions: <Widget>[
           IconButton(
             tooltip: context.t('common.refresh', fallback: 'Atualizar'),
             onPressed: _loading ? null : _recarregar,
-            icon: const Icon(Icons.refresh_rounded),
+            icon: Icon(Icons.refresh_rounded),
           ),
         ],
         bodyBuilder: (
@@ -931,20 +926,20 @@ class _CategoriasProdutosServicosMobileScreenState
                     right: 16,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(999),
-                      child: const LinearProgressIndicator(minHeight: 3),
+                      child: LinearProgressIndicator(minHeight: 3),
                     ),
                   ),
                 Positioned(
                   right: 16,
                   bottom: 16,
                   child: SafeArea(
-                    minimum: const EdgeInsets.only(bottom: 8),
+                    minimum: EdgeInsets.only(bottom: 8),
                     child: FloatingActionButton.extended(
                       onPressed: _loading ? null : () => _abrirFormulario(),
                       backgroundColor: _accentColor,
                       foregroundColor: SixMobilePalette.onPrimary,
                       elevation: 5,
-                      icon: const Icon(Icons.add_rounded),
+                      icon: Icon(Icons.add_rounded),
                       label: Text(
                         context.t(
                           'catalogCategories.newCategory',
@@ -1060,10 +1055,10 @@ class _CategoriaCatalogoFormSheetState
     }
   }
 
-  OutlineInputBorder _inputBorder([Color color = SixMobilePalette.border]) {
+  OutlineInputBorder _inputBorder([Color? color]) {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: color),
+      borderSide: BorderSide(color: color ?? SixMobilePalette.border),
     );
   }
 
@@ -1122,7 +1117,7 @@ class _CategoriaCatalogoFormSheetState
               fallback: 'Uso da categoria',
             ),
             prefixIcon: Icon(_tipoIcon(_tipo)),
-            suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
+            suffixIcon: Icon(Icons.keyboard_arrow_down_rounded),
             filled: true,
             fillColor: SixMobilePalette.softNeutralSurface,
             border: _inputBorder(),
@@ -1133,7 +1128,7 @@ class _CategoriaCatalogoFormSheetState
             _tipoLabel(_tipo),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.titleText,
               fontWeight: FontWeight.w800,
             ),
@@ -1151,14 +1146,14 @@ class _CategoriaCatalogoFormSheetState
     return Padding(
       padding: EdgeInsets.only(bottom: insets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: SixMobilePalette.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: Form(
               key: _formKey,
               child: Column(
@@ -1172,7 +1167,7 @@ class _CategoriaCatalogoFormSheetState
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -1185,14 +1180,14 @@ class _CategoriaCatalogoFormSheetState
                             'catalogCategories.form.createTitle',
                             fallback: 'Nova categoria',
                           ),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
                         color: SixMobilePalette.titleText,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   TextFormField(
                     controller: _nomeController,
                     textCapitalization: TextCapitalization.words,
@@ -1201,7 +1196,7 @@ class _CategoriaCatalogoFormSheetState
                         'catalogCategories.form.name',
                         fallback: 'Nome da categoria',
                       ),
-                      prefixIcon: const Icon(Icons.category_outlined),
+                      prefixIcon: Icon(Icons.category_outlined),
                       filled: true,
                       fillColor: SixMobilePalette.softNeutralSurface,
                       border: _inputBorder(),
@@ -1220,7 +1215,7 @@ class _CategoriaCatalogoFormSheetState
                       return null;
                     },
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   TextFormField(
                     controller: _descricaoController,
                     maxLines: 2,
@@ -1234,7 +1229,7 @@ class _CategoriaCatalogoFormSheetState
                         'catalogCategories.form.optional',
                         fallback: 'Opcional',
                       ),
-                      prefixIcon: const Icon(Icons.notes_rounded),
+                      prefixIcon: Icon(Icons.notes_rounded),
                       filled: true,
                       fillColor: SixMobilePalette.softNeutralSurface,
                       border: _inputBorder(),
@@ -1244,9 +1239,9 @@ class _CategoriaCatalogoFormSheetState
                       focusedBorder: _inputBorder(SixMobilePalette.accent),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _buildTipoField(),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     value: _ativo,
@@ -1266,7 +1261,7 @@ class _CategoriaCatalogoFormSheetState
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Row(
                     children: <Widget>[
                       Expanded(
@@ -1277,7 +1272,7 @@ class _CategoriaCatalogoFormSheetState
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10),
                       Expanded(
                         child: FilledButton(
                           onPressed: _salvar,
@@ -1333,18 +1328,18 @@ class _CategoryTypeSelectorSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           const _SheetHandle(),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _SheetTitle(
             title: context.t(
               'catalogCategories.form.typeField',
               fallback: 'Uso da categoria',
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           ...options.map((_CategoryTypeOption option) {
             final bool selected = option.value == selectedType;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.only(bottom: 8),
               child: _SheetActionTile(
                 icon: option.icon,
                 title: option.title,
@@ -1380,20 +1375,20 @@ class _CategoryActionsSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           const _SheetHandle(),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _SheetTitle(
             title: context.t(
               'catalogCategories.actions.title',
               fallback: 'Ações da categoria',
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _SheetActionTile(
             icon: Icons.edit_outlined,
             title: context.t('common.edit', fallback: 'Editar'),
             onTap: onEdit,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           _SheetActionTile(
             icon: active ? Icons.toggle_off_outlined : Icons.toggle_on_outlined,
             title:
@@ -1408,7 +1403,7 @@ class _CategoryActionsSheet extends StatelessWidget {
                     ),
             onTap: onToggle,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           _SheetActionTile(
             icon: Icons.delete_outline_rounded,
             title: context.t('common.delete', fallback: 'Excluir'),
@@ -1439,17 +1434,17 @@ class _ConfirmDeleteCategorySheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           const _SheetHandle(),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _SheetTitle(
             title: context.t(
               'catalogCategories.delete.title',
               fallback: 'Excluir categoria',
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: SixMobilePalette.error.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(14),
@@ -1457,13 +1452,10 @@ class _ConfirmDeleteCategorySheet extends StatelessWidget {
             ),
             child: Text(
               '${context.t('catalogCategories.delete.question', fallback: 'Deseja excluir')} "$categoryName"? ${context.t('catalogCategories.delete.linkedWarning', fallback: 'Se houver vínculo com produtos ou serviços, o backend pode bloquear.')}',
-              style: const TextStyle(
-                color: SixMobilePalette.titleText,
-                height: 1.35,
-              ),
+              style: TextStyle(color: SixMobilePalette.titleText, height: 1.35),
             ),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Row(
             children: <Widget>[
               Expanded(
@@ -1472,7 +1464,7 @@ class _ConfirmDeleteCategorySheet extends StatelessWidget {
                   child: Text(context.t('common.cancel', fallback: 'Cancelar')),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
@@ -1480,7 +1472,7 @@ class _ConfirmDeleteCategorySheet extends StatelessWidget {
                     foregroundColor: SixMobilePalette.onPrimary,
                   ),
                   onPressed: onConfirm,
-                  icon: const Icon(Icons.delete_outline_rounded),
+                  icon: Icon(Icons.delete_outline_rounded),
                   label: Text(context.t('common.delete', fallback: 'Excluir')),
                 ),
               ),
@@ -1500,14 +1492,14 @@ class _BottomSheetSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: SixMobilePalette.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
           child: child,
         ),
       ),
@@ -1542,7 +1534,7 @@ class _SheetTitle extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           color: SixMobilePalette.titleText,
           fontWeight: FontWeight.w900,
           fontSize: 18,
@@ -1593,8 +1585,8 @@ class _SheetActionTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           onTap: onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 56),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            constraints: BoxConstraints(minHeight: 56),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
@@ -1607,7 +1599,7 @@ class _SheetActionTile extends StatelessWidget {
             child: Row(
               children: <Widget>[
                 Icon(icon, color: activeColor, size: 22),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1623,12 +1615,12 @@ class _SheetActionTile extends StatelessWidget {
                         ),
                       ),
                       if (subtitle != null) ...<Widget>[
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2),
                         Text(
                           subtitle!,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: SixMobilePalette.mutedText,
                             height: 1.25,
                             fontSize: 12,
@@ -1639,8 +1631,8 @@ class _SheetActionTile extends StatelessWidget {
                   ),
                 ),
                 if (selected) ...<Widget>[
-                  const SizedBox(width: 10),
-                  const Icon(
+                  SizedBox(width: 10),
+                  Icon(
                     Icons.check_circle_rounded,
                     color: SixMobilePalette.accent,
                     size: 20,
@@ -1693,7 +1685,7 @@ class _TagPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(999),

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/data/models/dashboard_inicio_model.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
@@ -31,13 +32,6 @@ class HomePageMobile extends StatefulWidget {
 }
 
 class _HomePageMobileState extends State<HomePageMobile> {
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
   static const double _profileAvatarFadeDistance = 96;
   static const double _profileAvatarFadeStart = 0.10;
   static const Duration _profileAvatarFadeDuration = Duration(
@@ -62,6 +56,17 @@ class _HomePageMobileState extends State<HomePageMobile> {
   final ScrollController _homeScrollController = ScrollController();
   final ValueNotifier<double> _profileAvatarScrollProgress =
       ValueNotifier<double>(0);
+
+  SixMobileColorScheme get _colors => context.sixMobileColors;
+  Color get _backgroundColor => _colors.background;
+  Color get _primaryColor => _colors.primary;
+  Color get _secondaryColor => _colors.secondary;
+  Color get _accentColor => _colors.accent;
+  Color get _surfaceColor => _colors.surface;
+  Color get _mutedTextColor => _colors.mutedText;
+  Color get _titleTextColor => _colors.titleText;
+  Color get _borderColor => _colors.border;
+  Color get _softSurface => _colors.softSurface;
   bool _salvandoFotoPerfil = false;
   bool _sincronizandoPerfilInicial = false;
   String? _fotoPerfilSincronizada;
@@ -270,7 +275,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
   @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
-      return const AiAssistantHost(
+      return AiAssistantHost(
         modulo: 'geral',
         telaAtual: 'inicio_web',
         child: PaginaPrincipalWeb(),
@@ -298,11 +303,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
             icon: _buildNotificationIcon(),
             onPressed: () => _openNotifications(context),
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: 6),
         ],
         bodyBuilder: _buildHomeContent,
-        bottomNavigationBar:
-            kIsWeb ? null : const NavBarMobile(initialIndex: 1),
+        bottomNavigationBar: kIsWeb ? null : NavBarMobile(initialIndex: 1),
       ),
     );
   }
@@ -321,43 +325,43 @@ class _HomePageMobileState extends State<HomePageMobile> {
         onRefresh: _onRefresh,
         child: ListView(
           controller: scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
           children: [
             SixStaggeredEntry(
-              delay: const Duration(milliseconds: 40),
+              delay: Duration(milliseconds: 40),
               child: _buildGreetingHeader(context),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             SixStaggeredEntry(
-              delay: const Duration(milliseconds: 80),
+              delay: Duration(milliseconds: 80),
               child: _buildPeriodFilter(),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             SixStaggeredEntry(
-              delay: const Duration(milliseconds: 130),
+              delay: Duration(milliseconds: 130),
               child: _buildKpiGrid(data, loading),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             SixStaggeredEntry(
-              delay: const Duration(milliseconds: 190),
+              delay: Duration(milliseconds: 190),
               child: _buildDashboardChart(data),
             ),
             if (data.alerts.isNotEmpty) ...[
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               SixStaggeredEntry(
-                delay: const Duration(milliseconds: 240),
+                delay: Duration(milliseconds: 240),
                 child: _buildAlertasSection(data, context),
               ),
             ],
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             SixStaggeredEntry(
-              delay: const Duration(milliseconds: 290),
+              delay: Duration(milliseconds: 290),
               child: _buildUpcomingSection(data),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             SixStaggeredEntry(
-              delay: const Duration(milliseconds: 340),
+              delay: Duration(milliseconds: 340),
               child: _buildOperationsSection(data),
             ),
           ],
@@ -379,7 +383,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 1),
+            padding: EdgeInsets.only(top: 1),
             child: _buildProfileAvatarScrollFade(
               showInAppBar: false,
               child: SixMobileAccountPanelAction(
@@ -396,7 +400,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,14 +414,14 @@ class _HomePageMobileState extends State<HomePageMobile> {
                       .replaceAll('{nome}', nome),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.onPrimary,
                     fontSize: 28,
                     height: 1.08,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 Text(
                   context.t(
                     'dashboardInicio.mobileGreetingSubtitle',
@@ -446,7 +450,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
     return ValueListenableBuilder<double>(
       valueListenable: _profileAvatarScrollProgress,
       child: Padding(
-        padding: const EdgeInsets.only(left: 10, right: 6),
+        padding: EdgeInsets.only(left: 10, right: 6),
         child: Align(
           alignment: Alignment.centerLeft,
           child: SixMobileAccountPanelAction(
@@ -454,7 +458,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
             onPickImage: _pickImage,
             isUpdatingImage: _salvandoFotoPerfil || _sincronizandoPerfilInicial,
             size: 34,
-            borderColor: SixMobilePalette.border.withValues(alpha: 0.85),
+            borderColor: _borderColor.withValues(alpha: 0.85),
             backgroundColor: _surfaceColor.withValues(alpha: 0.96),
             iconColor: _titleTextColor,
           ),
@@ -467,7 +471,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
           context: context,
           progress: clampedProgress,
           showInAppBar: true,
-          child: child ?? const SizedBox.shrink(),
+          child: child ?? SizedBox.shrink(),
         );
       },
     );
@@ -485,7 +489,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
           context: context,
           progress: progress,
           showInAppBar: showInAppBar,
-          child: child ?? const SizedBox.shrink(),
+          child: child ?? SizedBox.shrink(),
         );
       },
     );
@@ -561,7 +565,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
             top: -6,
             child: SixPulsingBadge(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: SixMobilePalette.notificationBadge,
                   borderRadius: BorderRadius.circular(999),
@@ -572,7 +576,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 ),
                 child: Text(
                   _badgeText(naoLidas),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.onPrimary,
                     fontSize: 9,
                     fontWeight: FontWeight.w900,
@@ -596,21 +600,17 @@ class _HomePageMobileState extends State<HomePageMobile> {
             DashboardPeriod.values.map((DashboardPeriod period) {
               final bool selected = _dashboardProvider.period == period;
               return Padding(
-                padding: const EdgeInsets.only(right: 8),
+                padding: EdgeInsets.only(right: 8),
                 child: GestureDetector(
                   onTap: () => _dashboardProvider.setPeriod(period),
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
+                    duration: Duration(milliseconds: 200),
+                    padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: selected ? _accentColor : _surfaceColor,
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
-                        color:
-                            selected ? _accentColor : SixMobilePalette.border,
+                        color: selected ? _accentColor : _borderColor,
                       ),
                     ),
                     child: Text(
@@ -646,7 +646,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 loading: loading,
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(
               child: _buildKpiCard(
                 kpi: data.valorRecebido,
@@ -656,7 +656,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         Row(
           children: [
             Expanded(
@@ -666,7 +666,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 loading: loading,
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(
               child: _buildKpiCard(
                 kpi: data.resultado,
@@ -686,19 +686,15 @@ class _HomePageMobileState extends State<HomePageMobile> {
     required bool loading,
   }) {
     final Color borderColor =
-        kpi.highlight
-            ? SixMobilePalette.highlightedBorder
-            : SixMobilePalette.border;
+        kpi.highlight ? SixMobilePalette.highlightedBorder : _borderColor;
     final Color iconBg =
-        kpi.highlight
-            ? const Color(0xFFEFF6FF)
-            : SixMobilePalette.softNeutralSurface;
+        kpi.highlight ? _accentColor.withValues(alpha: 0.12) : _softSurface;
 
     return AnimatedOpacity(
       opacity: loading ? 0.55 : 1.0,
-      duration: const Duration(milliseconds: 250),
+      duration: Duration(milliseconds: 250),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: _surfaceColor,
           borderRadius: BorderRadius.circular(18),
@@ -706,7 +702,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
             color: borderColor,
             width: kpi.highlight ? 1.5 : 1.0,
           ),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
               color: Color(0x0A000000),
               blurRadius: 10,
@@ -728,20 +724,20 @@ class _HomePageMobileState extends State<HomePageMobile> {
                   ),
                   child: Icon(kpi.icon, size: 17, color: _accentColor),
                 ),
-                const Spacer(),
+                Spacer(),
                 _buildDeltaBadge(kpi),
               ],
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             TweenAnimationBuilder<double>(
               key: ValueKey<String>('kpi-$label-${kpi.value}'),
               tween: Tween<double>(begin: 0, end: kpi.value),
-              duration: const Duration(milliseconds: 700),
+              duration: Duration(milliseconds: 700),
               curve: Curves.easeOutCubic,
               builder: (BuildContext ctx, double v, Widget? _) {
                 return Text(
                   _compactFmt.format(v),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _titleTextColor,
                     fontSize: 17,
                     fontWeight: FontWeight.w900,
@@ -750,10 +746,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 );
               },
             ),
-            const SizedBox(height: 3),
+            SizedBox(height: 3),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _mutedTextColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -768,10 +764,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
   Widget _buildDeltaBadge(DashboardKpi kpi) {
     final double? delta = kpi.deltaPercent;
     final bool? positive = kpi.isPositive;
-    if (delta == null || positive == null) return const SizedBox.shrink();
+    if (delta == null || positive == null) return SizedBox.shrink();
 
-    final Color color =
-        positive ? const Color(0xFF16A34A) : SixMobilePalette.error;
+    final Color color = positive ? Color(0xFF16A34A) : SixMobilePalette.error;
     final IconData arrow =
         positive ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded;
 
@@ -779,7 +774,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(arrow, size: 11, color: color),
-        const SizedBox(width: 2),
+        SizedBox(width: 2),
         Text(
           '${delta.abs().toStringAsFixed(1)}%',
           style: TextStyle(
@@ -795,7 +790,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
   // ─── CHART ─────────────────────────────────────────────────────────────────
 
   Widget _buildDashboardChart(DashboardInicioModel data) {
-    if (data.chartData.isEmpty) return const SizedBox.shrink();
+    if (data.chartData.isEmpty) return SizedBox.shrink();
 
     final List<FlSpot> vendaSpots =
         data.chartData
@@ -811,12 +806,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
             .toList();
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 10, 10),
+      padding: EdgeInsets.fromLTRB(14, 14, 10, 10),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: SixMobilePalette.border),
-        boxShadow: const [
+        border: Border.all(color: _borderColor),
+        boxShadow: [
           BoxShadow(
             color: Color(0x0A000000),
             blurRadius: 10,
@@ -829,7 +824,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 'Evolução no período',
                 style: TextStyle(
                   color: _titleTextColor,
@@ -837,13 +832,13 @@ class _HomePageMobileState extends State<HomePageMobile> {
                   fontSize: 14,
                 ),
               ),
-              const Spacer(),
+              Spacer(),
               _chartLegend(_accentColor, 'Vendas', dashed: false),
-              const SizedBox(width: 10),
-              _chartLegend(const Color(0xFF16A34A), 'Recebido', dashed: true),
+              SizedBox(width: 10),
+              _chartLegend(Color(0xFF16A34A), 'Recebido', dashed: true),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           SizedBox(
             height: 160,
             child: LineChart(
@@ -870,7 +865,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                   drawVerticalLine: false,
                   getDrawingHorizontalLine:
                       (double v) => FlLine(
-                        color: SixMobilePalette.border.withValues(alpha: 0.5),
+                        color: _borderColor.withValues(alpha: 0.5),
                         strokeWidth: 1,
                       ),
                 ),
@@ -882,13 +877,13 @@ class _HomePageMobileState extends State<HomePageMobile> {
                       getTitlesWidget: (double v, TitleMeta meta) {
                         final int idx = v.round();
                         if (idx < 0 || idx >= data.chartData.length) {
-                          return const SizedBox.shrink();
+                          return SizedBox.shrink();
                         }
                         return Padding(
-                          padding: const EdgeInsets.only(top: 4),
+                          padding: EdgeInsets.only(top: 4),
                           child: Text(
                             data.chartData[idx].label,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
                               color: _mutedTextColor,
                               fontWeight: FontWeight.w500,
@@ -898,13 +893,13 @@ class _HomePageMobileState extends State<HomePageMobile> {
                       },
                     ),
                   ),
-                  leftTitles: const AxisTitles(
+                  leftTitles: AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
-                  topTitles: const AxisTitles(
+                  topTitles: AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
-                  rightTitles: const AxisTitles(
+                  rightTitles: AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
                 ),
@@ -915,7 +910,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                     color: _accentColor,
                     barWidth: 2.5,
                     isCurved: true,
-                    dotData: const FlDotData(show: false),
+                    dotData: FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
                       color: _accentColor.withValues(alpha: 0.07),
@@ -923,11 +918,11 @@ class _HomePageMobileState extends State<HomePageMobile> {
                   ),
                   LineChartBarData(
                     spots: recebSpots,
-                    color: const Color(0xFF16A34A),
+                    color: Color(0xFF16A34A),
                     barWidth: 2,
                     isCurved: true,
                     dashArray: <int>[5, 3],
-                    dotData: const FlDotData(show: false),
+                    dotData: FlDotData(show: false),
                   ),
                 ],
               ),
@@ -947,16 +942,16 @@ class _HomePageMobileState extends State<HomePageMobile> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(width: 5, height: 2, color: color),
-              const SizedBox(width: 3, height: 2),
+              SizedBox(width: 3, height: 2),
               Container(width: 5, height: 2, color: color),
             ],
           )
         else
           Container(width: 16, height: 2.5, color: color),
-        const SizedBox(width: 4),
+        SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             color: _mutedTextColor,
             fontWeight: FontWeight.w500,
@@ -976,7 +971,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
         border: Border.all(
           color: SixMobilePalette.errorBorder.withValues(alpha: 0.5),
         ),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             color: Color(0x0A000000),
             blurRadius: 10,
@@ -988,7 +983,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            padding: EdgeInsets.fromLTRB(16, 14, 16, 10),
             child: Row(
               children: [
                 Icon(
@@ -996,8 +991,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
                   size: 18,
                   color: SixMobilePalette.error,
                 ),
-                const SizedBox(width: 8),
-                const Text(
+                SizedBox(width: 8),
+                Text(
                   'Atenção necessária',
                   style: TextStyle(
                     color: _titleTextColor,
@@ -1005,12 +1000,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
                     fontSize: 14,
                   ),
                 ),
-                const Spacer(),
+                Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: SixMobilePalette.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(999),
@@ -1027,7 +1019,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
               ],
             ),
           ),
-          const Divider(height: 1, indent: 16, endIndent: 16),
+          Divider(
+            height: 1,
+            indent: 16,
+            endIndent: 16,
+            color: _borderColor.withValues(alpha: 0.75),
+          ),
           ...data.alerts.asMap().entries.map((entry) {
             final int idx = entry.key;
             final DashboardAlertItem alert = entry.value;
@@ -1035,11 +1032,16 @@ class _HomePageMobileState extends State<HomePageMobile> {
               children: [
                 _buildAlertRow(alert, context),
                 if (idx < data.alerts.length - 1)
-                  const Divider(height: 1, indent: 56, endIndent: 16),
+                  Divider(
+                    height: 1,
+                    indent: 56,
+                    endIndent: 16,
+                    color: _borderColor.withValues(alpha: 0.75),
+                  ),
               ],
             );
           }),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
         ],
       ),
     );
@@ -1051,7 +1053,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
       case DashboardAlertSeverity.critical:
         color = SixMobilePalette.error;
       case DashboardAlertSeverity.warning:
-        color = const Color(0xFFF59E0B);
+        color = Color(0xFFF59E0B);
       case DashboardAlertSeverity.info:
         color = _accentColor;
     }
@@ -1060,7 +1062,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
       onTap: alert.routeHint != null ? _showFeatureInProgress : null,
       borderRadius: BorderRadius.circular(4),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -1072,26 +1074,23 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     alert.titulo,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _titleTextColor,
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     alert.descricao,
-                    style: const TextStyle(
-                      color: _mutedTextColor,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: _mutedTextColor, fontSize: 12),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1099,7 +1098,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
               ),
             ),
             if (alert.valor != null && alert.valor! > 0) ...[
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 _compactFmt.format(alert.valor),
                 style: TextStyle(
@@ -1118,14 +1117,14 @@ class _HomePageMobileState extends State<HomePageMobile> {
   // ─── UPCOMING ──────────────────────────────────────────────────────────────
 
   Widget _buildUpcomingSection(DashboardInicioModel data) {
-    if (data.upcoming.isEmpty) return const SizedBox.shrink();
+    if (data.upcoming.isEmpty) return SizedBox.shrink();
 
     return Container(
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: SixMobilePalette.border),
-        boxShadow: const [
+        border: Border.all(color: _borderColor),
+        boxShadow: [
           BoxShadow(
             color: Color(0x0A000000),
             blurRadius: 10,
@@ -1136,7 +1135,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(16, 14, 16, 10),
             child: Row(
               children: [
@@ -1153,7 +1152,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
               ],
             ),
           ),
-          const Divider(height: 1, indent: 16, endIndent: 16),
+          Divider(
+            height: 1,
+            indent: 16,
+            endIndent: 16,
+            color: _borderColor.withValues(alpha: 0.75),
+          ),
           ...data.upcoming.asMap().entries.map((entry) {
             final int idx = entry.key;
             final DashboardUpcomingItem item = entry.value;
@@ -1161,11 +1165,16 @@ class _HomePageMobileState extends State<HomePageMobile> {
               children: [
                 _buildUpcomingRow(item),
                 if (idx < data.upcoming.length - 1)
-                  const Divider(height: 1, indent: 56, endIndent: 16),
+                  Divider(
+                    height: 1,
+                    indent: 56,
+                    endIndent: 16,
+                    color: _borderColor.withValues(alpha: 0.75),
+                  ),
               ],
             );
           }),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
         ],
       ),
     );
@@ -1176,7 +1185,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
     final IconData icon;
     switch (item.tipo) {
       case 'receber':
-        color = const Color(0xFF16A34A);
+        color = Color(0xFF16A34A);
         icon = Icons.arrow_downward_rounded;
       case 'pagar':
         color = SixMobilePalette.error;
@@ -1187,7 +1196,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           Container(
@@ -1199,14 +1208,14 @@ class _HomePageMobileState extends State<HomePageMobile> {
             ),
             child: Icon(icon, color: color, size: 18),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   item.descricao,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _titleTextColor,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
@@ -1214,16 +1223,16 @@ class _HomePageMobileState extends State<HomePageMobile> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   _dateFmt.format(item.dataPrevista),
-                  style: const TextStyle(color: _mutedTextColor, fontSize: 12),
+                  style: TextStyle(color: _mutedTextColor, fontSize: 12),
                 ),
               ],
             ),
           ),
           if (item.valor > 0) ...[
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               _compactFmt.format(item.valor),
               style: TextStyle(
@@ -1244,12 +1253,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
     final DashboardOperationSummary ops = data.operations;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: SixMobilePalette.border),
-        boxShadow: const [
+        border: Border.all(color: _borderColor),
+        boxShadow: [
           BoxShadow(
             color: Color(0x0A000000),
             blurRadius: 10,
@@ -1260,7 +1269,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(
                 Icons.business_center_outlined,
@@ -1278,7 +1287,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Row(
             children: [
               Expanded(
@@ -1288,7 +1297,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                   count: ops.atendimentosEmAndamento,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Expanded(
                 child: _buildOpChip(
                   icon: Icons.description_outlined,
@@ -1298,7 +1307,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -1308,7 +1317,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                   count: ops.equipamentosParaRetirada,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Expanded(
                 child: _buildOpChip(
                   icon: Icons.point_of_sale_outlined,
@@ -1329,22 +1338,20 @@ class _HomePageMobileState extends State<HomePageMobile> {
     required int count,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
-        color: SixMobilePalette.softNeutralSurface,
+        color: _softSurface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: SixMobilePalette.border.withValues(alpha: 0.7),
-        ),
+        border: Border.all(color: _borderColor.withValues(alpha: 0.7)),
       ),
       child: Row(
         children: [
           Icon(icon, size: 17, color: _accentColor),
-          const SizedBox(width: 6),
+          SizedBox(width: 6),
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _mutedTextColor,
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
@@ -1353,10 +1360,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: 4),
           Text(
             '$count',
-            style: const TextStyle(
+            style: TextStyle(
               color: _titleTextColor,
               fontSize: 16,
               fontWeight: FontWeight.w900,
@@ -1388,7 +1395,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
   }
 
   void _openNotifications(BuildContext context) {
-    _navigateTo(context, const NotificacoesMobileScreen());
+    _navigateTo(context, NotificacoesMobileScreen());
   }
 
   void _navigateTo(BuildContext context, Widget page) {
@@ -1402,7 +1409,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text('Fluxo mobile em evolução.'),
         behavior: SnackBarBehavior.floating,
       ),

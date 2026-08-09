@@ -31,9 +31,9 @@ class _WebDarkToggleState extends State<WebDarkToggle>
     final isDark = SixThemeResolver().isDark;
 
     // Cores adaptadas: em dark mode o pill fica no tom do ink.
-    const pillDark = Color(0xFF1E3040);   // ink levemente iluminado
-    const pillLight = Color(0xFFE3E6E5);  // line token
-    const thumbDark = Color(0xFFF5A12C);  // accent — destaca a lua
+    const pillDark = Color(0xFF1E3040); // ink levemente iluminado
+    const pillLight = Color(0xFFE3E6E5); // line token
+    const thumbDark = Color(0xFFF5A12C); // accent — destaca a lua
     const thumbLight = Color(0xFFFFFFFF); // branco no modo claro
 
     const pillW = 52.0;
@@ -52,7 +52,7 @@ class _WebDarkToggleState extends State<WebDarkToggle>
         onEnter: (_) => setState(() => _hover = true),
         onExit: (_) => setState(() => _hover = false),
         child: GestureDetector(
-          onTap: () => SixThemeResolver().toggleDarkLight(),
+          onTap: () => context.read<ThemeProvider>().toggleTheme(!isDark),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeInOut,
@@ -61,16 +61,17 @@ class _WebDarkToggleState extends State<WebDarkToggle>
             decoration: BoxDecoration(
               color: pillColor,
               borderRadius: BorderRadius.circular(999),
-              boxShadow: _hover
-                  ? [
-                      BoxShadow(
-                        color: (isDark ? thumbDark : WebRootTokens.ink)
-                            .withValues(alpha: 0.18),
-                        blurRadius: 8,
-                        spreadRadius: 0,
-                      ),
-                    ]
-                  : [],
+              boxShadow:
+                  _hover
+                      ? [
+                        BoxShadow(
+                          color: (isDark ? thumbDark : WebRootTokens.ink)
+                              .withValues(alpha: 0.18),
+                          blurRadius: 8,
+                          spreadRadius: 0,
+                        ),
+                      ]
+                      : [],
             ),
             child: Stack(
               children: [
@@ -99,7 +100,8 @@ class _WebDarkToggleState extends State<WebDarkToggle>
                   child: Center(
                     child: AnimatedOpacity(
                       duration: const Duration(milliseconds: 200),
-                      opacity: isDark ? 0.0 : 0.45, // visível no light como hint
+                      opacity:
+                          isDark ? 0.0 : 0.45, // visível no light como hint
                       child: const Icon(
                         Icons.nightlight_round,
                         size: 13,
@@ -135,9 +137,10 @@ class _WebDarkToggleState extends State<WebDarkToggle>
                             ? Icons.nightlight_round
                             : Icons.wb_sunny_rounded,
                         size: 13,
-                        color: isDark
-                            ? WebRootTokens.ink
-                            : const Color(0xFFF5A12C),
+                        color:
+                            isDark
+                                ? WebRootTokens.ink
+                                : const Color(0xFFF5A12C),
                       ),
                     ),
                   ),

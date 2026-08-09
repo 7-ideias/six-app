@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/design_system/tokens/auth_tokens.dart';
 
 import 'login_mobile.dart';
 
@@ -14,14 +15,16 @@ class ContaCriadaMobile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    const labelGrey = Color(0xFF8A8F8D);
-    const textDark = Color(0xFF1A1A1A);
+    final Color backgroundColor = SixAuthTokens.shellBackground(context);
+    final Color primary = SixAuthTokens.interactiveColor(context);
+    final Color foreground = SixAuthTokens.onInteractiveColor(context);
+    final Color labelGrey = SixAuthTokens.textMuted(context);
+    final Color textColor = SixAuthTokens.textPrimary(context);
 
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: backgroundColor,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(28, 24, 28, 28),
@@ -30,24 +33,24 @@ class ContaCriadaMobile extends StatelessWidget {
                 const Spacer(flex: 3),
 
                 // ── Ilustração ────────────────────────────────────────
-                _SuccessIllustration(primary: primary),
+                _SuccessIllustration(primary: primary, foreground: foreground),
 
                 const SizedBox(height: 40),
 
                 // ── Título ────────────────────────────────────────────
-                const Text(
+                Text(
                   'Tudo certo!',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w700,
-                    color: textDark,
+                    color: textColor,
                   ),
                 ),
                 const SizedBox(height: 12),
 
                 // ── Subtítulo ─────────────────────────────────────────
-                const Text(
+                Text(
                   'Sua conta foi criada com sucesso.\nFaça login para começar a usar o Six.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -67,7 +70,7 @@ class ContaCriadaMobile extends StatelessWidget {
                     onPressed: () => _goToLogin(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor: foreground,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -94,8 +97,9 @@ class ContaCriadaMobile extends StatelessWidget {
 // ── Ilustração de sucesso (check com halo + sparkles) ──────────────────────
 class _SuccessIllustration extends StatefulWidget {
   final Color primary;
+  final Color foreground;
 
-  const _SuccessIllustration({required this.primary});
+  const _SuccessIllustration({required this.primary, required this.foreground});
 
   @override
   State<_SuccessIllustration> createState() => _SuccessIllustrationState();
@@ -177,9 +181,9 @@ class _SuccessIllustrationState extends State<_SuccessIllustration>
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.check_rounded,
-                    color: Colors.white,
+                    color: widget.foreground,
                     size: 56,
                   ),
                 ),

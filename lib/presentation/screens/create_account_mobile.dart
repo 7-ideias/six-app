@@ -92,20 +92,19 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final Color backgroundColor = SixAuthTokens.shellBackground(context);
+    final Color textColor = SixAuthTokens.textPrimary(context);
+    final Color mutedColor = SixAuthTokens.dividerText(context);
+    final Color primary = SixAuthTokens.interactiveColor(context);
 
     return Scaffold(
-      backgroundColor: SixAuthTokens.colorShellBackground,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: SixAuthTokens.colorShellBackground,
+        backgroundColor: backgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_rounded,
-            color: SixAuthTokens.colorTextPrimary,
-            size: 20,
-          ),
+          icon: Icon(Icons.arrow_back_ios_rounded, color: textColor, size: 20),
           onPressed: _goBack,
         ),
       ),
@@ -138,7 +137,7 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                   _obscurePassword
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
-                  color: SixAuthTokens.colorDividerText,
+                  color: mutedColor,
                   size: 20,
                 ),
                 onPressed:
@@ -158,7 +157,7 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                   _obscureConfirmPassword
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
-                  color: SixAuthTokens.colorDividerText,
+                  color: mutedColor,
                   size: 20,
                 ),
                 onPressed:
@@ -173,8 +172,8 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                 padding: const EdgeInsets.only(left: 4),
                 child: Text(
                   _passwordMismatchError!,
-                  style: const TextStyle(
-                    color: Color(0xFFD32F2F),
+                  style: TextStyle(
+                    color: SixAuthTokens.errorText(context),
                     fontSize: 12,
                   ),
                 ),
@@ -204,12 +203,12 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Concordo com os Termos e Condições',
                         style: TextStyle(
                           fontSize: 13.5,
-                          color: SixAuthTokens.colorTextPrimary,
+                          color: textColor,
                           height: 1.4,
                         ),
                       ),

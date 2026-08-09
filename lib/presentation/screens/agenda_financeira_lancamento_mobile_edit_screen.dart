@@ -3,14 +3,20 @@ import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:sixpos/data/models/caixa_models.dart';
 import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/presentation/components/date_selector_mobile_bottom_sheet.dart';
 
 class AgendaFinanceiraLancamentoMobileEditScreen extends StatefulWidget {
   const AgendaFinanceiraLancamentoMobileEditScreen({
     super.key,
     required this.lancamento,
+    this.service,
+    this.caixaApiClient,
   });
 
   final Map<String, dynamic> lancamento;
+  final AgendaFinanceiraLancamentoService? service;
+  final CaixaApiClient? caixaApiClient;
 
   @override
   State<AgendaFinanceiraLancamentoMobileEditScreen> createState() =>
@@ -19,19 +25,22 @@ class AgendaFinanceiraLancamentoMobileEditScreen extends StatefulWidget {
 
 class _AgendaFinanceiraLancamentoMobileEditScreenState
     extends State<AgendaFinanceiraLancamentoMobileEditScreen> {
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _surfaceColor = Colors.white;
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
-  static const Color _borderColor = Color(0xFFE2E8F0);
-  static const Color _softBlueColor = Color(0xFFEFF6FF);
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _borderColor => SixMobilePalette.border;
+  static Color get _softBlueColor => SixMobilePalette.softAccentSurface;
+  static Color get _softNeutralColor => SixMobilePalette.softNeutralSurface;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final AgendaFinanceiraLancamentoService _service =
-      AgendaFinanceiraLancamentoService();
-  final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
+  late final AgendaFinanceiraLancamentoService _service =
+      widget.service ?? AgendaFinanceiraLancamentoService();
+  late final CaixaApiClient _caixaApiClient =
+      widget.caixaApiClient ?? HttpCaixaApiClient();
 
   final TextEditingController _descricaoController = TextEditingController();
   final TextEditingController _contatoController = TextEditingController();
@@ -499,62 +508,18 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     required DateTime atual,
     required ValueChanged<DateTime> onSelected,
   }) async {
-    DateTime selecionada = atual;
     final DateTime? result = await showModalBottomSheet<DateTime>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x66000000),
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Container(
-              padding: EdgeInsets.fromLTRB(
-                16,
-                16,
-                16,
-                MediaQuery.of(context).viewInsets.bottom + 18,
-              ),
-              decoration: const BoxDecoration(
-                color: _backgroundColor,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-              ),
-              child: SafeArea(
-                top: false,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    _sheetHandle(),
-                    const SizedBox(height: 16),
-                    Text(
-                      titulo,
-                      style: const TextStyle(
-                        color: _titleTextColor,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    CalendarDatePicker(
-                      initialDate: selecionada,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2100),
-                      onDateChanged:
-                          (DateTime value) => setModalState(
-                            () => selecionada = _normalizarData(value),
-                          ),
-                    ),
-                    const SizedBox(height: 10),
-                    FilledButton.icon(
-                      onPressed: () => Navigator.of(context).pop(selecionada),
-                      icon: const Icon(Icons.check_rounded),
-                      label: const Text('Aplicar data'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
+        return DateSelectorMobileBottomSheet(
+          title: titulo,
+          initialDate: atual,
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2100),
         );
       },
     );
@@ -570,7 +535,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
         elevation: 0,
         centerTitle: true,
         backgroundColor: _primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: SixMobilePalette.onPrimary,
         title: const Text(
           'Editar lançamento',
           style: TextStyle(fontWeight: FontWeight.w800),
@@ -838,11 +803,11 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
         top: false,
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: _surfaceColor,
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Color(0x14000000),
+                color: SixMobilePalette.navigationShadow,
                 blurRadius: 18,
                 offset: Offset(0, -6),
               ),
@@ -870,7 +835,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                             height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: SixMobilePalette.onPrimary,
                             ),
                           )
                           : const Icon(Icons.check_rounded),
@@ -889,12 +854,12 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
-        gradient: const LinearGradient(
-          colors: <Color>[_primaryColor, Color(0xFF123B69)],
+        gradient: LinearGradient(
+          colors: <Color>[_primaryColor, _secondaryColor],
         ),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x220B1F3A),
+            color: SixMobilePalette.heroShadow,
             blurRadius: 18,
             offset: Offset(0, 8),
           ),
@@ -910,7 +875,10 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0x33FFFFFF)),
             ),
-            child: const Icon(Icons.edit_note_rounded, color: Colors.white),
+            child: Icon(
+              Icons.edit_note_rounded,
+              color: SixMobilePalette.onPrimary,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -920,7 +888,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                 const Text(
                   'Editar lançamento',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: SixMobilePalette.onPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
@@ -932,8 +900,8 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                       : _descricaoController.text.trim(),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFD7E3F5),
+                  style: TextStyle(
+                    color: SixMobilePalette.heroSupportingText,
                     height: 1.25,
                   ),
                 ),
@@ -956,9 +924,9 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _borderColor),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x0F000000),
+            color: SixMobilePalette.navigationShadow.withValues(alpha: 0.70),
             blurRadius: 14,
             offset: Offset(0, 6),
           ),
@@ -971,11 +939,15 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
             children: <Widget>[
               Icon(icon, color: _accentColor, size: 20),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: _titleTextColor,
-                  fontWeight: FontWeight.w900,
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: _titleTextColor,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ],
@@ -1006,20 +978,22 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
         labelText: label,
         prefixIcon: Icon(icon, size: 20),
         filled: true,
-        fillColor: const Color(0xFFF8FAFC),
+        fillColor: _softNeutralColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: _borderColor),
+          borderSide: BorderSide(color: _borderColor),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: _borderColor),
+          borderSide: BorderSide(color: _borderColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: _accentColor, width: 1.4),
+          borderSide: BorderSide(color: _accentColor, width: 1.4),
         ),
       ),
+      cursorColor: _accentColor,
+      style: TextStyle(color: _titleTextColor),
     );
   }
 
@@ -1035,7 +1009,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
+          color: _softNeutralColor,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: _borderColor),
         ),
@@ -1049,7 +1023,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                 children: <Widget>[
                   Text(
                     label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _mutedTextColor,
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
@@ -1060,7 +1034,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                     value,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _titleTextColor,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1068,10 +1042,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                 ],
               ),
             ),
-            const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: _mutedTextColor,
-            ),
+            Icon(Icons.keyboard_arrow_down_rounded, color: _mutedTextColor),
           ],
         ),
       ),
@@ -1090,7 +1061,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
         children: <Widget>[
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: _mutedTextColor,
               fontSize: 12,
               fontWeight: FontWeight.w800,
@@ -1101,7 +1072,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: _titleTextColor,
               fontWeight: FontWeight.w900,
             ),
@@ -1361,17 +1332,6 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
     );
   }
-
-  Widget _sheetHandle() => Center(
-    child: Container(
-      width: 42,
-      height: 4,
-      decoration: BoxDecoration(
-        color: const Color(0xFFCBD5E1),
-        borderRadius: BorderRadius.circular(999),
-      ),
-    ),
-  );
 }
 
 class _MobilePickerSheet extends StatelessWidget {
@@ -1385,11 +1345,13 @@ class _MobilePickerSheet extends StatelessWidget {
   final List<String> values;
   final String selected;
 
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _titleTextColor = Color(0xFF0F172A);
-  static const Color _mutedTextColor = Color(0xFF64748B);
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _borderColor => SixMobilePalette.border;
 
   @override
   Widget build(BuildContext context) {
@@ -1400,7 +1362,7 @@ class _MobilePickerSheet extends StatelessWidget {
         16,
         MediaQuery.of(context).viewInsets.bottom + 18,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: _backgroundColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -1415,7 +1377,7 @@ class _MobilePickerSheet extends StatelessWidget {
                 width: 42,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFCBD5E1),
+                  color: SixMobilePalette.activeBorder,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
@@ -1423,14 +1385,14 @@ class _MobilePickerSheet extends StatelessWidget {
             const SizedBox(height: 18),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _titleTextColor,
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Toque em uma opção para aplicar.',
               style: TextStyle(color: _mutedTextColor, fontSize: 13),
             ),
@@ -1452,13 +1414,10 @@ class _MobilePickerSheet extends StatelessWidget {
                         vertical: 13,
                       ),
                       decoration: BoxDecoration(
-                        color: isSelected ? _primaryColor : Colors.white,
+                        color: isSelected ? _primaryColor : _surfaceColor,
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color:
-                              isSelected
-                                  ? _primaryColor
-                                  : const Color(0xFFE2E8F0),
+                          color: isSelected ? _primaryColor : _borderColor,
                         ),
                       ),
                       child: Row(
@@ -1467,7 +1426,10 @@ class _MobilePickerSheet extends StatelessWidget {
                             isSelected
                                 ? Icons.check_circle_rounded
                                 : Icons.circle_outlined,
-                            color: isSelected ? Colors.white : _accentColor,
+                            color:
+                                isSelected
+                                    ? SixMobilePalette.onPrimary
+                                    : _accentColor,
                             size: 20,
                           ),
                           const SizedBox(width: 10),
@@ -1476,7 +1438,9 @@ class _MobilePickerSheet extends StatelessWidget {
                               value,
                               style: TextStyle(
                                 color:
-                                    isSelected ? Colors.white : _titleTextColor,
+                                    isSelected
+                                        ? SixMobilePalette.onPrimary
+                                        : _titleTextColor,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),

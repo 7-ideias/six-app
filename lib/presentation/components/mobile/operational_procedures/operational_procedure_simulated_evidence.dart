@@ -21,7 +21,7 @@ class OperationalProcedureSimulatedEvidence extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: SixMobilePalette.softAccentSurface,
         borderRadius: BorderRadius.circular(16),
@@ -39,7 +39,7 @@ class OperationalProcedureSimulatedEvidence extends StatelessWidget {
             ),
             child: Icon(icon, color: SixMobilePalette.accent),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,17 +48,17 @@ class OperationalProcedureSimulatedEvidence extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.titleText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   detail,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.mutedText,
                     height: 1.25,
                   ),
@@ -69,7 +69,7 @@ class OperationalProcedureSimulatedEvidence extends StatelessWidget {
           IconButton(
             tooltip: removeLabel,
             onPressed: onRemove,
-            icon: const Icon(Icons.close_rounded),
+            icon: Icon(Icons.close_rounded),
           ),
         ],
       ),

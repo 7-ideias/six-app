@@ -80,8 +80,8 @@ class _FilterButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           onTap: onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 40, minWidth: 64),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            constraints: BoxConstraints(minHeight: 40, minWidth: 64),
+            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
               border: Border.all(

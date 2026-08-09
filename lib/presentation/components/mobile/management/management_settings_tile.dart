@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_settings_item_data.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_settings_maturity_badge.dart';
@@ -23,6 +23,7 @@ class ManagementSettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     final double opacity = _isEnabled ? 1.0 : 0.52;
     final String badgeLabel = switch (item.maturity) {
       ManagementSettingsMaturity.experimental => context.t(
@@ -57,9 +58,9 @@ class ManagementSettingsTile extends StatelessWidget {
                 border:
                     isLast
                         ? null
-                        : const Border(
+                        : Border(
                           bottom: BorderSide(
-                            color: SixMobilePalette.activeBorder,
+                            color: colors.strongBorder,
                             width: 0.5,
                           ),
                         ),
@@ -79,8 +80,8 @@ class ManagementSettingsTile extends StatelessWidget {
                                 item.title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: SixMobilePalette.titleText,
+                                style: TextStyle(
+                                  color: colors.titleText,
                                   fontSize: 14.5,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -101,8 +102,8 @@ class ManagementSettingsTile extends StatelessWidget {
                           item.subtitle,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: SixMobilePalette.mutedText,
+                          style: TextStyle(
+                            color: colors.mutedText,
                             fontSize: 12,
                             height: 1.35,
                           ),
@@ -115,7 +116,7 @@ class ManagementSettingsTile extends StatelessWidget {
                     _isEnabled
                         ? Icons.chevron_right_rounded
                         : Icons.lock_outline_rounded,
-                    color: SixMobilePalette.mutedText,
+                    color: colors.mutedText,
                     size: _isEnabled ? 22 : 16,
                   ),
                 ],
@@ -136,14 +137,15 @@ class _IconBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     final Color bg =
         maturity == ManagementSettingsMaturity.functional
-            ? SixMobilePalette.softAccentSurface
-            : SixMobilePalette.softNeutralSurface;
+            ? colors.softAccentSurface
+            : colors.softSurface;
     final Color fg =
         maturity == ManagementSettingsMaturity.functional
-            ? SixMobilePalette.accent
-            : SixMobilePalette.secondary;
+            ? colors.accent
+            : colors.secondary;
 
     return Container(
       width: 40,

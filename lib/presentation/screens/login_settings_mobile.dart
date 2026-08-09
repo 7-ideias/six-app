@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:sixpos/core/config/app_config.dart';
 import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
@@ -13,9 +15,123 @@ import 'package:sixpos/presentation/components/mobile/management/management_sett
 import 'package:sixpos/presentation/components/mobile/management/management_settings_maturity_badge.dart';
 import 'package:sixpos/presentation/components/user_profile_avatar_image.dart';
 import 'package:sixpos/presentation/screens/login_mobile.dart';
+import 'package:sixpos/providers/theme_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 
 import 'meu_perfil_mobile_screen.dart';
+
+class _AccountPanelColors {
+  const _AccountPanelColors({
+    required this.panelStart,
+    required this.panelMiddle,
+    required this.panelEnd,
+    required this.headerStart,
+    required this.headerMiddle,
+    required this.headerEnd,
+    required this.surface,
+    required this.softSurface,
+    required this.iconSurface,
+    required this.border,
+    required this.cardBorder,
+    required this.panelBorder,
+    required this.headerBorder,
+    required this.title,
+    required this.muted,
+    required this.accent,
+    required this.shadow,
+    required this.secondaryShadow,
+  });
+
+  final Color panelStart;
+  final Color panelMiddle;
+  final Color panelEnd;
+  final Color headerStart;
+  final Color headerMiddle;
+  final Color headerEnd;
+  final Color surface;
+  final Color softSurface;
+  final Color iconSurface;
+  final Color border;
+  final Color cardBorder;
+  final Color panelBorder;
+  final Color headerBorder;
+  final Color title;
+  final Color muted;
+  final Color accent;
+  final Color shadow;
+  final Color secondaryShadow;
+
+  static _AccountPanelColors resolve(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    if (theme.brightness != Brightness.dark) {
+      return _AccountPanelColors(
+        panelStart: SixMobilePalette.surface.withValues(alpha: 0.94),
+        panelMiddle: SixMobilePalette.softNeutralSurface.withValues(
+          alpha: 0.91,
+        ),
+        panelEnd: SixMobilePalette.background.withValues(alpha: 0.88),
+        headerStart: SixMobilePalette.primary.withValues(alpha: 0.08),
+        headerMiddle: SixMobilePalette.accent.withValues(alpha: 0.05),
+        headerEnd: SixMobilePalette.surface.withValues(alpha: 0.35),
+        surface: SixMobilePalette.surface,
+        softSurface: SixMobilePalette.softNeutralSurface,
+        iconSurface: SixMobilePalette.softNeutralSurface,
+        border: SixMobilePalette.border,
+        cardBorder: SixMobilePalette.onPrimary.withValues(alpha: 0.62),
+        panelBorder: SixMobilePalette.onPrimary.withValues(alpha: 0.56),
+        headerBorder: SixMobilePalette.onPrimary.withValues(alpha: 0.48),
+        title: SixMobilePalette.titleText,
+        muted: SixMobilePalette.mutedText,
+        accent: SixMobilePalette.accent,
+        shadow: SixMobilePalette.heroShadow.withValues(alpha: 0.38),
+        secondaryShadow: colorScheme.shadow.withValues(alpha: 0.08),
+      );
+    }
+
+    final Color baseSurface = colorScheme.surface;
+    final Color elevatedSurface = Color.alphaBlend(
+      colorScheme.onSurface.withValues(alpha: 0.07),
+      baseSurface,
+    );
+    final Color softSurface = Color.alphaBlend(
+      SixMobilePalette.accent.withValues(alpha: 0.09),
+      baseSurface,
+    );
+    final Color iconSurface = Color.alphaBlend(
+      SixMobilePalette.accent.withValues(alpha: 0.14),
+      baseSurface,
+    );
+
+    return _AccountPanelColors(
+      panelStart: Color.alphaBlend(
+        colorScheme.primary.withValues(alpha: 0.08),
+        baseSurface,
+      ).withValues(alpha: 0.97),
+      panelMiddle: elevatedSurface.withValues(alpha: 0.95),
+      panelEnd: Color.alphaBlend(
+        SixMobilePalette.accent.withValues(alpha: 0.07),
+        baseSurface,
+      ).withValues(alpha: 0.92),
+      headerStart: colorScheme.primary.withValues(alpha: 0.16),
+      headerMiddle: SixMobilePalette.accent.withValues(alpha: 0.11),
+      headerEnd: elevatedSurface.withValues(alpha: 0.62),
+      surface: elevatedSurface,
+      softSurface: softSurface,
+      iconSurface: iconSurface,
+      border: colorScheme.outlineVariant.withValues(alpha: 0.38),
+      cardBorder: colorScheme.outlineVariant.withValues(alpha: 0.34),
+      panelBorder: colorScheme.onSurface.withValues(alpha: 0.12),
+      headerBorder: colorScheme.onSurface.withValues(alpha: 0.10),
+      title: colorScheme.onSurface,
+      muted: colorScheme.onSurfaceVariant.withValues(alpha: 0.82),
+      accent: SixMobilePalette.highlightedBorder,
+      shadow: colorScheme.shadow.withValues(alpha: 0.44),
+      secondaryShadow: colorScheme.shadow.withValues(alpha: 0.24),
+    );
+  }
+}
 
 class LoginSettingsMobile extends StatelessWidget {
   const LoginSettingsMobile({
@@ -30,27 +146,37 @@ class LoginSettingsMobile extends StatelessWidget {
   final bool isUpdatingImage;
   static Future<void>? _profileLoadFuture;
 
-  static const Color _surface = SixMobilePalette.surface;
-  static const Color _border = SixMobilePalette.border;
-  static const Color _title = SixMobilePalette.titleText;
-  static const Color _muted = SixMobilePalette.mutedText;
-  static const Color _accent = SixMobilePalette.accent;
-  static const Color _background = SixMobilePalette.background;
-  static const Color _softSurface = SixMobilePalette.softNeutralSurface;
-
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    context.watch<ThemeProvider>();
+    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final String themeTitle = context.t(
+      'account.settings.theme.dark.title',
+      fallback: 'Tema escuro',
+    );
+    final String themeSubtitle = context.t(
+      isDarkMode
+          ? 'account.settings.theme.dark.enabled'
+          : 'account.settings.theme.dark.disabled',
+      fallback:
+          isDarkMode
+              ? 'Interface com fundo escuro ativada'
+              : 'Reduz o brilho da interface neste aparelho',
+    );
+    final String themeSemantics = context.t(
+      isDarkMode
+          ? 'account.settings.theme.dark.disable'
+          : 'account.settings.theme.dark.enable',
+      fallback: isDarkMode ? 'Desativar tema escuro' : 'Ativar tema escuro',
+    );
 
     return SafeArea(
       left: false,
       child: Material(
         color: Colors.transparent,
         child: ClipRRect(
-          borderRadius: const BorderRadius.horizontal(
-            left: Radius.circular(28),
-          ),
+          borderRadius: BorderRadius.horizontal(left: Radius.circular(28)),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: DecoratedBox(
@@ -59,31 +185,28 @@ class LoginSettingsMobile extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: <Color>[
-                    _surface.withValues(alpha: 0.94),
-                    _softSurface.withValues(alpha: 0.91),
-                    _background.withValues(alpha: 0.88),
+                    colors.panelStart,
+                    colors.panelMiddle,
+                    colors.panelEnd,
                   ],
                 ),
-                borderRadius: const BorderRadius.horizontal(
+                borderRadius: BorderRadius.horizontal(
                   left: Radius.circular(28),
                 ),
                 border: Border(
-                  left: BorderSide(
-                    color: SixMobilePalette.onPrimary.withValues(alpha: 0.56),
-                    width: 0.8,
-                  ),
+                  left: BorderSide(color: colors.panelBorder, width: 0.8),
                 ),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: SixMobilePalette.heroShadow.withValues(alpha: 0.38),
+                    color: colors.shadow,
                     blurRadius: 34,
                     spreadRadius: 1,
-                    offset: const Offset(-12, 0),
+                    offset: Offset(-12, 0),
                   ),
                   BoxShadow(
-                    color: colorScheme.shadow.withValues(alpha: 0.08),
+                    color: colors.secondaryShadow,
                     blurRadius: 18,
-                    offset: const Offset(-4, 8),
+                    offset: Offset(-4, 8),
                   ),
                 ],
               ),
@@ -92,67 +215,143 @@ class LoginSettingsMobile extends StatelessWidget {
                   _buildHeader(context),
                   Expanded(
                     child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+                      padding: EdgeInsets.fromLTRB(16, 14, 16, 18),
                       children: <Widget>[
-                        // ── Conta ──
-                        _buildSectionLabel(context, 'Conta'),
+                        _buildSectionLabel(
+                          context,
+                          context.t(
+                            'account.settings.section.account',
+                            fallback: 'Conta',
+                          ),
+                        ),
                         _buildGroupedCard(
                           context,
                           items: <_GroupedItemData>[
                             _GroupedItemData(
                               icon: Icons.person_outline_rounded,
-                              title: 'Meu perfil',
-                              subtitle: 'Dados pessoais e acesso',
-                              semanticsLabel: 'Abrir meu perfil',
+                              title: context.t(
+                                'account.settings.profile.title',
+                                fallback: 'Meu perfil',
+                              ),
+                              subtitle: context.t(
+                                'account.settings.profile.subtitle',
+                                fallback: 'Dados pessoais e acesso',
+                              ),
+                              semanticsLabel: context.t(
+                                'account.settings.profile.open',
+                                fallback: 'Abrir meu perfil',
+                              ),
                               onTap:
                                   () => _openScreen(
                                     context,
-                                    const MeuPerfilMobileScreen(),
+                                    MeuPerfilMobileScreen(),
                                   ),
                             ),
                             _GroupedItemData(
+                              icon:
+                                  isDarkMode
+                                      ? Icons.dark_mode_rounded
+                                      : Icons.light_mode_rounded,
+                              title: themeTitle,
+                              subtitle: themeSubtitle,
+                              semanticsLabel: themeSemantics,
+                              onTap: () => _toggleTheme(context, !isDarkMode),
+                              trailing: Switch.adaptive(
+                                value: isDarkMode,
+                                activeThumbColor: colors.accent,
+                                activeTrackColor: colors.accent.withValues(
+                                  alpha: 0.34,
+                                ),
+                                inactiveThumbColor: colors.surface,
+                                inactiveTrackColor: colors.softSurface,
+                                onChanged:
+                                    (bool value) =>
+                                        _toggleTheme(context, value),
+                              ),
+                            ),
+                            _GroupedItemData(
                               icon: Icons.tune_rounded,
-                              title: 'Preferências',
-                              subtitle: 'Ajustes individuais do app',
-                              semanticsLabel: 'Abrir preferências',
+                              title: context.t(
+                                'account.settings.preferences.title',
+                                fallback: 'Preferências',
+                              ),
+                              subtitle: context.t(
+                                'account.settings.preferences.subtitle',
+                                fallback: 'Ajustes individuais do app',
+                              ),
+                              semanticsLabel: context.t(
+                                'account.settings.preferences.open',
+                                fallback: 'Abrir preferências',
+                              ),
                               comingSoon: true,
                             ),
                             _GroupedItemData(
                               icon: Icons.privacy_tip_outlined,
-                              title: 'Gerenciar meus dados',
-                              subtitle: 'Dados e privacidade',
-                              semanticsLabel:
-                                  'Abrir gerenciamento dos meus dados',
+                              title: context.t(
+                                'account.settings.privacy.title',
+                                fallback: 'Gerenciar meus dados',
+                              ),
+                              subtitle: context.t(
+                                'account.settings.privacy.subtitle',
+                                fallback: 'Dados e privacidade',
+                              ),
+                              semanticsLabel: context.t(
+                                'account.settings.privacy.open',
+                                fallback: 'Abrir gerenciamento dos meus dados',
+                              ),
                               comingSoon: true,
                             ),
                           ],
                         ),
 
-                        const SizedBox(height: 20),
+                        SizedBox(height: 20),
 
-                        // ── Sobre ──
-                        _buildSectionLabel(context, 'Sobre'),
+                        _buildSectionLabel(
+                          context,
+                          context.t(
+                            'account.settings.section.about',
+                            fallback: 'Sobre',
+                          ),
+                        ),
                         _buildGroupedCard(
                           context,
                           items: <_GroupedItemData>[
                             _GroupedItemData(
                               icon: Icons.help_outline_rounded,
-                              title: 'Ajuda e suporte',
-                              subtitle: 'Dúvidas e contato',
-                              semanticsLabel: 'Abrir ajuda e suporte',
+                              title: context.t(
+                                'account.settings.support.title',
+                                fallback: 'Ajuda e suporte',
+                              ),
+                              subtitle: context.t(
+                                'account.settings.support.subtitle',
+                                fallback: 'Dúvidas e contato',
+                              ),
+                              semanticsLabel: context.t(
+                                'account.settings.support.open',
+                                fallback: 'Abrir ajuda e suporte',
+                              ),
                               comingSoon: true,
                             ),
                             _GroupedItemData(
                               icon: Icons.description_outlined,
-                              title: 'Termos e políticas',
-                              subtitle: 'Uso, privacidade e licenças',
-                              semanticsLabel: 'Abrir termos e políticas',
+                              title: context.t(
+                                'account.settings.terms.title',
+                                fallback: 'Termos e políticas',
+                              ),
+                              subtitle: context.t(
+                                'account.settings.terms.subtitle',
+                                fallback: 'Uso, privacidade e licenças',
+                              ),
+                              semanticsLabel: context.t(
+                                'account.settings.terms.open',
+                                fallback: 'Abrir termos e políticas',
+                              ),
                               comingSoon: true,
                             ),
                           ],
                         ),
 
-                        const SizedBox(height: 20),
+                        SizedBox(height: 20),
                         _buildLogoutItem(context),
                       ],
                     ),
@@ -169,6 +368,11 @@ class LoginSettingsMobile extends StatelessWidget {
 
   Widget _buildHeader(BuildContext context) {
     final UsuarioProvider usuarioProvider = UsuarioProvider();
+    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
+    final String closeLabel = context.t(
+      'account.settings.close',
+      fallback: 'Fechar configurações',
+    );
 
     return FutureBuilder<void>(
       future: _loadUser(),
@@ -180,57 +384,54 @@ class LoginSettingsMobile extends StatelessWidget {
 
             return Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
+              padding: EdgeInsets.fromLTRB(18, 16, 14, 16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: <Color>[
-                    SixMobilePalette.primary.withValues(alpha: 0.08),
-                    SixMobilePalette.accent.withValues(alpha: 0.05),
-                    _surface.withValues(alpha: 0.35),
+                    colors.headerStart,
+                    colors.headerMiddle,
+                    colors.headerEnd,
                   ],
                 ),
                 border: Border(
-                  bottom: BorderSide(
-                    color: SixMobilePalette.onPrimary.withValues(alpha: 0.48),
-                    width: 0.6,
-                  ),
+                  bottom: BorderSide(color: colors.headerBorder, width: 0.6),
                 ),
               ),
               child: Row(
                 children: <Widget>[
                   _buildAvatar(context, usuario?.foto ?? profileImage),
-                  const SizedBox(width: 14),
+                  SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          _userName(usuario),
+                          _userName(context, usuario),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: _title,
+                            color: colors.title,
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
-                          _userEmail(usuario),
+                          _userEmail(context, usuario),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: _muted, fontSize: 12.5),
+                          style: TextStyle(color: colors.muted, fontSize: 12.5),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   IconButton(
-                    tooltip: 'Fechar configurações',
-                    icon: const Icon(Icons.close_rounded),
-                    color: _title,
+                    tooltip: closeLabel,
+                    icon: Icon(Icons.close_rounded),
+                    color: colors.title,
                     onPressed: () => Navigator.of(context).maybePop(),
                   ),
                 ],
@@ -243,9 +444,15 @@ class LoginSettingsMobile extends StatelessWidget {
   }
 
   Widget _buildAvatar(BuildContext context, String? currentProfileImage) {
+    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
+    final String avatarLabel = context.t(
+      'account.settings.avatar.change',
+      fallback: 'Alterar foto do perfil',
+    );
+
     return Semantics(
       button: true,
-      label: 'Alterar foto do perfil',
+      label: avatarLabel,
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
         onTap: () => _showImagePickerOptions(context),
@@ -273,33 +480,33 @@ class LoginSettingsMobile extends StatelessWidget {
                   BoxShadow(
                     color: SixMobilePalette.heroShadow.withValues(alpha: 0.42),
                     blurRadius: 18,
-                    offset: const Offset(0, 8),
+                    offset: Offset(0, 8),
                   ),
                 ],
               ),
               child: CircleAvatar(
                 radius: 30,
-                backgroundColor: _softSurface,
+                backgroundColor: colors.softSurface,
                 child:
                     isUpdatingImage
-                        ? const SizedBox(
+                        ? SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.2,
-                            color: _accent,
+                            color: colors.accent,
                           ),
                         )
                         : (currentProfileImage?.trim().isEmpty ?? true)
-                        ? const Icon(
+                        ? Icon(
                           Icons.person_outline_rounded,
                           size: 30,
-                          color: _accent,
+                          color: colors.accent,
                         )
                         : UserProfileAvatarImage(
                           imageValue: currentProfileImage,
                           fallbackIcon: Icons.person_outline_rounded,
-                          fallbackColor: _accent,
+                          fallbackColor: colors.accent,
                           size: 64,
                           fallbackIconSize: 30,
                           circle: true,
@@ -313,7 +520,7 @@ class LoginSettingsMobile extends StatelessWidget {
                 width: 26,
                 height: 26,
                 decoration: BoxDecoration(
-                  color: _surface,
+                  color: colors.surface,
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: SixMobilePalette.highlightedBorder,
@@ -325,14 +532,14 @@ class LoginSettingsMobile extends StatelessWidget {
                         alpha: 0.7,
                       ),
                       blurRadius: 8,
-                      offset: const Offset(0, 3),
+                      offset: Offset(0, 3),
                     ),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.photo_camera_outlined,
                   size: 14,
-                  color: _accent,
+                  color: colors.accent,
                 ),
               ),
             ),
@@ -343,12 +550,14 @@ class LoginSettingsMobile extends StatelessWidget {
   }
 
   Widget _buildSectionLabel(BuildContext context, String label) {
+    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+      padding: EdgeInsets.fromLTRB(4, 0, 4, 10),
       child: Text(
         label.toUpperCase(),
-        style: const TextStyle(
-          color: _muted,
+        style: TextStyle(
+          color: colors.muted,
           fontSize: 11,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.7,
@@ -361,14 +570,13 @@ class LoginSettingsMobile extends StatelessWidget {
     BuildContext context, {
     required List<_GroupedItemData> items,
   }) {
+    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: _surface,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: SixMobilePalette.onPrimary.withValues(alpha: 0.62),
-          width: 0.8,
-        ),
+        border: Border.all(color: colors.cardBorder, width: 0.8),
       ),
       child: Column(
         children:
@@ -392,6 +600,7 @@ class LoginSettingsMobile extends StatelessWidget {
     required bool isFirst,
     required bool isLast,
   }) {
+    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
     final bool isEnabled = !item.comingSoon;
     final String comingSoonLabel = context.t(
       'gestao.settings.badge.comingSoon',
@@ -411,18 +620,18 @@ class LoginSettingsMobile extends StatelessWidget {
               top: Radius.circular(isFirst ? 20 : 0),
               bottom: Radius.circular(isLast ? 20 : 0),
             ),
-            hoverColor: SixMobilePalette.accent.withValues(alpha: 0.06),
-            splashColor: SixMobilePalette.accent.withValues(alpha: 0.08),
+            hoverColor: colors.accent.withValues(alpha: 0.08),
+            splashColor: colors.accent.withValues(alpha: 0.10),
             onTap: isEnabled ? item.onTap : null,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 13),
               decoration: BoxDecoration(
                 border:
                     isLast
                         ? null
                         : Border(
                           bottom: BorderSide(
-                            color: _border.withValues(alpha: 0.5),
+                            color: colors.border.withValues(alpha: 0.5),
                             width: 0.5,
                           ),
                         ),
@@ -433,12 +642,20 @@ class LoginSettingsMobile extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: _softSurface,
+                      color: colors.iconSurface,
                       borderRadius: BorderRadius.circular(13),
                     ),
-                    child: Icon(item.icon, color: _accent, size: 20),
+                    child: AnimatedSwitcher(
+                      duration: Duration(milliseconds: 180),
+                      child: Icon(
+                        item.icon,
+                        key: ValueKey<IconData>(item.icon),
+                        color: colors.accent,
+                        size: 20,
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,15 +667,15 @@ class LoginSettingsMobile extends StatelessWidget {
                                 item.title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: _title,
+                                style: TextStyle(
+                                  color: colors.title,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
                             if (item.comingSoon) ...<Widget>[
-                              const SizedBox(width: 8),
+                              SizedBox(width: 8),
                               ManagementSettingsMaturityBadge(
                                 maturity: ManagementSettingsMaturity.comingSoon,
                                 label: comingSoonLabel,
@@ -466,13 +683,13 @@ class LoginSettingsMobile extends StatelessWidget {
                             ],
                           ],
                         ),
-                        const SizedBox(height: 3),
+                        SizedBox(height: 3),
                         Text(
                           item.subtitle,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: _muted,
+                          style: TextStyle(
+                            color: colors.muted,
                             fontSize: 12,
                             height: 1.35,
                           ),
@@ -480,14 +697,15 @@ class LoginSettingsMobile extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Icon(
-                    isEnabled
-                        ? Icons.chevron_right_rounded
-                        : Icons.lock_outline_rounded,
-                    color: _muted.withValues(alpha: 0.7),
-                    size: isEnabled ? 22 : 16,
-                  ),
+                  SizedBox(width: 6),
+                  item.trailing ??
+                      Icon(
+                        isEnabled
+                            ? Icons.chevron_right_rounded
+                            : Icons.lock_outline_rounded,
+                        color: colors.muted.withValues(alpha: 0.7),
+                        size: isEnabled ? 22 : 16,
+                      ),
                 ],
               ),
             ),
@@ -498,9 +716,14 @@ class LoginSettingsMobile extends StatelessWidget {
   }
 
   Widget _buildLogoutItem(BuildContext context) {
+    final String logoutLabel = context.t(
+      'account.settings.logout',
+      fallback: 'Sair da conta',
+    );
+
     return Semantics(
       button: true,
-      label: 'Sair da conta',
+      label: logoutLabel,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -509,7 +732,7 @@ class LoginSettingsMobile extends StatelessWidget {
           splashColor: SixMobilePalette.error.withValues(alpha: 0.08),
           onTap: () => _confirmLogoutWithSwipe(context),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 10),
             child: Row(
               children: <Widget>[
                 Icon(
@@ -517,9 +740,9 @@ class LoginSettingsMobile extends StatelessWidget {
                   color: SixMobilePalette.error.withValues(alpha: 0.8),
                   size: 20,
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Text(
-                  'Sair da conta',
+                  logoutLabel,
                   style: TextStyle(
                     color: SixMobilePalette.error.withValues(alpha: 0.8),
                     fontSize: 13.5,
@@ -535,30 +758,45 @@ class LoginSettingsMobile extends StatelessWidget {
   }
 
   Widget _buildVersionFooter(BuildContext context) {
+    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
     final String version = AppConfig.appVersion.trim();
     final String buildNumber = AppConfig.appBuildNumber.trim();
     final String versionLabel =
-        version.isEmpty ? 'versão não informada' : 'v$version';
+        version.isEmpty
+            ? context.t(
+              'account.settings.version.unavailable',
+              fallback: 'versão não informada',
+            )
+            : 'v$version';
+    final String currentVersionPrefix = context.t(
+      'account.settings.version.currentPrefix',
+      fallback: 'Versão atual',
+    );
+    final String buildPrefix = context.t(
+      'account.settings.version.buildPrefix',
+      fallback: 'compilação',
+    );
+    final String versionValue = version.isEmpty ? '-' : version;
     final String tooltip =
         buildNumber.isEmpty
-            ? 'Versão atual: ${version.isEmpty ? '-' : version}'
-            : 'Versão atual: ${version.isEmpty ? '-' : version} • build $buildNumber';
+            ? '$currentVersionPrefix: $versionValue'
+            : '$currentVersionPrefix: $versionValue • $buildPrefix $buildNumber';
 
     return SafeArea(
       top: false,
       left: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+        padding: EdgeInsets.fromLTRB(14, 8, 14, 14),
         child: Tooltip(
           message: tooltip,
           child: Center(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: _softSurface,
+                color: colors.softSurface,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: _border.withValues(alpha: 0.4),
+                  color: colors.border.withValues(alpha: 0.4),
                   width: 0.5,
                 ),
               ),
@@ -568,13 +806,13 @@ class LoginSettingsMobile extends StatelessWidget {
                   Icon(
                     Icons.info_outline_rounded,
                     size: 13,
-                    color: _muted.withValues(alpha: 0.6),
+                    color: colors.muted.withValues(alpha: 0.6),
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox(width: 6),
                   Text(
                     versionLabel,
                     style: TextStyle(
-                      color: _muted.withValues(alpha: 0.7),
+                      color: colors.muted.withValues(alpha: 0.7),
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
                     ),
@@ -600,7 +838,7 @@ class LoginSettingsMobile extends StatelessWidget {
     }
   }
 
-  String _userName(UsuarioModel? usuario) {
+  String _userName(BuildContext context, UsuarioModel? usuario) {
     final String nomeDeGuerra = usuario?.nomeDeGuerra.trim() ?? '';
     if (nomeDeGuerra.isNotEmpty) return nomeDeGuerra;
 
@@ -609,17 +847,28 @@ class LoginSettingsMobile extends StatelessWidget {
       usuario?.sobrenome.trim() ?? '',
     ].where((String parte) => parte.isNotEmpty).join(' ');
 
-    return nomeCompleto.isEmpty ? 'Usuário' : nomeCompleto;
+    return nomeCompleto.isEmpty
+        ? context.t('account.settings.user.fallbackName', fallback: 'Usuário')
+        : nomeCompleto;
   }
 
-  String _userEmail(UsuarioModel? usuario) {
+  String _userEmail(BuildContext context, UsuarioModel? usuario) {
     final String email = usuario?.email.trim() ?? '';
-    return email.isEmpty ? 'E-mail não informado' : email;
+    return email.isEmpty
+        ? context.t(
+          'account.settings.user.emailUnavailable',
+          fallback: 'E-mail não informado',
+        )
+        : email;
   }
 
   void _openScreen(BuildContext context, Widget screen) {
     Navigator.of(context).pop();
     Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
+  }
+
+  void _toggleTheme(BuildContext context, bool isDarkMode) {
+    unawaited(context.read<ThemeProvider>().toggleTheme(isDarkMode));
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -628,35 +877,46 @@ class LoginSettingsMobile extends StatelessWidget {
     if (!context.mounted) return;
 
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(builder: (_) => const LoginPageMobile()),
+      MaterialPageRoute<void>(builder: (_) => LoginPageMobile()),
       (Route<dynamic> route) => false,
     );
   }
 
   Future<void> _confirmLogoutWithSwipe(BuildContext context) async {
+    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
+    final String confirmTitle = context.t(
+      'account.settings.logout.confirmTitle',
+      fallback: 'Sair da conta?',
+    );
+    final String confirmSubtitle = context.t(
+      'account.settings.logout.confirmSubtitle',
+      fallback: 'Confirme para encerrar sua sessão neste aparelho.',
+    );
+    final String cancelLabel = context.t('common.cancel', fallback: 'Cancelar');
+
     final bool confirmed =
         await showModalBottomSheet<bool>(
           context: context,
           showDragHandle: true,
-          backgroundColor: _surface,
-          shape: const RoundedRectangleBorder(
+          backgroundColor: colors.surface,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           builder: (BuildContext bottomSheetContext) {
             return SafeArea(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 4, 18, 18),
+                padding: EdgeInsets.fromLTRB(18, 4, 18, 18),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
                     Container(
-                      padding: const EdgeInsets.all(14),
+                      padding: EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: _softSurface,
+                        color: colors.softSurface,
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color: _border.withValues(alpha: 0.48),
+                          color: colors.border.withValues(alpha: 0.48),
                           width: 0.8,
                         ),
                       ),
@@ -666,7 +926,7 @@ class LoginSettingsMobile extends StatelessWidget {
                             width: 38,
                             height: 38,
                             decoration: BoxDecoration(
-                              color: _surface,
+                              color: colors.surface,
                               borderRadius: BorderRadius.circular(13),
                               border: Border.all(
                                 color: SixMobilePalette.error.withValues(
@@ -683,24 +943,24 @@ class LoginSettingsMobile extends StatelessWidget {
                               size: 20,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          const Expanded(
+                          SizedBox(width: 12),
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: <Widget>[
                                 Text(
-                                  'Sair da conta?',
+                                  confirmTitle,
                                   style: TextStyle(
-                                    color: _title,
+                                    color: colors.title,
                                     fontSize: 15.5,
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
                                 SizedBox(height: 3),
                                 Text(
-                                  'Confirme para encerrar sua sessão neste aparelho.',
+                                  confirmSubtitle,
                                   style: TextStyle(
-                                    color: _muted,
+                                    color: colors.muted,
                                     fontSize: 12,
                                     height: 1.35,
                                   ),
@@ -711,15 +971,16 @@ class LoginSettingsMobile extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     _LogoutSwipeConfirmation(
+                      colors: colors,
                       onConfirmed:
                           () => Navigator.of(bottomSheetContext).pop(true),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     TextButton(
                       onPressed: () => Navigator.of(bottomSheetContext).pop(),
-                      child: const Text('Cancelar'),
+                      child: Text(cancelLabel),
                     ),
                   ],
                 ),
@@ -734,44 +995,57 @@ class LoginSettingsMobile extends StatelessWidget {
   }
 
   void _showImagePickerOptions(BuildContext context) {
+    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
     final String? currentProfileImage = UsuarioProvider().usuario?.foto.trim();
+    final String title = context.t(
+      'account.settings.avatar.sheetTitle',
+      fallback: 'Foto do perfil',
+    );
+    final String cameraLabel = context.t(
+      'account.settings.avatar.camera',
+      fallback: 'Tirar foto',
+    );
+    final String galleryLabel = context.t(
+      'account.settings.avatar.gallery',
+      fallback: 'Escolher da galeria',
+    );
 
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      backgroundColor: _surface,
-      shape: const RoundedRectangleBorder(
+      backgroundColor: colors.surface,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (BuildContext bottomSheetContext) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+            padding: EdgeInsets.fromLTRB(16, 4, 16, 16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                const Text(
-                  'Foto do perfil',
+                Text(
+                  title,
                   style: TextStyle(
-                    color: _title,
+                    color: colors.title,
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 12),
-                _buildPhotoPreview(currentProfileImage),
-                const SizedBox(height: 14),
+                SizedBox(height: 12),
+                _buildPhotoPreview(context, currentProfileImage),
+                SizedBox(height: 14),
                 _buildImageOption(
                   bottomSheetContext,
                   icon: Icons.photo_camera_outlined,
-                  title: 'Tirar foto',
+                  title: cameraLabel,
                   source: ImageSource.camera,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _buildImageOption(
                   bottomSheetContext,
                   icon: Icons.photo_library_outlined,
-                  title: 'Escolher da galeria',
+                  title: galleryLabel,
                   source: ImageSource.gallery,
                 ),
               ],
@@ -782,33 +1056,34 @@ class LoginSettingsMobile extends StatelessWidget {
     );
   }
 
-  Widget _buildPhotoPreview(String? currentProfileImage) {
+  Widget _buildPhotoPreview(BuildContext context, String? currentProfileImage) {
+    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
     final String imageValue = currentProfileImage ?? profileImage ?? '';
 
     return Center(
       child: Container(
         width: 82,
         height: 82,
-        padding: const EdgeInsets.all(3),
+        padding: EdgeInsets.all(3),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: _surface,
+          color: colors.surface,
           border: Border.all(color: SixMobilePalette.highlightedBorder),
           boxShadow: <BoxShadow>[
             BoxShadow(
               color: SixMobilePalette.navigationShadow.withValues(alpha: 0.45),
               blurRadius: 14,
-              offset: const Offset(0, 6),
+              offset: Offset(0, 6),
             ),
           ],
         ),
         child: ClipOval(
           child: ColoredBox(
-            color: _softSurface,
+            color: colors.softSurface,
             child: UserProfileAvatarImage(
               imageValue: imageValue,
               fallbackIcon: Icons.person_outline_rounded,
-              fallbackColor: _accent,
+              fallbackColor: colors.accent,
               size: 76,
               fallbackIconSize: 34,
               circle: true,
@@ -825,8 +1100,10 @@ class LoginSettingsMobile extends StatelessWidget {
     required String title,
     required ImageSource source,
   }) {
+    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
+
     return Material(
-      color: SixMobilePalette.softNeutralSurface,
+      color: colors.softSurface,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -835,20 +1112,20 @@ class LoginSettingsMobile extends StatelessWidget {
           await onPickImage(source);
         },
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _border),
+            border: Border.all(color: colors.border),
           ),
           child: Row(
             children: <Widget>[
-              Icon(icon, color: _accent),
-              const SizedBox(width: 12),
+              Icon(icon, color: colors.accent),
+              SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: _title,
+                  style: TextStyle(
+                    color: colors.title,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -862,8 +1139,12 @@ class LoginSettingsMobile extends StatelessWidget {
 }
 
 class _LogoutSwipeConfirmation extends StatefulWidget {
-  const _LogoutSwipeConfirmation({required this.onConfirmed});
+  const _LogoutSwipeConfirmation({
+    required this.colors,
+    required this.onConfirmed,
+  });
 
+  final _AccountPanelColors colors;
   final VoidCallback onConfirmed;
 
   @override
@@ -915,7 +1196,10 @@ class _LogoutSwipeConfirmationState extends State<_LogoutSwipeConfirmation> {
         return Semantics(
           button: true,
           enabled: !_confirmed,
-          label: 'Deslize para confirmar saída da conta',
+          label: context.t(
+            'account.settings.logout.swipeSemantics',
+            fallback: 'Deslize para confirmar saída da conta',
+          ),
           child: GestureDetector(
             onHorizontalDragUpdate:
                 (DragUpdateDetails details) =>
@@ -924,10 +1208,10 @@ class _LogoutSwipeConfirmationState extends State<_LogoutSwipeConfirmation> {
             child: Container(
               height: _height,
               decoration: BoxDecoration(
-                color: SixMobilePalette.softNeutralSurface,
+                color: widget.colors.softSurface,
                 borderRadius: BorderRadius.circular(17),
                 border: Border.all(
-                  color: SixMobilePalette.border.withValues(alpha: 0.7),
+                  color: widget.colors.border.withValues(alpha: 0.7),
                   width: 0.8,
                 ),
               ),
@@ -947,17 +1231,20 @@ class _LogoutSwipeConfirmationState extends State<_LogoutSwipeConfirmation> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 58),
+                    padding: EdgeInsets.symmetric(horizontal: 58),
                     child: AnimatedOpacity(
                       opacity: _confirmed ? 0 : (1 - progress).clamp(0.35, 1),
-                      duration: const Duration(milliseconds: 120),
-                      child: const Text(
-                        'Segure e deslize para sair',
+                      duration: Duration(milliseconds: 120),
+                      child: Text(
+                        context.t(
+                          'account.settings.logout.swipeHint',
+                          fallback: 'Segure e deslize para sair',
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: SixMobilePalette.mutedText,
+                          color: widget.colors.muted,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
                         ),
@@ -968,7 +1255,7 @@ class _LogoutSwipeConfirmationState extends State<_LogoutSwipeConfirmation> {
                     duration:
                         _confirmed
                             ? Duration.zero
-                            : const Duration(milliseconds: 180),
+                            : Duration(milliseconds: 180),
                     curve: Curves.easeOutCubic,
                     left: _padding + _dragOffset,
                     top: _padding,
@@ -976,7 +1263,7 @@ class _LogoutSwipeConfirmationState extends State<_LogoutSwipeConfirmation> {
                       width: _thumbSize,
                       height: _thumbSize,
                       decoration: BoxDecoration(
-                        color: SixMobilePalette.surface,
+                        color: widget.colors.surface,
                         borderRadius: BorderRadius.circular(15),
                         border: Border.all(
                           color: SixMobilePalette.error.withValues(
@@ -990,7 +1277,7 @@ class _LogoutSwipeConfirmationState extends State<_LogoutSwipeConfirmation> {
                               alpha: 0.85,
                             ),
                             blurRadius: 12,
-                            offset: const Offset(0, 4),
+                            offset: Offset(0, 4),
                           ),
                         ],
                       ),
@@ -1021,6 +1308,7 @@ class _GroupedItemData {
     required this.semanticsLabel,
     this.comingSoon = false,
     this.onTap,
+    this.trailing,
   });
 
   final IconData icon;
@@ -1029,4 +1317,5 @@ class _GroupedItemData {
   final String semanticsLabel;
   final bool comingSoon;
   final VoidCallback? onTap;
+  final Widget? trailing;
 }

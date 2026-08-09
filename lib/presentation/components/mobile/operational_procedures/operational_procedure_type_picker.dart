@@ -43,7 +43,7 @@ class OperationalProcedureTypePicker extends StatelessWidget {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.sizeOf(context).height * 0.86,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: SixMobilePalette.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -67,28 +67,25 @@ class OperationalProcedureTypePicker extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Text(
             context.t('procedimentos.itemType', fallback: 'Tipo de item'),
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.titleText,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             context.t(
               'procedimentos.itemTypePickerHelp',
               fallback:
                   'Escolha como o colaborador vai responder ou registrar esta ação.',
             ),
-            style: const TextStyle(
-              color: SixMobilePalette.mutedText,
-              height: 1.3,
-            ),
+            style: TextStyle(color: SixMobilePalette.mutedText, height: 1.3),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Flexible(
             child: ListView(
               shrinkWrap: true,
@@ -102,7 +99,7 @@ class OperationalProcedureTypePicker extends StatelessWidget {
                             )
                             .toList(growable: false);
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                      padding: EdgeInsets.only(bottom: 12),
                       child: Semantics(
                         container: true,
                         label: responseTypeCategoryLabel(context, category),
@@ -111,13 +108,13 @@ class OperationalProcedureTypePicker extends StatelessWidget {
                           children: <Widget>[
                             Text(
                               responseTypeCategoryLabel(context, category),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: SixMobilePalette.mutedText,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            SizedBox(height: 6),
                             ...options.map(
                               (ProcedureResponseTypeMetadata metadata) =>
                                   _TypeOption(
@@ -173,9 +170,9 @@ class _TypeOption extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 68),
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
+            constraints: BoxConstraints(minHeight: 68),
+            margin: EdgeInsets.only(bottom: 8),
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
@@ -188,7 +185,7 @@ class _TypeOption extends StatelessWidget {
             child: Row(
               children: <Widget>[
                 Icon(metadata.icon, color: SixMobilePalette.secondary),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,7 +197,7 @@ class _TypeOption extends StatelessWidget {
                         children: <Widget>[
                           Text(
                             label,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: SixMobilePalette.titleText,
                               fontWeight: FontWeight.w900,
                             ),
@@ -208,7 +205,7 @@ class _TypeOption extends StatelessWidget {
                           if (metadata.simulated)
                             Text(
                               OperationalProcedureI18n.demonstration(context),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: SixMobilePalette.mutedText,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
@@ -216,12 +213,12 @@ class _TypeOption extends StatelessWidget {
                             ),
                         ],
                       ),
-                      const SizedBox(height: 3),
+                      SizedBox(height: 3),
                       Text(
                         description,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.mutedText,
                           height: 1.25,
                         ),
@@ -230,10 +227,7 @@ class _TypeOption extends StatelessWidget {
                   ),
                 ),
                 if (selected)
-                  const Icon(
-                    Icons.check_rounded,
-                    color: SixMobilePalette.accent,
-                  ),
+                  Icon(Icons.check_rounded, color: SixMobilePalette.accent),
               ],
             ),
           ),

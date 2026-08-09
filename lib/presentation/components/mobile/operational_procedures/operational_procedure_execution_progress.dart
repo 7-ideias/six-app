@@ -29,7 +29,7 @@ class OperationalProcedureExecutionProgress extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.titleText,
                     fontWeight: FontWeight.w900,
                   ),
@@ -37,14 +37,14 @@ class OperationalProcedureExecutionProgress extends StatelessWidget {
               ),
               Text(
                 OperationalProcedureI18n.formatPercent(context, value),
-                style: const TextStyle(
+                style: TextStyle(
                   color: SixMobilePalette.mutedText,
                   fontWeight: FontWeight.w800,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(

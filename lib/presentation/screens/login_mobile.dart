@@ -59,7 +59,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   void _navigateToPostLoginSplash() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const PostLoginSplashMobilePage()),
+      MaterialPageRoute(builder: (_) => PostLoginSplashMobilePage()),
     );
   }
 
@@ -92,21 +92,21 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   void _forgotPassword() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const EsqueceuSenhaMobile()),
+      MaterialPageRoute(builder: (_) => EsqueceuSenhaMobile()),
     );
   }
 
   void _createAccount() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const SignupOnboardingMobile()),
+      MaterialPageRoute(builder: (_) => SignupOnboardingMobile()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: SixMobilePalette.primary,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
@@ -117,7 +117,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+                padding: EdgeInsets.fromLTRB(20, 18, 20, 24),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
                     minHeight: constraints.maxHeight - 42,
@@ -129,9 +129,9 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                         SixStaggeredEntry(
                           child: const _MobileLoginLoopAnimation(),
                         ),
-                        const SizedBox(height: 18),
+                        SizedBox(height: 18),
                         SixStaggeredEntry(
-                          delay: const Duration(milliseconds: 70),
+                          delay: Duration(milliseconds: 70),
                           child: _MobileAuthCard(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -144,7 +144,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                                   keyboardType: TextInputType.emailAddress,
                                   textInputAction: TextInputAction.next,
                                 ),
-                                const SizedBox(height: 14),
+                                SizedBox(height: 14),
                                 _MobileAuthField(
                                   controller: _passwordController,
                                   hint: context.t('auth.password'),
@@ -170,14 +170,14 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                                         ),
                                   ),
                                 ),
-                                const SizedBox(height: 14),
+                                SizedBox(height: 14),
                                 Align(
                                   alignment: Alignment.centerRight,
                                   child: TextButton(
                                     onPressed: _forgotPassword,
                                     style: TextButton.styleFrom(
                                       foregroundColor: SixMobilePalette.accent,
-                                      padding: const EdgeInsets.symmetric(
+                                      padding: EdgeInsets.symmetric(
                                         horizontal: 10,
                                         vertical: 6,
                                       ),
@@ -187,7 +187,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                                     child: Text(
                                       context.t('auth.forgotPassword'),
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 12.5,
                                         decoration: TextDecoration.underline,
@@ -195,7 +195,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 12),
+                                SizedBox(height: 12),
                                 _MobilePrimaryButton(
                                   label: context.t('auth.continue'),
                                   onPressed: _login,
@@ -205,45 +205,45 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 18),
+                        SizedBox(height: 18),
                         SixStaggeredEntry(
-                          delay: const Duration(milliseconds: 120),
+                          delay: Duration(milliseconds: 120),
                           child: _MobileDivider(
                             text: context.t('auth.noAccount'),
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        SizedBox(height: 14),
                         SixStaggeredEntry(
-                          delay: const Duration(milliseconds: 160),
+                          delay: Duration(milliseconds: 160),
                           child: _SocialButton(
                             label: context.t('auth.createAccount'),
                             onPressed: _createAccount,
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
                         SixStaggeredEntry(
-                          delay: const Duration(milliseconds: 190),
+                          delay: Duration(milliseconds: 190),
                           child: _SocialButton(
                             label: context.t('auth.signInWithApple'),
                             onPressed: _loginWithApple,
-                            leading: const Icon(
+                            leading: Icon(
                               Icons.apple,
                               color: SixMobilePalette.titleText,
                               size: 22,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
                         SixStaggeredEntry(
-                          delay: const Duration(milliseconds: 220),
+                          delay: Duration(milliseconds: 220),
                           child: _SocialButton(
                             label: context.t('auth.signInWithGoogle'),
                             onPressed: _loginWithGoogle,
                             leading: const _GoogleGlyph(),
                           ),
                         ),
-                        const Spacer(),
-                        const SizedBox(height: 18),
+                        Spacer(),
+                        SizedBox(height: 18),
                         _TermsText(
                           prefix: context.t('auth.termsPrefix'),
                           terms: context.t('auth.terms'),
@@ -338,7 +338,7 @@ class _MobileLoginLoopAnimationState extends State<_MobileLoginLoopAnimation>
             BoxShadow(
               color: SixMobilePalette.heroShadow,
               blurRadius: 10,
-              offset: const Offset(0, 4),
+              offset: Offset(0, 4),
             ),
           ],
         ),
@@ -382,7 +382,7 @@ class _MobileAuthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(18),
@@ -391,7 +391,7 @@ class _MobileAuthCard extends StatelessWidget {
           BoxShadow(
             color: SixMobilePalette.navigationShadow,
             blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -431,7 +431,8 @@ class _MobileAuthField extends StatelessWidget {
       keyboardType: keyboardType,
       textInputAction: textInputAction,
       onSubmitted: onSubmitted,
-      style: const TextStyle(
+      cursorColor: SixMobilePalette.accent,
+      style: TextStyle(
         color: SixMobilePalette.titleText,
         fontSize: 14.5,
         fontWeight: FontWeight.w600,
@@ -439,39 +440,33 @@ class _MobileAuthField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon, color: SixMobilePalette.secondary, size: 20),
+        prefixIcon: Icon(icon, color: SixMobilePalette.mutedText, size: 20),
         suffixIcon: suffix,
         filled: true,
         fillColor: SixMobilePalette.softNeutralSurface,
-        labelStyle: const TextStyle(
-          color: SixMobilePalette.secondary,
+        labelStyle: TextStyle(
+          color: SixMobilePalette.mutedText,
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
-        floatingLabelStyle: const TextStyle(
+        floatingLabelStyle: TextStyle(
           color: SixMobilePalette.accent,
           fontSize: 13,
           fontWeight: FontWeight.w700,
         ),
-        hintStyle: const TextStyle(
-          color: SixMobilePalette.mutedText,
-          fontSize: 14,
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 15,
-        ),
+        hintStyle: TextStyle(color: SixMobilePalette.mutedText, fontSize: 14),
+        contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 15),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: SixMobilePalette.border),
+          borderSide: BorderSide(color: SixMobilePalette.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: SixMobilePalette.border),
+          borderSide: BorderSide(color: SixMobilePalette.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
+          borderSide: BorderSide(
             color: SixMobilePalette.highlightedBorder,
             width: 1.4,
           ),
@@ -511,7 +506,7 @@ class _MobilePrimaryButton extends StatelessWidget {
         ),
         child:
             isLoading
-                ? const SizedBox(
+                ? SizedBox(
                   height: 22,
                   width: 22,
                   child: CircularProgressIndicator(
@@ -523,10 +518,7 @@ class _MobilePrimaryButton extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800),
                 ),
       ),
     );
@@ -542,18 +534,18 @@ class _MobileDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: <Widget>[
-        const Expanded(child: Divider(color: SixMobilePalette.border)),
+        Expanded(child: Divider(color: SixMobilePalette.border)),
         ConstrainedBox(
           constraints: BoxConstraints(
             maxWidth: MediaQuery.sizeOf(context).width * 0.52,
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: EdgeInsets.symmetric(horizontal: 12),
             child: Text(
               text,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.mutedText,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -561,7 +553,7 @@ class _MobileDivider extends StatelessWidget {
             ),
           ),
         ),
-        const Expanded(child: Divider(color: SixMobilePalette.border)),
+        Expanded(child: Divider(color: SixMobilePalette.border)),
       ],
     );
   }
@@ -576,11 +568,11 @@ class _TermsText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: EdgeInsets.symmetric(horizontal: 8),
       child: RichText(
         textAlign: TextAlign.center,
         text: TextSpan(
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             color: SixMobilePalette.mutedText,
             height: 1.5,
@@ -589,7 +581,7 @@ class _TermsText extends StatelessWidget {
             TextSpan(text: prefix),
             TextSpan(
               text: terms,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.titleText,
                 decoration: TextDecoration.underline,
                 fontWeight: FontWeight.w700,
@@ -622,25 +614,22 @@ class _SocialButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           backgroundColor: SixMobilePalette.surface,
           foregroundColor: SixMobilePalette.titleText,
-          side: const BorderSide(color: SixMobilePalette.border),
+          side: BorderSide(color: SixMobilePalette.border),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          padding: EdgeInsets.symmetric(horizontal: 14),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (leading != null) ...[leading!, const SizedBox(width: 10)],
+            if (leading != null) ...[leading!, SizedBox(width: 10)],
             Flexible(
               child: Text(
                 label,
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               ),
             ),
           ],
@@ -655,7 +644,7 @@ class _GoogleGlyph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Text(
+    return Text(
       'G',
       style: TextStyle(
         fontSize: 20,

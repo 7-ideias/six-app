@@ -15,9 +15,9 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
 
   final ServicosAtendimentoMobileNavigate? onNavigate;
 
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
   static const Color _accentColor = Color(0xFF7C3AED);
   static const Color _consultAccentColor = Color(0xFF0F766E);
   static const String _serviceAsset =
@@ -44,7 +44,7 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
       scrolledSurfaceOpacity: 0.70,
       leading: IconButton(
         tooltip: _t(context, 'common.back', 'Voltar'),
-        icon: const Icon(Icons.arrow_back_rounded),
+        icon: Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
       bodyBuilder: (
@@ -66,7 +66,7 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
 
               return ListView(
                 controller: scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
+                physics: AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(
                   horizontalPadding,
                   topInset + topPadding,
@@ -75,11 +75,9 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
                 ),
                 children: <Widget>[
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 40),
+                    delay: Duration(milliseconds: 40),
                     child: _buildServiceActionCard(
-                      key: const ValueKey<String>(
-                        'servicos-action-new-service',
-                      ),
+                      key: ValueKey<String>('servicos-action-new-service'),
                       height: cardHeight,
                       title: _t(
                         context,
@@ -95,19 +93,14 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
                       badgeIcon: Icons.add_rounded,
                       accentColor: _accentColor,
                       onTap:
-                          () => _go(
-                            context,
-                            const AtendimentoTecnicoMobileScreen(),
-                          ),
+                          () => _go(context, AtendimentoTecnicoMobileScreen()),
                     ),
                   ),
-                  const SizedBox(height: _serviceCardGap),
+                  SizedBox(height: _serviceCardGap),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 95),
+                    delay: Duration(milliseconds: 95),
                     child: _buildServiceActionCard(
-                      key: const ValueKey<String>(
-                        'servicos-action-in-progress',
-                      ),
+                      key: ValueKey<String>('servicos-action-in-progress'),
                       height: cardHeight,
                       title: _t(
                         context,
@@ -123,10 +116,8 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
                       badgeIcon: Icons.fact_check_rounded,
                       accentColor: _consultAccentColor,
                       onTap:
-                          () => _go(
-                            context,
-                            const AtendimentosTecnicosMobileScreen(),
-                          ),
+                          () =>
+                              _go(context, AtendimentosTecnicosMobileScreen()),
                     ),
                   ),
                 ],
@@ -157,7 +148,7 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
         height: height,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          boxShadow: const <BoxShadow>[
+          boxShadow: <BoxShadow>[
             BoxShadow(
               color: SixMobilePalette.navigationShadow,
               blurRadius: 16,
@@ -187,7 +178,7 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
                       width: 5,
                       decoration: BoxDecoration(
                         color: accentColor,
-                        borderRadius: const BorderRadius.horizontal(
+                        borderRadius: BorderRadius.horizontal(
                           left: Radius.circular(20),
                         ),
                       ),

@@ -30,10 +30,9 @@ class ManagementParallaxCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final BorderRadius borderRadius = BorderRadius.circular(_cardBorderRadius);
     final BorderSide borderSide = BorderSide(
-      color: isActive ? const Color(0x33FFFFFF) : const Color(0x2AFFFFFF),
+      color: isActive ? Color(0x33FFFFFF) : Color(0x2AFFFFFF),
     );
-    final Color shadowColor =
-        isActive ? const Color(0x16111827) : const Color(0x0D111827);
+    final Color shadowColor = isActive ? Color(0x16111827) : Color(0x0D111827);
 
     Widget cardContent = Container(
       key: ValueKey<String>('management-parallax-card-${data.id}'),
@@ -45,7 +44,7 @@ class ManagementParallaxCard extends StatelessWidget {
             color: shadowColor,
             blurRadius: 12,
             spreadRadius: -1,
-            offset: const Offset(0, 6),
+            offset: Offset(0, 6),
           ),
         ],
       ),
@@ -130,7 +129,7 @@ class ManagementParallaxCard extends StatelessWidget {
   }
 
   Widget _buildOverlay() {
-    return const IgnorePointer(
+    return IgnorePointer(
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -153,7 +152,7 @@ class ManagementParallaxCard extends StatelessWidget {
         reduceMotion ? 0 : delta.clamp(-1.0, 1.0).toDouble() * -4;
 
     return Padding(
-      padding: const EdgeInsets.all(_cardContentPadding),
+      padding: EdgeInsets.all(_cardContentPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -163,9 +162,9 @@ class ManagementParallaxCard extends StatelessWidget {
               width: _iconContainerSize,
               height: _iconContainerSize,
               decoration: BoxDecoration(
-                color: const Color(0x26FFFFFF),
+                color: Color(0x26FFFFFF),
                 borderRadius: BorderRadius.circular(_iconBorderRadius),
-                border: Border.all(color: const Color(0x33FFFFFF)),
+                border: Border.all(color: Color(0x33FFFFFF)),
               ),
               child: Icon(
                 data.icon,
@@ -174,24 +173,24 @@ class ManagementParallaxCard extends StatelessWidget {
               ),
             ),
           ),
-          const Spacer(),
+          Spacer(),
           Text(
             data.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.onPrimary,
               fontSize: 22,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.1,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             data.subtitle,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.heroSupportingText,
               fontSize: 12.5,
               height: 1.3,

@@ -8,8 +8,8 @@ import 'regionalizacao_mobile_screen.dart';
 class ConfiguracoesMobileScreen extends StatelessWidget {
   const ConfiguracoesMobileScreen({super.key});
 
-  static const Color backgroundColor = SixMobilePalette.background;
-  static const Color primaryColor = SixMobilePalette.primary;
+  static Color get backgroundColor => SixMobilePalette.background;
+  static Color get primaryColor => SixMobilePalette.primary;
 
   @override
   Widget build(BuildContext context) {
@@ -23,18 +23,18 @@ class ConfiguracoesMobileScreen extends StatelessWidget {
         foregroundColor: SixMobilePalette.onPrimary,
         surfaceTintColor: Colors.transparent,
         systemOverlayStyle: SystemUiOverlayStyle.light,
-        leading: const BackButton(),
-        title: const Text(
+        leading: BackButton(),
+        title: Text(
           'Configurações',
           style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
         ),
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           children: <Widget>[
             _buildSectionLabel('Empresa'),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             _ConfigTile(
               icon: Icons.storefront_outlined,
               title: 'Empresa',
@@ -42,12 +42,12 @@ class ConfiguracoesMobileScreen extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => const EmpresaConfiguracaoMobile(),
+                    builder: (_) => EmpresaConfiguracaoMobile(),
                   ),
                 );
               },
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             _ConfigTile(
               icon: Icons.language_outlined,
               title: 'Regionalização',
@@ -55,7 +55,7 @@ class ConfiguracoesMobileScreen extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => const RegionalizacaoMobileScreen(),
+                    builder: (_) => RegionalizacaoMobileScreen(),
                   ),
                 );
               },
@@ -68,10 +68,10 @@ class ConfiguracoesMobileScreen extends StatelessWidget {
 
   Widget _buildSectionLabel(String label) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
+      padding: EdgeInsets.fromLTRB(4, 0, 4, 0),
       child: Text(
         label.toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           color: SixMobilePalette.mutedText,
           fontSize: 11,
           fontWeight: FontWeight.w800,
@@ -110,8 +110,8 @@ class _ConfigTile extends StatelessWidget {
           splashColor: SixMobilePalette.accent.withValues(alpha: 0.08),
           onTap: onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 64),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            constraints: BoxConstraints(minHeight: 64),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 11),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
@@ -124,7 +124,7 @@ class _ConfigTile extends StatelessWidget {
                     alpha: 0.45,
                   ),
                   blurRadius: 14,
-                  offset: const Offset(0, 6),
+                  offset: Offset(0, 6),
                 ),
               ],
             ),
@@ -145,7 +145,7 @@ class _ConfigTile extends StatelessWidget {
                   ),
                   child: Icon(icon, color: SixMobilePalette.accent, size: 21),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,18 +154,18 @@ class _ConfigTile extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.titleText,
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      SizedBox(height: 3),
                       Text(
                         subtitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.mutedText,
                           fontSize: 12,
                           height: 1.18,
@@ -174,7 +174,7 @@ class _ConfigTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Icon(
                   Icons.chevron_right_rounded,
                   color: SixMobilePalette.mutedText.withValues(alpha: 0.82),

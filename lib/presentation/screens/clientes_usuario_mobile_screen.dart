@@ -21,16 +21,16 @@ class ClientesUsuarioMobileScreen extends StatefulWidget {
 
 class _ClientesUsuarioMobileScreenState
     extends State<ClientesUsuarioMobileScreen> {
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _softSurfaceColor = SixMobilePalette.softNeutralSurface;
-  static const Color _softAccentColor = SixMobilePalette.softAccentSurface;
-  static const Color _borderColor = SixMobilePalette.activeBorder;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _softSurfaceColor => SixMobilePalette.softNeutralSurface;
+  static Color get _softAccentColor => SixMobilePalette.softAccentSurface;
+  static Color get _borderColor => SixMobilePalette.activeBorder;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
   static const Color _successColor = Color(0xFF16A34A);
 
   late final ClienteUsuarioApiClient _api;
@@ -42,7 +42,7 @@ class _ClientesUsuarioMobileScreenState
   String _filter = '';
 
   List<ClienteUsuario> get _clientes =>
-      _response?.clientes ?? const <ClienteUsuario>[];
+      _response?.clientes ?? <ClienteUsuario>[];
 
   List<ClienteUsuario> get _items {
     final String term = _filter.toLowerCase().replaceAll(
@@ -141,15 +141,15 @@ class _ClientesUsuarioMobileScreenState
       isScrollControlled: false,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x47000000),
+      barrierColor: Color(0x47000000),
       builder: (BuildContext bottomSheetContext) {
         return SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Container(
-              padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
-              decoration: const BoxDecoration(
+              padding: EdgeInsets.fromLTRB(18, 12, 18, 18),
+              decoration: BoxDecoration(
                 color: _surfaceColor,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
@@ -164,7 +164,7 @@ class _ClientesUsuarioMobileScreenState
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   Row(
                     children: <Widget>[
                       Container(
@@ -174,13 +174,10 @@ class _ClientesUsuarioMobileScreenState
                           color: _softAccentColor,
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: const Icon(
-                          Icons.link_outlined,
-                          color: _accentColor,
-                        ),
+                        child: Icon(Icons.link_outlined, color: _accentColor),
                       ),
-                      const SizedBox(width: 12),
-                      const Expanded(
+                      SizedBox(width: 12),
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
@@ -205,12 +202,12 @@ class _ClientesUsuarioMobileScreenState
                       ),
                       IconButton(
                         onPressed: () => Navigator.of(bottomSheetContext).pop(),
-                        icon: const Icon(Icons.close_rounded),
+                        icon: Icon(Icons.close_rounded),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
-                  const ClienteAutoCadastroLinkSection(
+                  SizedBox(height: 18),
+                  ClienteAutoCadastroLinkSection(
                     showAsCard: true,
                     actionsOnly: true,
                   ),
@@ -244,7 +241,7 @@ class _ClientesUsuarioMobileScreenState
         IconButton(
           tooltip: 'Auto cadastro',
           onPressed: _loading ? null : _openAutoCadastro,
-          icon: const Icon(Icons.link_outlined),
+          icon: Icon(Icons.link_outlined),
         ),
       ],
       bodyBuilder: (
@@ -261,14 +258,14 @@ class _ClientesUsuarioMobileScreenState
                 right: 16,
                 bottom: 16,
                 child: SafeArea(
-                  minimum: const EdgeInsets.only(bottom: 8),
+                  minimum: EdgeInsets.only(bottom: 8),
                   child: FloatingActionButton.extended(
                     backgroundColor: _accentColor,
                     foregroundColor: SixMobilePalette.onPrimary,
                     elevation: 5,
                     onPressed: _loading ? null : () => _openForm(),
-                    icon: const Icon(Icons.person_add_alt_1_rounded),
-                    label: const Text('Novo cliente'),
+                    icon: Icon(Icons.person_add_alt_1_rounded),
+                    label: Text('Novo cliente'),
                   ),
                 ),
               ),
@@ -295,30 +292,30 @@ class _ClientesUsuarioMobileScreenState
       onRefresh: _reload,
       child: ListView(
         controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16, topInset + 12, 16, 96),
         children: <Widget>[
           SixStaggeredEntry(child: _headerCard()),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           SixStaggeredEntry(
-            delay: const Duration(milliseconds: 60),
+            delay: Duration(milliseconds: 60),
             child: _summaryBar(),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           SixStaggeredEntry(
-            delay: const Duration(milliseconds: 100),
+            delay: Duration(milliseconds: 100),
             child: _searchBox(),
           ),
           if (_erro != null) ...<Widget>[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _inlineError(_erro!),
           ],
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           SixStaggeredEntry(
-            delay: const Duration(milliseconds: 140),
+            delay: Duration(milliseconds: 140),
             child: _listTitle(),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           if (_items.isEmpty)
             _emptyState()
           else
@@ -349,7 +346,7 @@ class _ClientesUsuarioMobileScreenState
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
             color: _surfaceColor,
             borderRadius: BorderRadius.circular(999),
@@ -357,10 +354,7 @@ class _ClientesUsuarioMobileScreenState
           ),
           child: Text(
             _formatInt(_items.length),
-            style: const TextStyle(
-              fontWeight: FontWeight.w900,
-              color: _primaryColor,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w900, color: _primaryColor),
           ),
         ),
       ],
@@ -370,15 +364,15 @@ class _ClientesUsuarioMobileScreenState
   Widget _headerCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: <Color>[_primaryColor, _secondaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: Color(0x220B1F3A),
             blurRadius: 18,
@@ -396,14 +390,14 @@ class _ClientesUsuarioMobileScreenState
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
             ),
-            child: const Icon(Icons.groups_2_outlined, color: Colors.white),
+            child: Icon(Icons.groups_2_outlined, color: Colors.white),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const Text(
+                Text(
                   'Base de clientes',
                   style: TextStyle(
                     color: Colors.white,
@@ -411,7 +405,7 @@ class _ClientesUsuarioMobileScreenState
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 5),
+                SizedBox(height: 5),
                 Text(
                   'Cadastre, edite e acompanhe relacionamento e fiado.',
                   style: TextStyle(
@@ -434,7 +428,7 @@ class _ClientesUsuarioMobileScreenState
     );
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(20),
@@ -474,19 +468,19 @@ class _ClientesUsuarioMobileScreenState
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: TextStyle(
             color: _mutedTextColor,
             fontSize: 12,
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 3),
+        SizedBox(height: 3),
         Text(
           value,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-          style: const TextStyle(
+          style: TextStyle(
             color: _titleTextColor,
             fontSize: 18,
             fontWeight: FontWeight.w900,
@@ -498,7 +492,7 @@ class _ClientesUsuarioMobileScreenState
 
   Widget _searchBox() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
@@ -509,12 +503,12 @@ class _ClientesUsuarioMobileScreenState
         onChanged: (String value) => setState(() => _filter = value),
         decoration: InputDecoration(
           hintText: 'Buscar cliente...',
-          prefixIcon: const Icon(Icons.search_rounded),
+          prefixIcon: Icon(Icons.search_rounded),
           suffixIcon:
               _search.text.isEmpty
                   ? null
                   : IconButton(
-                    icon: const Icon(Icons.close_rounded),
+                    icon: Icon(Icons.close_rounded),
                     onPressed: () {
                       _search.clear();
                       setState(() => _filter = '');
@@ -534,8 +528,8 @@ class _ClientesUsuarioMobileScreenState
   Widget _clientCard(ClienteUsuario cliente) {
     final bool fiadoOk = cliente.permiteCompraFiado && !cliente.bloqueadoFiado;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
@@ -552,13 +546,13 @@ class _ClientesUsuarioMobileScreenState
                 backgroundColor: _softAccentColor,
                 child: Text(
                   _initials(cliente.nome),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _accentColor,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -567,21 +561,18 @@ class _ClientesUsuarioMobileScreenState
                       cliente.nome.isEmpty ? 'Cliente sem nome' : cliente.nome,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _titleTextColor,
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       '${cliente.tipoPessoa.isEmpty ? 'PF' : cliente.tipoPessoa} • ${cliente.documento.isEmpty ? 'Documento não informado' : cliente.documento}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _mutedTextColor,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: _mutedTextColor, fontSize: 12),
                     ),
                   ],
                 ),
@@ -589,7 +580,7 @@ class _ClientesUsuarioMobileScreenState
               _status(cliente.ativo),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -605,10 +596,10 @@ class _ClientesUsuarioMobileScreenState
               _chip(Icons.location_on_outlined, _location(cliente)),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
               color:
                   fiadoOk
@@ -629,7 +620,7 @@ class _ClientesUsuarioMobileScreenState
                   color: fiadoOk ? _successColor : _mutedTextColor,
                   size: 19,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     cliente.permiteCompraFiado
@@ -637,31 +628,28 @@ class _ClientesUsuarioMobileScreenState
                         : 'Fiado não liberado',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             children: <Widget>[
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => _history(cliente),
-                  icon: const Icon(Icons.timeline_outlined, size: 18),
-                  label: const Text('Histórico'),
+                  icon: Icon(Icons.timeline_outlined, size: 18),
+                  label: Text('Histórico'),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: FilledButton.icon(
                   onPressed: () => _openForm(cliente: cliente),
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  label: const Text('Editar'),
+                  icon: Icon(Icons.edit_outlined, size: 18),
+                  label: Text('Editar'),
                 ),
               ),
             ],
@@ -673,7 +661,7 @@ class _ClientesUsuarioMobileScreenState
 
   Widget _chip(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 7),
       decoration: BoxDecoration(
         color: _softSurfaceColor,
         borderRadius: BorderRadius.circular(999),
@@ -683,14 +671,14 @@ class _ClientesUsuarioMobileScreenState
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(icon, size: 14, color: _primaryColor),
-          const SizedBox(width: 5),
+          SizedBox(width: 5),
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 190),
+            constraints: BoxConstraints(maxWidth: 190),
             child: Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _primaryColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -705,7 +693,7 @@ class _ClientesUsuarioMobileScreenState
   Widget _status(bool ativo) {
     final Color color = ativo ? _successColor : SixMobilePalette.error;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(999),
@@ -724,7 +712,7 @@ class _ClientesUsuarioMobileScreenState
   Widget _emptyState() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
@@ -739,21 +727,18 @@ class _ClientesUsuarioMobileScreenState
               color: _softAccentColor,
               borderRadius: BorderRadius.circular(18),
             ),
-            child: const Icon(
-              Icons.person_add_alt_1_rounded,
-              color: _accentColor,
-            ),
+            child: Icon(Icons.person_add_alt_1_rounded, color: _accentColor),
           ),
-          const SizedBox(height: 12),
-          const Text(
+          SizedBox(height: 12),
+          Text(
             'Nenhum cliente encontrado',
             style: TextStyle(
               color: _titleTextColor,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 5),
-          const Text(
+          SizedBox(height: 5),
+          Text(
             'Cadastre clientes para vender, atender e controlar fiado.',
             textAlign: TextAlign.center,
             style: TextStyle(color: _mutedTextColor),
@@ -766,11 +751,11 @@ class _ClientesUsuarioMobileScreenState
   Widget _errorState(ScrollController scrollController, double topInset) {
     return ListView(
       controller: scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
+      physics: AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(24, topInset + 40, 24, 96),
       children: <Widget>[
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: _surfaceColor,
             borderRadius: BorderRadius.circular(22),
@@ -779,21 +764,17 @@ class _ClientesUsuarioMobileScreenState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              const Icon(
-                Icons.cloud_off_rounded,
-                size: 44,
-                color: _accentColor,
-              ),
-              const SizedBox(height: 12),
+              Icon(Icons.cloud_off_rounded, size: 44, color: _accentColor),
+              SizedBox(height: 12),
               Text(
                 _erro ?? 'Não foi possível carregar os clientes.',
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               FilledButton.icon(
                 onPressed: _reload,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Tentar novamente'),
+                icon: Icon(Icons.refresh_rounded),
+                label: Text('Tentar novamente'),
               ),
             ],
           ),
@@ -805,7 +786,7 @@ class _ClientesUsuarioMobileScreenState
   Widget _inlineError(String message) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: Theme.of(
@@ -821,15 +802,15 @@ class _ClientesUsuarioMobileScreenState
       context: context,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x47000000),
+      barrierColor: Color(0x47000000),
       builder: (BuildContext bottomSheetContext) {
         return Container(
-          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          margin: EdgeInsets.fromLTRB(12, 0, 12, 12),
+          padding: EdgeInsets.fromLTRB(20, 12, 20, 24),
           decoration: BoxDecoration(
             color: _surfaceColor,
             borderRadius: BorderRadius.circular(28),
-            boxShadow: const <BoxShadow>[
+            boxShadow: <BoxShadow>[
               BoxShadow(
                 color: Color(0x26000000),
                 blurRadius: 28,
@@ -851,14 +832,14 @@ class _ClientesUsuarioMobileScreenState
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Text(
                 cliente.nome.isEmpty ? 'Cliente' : cliente.nome,
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               _historyRow(
                 'Telefone',
                 cliente.telefone.isEmpty ? '-' : cliente.telefone,
@@ -874,12 +855,12 @@ class _ClientesUsuarioMobileScreenState
                     ? _formatMoney(cliente.limiteFiado)
                     : 'não liberado',
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () => Navigator.of(bottomSheetContext).pop(),
-                  child: const Text('Fechar'),
+                  child: Text('Fechar'),
                 ),
               ),
             ],
@@ -891,7 +872,7 @@ class _ClientesUsuarioMobileScreenState
 
   Widget _historyRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -899,7 +880,7 @@ class _ClientesUsuarioMobileScreenState
             width: 86,
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _mutedTextColor,
                 fontWeight: FontWeight.w700,
               ),
@@ -909,7 +890,7 @@ class _ClientesUsuarioMobileScreenState
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(fontWeight: FontWeight.w800),
+              style: TextStyle(fontWeight: FontWeight.w800),
             ),
           ),
         ],
@@ -980,13 +961,13 @@ class _MobileClientesLoading extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       controller: controller,
-      physics: const AlwaysScrollableScrollPhysics(),
+      physics: AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(16, topPadding, 16, 96),
       children: List<Widget>.generate(
         5,
         (int index) => Container(
           height: index == 0 ? 118 : 132,
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             color: SixMobilePalette.surface,
             borderRadius: BorderRadius.circular(22),

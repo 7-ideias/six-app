@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/atendimento_tecnico_models.dart';
+import '../../design_system/themes/six_mobile_color_scheme.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import '../../l10n/six_i18n.dart';
@@ -26,13 +27,21 @@ class AtendimentosTecnicosPendentesPagamentoMobileScreen
 
 class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
     extends State<AtendimentosTecnicosPendentesPagamentoMobileScreen> {
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
   static const Color _accentColor = Color(0xFF0F766E);
 
   late final AtendimentoTecnicoService _service;
   late Future<List<AtendimentoTecnicoModel>> _future;
+
+  SixMobileColorScheme get _colors => context.sixMobileColors;
+  Color get _backgroundColor => _colors.background;
+  Color get _primaryColor => _colors.primary;
+  Color get _secondaryColor => _colors.secondary;
+  Color get _surfaceColor => _colors.surface;
+  Color get _softSurface => _colors.softSurface;
+  Color get _mutedTextColor => _colors.mutedText;
+  Color get _titleTextColor => _colors.titleText;
+  Color get _borderColor => _colors.border;
+  Color get _heroShadow => _colors.heroShadow;
 
   @override
   void initState() {
@@ -102,14 +111,14 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
       scrolledSurfaceOpacity: 0.70,
       leading: IconButton(
         tooltip: _t('common.back', 'Voltar'),
-        icon: const Icon(Icons.arrow_back_rounded),
+        icon: Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
       actions: <Widget>[
         IconButton(
           tooltip: _t('common.refresh', 'Atualizar'),
           onPressed: _recarregar,
-          icon: const Icon(Icons.refresh_rounded),
+          icon: Icon(Icons.refresh_rounded),
         ),
       ],
       bodyBuilder: _buildContent,
@@ -130,10 +139,10 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
       child: RefreshIndicator(
         onRefresh: _recarregar,
         color: _accentColor,
-        backgroundColor: SixMobilePalette.surface,
+        backgroundColor: _surfaceColor,
         child: ListView(
           controller: scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
           children: <Widget>[
             FutureBuilder<List<AtendimentoTecnicoModel>>(
@@ -162,8 +171,7 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
                 }
 
                 return _successState(
-                  atendimentos:
-                      snapshot.data ?? const <AtendimentoTecnicoModel>[],
+                  atendimentos: snapshot.data ?? <AtendimentoTecnicoModel>[],
                   reduceMotion: reduceMotion,
                 );
               },
@@ -185,7 +193,7 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
           _header(atendimentos: atendimentos, reduceMotion: reduceMotion),
           reduceMotion: reduceMotion,
         ),
-        const SizedBox(height: 18),
+        SizedBox(height: 18),
         _entry(
           _section(
             _t(
@@ -193,14 +201,14 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
               'Atendimentos com saldo',
             ),
           ),
-          delay: const Duration(milliseconds: 70),
+          delay: Duration(milliseconds: 70),
           reduceMotion: reduceMotion,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         if (atendimentos.isEmpty)
           _entry(
             _emptyState(),
-            delay: const Duration(milliseconds: 110),
+            delay: Duration(milliseconds: 110),
             reduceMotion: reduceMotion,
           )
         else
@@ -208,7 +216,7 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
             MapEntry<int, AtendimentoTecnicoModel> entry,
           ) {
             return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: EdgeInsets.only(bottom: 12),
               child: _entry(
                 _atendimentoCard(entry.value),
                 delay: Duration(milliseconds: 110 + entry.key * 40),
@@ -240,20 +248,16 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
     );
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: <Color>[_primaryColor, _secondaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: SixMobilePalette.heroShadow,
-            blurRadius: 20,
-            offset: Offset(0, 10),
-          ),
+        boxShadow: <BoxShadow>[
+          BoxShadow(color: _heroShadow, blurRadius: 20, offset: Offset(0, 10)),
         ],
       ),
       child: Column(
@@ -266,7 +270,7 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
                 bg: _withAlpha(SixMobilePalette.onPrimary, 0.12),
                 fg: SixMobilePalette.onPrimary,
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,18 +282,18 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.onPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       _pendingCountLabel(atendimentos.length),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.heroSupportingText,
                         fontWeight: FontWeight.w700,
                       ),
@@ -299,10 +303,10 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: _withAlpha(SixMobilePalette.onPrimary, 0.10),
               borderRadius: BorderRadius.circular(18),
@@ -318,13 +322,13 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
                     'atendimento.mobile.pendingPaymentTotalOpen',
                     'Total em aberto',
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.heroLabelText,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 TweenAnimationBuilder<double>(
                   key: ValueKey<String>(
                     'atendimento-pending-total-${totalAberto.toStringAsFixed(2)}',
@@ -333,7 +337,7 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
                   duration:
                       reduceMotion
                           ? Duration.zero
-                          : const Duration(milliseconds: 650),
+                          : Duration(milliseconds: 650),
                   curve: Curves.easeOutCubic,
                   builder: (
                     BuildContext context,
@@ -344,7 +348,7 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
                       _formatarMoeda(animatedValue),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.onPrimary,
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
@@ -366,14 +370,14 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
     final String vencimento = _formatarVencimento(atendimento.dataVencimentoEm);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: SixMobilePalette.surface,
+        color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: SixMobilePalette.border),
-        boxShadow: const <BoxShadow>[
+        border: Border.all(color: _borderColor),
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: SixMobilePalette.navigationShadow,
+            color: _colors.navigationShadow,
             blurRadius: 14,
             offset: Offset(0, 6),
           ),
@@ -386,11 +390,11 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
             children: <Widget>[
               _icon(
                 Icons.build_circle_outlined,
-                bg: SixMobilePalette.softNeutralSurface,
+                bg: _softSurface,
                 fg: _accentColor,
                 size: 48,
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -399,19 +403,19 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
                       '${_t('atendimento.mobile.serviceNumber', 'Atendimento')} ${atendimento.numero}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: SixMobilePalette.titleText,
+                      style: TextStyle(
+                        color: _titleTextColor,
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       cliente,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: SixMobilePalette.mutedText,
+                      style: TextStyle(
+                        color: _mutedTextColor,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -421,7 +425,7 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -431,7 +435,7 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
               if (equipamento.isNotEmpty) _pill(equipamento),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Row(
             children: <Widget>[
               Expanded(
@@ -441,7 +445,7 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
                   highlight: true,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: _amountBlock(
                   label: _t('atendimento.mobile.totalValue', 'Valor total'),
@@ -461,16 +465,12 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
     bool highlight = false,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color:
-            highlight
-                ? _accentColor.withAlpha(22)
-                : SixMobilePalette.softNeutralSurface,
+        color: highlight ? _accentColor.withAlpha(22) : _softSurface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color:
-              highlight ? _accentColor.withAlpha(52) : SixMobilePalette.border,
+          color: highlight ? _accentColor.withAlpha(52) : _borderColor,
         ),
       ),
       child: Column(
@@ -480,19 +480,19 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: SixMobilePalette.mutedText,
+            style: TextStyle(
+              color: _mutedTextColor,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 3),
+          SizedBox(height: 3),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: highlight ? _accentColor : SixMobilePalette.titleText,
+              color: highlight ? _accentColor : _titleTextColor,
               fontSize: 15,
               fontWeight: FontWeight.w900,
             ),
@@ -537,36 +537,31 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: SixMobilePalette.surface,
+        color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: SixMobilePalette.border),
+        border: Border.all(color: _borderColor),
       ),
       child: Column(
         children: <Widget>[
-          _icon(
-            icon,
-            bg: SixMobilePalette.softNeutralSurface,
-            fg: _accentColor,
-            size: 52,
-          ),
-          const SizedBox(height: 12),
+          _icon(icon, bg: _softSurface, fg: _accentColor, size: 52),
+          SizedBox(height: 12),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: SixMobilePalette.titleText,
+            style: TextStyle(
+              color: _titleTextColor,
               fontSize: 16,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: SixMobilePalette.mutedText,
+            style: TextStyle(
+              color: _mutedTextColor,
               height: 1.35,
               fontWeight: FontWeight.w600,
             ),
@@ -581,8 +576,8 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
       title,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: const TextStyle(
-        color: SixMobilePalette.titleText,
+      style: TextStyle(
+        color: _titleTextColor,
         fontSize: 16,
         fontWeight: FontWeight.w900,
       ),
@@ -608,18 +603,18 @@ class _AtendimentosTecnicosPendentesPagamentoMobileScreenState
 
   Widget _pill(String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: SixMobilePalette.softNeutralSurface,
+        color: _softSurface,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: SixMobilePalette.border),
+        border: Border.all(color: _borderColor),
       ),
       child: Text(
         text,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: SixMobilePalette.mutedText,
+        style: TextStyle(
+          color: _mutedTextColor,
           fontSize: 11,
           fontWeight: FontWeight.w800,
         ),

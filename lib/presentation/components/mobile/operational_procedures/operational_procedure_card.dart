@@ -48,11 +48,11 @@ class OperationalProcedureCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.fromLTRB(14, 14, 12, 12),
+            padding: EdgeInsets.fromLTRB(14, 14, 12, 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: SixMobilePalette.border),
-              boxShadow: const <BoxShadow>[
+              boxShadow: <BoxShadow>[
                 BoxShadow(
                   color: SixMobilePalette.navigationShadow,
                   blurRadius: 10,
@@ -71,7 +71,7 @@ class OperationalProcedureCard extends StatelessWidget {
                         procedure.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.titleText,
                           fontSize: 16,
                           height: 1.18,
@@ -79,33 +79,33 @@ class OperationalProcedureCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     _StatusBadge(status: procedure.status, label: status),
                   ],
                 ),
-                const SizedBox(height: 7),
+                SizedBox(height: 7),
                 Text(
                   procedure.description,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.mutedText,
                     fontSize: 12,
                     height: 1.3,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 _MetaLine(
                   icon: Icons.storefront_outlined,
                   text: '$operationType • $moment',
                 ),
-                const SizedBox(height: 7),
+                SizedBox(height: 7),
                 OperationalProcedureTriggerSummary(
                   triggers: procedure.triggers,
                   compact: true,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
@@ -129,8 +129,8 @@ class OperationalProcedureCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    const Icon(
+                    SizedBox(width: 8),
+                    Icon(
                       Icons.chevron_right_rounded,
                       color: SixMobilePalette.mutedText,
                       size: 24,
@@ -238,8 +238,8 @@ class _StatusBadge extends StatelessWidget {
     };
 
     return Container(
-      constraints: const BoxConstraints(minHeight: 30, maxWidth: 104),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      constraints: BoxConstraints(minHeight: 30, maxWidth: 104),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: SixMobilePalette.softAccentSurface,
         borderRadius: BorderRadius.circular(999),
@@ -249,13 +249,13 @@ class _StatusBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(icon, size: 14, color: SixMobilePalette.accent),
-          const SizedBox(width: 5),
+          SizedBox(width: 5),
           Flexible(
             child: Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: SixMobilePalette.titleText,
                 fontSize: 10.5,
                 height: 1.1,
@@ -281,13 +281,13 @@ class _MetaLine extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Icon(icon, size: 16, color: SixMobilePalette.secondary),
-        const SizedBox(width: 7),
+        SizedBox(width: 7),
         Expanded(
           child: Text(
             text,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.titleText,
               fontSize: 12,
               height: 1.25,
@@ -312,14 +312,14 @@ class _CompactMeta extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Icon(icon, size: 15, color: SixMobilePalette.secondary),
-        const SizedBox(width: 5),
+        SizedBox(width: 5),
         ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 150),
+          constraints: BoxConstraints(maxWidth: 150),
           child: Text(
             text,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.mutedText,
               fontSize: 11.5,
               height: 1.15,

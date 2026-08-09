@@ -29,17 +29,17 @@ class ClienteUsuarioCadastroMobileScreen extends StatefulWidget {
 
 class _ClienteUsuarioCadastroMobileScreenState
     extends State<ClienteUsuarioCadastroMobileScreen> {
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _accentColor = SixMobilePalette.accent;
-  static const Color _surfaceColor = SixMobilePalette.surface;
-  static const Color _softSurfaceColor = SixMobilePalette.softNeutralSurface;
-  static const Color _softAccentColor = SixMobilePalette.softAccentSurface;
-  static const Color _borderColor = SixMobilePalette.border;
-  static const Color _activeBorderColor = SixMobilePalette.activeBorder;
-  static const Color _titleTextColor = SixMobilePalette.titleText;
-  static const Color _mutedTextColor = SixMobilePalette.mutedText;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _softSurfaceColor => SixMobilePalette.softNeutralSurface;
+  static Color get _softAccentColor => SixMobilePalette.softAccentSurface;
+  static Color get _borderColor => SixMobilePalette.border;
+  static Color get _activeBorderColor => SixMobilePalette.activeBorder;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final ClienteUsuarioApiClient _api;
@@ -176,10 +176,10 @@ class _ClienteUsuarioCadastroMobileScreenState
         : _t('clientes.form.naturalPerson', 'Pessoa física (PF)');
   }
 
-  OutlineInputBorder _inputBorder([Color color = _borderColor]) {
+  OutlineInputBorder _inputBorder([Color? color]) {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
-      borderSide: BorderSide(color: color),
+      borderSide: BorderSide(color: color ?? _borderColor),
     );
   }
 
@@ -190,14 +190,14 @@ class _ClienteUsuarioCadastroMobileScreenState
       prefixIcon: Icon(icon, size: 20, color: _secondaryColor),
       filled: true,
       fillColor: _surfaceColor,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: _inputBorder(_activeBorderColor),
       disabledBorder: _inputBorder(_borderColor),
       focusedBorder: _inputBorder(_accentColor),
       errorBorder: _inputBorder(SixMobilePalette.errorBorder),
       focusedErrorBorder: _inputBorder(SixMobilePalette.error),
-      labelStyle: const TextStyle(color: _mutedTextColor),
-      hintStyle: const TextStyle(color: _mutedTextColor),
+      labelStyle: TextStyle(color: _mutedTextColor),
+      hintStyle: TextStyle(color: _mutedTextColor),
     );
   }
 
@@ -251,12 +251,12 @@ class _ClienteUsuarioCadastroMobileScreenState
       label: title,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: _surfaceColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: _activeBorderColor),
-          boxShadow: const <BoxShadow>[
+          boxShadow: <BoxShadow>[
             BoxShadow(
               color: SixMobilePalette.navigationShadow,
               blurRadius: 18,
@@ -279,7 +279,7 @@ class _ClienteUsuarioCadastroMobileScreenState
                   ),
                   child: Icon(icon, color: _accentColor, size: 21),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -288,18 +288,18 @@ class _ClienteUsuarioCadastroMobileScreenState
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: _titleTextColor,
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         subtitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: _mutedTextColor,
                           fontSize: 12,
                           height: 1.25,
@@ -310,7 +310,7 @@ class _ClienteUsuarioCadastroMobileScreenState
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             child,
           ],
         ),
@@ -325,9 +325,9 @@ class _ClienteUsuarioCadastroMobileScreenState
     required ValueChanged<bool> onChanged,
   }) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
+      duration: Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: value ? _softAccentColor : _softSurfaceColor,
         borderRadius: BorderRadius.circular(18),
@@ -346,17 +346,17 @@ class _ClienteUsuarioCadastroMobileScreenState
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _titleTextColor,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     color: _mutedTextColor,
                     height: 1.25,
@@ -365,7 +365,7 @@ class _ClienteUsuarioCadastroMobileScreenState
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Switch.adaptive(
             value: value,
             activeThumbColor: _accentColor,
@@ -468,7 +468,7 @@ class _ClienteUsuarioCadastroMobileScreenState
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               const _MobileSheetHandle(),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               Row(
                 children: <Widget>[
                   Container(
@@ -478,9 +478,9 @@ class _ClienteUsuarioCadastroMobileScreenState
                       color: _softAccentColor,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(Icons.link_outlined, color: _accentColor),
+                    child: Icon(Icons.link_outlined, color: _accentColor),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -489,13 +489,13 @@ class _ClienteUsuarioCadastroMobileScreenState
                           _t('clientes.form.autoSignupTitle', 'Auto cadastro'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: _titleTextColor,
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        SizedBox(height: 3),
                         Text(
                           _t(
                             'clientes.form.autoSignupSubtitle',
@@ -503,7 +503,7 @@ class _ClienteUsuarioCadastroMobileScreenState
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: _mutedTextColor,
                             height: 1.25,
                           ),
@@ -514,11 +514,11 @@ class _ClienteUsuarioCadastroMobileScreenState
                   IconButton(
                     tooltip: _t('common.close', 'Fechar'),
                     onPressed: () => Navigator.of(bottomSheetContext).pop(),
-                    icon: const Icon(Icons.close_rounded),
+                    icon: Icon(Icons.close_rounded),
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               ClienteAutoCadastroLinkSection(
                 key: ValueKey<String>('$_tipoPessoa-${_documento.text.trim()}'),
                 initialTipoPessoa: _tipoPessoa,
@@ -536,11 +536,11 @@ class _ClienteUsuarioCadastroMobileScreenState
   Widget _buildHeaderCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: _primaryColor,
         borderRadius: BorderRadius.circular(22),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: SixMobilePalette.heroShadow,
             blurRadius: 22,
@@ -563,7 +563,7 @@ class _ClienteUsuarioCadastroMobileScreenState
               color: SixMobilePalette.onPrimary,
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -574,13 +574,13 @@ class _ClienteUsuarioCadastroMobileScreenState
                       : _t('clientes.form.createTitle', 'Novo cliente'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.onPrimary,
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 5),
+                SizedBox(height: 5),
                 Text(
                   _t(
                     'clientes.form.headerSubtitle',
@@ -588,7 +588,7 @@ class _ClienteUsuarioCadastroMobileScreenState
                   ),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.heroSupportingText,
                     height: 1.25,
                   ),
@@ -614,7 +614,7 @@ class _ClienteUsuarioCadastroMobileScreenState
             _t('clientes.form.personType', 'Tipo de pessoa'),
             Icons.apartment_outlined,
           ).copyWith(
-            suffixIcon: const Icon(
+            suffixIcon: Icon(
               Icons.keyboard_arrow_down_rounded,
               color: _secondaryColor,
             ),
@@ -623,7 +623,7 @@ class _ClienteUsuarioCadastroMobileScreenState
             _tipoPessoaLabel(_tipoPessoa),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: _titleTextColor,
               fontWeight: FontWeight.w700,
             ),
@@ -641,7 +641,7 @@ class _ClienteUsuarioCadastroMobileScreenState
         onTap: _saving ? null : _openAutoCadastroSheet,
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: _activeBorderColor),
@@ -655,9 +655,9 @@ class _ClienteUsuarioCadastroMobileScreenState
                   color: _softAccentColor,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(Icons.link_outlined, color: _accentColor),
+                child: Icon(Icons.link_outlined, color: _accentColor),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -666,12 +666,12 @@ class _ClienteUsuarioCadastroMobileScreenState
                       _t('clientes.form.autoSignupTitle', 'Auto cadastro'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _titleTextColor,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       _t(
                         'clientes.form.autoSignupCardSubtitle',
@@ -679,7 +679,7 @@ class _ClienteUsuarioCadastroMobileScreenState
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: _mutedTextColor,
                         fontSize: 12,
                         height: 1.25,
@@ -688,8 +688,8 @@ class _ClienteUsuarioCadastroMobileScreenState
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
-              const Icon(Icons.chevron_right_rounded, color: _secondaryColor),
+              SizedBox(width: 12),
+              Icon(Icons.chevron_right_rounded, color: _secondaryColor),
             ],
           ),
         ),
@@ -714,9 +714,9 @@ class _ClienteUsuarioCadastroMobileScreenState
             validator: _required,
             textCapitalization: TextCapitalization.words,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _buildTipoPessoaField(),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _field(
             _documento,
             _t('clientes.form.document', 'CPF/CNPJ'),
@@ -725,7 +725,7 @@ class _ClienteUsuarioCadastroMobileScreenState
             keyboardType: TextInputType.number,
             onChanged: (_) => setState(() {}),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _switchCard(
             title: _t('clientes.form.activeCustomer', 'Cliente ativo'),
             subtitle: _t(
@@ -756,7 +756,7 @@ class _ClienteUsuarioCadastroMobileScreenState
             Icons.phone_outlined,
             keyboardType: TextInputType.phone,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _field(
             _email,
             _t('clientes.form.email', 'E-mail'),
@@ -784,7 +784,7 @@ class _ClienteUsuarioCadastroMobileScreenState
             Icons.pin_drop_outlined,
             keyboardType: TextInputType.number,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _field(
             _uf,
             _t('clientes.form.state', 'UF'),
@@ -795,34 +795,34 @@ class _ClienteUsuarioCadastroMobileScreenState
               UpperCaseTextFormatter(),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _field(
             _cidade,
             _t('clientes.form.city', 'Cidade'),
             Icons.location_city,
             textCapitalization: TextCapitalization.words,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _field(
             _logradouro,
             _t('clientes.form.street', 'Logradouro'),
             Icons.home_outlined,
             textCapitalization: TextCapitalization.words,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _field(
             _numero,
             _t('common.number', 'Número'),
             Icons.format_list_numbered,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _field(
             _bairro,
             _t('clientes.form.neighborhood', 'Bairro'),
             Icons.location_city_outlined,
             textCapitalization: TextCapitalization.words,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _field(
             _complemento,
             _t('clientes.form.complement', 'Complemento'),
@@ -848,16 +848,16 @@ class _ClienteUsuarioCadastroMobileScreenState
             _t('clientes.form.creditLimit', 'Limite de crédito'),
             Icons.credit_score_outlined,
             hintText: currencyCode,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _field(
             _prazo,
             _t('clientes.form.paymentDeadline', 'Prazo pagamento'),
             Icons.timelapse_outlined,
             keyboardType: TextInputType.number,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _switchCard(
             title: _t(
               'clientes.form.allowCreditPurchase',
@@ -870,7 +870,7 @@ class _ClienteUsuarioCadastroMobileScreenState
             value: _permiteFiado,
             onChanged: (bool value) => _permiteFiado = value,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _switchCard(
             title: _t(
               'clientes.form.blockedByDebt',
@@ -910,8 +910,8 @@ class _ClienteUsuarioCadastroMobileScreenState
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-        decoration: const BoxDecoration(
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 14),
+        decoration: BoxDecoration(
           color: _surfaceColor,
           border: Border(top: BorderSide(color: _activeBorderColor)),
           boxShadow: <BoxShadow>[
@@ -931,14 +931,14 @@ class _ClienteUsuarioCadastroMobileScreenState
                 child: Text(_t('common.cancel', 'Cancelar')),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               flex: 2,
               child: FilledButton.icon(
                 onPressed: _saving ? null : _save,
                 icon:
                     _saving
-                        ? const SizedBox(
+                        ? SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
@@ -946,9 +946,9 @@ class _ClienteUsuarioCadastroMobileScreenState
                             color: SixMobilePalette.onPrimary,
                           ),
                         )
-                        : const Icon(Icons.save_outlined),
+                        : Icon(Icons.save_outlined),
                 label: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
+                  duration: Duration(milliseconds: 180),
                   child: Text(
                     _saving
                         ? _t('clientes.form.saving', 'Salvando...')
@@ -1001,21 +1001,21 @@ class _ClienteUsuarioCadastroMobileScreenState
             child: ListView(
               controller: scrollController,
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              physics: const AlwaysScrollableScrollPhysics(),
+              physics: AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 112),
               children: <Widget>[
                 _staggered(0, _buildHeaderCard()),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _staggered(1, _buildMainDataSection()),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _staggered(2, _buildContactSection()),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _staggered(3, _buildAddressSection()),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _staggered(4, _buildCreditSection(currencyCode)),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _staggered(5, _buildAutoCadastroCard()),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _staggered(6, _buildNotesSection()),
               ],
             ),
@@ -1048,7 +1048,7 @@ class _PessoaTipoBottomSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           const _MobileSheetHandle(),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           Row(
             children: <Widget>[
               Container(
@@ -1058,12 +1058,12 @@ class _PessoaTipoBottomSheet extends StatelessWidget {
                   color: SixMobilePalette.softAccentSurface,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.apartment_outlined,
                   color: SixMobilePalette.accent,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1075,13 +1075,13 @@ class _PessoaTipoBottomSheet extends StatelessWidget {
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.titleText,
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: 3),
                     Text(
                       context.t(
                         'clientes.form.selectPersonTypeSubtitle',
@@ -1089,7 +1089,7 @@ class _PessoaTipoBottomSheet extends StatelessWidget {
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: SixMobilePalette.mutedText,
                         height: 1.25,
                       ),
@@ -1100,11 +1100,11 @@ class _PessoaTipoBottomSheet extends StatelessWidget {
               IconButton(
                 tooltip: context.t('common.close', fallback: 'Fechar'),
                 onPressed: onClose,
-                icon: const Icon(Icons.close_rounded),
+                icon: Icon(Icons.close_rounded),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _PessoaTipoOption(
             value: 'PF',
             title: naturalPersonLabel,
@@ -1115,7 +1115,7 @@ class _PessoaTipoBottomSheet extends StatelessWidget {
             icon: Icons.person_outline,
             selected: selected == 'PF',
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _PessoaTipoOption(
             value: 'PJ',
             title: legalPersonLabel,
@@ -1163,9 +1163,9 @@ class _PessoaTipoOption extends StatelessWidget {
           onTap: () => Navigator.of(context).pop(value),
           borderRadius: BorderRadius.circular(18),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
+            duration: Duration(milliseconds: 180),
             curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
@@ -1187,7 +1187,7 @@ class _PessoaTipoOption extends StatelessWidget {
                   ),
                   child: Icon(icon, color: SixMobilePalette.accent, size: 21),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1196,17 +1196,17 @@ class _PessoaTipoOption extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.titleText,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         subtitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: SixMobilePalette.mutedText,
                           fontSize: 12,
                           height: 1.25,
@@ -1215,7 +1215,7 @@ class _PessoaTipoOption extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Icon(
                   selected
                       ? Icons.check_circle_rounded
@@ -1247,11 +1247,11 @@ class _MobileBottomSheetFrame extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.fromLTRB(12, 0, 12, 12 + bottomInset),
         child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
           decoration: BoxDecoration(
             color: SixMobilePalette.surface,
             borderRadius: BorderRadius.circular(28),
-            boxShadow: const <BoxShadow>[
+            boxShadow: <BoxShadow>[
               BoxShadow(
                 color: SixMobilePalette.heroShadow,
                 blurRadius: 28,

@@ -24,14 +24,15 @@ class OpcoesVendaMobileScreen extends StatefulWidget {
   final NovaVendaMobileNavigate? onNavigate;
 
   @override
-  State<OpcoesVendaMobileScreen> createState() => _OpcoesVendaMobileScreenState();
+  State<OpcoesVendaMobileScreen> createState() =>
+      _OpcoesVendaMobileScreenState();
 }
 
 class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
-  static const Color _backgroundColor = SixMobilePalette.background;
-  static const Color _primaryColor = SixMobilePalette.primary;
-  static const Color _secondaryColor = SixMobilePalette.secondary;
-  static const Color _accentColor = SixMobilePalette.accent;
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
   static const Color _receiveAccentColor = Color(0xFF16A34A);
   static const Color _disabledAccentColor = Color(0xFF8B85A6);
   static const String _saleAsset = 'assets/images/vendas mobile/vendas.webp';
@@ -70,7 +71,7 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
       scrolledSurfaceOpacity: 0.70,
       leading: IconButton(
         tooltip: _t(context, 'common.back', 'Voltar'),
-        icon: const Icon(Icons.arrow_back_rounded),
+        icon: Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
       bodyBuilder: (
@@ -96,7 +97,7 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
 
               return ListView(
                 controller: scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
+                physics: AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(
                   horizontalPadding,
                   topInset + topPadding,
@@ -105,9 +106,9 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
                 ),
                 children: <Widget>[
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 40),
+                    delay: Duration(milliseconds: 40),
                     child: _OperationActionCard(
-                      key: const ValueKey<String>('nova-venda-action-new-sale'),
+                      key: ValueKey<String>('nova-venda-action-new-sale'),
                       height: cardHeight,
                       title: _t(
                         context,
@@ -120,7 +121,7 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
                         'Vender produtos',
                       ),
                       accentColor: _accentColor,
-                      illustration: const _OperationAssetIllustration(
+                      illustration: _OperationAssetIllustration(
                         assetPath: _saleAsset,
                         accentColor: _accentColor,
                       ),
@@ -128,11 +129,11 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
                       onTap: _startNewSale,
                     ),
                   ),
-                  const SizedBox(height: _operationCardGap),
+                  SizedBox(height: _operationCardGap),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 95),
+                    delay: Duration(milliseconds: 95),
                     child: _OperationActionCard(
-                      key: const ValueKey<String>('nova-venda-action-receive'),
+                      key: ValueKey<String>('nova-venda-action-receive'),
                       height: cardHeight,
                       title: _t(
                         context,
@@ -149,14 +150,14 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
                         assetPath: _receiveAsset,
                         accentColor: _receiveAccentColor,
                       ),
-                      onTap: () => _go(const VendasNaoLiquidadasMobileScreen()),
+                      onTap: () => _go(VendasNaoLiquidadasMobileScreen()),
                     ),
                   ),
-                  const SizedBox(height: _operationCardGap),
+                  SizedBox(height: _operationCardGap),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 140),
+                    delay: Duration(milliseconds: 140),
                     child: _OperationActionCard(
-                      key: const ValueKey<String>('nova-venda-action-history'),
+                      key: ValueKey<String>('nova-venda-action-history'),
                       height: compactCardHeight,
                       compact: true,
                       title: _t(
@@ -201,7 +202,7 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
         operationPoint: ProcedureOperationPoint.saleStartBefore,
       );
       if (!mounted) return;
-      if (result.shouldContinue) _go(const PdvMobileScreen());
+      if (result.shouldContinue) _go(PdvMobileScreen());
     } finally {
       if (mounted) setState(() => _openingNewSale = false);
     }
@@ -294,7 +295,7 @@ class _OperationActionCard extends StatelessWidget {
           child: InkWell(
             onTap: effectiveTap,
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
+              duration: Duration(milliseconds: 180),
               curve: Curves.easeOutCubic,
               constraints: BoxConstraints(
                 minHeight:
@@ -318,7 +319,7 @@ class _OperationActionCard extends StatelessWidget {
                       width: 5,
                       decoration: BoxDecoration(
                         color: enabled ? accentColor : SixMobilePalette.border,
-                        borderRadius: const BorderRadius.horizontal(
+                        borderRadius: BorderRadius.horizontal(
                           left: Radius.circular(20),
                         ),
                       ),
@@ -446,7 +447,7 @@ class _OperationIllustrationPane extends StatelessWidget {
                         : SixMobilePalette.border.withAlpha(32),
                 shape: BoxShape.circle,
               ),
-              child: Padding(padding: const EdgeInsets.all(4), child: child),
+              child: Padding(padding: EdgeInsets.all(4), child: child),
             ),
           ),
         ),
@@ -493,7 +494,7 @@ class _OperationStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: accentColor.withAlpha(18),
         borderRadius: BorderRadius.circular(999),
@@ -548,7 +549,7 @@ class _OperationActionTrailing extends StatelessWidget {
         child:
             loading
                 ? Padding(
-                  padding: const EdgeInsets.all(7),
+                  padding: EdgeInsets.all(7),
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     color: effectiveColor,

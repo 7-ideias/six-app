@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 
 /// Design tokens para as telas de autenticação (Login + Cadastro).
 ///
@@ -115,4 +117,110 @@ abstract final class SixAuthTokens {
   static const Color colorBackButtonFg = Color(0xFFFFFFFF);
   static const double sizeBackButton = 40.0;
   static const double radiusBackButton = 20.0;
+
+  static bool usesMobileAdaptiveColors(BuildContext context) {
+    return !kIsWeb && Theme.of(context).brightness == Brightness.dark;
+  }
+
+  static Color shellBackground(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.background
+        : colorShellBackground;
+  }
+
+  static Color fieldFill(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.softSurface
+        : colorFieldFill;
+  }
+
+  static Color fieldBorder(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.border
+        : colorFieldBorder;
+  }
+
+  static Color fieldBorderFocused(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.accent
+        : colorFieldBorderFocused;
+  }
+
+  static Color fieldHint(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.mutedText
+        : colorFieldHint;
+  }
+
+  static Color fieldLabel(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.titleText
+        : colorFieldLabel;
+  }
+
+  static Color textPrimary(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.titleText
+        : colorTextPrimary;
+  }
+
+  static Color textMuted(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.mutedText
+        : colorTextMuted;
+  }
+
+  static Color divider(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.border
+        : colorDivider;
+  }
+
+  static Color dividerText(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.mutedText
+        : colorDividerText;
+  }
+
+  static Color googleButtonBackground(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.surface
+        : colorButtonGoogleBg;
+  }
+
+  static Color googleButtonBorder(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.border
+        : colorButtonGoogleBorder;
+  }
+
+  static Color buttonPrimaryBackground(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.accent
+        : colorButtonPrimaryBg;
+  }
+
+  static Color buttonPrimaryForeground(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.onAccent
+        : colorButtonPrimaryFg;
+  }
+
+  static Color interactiveColor(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.accent
+        : colorTextBrand;
+  }
+
+  static Color onInteractiveColor(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.onAccent
+        : colorButtonPrimaryFg;
+  }
+
+  static Color errorText(BuildContext context) {
+    return usesMobileAdaptiveColors(context)
+        ? context.sixMobileColors.error
+        : const Color(0xFFD32F2F);
+  }
 }

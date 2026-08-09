@@ -33,12 +33,19 @@ class ProdutolistMobileScreen extends StatefulWidget {
 }
 
 class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
-  static const Color _backgroundColor = Color(0xFFF4F7FB);
-  static const Color _secondaryColor = Color(0xFF123B69);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _surfaceColor = Colors.white;
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _onAccentColor => SixMobilePalette.onAccent;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _surfaceElevatedColor => SixMobilePalette.surfaceElevated;
+  static Color get _softAccentColor => SixMobilePalette.softAccentSurface;
+  static Color get _softNeutralColor => SixMobilePalette.softNeutralSurface;
+  static Color get _borderColor => SixMobilePalette.border;
+  static Color get _activeAccentSurface =>
+      SixMobilePalette.accent.withValues(alpha: 0.16);
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
 
   final TextEditingController _controllerBusca = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -188,9 +195,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     if (usuarioAtual == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Não foi possível carregar suas preferências.'),
-        ),
+        SnackBar(content: Text('Não foi possível carregar suas preferências.')),
       );
       return;
     }
@@ -226,7 +231,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
             'Não foi possível salvar a preferência de visualização.',
           ),
@@ -265,7 +270,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           initialContentSpacing: 4,
           scrollEffectOffset: 24,
           scrolledSurfaceOpacity: 0.66,
-          actions: const <Widget>[],
+          actions: <Widget>[],
           bodyBuilder: (
             BuildContext context,
             ScrollController scrollController,
@@ -279,7 +284,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                     onRefresh: _recarregar,
                     child: ListView(
                       controller: scrollController,
-                      physics: const AlwaysScrollableScrollPhysics(),
+                      physics: AlwaysScrollableScrollPhysics(),
                       padding: EdgeInsets.fromLTRB(
                         16,
                         topInset + 8,
@@ -288,14 +293,14 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       ),
                       children: <Widget>[
                         SixStaggeredEntry(
-                          delay: const Duration(milliseconds: 70),
+                          delay: Duration(milliseconds: 70),
                           child: _buildTabs(compact: isSelecao),
                         ),
                         if (_exibirCampoBusca &&
                             !_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           SixStaggeredEntry(
-                            delay: const Duration(milliseconds: 120),
+                            delay: Duration(milliseconds: 120),
                             child: _buildSearchField(),
                           ),
                         ],
@@ -311,7 +316,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                             itensDaLista.length,
                             provider.isLoading,
                           ),
-                          const SizedBox(height: 10),
+                          SizedBox(height: 10),
                         ],
                         ..._buildListContent(provider, itensDaLista, isSelecao),
                       ],
@@ -332,13 +337,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       right: 16,
                       bottom: 16,
                       child: SafeArea(
-                        minimum: const EdgeInsets.only(bottom: 8),
+                        minimum: EdgeInsets.only(bottom: 8),
                         child: FloatingActionButton.extended(
                           backgroundColor: _accentColor,
-                          foregroundColor: Colors.white,
+                          foregroundColor: _onAccentColor,
                           elevation: 5,
                           onPressed: _criarProduto,
-                          icon: const Icon(Icons.add_rounded),
+                          icon: Icon(Icons.add_rounded),
                           label: Text(
                             _isProdutoSelecionado
                                 ? 'Novo produto'
@@ -378,15 +383,15 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     return Material(
       color: _backgroundColor,
       elevation: 8,
-      shadowColor: const Color(0x1A000000),
+      shadowColor: SixMobilePalette.navigationShadow,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        padding: EdgeInsets.fromLTRB(16, 10, 16, 10),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             _buildListHeader(count, isLoading),
             if (_exibirCampoBusca) ...<Widget>[
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               _buildSearchField(),
             ],
           ],
@@ -401,7 +406,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     bool isSelecao,
   ) {
     if (provider.isLoading && todosProdutos.isEmpty) {
-      return const <Widget>[_LoadingState()];
+      return <Widget>[_LoadingState()];
     }
 
     if (provider.erro != null && todosProdutos.isEmpty) {
@@ -409,7 +414,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     }
 
     if (itensDaLista.isEmpty) {
-      return const <Widget>[_EmptyState()];
+      return <Widget>[_EmptyState()];
     }
 
     if (_exibicaoHorizontal) {
@@ -424,7 +429,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             itemBuilder: (BuildContext context, int index) {
               final int itemDelay = 190 + ((index * 28).clamp(0, 180)).toInt();
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                 child: SixStaggeredEntry(
                   delay: Duration(milliseconds: itemDelay),
                   child: _buildProdutoCard(itensDaLista[index]),
@@ -452,11 +457,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   Widget _buildTabs({required bool compact}) {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(compact ? 16 : 18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: _borderColor),
       ),
       child: Row(
         children: <Widget>[
@@ -488,9 +493,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: const <BoxShadow>[
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x14000000),
+            color: SixMobilePalette.navigationShadow,
             blurRadius: 18,
             offset: Offset(0, 8),
           ),
@@ -499,6 +504,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       child: TextField(
         controller: _controllerBusca,
         focusNode: _focusBusca,
+        cursorColor: _accentColor,
+        style: TextStyle(color: _titleTextColor, fontWeight: FontWeight.w600),
         onTap: _reiniciarTimerOcultarBusca,
         onChanged: (String value) {
           termoBusca = value;
@@ -510,15 +517,12 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
               _isProdutoSelecionado
                   ? 'Buscar produto ou código'
                   : 'Buscar serviço',
-          hintStyle: const TextStyle(color: _mutedTextColor),
-          prefixIcon: const Icon(Icons.search_rounded, color: _accentColor),
+          hintStyle: TextStyle(color: _mutedTextColor),
+          prefixIcon: Icon(Icons.search_rounded, color: _accentColor),
           suffixIcon:
               _controllerBusca.text.isEmpty
                   ? IconButton(
-                    icon: const Icon(
-                      Icons.tune_rounded,
-                      color: _titleTextColor,
-                    ),
+                    icon: Icon(Icons.tune_rounded, color: _titleTextColor),
                     onPressed: _showSortOptions,
                   )
                   : IconButton(
@@ -528,16 +532,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       aplicarFiltroOrdenacao();
                       _reiniciarTimerOcultarBusca();
                     },
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      color: _mutedTextColor,
-                    ),
+                    icon: Icon(Icons.close_rounded, color: _mutedTextColor),
                   ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 15,
-          ),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         ),
       ),
     );
@@ -561,7 +559,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   void _reiniciarTimerOcultarBusca() {
     _timerOcultarBusca?.cancel();
     _timerOcultarBusca = Timer(
-      const Duration(seconds: 10),
+      Duration(seconds: 10),
       _ocultarCampoBuscaPorInatividade,
     );
   }
@@ -589,17 +587,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color:
-                _exibirCampoBusca
-                    ? const Color(0xFFDDEBFF)
-                    : const Color(0xFFEFF6FF),
+            color: _exibirCampoBusca ? _activeAccentSurface : _softAccentColor,
             borderRadius: BorderRadius.circular(999),
           ),
-          child: const Icon(
-            Icons.search_rounded,
-            color: _accentColor,
-            size: 18,
-          ),
+          child: Icon(Icons.search_rounded, color: _accentColor, size: 18),
         ),
       ),
     );
@@ -614,14 +605,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         onTap: _showSortOptions,
         borderRadius: BorderRadius.circular(999),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: Duration(milliseconds: 180),
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color:
-                ordenacaoAlterada
-                    ? const Color(0xFFDDEBFF)
-                    : const Color(0xFFEFF6FF),
+            color: ordenacaoAlterada ? _activeAccentSurface : _softAccentColor,
             borderRadius: BorderRadius.circular(999),
           ),
           child: Icon(
@@ -665,37 +653,34 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           onTap: () => _alternarFavoritoVisual(produto),
           borderRadius: BorderRadius.circular(999),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
+            duration: Duration(milliseconds: 180),
             width: 34,
             height: 34,
             decoration: BoxDecoration(
               color:
                   favorito
-                      ? const Color(0xFFEF4444)
+                      ? Color(0xFFEF4444)
                       : sobreImagem
-                      ? const Color(0xD9FFFFFF)
-                      : Colors.white,
+                      ? Color(0xD9FFFFFF)
+                      : _surfaceColor,
               borderRadius: BorderRadius.circular(999),
               border: Border.all(
-                color:
-                    favorito
-                        ? const Color(0xFFEF4444)
-                        : const Color(0xFFFCA5A5),
+                color: favorito ? Color(0xFFEF4444) : Color(0xFFFCA5A5),
               ),
               boxShadow:
                   sobreImagem
-                      ? const <BoxShadow>[
+                      ? <BoxShadow>[
                         BoxShadow(
-                          color: Color(0x26000000),
+                          color: SixMobilePalette.navigationShadow,
                           blurRadius: 10,
                           offset: Offset(0, 4),
                         ),
                       ]
-                      : const <BoxShadow>[],
+                      : <BoxShadow>[],
             ),
             child: Icon(
               favorito ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-              color: favorito ? Colors.white : const Color(0xFFEF4444),
+              color: favorito ? Colors.white : Color(0xFFEF4444),
               size: 19,
             ),
           ),
@@ -717,12 +702,12 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color: const Color(0xFFEFF6FF),
+            color: _softAccentColor,
             borderRadius: BorderRadius.circular(999),
           ),
           child:
               _salvandoPreferencia
-                  ? const Center(
+                  ? Center(
                     child: SizedBox(
                       width: 16,
                       height: 16,
@@ -756,7 +741,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         Expanded(
           child: Text(
             titulo,
-            style: const TextStyle(
+            style: TextStyle(
               color: _titleTextColor,
               fontSize: 16,
               fontWeight: FontWeight.w900,
@@ -764,28 +749,28 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           ),
         ),
         if (isLoading) ...<Widget>[
-          const SizedBox(
+          SizedBox(
             width: 18,
             height: 18,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
         ],
         _buildBuscaListHeaderButton(),
-        const SizedBox(width: 8),
+        SizedBox(width: 8),
         _buildFiltroListHeaderButton(),
-        const SizedBox(width: 8),
+        SizedBox(width: 8),
         _buildModoExibicaoListHeaderButton(),
-        const SizedBox(width: 8),
+        SizedBox(width: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: const Color(0xFFEFF6FF),
+            color: _softAccentColor,
             borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
             '$count ${count == 1 ? 'item' : 'itens'}',
-            style: const TextStyle(
+            style: TextStyle(
               color: _accentColor,
               fontSize: 11,
               fontWeight: FontWeight.w900,
@@ -814,13 +799,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         borderRadius: BorderRadius.circular(22),
         onTap: () => _editarProduto(produto),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: const <BoxShadow>[
+            border: Border.all(color: _borderColor),
+            boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Color(0x0F000000),
+                color: SixMobilePalette.navigationShadow,
                 blurRadius: 14,
                 offset: Offset(0, 6),
               ),
@@ -830,7 +815,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               _buildThumbnail(produto, isProduto, size: 54),
-              const SizedBox(width: 13),
+              SizedBox(width: 13),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -843,7 +828,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                             produto.nomeProduto,
                             maxLines: _exibicaoHorizontal ? 1 : 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               height: 1.2,
                               fontWeight: FontWeight.w900,
@@ -851,13 +836,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         _buildFavoritoVisualButton(produto),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         _StatusChip(ativo: ativo),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 6,
@@ -881,13 +866,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Row(
                       children: <Widget>[
                         Expanded(
                           child: Text(
                             _formatCurrency(produto.precoVenda),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
                               color: _titleTextColor,
@@ -898,10 +883,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEFF6FF),
+                            color: _softAccentColor,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.edit_outlined,
                             color: _accentColor,
                             size: 19,
@@ -944,7 +929,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   List<dynamic> _imagensValidasProduto(ProdutoModel produto) {
     final List<dynamic> imagens = List<dynamic>.from(
-      produto.imagens ?? const <dynamic>[],
+      produto.imagens ?? <dynamic>[],
     );
 
     return imagens.where((dynamic imagem) {
@@ -968,13 +953,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         borderRadius: BorderRadius.circular(24),
         onTap: () => _editarProduto(produto),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: const <BoxShadow>[
+            border: Border.all(color: _borderColor),
+            boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Color(0x0F000000),
+                color: SixMobilePalette.navigationShadow,
                 blurRadius: 14,
                 offset: Offset(0, 6),
               ),
@@ -1006,16 +991,16 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       right: 9,
                       bottom: 9,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                           horizontal: 11,
                           vertical: 7,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: _surfaceElevatedColor,
                           borderRadius: BorderRadius.circular(999),
-                          boxShadow: const <BoxShadow>[
+                          boxShadow: <BoxShadow>[
                             BoxShadow(
-                              color: Color(0x26000000),
+                              color: SixMobilePalette.navigationShadow,
                               blurRadius: 10,
                               offset: Offset(0, 4),
                             ),
@@ -1025,7 +1010,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                           _formatCurrency(produto.precoVenda),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: _titleTextColor,
                             fontSize: 13,
                             fontWeight: FontWeight.w900,
@@ -1036,21 +1021,21 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               Text(
                 produto.nomeProduto.isEmpty
                     ? 'Item sem nome'
                     : produto.nomeProduto,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   height: 1.15,
                   fontWeight: FontWeight.w900,
                   color: _titleTextColor,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Row(
                 children: <Widget>[
                   Expanded(
@@ -1059,7 +1044,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       label: codigo.isEmpty ? 'Sem código' : 'Código $codigo',
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   _InfoChip(
                     icon: Icons.photo_library_outlined,
                     label: '$imagensCount foto${imagensCount == 1 ? '' : 's'}',
@@ -1122,14 +1107,14 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                 children: List<Widget>.generate(imagens.length, (int index) {
                   final bool ativo = index == indiceAtual;
                   return AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    duration: Duration(milliseconds: 180),
+                    margin: EdgeInsets.symmetric(horizontal: 3),
                     width: ativo ? 16 : 6,
                     height: 6,
                     decoration: BoxDecoration(
-                      color: ativo ? Colors.white : const Color(0x99FFFFFF),
+                      color: ativo ? Colors.white : Color(0x99FFFFFF),
                       borderRadius: BorderRadius.circular(999),
-                      boxShadow: const <BoxShadow>[
+                      boxShadow: <BoxShadow>[
                         BoxShadow(
                           color: Color(0x33000000),
                           blurRadius: 6,
@@ -1150,9 +1135,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: _softAccentColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: _borderColor),
       ),
       child: child,
     );
@@ -1185,7 +1170,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         ImageChunkEvent? loadingProgress,
       ) {
         if (loadingProgress == null) return child;
-        return const Center(
+        return Center(
           child: SizedBox(
             height: 22,
             width: 22,
@@ -1224,7 +1209,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                     ? _alternarProdutoSelecionado(produto)
                     : Navigator.pop(context, produto),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
           constraints: BoxConstraints(
             minHeight:
@@ -1235,15 +1220,15 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             vertical: _selecaoMultiplaAtiva && !estaSelecionado ? 8 : 10,
           ),
           decoration: BoxDecoration(
-            color: estaSelecionado ? const Color(0xFFEFF6FF) : _surfaceColor,
+            color: estaSelecionado ? _softAccentColor : _surfaceColor,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: estaSelecionado ? _accentColor : const Color(0xFFE2E8F0),
+              color: estaSelecionado ? _accentColor : _borderColor,
               width: estaSelecionado ? 1.4 : 1,
             ),
-            boxShadow: const <BoxShadow>[
+            boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Color(0x0A000000),
+                color: SixMobilePalette.navigationShadow,
                 blurRadius: 10,
                 offset: Offset(0, 4),
               ),
@@ -1255,7 +1240,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
               Row(
                 children: <Widget>[
                   _buildThumbnail(produto, isProduto, size: 42),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -1267,13 +1252,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                               : produto.nomeProduto,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w900,
                             color: _titleTextColor,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Row(
                           children: <Widget>[
                             Flexible(
@@ -1281,17 +1266,17 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                                 codigo.isEmpty ? 'Sem código' : codigo,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: _mutedTextColor,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: 10),
                             Text(
                               _formatCurrency(produto.precoVenda),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: _titleTextColor,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w900,
@@ -1302,39 +1287,36 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
+                    duration: Duration(milliseconds: 180),
                     width: 34,
                     height: 34,
                     decoration: BoxDecoration(
-                      color:
-                          estaSelecionado
-                              ? _accentColor
-                              : const Color(0xFFEFF6FF),
+                      color: estaSelecionado ? _accentColor : _softAccentColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       estaSelecionado ? Icons.check_rounded : Icons.add_rounded,
-                      color: estaSelecionado ? Colors.white : _accentColor,
+                      color: estaSelecionado ? _onAccentColor : _accentColor,
                       size: 20,
                     ),
                   ),
                 ],
               ),
               if (_selecaoMultiplaAtiva && estaSelecionado) ...<Widget>[
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Row(
                   children: <Widget>[
                     Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: _surfaceElevatedColor,
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                        border: Border.all(color: _borderColor),
                       ),
                       child: Text(
                         'Selecionado',
@@ -1345,16 +1327,16 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         ),
                       ),
                     ),
-                    const Spacer(),
+                    Spacer(),
                     _QuantidadeButton(
                       icon: Icons.remove_rounded,
                       onTap: () => _alterarQuantidadeSelecionada(produto, -1),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: EdgeInsets.symmetric(horizontal: 12),
                       child: Text(
                         '$quantidade',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: _titleTextColor,
                           fontSize: 15,
                           fontWeight: FontWeight.w900,
@@ -1384,9 +1366,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     final int quantidade = selecionado?.quantidade ?? 0;
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 190),
+      duration: Duration(milliseconds: 190),
       curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.all(2),
+      padding: EdgeInsets.all(2),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
@@ -1397,10 +1379,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           BoxShadow(
             color:
                 estaSelecionado
-                    ? const Color(0x292563EB)
-                    : const Color(0x12000000),
+                    ? _accentColor.withValues(alpha: 0.18)
+                    : SixMobilePalette.navigationShadow,
             blurRadius: estaSelecionado ? 22 : 16,
-            offset: const Offset(0, 8),
+            offset: Offset(0, 8),
           ),
         ],
       ),
@@ -1411,13 +1393,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           borderRadius: BorderRadius.circular(26),
           onTap: () => _alternarProdutoSelecionado(produto),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 190),
+            duration: Duration(milliseconds: 190),
             curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: estaSelecionado ? const Color(0xFFF8FBFF) : _surfaceColor,
+              color: estaSelecionado ? _softAccentColor : _surfaceColor,
               borderRadius: BorderRadius.circular(26),
-              border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+              border: Border.all(color: _borderColor, width: 1),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1429,21 +1411,22 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       top: 10,
                       right: 10,
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
+                        duration: Duration(milliseconds: 180),
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                          color: estaSelecionado ? _accentColor : Colors.white,
+                          color:
+                              estaSelecionado
+                                  ? _accentColor
+                                  : _surfaceElevatedColor,
                           borderRadius: BorderRadius.circular(15),
                           border: Border.all(
                             color:
-                                estaSelecionado
-                                    ? _accentColor
-                                    : const Color(0xFFE2E8F0),
+                                estaSelecionado ? _accentColor : _borderColor,
                           ),
-                          boxShadow: const <BoxShadow>[
+                          boxShadow: <BoxShadow>[
                             BoxShadow(
-                              color: Color(0x24000000),
+                              color: SixMobilePalette.navigationShadow,
                               blurRadius: 12,
                               offset: Offset(0, 5),
                             ),
@@ -1453,7 +1436,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                           estaSelecionado
                               ? Icons.check_rounded
                               : Icons.add_rounded,
-                          color: estaSelecionado ? Colors.white : _accentColor,
+                          color:
+                              estaSelecionado ? _onAccentColor : _accentColor,
                           size: 24,
                         ),
                       ),
@@ -1463,34 +1447,34 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         left: 10,
                         bottom: 10,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
+                          padding: EdgeInsets.symmetric(
                             horizontal: 11,
                             vertical: 7,
                           ),
                           decoration: BoxDecoration(
                             color: _accentColor,
                             borderRadius: BorderRadius.circular(999),
-                            boxShadow: const <BoxShadow>[
+                            boxShadow: <BoxShadow>[
                               BoxShadow(
-                                color: Color(0x302563EB),
+                                color: _accentColor.withValues(alpha: 0.25),
                                 blurRadius: 10,
                                 offset: Offset(0, 4),
                               ),
                             ],
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: <Widget>[
                               Icon(
                                 Icons.check_circle_rounded,
-                                color: Colors.white,
+                                color: _onAccentColor,
                                 size: 15,
                               ),
                               SizedBox(width: 5),
                               Text(
                                 'Selecionado',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: _onAccentColor,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w900,
                                 ),
@@ -1501,7 +1485,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
@@ -1515,28 +1499,28 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                                 : produto.nomeProduto,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: _titleTextColor,
                               fontSize: 17,
                               height: 1.16,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Row(
                             children: <Widget>[
-                              const Icon(
+                              Icon(
                                 Icons.qr_code_2_rounded,
                                 color: _mutedTextColor,
                                 size: 15,
                               ),
-                              const SizedBox(width: 5),
+                              SizedBox(width: 5),
                               Flexible(
                                 child: Text(
                                   codigo.isEmpty ? 'Sem código' : codigo,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: _mutedTextColor,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w800,
@@ -1548,19 +1532,19 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 9,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
+                        color: _softAccentColor,
                         borderRadius: BorderRadius.circular(15),
                       ),
                       child: Text(
                         _formatCurrency(produto.precoVenda),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: _titleTextColor,
                           fontSize: 15,
                           fontWeight: FontWeight.w900,
@@ -1570,16 +1554,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                   ],
                 ),
                 if (estaSelecionado) ...<Widget>[
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: _surfaceElevatedColor,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFFBFDBFE)),
+                      border: Border.all(color: _borderColor),
                     ),
                     child: Row(
                       children: <Widget>[
@@ -1601,10 +1582,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                               () => _alterarQuantidadeSelecionada(produto, -1),
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          padding: EdgeInsets.symmetric(horizontal: 14),
                           child: Text(
                             '$quantidade',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: _titleTextColor,
                               fontSize: 17,
                               fontWeight: FontWeight.w900,
@@ -1648,7 +1629,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           ImageChunkEvent? loadingProgress,
         ) {
           if (loadingProgress == null) return child;
-          return const Center(
+          return Center(
             child: SizedBox(
               height: 22,
               width: 22,
@@ -1668,9 +1649,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         width: double.infinity,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: const Color(0xFFEFF6FF),
+          color: _softAccentColor,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: _borderColor),
         ),
         child: content,
       ),
@@ -1679,9 +1660,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   Widget _buildHeroPlaceholder(bool isProduto) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: <Color>[Color(0xFFEFF6FF), Color(0xFFF8FAFC)],
+          colors: <Color>[_softAccentColor, _softNeutralColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1691,9 +1672,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           width: 74,
           height: 74,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: _surfaceElevatedColor,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFDDEBFF)),
+            border: Border.all(color: _borderColor),
           ),
           child: Icon(
             isProduto
@@ -1713,13 +1694,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
+        decoration: BoxDecoration(
+          color: _surfaceColor,
+          border: Border(top: BorderSide(color: _borderColor)),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Color(0x14000000),
+              color: SixMobilePalette.navigationShadow,
               blurRadius: 18,
               offset: Offset(0, -6),
             ),
@@ -1735,16 +1716,16 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                     '$_quantidadeSelecionadaTotal item(ns) selecionado(s)',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _titleTextColor,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Text(
                   _formatCurrency(_totalSelecionado),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: _titleTextColor,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
@@ -1752,13 +1733,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             FilledButton.icon(
               onPressed: possuiSelecionados ? _confirmarSelecaoMultipla : null,
-              icon: const Icon(Icons.add_shopping_cart_rounded),
-              label: const Text('Adicionar selecionados'),
+              icon: Icon(Icons.add_shopping_cart_rounded),
+              label: Text('Adicionar selecionados'),
               style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
+                minimumSize: Size.fromHeight(48),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -1848,7 +1829,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           ImageChunkEvent? loadingProgress,
         ) {
           if (loadingProgress == null) return child;
-          return const Center(
+          return Center(
             child: SizedBox(
               height: 16,
               width: 16,
@@ -1856,7 +1837,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             ),
           );
         },
-        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined),
+        errorBuilder: (_, __, ___) => Icon(Icons.broken_image_outlined),
       );
     } else {
       content = Icon(
@@ -1871,9 +1852,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       height: size,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: _softAccentColor,
         borderRadius: BorderRadius.circular(size <= 44 ? 14 : 17),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: _borderColor),
       ),
       child: Center(child: content),
     );
@@ -1946,19 +1927,19 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       context: context,
       showDragHandle: false,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x47000000),
+      barrierColor: Colors.black.withValues(alpha: 0.44),
       builder: (BuildContext context) {
         return SafeArea(
           top: false,
           child: Container(
-            margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            margin: EdgeInsets.fromLTRB(12, 0, 12, 12),
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: _surfaceColor,
               borderRadius: BorderRadius.circular(28),
-              boxShadow: const <BoxShadow>[
+              boxShadow: <BoxShadow>[
                 BoxShadow(
-                  color: Color(0x26000000),
+                  color: SixMobilePalette.navigationShadow,
                   blurRadius: 28,
                   offset: Offset(0, 12),
                 ),
@@ -1973,29 +1954,29 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                     width: 42,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE2E8F0),
+                      color: _borderColor,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Row(
                   children: <Widget>[
                     Container(
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
+                        color: _softAccentColor,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.tune_rounded,
                         color: _accentColor,
                         size: 20,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    const Expanded(
+                    SizedBox(width: 12),
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
@@ -2023,7 +2004,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _SortOptionTile(
                   icon: Icons.sort_by_alpha_rounded,
                   title: 'Nome',
@@ -2031,7 +2012,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                   selected: ordenacao == 'nome',
                   onTap: () => _changeSort('nome'),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _SortOptionTile(
                   icon: Icons.south_west_rounded,
                   title: 'Menor preço',
@@ -2039,7 +2020,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                   selected: ordenacao == 'precoAsc',
                   onTap: () => _changeSort('precoAsc'),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _SortOptionTile(
                   icon: Icons.north_east_rounded,
                   title: 'Maior preço',
@@ -2094,7 +2075,7 @@ class _QuantidadeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: SixMobilePalette.surfaceElevated,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -2104,9 +2085,9 @@ class _QuantidadeButton extends StatelessWidget {
           height: 32,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFBFDBFE)),
+            border: Border.all(color: SixMobilePalette.border),
           ),
-          child: Icon(icon, color: const Color(0xFF2563EB), size: 18),
+          child: Icon(icon, color: SixMobilePalette.accent, size: 18),
         ),
       ),
     );
@@ -2128,16 +2109,13 @@ class _SegmentButton extends StatelessWidget {
   final VoidCallback onTap;
   final bool compact;
 
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _mutedTextColor = Color(0xFF64748B);
-
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
+      duration: Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
       child: Material(
-        color: selected ? _accentColor : Colors.transparent,
+        color: selected ? SixMobilePalette.accent : Colors.transparent,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: onTap,
@@ -2153,9 +2131,12 @@ class _SegmentButton extends StatelessWidget {
                 Icon(
                   icon,
                   size: 18,
-                  color: selected ? Colors.white : _mutedTextColor,
+                  color:
+                      selected
+                          ? SixMobilePalette.onAccent
+                          : SixMobilePalette.mutedText,
                 ),
-                const SizedBox(width: 7),
+                SizedBox(width: 7),
                 Flexible(
                   child: Text(
                     label,
@@ -2165,7 +2146,10 @@ class _SegmentButton extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w900,
-                      color: selected ? Colors.white : _mutedTextColor,
+                      color:
+                          selected
+                              ? SixMobilePalette.onAccent
+                              : SixMobilePalette.mutedText,
                     ),
                   ),
                 ),
@@ -2185,13 +2169,18 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color backgroundColor =
-        ativo ? const Color(0xFFEAF8EE) : const Color(0xFFFEF2F2);
+        ativo
+            ? (isDark ? const Color(0xFF052E1A) : const Color(0xFFEAF8EE))
+            : (isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2));
     final Color foregroundColor =
-        ativo ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
+        ativo
+            ? (isDark ? const Color(0xFF86EFAC) : const Color(0xFF16A34A))
+            : (isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626));
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(999),
@@ -2217,25 +2206,25 @@ class _InfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 180),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      constraints: BoxConstraints(maxWidth: 180),
+      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: SixMobilePalette.softNeutralSurface,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: SixMobilePalette.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 13, color: const Color(0xFF64748B)),
-          const SizedBox(width: 5),
+          Icon(icon, size: 13, color: SixMobilePalette.mutedText),
+          SizedBox(width: 5),
           Flexible(
             child: Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFF64748B),
+              style: TextStyle(
+                color: SixMobilePalette.mutedText,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
@@ -2268,50 +2257,59 @@ class _SortOptionTile extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 11),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFEFF6FF) : const Color(0xFFF8FAFC),
+          color:
+              selected
+                  ? SixMobilePalette.softAccentSurface
+                  : SixMobilePalette.softNeutralSurface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: selected ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
+            color: selected ? SixMobilePalette.accent : SixMobilePalette.border,
             width: selected ? 1.3 : 1,
           ),
           boxShadow:
               selected
-                  ? const <BoxShadow>[
+                  ? <BoxShadow>[
                     BoxShadow(
-                      color: Color(0x142563EB),
+                      color: SixMobilePalette.accent.withValues(alpha: 0.10),
                       blurRadius: 14,
                       offset: Offset(0, 6),
                     ),
                   ]
-                  : const <BoxShadow>[],
+                  : <BoxShadow>[],
         ),
         child: Row(
           children: <Widget>[
             AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
+              duration: Duration(milliseconds: 180),
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: selected ? const Color(0xFF2563EB) : Colors.white,
+                color:
+                    selected
+                        ? SixMobilePalette.accent
+                        : SixMobilePalette.surfaceElevated,
                 borderRadius: BorderRadius.circular(13),
                 border: Border.all(
                   color:
                       selected
-                          ? const Color(0xFF2563EB)
-                          : const Color(0xFFE2E8F0),
+                          ? SixMobilePalette.accent
+                          : SixMobilePalette.border,
                 ),
               ),
               child: Icon(
                 icon,
-                color: selected ? Colors.white : const Color(0xFF64748B),
+                color:
+                    selected
+                        ? SixMobilePalette.onAccent
+                        : SixMobilePalette.mutedText,
                 size: 18,
               ),
             ),
-            const SizedBox(width: 11),
+            SizedBox(width: 11),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2323,19 +2321,19 @@ class _SortOptionTile extends StatelessWidget {
                     style: TextStyle(
                       color:
                           selected
-                              ? const Color(0xFF1D4ED8)
-                              : const Color(0xFF0F172A),
+                              ? SixMobilePalette.accent
+                              : SixMobilePalette.titleText,
                       fontSize: 14,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF64748B),
+                    style: TextStyle(
+                      color: SixMobilePalette.mutedText,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -2344,19 +2342,19 @@ class _SortOptionTile extends StatelessWidget {
               ),
             ),
             AnimatedScale(
-              duration: const Duration(milliseconds: 160),
+              duration: Duration(milliseconds: 160),
               curve: Curves.easeOutCubic,
               scale: selected ? 1 : 0,
               child: Container(
                 width: 24,
                 height: 24,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF2563EB),
+                decoration: BoxDecoration(
+                  color: SixMobilePalette.accent,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.check_rounded,
-                  color: Colors.white,
+                  color: SixMobilePalette.onAccent,
                   size: 16,
                 ),
               ),
@@ -2373,7 +2371,7 @@ class _LoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(vertical: 32),
       child: Center(
         child: CircularProgressIndicator(
@@ -2394,33 +2392,29 @@ class _ErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFFECACA)),
+        border: Border.all(color: SixMobilePalette.errorBorder),
       ),
       child: Column(
         children: <Widget>[
-          const Icon(
-            Icons.wifi_off_outlined,
-            color: Color(0xFFDC2626),
-            size: 34,
-          ),
-          const SizedBox(height: 10),
-          const Text(
+          Icon(Icons.wifi_off_outlined, color: Color(0xFFDC2626), size: 34),
+          SizedBox(height: 10),
+          Text(
             'Não foi possível carregar o catálogo.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(0xFF0F172A),
+              color: SixMobilePalette.titleText,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () => onRetry(),
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Tentar novamente'),
+            icon: Icon(Icons.refresh_rounded),
+            label: Text('Tentar novamente'),
           ),
         ],
       ),
@@ -2434,21 +2428,25 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: SixMobilePalette.border),
       ),
-      child: const Column(
+      child: Column(
         children: <Widget>[
-          Icon(Icons.inventory_2_outlined, color: Color(0xFF2563EB), size: 34),
+          Icon(
+            Icons.inventory_2_outlined,
+            color: SixMobilePalette.accent,
+            size: 34,
+          ),
           SizedBox(height: 10),
           Text(
             'Nenhum item encontrado.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(0xFF0F172A),
+              color: SixMobilePalette.titleText,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -2456,7 +2454,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             'Ajuste a busca ou atualize a listagem.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+            style: TextStyle(color: SixMobilePalette.mutedText, fontSize: 12),
           ),
         ],
       ),

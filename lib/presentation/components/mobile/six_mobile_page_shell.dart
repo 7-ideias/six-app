@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/app_modal_side_sheet.dart';
 import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
 
@@ -139,6 +141,59 @@ class _SixMobilePageShellState extends State<SixMobilePageShell> {
     widget.onScrollProgressChanged?.call(normalized);
   }
 
+  Color _effectiveColor({
+    required BuildContext context,
+    required Color configuredColor,
+    required Color lightToken,
+    required Color darkToken,
+  }) {
+    if (Theme.of(context).brightness == Brightness.dark &&
+        configuredColor == lightToken) {
+      return darkToken;
+    }
+    return configuredColor;
+  }
+
+  Color _effectiveBackgroundColor(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    return _effectiveColor(
+      context: context,
+      configuredColor: widget.backgroundColor,
+      lightToken: SixMobilePalette.backgroundLight,
+      darkToken: colors.background,
+    );
+  }
+
+  Color _effectivePrimaryColor(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    return _effectiveColor(
+      context: context,
+      configuredColor: widget.primaryColor,
+      lightToken: SixMobilePalette.primaryLight,
+      darkToken: colors.primary,
+    );
+  }
+
+  Color _effectiveSecondaryColor(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    return _effectiveColor(
+      context: context,
+      configuredColor: widget.secondaryColor,
+      lightToken: SixMobilePalette.secondaryLight,
+      darkToken: colors.secondary,
+    );
+  }
+
+  Color _effectiveAccentColor(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    return _effectiveColor(
+      context: context,
+      configuredColor: widget.accentColor,
+      lightToken: SixMobilePalette.accentLight,
+      darkToken: colors.accent,
+    );
+  }
+
   Widget _buildBackground(BuildContext context, Widget child) {
     if (widget.backgroundBuilder != null) {
       return widget.backgroundBuilder!(context, child);
@@ -147,10 +202,10 @@ class _SixMobilePageShellState extends State<SixMobilePageShell> {
     return SixMobileAnimatedGradientBackground(
       enabled: widget.enableAnimatedBackground,
       intensity: widget.backgroundIntensity,
-      baseColor: widget.backgroundColor,
-      primaryColor: widget.primaryColor,
-      secondaryColor: widget.secondaryColor,
-      accentColor: widget.accentColor,
+      baseColor: _effectiveBackgroundColor(context),
+      primaryColor: _effectivePrimaryColor(context),
+      secondaryColor: _effectiveSecondaryColor(context),
+      accentColor: _effectiveAccentColor(context),
       child: child,
     );
   }
@@ -168,6 +223,9 @@ class _SixMobilePageShellState extends State<SixMobilePageShell> {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final Color backgroundColor = _effectiveBackgroundColor(context);
+    final Color primaryColor = _effectivePrimaryColor(context);
     final double topBarHeight = _resolveTopBarHeight(context);
     final Widget? leading = widget.leading ?? _buildMenuLeading(context);
     final Widget body = _buildBackground(
@@ -181,7 +239,7 @@ class _SixMobilePageShellState extends State<SixMobilePageShell> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: widget.backgroundColor,
+      backgroundColor: backgroundColor,
       appBar: _SixMobileScrollableAppBar(
         title: widget.title,
         leading: leading,
@@ -189,7 +247,7 @@ class _SixMobilePageShellState extends State<SixMobilePageShell> {
         titleTextStyle: widget.titleTextStyle,
         centerTitle: widget.centerTitle,
         automaticallyImplyLeading: widget.automaticallyImplyLeading,
-        topBackgroundColor: widget.primaryColor,
+        topBackgroundColor: primaryColor,
         scrollProgress: _scrollProgress,
         enableBlur: widget.enableAppBarBlur,
         maxOverlayOpacity: widget.scrolledSurfaceOpacity,
@@ -212,8 +270,8 @@ class _SixMobilePageShellState extends State<SixMobilePageShell> {
                 progressListenable: _scrollProgress,
                 blurSigma: widget.maxBlurSigma,
                 maxOverlayOpacity: widget.scrolledSurfaceOpacity,
-                overlayColor: Theme.of(context).colorScheme.surface,
-                borderColor: Theme.of(context).colorScheme.outlineVariant,
+                overlayColor: colors.surface,
+                borderColor: colors.border,
                 animationDuration: widget.appBarAnimationDuration,
                 animationCurve: widget.appBarAnimationCurve,
               ),
@@ -231,7 +289,7 @@ class _SixMobilePageShellState extends State<SixMobilePageShell> {
 
     return IconButton(
       tooltip: 'Menu',
-      icon: const Icon(Icons.menu_rounded),
+      icon: Icon(Icons.menu_rounded),
       onPressed: () {
         showAppModalSideSheet<void>(context: context, child: drawer);
       },
@@ -296,7 +354,7 @@ class _SixMobileScrollableAppBar extends StatelessWidget
             final TextStyle baseTitleStyle =
                 theme.appBarTheme.titleTextStyle ??
                 theme.textTheme.titleLarge ??
-                const TextStyle(fontSize: 20, fontWeight: FontWeight.w700);
+                TextStyle(fontSize: 20, fontWeight: FontWeight.w700);
 
             return AppBar(
               automaticallyImplyLeading: automaticallyImplyLeading,
@@ -395,7 +453,7 @@ class _SixMobileTopBlurLayer extends StatelessWidget {
           curve: animationCurve,
           builder: (BuildContext context, double progress, Widget? child) {
             if (!enabled || progress <= 0) {
-              return const SizedBox.shrink();
+              return SizedBox.shrink();
             }
 
             final double overlayOpacity = (maxOverlayOpacity * progress).clamp(
@@ -413,7 +471,7 @@ class _SixMobileTopBlurLayer extends StatelessWidget {
                       sigmaX: blurSigma,
                       sigmaY: blurSigma,
                     ),
-                    child: const SizedBox.expand(),
+                    child: SizedBox.expand(),
                   ),
                   DecoratedBox(
                     decoration: BoxDecoration(

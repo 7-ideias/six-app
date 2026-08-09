@@ -18,13 +18,13 @@ class ManagementSettingsMaturityBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (maturity == ManagementSettingsMaturity.functional) {
-      return const SizedBox.shrink();
+      return SizedBox.shrink();
     }
 
     final (Color bg, Color fg) = switch (maturity) {
       ManagementSettingsMaturity.experimental => (
-        const Color(0xFFFFF7ED),
-        const Color(0xFFC2410C),
+        Color(0xFFFFF7ED),
+        Color(0xFFC2410C),
       ),
       ManagementSettingsMaturity.comingSoon => (
         SixMobilePalette.softNeutralSurface,
@@ -37,7 +37,7 @@ class ManagementSettingsMaturityBadge extends StatelessWidget {
     };
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(8),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
 import 'package:sixpos/presentation/screens/gestao_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/home_page_mobile_screen.dart';
@@ -15,6 +16,7 @@ class NavBarMobile extends StatelessWidget {
     final MobileNavigationController? controller =
         MobileNavigationScope.maybeOf(context);
     final int selectedIndex = controller?.value ?? initialIndex;
+    final SixMobileColorScheme colors = context.sixMobileColors;
 
     return SafeArea(
       top: false,
@@ -23,14 +25,14 @@ class NavBarMobile extends StatelessWidget {
         height: 64,
         padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
-          color: SixMobilePalette.surface,
+          color: colors.surface,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: SixMobilePalette.border),
-          boxShadow: const <BoxShadow>[
+          border: Border.all(color: colors.border),
+          boxShadow: <BoxShadow>[
             BoxShadow(
-              color: SixMobilePalette.navigationShadow,
+              color: colors.navigationShadow,
               blurRadius: 18,
-              offset: Offset(0, 8),
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -39,21 +41,21 @@ class NavBarMobile extends StatelessWidget {
             _NavItem(
               icon: Icons.manage_accounts_outlined,
               activeIcon: Icons.manage_accounts_rounded,
-              label: 'Gestão',
+              label: context.t('mobile.nav.management', fallback: 'Gestão'),
               selected: selectedIndex == 0,
               onTap: () => _select(context, controller, 0),
             ),
             _NavItem(
               icon: Icons.home_outlined,
               activeIcon: Icons.home_rounded,
-              label: 'Início',
+              label: context.t('mobile.nav.home', fallback: 'Início'),
               selected: selectedIndex == 1,
               onTap: () => _select(context, controller, 1),
             ),
             _NavItem(
               icon: Icons.support_agent_outlined,
               activeIcon: Icons.support_agent_rounded,
-              label: 'Atendimento',
+              label: context.t('mobile.nav.service', fallback: 'Atendimento'),
               selected: selectedIndex == 2,
               onTap: () => _select(context, controller, 2),
             ),
@@ -90,9 +92,9 @@ class NavBarMobile extends StatelessWidget {
         return;
     }
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => page),
-    );
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute<void>(builder: (_) => page));
   }
 }
 
@@ -113,6 +115,8 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+
     return Expanded(
       child: Semantics(
         button: true,
@@ -126,9 +130,7 @@ class _NavItem extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
               decoration: BoxDecoration(
-                color: selected
-                    ? SixMobilePalette.softAccentSurface
-                    : Colors.transparent,
+                color: selected ? colors.softAccentSurface : Colors.transparent,
                 borderRadius: BorderRadius.circular(17),
               ),
               child: Column(
@@ -137,9 +139,7 @@ class _NavItem extends StatelessWidget {
                   Icon(
                     selected ? activeIcon : icon,
                     size: 21,
-                    color: selected
-                        ? SixMobilePalette.accent
-                        : SixMobilePalette.mutedText,
+                    color: selected ? colors.accent : colors.mutedText,
                   ),
                   const SizedBox(height: 3),
                   Text(
@@ -147,12 +147,9 @@ class _NavItem extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: selected
-                          ? SixMobilePalette.primary
-                          : SixMobilePalette.mutedText,
+                      color: selected ? colors.titleText : colors.mutedText,
                       fontSize: 10.5,
-                      fontWeight:
-                          selected ? FontWeight.w700 : FontWeight.w600,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                     ),
                   ),
                 ],

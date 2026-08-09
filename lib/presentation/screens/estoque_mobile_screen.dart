@@ -10,20 +10,23 @@ import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 
 class EstoqueMobileScreen extends StatefulWidget {
-  const EstoqueMobileScreen({super.key});
+  const EstoqueMobileScreen({super.key, this.produtoService});
+
+  final ProdutoService? produtoService;
 
   @override
   State<EstoqueMobileScreen> createState() => _EstoqueMobileScreenState();
 }
 
 class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
-  static const Color _primaryColor = Color(0xFF0B1F3A);
-  static const Color _secondaryColor = Color(0xFF123B69);
-  static const Color _accentColor = Color(0xFF2563EB);
-  static const Color _mutedTextColor = Color(0xFF64748B);
-  static const Color _titleTextColor = Color(0xFF0F172A);
+  static Color get _primaryColor => SixMobilePalette.primary;
+  static Color get _secondaryColor => SixMobilePalette.secondary;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
 
-  final ProdutoService _produtoService = ProdutoService();
+  late final ProdutoService _produtoService =
+      widget.produtoService ?? ProdutoService();
   late Future<EstoqueDashboardModel> _dashboardFuture;
   DateTime? _ultimaAtualizacaoEm;
 
@@ -65,7 +68,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
       actions: [
         IconButton(
           tooltip: _t('estoque.mobile.refresh', 'Atualizar'),
-          icon: const Icon(Icons.refresh_rounded),
+          icon: Icon(Icons.refresh_rounded),
           onPressed: _reload,
         ),
       ],
@@ -80,7 +83,12 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Padding(
                 padding: EdgeInsets.only(top: topInset),
-                child: const Center(child: CircularProgressIndicator()),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: SixMobilePalette.accent,
+                    backgroundColor: SixMobilePalette.activeBorder,
+                  ),
+                ),
               );
             }
 
@@ -104,18 +112,18 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
               onRefresh: _reload,
               child: ListView(
                 controller: scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
+                physics: AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
                 children: [
                   SixStaggeredEntry(child: _buildHeaderCard()),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 70),
+                    delay: Duration(milliseconds: 70),
                     child: _buildActions(),
                   ),
-                  const SizedBox(height: 22),
+                  SizedBox(height: 22),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 120),
+                    delay: Duration(milliseconds: 120),
                     child: _buildProgressSection(
                       title: _t(
                         'estoque.mobile.stockSituation',
@@ -134,9 +142,9 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 170),
+                    delay: Duration(milliseconds: 170),
                     child: _buildProgressSection(
                       title: _t(
                         'estoque.mobile.valueByCategory',
@@ -155,14 +163,14 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 220),
+                    delay: Duration(milliseconds: 220),
                     child: _buildAlerts(dashboard.alertas),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 270),
+                    delay: Duration(milliseconds: 270),
                     child: _buildProductSection(
                       title: _t(
                         'estoque.mobile.productsForRestock',
@@ -181,9 +189,9 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                       valueMode: _ProductValueMode.reposition,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 320),
+                    delay: Duration(milliseconds: 320),
                     child: _buildProductSection(
                       title: _t(
                         'estoque.mobile.errorsAndExcess',
@@ -202,9 +210,9 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                       valueMode: _ProductValueMode.reposition,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 370),
+                    delay: Duration(milliseconds: 370),
                     child: _buildProductSection(
                       title: _t(
                         'estoque.mobile.highestIdleValue',
@@ -223,9 +231,9 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                       valueMode: _ProductValueMode.value,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   SixStaggeredEntry(
-                    delay: const Duration(milliseconds: 420),
+                    delay: Duration(milliseconds: 420),
                     child: _buildMovements(dashboard.movimentacoesRecentes),
                   ),
                 ],
@@ -238,7 +246,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
   }
 
   EstoqueDashboardModel _emptyDashboard() {
-    return const EstoqueDashboardModel(
+    return EstoqueDashboardModel(
       valorTotalEstoque: 0,
       quantidadeTotalEstoque: 0,
       totalProdutos: 0,
@@ -261,15 +269,15 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
 
   Widget _buildHeaderCard() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: [_primaryColor, _secondaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             color: Color(0x260B1F3A),
             blurRadius: 22,
@@ -283,13 +291,13 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: const Color(0x1AFFFFFF),
+              color: Color(0x1AFFFFFF),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0x33FFFFFF)),
+              border: Border.all(color: Color(0x33FFFFFF)),
             ),
-            child: const Icon(Icons.warehouse_outlined, color: Colors.white),
+            child: Icon(Icons.warehouse_outlined, color: Colors.white),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,10 +313,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                 SizedBox(height: 6),
                 Text(
                   _lastUpdatedLabel(),
-                  style: const TextStyle(
-                    color: Color(0xFFD7E3F5),
-                    height: 1.35,
-                  ),
+                  style: TextStyle(color: Color(0xFFD7E3F5), height: 1.35),
                 ),
               ],
             ),
@@ -340,7 +345,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
             onTap: _showFeatureInProgress,
           ),
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: 10),
         Expanded(
           child: _ActionButton(
             label: _t('estoque.mobile.exit', 'Saída'),
@@ -348,7 +353,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
             onTap: _showFeatureInProgress,
           ),
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: 10),
         Expanded(
           child: _ActionButton(
             label: _t('estoque.mobile.products', 'Produtos'),
@@ -356,9 +361,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
             onTap:
                 () => Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const ProdutolistMobileScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => ProdutolistMobileScreen()),
                 ),
           ),
         ),
@@ -439,8 +442,8 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                     items.map((alert) {
                       final color = _alertColor(alert.tipo);
                       return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(14),
+                        margin: EdgeInsets.only(bottom: 10),
+                        padding: EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(18),
@@ -452,22 +455,22 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Icon(_alertIcon(alert.tipo), color: color),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     alert.titulo,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: _titleTextColor,
                                       fontWeight: FontWeight.w900,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: 4),
                                   Text(
                                     alert.descricao,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: _mutedTextColor,
                                       fontSize: 12,
                                       height: 1.35,
@@ -476,7 +479,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8),
                             Text(
                               _integer(alert.quantidade),
                               style: TextStyle(
@@ -535,7 +538,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
               : item.problema,
       trailingSubtitle:
           '${_t('estoque.mobile.differenceShort', 'Dif.')} ${_qty(item.diferencaParaMinimo)}',
-      trailingColor: normal ? _accentColor : const Color(0xFFDC2626),
+      trailingColor: normal ? _accentColor : Color(0xFFDC2626),
     );
   }
 
@@ -579,7 +582,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
 
   Widget _movementTile(EstoqueDashboardMovimentoItem item) {
     final entrada = item.tipo.toUpperCase().contains('ENTRADA');
-    final color = entrada ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
+    final color = entrada ? Color(0xFF16A34A) : Color(0xFFDC2626);
 
     return _InventoryTile(
       icon: entrada ? Icons.add_circle_outline : Icons.remove_circle_outline,
@@ -671,7 +674,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
   }
 
   Color _chartColor(int index) {
-    const colors = [
+    final colors = [
       _accentColor,
       Color(0xFF16A34A),
       Color(0xFFDC2626),
@@ -685,10 +688,10 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
   Color _alertColor(String tipo) {
     final normalized = tipo.toUpperCase();
     if (normalized.contains('ERRO') || normalized.contains('NEGATIVO')) {
-      return const Color(0xFFDC2626);
+      return Color(0xFFDC2626);
     }
     if (normalized.contains('SEM') || normalized.contains('MINIMO')) {
-      return const Color(0xFFF59E0B);
+      return Color(0xFFF59E0B);
     }
     return _accentColor;
   }
@@ -721,27 +724,27 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: SixMobilePalette.surface,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 13),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: SixMobilePalette.border),
           ),
           child: Column(
             children: [
-              Icon(icon, color: const Color(0xFF2563EB), size: 21),
-              const SizedBox(height: 6),
+              Icon(icon, color: SixMobilePalette.accent, size: 21),
+              SizedBox(height: 6),
               Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFF0F172A),
+                style: TextStyle(
+                  color: SixMobilePalette.titleText,
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
                 ),
@@ -771,14 +774,14 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
+        border: Border.all(color: SixMobilePalette.border),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0F000000),
+            color: SixMobilePalette.navigationShadow,
             blurRadius: 14,
             offset: Offset(0, 6),
           ),
@@ -793,31 +796,31 @@ class _SectionCard extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
+                  color: SixMobilePalette.softAccentSurface,
                   borderRadius: BorderRadius.circular(13),
                 ),
-                child: Icon(icon, color: const Color(0xFF2563EB), size: 20),
+                child: Icon(icon, color: SixMobilePalette.accent, size: 20),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Color(0xFF0F172A),
+                      style: TextStyle(
+                        color: SixMobilePalette.titleText,
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: 3),
                     Text(
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF64748B),
+                      style: TextStyle(
+                        color: SixMobilePalette.mutedText,
                         fontSize: 12,
                         height: 1.35,
                       ),
@@ -827,7 +830,7 @@ class _SectionCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           child,
         ],
       ),
@@ -853,7 +856,7 @@ class _ProgressItem extends StatelessWidget {
     final safePercent = percent < 0.0 ? 0.0 : (percent > 1.0 ? 1.0 : percent);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 13),
+      padding: EdgeInsets.only(bottom: 13),
       child: Column(
         children: [
           Row(
@@ -863,35 +866,35 @@ class _ProgressItem extends StatelessWidget {
                 height: 10,
                 decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Expanded(
                 child: Text(
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF0F172A),
+                  style: TextStyle(
+                    color: SixMobilePalette.titleText,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
               Text(
                 value,
-                style: const TextStyle(
-                  color: Color(0xFF0F172A),
+                style: TextStyle(
+                  color: SixMobilePalette.titleText,
                   fontWeight: FontWeight.w900,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
               value: safePercent,
               minHeight: 8,
               color: color,
-              backgroundColor: const Color(0xFFE2E8F0),
+              backgroundColor: SixMobilePalette.border,
             ),
           ),
         ],
@@ -920,12 +923,12 @@ class _InventoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: SixMobilePalette.softNeutralSurface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: SixMobilePalette.border),
       ),
       child: Row(
         children: [
@@ -933,12 +936,12 @@ class _InventoryTile extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
+              color: SixMobilePalette.softAccentSurface,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: const Color(0xFF2563EB), size: 21),
+            child: Icon(icon, color: SixMobilePalette.accent, size: 21),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -947,18 +950,18 @@ class _InventoryTile extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF0F172A),
+                  style: TextStyle(
+                    color: SixMobilePalette.titleText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF64748B),
+                  style: TextStyle(
+                    color: SixMobilePalette.mutedText,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -966,7 +969,7 @@ class _InventoryTile extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -980,11 +983,11 @@ class _InventoryTile extends StatelessWidget {
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 3),
+              SizedBox(height: 3),
               Text(
                 trailingSubtitle,
-                style: const TextStyle(
-                  color: Color(0xFF64748B),
+                style: TextStyle(
+                  color: SixMobilePalette.mutedText,
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
                 ),
@@ -1006,16 +1009,16 @@ class _NoData extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: SixMobilePalette.softNeutralSurface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: Color(0xFF64748B),
+        style: TextStyle(
+          color: SixMobilePalette.mutedText,
           fontWeight: FontWeight.w700,
           height: 1.35,
         ),
@@ -1033,39 +1036,35 @@ class _ErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Container(
-          padding: const EdgeInsets.all(22),
+          padding: EdgeInsets.all(22),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: SixMobilePalette.surface,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFFECACA)),
+            border: Border.all(color: SixMobilePalette.errorBorder),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.cloud_off_rounded,
-                size: 42,
-                color: Color(0xFFDC2626),
-              ),
-              const SizedBox(height: 14),
+              Icon(Icons.cloud_off_rounded, size: 42, color: Color(0xFFDC2626)),
+              SizedBox(height: 14),
               Text(
                 context.t(
                   'estoque.mobile.loadError',
                   fallback: 'Não foi possível carregar o estoque.',
                 ),
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF0F172A),
+                style: TextStyle(
+                  color: SixMobilePalette.titleText,
                   fontSize: 17,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: onRetry,
-                icon: const Icon(Icons.refresh_rounded),
+                icon: Icon(Icons.refresh_rounded),
                 label: Text(
                   context.t('common.tryAgain', fallback: 'Tentar novamente'),
                 ),
@@ -1095,25 +1094,25 @@ class _EmptyInventoryState extends StatelessWidget {
       onRefresh: onRefresh,
       child: ListView(
         controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(24, topInset + 96, 24, 24),
         children: [
-          const Icon(
+          Icon(
             Icons.warehouse_outlined,
             size: 52,
             color: SixMobilePalette.accent,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Text(
             context.t('estoque.mobile.emptyTitle', fallback: 'Estoque vazio'),
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFF0F172A),
+            style: TextStyle(
+              color: SixMobilePalette.titleText,
               fontSize: 20,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             context.t(
               'estoque.mobile.emptySubtitle',
@@ -1121,7 +1120,7 @@ class _EmptyInventoryState extends StatelessWidget {
                   'Cadastre produtos e movimente o estoque para acompanhar os indicadores.',
             ),
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF64748B), height: 1.35),
+            style: TextStyle(color: SixMobilePalette.mutedText, height: 1.35),
           ),
         ],
       ),

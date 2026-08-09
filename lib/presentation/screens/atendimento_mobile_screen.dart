@@ -4,6 +4,7 @@ import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
@@ -43,10 +44,6 @@ class AtendimentoMobileScreen extends StatefulWidget {
 }
 
 class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
-  static const Color _bg = SixMobilePalette.background;
-  static const Color _primary = SixMobilePalette.primary;
-  static const Color _secondary = SixMobilePalette.secondary;
-  static const Color _accent = SixMobilePalette.accent;
   static const Color _serviceAccent = Color(0xFF7C3AED);
   static const Color _receiveAccent = Color(0xFF16A34A);
   static const Color _cashAccent = Color(0xFF0F766E);
@@ -71,6 +68,12 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
 
   TelaInicialModel? _resumo;
   int _totalNotificacoesConhecidas = 0;
+
+  SixMobileColorScheme get _colors => context.sixMobileColors;
+  Color get _bg => _colors.background;
+  Color get _primary => _colors.primary;
+  Color get _secondary => _colors.secondary;
+  Color get _accent => _colors.accent;
 
   @override
   void initState() {
@@ -115,7 +118,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   void _garantirWebSocketMobile() {
     if (kIsWeb || !widget.enableWebSocket) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future<void>.delayed(const Duration(milliseconds: 180), () {
+      Future<void>.delayed(Duration(milliseconds: 180), () {
         if (mounted) connectStomp();
       });
     });
@@ -140,7 +143,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
       secondaryColor: _secondary,
       accentColor: _accent,
       automaticallyImplyLeading: false,
-      leading: const SixMobileAppBarProfileAction(),
+      leading: SixMobileAppBarProfileAction(),
       actions: <Widget>[
         IconButton(
           tooltip: _txt(
@@ -148,14 +151,14 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             'Notificações',
           ),
           icon: _notificationIcon(),
-          onPressed: () => _go(const NotificacoesMobileScreen()),
+          onPressed: () => _go(NotificacoesMobileScreen()),
         ),
       ],
       bodyBuilder: _buildContent,
       bottomNavigationBar:
           kIsWeb || !widget.showBottomNavigationBar
               ? null
-              : const NavBarMobile(initialIndex: 2),
+              : NavBarMobile(initialIndex: 2),
     );
   }
 
@@ -181,15 +184,15 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             edgeOffset: topInset,
             displacement: 18,
             color: _accent,
-            backgroundColor: SixMobilePalette.surface,
+            backgroundColor: _colors.surface,
             onRefresh: _carregarResumo,
             child: ListView(
               controller: scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
+              physics: AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
               children: <Widget>[
                 SixStaggeredEntry(
-                  delay: const Duration(milliseconds: 40),
+                  delay: Duration(milliseconds: 40),
                   child: _AtendimentoHeroCard(
                     title: _txt(
                       'atendimento.mobile.heroTitle',
@@ -202,18 +205,18 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
                     assetPath: _heroAsset,
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 SixStaggeredEntry(
-                  delay: const Duration(milliseconds: 95),
+                  delay: Duration(milliseconds: 95),
                   child: _AtendimentoActionsRow(
                     actions: _primaryActions(),
                     prominence: _AtendimentoActionProminence.primary,
                     heightBoost: sizing.primaryRowExtraHeight,
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 SixStaggeredEntry(
-                  delay: const Duration(milliseconds: 130),
+                  delay: Duration(milliseconds: 130),
                   child: _AtendimentoActionsRow(
                     actions: _secondaryActions(),
                     prominence: _AtendimentoActionProminence.compact,
@@ -244,7 +247,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             top: -6,
             child: SixPulsingBadge(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: SixMobilePalette.notificationBadge,
                   borderRadius: BorderRadius.circular(999),
@@ -255,7 +258,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
                 ),
                 child: Text(
                   naoLidas > 9 ? '+9' : naoLidas.toString(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: SixMobilePalette.onPrimary,
                     fontSize: 9,
                     fontWeight: FontWeight.w900,
@@ -287,7 +290,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         ),
         assetPath: _serviceAsset,
         accentColor: _serviceAccent,
-        onTap: () => _go(const OpcoesServicosAtendimentoMobileScreen()),
+        onTap: () => _go(OpcoesServicosAtendimentoMobileScreen()),
       ),
     ];
   }
@@ -303,7 +306,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         ),
         assetPath: _receiveAsset,
         accentColor: _receiveAccent,
-        onTap: () => _go(const ReceberMobileScreen()),
+        onTap: () => _go(ReceberMobileScreen()),
         badgeValue: _resumo?.totalVendasAbertas,
       ),
       _PrimaryActionData(
@@ -318,7 +321,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         ),
         assetPath: _cashAsset,
         accentColor: _cashAccent,
-        onTap: () => _go(const OperacoesCaixaMobileScreen()),
+        onTap: () => _go(OperacoesCaixaMobileScreen()),
       ),
       _PrimaryActionData(
         id: 'return',
@@ -369,6 +372,7 @@ class _AtendimentoHeroCard extends StatelessWidget {
       label: '$title. $subtitle',
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
+          final SixMobileColorScheme colors = context.sixMobileColors;
           final double width = constraints.maxWidth;
           final bool compact = width < 350 || textScale >= 1.2;
           final bool tightText = textScale >= 1.35;
@@ -412,7 +416,7 @@ class _AtendimentoHeroCard extends StatelessWidget {
                         Object error,
                         StackTrace? stackTrace,
                       ) {
-                        return const SizedBox.shrink();
+                        return SizedBox.shrink();
                       },
                     ),
                   ),
@@ -431,17 +435,17 @@ class _AtendimentoHeroCard extends StatelessWidget {
                       Text(
                         title,
                         style: TextStyle(
-                          color: SixMobilePalette.titleText,
+                          color: colors.titleText,
                           fontSize: titleSize,
                           height: 1.05,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         subtitle,
-                        style: const TextStyle(
-                          color: SixMobilePalette.mutedText,
+                        style: TextStyle(
+                          color: colors.mutedText,
                           fontSize: 12.5,
                           height: 1.28,
                           fontWeight: FontWeight.w600,
@@ -573,6 +577,7 @@ class _PrimaryActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     final bool enabled = data.enabled && data.onTap != null;
     final String status = data.statusLabel ?? '';
     final String badge =
@@ -604,8 +609,8 @@ class _PrimaryActionCard extends StatelessWidget {
               BoxShadow(
                 color:
                     _isPrimary
-                        ? SixMobilePalette.navigationShadow
-                        : SixMobilePalette.navigationShadow.withAlpha(18),
+                        ? colors.navigationShadow
+                        : colors.navigationShadow.withAlpha(18),
                 blurRadius: _isPrimary ? 16 : 10,
                 offset: Offset(0, _isPrimary ? 8 : 5),
               ),
@@ -624,8 +629,8 @@ class _PrimaryActionCard extends StatelessWidget {
                     child: Container(
                       padding:
                           _isPrimary
-                              ? const EdgeInsets.fromLTRB(10, 11, 10, 10)
-                              : const EdgeInsets.fromLTRB(7, 8, 7, 8),
+                              ? EdgeInsets.fromLTRB(10, 11, 10, 10)
+                              : EdgeInsets.fromLTRB(7, 8, 7, 8),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(radius),
                         border: Border.all(
@@ -634,7 +639,7 @@ class _PrimaryActionCard extends StatelessWidget {
                                   ? data.accentColor.withAlpha(
                                     _isPrimary ? 62 : 42,
                                   )
-                                  : SixMobilePalette.border,
+                                  : colors.border,
                         ),
                       ),
                       child: LayoutBuilder(
@@ -688,6 +693,7 @@ class _ActionCardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     final double textScale = MediaQuery.textScalerOf(context).scale(1);
     final bool compactWidth =
         constraints.maxWidth < (_isPrimary ? 150 : 102) || rowWidth < 340;
@@ -741,8 +747,7 @@ class _ActionCardContent extends StatelessWidget {
               ) {
                 return Icon(
                   Icons.image_not_supported_outlined,
-                  color:
-                      enabled ? data.accentColor : SixMobilePalette.mutedText,
+                  color: enabled ? data.accentColor : colors.mutedText,
                   size: _isPrimary ? 22 : 18,
                 );
               },
@@ -760,8 +765,7 @@ class _ActionCardContent extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color:
-                      enabled ? data.accentColor : SixMobilePalette.mutedText,
+                  color: enabled ? data.accentColor : colors.mutedText,
                   fontSize: titleSize,
                   height: 1.08,
                   fontWeight: FontWeight.w900,
@@ -774,7 +778,7 @@ class _ActionCardContent extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: SixMobilePalette.mutedText,
+                  color: colors.mutedText,
                   fontSize: subtitleSize,
                   height: 1.12,
                   fontWeight: FontWeight.w600,
@@ -809,6 +813,7 @@ class _ActionIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     if (!enabled && statusLabel != null && statusLabel!.isNotEmpty) {
       return _SoonChip(label: statusLabel!, compact: compact);
     }
@@ -824,7 +829,7 @@ class _ActionIndicator extends StatelessWidget {
         ),
         child: Icon(
           enabled ? Icons.arrow_forward_rounded : Icons.lock_outline_rounded,
-          color: enabled ? accentColor : SixMobilePalette.mutedText,
+          color: enabled ? accentColor : colors.mutedText,
           size: compact ? 13 : 15,
         ),
       ),
@@ -841,8 +846,8 @@ class _ActionCounterBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return ExcludeSemantics(
       child: Container(
-        constraints: const BoxConstraints(minWidth: 20),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        constraints: BoxConstraints(minWidth: 20),
+        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
         decoration: BoxDecoration(
           color: SixMobilePalette.notificationBadge,
           borderRadius: BorderRadius.circular(999),
@@ -851,7 +856,7 @@ class _ActionCounterBadge extends StatelessWidget {
         child: Text(
           value,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             color: SixMobilePalette.onPrimary,
             fontSize: 10,
             height: 1,
@@ -871,6 +876,7 @@ class _SoonChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: compact ? 70 : 118),
       child: Container(
@@ -879,9 +885,9 @@ class _SoonChip extends StatelessWidget {
           vertical: compact ? 5 : 6,
         ),
         decoration: BoxDecoration(
-          color: SixMobilePalette.mutedText.withAlpha(18),
+          color: colors.mutedText.withAlpha(18),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: SixMobilePalette.mutedText.withAlpha(35)),
+          border: Border.all(color: colors.mutedText.withAlpha(35)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -889,7 +895,7 @@ class _SoonChip extends StatelessWidget {
             Icon(
               Icons.lock_outline_rounded,
               size: compact ? 10 : 12,
-              color: SixMobilePalette.mutedText,
+              color: colors.mutedText,
             ),
             SizedBox(width: compact ? 3 : 5),
             Flexible(
@@ -898,7 +904,7 @@ class _SoonChip extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: SixMobilePalette.mutedText,
+                  color: colors.mutedText,
                   fontSize: compact ? 9 : 11,
                   height: 1,
                   fontWeight: FontWeight.w900,

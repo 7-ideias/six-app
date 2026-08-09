@@ -12,8 +12,8 @@ class OperationalProcedureDemoBadge extends StatelessWidget {
       container: true,
       label: label,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 30, maxWidth: 220),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        constraints: BoxConstraints(minHeight: 30, maxWidth: 220),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
           color: SixMobilePalette.softNeutralSurface,
           borderRadius: BorderRadius.circular(999),
@@ -22,18 +22,18 @@ class OperationalProcedureDemoBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Icon(
+            Icon(
               Icons.science_outlined,
               size: 14,
               color: SixMobilePalette.secondary,
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Flexible(
               child: Text(
                 label,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: SixMobilePalette.secondary,
                   fontSize: 11,
                   height: 1.15,
