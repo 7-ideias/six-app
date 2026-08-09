@@ -25,6 +25,7 @@ import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/providers/produtos_list_provider.dart';
+import 'package:sixpos/providers/streak_provider.dart';
 import 'package:sixpos/providers/theme_provider.dart';
 import 'package:sixpos/splash_screen.dart';
 import 'package:flutter/foundation.dart';
@@ -64,6 +65,7 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => ColaboradorAutorizacoesProvider(),
         ),
+        ChangeNotifierProvider(create: (_) => StreakProvider()),
         ChangeNotifierProvider(
           lazy: false,
           create:
