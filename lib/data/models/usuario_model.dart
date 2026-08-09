@@ -385,6 +385,49 @@ extension AgendaFinanceiraStatusWebPreferenciaApi
   }
 }
 
+enum AtendimentosCriadosStatusPagamentoFiltro { todos, emAberto, liquidado }
+
+extension AtendimentosCriadosStatusPagamentoFiltroApi
+    on AtendimentosCriadosStatusPagamentoFiltro {
+  String get codigo {
+    switch (this) {
+      case AtendimentosCriadosStatusPagamentoFiltro.todos:
+        return 'TODOS';
+      case AtendimentosCriadosStatusPagamentoFiltro.emAberto:
+        return 'EM_ABERTO';
+      case AtendimentosCriadosStatusPagamentoFiltro.liquidado:
+        return 'LIQUIDADO';
+    }
+  }
+
+  static AtendimentosCriadosStatusPagamentoFiltro? tryFromCodigo(
+    dynamic value,
+  ) {
+    final String codigo = value?.toString().trim().toUpperCase() ?? '';
+    switch (codigo) {
+      case 'TODOS':
+        return AtendimentosCriadosStatusPagamentoFiltro.todos;
+      case 'EM_ABERTO':
+      case 'ABERTO':
+      case 'PENDENTE':
+        return AtendimentosCriadosStatusPagamentoFiltro.emAberto;
+      case 'LIQUIDADO':
+      case 'PAGO':
+      case 'QUITADO':
+        return AtendimentosCriadosStatusPagamentoFiltro.liquidado;
+      default:
+        return null;
+    }
+  }
+
+  static AtendimentosCriadosStatusPagamentoFiltro fromCodigo(
+    dynamic value,
+    AtendimentosCriadosStatusPagamentoFiltro fallback,
+  ) {
+    return tryFromCodigo(value) ?? fallback;
+  }
+}
+
 class PreferenciasIndividuaisDoUsuarioModel {
   final String idiomaDePreferencia;
   final ModoDeExibicaoUsuario modoDeExibicaoProdutosWeb;
@@ -396,6 +439,9 @@ class PreferenciasIndividuaisDoUsuarioModel {
   final AgendaFinanceiraTipoWebPreferencia agendaFinanceiraTipoWeb;
   final AgendaFinanceiraStatusWebPreferencia agendaFinanceiraStatusWeb;
   final List<String> agendaFinanceiraTipoDePagamentoWeb;
+  final AtendimentosCriadosFiltrosWebPreferencia atendimentosCriadosFiltrosWeb;
+  final AtendimentosCriadosFiltrosMobilePreferencia
+  atendimentosCriadosFiltrosMobile;
 
   PreferenciasIndividuaisDoUsuarioModel({
     this.idiomaDePreferencia = '',
@@ -410,6 +456,9 @@ class PreferenciasIndividuaisDoUsuarioModel {
     AgendaFinanceiraTipoWebPreferencia? agendaFinanceiraTipoWeb,
     AgendaFinanceiraStatusWebPreferencia? agendaFinanceiraStatusWeb,
     List<String>? agendaFinanceiraTipoDePagamentoWeb,
+    AtendimentosCriadosFiltrosWebPreferencia? atendimentosCriadosFiltrosWeb,
+    AtendimentosCriadosFiltrosMobilePreferencia?
+    atendimentosCriadosFiltrosMobile,
   }) : modoDeExibicaoProdutosWeb =
            modoDeExibicaoProdutosWeb ??
            modoDeExibicaoProdutos ??
@@ -436,7 +485,13 @@ class PreferenciasIndividuaisDoUsuarioModel {
            AgendaFinanceiraStatusWebPreferencia.todos,
        agendaFinanceiraTipoDePagamentoWeb = List<String>.unmodifiable(
          _normalizarListaDeStrings(agendaFinanceiraTipoDePagamentoWeb),
-       );
+       ),
+       atendimentosCriadosFiltrosWeb =
+           atendimentosCriadosFiltrosWeb ??
+           AtendimentosCriadosFiltrosWebPreferencia.vazia(),
+       atendimentosCriadosFiltrosMobile =
+           atendimentosCriadosFiltrosMobile ??
+           AtendimentosCriadosFiltrosMobilePreferencia.vazia();
 
   ModoDeExibicaoUsuario get modoDeExibicaoProdutos =>
       kIsWeb ? modoDeExibicaoProdutosWeb : modoDeExibicaoProdutosMobile;
@@ -457,6 +512,10 @@ class PreferenciasIndividuaisDoUsuarioModel {
       agendaFinanceiraTipoWeb: AgendaFinanceiraTipoWebPreferencia.todos,
       agendaFinanceiraStatusWeb: AgendaFinanceiraStatusWebPreferencia.todos,
       agendaFinanceiraTipoDePagamentoWeb: const <String>[],
+      atendimentosCriadosFiltrosWeb:
+          AtendimentosCriadosFiltrosWebPreferencia.vazia(),
+      atendimentosCriadosFiltrosMobile:
+          AtendimentosCriadosFiltrosMobilePreferencia.vazia(),
     );
   }
 
@@ -518,6 +577,14 @@ class PreferenciasIndividuaisDoUsuarioModel {
       agendaFinanceiraTipoDePagamentoWeb: _normalizarListaDeStrings(
         json['agendaFinanceiraTipoDePagamentoWeb'],
       ),
+      atendimentosCriadosFiltrosWeb:
+          AtendimentosCriadosFiltrosWebPreferencia.fromJson(
+            json['atendimentosCriadosFiltrosWeb'],
+          ),
+      atendimentosCriadosFiltrosMobile:
+          AtendimentosCriadosFiltrosMobilePreferencia.fromJson(
+            json['atendimentosCriadosFiltrosMobile'],
+          ),
     );
   }
 
@@ -536,6 +603,9 @@ class PreferenciasIndividuaisDoUsuarioModel {
       'agendaFinanceiraTipoWeb': agendaFinanceiraTipoWeb.codigo,
       'agendaFinanceiraStatusWeb': agendaFinanceiraStatusWeb.codigo,
       'agendaFinanceiraTipoDePagamentoWeb': agendaFinanceiraTipoDePagamentoWeb,
+      'atendimentosCriadosFiltrosWeb': atendimentosCriadosFiltrosWeb.toJson(),
+      'atendimentosCriadosFiltrosMobile':
+          atendimentosCriadosFiltrosMobile.toJson(),
     };
   }
 
@@ -552,6 +622,9 @@ class PreferenciasIndividuaisDoUsuarioModel {
     AgendaFinanceiraTipoWebPreferencia? agendaFinanceiraTipoWeb,
     AgendaFinanceiraStatusWebPreferencia? agendaFinanceiraStatusWeb,
     List<String>? agendaFinanceiraTipoDePagamentoWeb,
+    AtendimentosCriadosFiltrosWebPreferencia? atendimentosCriadosFiltrosWeb,
+    AtendimentosCriadosFiltrosMobilePreferencia?
+    atendimentosCriadosFiltrosMobile,
   }) {
     return PreferenciasIndividuaisDoUsuarioModel(
       idiomaDePreferencia: idiomaDePreferencia ?? this.idiomaDePreferencia,
@@ -586,6 +659,11 @@ class PreferenciasIndividuaisDoUsuarioModel {
       agendaFinanceiraTipoDePagamentoWeb:
           agendaFinanceiraTipoDePagamentoWeb ??
           this.agendaFinanceiraTipoDePagamentoWeb,
+      atendimentosCriadosFiltrosWeb:
+          atendimentosCriadosFiltrosWeb ?? this.atendimentosCriadosFiltrosWeb,
+      atendimentosCriadosFiltrosMobile:
+          atendimentosCriadosFiltrosMobile ??
+          this.atendimentosCriadosFiltrosMobile,
     );
   }
 
@@ -606,5 +684,153 @@ class PreferenciasIndividuaisDoUsuarioModel {
           .toList(growable: false);
     }
     return <String>[];
+  }
+}
+
+class AtendimentosCriadosFiltrosWebPreferencia {
+  const AtendimentosCriadosFiltrosWebPreferencia({
+    this.busca = '',
+    this.dataInicio,
+    this.dataFim,
+    this.tecnicoKey,
+    this.statusKey,
+    this.statusPagamento = AtendimentosCriadosStatusPagamentoFiltro.todos,
+  });
+
+  final String busca;
+  final DateTime? dataInicio;
+  final DateTime? dataFim;
+  final String? tecnicoKey;
+  final String? statusKey;
+  final AtendimentosCriadosStatusPagamentoFiltro statusPagamento;
+
+  factory AtendimentosCriadosFiltrosWebPreferencia.vazia() {
+    return const AtendimentosCriadosFiltrosWebPreferencia();
+  }
+
+  factory AtendimentosCriadosFiltrosWebPreferencia.fromJson(dynamic json) {
+    if (json is! Map<String, dynamic>) {
+      return AtendimentosCriadosFiltrosWebPreferencia.vazia();
+    }
+
+    return AtendimentosCriadosFiltrosWebPreferencia(
+      busca: json['busca']?.toString().trim() ?? '',
+      dataInicio: _dateFromJson(json['dataInicio']),
+      dataFim: _dateFromJson(json['dataFim']),
+      tecnicoKey: _nullableStringFromJson(json['tecnicoKey']),
+      statusKey: _nullableStringFromJson(json['statusKey']),
+      statusPagamento: AtendimentosCriadosStatusPagamentoFiltroApi.fromCodigo(
+        json['statusPagamento'],
+        AtendimentosCriadosStatusPagamentoFiltro.todos,
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      if (busca.trim().isNotEmpty) 'busca': busca.trim(),
+      if (dataInicio != null) 'dataInicio': _dateToJson(dataInicio!),
+      if (dataFim != null) 'dataFim': _dateToJson(dataFim!),
+      if ((tecnicoKey ?? '').trim().isNotEmpty)
+        'tecnicoKey': tecnicoKey!.trim(),
+      if ((statusKey ?? '').trim().isNotEmpty) 'statusKey': statusKey!.trim(),
+      if (statusPagamento != AtendimentosCriadosStatusPagamentoFiltro.todos)
+        'statusPagamento': statusPagamento.codigo,
+    };
+  }
+
+  static DateTime? _dateFromJson(dynamic value) {
+    final String raw = value?.toString().trim() ?? '';
+    if (raw.isEmpty) return null;
+    final DateTime? parsed = DateTime.tryParse(raw);
+    if (parsed == null) return null;
+    return DateTime(parsed.year, parsed.month, parsed.day);
+  }
+
+  static String? _nullableStringFromJson(dynamic value) {
+    final String raw = value?.toString().trim() ?? '';
+    return raw.isEmpty ? null : raw;
+  }
+
+  static String _dateToJson(DateTime value) {
+    final DateTime date = DateTime(value.year, value.month, value.day);
+    final String year = date.year.toString().padLeft(4, '0');
+    final String month = date.month.toString().padLeft(2, '0');
+    final String day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
+}
+
+class AtendimentosCriadosFiltrosMobilePreferencia {
+  const AtendimentosCriadosFiltrosMobilePreferencia({
+    this.busca = '',
+    this.dataInicio,
+    this.dataFim,
+    this.tecnicoKey,
+    this.statusKey,
+    this.statusPagamento = AtendimentosCriadosStatusPagamentoFiltro.todos,
+  });
+
+  final String busca;
+  final DateTime? dataInicio;
+  final DateTime? dataFim;
+  final String? tecnicoKey;
+  final String? statusKey;
+  final AtendimentosCriadosStatusPagamentoFiltro statusPagamento;
+
+  factory AtendimentosCriadosFiltrosMobilePreferencia.vazia() {
+    return const AtendimentosCriadosFiltrosMobilePreferencia();
+  }
+
+  factory AtendimentosCriadosFiltrosMobilePreferencia.fromJson(dynamic json) {
+    if (json is! Map<String, dynamic>) {
+      return AtendimentosCriadosFiltrosMobilePreferencia.vazia();
+    }
+
+    return AtendimentosCriadosFiltrosMobilePreferencia(
+      busca: json['busca']?.toString().trim() ?? '',
+      dataInicio: _dateFromJson(json['dataInicio']),
+      dataFim: _dateFromJson(json['dataFim']),
+      tecnicoKey: _nullableStringFromJson(json['tecnicoKey']),
+      statusKey: _nullableStringFromJson(json['statusKey']),
+      statusPagamento: AtendimentosCriadosStatusPagamentoFiltroApi.fromCodigo(
+        json['statusPagamento'],
+        AtendimentosCriadosStatusPagamentoFiltro.todos,
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      if (busca.trim().isNotEmpty) 'busca': busca.trim(),
+      if (dataInicio != null) 'dataInicio': _dateToJson(dataInicio!),
+      if (dataFim != null) 'dataFim': _dateToJson(dataFim!),
+      if ((tecnicoKey ?? '').trim().isNotEmpty)
+        'tecnicoKey': tecnicoKey!.trim(),
+      if ((statusKey ?? '').trim().isNotEmpty) 'statusKey': statusKey!.trim(),
+      if (statusPagamento != AtendimentosCriadosStatusPagamentoFiltro.todos)
+        'statusPagamento': statusPagamento.codigo,
+    };
+  }
+
+  static DateTime? _dateFromJson(dynamic value) {
+    final String raw = value?.toString().trim() ?? '';
+    if (raw.isEmpty) return null;
+    final DateTime? parsed = DateTime.tryParse(raw);
+    if (parsed == null) return null;
+    return DateTime(parsed.year, parsed.month, parsed.day);
+  }
+
+  static String? _nullableStringFromJson(dynamic value) {
+    final String raw = value?.toString().trim() ?? '';
+    return raw.isEmpty ? null : raw;
+  }
+
+  static String _dateToJson(DateTime value) {
+    final DateTime date = DateTime(value.year, value.month, value.day);
+    final String year = date.year.toString().padLeft(4, '0');
+    final String month = date.month.toString().padLeft(2, '0');
+    final String day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
   }
 }

@@ -28,6 +28,15 @@ void main() {
       await client.atualizarPreferenciasIndividuais(<String, dynamic>{
         'agendaFinanceiraPeriodoWeb': 'ESTE_MES',
         'agendaFinanceiraTipoDePagamentoWeb': <String>['tipo2', 'tipo3'],
+        'atendimentosCriadosFiltrosWeb': <String, dynamic>{
+          'busca': 'cliente teste',
+          'statusKey': 'id:3',
+          'statusPagamento': 'EM_ABERTO',
+        },
+        'atendimentosCriadosFiltrosMobile': <String, dynamic>{
+          'tecnicoKey': 'tecnico-2',
+          'statusPagamento': 'LIQUIDADO',
+        },
       });
 
       expect(capturedRequest.method, 'POST');
@@ -45,6 +54,15 @@ void main() {
       expect(body['payload'], <String, dynamic>{
         'agendaFinanceiraPeriodoWeb': 'ESTE_MES',
         'agendaFinanceiraTipoDePagamentoWeb': <String>['tipo2', 'tipo3'],
+        'atendimentosCriadosFiltrosWeb': <String, dynamic>{
+          'busca': 'cliente teste',
+          'statusKey': 'id:3',
+          'statusPagamento': 'EM_ABERTO',
+        },
+        'atendimentosCriadosFiltrosMobile': <String, dynamic>{
+          'tecnicoKey': 'tecnico-2',
+          'statusPagamento': 'LIQUIDADO',
+        },
       });
     },
   );

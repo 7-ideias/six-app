@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -6,10 +8,13 @@ import 'package:share_plus/share_plus.dart' as sharing;
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/dominio_models.dart';
+import '../../data/models/usuario_model.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
+import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
+import '../../providers/usuario_provider.dart';
 import '../components/web/six_web_recebimento_dialog.dart';
 import 'atendimento_tecnico_editar_dialog.dart';
 import 'atendimentos_tecnicos_web_page.dart';
@@ -38,26 +43,38 @@ class _AtendimentosTecnicosListaWebPageState
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
   final ColaboradorUsuarioApiClient _colaboradorApiClient =
       HttpColaboradorUsuarioApiClient();
+  final UsuarioService _usuarioService = UsuarioService();
+  final UsuarioProvider _usuarioProvider = UsuarioProvider();
   final TextEditingController _buscaController = TextEditingController();
 
   late Future<_ListaAtendimentosState> _future;
+  Timer? _salvarBuscaDebounce;
   bool _alterandoStatus = false;
   bool _gerandoLink = false;
   bool _gerandoLinkStatus = false;
+  bool _aplicandoPreferencias = false;
+  bool _usuarioAlterouFiltros = false;
   DateTime? _dataInicioFiltro;
   DateTime? _dataFimFiltro;
   String? _tecnicoFiltroKey;
-  String? _statusFiltroLabel;
+  String? _statusFiltroKey;
+  AtendimentosCriadosStatusPagamentoFiltro _statusPagamentoFiltro =
+      AtendimentosCriadosStatusPagamentoFiltro.todos;
 
   @override
   void initState() {
     super.initState();
     _future = _carregar();
     _buscaController.addListener(_onBuscaChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _restaurarPreferenciasAtendimentosCriados();
+      await _restaurarPreferenciasAtendimentosCriadosBackend();
+    });
   }
 
   @override
   void dispose() {
+    _salvarBuscaDebounce?.cancel();
     _buscaController.removeListener(_onBuscaChanged);
     _buscaController.dispose();
     super.dispose();
@@ -76,8 +93,94 @@ class _AtendimentosTecnicosListaWebPageState
     );
   }
 
+  Future<void> _restaurarPreferenciasAtendimentosCriados() async {
+    final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+        await _usuarioService.carregarPreferenciasIndividuaisDoCache();
+    if (!mounted || preferencias == null || _usuarioAlterouFiltros) {
+      return;
+    }
+    _aplicarPreferenciasAtendimentosCriados(
+      preferencias.atendimentosCriadosFiltrosWeb,
+    );
+  }
+
+  Future<void> _restaurarPreferenciasAtendimentosCriadosBackend() async {
+    try {
+      if (_usuarioProvider.usuario == null) {
+        await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
+      }
+      final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+          _usuarioProvider.usuario?.preferenciasIndividuaisDoUsuario;
+      if (!mounted || preferencias == null || _usuarioAlterouFiltros) {
+        return;
+      }
+      _aplicarPreferenciasAtendimentosCriados(
+        preferencias.atendimentosCriadosFiltrosWeb,
+      );
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Erro ao restaurar preferencias dos atendimentos criados: '
+        '$error\n$stackTrace',
+      );
+    }
+  }
+
+  void _aplicarPreferenciasAtendimentosCriados(
+    AtendimentosCriadosFiltrosWebPreferencia filtros,
+  ) {
+    _aplicandoPreferencias = true;
+    if (_buscaController.text != filtros.busca) {
+      _buscaController.text = filtros.busca;
+    }
+    setState(() {
+      _dataInicioFiltro = filtros.dataInicio;
+      _dataFimFiltro = filtros.dataFim;
+      _tecnicoFiltroKey = filtros.tecnicoKey;
+      _statusFiltroKey = filtros.statusKey;
+      _statusPagamentoFiltro = filtros.statusPagamento;
+    });
+    _aplicandoPreferencias = false;
+  }
+
+  void _agendarSalvarPreferenciasAtendimentosCriados() {
+    _salvarBuscaDebounce?.cancel();
+    _salvarBuscaDebounce = Timer(
+      const Duration(milliseconds: 450),
+      _salvarPreferenciasAtendimentosCriados,
+    );
+  }
+
+  void _salvarPreferenciasAtendimentosCriados() {
+    _salvarBuscaDebounce?.cancel();
+    final filtros = AtendimentosCriadosFiltrosWebPreferencia(
+      busca: _buscaController.text,
+      dataInicio: _dataInicioFiltro,
+      dataFim: _dataFimFiltro,
+      tecnicoKey: _tecnicoFiltroKey,
+      statusKey: _statusFiltroKey,
+      statusPagamento: _statusPagamentoFiltro,
+    );
+
+    unawaited(
+      _usuarioService
+          .atualizarPreferenciasIndividuais(
+            atendimentosCriadosFiltrosWeb: filtros.toJson(),
+          )
+          .catchError((Object error, StackTrace stackTrace) {
+            debugPrint(
+              'Erro ao salvar preferencias dos atendimentos criados: '
+              '$error\n$stackTrace',
+            );
+          }),
+    );
+  }
+
   void _onBuscaChanged() {
     if (mounted) setState(() {});
+    if (!_aplicandoPreferencias) {
+      _usuarioAlterouFiltros = true;
+      _agendarSalvarPreferenciasAtendimentosCriados();
+    }
   }
 
   bool get _possuiFiltrosAtivos =>
@@ -85,16 +188,24 @@ class _AtendimentosTecnicosListaWebPageState
       _dataInicioFiltro != null ||
       _dataFimFiltro != null ||
       _tecnicoFiltroKey != null ||
-      _statusFiltroLabel != null;
+      _statusFiltroKey != null ||
+      _statusPagamentoFiltro != AtendimentosCriadosStatusPagamentoFiltro.todos;
 
   void _limparFiltros() {
+    _aplicandoPreferencias = true;
+    if (_buscaController.text.isNotEmpty) {
+      _buscaController.clear();
+    }
     setState(() {
       _dataInicioFiltro = null;
       _dataFimFiltro = null;
       _tecnicoFiltroKey = null;
-      _statusFiltroLabel = null;
-      _buscaController.clear();
+      _statusFiltroKey = null;
+      _statusPagamentoFiltro = AtendimentosCriadosStatusPagamentoFiltro.todos;
     });
+    _aplicandoPreferencias = false;
+    _usuarioAlterouFiltros = true;
+    _salvarPreferenciasAtendimentosCriados();
   }
 
   void _recarregar() {
@@ -153,7 +264,8 @@ class _AtendimentosTecnicosListaWebPageState
         _dataInicioFiltro == null ? null : _inicioDoDia(_dataInicioFiltro!);
     final fim = _dataFimFiltro == null ? null : _fimDoDia(_dataFimFiltro!);
     final tecnicoKey = _tecnicoFiltroKey;
-    final statusLabel = _statusFiltroLabel;
+    final statusKey = _statusFiltroKey;
+    final statusPagamento = _statusPagamentoFiltro;
 
     return itens
         .where((atendimento) {
@@ -172,8 +284,11 @@ class _AtendimentosTecnicosListaWebPageState
               _tecnicoKeyAtendimento(atendimento) != tecnicoKey) {
             return false;
           }
-          if (statusLabel != null &&
-              _statusLabel(atendimento, statusOptions) != statusLabel) {
+          if (statusKey != null &&
+              _statusFiltroKeyAtendimento(atendimento) != statusKey) {
+            return false;
+          }
+          if (!_atendimentoPassaStatusPagamento(atendimento, statusPagamento)) {
             return false;
           }
 
@@ -209,6 +324,28 @@ class _AtendimentosTecnicosListaWebPageState
           return texto.contains(termo);
         })
         .toList(growable: false);
+  }
+
+  bool _atendimentoPassaStatusPagamento(
+    AtendimentoTecnicoModel atendimento,
+    AtendimentosCriadosStatusPagamentoFiltro filtro,
+  ) {
+    switch (filtro) {
+      case AtendimentosCriadosStatusPagamentoFiltro.todos:
+        return true;
+      case AtendimentosCriadosStatusPagamentoFiltro.emAberto:
+        return _pagamentoEmAberto(atendimento);
+      case AtendimentosCriadosStatusPagamentoFiltro.liquidado:
+        return _pagamentoLiquidado(atendimento);
+    }
+  }
+
+  bool _pagamentoEmAberto(AtendimentoTecnicoModel atendimento) {
+    return !atendimento.operacaoLiquidada && atendimento.valorEmAberto > 0;
+  }
+
+  bool _pagamentoLiquidado(AtendimentoTecnicoModel atendimento) {
+    return atendimento.operacaoLiquidada || atendimento.valorEmAberto <= 0;
   }
 
   DateTime _inicioDoDia(DateTime value) =>
@@ -285,6 +422,13 @@ class _AtendimentosTecnicosListaWebPageState
     return nome.isEmpty ? 'Sem técnico responsável' : nome;
   }
 
+  String _statusFiltroKeyAtendimento(AtendimentoTecnicoModel atendimento) {
+    if (atendimento.statusId > 0) return 'id:${atendimento.statusId}';
+    final String codigo = atendimento.statusCodigo.trim().toUpperCase();
+    if (codigo.isNotEmpty) return 'codigo:$codigo';
+    return '__sem_status__';
+  }
+
   List<_TecnicoFiltroOption> _tecnicoOptions(
     List<AtendimentoTecnicoModel> atendimentos,
     List<ColaboradorUsuarioResumo> tecnicos,
@@ -337,28 +481,72 @@ class _AtendimentosTecnicosListaWebPageState
     List<AtendimentoTecnicoModel> atendimentos,
     List<DominioOpcaoModel> statusOptions,
   ) {
-    final Map<String, int> counts = <String, int>{};
+    final Map<String, _StatusFiltroOption> options =
+        <String, _StatusFiltroOption>{};
     for (final atendimento in atendimentos) {
+      final key = _statusFiltroKeyAtendimento(atendimento);
       final label = _statusLabel(atendimento, statusOptions);
-      counts[label] = (counts[label] ?? 0) + 1;
+      final current = options[key];
+      options[key] = _StatusFiltroOption(
+        key: key,
+        label: current?.label ?? label,
+        count: (current?.count ?? 0) + 1,
+      );
     }
-    final options = counts.entries
-      .map((entry) => _StatusFiltroOption(label: entry.key, count: entry.value))
-      .toList(growable: false)..sort((a, b) {
+    final sortedOptions = options.values.toList(growable: false)..sort((a, b) {
       final countCompare = b.count.compareTo(a.count);
       if (countCompare != 0) return countCompare;
       return a.label.toLowerCase().compareTo(b.label.toLowerCase());
     });
-    return options;
+    return sortedOptions;
   }
 
   String _statusFiltroDisplayLabel(List<_StatusFiltroOption> options) {
-    final selected = _statusFiltroLabel;
+    final selected = _statusFiltroKey;
     if (selected == null) return 'Todos os status';
     for (final option in options) {
-      if (option.label == selected) return option.label;
+      if (option.key == selected) return option.label;
     }
     return 'Status selecionado';
+  }
+
+  String _statusPagamentoFiltroLabel(
+    AtendimentosCriadosStatusPagamentoFiltro value,
+  ) {
+    switch (value) {
+      case AtendimentosCriadosStatusPagamentoFiltro.todos:
+        return context.t(
+          'atendimentoTecnico.filters.paymentStatus.all',
+          fallback: 'Todos os pagamentos',
+        );
+      case AtendimentosCriadosStatusPagamentoFiltro.emAberto:
+        return context.t(
+          'atendimentoTecnico.filters.paymentStatus.open',
+          fallback: 'Em aberto',
+        );
+      case AtendimentosCriadosStatusPagamentoFiltro.liquidado:
+        return context.t(
+          'atendimentoTecnico.filters.paymentStatus.paid',
+          fallback: 'Liquidado',
+        );
+    }
+  }
+
+  List<_TecnicoFiltroOption> _statusPagamentoFiltroOptions() {
+    return <_TecnicoFiltroOption>[
+      _TecnicoFiltroOption(
+        key: AtendimentosCriadosStatusPagamentoFiltro.emAberto.codigo,
+        label: _statusPagamentoFiltroLabel(
+          AtendimentosCriadosStatusPagamentoFiltro.emAberto,
+        ),
+      ),
+      _TecnicoFiltroOption(
+        key: AtendimentosCriadosStatusPagamentoFiltro.liquidado.codigo,
+        label: _statusPagamentoFiltroLabel(
+          AtendimentosCriadosStatusPagamentoFiltro.liquidado,
+        ),
+      ),
+    ];
   }
 
   String _periodoFiltroLabel() {
@@ -622,9 +810,7 @@ class _AtendimentosTecnicosListaWebPageState
   }
 
   int _totalEmAberto(List<AtendimentoTecnicoModel> atendimentos) =>
-      atendimentos
-          .where((atendimento) => !atendimento.operacaoLiquidada)
-          .length;
+      atendimentos.where(_pagamentoEmAberto).length;
 
   int _totalAssinados(List<AtendimentoTecnicoModel> atendimentos) =>
       atendimentos
@@ -633,7 +819,7 @@ class _AtendimentosTecnicosListaWebPageState
 
   double _valorAberto(List<AtendimentoTecnicoModel> atendimentos) =>
       atendimentos
-          .where((atendimento) => !atendimento.operacaoLiquidada)
+          .where(_pagamentoEmAberto)
           .fold<double>(
             0,
             (total, atendimento) => total + atendimento.valorEmAberto,
@@ -1275,6 +1461,7 @@ class _AtendimentosTecnicosListaWebPageState
                   possuiFiltrosAtivos ? saldoFiltradoHelper : 'Saldo pendente',
               icon: Icons.payments_outlined,
               highlight: true,
+              highlightColor: theme.colorScheme.error,
             ),
           ],
         );
@@ -1291,20 +1478,19 @@ class _AtendimentosTecnicosListaWebPageState
     required String helper,
     required IconData icon,
     bool highlight = false,
+    Color? highlightColor,
   }) {
     final colorScheme = theme.colorScheme;
+    final Color destaque = highlightColor ?? colorScheme.primary;
     return SizedBox(
       width: width,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: highlight ? colorScheme.primary : colorScheme.surface,
+          color: highlight ? destaque : colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color:
-                highlight
-                    ? colorScheme.primary
-                    : colorScheme.outline.withOpacity(0.12),
+            color: highlight ? destaque : colorScheme.outline.withOpacity(0.12),
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
@@ -1438,6 +1624,9 @@ class _AtendimentosTecnicosListaWebPageState
             options: statusFiltroOptions,
             total: atendimentos.length,
           );
+          final filtroStatusPagamento = _statusPagamentoFilterMenu(
+            width: isCompact ? constraints.maxWidth : 230,
+          );
           final limparFiltros =
               _possuiFiltrosAtivos
                   ? OutlinedButton.icon(
@@ -1503,7 +1692,7 @@ class _AtendimentosTecnicosListaWebPageState
 
           final bool useWrappedFilters =
               isCompact ||
-              constraints.maxWidth < (_possuiFiltrosAtivos ? 1480 : 1320);
+              constraints.maxWidth < (_possuiFiltrosAtivos ? 1710 : 1550);
 
           if (useWrappedFilters) {
             return Wrap(
@@ -1515,6 +1704,7 @@ class _AtendimentosTecnicosListaWebPageState
                 filtroData,
                 filtroTecnico,
                 filtroStatus,
+                filtroStatusPagamento,
                 if (limparFiltros != null) limparFiltros,
                 if (!isCompact) auditoria,
               ],
@@ -1531,6 +1721,8 @@ class _AtendimentosTecnicosListaWebPageState
               filtroTecnico,
               const SizedBox(width: 12),
               filtroStatus,
+              const SizedBox(width: 12),
+              filtroStatusPagamento,
               const SizedBox(width: 12),
               if (limparFiltros != null) ...<Widget>[
                 limparFiltros,
@@ -1560,6 +1752,8 @@ class _AtendimentosTecnicosListaWebPageState
       _dataInicioFiltro = result.dataInicio;
       _dataFimFiltro = result.dataFim;
     });
+    _usuarioAlterouFiltros = true;
+    _salvarPreferenciasAtendimentosCriados();
   }
 
   Widget _filterTrigger(
@@ -1656,6 +1850,8 @@ class _AtendimentosTecnicosListaWebPageState
         setState(() {
           _tecnicoFiltroKey = value == _todosTecnicosKey ? null : value;
         });
+        _usuarioAlterouFiltros = true;
+        _salvarPreferenciasAtendimentosCriados();
       },
     );
   }
@@ -1670,14 +1866,57 @@ class _AtendimentosTecnicosListaWebPageState
       label: 'Status',
       displayValue: _statusFiltroDisplayLabel(options),
       tooltip: 'Filtrar por status',
-      selectedLabel: _statusFiltroLabel,
+      selectedKey: _statusFiltroKey,
       todosKey: _todosStatusKey,
       total: total,
       options: options,
       onChanged: (value) {
         setState(() {
-          _statusFiltroLabel = value == _todosStatusKey ? null : value;
+          _statusFiltroKey = value == _todosStatusKey ? null : value;
         });
+        _usuarioAlterouFiltros = true;
+        _salvarPreferenciasAtendimentosCriados();
+      },
+    );
+  }
+
+  Widget _statusPagamentoFilterMenu({required double width}) {
+    final String todosKey =
+        AtendimentosCriadosStatusPagamentoFiltro.todos.codigo;
+    return _TecnicoFiltroDropdown(
+      width: width,
+      label: context.t(
+        'atendimentoTecnico.filters.paymentStatus.label',
+        fallback: 'Status pagamento',
+      ),
+      displayValue: _statusPagamentoFiltroLabel(_statusPagamentoFiltro),
+      tooltip: context.t(
+        'atendimentoTecnico.filters.paymentStatus.tooltip',
+        fallback: 'Filtrar por status do pagamento',
+      ),
+      icon: Icons.account_balance_wallet_outlined,
+      selectedKey:
+          _statusPagamentoFiltro ==
+                  AtendimentosCriadosStatusPagamentoFiltro.todos
+              ? null
+              : _statusPagamentoFiltro.codigo,
+      todosKey: todosKey,
+      todosLabel: _statusPagamentoFiltroLabel(
+        AtendimentosCriadosStatusPagamentoFiltro.todos,
+      ),
+      todosIcon: Icons.receipt_long_outlined,
+      itemIcon: Icons.account_balance_wallet_outlined,
+      options: _statusPagamentoFiltroOptions(),
+      onChanged: (value) {
+        setState(() {
+          _statusPagamentoFiltro =
+              AtendimentosCriadosStatusPagamentoFiltroApi.fromCodigo(
+                value,
+                AtendimentosCriadosStatusPagamentoFiltro.todos,
+              );
+        });
+        _usuarioAlterouFiltros = true;
+        _salvarPreferenciasAtendimentosCriados();
       },
     );
   }
@@ -1690,7 +1929,7 @@ class _AtendimentosTecnicosListaWebPageState
   ) {
     final statusTexto = _statusLabel(atendimento, status);
     final colorScheme = theme.colorScheme;
-    final bool pendente = !atendimento.operacaoLiquidada;
+    final bool pagamentoAberto = _pagamentoEmAberto(atendimento);
     final bool entregaAtrasada = _entregaAtrasada(atendimento);
     final clienteSnapshot = atendimento.nomeClienteSnapshot?.trim() ?? '';
     final String cliente =
@@ -1733,11 +1972,13 @@ class _AtendimentosTecnicosListaWebPageState
                     const SizedBox(width: 10),
                     _coloredChip(
                       theme,
-                      pendente ? 'Financeiro aberto' : 'Financeiro liquidado',
-                      pendente
+                      pagamentoAberto
+                          ? 'Financeiro aberto'
+                          : 'Financeiro liquidado',
+                      pagamentoAberto
                           ? Icons.account_balance_wallet_outlined
                           : Icons.price_check_rounded,
-                      pendente ? colorScheme.error : colorScheme.primary,
+                      pagamentoAberto ? colorScheme.error : colorScheme.primary,
                     ),
                   ],
                 ],
@@ -1770,9 +2011,9 @@ class _AtendimentosTecnicosListaWebPageState
                 runSpacing: 8,
                 children: <Widget>[
                   if (isCompact)
-                    atendimento.operacaoLiquidada
-                        ? _liquidadaChip(theme)
-                        : _naoLiquidadaChip(theme),
+                    pagamentoAberto
+                        ? _naoLiquidadaChip(theme)
+                        : _liquidadaChip(theme),
                   if (atendimento.assinaturaAprovada) _signedChip(theme),
                   if (atendimento.requerNovaAssinatura)
                     _pendingSignatureChip(theme),
@@ -1804,12 +2045,14 @@ class _AtendimentosTecnicosListaWebPageState
                     _formatarMoeda(atendimento.valorTotalAtendimento),
                     Icons.payments_outlined,
                   ),
-                  _metricChip(
-                    theme,
-                    'Aberto',
-                    _formatarMoeda(atendimento.valorEmAberto),
-                    Icons.account_balance_wallet_outlined,
-                  ),
+                  if (atendimento.valorEmAberto > 0)
+                    _metricChip(
+                      theme,
+                      'Aberto',
+                      _formatarMoeda(atendimento.valorEmAberto),
+                      Icons.account_balance_wallet_outlined,
+                      emphasisColor: colorScheme.error,
+                    ),
                   _chip(
                     theme,
                     'Atualização ${_formatarDataCurta(atendimento.dataAtualizacao)}',
@@ -2548,32 +2791,42 @@ class _AtendimentosTecnicosListaWebPageState
     ThemeData theme,
     String label,
     String value,
-    IconData icon,
-  ) {
+    IconData icon, {
+    Color? emphasisColor,
+  }) {
     final colorScheme = theme.colorScheme;
+    final Color? destaque = emphasisColor;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: destaque?.withValues(alpha: 0.08) ?? colorScheme.surface,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(
+          color:
+              destaque?.withValues(alpha: 0.30) ??
+              colorScheme.outline.withValues(alpha: 0.12),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
+          Icon(icon, size: 14, color: destaque ?? colorScheme.onSurfaceVariant),
           const SizedBox(width: 6),
           Text(
             '$label ',
             style: TextStyle(
-              color: colorScheme.onSurfaceVariant,
+              color: destaque ?? colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w700,
               fontSize: 12,
             ),
           ),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
+            style: TextStyle(
+              color: destaque,
+              fontWeight: FontWeight.w900,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
@@ -3595,6 +3848,9 @@ class _TecnicoFiltroDropdown extends StatefulWidget {
     required this.todosKey,
     required this.options,
     required this.onChanged,
+    this.todosLabel = 'Todos os técnicos',
+    this.todosIcon = Icons.groups_2_outlined,
+    this.itemIcon = Icons.engineering_outlined,
   });
 
   final double width;
@@ -3606,6 +3862,9 @@ class _TecnicoFiltroDropdown extends StatefulWidget {
   final String todosKey;
   final List<_TecnicoFiltroOption> options;
   final ValueChanged<String> onChanged;
+  final String todosLabel;
+  final IconData todosIcon;
+  final IconData itemIcon;
 
   @override
   State<_TecnicoFiltroDropdown> createState() => _TecnicoFiltroDropdownState();
@@ -3650,8 +3909,8 @@ class _TecnicoFiltroDropdownState extends State<_TecnicoFiltroDropdown> {
           height: 48,
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           child: _TecnicoFiltroMenuItem(
-            label: 'Todos os técnicos',
-            icon: Icons.groups_2_outlined,
+            label: widget.todosLabel,
+            icon: widget.todosIcon,
             selected: widget.selectedKey == null,
             colorScheme: theme.colorScheme,
           ),
@@ -3664,7 +3923,7 @@ class _TecnicoFiltroDropdownState extends State<_TecnicoFiltroDropdown> {
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             child: _TecnicoFiltroMenuItem(
               label: option.label,
-              icon: Icons.engineering_outlined,
+              icon: widget.itemIcon,
               selected: widget.selectedKey == option.key,
               colorScheme: theme.colorScheme,
             ),
@@ -3850,7 +4109,7 @@ class _StatusFiltroDropdown extends StatefulWidget {
     required this.label,
     required this.displayValue,
     required this.tooltip,
-    required this.selectedLabel,
+    required this.selectedKey,
     required this.todosKey,
     required this.total,
     required this.options,
@@ -3861,7 +4120,7 @@ class _StatusFiltroDropdown extends StatefulWidget {
   final String label;
   final String displayValue;
   final String tooltip;
-  final String? selectedLabel;
+  final String? selectedKey;
   final String todosKey;
   final int total;
   final List<_StatusFiltroOption> options;
@@ -3912,20 +4171,20 @@ class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
           child: _TecnicoFiltroMenuItem(
             label: 'Todos os status (${widget.total})',
             icon: Icons.flag_outlined,
-            selected: widget.selectedLabel == null,
+            selected: widget.selectedKey == null,
             colorScheme: theme.colorScheme,
           ),
         ),
         if (widget.options.isNotEmpty) const PopupMenuDivider(height: 8),
         ...widget.options.map(
           (option) => PopupMenuItem<String>(
-            value: option.label,
+            value: option.key,
             height: 48,
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             child: _TecnicoFiltroMenuItem(
               label: '${option.label} (${option.count})',
               icon: Icons.flag_outlined,
-              selected: widget.selectedLabel == option.label,
+              selected: widget.selectedKey == option.key,
               colorScheme: theme.colorScheme,
             ),
           ),
@@ -3935,7 +4194,7 @@ class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
 
     if (!mounted) return;
     setState(() => _opened = false);
-    final currentKey = widget.selectedLabel ?? widget.todosKey;
+    final currentKey = widget.selectedKey ?? widget.todosKey;
     if (selected != null && selected != currentKey) widget.onChanged(selected);
   }
 
@@ -3943,7 +4202,7 @@ class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final bool active = widget.selectedLabel != null;
+    final bool active = widget.selectedKey != null;
     final bool emphasized = _opened || _hovered || active;
     return SizedBox(
       key: _fieldKey,
@@ -4056,8 +4315,13 @@ class _TecnicoFiltroOption {
 }
 
 class _StatusFiltroOption {
-  const _StatusFiltroOption({required this.label, required this.count});
+  const _StatusFiltroOption({
+    required this.key,
+    required this.label,
+    required this.count,
+  });
 
+  final String key;
   final String label;
   final int count;
 }

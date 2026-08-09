@@ -74,5 +74,87 @@ void main() {
         ]),
       );
     });
+
+    test('serializa e desserializa filtros web de atendimentos criados', () {
+      final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+        const <String, dynamic>{
+          'atendimentosCriadosFiltrosWeb': <String, dynamic>{
+            'busca': 'cliente teste',
+            'dataInicio': '2026-08-01',
+            'dataFim': '2026-08-09',
+            'tecnicoKey': 'tecnico-1',
+            'statusKey': 'id:3',
+            'statusPagamento': 'EM_ABERTO',
+          },
+        },
+      );
+
+      final filtros = preferencias.atendimentosCriadosFiltrosWeb;
+
+      expect(filtros.busca, 'cliente teste');
+      expect(filtros.dataInicio, DateTime(2026, 8, 1));
+      expect(filtros.dataFim, DateTime(2026, 8, 9));
+      expect(filtros.tecnicoKey, 'tecnico-1');
+      expect(filtros.statusKey, 'id:3');
+      expect(
+        filtros.statusPagamento,
+        AtendimentosCriadosStatusPagamentoFiltro.emAberto,
+      );
+      expect(filtros.toJson(), <String, dynamic>{
+        'busca': 'cliente teste',
+        'dataInicio': '2026-08-01',
+        'dataFim': '2026-08-09',
+        'tecnicoKey': 'tecnico-1',
+        'statusKey': 'id:3',
+        'statusPagamento': 'EM_ABERTO',
+      });
+      expect(
+        PreferenciasIndividuaisDoUsuarioModel.fromJson(
+          const <String, dynamic>{},
+        ).atendimentosCriadosFiltrosWeb.toJson(),
+        isEmpty,
+      );
+    });
+
+    test('serializa e desserializa filtros mobile de atendimentos criados', () {
+      final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+        const <String, dynamic>{
+          'atendimentosCriadosFiltrosMobile': <String, dynamic>{
+            'busca': 'equipamento teste',
+            'dataInicio': '2026-08-02',
+            'dataFim': '2026-08-08',
+            'tecnicoKey': 'tecnico-2',
+            'statusKey': 'codigo:REPAIRING',
+            'statusPagamento': 'LIQUIDADO',
+          },
+        },
+      );
+
+      final filtros = preferencias.atendimentosCriadosFiltrosMobile;
+
+      expect(filtros.busca, 'equipamento teste');
+      expect(filtros.dataInicio, DateTime(2026, 8, 2));
+      expect(filtros.dataFim, DateTime(2026, 8, 8));
+      expect(filtros.tecnicoKey, 'tecnico-2');
+      expect(filtros.statusKey, 'codigo:REPAIRING');
+      expect(
+        filtros.statusPagamento,
+        AtendimentosCriadosStatusPagamentoFiltro.liquidado,
+      );
+      expect(filtros.toJson(), <String, dynamic>{
+        'busca': 'equipamento teste',
+        'dataInicio': '2026-08-02',
+        'dataFim': '2026-08-08',
+        'tecnicoKey': 'tecnico-2',
+        'statusKey': 'codigo:REPAIRING',
+        'statusPagamento': 'LIQUIDADO',
+      });
+      expect(
+        PreferenciasIndividuaisDoUsuarioModel.fromJson(
+          const <String, dynamic>{},
+        ).atendimentosCriadosFiltrosMobile.toJson(),
+        isEmpty,
+      );
+    });
   });
 }

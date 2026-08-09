@@ -77,6 +77,8 @@ class UsuarioService {
     String? agendaFinanceiraTipoWeb,
     String? agendaFinanceiraStatusWeb,
     List<String>? agendaFinanceiraTipoDePagamentoWeb,
+    Map<String, dynamic>? atendimentosCriadosFiltrosWeb,
+    Map<String, dynamic>? atendimentosCriadosFiltrosMobile,
   }) async {
     final Map<String, dynamic> body = <String, dynamic>{};
     if (idiomaDePreferencia != null) {
@@ -119,6 +121,13 @@ class UsuarioService {
     if (agendaFinanceiraTipoDePagamentoWeb != null) {
       body['agendaFinanceiraTipoDePagamentoWeb'] =
           agendaFinanceiraTipoDePagamentoWeb;
+    }
+    if (atendimentosCriadosFiltrosWeb != null) {
+      body['atendimentosCriadosFiltrosWeb'] = atendimentosCriadosFiltrosWeb;
+    }
+    if (atendimentosCriadosFiltrosMobile != null) {
+      body['atendimentosCriadosFiltrosMobile'] =
+          atendimentosCriadosFiltrosMobile;
     }
 
     if (body.isEmpty) {
