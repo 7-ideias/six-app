@@ -76,6 +76,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.copy': 'Copiar',
     'common.share': 'Compartilhar',
     'common.number': 'Número',
+    'common.all': 'Todos',
     'common.customer': 'Cliente',
     'common.updatedAt': 'Atualizado em',
     'common.lastUpdatedAt': 'Última atualização às',
@@ -211,10 +212,51 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.mobile.emptyTitle': 'Nenhum atendimento encontrado',
     'atendimentoTecnico.mobile.emptyMessage':
         'Tente buscar por cliente, equipamento, status ou número.',
+    'atendimentoTecnico.mobile.emptyFilteredMessage':
+        'Nenhum atendimento encontrado com os filtros selecionados.',
     'atendimentoTecnico.mobile.errorTitle':
         'Não foi possível carregar os atendimentos',
     'atendimentoTecnico.mobile.recentSection': 'Atendimentos recentes',
     'atendimentoTecnico.mobile.filteredSection': 'Resultado do filtro',
+    'atendimentoTecnico.mobile.searchHint':
+        'Buscar por cliente, status, equipamento ou número',
+    'atendimentoTecnico.mobile.advancedFilters': 'Filtros avançados',
+    'atendimentoTecnico.mobile.advancedFiltersActive':
+        'Filtros avançados ativos',
+    'atendimentoTecnico.mobile.clearFilters': 'Limpar filtros',
+    'atendimentoTecnico.mobile.sortRecent': 'Mais recentes',
+    'atendimentoTecnico.mobile.resultCountOne': '1 atendimento',
+    'atendimentoTecnico.mobile.resultCountMany': '{count} atendimentos',
+    'atendimentoTecnico.mobile.periodSummaryTitle': 'Resumo do período',
+    'atendimentoTecnico.mobile.summaryServiceOne': 'atendimento',
+    'atendimentoTecnico.mobile.summaryServiceMany': 'atendimentos',
+    'atendimentoTecnico.mobile.summaryOpenOne': 'em aberto',
+    'atendimentoTecnico.mobile.summaryOpenMany': 'em aberto',
+    'atendimentoTecnico.mobile.summarySignedOne': 'assinado',
+    'atendimentoTecnico.mobile.summarySignedMany': 'assinados',
+    'atendimentoTecnico.mobile.summaryOpenValue': '{value} em aberto',
+    'atendimentoTecnico.mobile.summaryOpenValueCaption': 'em aberto',
+    'atendimentoTecnico.mobile.filterSheetTitle': 'Filtrar atendimentos',
+    'atendimentoTecnico.mobile.filterPeriod': 'Período',
+    'atendimentoTecnico.mobile.filterPaymentStatus': 'Status do pagamento',
+    'atendimentoTecnico.mobile.filterDate': 'Data',
+    'atendimentoTecnico.mobile.filterStartDate': 'Início',
+    'atendimentoTecnico.mobile.filterEndDate': 'Fim',
+    'atendimentoTecnico.mobile.dateToday': 'Hoje',
+    'atendimentoTecnico.mobile.dateAll': 'Todas as datas',
+    'atendimentoTecnico.mobile.dateRange': '{start} até {end}',
+    'atendimentoTecnico.mobile.dateFrom': 'A partir de {date}',
+    'atendimentoTecnico.mobile.dateUntil': 'Até {date}',
+    'atendimentoTecnico.mobile.dateLast7Days': 'Últimos 7 dias',
+    'atendimentoTecnico.mobile.dateNext7Days': 'Próximos 7 dias',
+    'atendimentoTecnico.mobile.dateOverdue': 'Vencidos',
+    'atendimentoTecnico.mobile.filterTechnician': 'Técnico responsável',
+    'atendimentoTecnico.mobile.searchTechnician': 'Buscar técnico',
+    'atendimentoTecnico.mobile.allTechnicians': 'Todos os técnicos',
+    'atendimentoTecnico.mobile.selectedTechnician': 'Técnico selecionado',
+    'atendimentoTecnico.mobile.noTechnicianFound': 'Nenhum técnico encontrado.',
+    'atendimentoTecnico.mobile.viewOneService': 'Ver 1 atendimento',
+    'atendimentoTecnico.mobile.viewManyServices': 'Ver {count} atendimentos',
     'atendimentoTecnico.mobile.waitingApprovalTitle':
         'Orçamentos aguardando aprovação',
     'atendimentoTecnico.mobile.waitingApprovalDescription':
@@ -236,6 +278,12 @@ const Map<String, Map<String, String>> _fallbacks = {
     'technicalService.status.waitingCustomerAproval':
         'Aguardando aprovação do cliente',
     'atendimentoTecnico.mobile.sharePdfTooltip': 'Compartilhar atendimento',
+    'atendimentoTecnico.mobile.pdfSectionTitle': 'Documento do atendimento',
+    'atendimentoTecnico.mobile.pdfSectionDescription':
+        'PDF pronto para enviar ao cliente com os dados do atendimento.',
+    'atendimentoTecnico.mobile.pdfSectionGenerating':
+        'Preparando o PDF para compartilhamento.',
+    'atendimentoTecnico.mobile.sharePdfAction': 'Compartilhar PDF',
     'atendimentoTecnico.mobile.pdfLoadingTitle': 'Gerando PDF do atendimento',
     'atendimentoTecnico.mobile.pdfLoadingSubtitle':
         'Aguarde enquanto o documento é preparado.',
@@ -255,11 +303,48 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Não foi possível gerar o PDF do atendimento.',
     'atendimentoTecnico.mobile.publicStatusDescription':
         'Visível para o cliente no link de acompanhamento.',
+    'atendimentoTecnico.publicStatus.shareLinkAction': 'Compartilhar link',
     'atendimentoTecnico.mobile.paymentOpen': 'Financeiro aberto',
     'atendimentoTecnico.mobile.paymentSettled': 'Financeiro liquidado',
     'atendimentoTecnico.mobile.signed': 'Assinado',
     'atendimentoTecnico.mobile.signaturePending': 'Assinatura pendente',
+    'atendimentoTecnico.customerNotSigned': 'Cliente não assinou',
+    'atendimentoTecnico.mobile.customerNotSigned': 'Cliente não assinou',
     'atendimentoTecnico.mobile.deliveryLate': 'Entrega atrasada',
+    'atendimentoTecnico.signatureGate.title': 'Assinatura necessária',
+    'atendimentoTecnico.signatureGate.message':
+        'Para avançar para {status}, envie o link de assinatura ao cliente, assine neste dispositivo ou registre o bypass.',
+    'atendimentoTecnico.signatureGate.sendLink': 'Enviar link ao cliente',
+    'atendimentoTecnico.signatureGate.signHere': 'Assinar neste dispositivo',
+    'atendimentoTecnico.signatureGate.bypass': 'Avançar sem assinatura',
+    'atendimentoTecnico.signatureGate.deviceTitle': 'Coletar assinatura',
+    'atendimentoTecnico.signatureGate.deviceMessage':
+        'Registre a assinatura para avançar para {status}.',
+    'atendimentoTecnico.signatureGate.deviceSigner': 'Nome de quem assina',
+    'atendimentoTecnico.signatureGate.deviceDocument': 'Documento opcional',
+    'atendimentoTecnico.signatureGate.deviceSignatureField': 'Assinatura',
+    'atendimentoTecnico.signatureGate.deviceObservation': 'Observação opcional',
+    'atendimentoTecnico.signatureGate.deviceSave': 'Registrar assinatura',
+    'atendimentoTecnico.signatureGate.deviceSignerRequired':
+        'Informe o nome de quem está assinando.',
+    'atendimentoTecnico.signatureGate.deviceSignatureRequired':
+        'Faça a assinatura no quadro indicado.',
+    'atendimentoTecnico.signatureGate.deviceSignatureSaved':
+        'Assinatura registrada e status atualizado.',
+    'atendimentoTecnico.signatureGate.deviceSignatureError':
+        'Não foi possível registrar a assinatura',
+    'atendimentoTecnico.signatureGate.publicUrlMissing':
+        'URL pública do aplicativo não configurada.',
+    'atendimentoTecnico.signatureGate.linkMissing':
+        'Link de assinatura não retornado pelo backend.',
+    'atendimentoTecnico.signatureGate.linkCopied':
+        'Link de assinatura copiado.',
+    'atendimentoTecnico.signatureGate.linkError':
+        'Não foi possível gerar o link de assinatura',
+    'atendimentoTecnico.signatureGate.shareMessage':
+        'Para aprovar o atendimento, assine pelo link abaixo:',
+    'atendimentoTecnico.signatureGate.shareSubject':
+        'Assinatura do atendimento',
     'atendimentoTecnico.mobile.valorOriginal': 'Valor original',
     'atendimentoTecnico.mobile.valorJaRecebido': 'Valor já recebido',
     'atendimentoTecnico.mobile.valorEmAberto': 'Valor em aberto',
@@ -1019,6 +1104,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.copy': 'Copy',
     'common.share': 'Share',
     'common.number': 'Number',
+    'common.all': 'All',
     'common.customer': 'Customer',
     'common.updatedAt': 'Updated at',
     'common.lastUpdatedAt': 'Last updated at',
@@ -1136,7 +1222,54 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.publicStatus.signatureLinkError':
         'Could not open the signature.',
     'atendimentoTecnico.mobile.loading': 'Loading technical services',
+    'atendimentoTecnico.mobile.emptyFilteredMessage':
+        'No services found with the selected filters.',
+    'atendimentoTecnico.mobile.searchHint':
+        'Search by customer, status, equipment, or number',
+    'atendimentoTecnico.mobile.advancedFilters': 'Advanced filters',
+    'atendimentoTecnico.mobile.advancedFiltersActive':
+        'Active advanced filters',
+    'atendimentoTecnico.mobile.clearFilters': 'Clear filters',
+    'atendimentoTecnico.mobile.sortRecent': 'Most recent',
+    'atendimentoTecnico.mobile.resultCountOne': '1 service',
+    'atendimentoTecnico.mobile.resultCountMany': '{count} services',
+    'atendimentoTecnico.mobile.periodSummaryTitle': 'Period summary',
+    'atendimentoTecnico.mobile.summaryServiceOne': 'service',
+    'atendimentoTecnico.mobile.summaryServiceMany': 'services',
+    'atendimentoTecnico.mobile.summaryOpenOne': 'open',
+    'atendimentoTecnico.mobile.summaryOpenMany': 'open',
+    'atendimentoTecnico.mobile.summarySignedOne': 'signed',
+    'atendimentoTecnico.mobile.summarySignedMany': 'signed',
+    'atendimentoTecnico.mobile.summaryOpenValue': '{value} open',
+    'atendimentoTecnico.mobile.summaryOpenValueCaption': 'open',
+    'atendimentoTecnico.mobile.filterSheetTitle': 'Filter services',
+    'atendimentoTecnico.mobile.filterPeriod': 'Period',
+    'atendimentoTecnico.mobile.filterPaymentStatus': 'Payment status',
+    'atendimentoTecnico.mobile.filterDate': 'Date',
+    'atendimentoTecnico.mobile.filterStartDate': 'Start',
+    'atendimentoTecnico.mobile.filterEndDate': 'End',
+    'atendimentoTecnico.mobile.dateToday': 'Today',
+    'atendimentoTecnico.mobile.dateAll': 'All dates',
+    'atendimentoTecnico.mobile.dateRange': '{start} to {end}',
+    'atendimentoTecnico.mobile.dateFrom': 'From {date}',
+    'atendimentoTecnico.mobile.dateUntil': 'Until {date}',
+    'atendimentoTecnico.mobile.dateLast7Days': 'Last 7 days',
+    'atendimentoTecnico.mobile.dateNext7Days': 'Next 7 days',
+    'atendimentoTecnico.mobile.dateOverdue': 'Overdue',
+    'atendimentoTecnico.mobile.filterTechnician': 'Responsible technician',
+    'atendimentoTecnico.mobile.searchTechnician': 'Search technician',
+    'atendimentoTecnico.mobile.allTechnicians': 'All technicians',
+    'atendimentoTecnico.mobile.selectedTechnician': 'Selected technician',
+    'atendimentoTecnico.mobile.noTechnicianFound': 'No technician found.',
+    'atendimentoTecnico.mobile.viewOneService': 'View 1 service',
+    'atendimentoTecnico.mobile.viewManyServices': 'View {count} services',
     'atendimentoTecnico.mobile.sharePdfTooltip': 'Share service',
+    'atendimentoTecnico.mobile.pdfSectionTitle': 'Service document',
+    'atendimentoTecnico.mobile.pdfSectionDescription':
+        'PDF ready to send to the customer with the service details.',
+    'atendimentoTecnico.mobile.pdfSectionGenerating':
+        'Preparing the PDF for sharing.',
+    'atendimentoTecnico.mobile.sharePdfAction': 'Share PDF',
     'atendimentoTecnico.mobile.pdfLoadingTitle': 'Generating service PDF',
     'atendimentoTecnico.mobile.pdfLoadingSubtitle':
         'Please wait while the document is prepared.',
@@ -1154,11 +1287,46 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Could not generate the service PDF.',
     'atendimentoTecnico.mobile.publicStatusDescription':
         'Visible to the customer in the tracking link.',
+    'atendimentoTecnico.publicStatus.shareLinkAction': 'Share link',
     'atendimentoTecnico.mobile.paymentOpen': 'Open financial balance',
     'atendimentoTecnico.mobile.paymentSettled': 'Financial balance settled',
     'atendimentoTecnico.mobile.signed': 'Signed',
     'atendimentoTecnico.mobile.signaturePending': 'Signature pending',
+    'atendimentoTecnico.customerNotSigned': 'Customer has not signed',
+    'atendimentoTecnico.mobile.customerNotSigned': 'Customer has not signed',
     'atendimentoTecnico.mobile.deliveryLate': 'Delivery late',
+    'atendimentoTecnico.signatureGate.title': 'Signature required',
+    'atendimentoTecnico.signatureGate.message':
+        'To move to {status}, send the signature link to the customer, sign on this device, or register the bypass.',
+    'atendimentoTecnico.signatureGate.sendLink': 'Send link to customer',
+    'atendimentoTecnico.signatureGate.signHere': 'Sign on this device',
+    'atendimentoTecnico.signatureGate.bypass': 'Move without signature',
+    'atendimentoTecnico.signatureGate.deviceTitle': 'Collect signature',
+    'atendimentoTecnico.signatureGate.deviceMessage':
+        'Register the signature to move to {status}.',
+    'atendimentoTecnico.signatureGate.deviceSigner': 'Signer name',
+    'atendimentoTecnico.signatureGate.deviceDocument': 'Optional document',
+    'atendimentoTecnico.signatureGate.deviceSignatureField': 'Signature',
+    'atendimentoTecnico.signatureGate.deviceObservation': 'Optional note',
+    'atendimentoTecnico.signatureGate.deviceSave': 'Register signature',
+    'atendimentoTecnico.signatureGate.deviceSignerRequired':
+        'Enter the name of the person signing.',
+    'atendimentoTecnico.signatureGate.deviceSignatureRequired':
+        'Sign in the indicated area.',
+    'atendimentoTecnico.signatureGate.deviceSignatureSaved':
+        'Signature registered and status updated.',
+    'atendimentoTecnico.signatureGate.deviceSignatureError':
+        'Could not register the signature',
+    'atendimentoTecnico.signatureGate.publicUrlMissing':
+        'The public app URL is not configured.',
+    'atendimentoTecnico.signatureGate.linkMissing':
+        'The backend did not return a signature link.',
+    'atendimentoTecnico.signatureGate.linkCopied': 'Signature link copied.',
+    'atendimentoTecnico.signatureGate.linkError':
+        'Could not generate the signature link',
+    'atendimentoTecnico.signatureGate.shareMessage':
+        'To approve the service, sign using the link below:',
+    'atendimentoTecnico.signatureGate.shareSubject': 'Service signature',
     'atendimentoTecnico.mobile.valorOriginal': 'Original amount',
     'atendimentoTecnico.mobile.valorJaRecebido': 'Amount already received',
     'atendimentoTecnico.mobile.valorEmAberto': 'Open amount',
@@ -1866,6 +2034,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.copy': 'Copiar',
     'common.share': 'Compartir',
     'common.number': 'Número',
+    'common.all': 'Todos',
     'common.customer': 'Cliente',
     'common.updatedAt': 'Actualizado el',
     'common.lastUpdatedAt': 'Última actualización a las',
@@ -1992,7 +2161,54 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.publicStatus.signatureLinkError':
         'No se pudo abrir la firma.',
     'atendimentoTecnico.mobile.loading': 'Cargando servicios técnicos',
+    'atendimentoTecnico.mobile.emptyFilteredMessage':
+        'No se encontraron servicios con los filtros seleccionados.',
+    'atendimentoTecnico.mobile.searchHint':
+        'Buscar por cliente, estado, equipo o número',
+    'atendimentoTecnico.mobile.advancedFilters': 'Filtros avanzados',
+    'atendimentoTecnico.mobile.advancedFiltersActive':
+        'Filtros avanzados activos',
+    'atendimentoTecnico.mobile.clearFilters': 'Limpiar filtros',
+    'atendimentoTecnico.mobile.sortRecent': 'Más recientes',
+    'atendimentoTecnico.mobile.resultCountOne': '1 servicio',
+    'atendimentoTecnico.mobile.resultCountMany': '{count} servicios',
+    'atendimentoTecnico.mobile.periodSummaryTitle': 'Resumen del período',
+    'atendimentoTecnico.mobile.summaryServiceOne': 'servicio',
+    'atendimentoTecnico.mobile.summaryServiceMany': 'servicios',
+    'atendimentoTecnico.mobile.summaryOpenOne': 'abierto',
+    'atendimentoTecnico.mobile.summaryOpenMany': 'abiertos',
+    'atendimentoTecnico.mobile.summarySignedOne': 'firmado',
+    'atendimentoTecnico.mobile.summarySignedMany': 'firmados',
+    'atendimentoTecnico.mobile.summaryOpenValue': '{value} abierto',
+    'atendimentoTecnico.mobile.summaryOpenValueCaption': 'abierto',
+    'atendimentoTecnico.mobile.filterSheetTitle': 'Filtrar servicios',
+    'atendimentoTecnico.mobile.filterPeriod': 'Período',
+    'atendimentoTecnico.mobile.filterPaymentStatus': 'Estado del pago',
+    'atendimentoTecnico.mobile.filterDate': 'Fecha',
+    'atendimentoTecnico.mobile.filterStartDate': 'Inicio',
+    'atendimentoTecnico.mobile.filterEndDate': 'Fin',
+    'atendimentoTecnico.mobile.dateToday': 'Hoy',
+    'atendimentoTecnico.mobile.dateAll': 'Todas las fechas',
+    'atendimentoTecnico.mobile.dateRange': '{start} hasta {end}',
+    'atendimentoTecnico.mobile.dateFrom': 'Desde {date}',
+    'atendimentoTecnico.mobile.dateUntil': 'Hasta {date}',
+    'atendimentoTecnico.mobile.dateLast7Days': 'Últimos 7 días',
+    'atendimentoTecnico.mobile.dateNext7Days': 'Próximos 7 días',
+    'atendimentoTecnico.mobile.dateOverdue': 'Vencidos',
+    'atendimentoTecnico.mobile.filterTechnician': 'Técnico responsable',
+    'atendimentoTecnico.mobile.searchTechnician': 'Buscar técnico',
+    'atendimentoTecnico.mobile.allTechnicians': 'Todos los técnicos',
+    'atendimentoTecnico.mobile.selectedTechnician': 'Técnico seleccionado',
+    'atendimentoTecnico.mobile.noTechnicianFound': 'No se encontró técnico.',
+    'atendimentoTecnico.mobile.viewOneService': 'Ver 1 servicio',
+    'atendimentoTecnico.mobile.viewManyServices': 'Ver {count} servicios',
     'atendimentoTecnico.mobile.sharePdfTooltip': 'Compartir servicio',
+    'atendimentoTecnico.mobile.pdfSectionTitle': 'Documento del servicio',
+    'atendimentoTecnico.mobile.pdfSectionDescription':
+        'PDF listo para enviar al cliente con los datos del servicio.',
+    'atendimentoTecnico.mobile.pdfSectionGenerating':
+        'Preparando el PDF para compartir.',
+    'atendimentoTecnico.mobile.sharePdfAction': 'Compartir PDF',
     'atendimentoTecnico.mobile.pdfLoadingTitle': 'Generando PDF del servicio',
     'atendimentoTecnico.mobile.pdfLoadingSubtitle':
         'Espera mientras se prepara el documento.',
@@ -2012,11 +2228,47 @@ const Map<String, Map<String, String>> _fallbacks = {
         'No se pudo generar el PDF del servicio.',
     'atendimentoTecnico.mobile.publicStatusDescription':
         'Visible para el cliente en el link de seguimiento.',
+    'atendimentoTecnico.publicStatus.shareLinkAction': 'Compartir link',
     'atendimentoTecnico.mobile.paymentOpen': 'Financiero abierto',
     'atendimentoTecnico.mobile.paymentSettled': 'Financiero liquidado',
     'atendimentoTecnico.mobile.signed': 'Firmado',
     'atendimentoTecnico.mobile.signaturePending': 'Firma pendiente',
+    'atendimentoTecnico.customerNotSigned': 'Cliente no firmó',
+    'atendimentoTecnico.mobile.customerNotSigned': 'Cliente no firmó',
     'atendimentoTecnico.mobile.deliveryLate': 'Entrega atrasada',
+    'atendimentoTecnico.signatureGate.title': 'Firma necesaria',
+    'atendimentoTecnico.signatureGate.message':
+        'Para avanzar a {status}, envía el link de firma al cliente, firma en este dispositivo o registra el bypass.',
+    'atendimentoTecnico.signatureGate.sendLink': 'Enviar link al cliente',
+    'atendimentoTecnico.signatureGate.signHere': 'Firmar en este dispositivo',
+    'atendimentoTecnico.signatureGate.bypass': 'Avanzar sin firma',
+    'atendimentoTecnico.signatureGate.deviceTitle': 'Recoger firma',
+    'atendimentoTecnico.signatureGate.deviceMessage':
+        'Registra la firma para avanzar a {status}.',
+    'atendimentoTecnico.signatureGate.deviceSigner': 'Nombre de quien firma',
+    'atendimentoTecnico.signatureGate.deviceDocument': 'Documento opcional',
+    'atendimentoTecnico.signatureGate.deviceSignatureField': 'Firma',
+    'atendimentoTecnico.signatureGate.deviceObservation':
+        'Observación opcional',
+    'atendimentoTecnico.signatureGate.deviceSave': 'Registrar firma',
+    'atendimentoTecnico.signatureGate.deviceSignerRequired':
+        'Informa el nombre de quien firma.',
+    'atendimentoTecnico.signatureGate.deviceSignatureRequired':
+        'Firma en el cuadro indicado.',
+    'atendimentoTecnico.signatureGate.deviceSignatureSaved':
+        'Firma registrada y estado actualizado.',
+    'atendimentoTecnico.signatureGate.deviceSignatureError':
+        'No se pudo registrar la firma',
+    'atendimentoTecnico.signatureGate.publicUrlMissing':
+        'La URL pública de la aplicación no está configurada.',
+    'atendimentoTecnico.signatureGate.linkMissing':
+        'El backend no devolvió el link de firma.',
+    'atendimentoTecnico.signatureGate.linkCopied': 'Link de firma copiado.',
+    'atendimentoTecnico.signatureGate.linkError':
+        'No se pudo generar el link de firma',
+    'atendimentoTecnico.signatureGate.shareMessage':
+        'Para aprobar el servicio, firma por el link abajo:',
+    'atendimentoTecnico.signatureGate.shareSubject': 'Firma del servicio',
     'atendimentoTecnico.mobile.valorOriginal': 'Valor original',
     'atendimentoTecnico.mobile.valorJaRecebido': 'Valor ya recibido',
     'atendimentoTecnico.mobile.valorEmAberto': 'Valor abierto',

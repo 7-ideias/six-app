@@ -62,6 +62,7 @@ class AtendimentoTecnicoService {
     required String id,
     required DominioOpcaoModel status,
     String? observacao,
+    bool bypassAssinatura = false,
   }) {
     if (_statusDeCancelamento(status.codigo)) {
       return cancelar(id: id, observacao: observacao);
@@ -73,6 +74,29 @@ class AtendimentoTecnicoService {
       statusCodigo: status.codigo,
       statusI18nKey: status.i18nKey,
       observacao: observacao,
+      bypassAssinatura: bypassAssinatura,
+    );
+  }
+
+  Future<AtendimentoTecnicoModel> assinarNoDispositivo({
+    required String id,
+    required DominioOpcaoModel status,
+    String? observacaoStatus,
+    required String nomeAssinante,
+    String? documentoAssinante,
+    required String assinaturaDataUrl,
+    String? observacaoAssinatura,
+  }) {
+    return _apiClient.assinarNoDispositivo(
+      id: id,
+      statusId: status.id,
+      statusCodigo: status.codigo,
+      statusI18nKey: status.i18nKey,
+      observacaoStatus: observacaoStatus,
+      nomeAssinante: nomeAssinante,
+      documentoAssinante: documentoAssinante,
+      assinaturaDataUrl: assinaturaDataUrl,
+      observacaoAssinatura: observacaoAssinatura,
     );
   }
 

@@ -199,6 +199,7 @@ class AtendimentoTecnicoApiClient {
     required String statusCodigo,
     required String statusI18nKey,
     String? observacao,
+    bool bypassAssinatura = false,
   }) async {
     final response = await _httpClient.patch(
       Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos/$id/status'),
@@ -208,6 +209,45 @@ class AtendimentoTecnicoApiClient {
         'statusCodigo': statusCodigo,
         'statusI18nKey': statusI18nKey,
         'observacao': observacao,
+        'bypassAssinatura': bypassAssinatura,
+      }),
+    );
+    if (response.statusCode != 200) {
+      throw AtendimentoTecnicoApiException(
+        statusCode: response.statusCode,
+        body: _decodeBody(response),
+      );
+    }
+    return AtendimentoTecnicoModel.fromJson(
+      jsonDecode(_decodeBody(response)) as Map<String, dynamic>,
+    );
+  }
+
+  Future<AtendimentoTecnicoModel> assinarNoDispositivo({
+    required String id,
+    required int statusId,
+    required String statusCodigo,
+    required String statusI18nKey,
+    String? observacaoStatus,
+    required String nomeAssinante,
+    String? documentoAssinante,
+    required String assinaturaDataUrl,
+    String? observacaoAssinatura,
+  }) async {
+    final response = await _httpClient.post(
+      Uri.parse(
+        '${AppConfig.baseUrl}/atendimentos-tecnicos/$id/assinatura/dispositivo',
+      ),
+      headers: await _headers(),
+      body: jsonEncode(<String, dynamic>{
+        'statusId': statusId,
+        'statusCodigo': statusCodigo,
+        'statusI18nKey': statusI18nKey,
+        'observacaoStatus': observacaoStatus,
+        'nomeAssinante': nomeAssinante,
+        'documentoAssinante': documentoAssinante,
+        'assinaturaDataUrl': assinaturaDataUrl,
+        'observacaoAssinatura': observacaoAssinatura,
       }),
     );
     if (response.statusCode != 200) {

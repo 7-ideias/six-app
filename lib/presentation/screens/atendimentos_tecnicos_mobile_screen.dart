@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart' as sharing;
+import 'package:signature/signature.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/services/pdf_file_share_service.dart';
@@ -14,6 +16,7 @@ import '../../data/models/usuario_model.dart';
 import '../../data/services/caixa/caixa_api_client.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
+import '../../domain/services/atendimento_tecnico/atendimento_status_signature_policy.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_pdf_share_service.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
@@ -159,11 +162,7 @@ class _AtendimentosTecnicosMobileScreenState
   static Color get _borderColor => SixMobilePalette.activeBorder;
   static Color get _highlightedBorderColor =>
       SixMobilePalette.highlightedBorder;
-  static Color get _onPrimaryColor => SixMobilePalette.onPrimary;
   static Color get _onAccentColor => SixMobilePalette.onAccent;
-  static Color get _heroSupportingTextColor =>
-      SixMobilePalette.heroSupportingText;
-  static Color get _heroShadowColor => SixMobilePalette.heroShadow;
   static Color get _cardShadowColor => SixMobilePalette.navigationShadow;
 
   late final AtendimentoTecnicoService _service;
@@ -175,14 +174,12 @@ class _AtendimentosTecnicosMobileScreenState
 
   late Future<_AtendimentosTecnicosMobileState> _future;
   Timer? _salvarBuscaDebounce;
-  String? _statusSelecionadoKey;
-  DateTime? _dataInicioFiltro;
-  DateTime? _dataFimFiltro;
-  String? _tecnicoFiltroKey;
-  AtendimentosCriadosStatusPagamentoFiltro _statusPagamentoFiltro =
-      AtendimentosCriadosStatusPagamentoFiltro.todos;
+  Timer? _aplicarBuscaDebounce;
+  _AtendimentosTecnicosConsulta _consulta =
+      const _AtendimentosTecnicosConsulta();
   bool _processandoAcao = false;
   bool _gerandoLinkStatus = false;
+  bool _gerandoLinkAssinatura = false;
   bool _aplicandoPreferencias = false;
   bool _usuarioAlterouFiltros = false;
 
@@ -208,6 +205,7 @@ class _AtendimentosTecnicosMobileScreenState
   @override
   void dispose() {
     _salvarBuscaDebounce?.cancel();
+    _aplicarBuscaDebounce?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
@@ -235,6 +233,15 @@ class _AtendimentosTecnicosMobileScreenState
 
   void _onSearchChanged() {
     if (mounted) setState(() {});
+    if (!_aplicandoPreferencias) {
+      _aplicarBuscaDebounce?.cancel();
+      _aplicarBuscaDebounce = Timer(const Duration(milliseconds: 420), () {
+        if (!mounted) return;
+        final String busca = _searchController.text.trim();
+        if (_consulta.busca == busca) return;
+        _aplicarConsulta(_consulta.copyWith(busca: busca));
+      });
+    }
     if (!_aplicandoPreferencias && _permitePreferenciasAtendimentosCriados) {
       _usuarioAlterouFiltros = true;
       _agendarSalvarPreferenciasAtendimentosCriadosMobile();
@@ -284,11 +291,14 @@ class _AtendimentosTecnicosMobileScreenState
       _searchController.text = filtros.busca;
     }
     setState(() {
-      _dataInicioFiltro = filtros.dataInicio;
-      _dataFimFiltro = filtros.dataFim;
-      _tecnicoFiltroKey = filtros.tecnicoKey;
-      _statusSelecionadoKey = filtros.statusKey;
-      _statusPagamentoFiltro = filtros.statusPagamento;
+      _consulta = _AtendimentosTecnicosConsulta(
+        busca: filtros.busca.trim(),
+        dataInicio: filtros.dataInicio,
+        dataFim: filtros.dataFim,
+        tecnicoKey: filtros.tecnicoKey,
+        statusKey: filtros.statusKey,
+        statusPagamento: filtros.statusPagamento,
+      );
     });
     _aplicandoPreferencias = false;
   }
@@ -308,11 +318,11 @@ class _AtendimentosTecnicosMobileScreenState
     }
     final filtros = AtendimentosCriadosFiltrosMobilePreferencia(
       busca: _searchController.text,
-      dataInicio: _dataInicioFiltro,
-      dataFim: _dataFimFiltro,
-      tecnicoKey: _tecnicoFiltroKey,
-      statusKey: _statusSelecionadoKey,
-      statusPagamento: _statusPagamentoFiltro,
+      dataInicio: _consulta.dataInicio,
+      dataFim: _consulta.dataFim,
+      tecnicoKey: _consulta.tecnicoKey,
+      statusKey: _consulta.statusKey,
+      statusPagamento: _consulta.statusPagamento,
     );
 
     unawaited(
@@ -334,30 +344,59 @@ class _AtendimentosTecnicosMobileScreenState
 
   bool get _statusPagamentoFiltroAtivo =>
       _permitePreferenciasAtendimentosCriados &&
-      _statusPagamentoFiltro != AtendimentosCriadosStatusPagamentoFiltro.todos;
+      _consulta.statusPagamento !=
+          AtendimentosCriadosStatusPagamentoFiltro.todos;
 
-  bool get _hasAdvancedFilters =>
-      _dataInicioFiltro != null ||
-      _dataFimFiltro != null ||
-      _tecnicoFiltroKey != null ||
-      _statusPagamentoFiltroAtivo;
+  int get _advancedFiltersCount => _consulta.advancedFilterCount(
+    includePayment: _permitePreferenciasAtendimentosCriados,
+  );
+
+  bool get _hasAdvancedFilters => _advancedFiltersCount > 0;
 
   bool get _hasAnyFilter =>
       _hasAdvancedFilters ||
-      _statusSelecionadoKey != null ||
-      _searchController.text.trim().isNotEmpty;
+      _consulta.statusKey != null ||
+      _consulta.busca.trim().isNotEmpty;
 
-  void _limparFiltros() {
+  void _aplicarConsulta(
+    _AtendimentosTecnicosConsulta consulta, {
+    bool salvarPreferencias = true,
+  }) {
+    _aplicarBuscaDebounce?.cancel();
+    setState(() => _consulta = consulta.copyWith(page: 0));
+    if (salvarPreferencias && _permitePreferenciasAtendimentosCriados) {
+      _usuarioAlterouFiltros = true;
+      _salvarPreferenciasAtendimentosCriadosMobile();
+    }
+  }
+
+  void _limparBusca() {
+    _aplicarBuscaDebounce?.cancel();
     _aplicandoPreferencias = true;
-    setState(() {
-      _statusSelecionadoKey = null;
-      _dataInicioFiltro = null;
-      _dataFimFiltro = null;
-      _tecnicoFiltroKey = null;
-      _statusPagamentoFiltro = AtendimentosCriadosStatusPagamentoFiltro.todos;
-      _searchController.clear();
-    });
+    _searchController.clear();
     _aplicandoPreferencias = false;
+    _aplicarConsulta(_consulta.copyWith(busca: ''));
+  }
+
+  void _limparFiltrosAvancados() {
+    _aplicarConsulta(
+      _consulta.copyWith(
+        dataInicio: null,
+        dataFim: null,
+        tecnicoKey: null,
+        statusPagamento: AtendimentosCriadosStatusPagamentoFiltro.todos,
+      ),
+    );
+  }
+
+  void _limparConsultaCompleta() {
+    _aplicarBuscaDebounce?.cancel();
+    _aplicandoPreferencias = true;
+    _searchController.clear();
+    _aplicandoPreferencias = false;
+    setState(() {
+      _consulta = const _AtendimentosTecnicosConsulta();
+    });
     _usuarioAlterouFiltros = true;
     _salvarPreferenciasAtendimentosCriadosMobile();
   }
@@ -427,6 +466,10 @@ class _AtendimentosTecnicosMobileScreenState
         final List<AtendimentoTecnicoModel> atendimentos = state.atendimentos;
         final List<DominioOpcaoModel> statusDisponiveis =
             state.dominios.statusAtendimentoTecnico;
+        final List<_TecnicoFiltroOption> tecnicos = _tecnicoOptions(
+          atendimentos,
+          state.tecnicos,
+        );
         final List<AtendimentoTecnicoModel> filtrados = _filtrar(
           atendimentos,
           statusDisponiveis,
@@ -441,50 +484,28 @@ class _AtendimentosTecnicosMobileScreenState
             children: <Widget>[
               SixStaggeredEntry(
                 delay: Duration(milliseconds: 60),
-                child: _hero(filtrados, totalGeral: atendimentos.length),
+                child: _querySearchBar(
+                  atendimentos: atendimentos,
+                  statusDisponiveis: statusDisponiveis,
+                  tecnicos: tecnicos,
+                ),
               ),
-              SizedBox(height: 16),
+              SizedBox(height: 10),
               SixStaggeredEntry(
-                delay: Duration(milliseconds: 120),
-                child: _summaryGrid(filtrados),
+                delay: Duration(milliseconds: 110),
+                child: _statusQuickFilters(statusDisponiveis),
               ),
-              SizedBox(height: 16),
-              SixStaggeredEntry(
-                delay: Duration(milliseconds: 180),
-                child: _statusOverview(atendimentos, statusDisponiveis),
-              ),
-              SizedBox(height: 14),
-              SixStaggeredEntry(
-                delay: Duration(milliseconds: 220),
-                child: _statusFilter(atendimentos, statusDisponiveis),
-              ),
-              SizedBox(height: 14),
-              SixStaggeredEntry(
-                delay: Duration(milliseconds: 260),
-                child: _advancedFilters(atendimentos, state.tecnicos),
-              ),
-              SizedBox(height: 14),
-              SixStaggeredEntry(
-                delay: Duration(milliseconds: 300),
-                child: _searchBox(),
-              ),
-              SizedBox(height: 16),
-              _sectionTitle(
-                !_hasAnyFilter
-                    ? _t(
-                      widget.listContext.sectionTitleKey ??
-                          'atendimentoTecnico.mobile.recentSection',
-                      widget.listContext.sectionTitleFallback ??
-                          'Atendimentos recentes',
-                    )
-                    : _t(
-                      widget.listContext.filteredSectionTitleKey ??
-                          'atendimentoTecnico.mobile.filteredSection',
-                      widget.listContext.filteredSectionTitleFallback ??
-                          'Resultado do filtro',
-                    ),
-              ),
+              _activeAdvancedFilterChips(tecnicos),
+              if (filtrados.isNotEmpty) ...<Widget>[
+                SizedBox(height: 12),
+                SixStaggeredEntry(
+                  delay: Duration(milliseconds: 150),
+                  child: _summaryCompactCard(filtrados),
+                ),
+              ],
               SizedBox(height: 12),
+              _resultSummary(filtrados.length),
+              SizedBox(height: 10),
               if (filtrados.isEmpty)
                 _emptyState()
               else
@@ -497,7 +518,7 @@ class _AtendimentosTecnicosMobileScreenState
                       (entry) => Padding(
                         padding: EdgeInsets.only(bottom: 12),
                         child: SixStaggeredEntry(
-                          delay: Duration(milliseconds: 340 + entry.key * 45),
+                          delay: Duration(milliseconds: 160 + entry.key * 45),
                           child: _atendimentoCard(
                             entry.value,
                             statusDisponiveis,
@@ -525,144 +546,65 @@ class _AtendimentosTecnicosMobileScreenState
         physics: AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
         children: <Widget>[
-          _loadingHeroSkeleton(),
-          SizedBox(height: 16),
-          _loadingSummaryGrid(),
-          SizedBox(height: 16),
-          _loadingStatusOverviewSkeleton(),
-          SizedBox(height: 14),
+          _loadingSearchSkeleton(),
+          SizedBox(height: 10),
           _loadingFilterSkeleton(),
           SizedBox(height: 14),
-          _loadingSearchSkeleton(),
-          SizedBox(height: 16),
-          const _AtendimentoSkeletonBlock(width: 168, height: 18, radius: 8),
+          _loadingSummaryGrid(),
+          SizedBox(height: 14),
+          const _AtendimentoSkeletonBlock(width: 142, height: 18, radius: 8),
           SizedBox(height: 12),
           const _AtendimentoCardSkeleton(),
           SizedBox(height: 12),
           const _AtendimentoCardSkeleton(),
           SizedBox(height: 12),
           const _AtendimentoCardSkeleton(),
-        ],
-      ),
-    );
-  }
-
-  Widget _loadingHeroSkeleton() {
-    return _card(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _iconBox(Icons.fact_check_outlined, size: 40),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                _AtendimentoSkeletonBlock(height: 18, radius: 8),
-                SizedBox(height: 9),
-                _AtendimentoSkeletonBlock(height: 12, radius: 7),
-                SizedBox(height: 6),
-                FractionallySizedBox(
-                  widthFactor: 0.72,
-                  child: _AtendimentoSkeletonBlock(height: 12, radius: 7),
-                ),
-                SizedBox(height: 13),
-                _AtendimentoSkeletonBlock(width: 126, height: 28, radius: 999),
-              ],
-            ),
-          ),
         ],
       ),
     );
   }
 
   Widget _loadingSummaryGrid() {
-    final List<IconData> icons = <IconData>[
-      Icons.assignment_turned_in_outlined,
-      Icons.account_balance_wallet_outlined,
-      Icons.verified_rounded,
-      Icons.payments_outlined,
-    ];
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final double width = (constraints.maxWidth - 12) / 2;
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: icons
-              .map(
-                (IconData icon) => SizedBox(
-                  width: width,
-                  child: _loadingSummaryCardSkeleton(icon),
-                ),
-              )
-              .toList(growable: false),
-        );
-      },
-    );
-  }
-
-  Widget _loadingSummaryCardSkeleton(IconData icon) {
     return Container(
       padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _surfaceColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _borderColor),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: _cardShadowColor,
-            blurRadius: 14,
-            offset: Offset(0, 6),
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _iconBox(icon, size: 38),
-          SizedBox(height: 12),
-          const _AtendimentoSkeletonBlock(width: 88, height: 12, radius: 7),
-          SizedBox(height: 8),
-          const _AtendimentoSkeletonBlock(width: 58, height: 22, radius: 8),
-          SizedBox(height: 7),
-          const _AtendimentoSkeletonBlock(height: 11, radius: 7),
-        ],
-      ),
-    );
-  }
-
-  Widget _loadingStatusOverviewSkeleton() {
-    return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
             children: <Widget>[
-              _iconBox(Icons.flag_outlined, size: 42),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    _AtendimentoSkeletonBlock(height: 16, radius: 8),
-                    SizedBox(height: 7),
-                    FractionallySizedBox(
-                      widthFactor: 0.76,
-                      child: _AtendimentoSkeletonBlock(height: 12, radius: 7),
-                    ),
-                  ],
-                ),
+              _iconBox(Icons.query_stats_rounded, size: 34),
+              SizedBox(width: 10),
+              const _AtendimentoSkeletonBlock(
+                width: 132,
+                height: 14,
+                radius: 7,
               ),
             ],
           ),
-          SizedBox(height: 16),
-          const _StatusOverviewSkeletonRow(),
           SizedBox(height: 10),
-          const _StatusOverviewSkeletonRow(),
-          SizedBox(height: 10),
-          const _StatusOverviewSkeletonRow(),
+          const _AtendimentoSkeletonBlock(width: 120, height: 24, radius: 8),
+          SizedBox(height: 8),
+          Wrap(
+            spacing: 14,
+            runSpacing: 8,
+            children: const <Widget>[
+              _AtendimentoSkeletonBlock(width: 96, height: 14, radius: 7),
+              _AtendimentoSkeletonBlock(width: 78, height: 14, radius: 7),
+              _AtendimentoSkeletonBlock(width: 76, height: 14, radius: 7),
+            ],
+          ),
         ],
       ),
     );
@@ -757,620 +699,272 @@ class _AtendimentosTecnicosMobileScreenState
     );
   }
 
-  Widget _hero(
-    List<AtendimentoTecnicoModel> atendimentos, {
-    required int totalGeral,
-  }) {
-    final int pendentes = _totalPendentes(atendimentos);
-    final bool filtrando =
-        _statusSelecionadoKey != null ||
-        _searchController.text.trim().isNotEmpty;
-    final bool hasContextDescription =
-        widget.listContext.descriptionFallback.trim().isNotEmpty;
-    final String contextDescription =
-        hasContextDescription
-            ? _t(
-              widget.listContext.descriptionKey,
-              widget.listContext.descriptionFallback,
-            ).trim()
-            : '';
-    final String description =
-        contextDescription.isNotEmpty
-            ? contextDescription
-            : filtrando
-            ? '${atendimentos.length} de $totalGeral atendimento(s) no filtro.'
-            : pendentes == 1
-            ? '1 atendimento ainda precisa de atenção.'
-            : '$pendentes atendimentos ainda precisam de atenção.';
-
-    return Container(
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          colors: <Color>[_primaryColor, _secondaryColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: _heroShadowColor,
-            blurRadius: 22,
-            offset: Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Row(
-        children: <Widget>[
-          _iconBox(
-            Icons.fact_check_outlined,
-            backgroundColor: Color(0x1AFFFFFF),
-            foregroundColor: _onPrimaryColor,
-          ),
-          SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  _t(
-                    widget.listContext.heroTitleKey,
-                    widget.listContext.heroTitleFallback,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: _onPrimaryColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: _heroSupportingTextColor,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+  Widget _summaryCompactCard(List<AtendimentoTecnicoModel> atendimentos) {
+    final int total = atendimentos.length;
+    final int totalEmAberto = _totalEmAberto(atendimentos);
+    final int totalAssinados = _totalAssinados(atendimentos);
+    final String valorEmAberto = _formatarMoeda(_valorAberto(atendimentos));
+    final String title = _t(
+      'atendimentoTecnico.mobile.periodSummaryTitle',
+      'Resumo do período',
     );
-  }
-
-  Widget _summaryGrid(List<AtendimentoTecnicoModel> atendimentos) {
-    final List<_SummaryItem> items = <_SummaryItem>[
-      _SummaryItem(
-        label: 'Atendimentos',
-        value: atendimentos.length.toString(),
-        helper: 'Total exibido',
-        icon: Icons.assignment_turned_in_outlined,
-      ),
-      _SummaryItem(
-        label: 'Em aberto',
-        value: _totalEmAberto(atendimentos).toString(),
-        helper: 'Aguardam recebimento',
-        icon: Icons.account_balance_wallet_outlined,
-      ),
-      _SummaryItem(
-        label: 'Assinados',
-        value: _totalAssinados(atendimentos).toString(),
-        helper: 'Com aceite do cliente',
-        icon: Icons.verified_rounded,
-      ),
-      _SummaryItem(
-        label: 'Valor aberto',
-        value: _formatarMoeda(_valorAberto(atendimentos)),
-        helper: 'Saldo pendente',
-        icon: Icons.payments_outlined,
-        highlight: true,
-      ),
-    ];
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final double width = (constraints.maxWidth - 12) / 2;
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: items
-              .map((item) => SizedBox(width: width, child: _summaryCard(item)))
-              .toList(growable: false),
+        final bool stacked =
+            constraints.maxWidth < 350 ||
+            MediaQuery.textScalerOf(context).scale(1) > 1.15;
+        final Widget moneyMetric = _summaryMoneyMetric(valorEmAberto);
+        final Widget countMetrics = _summaryCountMetrics(
+          total: total,
+          totalEmAberto: totalEmAberto,
+          totalAssinados: totalAssinados,
+        );
+
+        return Semantics(
+          container: true,
+          label: <String>[
+            title,
+            _summaryServicesLabel(total),
+            _summaryOpenCountLabel(totalEmAberto),
+            _summarySignedCountLabel(totalAssinados),
+            _summaryOpenValueLabel(valorEmAberto),
+          ].join('. '),
+          child: Container(
+            key: const ValueKey<String>(
+              'atendimentos-tecnicos-resumo-compacto',
+            ),
+            width: double.infinity,
+            padding: EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _surfaceColor,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: _borderColor),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: _cardShadowColor,
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    _iconBox(Icons.query_stats_rounded, size: 34),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _titleTextColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10),
+                if (stacked)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      moneyMetric,
+                      SizedBox(height: 10),
+                      countMetrics,
+                    ],
+                  )
+                else
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: <Widget>[
+                      Expanded(flex: 5, child: moneyMetric),
+                      SizedBox(width: 14),
+                      Container(width: 1, height: 38, color: _borderColor),
+                      SizedBox(width: 14),
+                      Expanded(flex: 7, child: countMetrics),
+                    ],
+                  ),
+              ],
+            ),
+          ),
         );
       },
     );
   }
 
-  Widget _summaryCard(_SummaryItem item) {
-    final Color background = item.highlight ? _primaryColor : _surfaceColor;
-    final Color foreground = item.highlight ? _onPrimaryColor : _titleTextColor;
-    final Color muted =
-        item.highlight ? _heroSupportingTextColor : _mutedTextColor;
-
-    return Container(
-      padding: EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: item.highlight ? _primaryColor : _borderColor,
-        ),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: _cardShadowColor,
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
+  Widget _summaryMoneyMetric(String value) {
+    return ExcludeSemantics(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color:
-                  item.highlight ? Color(0x1AFFFFFF) : _softAccentSurfaceColor,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              item.icon,
-              size: 20,
-              color: item.highlight ? _onPrimaryColor : _accentColor,
+          Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.visible,
+            style: TextStyle(
+              color: _titleTextColor,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              height: 1.05,
             ),
           ),
-          SizedBox(height: 12),
+          SizedBox(height: 2),
           Text(
-            item.label,
+            _t(
+              'atendimentoTecnico.mobile.summaryOpenValueCaption',
+              'em aberto',
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: muted,
-              fontSize: 12,
+              color: _mutedTextColor,
+              fontSize: 11,
               fontWeight: FontWeight.w800,
             ),
           ),
-          SizedBox(height: 4),
-          _animatedValue(item.value, foreground),
-          SizedBox(height: 2),
-          Text(
-            item.helper,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: muted, fontSize: 11),
-          ),
         ],
       ),
     );
   }
 
-  Widget _animatedValue(String value, Color color) {
-    final TextStyle style = TextStyle(
-      color: color,
-      fontSize: 22,
+  Widget _summaryCountMetrics({
+    required int total,
+    required int totalEmAberto,
+    required int totalAssinados,
+  }) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 7,
+      children: <Widget>[
+        _summaryCountMetric(
+          count: total,
+          label: _summaryServiceUnitLabel(total),
+          icon: Icons.assignment_turned_in_outlined,
+        ),
+        _summaryCountMetric(
+          count: totalEmAberto,
+          label: _summaryOpenUnitLabel(totalEmAberto),
+          icon: Icons.account_balance_wallet_outlined,
+        ),
+        _summaryCountMetric(
+          count: totalAssinados,
+          label: _summarySignedUnitLabel(totalAssinados),
+          icon: Icons.verified_rounded,
+        ),
+      ],
+    );
+  }
+
+  Widget _summaryCountMetric({
+    required int count,
+    required String label,
+    required IconData icon,
+  }) {
+    final TextStyle countStyle = TextStyle(
+      color: _titleTextColor,
+      fontSize: 13,
       fontWeight: FontWeight.w900,
     );
-    return int.tryParse(value) == null
-        ? Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: style,
-        )
-        : SixAnimatedNumberText(value: value, style: style);
-  }
-
-  Widget _statusOverview(
-    List<AtendimentoTecnicoModel> atendimentos,
-    List<DominioOpcaoModel> statusDisponiveis,
-  ) {
-    final List<_StatusCount> status =
-        _statusCounts(atendimentos, statusDisponiveis).take(4).toList();
-
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              _iconBox(Icons.flag_outlined, size: 42),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'Visão por status',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: _titleTextColor,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
-                      ),
-                    ),
-                    SizedBox(height: 3),
-                    Text(
-                      'Acompanhe onde estão os atendimentos.',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: _mutedTextColor, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 14),
-          if (status.isEmpty)
-            Text(
-              'Nenhum status para exibir.',
-              style: TextStyle(color: _mutedTextColor),
-            )
-          else
-            ...status.map(_statusRow),
-        ],
-      ),
-    );
-  }
-
-  Widget _statusRow(_StatusCount item) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 10),
+    return ExcludeSemantics(
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Expanded(
+          Icon(icon, color: _accentColor, size: 15),
+          SizedBox(width: 5),
+          SixAnimatedNumberText(value: count.toString(), style: countStyle),
+          SizedBox(width: 3),
+          Flexible(
+            fit: FlexFit.loose,
             child: Text(
-              item.label,
+              label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: _titleTextColor,
+                color: _mutedTextColor,
+                fontSize: 12,
                 fontWeight: FontWeight.w800,
               ),
             ),
           ),
-          SizedBox(width: 10),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: _softAccentSurfaceColor,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: _highlightedBorderColor),
-            ),
-            child: Text(
-              item.count.toString(),
-              style: TextStyle(
-                color: _accentColor,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _statusFilter(
-    List<AtendimentoTecnicoModel> atendimentos,
-    List<DominioOpcaoModel> statusDisponiveis,
-  ) {
-    final List<_StatusCount> statuses = _statusCounts(
-      atendimentos,
-      statusDisponiveis,
-    );
-    final int total = atendimentos.length;
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _surfaceColor,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            'Filtrar por status',
-            style: TextStyle(
-              color: _titleTextColor,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          SizedBox(height: 10),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: <Widget>[
-                _statusChip(
-                  label: 'Todos',
-                  count: total,
-                  selected: _statusSelecionadoKey == null,
-                  onSelected: () {
-                    setState(() => _statusSelecionadoKey = null);
-                    _usuarioAlterouFiltros = true;
-                    _salvarPreferenciasAtendimentosCriadosMobile();
-                  },
-                ),
-                SizedBox(width: 8),
-                ...statuses.map(
-                  (status) => Padding(
-                    padding: EdgeInsets.only(right: 8),
-                    child: _statusChip(
-                      label: status.label,
-                      count: status.count,
-                      selected: _statusSelecionadoKey == status.key,
-                      onSelected: () {
-                        setState(() {
-                          _statusSelecionadoKey = status.key;
-                        });
-                        _usuarioAlterouFiltros = true;
-                        _salvarPreferenciasAtendimentosCriadosMobile();
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  String _summaryServicesLabel(int count) {
+    return '$count ${_summaryServiceUnitLabel(count)}';
   }
 
-  Widget _statusChip({
-    required String label,
-    required int count,
-    required bool selected,
-    required VoidCallback onSelected,
+  String _summaryOpenCountLabel(int count) {
+    return '$count ${_summaryOpenUnitLabel(count)}';
+  }
+
+  String _summarySignedCountLabel(int count) {
+    return '$count ${_summarySignedUnitLabel(count)}';
+  }
+
+  String _summaryOpenValueLabel(String value) {
+    return _t(
+      'atendimentoTecnico.mobile.summaryOpenValue',
+      '{value} em aberto',
+    ).replaceAll('{value}', value);
+  }
+
+  String _summaryServiceUnitLabel(int count) {
+    return count == 1
+        ? _t('atendimentoTecnico.mobile.summaryServiceOne', 'atendimento')
+        : _t('atendimentoTecnico.mobile.summaryServiceMany', 'atendimentos');
+  }
+
+  String _summaryOpenUnitLabel(int count) {
+    return count == 1
+        ? _t('atendimentoTecnico.mobile.summaryOpenOne', 'em aberto')
+        : _t('atendimentoTecnico.mobile.summaryOpenMany', 'em aberto');
+  }
+
+  String _summarySignedUnitLabel(int count) {
+    return count == 1
+        ? _t('atendimentoTecnico.mobile.summarySignedOne', 'assinado')
+        : _t('atendimentoTecnico.mobile.summarySignedMany', 'assinados');
+  }
+
+  Widget _querySearchBar({
+    required List<AtendimentoTecnicoModel> atendimentos,
+    required List<DominioOpcaoModel> statusDisponiveis,
+    required List<_TecnicoFiltroOption> tecnicos,
   }) {
-    return ChoiceChip(
-      selected: selected,
-      showCheckmark: false,
-      label: Text('$label · $count'),
-      onSelected: (_) => onSelected(),
-      selectedColor: _accentColor,
-      backgroundColor: _softSurfaceColor,
-      side: BorderSide(color: selected ? _accentColor : _borderColor),
-      labelStyle: TextStyle(
-        color: selected ? _onAccentColor : _titleTextColor,
-        fontWeight: FontWeight.w900,
-        fontSize: 12,
-      ),
-      visualDensity: VisualDensity.compact,
-    );
-  }
-
-  Widget _advancedFilters(
-    List<AtendimentoTecnicoModel> atendimentos,
-    List<ColaboradorUsuarioResumo> tecnicosDisponiveis,
-  ) {
-    final List<_TecnicoFiltroOption> tecnicos = _tecnicoOptions(
-      atendimentos,
-      tecnicosDisponiveis,
-    );
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  'Filtros do atendimento',
-                  style: TextStyle(
-                    color: _titleTextColor,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-              if (_hasAnyFilter)
-                TextButton.icon(
-                  onPressed: _limparFiltros,
-                  icon: Icon(Icons.filter_alt_off_rounded, size: 17),
-                  label: Text('Limpar'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: _accentColor,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-            ],
-          ),
-          SizedBox(height: 10),
-          _filterField(
-            label: 'Data',
-            value: _periodoFiltroLabel(),
-            icon: Icons.event_outlined,
-            active: _dataInicioFiltro != null || _dataFimFiltro != null,
-            onTap: _abrirFiltroPeriodo,
-          ),
-          SizedBox(height: 10),
-          _filterField(
-            label: 'Técnico responsável',
-            value: _tecnicoFiltroLabel(tecnicos),
-            icon: Icons.engineering_outlined,
-            active: _tecnicoFiltroKey != null,
-            onTap: () => _abrirFiltroTecnico(tecnicos),
-          ),
-          if (_permitePreferenciasAtendimentosCriados) ...<Widget>[
-            SizedBox(height: 10),
-            _filterField(
-              label: _t(
-                'atendimentoTecnico.filters.paymentStatus.label',
-                'Status pagamento',
-              ),
-              value: _statusPagamentoFiltroLabel(_statusPagamentoFiltro),
-              icon: Icons.account_balance_wallet_outlined,
-              active:
-                  _statusPagamentoFiltro !=
-                  AtendimentosCriadosStatusPagamentoFiltro.todos,
-              onTap: _abrirFiltroStatusPagamento,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _filterField({
-    required String label,
-    required String value,
-    required IconData icon,
-    required bool active,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: Duration(milliseconds: 160),
-          curve: Curves.easeOutCubic,
-          padding: EdgeInsets.symmetric(horizontal: 13, vertical: 12),
-          decoration: BoxDecoration(
-            color: active ? _softAccentSurfaceColor : _softSurfaceColor,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: active ? _highlightedBorderColor : _borderColor,
-            ),
-          ),
-          child: Row(
-            children: <Widget>[
-              _iconBox(
-                icon,
-                size: 38,
-                backgroundColor:
-                    active ? _softAccentSurfaceColor : _softSurfaceColor,
-              ),
-              SizedBox(width: 11),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: _mutedTextColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: _titleTextColor,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: 8),
-              Icon(Icons.keyboard_arrow_down_rounded, color: _accentColor),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _abrirFiltroPeriodo() async {
-    final _PeriodoFiltro? result = await showModalBottomSheet<_PeriodoFiltro>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Color(0x66000000),
-      builder: (BuildContext context) {
-        return _PeriodoFiltroMobileSheet(
-          dataInicio: _dataInicioFiltro,
-          dataFim: _dataFimFiltro,
-          formatarData: _formatarData,
-        );
-      },
-    );
-    if (result == null || !mounted) return;
-    setState(() {
-      _dataInicioFiltro = result.dataInicio;
-      _dataFimFiltro = result.dataFim;
-    });
-    _usuarioAlterouFiltros = true;
-    _salvarPreferenciasAtendimentosCriadosMobile();
-  }
-
-  Future<void> _abrirFiltroTecnico(List<_TecnicoFiltroOption> tecnicos) async {
-    final String? result = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Color(0x66000000),
-      builder: (BuildContext context) {
-        return _TecnicoFiltroMobileSheet(
-          tecnicos: tecnicos,
-          selectedKey: _tecnicoFiltroKey,
-        );
-      },
-    );
-    if (result == null || !mounted) return;
-    setState(() {
-      _tecnicoFiltroKey =
-          result == _TecnicoFiltroMobileSheet.todosKey ? null : result;
-    });
-    _usuarioAlterouFiltros = true;
-    _salvarPreferenciasAtendimentosCriadosMobile();
-  }
-
-  Future<void> _abrirFiltroStatusPagamento() async {
-    final AtendimentosCriadosStatusPagamentoFiltro? result =
-        await showModalBottomSheet<AtendimentosCriadosStatusPagamentoFiltro>(
-          context: context,
-          isScrollControlled: true,
-          useSafeArea: true,
-          backgroundColor: Colors.transparent,
-          barrierColor: Color(0x66000000),
-          builder: (BuildContext context) {
-            return _StatusPagamentoFiltroMobileSheet(
-              selected: _statusPagamentoFiltro,
-              labelFor: _statusPagamentoFiltroLabel,
-            );
-          },
-        );
-    if (result == null || !mounted) return;
-    setState(() => _statusPagamentoFiltro = result);
-    _usuarioAlterouFiltros = true;
-    _salvarPreferenciasAtendimentosCriadosMobile();
-  }
-
-  Widget _searchBox() {
     return TextField(
       controller: _searchController,
       decoration: InputDecoration(
-        hintText: 'Buscar por cliente, status, equipamento ou número',
+        hintText: _t(
+          'atendimentoTecnico.mobile.searchHint',
+          'Buscar por cliente, status, equipamento ou número',
+        ),
         prefixIcon: Icon(Icons.search_rounded, color: _accentColor),
-        suffixIcon:
-            _searchController.text.trim().isEmpty
-                ? null
-                : IconButton(
-                  onPressed: _searchController.clear,
-                  icon: Icon(Icons.clear_rounded),
-                ),
+        suffixIcon: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (_searchController.text.trim().isNotEmpty)
+              IconButton(
+                tooltip: _t('common.clear', 'Limpar'),
+                onPressed: _limparBusca,
+                icon: Icon(Icons.clear_rounded),
+              ),
+            _advancedFilterButton(
+              atendimentos: atendimentos,
+              statusDisponiveis: statusDisponiveis,
+              tecnicos: tecnicos,
+            ),
+          ],
+        ),
+        suffixIconConstraints: BoxConstraints(minHeight: 48, minWidth: 48),
         filled: true,
         fillColor: _surfaceColor,
         border: OutlineInputBorder(
@@ -1390,6 +984,310 @@ class _AtendimentosTecnicosMobileScreenState
     );
   }
 
+  Widget _advancedFilterButton({
+    required List<AtendimentoTecnicoModel> atendimentos,
+    required List<DominioOpcaoModel> statusDisponiveis,
+    required List<_TecnicoFiltroOption> tecnicos,
+  }) {
+    final int count = _advancedFiltersCount;
+    return Semantics(
+      button: true,
+      label:
+          count == 0
+              ? _t(
+                'atendimentoTecnico.mobile.advancedFilters',
+                'Filtros avançados',
+              )
+              : _t(
+                'atendimentoTecnico.mobile.advancedFiltersActive',
+                'Filtros avançados ativos',
+              ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: <Widget>[
+          IconButton(
+            tooltip: _t(
+              'atendimentoTecnico.mobile.advancedFilters',
+              'Filtros avançados',
+            ),
+            onPressed:
+                () => _abrirFiltrosAvancados(
+                  atendimentos: atendimentos,
+                  statusDisponiveis: statusDisponiveis,
+                  tecnicos: tecnicos,
+                ),
+            icon: Icon(Icons.tune_rounded, color: _accentColor),
+          ),
+          if (count > 0)
+            Positioned(
+              right: 6,
+              top: 6,
+              child: Container(
+                constraints: BoxConstraints(minWidth: 17, minHeight: 17),
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: SixMobilePalette.notificationBadge,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: _surfaceColor, width: 1.4),
+                ),
+                child: Text(
+                  count.toString(),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusQuickFilters(List<DominioOpcaoModel> statusDisponiveis) {
+    final List<DominioOpcaoModel> statuses = List<DominioOpcaoModel>.from(
+      statusDisponiveis,
+    )..sort(
+      (DominioOpcaoModel a, DominioOpcaoModel b) => a.ordem.compareTo(b.ordem),
+    );
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: <Widget>[
+          _statusChip(
+            label: _t('common.all', 'Todos'),
+            selected: _consulta.statusKey == null,
+            onSelected:
+                () => _aplicarConsulta(_consulta.copyWith(statusKey: null)),
+          ),
+          SizedBox(width: 8),
+          ...statuses.map((DominioOpcaoModel status) {
+            final String statusKey = _statusFiltroKeyOpcao(status);
+            return Padding(
+              padding: EdgeInsets.only(right: 8),
+              child: _statusChip(
+                label: _statusOptionLabel(status),
+                selected: _consulta.statusKey == statusKey,
+                onSelected:
+                    () => _aplicarConsulta(
+                      _consulta.copyWith(statusKey: statusKey),
+                    ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onSelected,
+  }) {
+    return ChoiceChip(
+      selected: selected,
+      showCheckmark: false,
+      label: Text(label),
+      onSelected: (_) => onSelected(),
+      selectedColor: _accentColor,
+      backgroundColor: _softSurfaceColor,
+      side: BorderSide(color: selected ? _accentColor : _borderColor),
+      labelStyle: TextStyle(
+        color: selected ? _onAccentColor : _titleTextColor,
+        fontWeight: FontWeight.w900,
+        fontSize: 12,
+      ),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  Widget _activeAdvancedFilterChips(List<_TecnicoFiltroOption> tecnicos) {
+    if (!_hasAdvancedFilters) return SizedBox.shrink();
+
+    final List<Widget> chips = <Widget>[];
+    if (_consulta.dataInicio != null || _consulta.dataFim != null) {
+      chips.add(
+        _activeFilterChip(
+          label: _periodoFiltroLabel(_consulta),
+          icon: Icons.event_outlined,
+          onDeleted:
+              () => _aplicarConsulta(
+                _consulta.copyWith(dataInicio: null, dataFim: null),
+              ),
+        ),
+      );
+    }
+    if (_consulta.tecnicoKey != null) {
+      chips.add(
+        _activeFilterChip(
+          label: _tecnicoFiltroLabel(tecnicos, _consulta.tecnicoKey),
+          icon: Icons.engineering_outlined,
+          onDeleted:
+              () => _aplicarConsulta(_consulta.copyWith(tecnicoKey: null)),
+        ),
+      );
+    }
+    if (_statusPagamentoFiltroAtivo) {
+      chips.add(
+        _activeFilterChip(
+          label: _statusPagamentoFiltroLabel(_consulta.statusPagamento),
+          icon: Icons.account_balance_wallet_outlined,
+          onDeleted:
+              () => _aplicarConsulta(
+                _consulta.copyWith(
+                  statusPagamento:
+                      AtendimentosCriadosStatusPagamentoFiltro.todos,
+                ),
+              ),
+        ),
+      );
+    }
+    chips.add(
+      ActionChip(
+        avatar: Icon(Icons.filter_alt_off_rounded, size: 16),
+        label: Text(
+          _t('atendimentoTecnico.mobile.clearFilters', 'Limpar filtros'),
+        ),
+        onPressed: _limparFiltrosAvancados,
+        backgroundColor: _surfaceColor,
+        side: BorderSide(color: _borderColor),
+        labelStyle: TextStyle(
+          color: _accentColor,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+        ),
+        visualDensity: VisualDensity.compact,
+      ),
+    );
+
+    return Padding(
+      padding: EdgeInsets.only(top: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: chips
+              .map(
+                (Widget chip) =>
+                    Padding(padding: EdgeInsets.only(right: 8), child: chip),
+              )
+              .toList(growable: false),
+        ),
+      ),
+    );
+  }
+
+  Widget _activeFilterChip({
+    required String label,
+    required IconData icon,
+    required VoidCallback onDeleted,
+  }) {
+    return InputChip(
+      avatar: Icon(icon, size: 16, color: _accentColor),
+      label: Text(label),
+      onDeleted: onDeleted,
+      deleteIcon: Icon(Icons.close_rounded, size: 16),
+      backgroundColor: _softAccentSurfaceColor,
+      side: BorderSide(color: _highlightedBorderColor),
+      labelStyle: TextStyle(
+        color: _titleTextColor,
+        fontSize: 12,
+        fontWeight: FontWeight.w900,
+      ),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  Widget _resultSummary(int count) {
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Text(
+            _resultadoConsultaLabel(count),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: _titleTextColor,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+          decoration: BoxDecoration(
+            color: _softSurfaceColor,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: _borderColor),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.sort_rounded, size: 14, color: _accentColor),
+              SizedBox(width: 5),
+              Text(
+                _t('atendimentoTecnico.mobile.sortRecent', 'Mais recentes'),
+                style: TextStyle(
+                  color: _titleTextColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _abrirFiltrosAvancados({
+    required List<AtendimentoTecnicoModel> atendimentos,
+    required List<DominioOpcaoModel> statusDisponiveis,
+    required List<_TecnicoFiltroOption> tecnicos,
+  }) async {
+    final _AtendimentosTecnicosConsulta? result =
+        await showModalBottomSheet<_AtendimentosTecnicosConsulta>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          backgroundColor: Colors.transparent,
+          barrierColor: Color(0x66000000),
+          builder: (BuildContext context) {
+            return _FiltrosAvancadosAtendimentosTecnicosMobileSheet(
+              consulta: _consulta,
+              tecnicos: tecnicos,
+              permitePagamento: _permitePreferenciasAtendimentosCriados,
+              formatarData: _formatarData,
+              statusPagamentoLabel: _statusPagamentoFiltroLabel,
+              previewCountFor:
+                  (consulta) => _previewCountForAdvancedQuery(
+                    atendimentos: atendimentos,
+                    statusDisponiveis: statusDisponiveis,
+                    consulta: consulta,
+                  ),
+            );
+          },
+        );
+    if (result == null || !mounted) return;
+    _aplicarConsulta(result);
+  }
+
+  int _previewCountForAdvancedQuery({
+    required List<AtendimentoTecnicoModel> atendimentos,
+    required List<DominioOpcaoModel> statusDisponiveis,
+    required _AtendimentosTecnicosConsulta consulta,
+  }) {
+    return _filtrar(
+      atendimentos,
+      statusDisponiveis,
+      consultaOverride: consulta,
+    ).length;
+  }
+
   Widget _atendimentoCard(
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> statusDisponiveis,
@@ -1399,6 +1297,9 @@ class _AtendimentosTecnicosMobileScreenState
     final String equipamento = _equipamentoTitulo(atendimento);
     final bool pagamentoAberto = _pagamentoEmAberto(atendimento);
     final bool entregaAtrasada = _entregaAtrasada(atendimento);
+    final bool clienteNaoAssinou = _clienteNaoAssinouAtendimentoAberto(
+      atendimento,
+    );
 
     return Material(
       color: _surfaceColor,
@@ -1463,6 +1364,14 @@ class _AtendimentosTecnicosMobileScreenState
                         _alertChip(
                           'Entrega atrasada',
                           Icons.warning_amber_rounded,
+                        ),
+                      if (clienteNaoAssinou)
+                        _alertChip(
+                          _t(
+                            'atendimentoTecnico.mobile.customerNotSigned',
+                            'Cliente não assinou',
+                          ),
+                          Icons.assignment_late_outlined,
                         ),
                       if (atendimento.assinaturaAprovada)
                         _chip('Assinado', Icons.verified_rounded),
@@ -1656,9 +1565,6 @@ class _AtendimentosTecnicosMobileScreenState
             atendimento: atendimento,
             equipamento: equipamento,
             cliente: cliente,
-            gerandoPdf: gerandoPdf,
-            habilitarCompartilhamentoPdf: !carregandoDetalhes && !erroDetalhes,
-            onCompartilharPdf: onCompartilharPdf,
           ),
         ),
         if (carregandoDetalhes) ...<Widget>[
@@ -1684,11 +1590,25 @@ class _AtendimentosTecnicosMobileScreenState
         SizedBox(height: 14),
         SixStaggeredEntry(
           delay: Duration(milliseconds: 80),
-          child: _publicStatusCard(status: status),
+          child: _publicStatusCard(
+            sheetContext: sheetContext,
+            atendimento: atendimento,
+            status: status,
+            acaoEmProcessamento: acaoEmProcessamento,
+          ),
         ),
-        SizedBox(height: 16),
+        SizedBox(height: 12),
         SixStaggeredEntry(
           delay: Duration(milliseconds: 120),
+          child: _pdfActionsSection(
+            gerandoPdf: gerandoPdf,
+            habilitarCompartilhamentoPdf: !carregandoDetalhes && !erroDetalhes,
+            onCompartilharPdf: onCompartilharPdf,
+          ),
+        ),
+        SizedBox(height: 12),
+        SixStaggeredEntry(
+          delay: Duration(milliseconds: 150),
           child: _detailActions(
             sheetContext: sheetContext,
             atendimento: atendimento,
@@ -1700,7 +1620,7 @@ class _AtendimentosTecnicosMobileScreenState
         ),
         SizedBox(height: 18),
         SixStaggeredEntry(
-          delay: Duration(milliseconds: 160),
+          delay: Duration(milliseconds: 180),
           child: _detailFinancialSummary(
             atendimento,
             valorJaRecebido: valorJaRecebido,
@@ -1804,81 +1724,67 @@ class _AtendimentosTecnicosMobileScreenState
   }) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final bool compact = constraints.maxWidth < 360;
+        final bool compact =
+            constraints.maxWidth < 340 ||
+            MediaQuery.textScalerOf(context).scale(1) > 1.18;
         final double itemWidth =
             compact ? constraints.maxWidth : (constraints.maxWidth - 10) / 2;
-        return Wrap(
-          spacing: 10,
-          runSpacing: 10,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            SizedBox(
-              width: itemWidth,
-              child: _sheetActionButton(
-                label: _t('atendimento.mobile.receiveTitle', 'Receber'),
-                icon: Icons.payments_outlined,
-                filled: true,
-                onPressed:
-                    podeReceber
-                        ? () => _runAfterClosingSheet(
-                          sheetContext,
-                          () => _abrirRecebimento(atendimento),
-                        )
-                        : null,
+            Wrap(
+              key: const ValueKey<String>(
+                'atendimento-detail-operational-actions',
               ),
-            ),
-            SizedBox(
-              width: itemWidth,
-              child: _sheetActionButton(
-                label: _t('common.edit', 'Editar'),
-                icon: Icons.edit_note_rounded,
-                onPressed:
-                    acaoEmProcessamento
-                        ? null
-                        : () => _runAfterClosingSheet(
-                          sheetContext,
-                          () => _editarAtendimento(atendimento),
-                        ),
-              ),
-            ),
-            SizedBox(
-              width: itemWidth,
-              child: _sheetActionButton(
-                label:
-                    _gerandoLinkStatus
-                        ? _t('common.generating', 'Gerando...')
-                        : _t(
-                          'atendimentoTecnico.publicStatus.action',
-                          'Status público',
-                        ),
-                icon: Icons.ios_share_rounded,
-                onPressed:
-                    acaoEmProcessamento || _gerandoLinkStatus
-                        ? null
-                        : () => _runAfterClosingSheet(
-                          sheetContext,
-                          () => _compartilharStatusPublico(atendimento),
-                        ),
-              ),
-            ),
-            SizedBox(
-              width: itemWidth,
-              child: _sheetActionButton(
-                label: _t(
-                  'atendimentoTecnico.mobile.changeStatusAction',
-                  'Mudar status',
+              spacing: 10,
+              runSpacing: 10,
+              children: <Widget>[
+                SizedBox(
+                  key: const ValueKey<String>('atendimento-detail-edit-action'),
+                  width: itemWidth,
+                  child: _sheetActionButton(
+                    label: _t('common.edit', 'Editar'),
+                    icon: Icons.edit_note_rounded,
+                    onPressed:
+                        acaoEmProcessamento
+                            ? null
+                            : () => _runAfterClosingSheet(
+                              sheetContext,
+                              () => _editarAtendimento(atendimento),
+                            ),
+                  ),
                 ),
-                icon: Icons.swap_horiz_rounded,
-                onPressed:
-                    podeAlterarStatus
-                        ? () => _runAfterClosingSheet(
-                          sheetContext,
-                          () => _abrirAlterarStatus(
-                            atendimento,
-                            statusDisponiveis,
-                          ),
-                        )
-                        : null,
-              ),
+                SizedBox(
+                  key: const ValueKey<String>(
+                    'atendimento-detail-change-status-action',
+                  ),
+                  width: itemWidth,
+                  child: _sheetActionButton(
+                    label: _t(
+                      'atendimentoTecnico.mobile.changeStatusAction',
+                      'Mudar status',
+                    ),
+                    icon: Icons.swap_horiz_rounded,
+                    onPressed:
+                        podeAlterarStatus
+                            ? () => _runAfterClosingSheet(
+                              sheetContext,
+                              () => _abrirAlterarStatus(
+                                atendimento,
+                                statusDisponiveis,
+                              ),
+                            )
+                            : null,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            _financialActionButton(
+              sheetContext: sheetContext,
+              atendimento: atendimento,
+              podeReceber: podeReceber,
+              acaoEmProcessamento: acaoEmProcessamento,
             ),
           ],
         );
@@ -1891,10 +1797,6 @@ class _AtendimentosTecnicosMobileScreenState
     required AtendimentoTecnicoModel atendimento,
     required String equipamento,
     required String cliente,
-    required bool gerandoPdf,
-    required bool habilitarCompartilhamentoPdf,
-    required Future<void> Function(BuildContext originContext)?
-    onCompartilharPdf,
   }) {
     return Container(
       padding: EdgeInsets.all(14),
@@ -1949,11 +1851,6 @@ class _AtendimentosTecnicosMobileScreenState
                 ),
               ),
               SizedBox(width: 8),
-              _sharePdfHeaderButton(
-                gerando: gerandoPdf,
-                habilitado: habilitarCompartilhamentoPdf,
-                onPressed: onCompartilharPdf,
-              ),
               IconButton(
                 tooltip: _t('common.close', 'Fechar'),
                 style: IconButton.styleFrom(
@@ -2015,7 +1912,12 @@ class _AtendimentosTecnicosMobileScreenState
     );
   }
 
-  Widget _publicStatusCard({required String status}) {
+  Widget _publicStatusCard({
+    required BuildContext sheetContext,
+    required AtendimentoTecnicoModel atendimento,
+    required String status,
+    required bool acaoEmProcessamento,
+  }) {
     final String title = _t(
       'atendimentoTecnico.publicStatus.action',
       'Status público',
@@ -2024,6 +1926,14 @@ class _AtendimentosTecnicosMobileScreenState
       'atendimentoTecnico.mobile.publicStatusDescription',
       'Visível para o cliente no link de acompanhamento.',
     );
+    final bool podeCompartilhar = !acaoEmProcessamento && !_gerandoLinkStatus;
+    final String actionLabel =
+        _gerandoLinkStatus
+            ? _t('common.generating', 'Gerando...')
+            : _t(
+              'atendimentoTecnico.publicStatus.shareLinkAction',
+              'Compartilhar link',
+            );
 
     return Semantics(
       container: true,
@@ -2036,58 +1946,274 @@ class _AtendimentosTecnicosMobileScreenState
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: _highlightedBorderColor),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            _iconBox(
-              Icons.public_rounded,
-              size: 40,
-              backgroundColor: _accentColor.withValues(alpha: 0.14),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _iconBox(
+                  Icons.public_rounded,
+                  size: 40,
+                  backgroundColor: _accentColor.withValues(alpha: 0.14),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _mutedTextColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          height: 1.2,
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      Text(
+                        status,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _titleTextColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          height: 1.18,
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      Text(
+                        description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _mutedTextColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: _mutedTextColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      height: 1.2,
-                    ),
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    status,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: _titleTextColor,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      height: 1.18,
-                    ),
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: _mutedTextColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      height: 1.25,
-                    ),
-                  ),
-                ],
+            SizedBox(height: 12),
+            OutlinedButton.icon(
+              key: const ValueKey<String>(
+                'atendimento-detail-public-status-share-action',
+              ),
+              onPressed:
+                  podeCompartilhar
+                      ? () => _runAfterClosingSheet(
+                        sheetContext,
+                        () => _compartilharStatusPublico(atendimento),
+                      )
+                      : null,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _titleTextColor,
+                side: BorderSide(color: _highlightedBorderColor),
+                minimumSize: Size.fromHeight(44),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              icon:
+                  _gerandoLinkStatus
+                      ? SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            _accentColor,
+                          ),
+                        ),
+                      )
+                      : Icon(Icons.link_rounded, size: 17),
+              label: Text(
+                actionLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _pdfActionsSection({
+    required bool gerandoPdf,
+    required bool habilitarCompartilhamentoPdf,
+    required Future<void> Function(BuildContext originContext)?
+    onCompartilharPdf,
+  }) {
+    final String title = _t(
+      'atendimentoTecnico.mobile.pdfSectionTitle',
+      'Documento do atendimento',
+    );
+    final String description =
+        gerandoPdf
+            ? _t(
+              'atendimentoTecnico.mobile.pdfSectionGenerating',
+              'Preparando o PDF para compartilhamento.',
+            )
+            : _t(
+              'atendimentoTecnico.mobile.pdfSectionDescription',
+              'PDF pronto para enviar ao cliente com os dados do atendimento.',
+            );
+    final String actionLabel = _t(
+      'atendimentoTecnico.mobile.sharePdfAction',
+      'Compartilhar PDF',
+    );
+    final bool enabled =
+        habilitarCompartilhamentoPdf &&
+        !gerandoPdf &&
+        onCompartilharPdf != null;
+
+    return Builder(
+      builder: (BuildContext buttonContext) {
+        return Semantics(
+          container: true,
+          label: '$title. $description. $actionLabel',
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _surfaceColor,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: _borderColor),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    _iconBox(Icons.picture_as_pdf_outlined, size: 40),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: _titleTextColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                              height: 1.2,
+                            ),
+                          ),
+                          SizedBox(height: 5),
+                          Text(
+                            description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: _mutedTextColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              height: 1.25,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12),
+                FilledButton.icon(
+                  key: const ValueKey<String>(
+                    'atendimento-detail-share-pdf-action',
+                  ),
+                  onPressed:
+                      enabled ? () => onCompartilharPdf(buttonContext) : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _accentColor,
+                    foregroundColor: SixMobilePalette.onPrimary,
+                    minimumSize: Size.fromHeight(48),
+                    padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  icon:
+                      gerandoPdf
+                          ? SizedBox(
+                            width: 17,
+                            height: 17,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.1,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                SixMobilePalette.onPrimary,
+                              ),
+                            ),
+                          )
+                          : Icon(Icons.ios_share_rounded, size: 18),
+                  label: Text(
+                    actionLabel,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _financialActionButton({
+    required BuildContext sheetContext,
+    required AtendimentoTecnicoModel atendimento,
+    required bool podeReceber,
+    required bool acaoEmProcessamento,
+  }) {
+    final bool financeiroLiquidado =
+        atendimento.operacaoLiquidada || atendimento.valorEmAberto <= 0;
+    final String label =
+        financeiroLiquidado
+            ? _t(
+              'atendimentoTecnico.mobile.paymentSettled',
+              'Financeiro liquidado',
+            )
+            : _t('atendimento.mobile.receiveTitle', 'Receber');
+    final IconData icon =
+        financeiroLiquidado
+            ? Icons.price_check_rounded
+            : Icons.payments_outlined;
+
+    return SizedBox(
+      key: const ValueKey<String>('atendimento-detail-financial-action'),
+      width: double.infinity,
+      child: Semantics(
+        button: true,
+        enabled: podeReceber,
+        label: label,
+        child: _sheetActionButton(
+          label: label,
+          icon: icon,
+          filled: podeReceber,
+          onPressed:
+              podeReceber && !acaoEmProcessamento
+                  ? () => _runAfterClosingSheet(
+                    sheetContext,
+                    () => _abrirRecebimento(atendimento),
+                  )
+                  : null,
         ),
       ),
     );
@@ -2363,51 +2489,6 @@ class _AtendimentosTecnicosMobileScreenState
     return filled
         ? FilledButton(onPressed: onPressed, style: style, child: child)
         : OutlinedButton(onPressed: onPressed, style: style, child: child);
-  }
-
-  Widget _sharePdfHeaderButton({
-    required bool gerando,
-    required bool habilitado,
-    required Future<void> Function(BuildContext originContext)? onPressed,
-  }) {
-    final String tooltip = _t(
-      'atendimentoTecnico.mobile.sharePdfTooltip',
-      'Compartilhar atendimento',
-    );
-    return Builder(
-      builder: (BuildContext buttonContext) {
-        return Semantics(
-          button: true,
-          label: tooltip,
-          enabled: habilitado && !gerando && onPressed != null,
-          child: IconButton(
-            tooltip: tooltip,
-            style: IconButton.styleFrom(
-              fixedSize: Size(46, 46),
-              minimumSize: Size(46, 46),
-              foregroundColor: _accentColor,
-              backgroundColor:
-                  gerando ? _softSurfaceColor : _softAccentSurfaceColor,
-            ),
-            onPressed:
-                habilitado && !gerando && onPressed != null
-                    ? () => onPressed(buttonContext)
-                    : null,
-            icon:
-                gerando
-                    ? SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        valueColor: AlwaysStoppedAnimation<Color>(_accentColor),
-                      ),
-                    )
-                    : Icon(Icons.send_rounded, size: 21),
-          ),
-        );
-      },
-    );
   }
 
   Widget _pdfLoadingOverlay() {
@@ -3082,6 +3163,278 @@ class _AtendimentosTecnicosMobileScreenState
     }
   }
 
+  Future<_StatusSignatureGateAction?> _abrirAssinaturaStatusSheet(
+    AtendimentoTecnicoModel atendimento,
+    DominioOpcaoModel status,
+  ) {
+    final String statusLabel = _statusOptionLabel(status);
+    return showModalBottomSheet<_StatusSignatureGateAction>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Color(0x66000000),
+      builder: (BuildContext sheetContext) {
+        return Container(
+          decoration: BoxDecoration(
+            color: _backgroundColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                18,
+                10,
+                18,
+                18 + MediaQuery.viewInsetsOf(sheetContext).bottom,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: SixMobilePalette.activeBorder,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      _iconBox(
+                        Icons.draw_rounded,
+                        size: 44,
+                        backgroundColor: SixMobilePalette.error.withValues(
+                          alpha: 0.12,
+                        ),
+                        foregroundColor: SixMobilePalette.error,
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              _t(
+                                'atendimentoTecnico.signatureGate.title',
+                                'Assinatura necessária',
+                              ),
+                              style: TextStyle(
+                                color: _titleTextColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            SizedBox(height: 6),
+                            Text(
+                              _t(
+                                'atendimentoTecnico.signatureGate.message',
+                                'Para avançar para {status}, envie o link de assinatura ao cliente, assine neste dispositivo ou registre o bypass.',
+                              ).replaceAll('{status}', statusLabel),
+                              style: TextStyle(
+                                color: _mutedTextColor,
+                                fontSize: 13,
+                                height: 1.35,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        icon: Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed:
+                        () => Navigator.of(
+                          sheetContext,
+                        ).pop(_StatusSignatureGateAction.enviarLink),
+                    icon: Icon(Icons.ios_share_rounded),
+                    label: Text(
+                      _t(
+                        'atendimentoTecnico.signatureGate.sendLink',
+                        'Enviar link ao cliente',
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed:
+                        () => Navigator.of(sheetContext).pop(
+                          _StatusSignatureGateAction.assinarNesteDispositivo,
+                        ),
+                    icon: Icon(Icons.edit_note_rounded),
+                    label: Text(
+                      _t(
+                        'atendimentoTecnico.signatureGate.signHere',
+                        'Assinar neste dispositivo',
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextButton.icon(
+                    onPressed:
+                        () => Navigator.of(
+                          sheetContext,
+                        ).pop(_StatusSignatureGateAction.avancarSemAssinatura),
+                    icon: Icon(Icons.warning_amber_rounded),
+                    label: Text(
+                      _t(
+                        'atendimentoTecnico.signatureGate.bypass',
+                        'Avançar sem assinatura',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<String> _gerarLinkAssinaturaAtendimento(
+    AtendimentoTecnicoModel atendimento,
+  ) async {
+    final String origin = AppConfig.publicFrontendOrigin.trim();
+    if (origin.isEmpty) {
+      throw Exception(
+        _t(
+          'atendimentoTecnico.signatureGate.publicUrlMissing',
+          'URL pública do aplicativo não configurada.',
+        ),
+      );
+    }
+    final Map<String, dynamic> response = await _service.gerarLinkAssinatura(
+      id: atendimento.id,
+      baseUrl: '$origin/atendimento/assinatura',
+    );
+    final String link = response['link']?.toString().trim() ?? '';
+    if (link.isEmpty) {
+      throw Exception(
+        _t(
+          'atendimentoTecnico.signatureGate.linkMissing',
+          'Link de assinatura não retornado pelo backend.',
+        ),
+      );
+    }
+    return link;
+  }
+
+  Future<void> _compartilharLinkAssinatura(
+    AtendimentoTecnicoModel atendimento,
+  ) async {
+    if (_processandoAcao || _gerandoLinkAssinatura) return;
+    setState(() {
+      _processandoAcao = true;
+      _gerandoLinkAssinatura = true;
+    });
+    try {
+      final String link = await _gerarLinkAssinaturaAtendimento(atendimento);
+      if (!mounted) return;
+      await Clipboard.setData(ClipboardData(text: link));
+      await sharing.Share.share(
+        <String>[
+          _t(
+            'atendimentoTecnico.signatureGate.shareMessage',
+            'Para aprovar o atendimento, assine pelo link abaixo:',
+          ),
+          '${atendimento.numero} - ${_equipamentoTitulo(atendimento)}',
+          link,
+        ].join('\n\n'),
+        subject: _t(
+          'atendimentoTecnico.signatureGate.shareSubject',
+          'Assinatura do atendimento',
+        ),
+      );
+      if (!mounted) return;
+      _mostrarMensagem(
+        _t(
+          'atendimentoTecnico.signatureGate.linkCopied',
+          'Link de assinatura copiado.',
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem(
+        '${_t('atendimentoTecnico.signatureGate.linkError', 'Não foi possível gerar o link de assinatura')}: $error',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _processandoAcao = false;
+          _gerandoLinkAssinatura = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _abrirAssinaturaNoDispositivo(
+    AtendimentoTecnicoModel atendimento,
+    DominioOpcaoModel status,
+    String? observacaoStatus,
+  ) async {
+    if (_processandoAcao) return;
+    final _AssinaturaDispositivoMobileResult? result =
+        await showModalBottomSheet<_AssinaturaDispositivoMobileResult>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          backgroundColor: Colors.transparent,
+          barrierColor: Color(0x66000000),
+          builder: (BuildContext sheetContext) {
+            return _AssinaturaDispositivoMobileSheet(
+              atendimento: atendimento,
+              statusLabel: _statusOptionLabel(status),
+            );
+          },
+        );
+
+    if (result == null || !mounted) return;
+    setState(() {
+      _processandoAcao = true;
+    });
+    try {
+      await _service.assinarNoDispositivo(
+        id: atendimento.id,
+        status: status,
+        observacaoStatus: _textoOuNulo(observacaoStatus),
+        nomeAssinante: result.nomeAssinante,
+        documentoAssinante: _textoOuNulo(result.documentoAssinante),
+        assinaturaDataUrl: result.assinaturaDataUrl,
+        observacaoAssinatura: _textoOuNulo(result.observacao),
+      );
+      if (!mounted) return;
+      await _recarregar();
+      _mostrarMensagem(
+        _t(
+          'atendimentoTecnico.signatureGate.deviceSignatureSaved',
+          'Assinatura registrada e status atualizado.',
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem(
+        '${_t('atendimentoTecnico.signatureGate.deviceSignatureError', 'Não foi possível registrar a assinatura')}: $error',
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _processandoAcao = false);
+      }
+    }
+  }
+
   Future<void> _abrirAlterarStatus(
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> statusDisponiveis,
@@ -3110,12 +3463,37 @@ class _AtendimentosTecnicosMobileScreenState
         );
 
     if (result == null || !mounted) return;
+    bool bypassAssinatura = false;
+    if (AtendimentoStatusSignaturePolicy.atendimentoPrecisaAssinaturaPara(
+      atendimento: atendimento,
+      status: result.status,
+    )) {
+      final _StatusSignatureGateAction? action =
+          await _abrirAssinaturaStatusSheet(atendimento, result.status);
+      if (action == null || !mounted) return;
+      switch (action) {
+        case _StatusSignatureGateAction.enviarLink:
+          await _compartilharLinkAssinatura(atendimento);
+          return;
+        case _StatusSignatureGateAction.assinarNesteDispositivo:
+          await _abrirAssinaturaNoDispositivo(
+            atendimento,
+            result.status,
+            result.observacao,
+          );
+          return;
+        case _StatusSignatureGateAction.avancarSemAssinatura:
+          bypassAssinatura = true;
+      }
+    }
+
     setState(() => _processandoAcao = true);
     try {
       await _service.alterarStatus(
         id: atendimento.id,
         status: result.status,
         observacao: _textoOuNulo(result.observacao),
+        bypassAssinatura: bypassAssinatura,
       );
       if (!mounted) return;
       await _recarregar();
@@ -3129,6 +3507,7 @@ class _AtendimentosTecnicosMobileScreenState
   }
 
   Widget _emptyState() {
+    final bool filtering = _hasAnyFilter;
     return _card(
       child: Column(
         children: <Widget>[
@@ -3147,13 +3526,28 @@ class _AtendimentosTecnicosMobileScreenState
           ),
           SizedBox(height: 5),
           Text(
-            _t(
-              widget.listContext.emptyMessageKey,
-              widget.listContext.emptyMessageFallback,
-            ),
+            filtering
+                ? _t(
+                  'atendimentoTecnico.mobile.emptyFilteredMessage',
+                  'Nenhum atendimento encontrado com os filtros selecionados.',
+                )
+                : _t(
+                  widget.listContext.emptyMessageKey,
+                  widget.listContext.emptyMessageFallback,
+                ),
             textAlign: TextAlign.center,
             style: TextStyle(color: _mutedTextColor, height: 1.3),
           ),
+          if (filtering) ...<Widget>[
+            SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: _limparConsultaCompleta,
+              icon: Icon(Icons.filter_alt_off_rounded),
+              label: Text(
+                _t('atendimentoTecnico.mobile.clearFilters', 'Limpar filtros'),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -3263,32 +3657,23 @@ class _AtendimentosTecnicosMobileScreenState
     );
   }
 
-  Widget _sectionTitle(String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        color: _titleTextColor,
-        fontSize: 16,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 0.1,
-      ),
-    );
-  }
-
   List<AtendimentoTecnicoModel> _filtrar(
     List<AtendimentoTecnicoModel> atendimentos,
-    List<DominioOpcaoModel> statusDisponiveis,
-  ) {
-    final String termo = _searchController.text.trim().toLowerCase();
-    final String? statusSelecionadoKey = _statusSelecionadoKey;
+    List<DominioOpcaoModel> statusDisponiveis, {
+    _AtendimentosTecnicosConsulta? consultaOverride,
+  }) {
+    final _AtendimentosTecnicosConsulta consulta =
+        consultaOverride ?? _consulta;
+    final String termo = consulta.busca.trim().toLowerCase();
+    final String? statusSelecionadoKey = consulta.statusKey;
     final DateTime? inicio =
-        _dataInicioFiltro == null ? null : _inicioDoDia(_dataInicioFiltro!);
+        consulta.dataInicio == null ? null : _inicioDoDia(consulta.dataInicio!);
     final DateTime? fim =
-        _dataFimFiltro == null ? null : _fimDoDia(_dataFimFiltro!);
-    final String? tecnicoKey = _tecnicoFiltroKey;
+        consulta.dataFim == null ? null : _fimDoDia(consulta.dataFim!);
+    final String? tecnicoKey = consulta.tecnicoKey;
     final AtendimentosCriadosStatusPagamentoFiltro statusPagamento =
         _permitePreferenciasAtendimentosCriados
-            ? _statusPagamentoFiltro
+            ? consulta.statusPagamento
             : AtendimentosCriadosStatusPagamentoFiltro.todos;
     final List<AtendimentoTecnicoModel> sorted =
         List<AtendimentoTecnicoModel>.from(atendimentos)
@@ -3429,6 +3814,15 @@ class _AtendimentosTecnicosMobileScreenState
         statusTexto.contains('CONCLU');
   }
 
+  bool _clienteNaoAssinouAtendimentoAberto(
+    AtendimentoTecnicoModel atendimento,
+  ) {
+    if (_atendimentoFinalizadoOperacionalmente(atendimento)) {
+      return false;
+    }
+    return !atendimento.assinaturaAprovada || atendimento.requerNovaAssinatura;
+  }
+
   DateTime? _dataReferenciaFiltro(AtendimentoTecnicoModel atendimento) {
     return atendimento.dataEntregaPrevista ??
         atendimento.dataAtualizacao ??
@@ -3457,6 +3851,31 @@ class _AtendimentosTecnicosMobileScreenState
     final String codigo = atendimento.statusCodigo.trim().toUpperCase();
     if (codigo.isNotEmpty) return 'codigo:$codigo';
     return '__sem_status__';
+  }
+
+  String _statusFiltroKeyOpcao(DominioOpcaoModel status) {
+    if (status.id > 0) return 'id:${status.id}';
+    final String codigo = status.codigo.trim().toUpperCase();
+    return codigo.isEmpty ? '__sem_status__' : 'codigo:$codigo';
+  }
+
+  String _statusOptionLabel(DominioOpcaoModel status) {
+    final String fallback =
+        status.nomePadraoPtBr.trim().isEmpty
+            ? status.codigo.trim()
+            : status.nomePadraoPtBr.trim();
+    final String key = status.i18nKey.trim();
+    return key.isEmpty ? fallback : _t(key, fallback);
+  }
+
+  String _resultadoConsultaLabel(int count) {
+    if (count == 1) {
+      return _t('atendimentoTecnico.mobile.resultCountOne', '1 atendimento');
+    }
+    return _t(
+      'atendimentoTecnico.mobile.resultCountMany',
+      '{count} atendimentos',
+    ).replaceAll('{count}', count.toString());
   }
 
   List<_TecnicoFiltroOption> _tecnicoOptions(
@@ -3500,45 +3919,53 @@ class _AtendimentosTecnicosMobileScreenState
     return options;
   }
 
-  String _tecnicoFiltroLabel(List<_TecnicoFiltroOption> options) {
-    final String? selected = _tecnicoFiltroKey;
-    if (selected == null) return 'Todos os técnicos';
+  String _tecnicoFiltroLabel(
+    List<_TecnicoFiltroOption> options,
+    String? selected,
+  ) {
+    if (selected == null) {
+      return _t(
+        'atendimentoTecnico.mobile.allTechnicians',
+        'Todos os técnicos',
+      );
+    }
     for (final _TecnicoFiltroOption option in options) {
       if (option.key == selected) return option.label;
     }
-    return 'Técnico selecionado';
+    return _t(
+      'atendimentoTecnico.mobile.selectedTechnician',
+      'Técnico selecionado',
+    );
   }
 
-  String _periodoFiltroLabel() {
-    final DateTime? inicio = _dataInicioFiltro;
-    final DateTime? fim = _dataFimFiltro;
-    if (inicio == null && fim == null) return 'Todas as datas';
+  String _periodoFiltroLabel(_AtendimentosTecnicosConsulta consulta) {
+    final DateTime? inicio = consulta.dataInicio;
+    final DateTime? fim = consulta.dataFim;
+    if (inicio == null && fim == null) {
+      return _t('atendimentoTecnico.mobile.dateAll', 'Todas as datas');
+    }
+    final DateTime hoje = _inicioDoDia(DateTime.now());
+    if (inicio != null &&
+        fim != null &&
+        _inicioDoDia(inicio) == hoje &&
+        _inicioDoDia(fim) == hoje) {
+      return _t('atendimentoTecnico.mobile.dateToday', 'Hoje');
+    }
     if (inicio != null && fim != null) {
-      return '${_formatarData(inicio)} até ${_formatarData(fim)}';
+      return _t('atendimentoTecnico.mobile.dateRange', '{start} até {end}')
+          .replaceAll('{start}', _formatarData(inicio))
+          .replaceAll('{end}', _formatarData(fim));
     }
-    if (inicio != null) return 'A partir de ${_formatarData(inicio)}';
-    return 'Até ${_formatarData(fim!)}';
-  }
-
-  List<_StatusCount> _statusCounts(
-    List<AtendimentoTecnicoModel> atendimentos,
-    List<DominioOpcaoModel> statusDisponiveis,
-  ) {
-    final Map<String, _StatusCount> counts = <String, _StatusCount>{};
-    for (final AtendimentoTecnicoModel atendimento in atendimentos) {
-      final String key = _statusFiltroKeyAtendimento(atendimento);
-      final String label = _statusLabel(atendimento, statusDisponiveis);
-      final _StatusCount? current = counts[key];
-      counts[key] = _StatusCount(
-        key: key,
-        label: current?.label ?? label,
-        count: (current?.count ?? 0) + 1,
-      );
+    if (inicio != null) {
+      return _t(
+        'atendimentoTecnico.mobile.dateFrom',
+        'A partir de {date}',
+      ).replaceAll('{date}', _formatarData(inicio));
     }
-
-    final List<_StatusCount> result = counts.values.toList(growable: false)
-      ..sort((a, b) => b.count.compareTo(a.count));
-    return result;
+    return _t(
+      'atendimentoTecnico.mobile.dateUntil',
+      'Até {date}',
+    ).replaceAll('{date}', _formatarData(fim!));
   }
 
   String _statusPagamentoFiltroLabel(
@@ -3555,16 +3982,6 @@ class _AtendimentosTecnicosMobileScreenState
       case AtendimentosCriadosStatusPagamentoFiltro.liquidado:
         return _t('atendimentoTecnico.filters.paymentStatus.paid', 'Liquidado');
     }
-  }
-
-  int _totalPendentes(List<AtendimentoTecnicoModel> atendimentos) {
-    return atendimentos
-        .where(
-          (AtendimentoTecnicoModel atendimento) =>
-              _pagamentoEmAberto(atendimento) ||
-              atendimento.requerNovaAssinatura,
-        )
-        .length;
   }
 
   int _totalEmAberto(List<AtendimentoTecnicoModel> atendimentos) {
@@ -3704,8 +4121,8 @@ class _AtendimentosTecnicosMobileScreenState
         : 'Recebimento parcial realizado no atendimento técnico mobile.';
   }
 
-  String? _textoOuNulo(String value) {
-    final String text = value.trim();
+  String? _textoOuNulo(String? value) {
+    final String text = value?.trim() ?? '';
     return text.isEmpty ? null : text;
   }
 
@@ -3803,21 +4220,6 @@ class _AtendimentoCardSkeleton extends StatelessWidget {
           );
         },
       ),
-    );
-  }
-}
-
-class _StatusOverviewSkeletonRow extends StatelessWidget {
-  const _StatusOverviewSkeletonRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        Expanded(child: _AtendimentoSkeletonBlock(height: 14, radius: 8)),
-        SizedBox(width: 10),
-        _AtendimentoSkeletonBlock(width: 42, height: 26, radius: 999),
-      ],
     );
   }
 }
@@ -3977,32 +4379,11 @@ class _AtendimentoSkeletonBlockState extends State<_AtendimentoSkeletonBlock>
   }
 }
 
-class _SummaryItem {
-  const _SummaryItem({
-    required this.label,
-    required this.value,
-    required this.helper,
-    required this.icon,
-    this.highlight = false,
-  });
-
-  final String label;
-  final String value;
-  final String helper;
-  final IconData icon;
-  final bool highlight;
-}
-
-class _StatusCount {
-  const _StatusCount({
-    required this.key,
-    required this.label,
-    required this.count,
-  });
+class _TecnicoFiltroOption {
+  const _TecnicoFiltroOption({required this.key, required this.label});
 
   final String key;
   final String label;
-  final int count;
 }
 
 class _PeriodoFiltro {
@@ -4012,11 +4393,72 @@ class _PeriodoFiltro {
   final DateTime? dataFim;
 }
 
-class _TecnicoFiltroOption {
-  const _TecnicoFiltroOption({required this.key, required this.label});
+class _AtendimentosTecnicosConsulta {
+  const _AtendimentosTecnicosConsulta({
+    this.busca = '',
+    this.statusKey,
+    this.dataInicio,
+    this.dataFim,
+    this.tecnicoKey,
+    this.statusPagamento = AtendimentosCriadosStatusPagamentoFiltro.todos,
+    this.page = 0,
+    this.pageSize = 20,
+    this.sortKey = 'dataAtualizacaoDesc',
+  });
 
-  final String key;
-  final String label;
+  static const Object _unset = Object();
+
+  final String busca;
+  final String? statusKey;
+  final DateTime? dataInicio;
+  final DateTime? dataFim;
+  final String? tecnicoKey;
+  final AtendimentosCriadosStatusPagamentoFiltro statusPagamento;
+  final int page;
+  final int pageSize;
+  final String sortKey;
+
+  int advancedFilterCount({required bool includePayment}) {
+    int count = 0;
+    if (dataInicio != null || dataFim != null) count++;
+    if (tecnicoKey != null) count++;
+    if (includePayment &&
+        statusPagamento != AtendimentosCriadosStatusPagamentoFiltro.todos) {
+      count++;
+    }
+    return count;
+  }
+
+  _AtendimentosTecnicosConsulta copyWith({
+    String? busca,
+    Object? statusKey = _unset,
+    Object? dataInicio = _unset,
+    Object? dataFim = _unset,
+    Object? tecnicoKey = _unset,
+    AtendimentosCriadosStatusPagamentoFiltro? statusPagamento,
+    int? page,
+    int? pageSize,
+    String? sortKey,
+  }) {
+    return _AtendimentosTecnicosConsulta(
+      busca: busca ?? this.busca,
+      statusKey:
+          identical(statusKey, _unset) ? this.statusKey : statusKey as String?,
+      dataInicio:
+          identical(dataInicio, _unset)
+              ? this.dataInicio
+              : dataInicio as DateTime?,
+      dataFim: identical(dataFim, _unset) ? this.dataFim : dataFim as DateTime?,
+      tecnicoKey:
+          identical(tecnicoKey, _unset)
+              ? this.tecnicoKey
+              : tecnicoKey as String?,
+      statusPagamento: statusPagamento ?? this.statusPagamento,
+      page: page ?? this.page,
+      pageSize: pageSize ?? this.pageSize,
+      sortKey: sortKey ?? this.sortKey,
+    );
+  }
 }
 
 class _AtendimentosTecnicosMobileState {
@@ -4029,6 +4471,983 @@ class _AtendimentosTecnicosMobileState {
   final AtendimentoTecnicoDominiosBaseModel dominios;
   final List<AtendimentoTecnicoModel> atendimentos;
   final List<ColaboradorUsuarioResumo> tecnicos;
+}
+
+class _FiltrosAvancadosAtendimentosTecnicosMobileSheet extends StatefulWidget {
+  const _FiltrosAvancadosAtendimentosTecnicosMobileSheet({
+    required this.consulta,
+    required this.tecnicos,
+    required this.permitePagamento,
+    required this.formatarData,
+    required this.statusPagamentoLabel,
+    required this.previewCountFor,
+  });
+
+  final _AtendimentosTecnicosConsulta consulta;
+  final List<_TecnicoFiltroOption> tecnicos;
+  final bool permitePagamento;
+  final String Function(DateTime?) formatarData;
+  final String Function(AtendimentosCriadosStatusPagamentoFiltro value)
+  statusPagamentoLabel;
+  final int Function(_AtendimentosTecnicosConsulta consulta) previewCountFor;
+
+  @override
+  State<_FiltrosAvancadosAtendimentosTecnicosMobileSheet> createState() =>
+      _FiltrosAvancadosAtendimentosTecnicosMobileSheetState();
+}
+
+enum _FiltrosAvancadosAtendimentosTecnicosMobileView {
+  principal,
+  periodo,
+  tecnico,
+  pagamento,
+}
+
+class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
+    extends State<_FiltrosAvancadosAtendimentosTecnicosMobileSheet> {
+  static Color get _backgroundColor => SixMobilePalette.background;
+  static Color get _surfaceColor => SixMobilePalette.surface;
+  static Color get _accentColor => SixMobilePalette.accent;
+  static Color get _mutedTextColor => SixMobilePalette.mutedText;
+  static Color get _titleTextColor => SixMobilePalette.titleText;
+  static Color get _borderColor => SixMobilePalette.activeBorder;
+  static Color get _highlightedBorderColor =>
+      SixMobilePalette.highlightedBorder;
+
+  final TextEditingController _tecnicoSearchController =
+      TextEditingController();
+  late DateTime? _dataInicio = widget.consulta.dataInicio;
+  late DateTime? _dataFim = widget.consulta.dataFim;
+  late String? _tecnicoKey = widget.consulta.tecnicoKey;
+  late AtendimentosCriadosStatusPagamentoFiltro _statusPagamento =
+      widget.consulta.statusPagamento;
+  bool _editandoInicio = true;
+  String _tecnicoSearch = '';
+  _FiltrosAvancadosAtendimentosTecnicosMobileView _view =
+      _FiltrosAvancadosAtendimentosTecnicosMobileView.principal;
+
+  static const List<AtendimentosCriadosStatusPagamentoFiltro>
+  _statusPagamentoOptions = <AtendimentosCriadosStatusPagamentoFiltro>[
+    AtendimentosCriadosStatusPagamentoFiltro.todos,
+    AtendimentosCriadosStatusPagamentoFiltro.emAberto,
+    AtendimentosCriadosStatusPagamentoFiltro.liquidado,
+  ];
+
+  List<_TecnicoFiltroOption> get _tecnicosFiltrados {
+    final String term = _normalize(_tecnicoSearch);
+    if (term.isEmpty) return widget.tecnicos;
+    return widget.tecnicos
+        .where((_TecnicoFiltroOption item) {
+          return _normalize(item.label).contains(term);
+        })
+        .toList(growable: false);
+  }
+
+  @override
+  void dispose() {
+    _tecnicoSearchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.84,
+      minChildSize: 0.56,
+      maxChildSize: 0.96,
+      expand: false,
+      builder: (BuildContext context, ScrollController _) {
+        final _AtendimentosTecnicosConsulta consulta = _temporaryConsulta();
+        final int previewCount = widget.previewCountFor(consulta);
+        return Container(
+          decoration: BoxDecoration(
+            color: _backgroundColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: SafeArea(
+            top: false,
+            child: PopScope(
+              canPop:
+                  _view ==
+                  _FiltrosAvancadosAtendimentosTecnicosMobileView.principal,
+              onPopInvokedWithResult: (bool didPop, Object? result) {
+                if (didPop) return;
+                if (_view !=
+                    _FiltrosAvancadosAtendimentosTecnicosMobileView.principal) {
+                  _voltarPainelPrincipal();
+                }
+              },
+              child: Column(
+                children: <Widget>[
+                  SizedBox(height: 10),
+                  Container(
+                    width: 42,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: SixMobilePalette.activeBorder,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  SizedBox(height: 14),
+                  _sheetHeader(),
+                  SizedBox(height: 12),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: Duration(milliseconds: 180),
+                      reverseDuration: Duration(milliseconds: 140),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (
+                        Widget child,
+                        Animation<double> animation,
+                      ) {
+                        final Animation<Offset> offset = Tween<Offset>(
+                          begin: Offset(0.03, 0),
+                          end: Offset.zero,
+                        ).animate(animation);
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: offset,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: KeyedSubtree(
+                        key: ValueKey<
+                          _FiltrosAvancadosAtendimentosTecnicosMobileView
+                        >(_view),
+                        child: _buildCurrentView(),
+                      ),
+                    ),
+                  ),
+                  if (_view ==
+                      _FiltrosAvancadosAtendimentosTecnicosMobileView.principal)
+                    _sheetActions(
+                      consulta: consulta,
+                      previewCount: previewCount,
+                    )
+                  else
+                    SizedBox(
+                      height: 14 + MediaQuery.viewInsetsOf(context).bottom,
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _sheetHeader() {
+    if (_view != _FiltrosAvancadosAtendimentosTecnicosMobileView.principal) {
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          children: <Widget>[
+            IconButton(
+              tooltip: _t('common.back', 'Voltar'),
+              onPressed: _voltarPainelPrincipal,
+              icon: Icon(Icons.arrow_back_rounded),
+            ),
+            _sheetIcon(_currentViewIcon(), size: 40),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _currentViewTitle(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: _titleTextColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 18),
+      child: Row(
+        children: <Widget>[
+          _sheetIcon(Icons.tune_rounded),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _t(
+                'atendimentoTecnico.mobile.filterSheetTitle',
+                'Filtrar atendimentos',
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: _titleTextColor,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: _t('common.close', 'Fechar'),
+            onPressed: () => Navigator.of(context).pop(),
+            icon: Icon(Icons.close_rounded),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCurrentView() {
+    switch (_view) {
+      case _FiltrosAvancadosAtendimentosTecnicosMobileView.principal:
+        return _mainFiltersView();
+      case _FiltrosAvancadosAtendimentosTecnicosMobileView.periodo:
+        return _periodSelectorView();
+      case _FiltrosAvancadosAtendimentosTecnicosMobileView.tecnico:
+        return _technicianSelectorView();
+      case _FiltrosAvancadosAtendimentosTecnicosMobileView.pagamento:
+        return _paymentSelectorView();
+    }
+  }
+
+  Widget _mainFiltersView() {
+    return ListView(
+      padding: EdgeInsets.fromLTRB(18, 0, 18, 12),
+      children: <Widget>[
+        _compactFilterRow(
+          title: _t('atendimentoTecnico.mobile.filterPeriod', 'Período'),
+          value: _periodoResumoLabel(),
+          icon: Icons.event_outlined,
+          onTap:
+              () => _openView(
+                _FiltrosAvancadosAtendimentosTecnicosMobileView.periodo,
+              ),
+        ),
+        SizedBox(height: 10),
+        _compactFilterRow(
+          title: _t(
+            'atendimentoTecnico.mobile.filterTechnician',
+            'Técnico responsável',
+          ),
+          value: _tecnicoResumoLabel(),
+          icon: Icons.engineering_outlined,
+          onTap:
+              () => _openView(
+                _FiltrosAvancadosAtendimentosTecnicosMobileView.tecnico,
+              ),
+        ),
+        if (widget.permitePagamento) ...<Widget>[
+          SizedBox(height: 10),
+          _compactFilterRow(
+            title: _t(
+              'atendimentoTecnico.mobile.filterPaymentStatus',
+              'Status do pagamento',
+            ),
+            value: widget.statusPagamentoLabel(_statusPagamento),
+            icon: Icons.account_balance_wallet_outlined,
+            onTap:
+                () => _openView(
+                  _FiltrosAvancadosAtendimentosTecnicosMobileView.pagamento,
+                ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _periodSelectorView() {
+    final DateTime now = DateTime.now();
+    final DateTime selected = (_editandoInicio ? _dataInicio : _dataFim) ?? now;
+    return ListView(
+      padding: EdgeInsets.fromLTRB(
+        18,
+        0,
+        18,
+        16 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      children: <Widget>[
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: <Widget>[
+            _dateTargetChip(
+              label: _t('atendimentoTecnico.mobile.filterStartDate', 'Início'),
+              value: widget.formatarData(_dataInicio),
+              selected: _editandoInicio,
+              onTap: () => setState(() => _editandoInicio = true),
+            ),
+            _dateTargetChip(
+              label: _t('atendimentoTecnico.mobile.filterEndDate', 'Fim'),
+              value: widget.formatarData(_dataFim),
+              selected: !_editandoInicio,
+              onTap: () => setState(() => _editandoInicio = false),
+            ),
+          ],
+        ),
+        SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: <Widget>[
+            _shortcutChip(
+              _t('atendimentoTecnico.mobile.dateToday', 'Hoje'),
+              () => _setPeriodo(now, now),
+            ),
+            _shortcutChip(
+              _t('atendimentoTecnico.mobile.dateLast7Days', 'Últimos 7 dias'),
+              () => _setPeriodo(now.subtract(Duration(days: 6)), now),
+            ),
+            _shortcutChip(
+              _t('atendimentoTecnico.mobile.dateNext7Days', 'Próximos 7 dias'),
+              () => _setPeriodo(now, now.add(Duration(days: 7))),
+            ),
+            _shortcutChip(
+              _t('atendimentoTecnico.mobile.dateOverdue', 'Vencidos'),
+              () => _setPeriodoAte(now.subtract(Duration(days: 1))),
+            ),
+          ],
+        ),
+        SizedBox(height: 10),
+        Container(
+          decoration: BoxDecoration(
+            color: _surfaceColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _borderColor),
+          ),
+          child: CalendarDatePicker(
+            key: ValueKey<String>(
+              '${_editandoInicio ? 'inicio' : 'fim'}-${selected.toIso8601String()}',
+            ),
+            initialDate: selected,
+            firstDate: DateTime(2000),
+            lastDate: DateTime(now.year + 5, 12, 31),
+            onDateChanged: _selecionarData,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _technicianSelectorView() {
+    final List<_TecnicoFiltroOption> tecnicos = _tecnicosFiltrados;
+    final bool noResults = _tecnicoSearch.trim().isNotEmpty && tecnicos.isEmpty;
+    final int itemCount = 1 + (noResults ? 1 : tecnicos.length);
+
+    return Column(
+      children: <Widget>[
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 18),
+          child: TextField(
+            controller: _tecnicoSearchController,
+            onChanged: (String value) => setState(() => _tecnicoSearch = value),
+            decoration: InputDecoration(
+              hintText: _t(
+                'atendimentoTecnico.mobile.searchTechnician',
+                'Buscar técnico',
+              ),
+              prefixIcon: Icon(Icons.search_rounded),
+              suffixIcon:
+                  _tecnicoSearchController.text.isEmpty
+                      ? null
+                      : IconButton(
+                        tooltip: _t('common.clear', 'Limpar'),
+                        icon: Icon(Icons.close_rounded),
+                        onPressed: () {
+                          _tecnicoSearchController.clear();
+                          setState(() => _tecnicoSearch = '');
+                        },
+                      ),
+              filled: true,
+              fillColor: _surfaceColor,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: _borderColor),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: _borderColor),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: _accentColor, width: 1.4),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: 12),
+        Expanded(
+          child: ListView.builder(
+            padding: EdgeInsets.fromLTRB(
+              18,
+              0,
+              18,
+              16 + MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            itemCount: itemCount,
+            itemBuilder: (BuildContext context, int index) {
+              if (index == 0) {
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 10),
+                  child: _optionTile(
+                    label: _t(
+                      'atendimentoTecnico.mobile.allTechnicians',
+                      'Todos os técnicos',
+                    ),
+                    icon: Icons.groups_outlined,
+                    selected: _tecnicoKey == null,
+                    onTap: _selecionarTodosTecnicos,
+                  ),
+                );
+              }
+
+              if (noResults) {
+                return _selectorEmptyState(
+                  icon: Icons.search_off_rounded,
+                  message: _t(
+                    'atendimentoTecnico.mobile.noTechnicianFound',
+                    'Nenhum técnico encontrado.',
+                  ),
+                );
+              }
+
+              final _TecnicoFiltroOption tecnico = tecnicos[index - 1];
+              return Padding(
+                padding: EdgeInsets.only(bottom: 10),
+                child: _optionTile(
+                  label: tecnico.label,
+                  icon: Icons.engineering_outlined,
+                  selected: _tecnicoKey == tecnico.key,
+                  onTap: () => _selecionarTecnico(tecnico.key),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _paymentSelectorView() {
+    return ListView.builder(
+      padding: EdgeInsets.fromLTRB(
+        18,
+        0,
+        18,
+        16 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      itemCount: _statusPagamentoOptions.length,
+      itemBuilder: (BuildContext context, int index) {
+        final AtendimentosCriadosStatusPagamentoFiltro option =
+            _statusPagamentoOptions[index];
+        return Padding(
+          padding: EdgeInsets.only(bottom: 10),
+          child: _optionTile(
+            label: widget.statusPagamentoLabel(option),
+            icon: _paymentIcon(option),
+            selected: _statusPagamento == option,
+            onTap: () => _selecionarStatusPagamento(option),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _sheetActions({
+    required _AtendimentosTecnicosConsulta consulta,
+    required int previewCount,
+  }) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        18,
+        8,
+        18,
+        18 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: OutlinedButton(
+              onPressed: _limparTemporarios,
+              child: Text(_t('common.clear', 'Limpar')),
+            ),
+          ),
+          SizedBox(width: 10),
+          Expanded(
+            child: FilledButton.icon(
+              onPressed: () => Navigator.of(context).pop(consulta),
+              icon: Icon(Icons.check_rounded),
+              label: Text(_verAtendimentosLabel(previewCount)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _compactFilterRow({
+    required String title,
+    required String value,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Semantics(
+      button: true,
+      label: '$title, $value',
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _surfaceColor,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: _borderColor),
+            ),
+            child: Row(
+              children: <Widget>[
+                _sheetIcon(icon, size: 40),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _titleTextColor,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13,
+                        ),
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        value,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _mutedTextColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                          height: 1.22,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: _mutedTextColor,
+                  size: 22,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _selectorEmptyState({
+    required IconData icon,
+    required String message,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      decoration: BoxDecoration(
+        color: SixMobilePalette.softNeutralSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _borderColor),
+      ),
+      child: Row(
+        children: <Widget>[
+          _sheetIcon(icon, size: 36),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: _mutedTextColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _currentViewTitle() {
+    switch (_view) {
+      case _FiltrosAvancadosAtendimentosTecnicosMobileView.principal:
+        return _t(
+          'atendimentoTecnico.mobile.filterSheetTitle',
+          'Filtrar atendimentos',
+        );
+      case _FiltrosAvancadosAtendimentosTecnicosMobileView.periodo:
+        return _t('atendimentoTecnico.mobile.filterPeriod', 'Período');
+      case _FiltrosAvancadosAtendimentosTecnicosMobileView.tecnico:
+        return _t(
+          'atendimentoTecnico.mobile.filterTechnician',
+          'Técnico responsável',
+        );
+      case _FiltrosAvancadosAtendimentosTecnicosMobileView.pagamento:
+        return _t(
+          'atendimentoTecnico.mobile.filterPaymentStatus',
+          'Status do pagamento',
+        );
+    }
+  }
+
+  IconData _currentViewIcon() {
+    switch (_view) {
+      case _FiltrosAvancadosAtendimentosTecnicosMobileView.principal:
+        return Icons.tune_rounded;
+      case _FiltrosAvancadosAtendimentosTecnicosMobileView.periodo:
+        return Icons.event_outlined;
+      case _FiltrosAvancadosAtendimentosTecnicosMobileView.tecnico:
+        return Icons.engineering_outlined;
+      case _FiltrosAvancadosAtendimentosTecnicosMobileView.pagamento:
+        return Icons.account_balance_wallet_outlined;
+    }
+  }
+
+  void _openView(_FiltrosAvancadosAtendimentosTecnicosMobileView view) {
+    setState(() => _view = view);
+  }
+
+  void _voltarPainelPrincipal() {
+    setState(
+      () => _view = _FiltrosAvancadosAtendimentosTecnicosMobileView.principal,
+    );
+  }
+
+  void _selecionarTodosTecnicos() {
+    setState(() {
+      _tecnicoKey = null;
+      _tecnicoSearch = '';
+      _tecnicoSearchController.clear();
+      _view = _FiltrosAvancadosAtendimentosTecnicosMobileView.principal;
+    });
+  }
+
+  void _selecionarTecnico(String key) {
+    setState(() {
+      _tecnicoKey = key;
+      _tecnicoSearch = '';
+      _tecnicoSearchController.clear();
+      _view = _FiltrosAvancadosAtendimentosTecnicosMobileView.principal;
+    });
+  }
+
+  void _selecionarStatusPagamento(
+    AtendimentosCriadosStatusPagamentoFiltro value,
+  ) {
+    setState(() {
+      _statusPagamento = value;
+      _view = _FiltrosAvancadosAtendimentosTecnicosMobileView.principal;
+    });
+  }
+
+  String _periodoResumoLabel() {
+    final DateTime? inicio = _dataInicio;
+    final DateTime? fim = _dataFim;
+    if (inicio == null && fim == null) {
+      return _t('atendimentoTecnico.mobile.dateAll', 'Todas as datas');
+    }
+
+    final DateTime hoje = _inicioDoDia(DateTime.now());
+    final DateTime ultimos7Inicio = hoje.subtract(Duration(days: 6));
+    final DateTime proximos7Fim = hoje.add(Duration(days: 7));
+    final DateTime vencidosFim = hoje.subtract(Duration(days: 1));
+
+    if (inicio != null && fim != null) {
+      final DateTime inicioDia = _inicioDoDia(inicio);
+      final DateTime fimDia = _inicioDoDia(fim);
+      if (inicioDia == hoje && fimDia == hoje) {
+        return _t('atendimentoTecnico.mobile.dateToday', 'Hoje');
+      }
+      if (inicioDia == ultimos7Inicio && fimDia == hoje) {
+        return _t('atendimentoTecnico.mobile.dateLast7Days', 'Últimos 7 dias');
+      }
+      if (inicioDia == hoje && fimDia == proximos7Fim) {
+        return _t('atendimentoTecnico.mobile.dateNext7Days', 'Próximos 7 dias');
+      }
+      return _t('atendimentoTecnico.mobile.dateRange', '{start} até {end}')
+          .replaceAll('{start}', widget.formatarData(inicio))
+          .replaceAll('{end}', widget.formatarData(fim));
+    }
+
+    if (inicio == null && fim != null && _inicioDoDia(fim) == vencidosFim) {
+      return _t('atendimentoTecnico.mobile.dateOverdue', 'Vencidos');
+    }
+
+    if (inicio != null) {
+      return _t(
+        'atendimentoTecnico.mobile.dateFrom',
+        'A partir de {date}',
+      ).replaceAll('{date}', widget.formatarData(inicio));
+    }
+    return _t(
+      'atendimentoTecnico.mobile.dateUntil',
+      'Até {date}',
+    ).replaceAll('{date}', widget.formatarData(fim));
+  }
+
+  String _tecnicoResumoLabel() {
+    if (_tecnicoKey == null) {
+      return _t(
+        'atendimentoTecnico.mobile.allTechnicians',
+        'Todos os técnicos',
+      );
+    }
+    for (final _TecnicoFiltroOption tecnico in widget.tecnicos) {
+      if (tecnico.key == _tecnicoKey) return tecnico.label;
+    }
+    return _t(
+      'atendimentoTecnico.mobile.selectedTechnician',
+      'Técnico selecionado',
+    );
+  }
+
+  DateTime _inicioDoDia(DateTime value) {
+    return DateTime(value.year, value.month, value.day);
+  }
+
+  Widget _dateTargetChip({
+    required String label,
+    required String value,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return ChoiceChip(
+      selected: selected,
+      showCheckmark: false,
+      label: Text('$label: $value'),
+      onSelected: (_) => onTap(),
+      selectedColor: _accentColor,
+      backgroundColor: SixMobilePalette.softNeutralSurface,
+      side: BorderSide(color: selected ? _accentColor : _borderColor),
+      labelStyle: TextStyle(
+        color: selected ? SixMobilePalette.onAccent : _titleTextColor,
+        fontWeight: FontWeight.w900,
+        fontSize: 12,
+      ),
+    );
+  }
+
+  Widget _shortcutChip(String label, VoidCallback onTap) {
+    return ActionChip(
+      label: Text(label),
+      onPressed: onTap,
+      backgroundColor: SixMobilePalette.softNeutralSurface,
+      side: BorderSide(color: _borderColor),
+      labelStyle: TextStyle(
+        color: _titleTextColor,
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+  }
+
+  Widget _optionTile({
+    required String label,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color:
+                selected
+                    ? SixMobilePalette.softAccentSurface
+                    : SixMobilePalette.softNeutralSurface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected ? _highlightedBorderColor : _borderColor,
+              width: selected ? 1.2 : 1,
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              _sheetIcon(icon, size: 36),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: _titleTextColor,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              SizedBox(width: 8),
+              Icon(
+                selected
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                color: selected ? _accentColor : _mutedTextColor,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sheetIcon(IconData icon, {double size = 42}) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: SixMobilePalette.softAccentSurface,
+        borderRadius: BorderRadius.circular(size * 0.36),
+      ),
+      child: Icon(icon, color: _accentColor, size: size * 0.52),
+    );
+  }
+
+  void _selecionarData(DateTime value) {
+    final DateTime normalized = DateTime(value.year, value.month, value.day);
+    setState(() {
+      if (_editandoInicio) {
+        _dataInicio = normalized;
+        if (_dataFim != null && _dataFim!.isBefore(normalized)) {
+          _dataFim = normalized;
+        }
+      } else {
+        _dataFim = normalized;
+        if (_dataInicio != null && _dataInicio!.isAfter(normalized)) {
+          _dataInicio = normalized;
+        }
+      }
+    });
+  }
+
+  void _setPeriodo(DateTime inicio, DateTime fim) {
+    setState(() {
+      _dataInicio = DateTime(inicio.year, inicio.month, inicio.day);
+      _dataFim = DateTime(fim.year, fim.month, fim.day);
+    });
+  }
+
+  void _setPeriodoAte(DateTime fim) {
+    setState(() {
+      _dataInicio = null;
+      _dataFim = DateTime(fim.year, fim.month, fim.day);
+      _editandoInicio = false;
+    });
+  }
+
+  void _limparTemporarios() {
+    setState(() {
+      _dataInicio = null;
+      _dataFim = null;
+      _tecnicoKey = null;
+      _statusPagamento = AtendimentosCriadosStatusPagamentoFiltro.todos;
+      _tecnicoSearch = '';
+      _tecnicoSearchController.clear();
+      _view = _FiltrosAvancadosAtendimentosTecnicosMobileView.principal;
+    });
+  }
+
+  _AtendimentosTecnicosConsulta _temporaryConsulta() {
+    return widget.consulta.copyWith(
+      dataInicio: _dataInicio,
+      dataFim: _dataFim,
+      tecnicoKey: _tecnicoKey,
+      statusPagamento:
+          widget.permitePagamento
+              ? _statusPagamento
+              : AtendimentosCriadosStatusPagamentoFiltro.todos,
+    );
+  }
+
+  String _verAtendimentosLabel(int count) {
+    if (count == 1) {
+      return _t(
+        'atendimentoTecnico.mobile.viewOneService',
+        'Ver 1 atendimento',
+      );
+    }
+    return _t(
+      'atendimentoTecnico.mobile.viewManyServices',
+      'Ver {count} atendimentos',
+    ).replaceAll('{count}', count.toString());
+  }
+
+  IconData _paymentIcon(AtendimentosCriadosStatusPagamentoFiltro value) {
+    switch (value) {
+      case AtendimentosCriadosStatusPagamentoFiltro.todos:
+        return Icons.receipt_long_outlined;
+      case AtendimentosCriadosStatusPagamentoFiltro.emAberto:
+        return Icons.account_balance_wallet_outlined;
+      case AtendimentosCriadosStatusPagamentoFiltro.liquidado:
+        return Icons.price_check_rounded;
+    }
+  }
+
+  String _t(String key, String fallback) {
+    return context.t(key, fallback: fallback);
+  }
+
+  String _normalize(String value) {
+    String normalized = value.toLowerCase();
+    const Map<String, String> replacements = <String, String>{
+      'á': 'a',
+      'à': 'a',
+      'â': 'a',
+      'ã': 'a',
+      'ä': 'a',
+      'é': 'e',
+      'è': 'e',
+      'ê': 'e',
+      'ë': 'e',
+      'í': 'i',
+      'ì': 'i',
+      'î': 'i',
+      'ï': 'i',
+      'ó': 'o',
+      'ò': 'o',
+      'ô': 'o',
+      'õ': 'o',
+      'ö': 'o',
+      'ú': 'u',
+      'ù': 'u',
+      'û': 'u',
+      'ü': 'u',
+      'ç': 'c',
+      'ñ': 'n',
+    };
+    for (final MapEntry<String, String> entry in replacements.entries) {
+      normalized = normalized.replaceAll(entry.key, entry.value);
+    }
+    return normalized.replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
 }
 
 class _PeriodoFiltroMobileSheet extends StatefulWidget {
@@ -4574,48 +5993,136 @@ class _StatusAtendimentoMobileResult {
   final String observacao;
 }
 
-class _StatusPagamentoFiltroMobileSheet extends StatelessWidget {
-  const _StatusPagamentoFiltroMobileSheet({
-    required this.selected,
-    required this.labelFor,
+enum _StatusSignatureGateAction {
+  enviarLink,
+  assinarNesteDispositivo,
+  avancarSemAssinatura,
+}
+
+class _AssinaturaDispositivoMobileResult {
+  const _AssinaturaDispositivoMobileResult({
+    required this.nomeAssinante,
+    required this.documentoAssinante,
+    required this.assinaturaDataUrl,
+    required this.observacao,
   });
 
-  final AtendimentosCriadosStatusPagamentoFiltro selected;
-  final String Function(AtendimentosCriadosStatusPagamentoFiltro value)
-  labelFor;
+  final String nomeAssinante;
+  final String documentoAssinante;
+  final String assinaturaDataUrl;
+  final String observacao;
+}
 
-  static const List<AtendimentosCriadosStatusPagamentoFiltro> _options =
-      <AtendimentosCriadosStatusPagamentoFiltro>[
-        AtendimentosCriadosStatusPagamentoFiltro.todos,
-        AtendimentosCriadosStatusPagamentoFiltro.emAberto,
-        AtendimentosCriadosStatusPagamentoFiltro.liquidado,
-      ];
+class _AssinaturaDispositivoMobileSheet extends StatefulWidget {
+  const _AssinaturaDispositivoMobileSheet({
+    required this.atendimento,
+    required this.statusLabel,
+  });
+
+  final AtendimentoTecnicoModel atendimento;
+  final String statusLabel;
+
+  @override
+  State<_AssinaturaDispositivoMobileSheet> createState() =>
+      _AssinaturaDispositivoMobileSheetState();
+}
+
+class _AssinaturaDispositivoMobileSheetState
+    extends State<_AssinaturaDispositivoMobileSheet> {
+  late final TextEditingController _nomeController;
+  final TextEditingController _documentoController = TextEditingController();
+  final TextEditingController _observacaoController = TextEditingController();
+  late final SignatureController _signatureController;
+  String? _erro;
+
+  @override
+  void initState() {
+    super.initState();
+    final String cliente = widget.atendimento.nomeClienteSnapshot?.trim() ?? '';
+    _nomeController = TextEditingController(text: cliente);
+    _signatureController = SignatureController(
+      penStrokeWidth: 2.6,
+      penColor: SixMobilePalette.titleText,
+      exportBackgroundColor: SixMobilePalette.surface,
+    );
+  }
+
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _documentoController.dispose();
+    _observacaoController.dispose();
+    _signatureController.dispose();
+    super.dispose();
+  }
+
+  void _confirmar() {
+    final String nome = _nomeController.text.trim();
+    if (nome.isEmpty) {
+      setState(() {
+        _erro = context.t(
+          'atendimentoTecnico.signatureGate.deviceSignerRequired',
+          fallback: 'Informe o nome de quem está assinando.',
+        );
+      });
+      return;
+    }
+    if (_signatureController.isEmpty) {
+      setState(() {
+        _erro = context.t(
+          'atendimentoTecnico.signatureGate.deviceSignatureRequired',
+          fallback: 'Faça a assinatura no quadro indicado.',
+        );
+      });
+      return;
+    }
+
+    final String assinaturaDataUrl = _assinaturaSvgDataUrl(
+      _signatureController,
+      SixMobilePalette.surface,
+      SixMobilePalette.titleText,
+    );
+    if (assinaturaDataUrl.isEmpty) {
+      setState(() {
+        _erro = context.t(
+          'atendimentoTecnico.signatureGate.deviceSignatureRequired',
+          fallback: 'Faça a assinatura no quadro indicado.',
+        );
+      });
+      return;
+    }
+    Navigator.of(context).pop(
+      _AssinaturaDispositivoMobileResult(
+        nomeAssinante: nome,
+        documentoAssinante: _documentoController.text.trim(),
+        assinaturaDataUrl: assinaturaDataUrl,
+        observacao: _observacaoController.text.trim(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final Color backgroundColor = SixMobilePalette.background;
-    final Color surfaceColor = SixMobilePalette.surface;
-    final Color accentColor = SixMobilePalette.accent;
-    final Color mutedTextColor = SixMobilePalette.mutedText;
-    final Color titleTextColor = SixMobilePalette.titleText;
-    final Color borderColor = SixMobilePalette.activeBorder;
-
-    return DraggableScrollableSheet(
-      initialChildSize: 0.48,
-      minChildSize: 0.36,
-      maxChildSize: 0.70,
-      expand: false,
-      builder: (BuildContext context, ScrollController scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+    final double maxHeight = MediaQuery.sizeOf(context).height * 0.92;
+    return Container(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      decoration: BoxDecoration(
+        color: SixMobilePalette.background,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            18,
+            10,
+            18,
+            18 + MediaQuery.viewInsetsOf(context).bottom,
           ),
-          child: SafeArea(
-            top: false,
-            child: ListView(
-              controller: scrollController,
-              padding: EdgeInsets.fromLTRB(18, 10, 18, 22),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 Center(
                   child: Container(
@@ -4629,17 +6136,18 @@ class _StatusPagamentoFiltroMobileSheet extends StatelessWidget {
                 ),
                 SizedBox(height: 16),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Container(
-                      width: 42,
-                      height: 42,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
                         color: SixMobilePalette.softAccentSurface,
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: Icon(
-                        Icons.account_balance_wallet_outlined,
-                        color: accentColor,
+                        Icons.draw_rounded,
+                        color: SixMobilePalette.accent,
                       ),
                     ),
                     SizedBox(width: 12),
@@ -4649,26 +6157,29 @@ class _StatusPagamentoFiltroMobileSheet extends StatelessWidget {
                         children: <Widget>[
                           Text(
                             context.t(
-                              'atendimentoTecnico.filters.paymentStatus.label',
-                              fallback: 'Status pagamento',
+                              'atendimentoTecnico.signatureGate.deviceTitle',
+                              fallback: 'Coletar assinatura',
                             ),
                             style: TextStyle(
-                              color: titleTextColor,
+                              color: SixMobilePalette.titleText,
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          SizedBox(height: 3),
+                          SizedBox(height: 4),
                           Text(
-                            context.t(
-                              'atendimentoTecnico.filters.paymentStatus.helper',
-                              fallback:
-                                  'Filtre atendimentos por saldo em aberto ou liquidado.',
-                            ),
+                            context
+                                .t(
+                                  'atendimentoTecnico.signatureGate.deviceMessage',
+                                  fallback:
+                                      'Registre a assinatura para avançar para {status}.',
+                                )
+                                .replaceAll('{status}', widget.statusLabel),
                             style: TextStyle(
-                              color: mutedTextColor,
-                              fontSize: 12,
-                              height: 1.25,
+                              color: SixMobilePalette.mutedText,
+                              fontSize: 13,
+                              height: 1.35,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
@@ -4681,95 +6192,183 @@ class _StatusPagamentoFiltroMobileSheet extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: 16),
-                ..._options.map((
-                  AtendimentosCriadosStatusPagamentoFiltro option,
-                ) {
-                  final bool isSelected = selected == option;
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: 10),
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: () => Navigator.of(context).pop(option),
-                        child: AnimatedContainer(
-                          duration: Duration(milliseconds: 160),
-                          curve: Curves.easeOutCubic,
-                          padding: EdgeInsets.all(13),
-                          decoration: BoxDecoration(
-                            color:
-                                isSelected
-                                    ? SixMobilePalette.softAccentSurface
-                                    : surfaceColor,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color:
-                                  isSelected
-                                      ? SixMobilePalette.highlightedBorder
-                                      : borderColor,
-                              width: isSelected ? 1.2 : 1,
-                            ),
-                          ),
-                          child: Row(
-                            children: <Widget>[
-                              CircleAvatar(
-                                radius: 21,
-                                backgroundColor:
-                                    isSelected
-                                        ? SixMobilePalette.softAccentSurface
-                                        : SixMobilePalette.iconSurface,
-                                child: Icon(
-                                  _iconFor(option),
-                                  color: accentColor,
-                                  size: 20,
-                                ),
-                              ),
-                              SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  labelFor(option),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: titleTextColor,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              Icon(
-                                isSelected
-                                    ? Icons.check_circle_rounded
-                                    : Icons.radio_button_unchecked_rounded,
-                                color:
-                                    isSelected ? accentColor : mutedTextColor,
-                              ),
-                            ],
+                TextField(
+                  controller: _nomeController,
+                  textInputAction: TextInputAction.next,
+                  decoration: _decoration(
+                    context.t(
+                      'atendimentoTecnico.signatureGate.deviceSigner',
+                      fallback: 'Nome de quem assina',
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10),
+                TextField(
+                  controller: _documentoController,
+                  textInputAction: TextInputAction.next,
+                  decoration: _decoration(
+                    context.t(
+                      'atendimentoTecnico.signatureGate.deviceDocument',
+                      fallback: 'Documento opcional',
+                    ),
+                  ),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  context.t(
+                    'atendimentoTecnico.signatureGate.deviceSignatureField',
+                    fallback: 'Assinatura',
+                  ),
+                  style: TextStyle(
+                    color: SixMobilePalette.titleText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Container(
+                  height: 190,
+                  decoration: BoxDecoration(
+                    color: SixMobilePalette.surface,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: SixMobilePalette.border),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Signature(
+                    controller: _signatureController,
+                    backgroundColor: SixMobilePalette.surface,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      _signatureController.clear();
+                      setState(() => _erro = null);
+                    },
+                    icon: Icon(Icons.cleaning_services_rounded),
+                    label: Text(context.t('common.clear', fallback: 'Limpar')),
+                  ),
+                ),
+                TextField(
+                  controller: _observacaoController,
+                  minLines: 2,
+                  maxLines: 3,
+                  decoration: _decoration(
+                    context.t(
+                      'atendimentoTecnico.signatureGate.deviceObservation',
+                      fallback: 'Observação opcional',
+                    ),
+                  ),
+                ),
+                if (_erro != null) ...<Widget>[
+                  SizedBox(height: 10),
+                  Text(
+                    _erro!,
+                    style: TextStyle(
+                      color: SixMobilePalette.error,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+                SizedBox(height: 16),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text(
+                          context.t('common.cancel', fallback: 'Cancelar'),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _confirmar,
+                        icon: Icon(Icons.check_rounded),
+                        label: Text(
+                          context.t(
+                            'atendimentoTecnico.signatureGate.deviceSave',
+                            fallback: 'Registrar assinatura',
                           ),
                         ),
                       ),
                     ),
-                  );
-                }),
+                  ],
+                ),
               ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  IconData _iconFor(AtendimentosCriadosStatusPagamentoFiltro value) {
-    switch (value) {
-      case AtendimentosCriadosStatusPagamentoFiltro.todos:
-        return Icons.receipt_long_outlined;
-      case AtendimentosCriadosStatusPagamentoFiltro.emAberto:
-        return Icons.account_balance_wallet_outlined;
-      case AtendimentosCriadosStatusPagamentoFiltro.liquidado:
-        return Icons.price_check_rounded;
-    }
+  InputDecoration _decoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: SixMobilePalette.surface,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: SixMobilePalette.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: SixMobilePalette.accent, width: 1.4),
+      ),
+    );
   }
+}
+
+String _assinaturaSvgDataUrl(
+  SignatureController controller,
+  Color backgroundColor,
+  Color penColor,
+) {
+  if (controller.isEmpty) return '';
+
+  final double minX = controller.minXValue ?? 0;
+  final double minY = controller.minYValue ?? 0;
+  final double stroke = controller.penStrokeWidth;
+  final int width =
+      ((controller.maxXValue ?? minX) - minX + stroke * 2)
+          .ceil()
+          .clamp(1, 4096)
+          .toInt();
+  final int height =
+      ((controller.maxYValue ?? minY) - minY + stroke * 2)
+          .ceil()
+          .clamp(1, 4096)
+          .toInt();
+  final String points = controller.points
+      .map((Point point) {
+        final double dx = point.offset.dx - minX + stroke;
+        final double dy = point.offset.dy - minY + stroke;
+        return '${dx.toStringAsFixed(2)},${dy.toStringAsFixed(2)}';
+      })
+      .join(' ');
+
+  if (points.trim().isEmpty) return '';
+
+  final String svg =
+      '<svg viewBox="0 0 $width $height" width="$width" height="$height" xmlns="http://www.w3.org/2000/svg">'
+      '<rect width="100%" height="100%" fill="${_svgColor(backgroundColor)}"/>'
+      '<polyline fill="none" stroke="${_svgColor(penColor)}" stroke-linecap="round" stroke-linejoin="round" stroke-width="${stroke.toStringAsFixed(2)}" points="$points"/>'
+      '</svg>';
+  return 'data:image/svg+xml;base64,${base64Encode(utf8.encode(svg))}';
+}
+
+String _svgColor(Color color) {
+  return '#${_svgColorChannel(color.r).toRadixString(16).padLeft(2, '0')}'
+      '${_svgColorChannel(color.g).toRadixString(16).padLeft(2, '0')}'
+      '${_svgColorChannel(color.b).toRadixString(16).padLeft(2, '0')}';
+}
+
+int _svgColorChannel(double value) {
+  return (value * 255).round().clamp(0, 255).toInt();
 }
 
 class _StatusAtendimentoMobileSheet extends StatefulWidget {
