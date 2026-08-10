@@ -1,15 +1,24 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart' as sharing;
+import 'package:signature/signature.dart';
 
+import '../../core/config/app_config.dart';
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/dominio_models.dart';
+import '../../data/models/usuario_model.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
+import '../../domain/services/atendimento_tecnico/atendimento_status_signature_policy.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
+import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
+import '../../providers/usuario_provider.dart';
 import '../components/web/six_web_recebimento_dialog.dart';
 import 'atendimento_tecnico_editar_dialog.dart';
 import 'atendimentos_tecnicos_web_page.dart';
@@ -38,26 +47,38 @@ class _AtendimentosTecnicosListaWebPageState
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
   final ColaboradorUsuarioApiClient _colaboradorApiClient =
       HttpColaboradorUsuarioApiClient();
+  final UsuarioService _usuarioService = UsuarioService();
+  final UsuarioProvider _usuarioProvider = UsuarioProvider();
   final TextEditingController _buscaController = TextEditingController();
 
   late Future<_ListaAtendimentosState> _future;
+  Timer? _salvarBuscaDebounce;
   bool _alterandoStatus = false;
   bool _gerandoLink = false;
   bool _gerandoLinkStatus = false;
+  bool _aplicandoPreferencias = false;
+  bool _usuarioAlterouFiltros = false;
   DateTime? _dataInicioFiltro;
   DateTime? _dataFimFiltro;
   String? _tecnicoFiltroKey;
-  String? _statusFiltroLabel;
+  String? _statusFiltroKey;
+  AtendimentosCriadosStatusPagamentoFiltro _statusPagamentoFiltro =
+      AtendimentosCriadosStatusPagamentoFiltro.todos;
 
   @override
   void initState() {
     super.initState();
     _future = _carregar();
     _buscaController.addListener(_onBuscaChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _restaurarPreferenciasAtendimentosCriados();
+      await _restaurarPreferenciasAtendimentosCriadosBackend();
+    });
   }
 
   @override
   void dispose() {
+    _salvarBuscaDebounce?.cancel();
     _buscaController.removeListener(_onBuscaChanged);
     _buscaController.dispose();
     super.dispose();
@@ -76,8 +97,94 @@ class _AtendimentosTecnicosListaWebPageState
     );
   }
 
+  Future<void> _restaurarPreferenciasAtendimentosCriados() async {
+    final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+        await _usuarioService.carregarPreferenciasIndividuaisDoCache();
+    if (!mounted || preferencias == null || _usuarioAlterouFiltros) {
+      return;
+    }
+    _aplicarPreferenciasAtendimentosCriados(
+      preferencias.atendimentosCriadosFiltrosWeb,
+    );
+  }
+
+  Future<void> _restaurarPreferenciasAtendimentosCriadosBackend() async {
+    try {
+      if (_usuarioProvider.usuario == null) {
+        await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
+      }
+      final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+          _usuarioProvider.usuario?.preferenciasIndividuaisDoUsuario;
+      if (!mounted || preferencias == null || _usuarioAlterouFiltros) {
+        return;
+      }
+      _aplicarPreferenciasAtendimentosCriados(
+        preferencias.atendimentosCriadosFiltrosWeb,
+      );
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Erro ao restaurar preferencias dos atendimentos criados: '
+        '$error\n$stackTrace',
+      );
+    }
+  }
+
+  void _aplicarPreferenciasAtendimentosCriados(
+    AtendimentosCriadosFiltrosWebPreferencia filtros,
+  ) {
+    _aplicandoPreferencias = true;
+    if (_buscaController.text != filtros.busca) {
+      _buscaController.text = filtros.busca;
+    }
+    setState(() {
+      _dataInicioFiltro = filtros.dataInicio;
+      _dataFimFiltro = filtros.dataFim;
+      _tecnicoFiltroKey = filtros.tecnicoKey;
+      _statusFiltroKey = filtros.statusKey;
+      _statusPagamentoFiltro = filtros.statusPagamento;
+    });
+    _aplicandoPreferencias = false;
+  }
+
+  void _agendarSalvarPreferenciasAtendimentosCriados() {
+    _salvarBuscaDebounce?.cancel();
+    _salvarBuscaDebounce = Timer(
+      const Duration(milliseconds: 450),
+      _salvarPreferenciasAtendimentosCriados,
+    );
+  }
+
+  void _salvarPreferenciasAtendimentosCriados() {
+    _salvarBuscaDebounce?.cancel();
+    final filtros = AtendimentosCriadosFiltrosWebPreferencia(
+      busca: _buscaController.text,
+      dataInicio: _dataInicioFiltro,
+      dataFim: _dataFimFiltro,
+      tecnicoKey: _tecnicoFiltroKey,
+      statusKey: _statusFiltroKey,
+      statusPagamento: _statusPagamentoFiltro,
+    );
+
+    unawaited(
+      _usuarioService
+          .atualizarPreferenciasIndividuais(
+            atendimentosCriadosFiltrosWeb: filtros.toJson(),
+          )
+          .catchError((Object error, StackTrace stackTrace) {
+            debugPrint(
+              'Erro ao salvar preferencias dos atendimentos criados: '
+              '$error\n$stackTrace',
+            );
+          }),
+    );
+  }
+
   void _onBuscaChanged() {
     if (mounted) setState(() {});
+    if (!_aplicandoPreferencias) {
+      _usuarioAlterouFiltros = true;
+      _agendarSalvarPreferenciasAtendimentosCriados();
+    }
   }
 
   bool get _possuiFiltrosAtivos =>
@@ -85,16 +192,24 @@ class _AtendimentosTecnicosListaWebPageState
       _dataInicioFiltro != null ||
       _dataFimFiltro != null ||
       _tecnicoFiltroKey != null ||
-      _statusFiltroLabel != null;
+      _statusFiltroKey != null ||
+      _statusPagamentoFiltro != AtendimentosCriadosStatusPagamentoFiltro.todos;
 
   void _limparFiltros() {
+    _aplicandoPreferencias = true;
+    if (_buscaController.text.isNotEmpty) {
+      _buscaController.clear();
+    }
     setState(() {
       _dataInicioFiltro = null;
       _dataFimFiltro = null;
       _tecnicoFiltroKey = null;
-      _statusFiltroLabel = null;
-      _buscaController.clear();
+      _statusFiltroKey = null;
+      _statusPagamentoFiltro = AtendimentosCriadosStatusPagamentoFiltro.todos;
     });
+    _aplicandoPreferencias = false;
+    _usuarioAlterouFiltros = true;
+    _salvarPreferenciasAtendimentosCriados();
   }
 
   void _recarregar() {
@@ -153,7 +268,8 @@ class _AtendimentosTecnicosListaWebPageState
         _dataInicioFiltro == null ? null : _inicioDoDia(_dataInicioFiltro!);
     final fim = _dataFimFiltro == null ? null : _fimDoDia(_dataFimFiltro!);
     final tecnicoKey = _tecnicoFiltroKey;
-    final statusLabel = _statusFiltroLabel;
+    final statusKey = _statusFiltroKey;
+    final statusPagamento = _statusPagamentoFiltro;
 
     return itens
         .where((atendimento) {
@@ -172,8 +288,11 @@ class _AtendimentosTecnicosListaWebPageState
               _tecnicoKeyAtendimento(atendimento) != tecnicoKey) {
             return false;
           }
-          if (statusLabel != null &&
-              _statusLabel(atendimento, statusOptions) != statusLabel) {
+          if (statusKey != null &&
+              _statusFiltroKeyAtendimento(atendimento) != statusKey) {
+            return false;
+          }
+          if (!_atendimentoPassaStatusPagamento(atendimento, statusPagamento)) {
             return false;
           }
 
@@ -209,6 +328,28 @@ class _AtendimentosTecnicosListaWebPageState
           return texto.contains(termo);
         })
         .toList(growable: false);
+  }
+
+  bool _atendimentoPassaStatusPagamento(
+    AtendimentoTecnicoModel atendimento,
+    AtendimentosCriadosStatusPagamentoFiltro filtro,
+  ) {
+    switch (filtro) {
+      case AtendimentosCriadosStatusPagamentoFiltro.todos:
+        return true;
+      case AtendimentosCriadosStatusPagamentoFiltro.emAberto:
+        return _pagamentoEmAberto(atendimento);
+      case AtendimentosCriadosStatusPagamentoFiltro.liquidado:
+        return _pagamentoLiquidado(atendimento);
+    }
+  }
+
+  bool _pagamentoEmAberto(AtendimentoTecnicoModel atendimento) {
+    return !atendimento.operacaoLiquidada && atendimento.valorEmAberto > 0;
+  }
+
+  bool _pagamentoLiquidado(AtendimentoTecnicoModel atendimento) {
+    return atendimento.operacaoLiquidada || atendimento.valorEmAberto <= 0;
   }
 
   DateTime _inicioDoDia(DateTime value) =>
@@ -264,6 +405,15 @@ class _AtendimentosTecnicosListaWebPageState
         statusTexto.contains('CONCLU');
   }
 
+  bool _clienteNaoAssinouAtendimentoAberto(
+    AtendimentoTecnicoModel atendimento,
+  ) {
+    if (_atendimentoFinalizadoOperacionalmente(atendimento)) {
+      return false;
+    }
+    return !atendimento.assinaturaAprovada;
+  }
+
   DateTime? _dataReferenciaFiltro(AtendimentoTecnicoModel atendimento) {
     return atendimento.dataEntregaPrevista ??
         atendimento.dataAtualizacao ??
@@ -283,6 +433,13 @@ class _AtendimentosTecnicosListaWebPageState
   String _tecnicoLabelAtendimento(AtendimentoTecnicoModel atendimento) {
     final nome = atendimento.nomeTecnicoResponsavelSnapshot?.trim() ?? '';
     return nome.isEmpty ? 'Sem técnico responsável' : nome;
+  }
+
+  String _statusFiltroKeyAtendimento(AtendimentoTecnicoModel atendimento) {
+    if (atendimento.statusId > 0) return 'id:${atendimento.statusId}';
+    final String codigo = atendimento.statusCodigo.trim().toUpperCase();
+    if (codigo.isNotEmpty) return 'codigo:$codigo';
+    return '__sem_status__';
   }
 
   List<_TecnicoFiltroOption> _tecnicoOptions(
@@ -337,28 +494,72 @@ class _AtendimentosTecnicosListaWebPageState
     List<AtendimentoTecnicoModel> atendimentos,
     List<DominioOpcaoModel> statusOptions,
   ) {
-    final Map<String, int> counts = <String, int>{};
+    final Map<String, _StatusFiltroOption> options =
+        <String, _StatusFiltroOption>{};
     for (final atendimento in atendimentos) {
+      final key = _statusFiltroKeyAtendimento(atendimento);
       final label = _statusLabel(atendimento, statusOptions);
-      counts[label] = (counts[label] ?? 0) + 1;
+      final current = options[key];
+      options[key] = _StatusFiltroOption(
+        key: key,
+        label: current?.label ?? label,
+        count: (current?.count ?? 0) + 1,
+      );
     }
-    final options = counts.entries
-      .map((entry) => _StatusFiltroOption(label: entry.key, count: entry.value))
-      .toList(growable: false)..sort((a, b) {
+    final sortedOptions = options.values.toList(growable: false)..sort((a, b) {
       final countCompare = b.count.compareTo(a.count);
       if (countCompare != 0) return countCompare;
       return a.label.toLowerCase().compareTo(b.label.toLowerCase());
     });
-    return options;
+    return sortedOptions;
   }
 
   String _statusFiltroDisplayLabel(List<_StatusFiltroOption> options) {
-    final selected = _statusFiltroLabel;
+    final selected = _statusFiltroKey;
     if (selected == null) return 'Todos os status';
     for (final option in options) {
-      if (option.label == selected) return option.label;
+      if (option.key == selected) return option.label;
     }
     return 'Status selecionado';
+  }
+
+  String _statusPagamentoFiltroLabel(
+    AtendimentosCriadosStatusPagamentoFiltro value,
+  ) {
+    switch (value) {
+      case AtendimentosCriadosStatusPagamentoFiltro.todos:
+        return context.t(
+          'atendimentoTecnico.filters.paymentStatus.all',
+          fallback: 'Todos os pagamentos',
+        );
+      case AtendimentosCriadosStatusPagamentoFiltro.emAberto:
+        return context.t(
+          'atendimentoTecnico.filters.paymentStatus.open',
+          fallback: 'Em aberto',
+        );
+      case AtendimentosCriadosStatusPagamentoFiltro.liquidado:
+        return context.t(
+          'atendimentoTecnico.filters.paymentStatus.paid',
+          fallback: 'Liquidado',
+        );
+    }
+  }
+
+  List<_TecnicoFiltroOption> _statusPagamentoFiltroOptions() {
+    return <_TecnicoFiltroOption>[
+      _TecnicoFiltroOption(
+        key: AtendimentosCriadosStatusPagamentoFiltro.emAberto.codigo,
+        label: _statusPagamentoFiltroLabel(
+          AtendimentosCriadosStatusPagamentoFiltro.emAberto,
+        ),
+      ),
+      _TecnicoFiltroOption(
+        key: AtendimentosCriadosStatusPagamentoFiltro.liquidado.codigo,
+        label: _statusPagamentoFiltroLabel(
+          AtendimentosCriadosStatusPagamentoFiltro.liquidado,
+        ),
+      ),
+    ];
   }
 
   String _periodoFiltroLabel() {
@@ -584,6 +785,11 @@ class _AtendimentosTecnicosListaWebPageState
     return context.read<LocaleSettingsProvider>().formatDate(value);
   }
 
+  String? _textoOuNulo(String? value) {
+    final String texto = value?.trim() ?? '';
+    return texto.isEmpty ? null : texto;
+  }
+
   String _assinaturaResumo(AtendimentoTecnicoModel atendimento) {
     final nome = atendimento.assinaturaNomeAssinante?.trim() ?? '';
     final data = _formatarData(atendimento.assinaturaDataHora);
@@ -622,9 +828,7 @@ class _AtendimentosTecnicosListaWebPageState
   }
 
   int _totalEmAberto(List<AtendimentoTecnicoModel> atendimentos) =>
-      atendimentos
-          .where((atendimento) => !atendimento.operacaoLiquidada)
-          .length;
+      atendimentos.where(_pagamentoEmAberto).length;
 
   int _totalAssinados(List<AtendimentoTecnicoModel> atendimentos) =>
       atendimentos
@@ -633,7 +837,7 @@ class _AtendimentosTecnicosListaWebPageState
 
   double _valorAberto(List<AtendimentoTecnicoModel> atendimentos) =>
       atendimentos
-          .where((atendimento) => !atendimento.operacaoLiquidada)
+          .where(_pagamentoEmAberto)
           .fold<double>(
             0,
             (total, atendimento) => total + atendimento.valorEmAberto,
@@ -701,13 +905,7 @@ class _AtendimentosTecnicosListaWebPageState
     if (_gerandoLink) return;
     setState(() => _gerandoLink = true);
     try {
-      final baseUrl = '${Uri.base.origin}/atendimento/assinatura';
-      final response = await _service.gerarLinkAssinatura(
-        id: atendimento.id,
-        baseUrl: baseUrl,
-      );
-      final link = response['link']?.toString() ?? '';
-      if (link.isEmpty) throw Exception('Link não retornado pelo backend.');
+      final link = await _gerarLinkAssinaturaAtendimento(atendimento);
       await Clipboard.setData(ClipboardData(text: link));
       if (!mounted) return;
       await showDialog<void>(
@@ -746,6 +944,72 @@ class _AtendimentosTecnicosListaWebPageState
       _mostrarMensagem('Não foi possível gerar o link: $error');
     } finally {
       if (mounted) setState(() => _gerandoLink = false);
+    }
+  }
+
+  Future<String> _gerarLinkAssinaturaAtendimento(
+    AtendimentoTecnicoModel atendimento,
+  ) async {
+    final String publicUrlMissingMessage = context.t(
+      'atendimentoTecnico.signatureGate.publicUrlMissing',
+      fallback: 'URL pública do aplicativo não configurada.',
+    );
+    final String linkMissingMessage = context.t(
+      'atendimentoTecnico.signatureGate.linkMissing',
+      fallback: 'Link de assinatura não retornado pelo backend.',
+    );
+    final String origin = AppConfig.publicFrontendOrigin.trim();
+    if (origin.isEmpty) {
+      throw Exception(publicUrlMissingMessage);
+    }
+    final response = await _service.gerarLinkAssinatura(
+      id: atendimento.id,
+      baseUrl: '$origin/atendimento/assinatura',
+    );
+    final link = response['link']?.toString().trim() ?? '';
+    if (link.isEmpty) {
+      throw Exception(linkMissingMessage);
+    }
+    return link;
+  }
+
+  Future<bool> _abrirAssinaturaNoDispositivo(
+    AtendimentoTecnicoModel atendimento,
+    DominioOpcaoModel status,
+    String? observacaoStatus,
+  ) async {
+    if (_alterandoStatus) return false;
+    final _AssinaturaDispositivoWebResult? result =
+        await showDialog<_AssinaturaDispositivoWebResult>(
+          context: context,
+          barrierDismissible: !_alterandoStatus,
+          builder:
+              (_) => _AssinaturaDispositivoWebDialog(
+                atendimento: atendimento,
+                statusLabel: _statusOptionLabel(status),
+              ),
+        );
+    if (result == null || !mounted) return false;
+    setState(() => _alterandoStatus = true);
+    try {
+      await _service.assinarNoDispositivo(
+        id: atendimento.id,
+        status: status,
+        observacaoStatus: observacaoStatus,
+        nomeAssinante: result.nomeAssinante,
+        documentoAssinante: _textoOuNulo(result.documentoAssinante),
+        assinaturaDataUrl: result.assinaturaDataUrl,
+        observacaoAssinatura: _textoOuNulo(result.observacao),
+      );
+      return true;
+    } catch (error) {
+      if (!mounted) return false;
+      _mostrarMensagem(
+        '${context.t('atendimentoTecnico.signatureGate.deviceSignatureError', fallback: 'Não foi possível registrar a assinatura')}: $error',
+      );
+      return false;
+    } finally {
+      if (mounted) setState(() => _alterandoStatus = false);
     }
   }
 
@@ -906,12 +1170,35 @@ class _AtendimentosTecnicosListaWebPageState
           statusAtual: _statusAtual(atendimento, status),
           statusAtualLabel: _statusLabel(atendimento, status),
           onSalvar: (DominioOpcaoModel novoStatus, String? observacao) async {
+            bool bypassAssinatura = false;
+            if (AtendimentoStatusSignaturePolicy.atendimentoPrecisaAssinaturaPara(
+              atendimento: atendimento,
+              status: novoStatus,
+            )) {
+              final _StatusSignatureGateAction? action =
+                  await _abrirAssinaturaStatusDialog(atendimento, novoStatus);
+              if (action == null || !mounted) return false;
+              switch (action) {
+                case _StatusSignatureGateAction.enviarLink:
+                  await _gerarLinkAssinatura(atendimento);
+                  return false;
+                case _StatusSignatureGateAction.assinarNesteDispositivo:
+                  return _abrirAssinaturaNoDispositivo(
+                    atendimento,
+                    novoStatus,
+                    observacao,
+                  );
+                case _StatusSignatureGateAction.avancarSemAssinatura:
+                  bypassAssinatura = true;
+              }
+            }
             setState(() => _alterandoStatus = true);
             try {
               await _service.alterarStatus(
                 id: atendimento.id,
                 status: novoStatus,
                 observacao: observacao,
+                bypassAssinatura: bypassAssinatura,
               );
               return true;
             } finally {
@@ -928,6 +1215,100 @@ class _AtendimentosTecnicosListaWebPageState
       _recarregar();
       _mostrarMensagem('Status atualizado no histórico.');
     }
+  }
+
+  Future<_StatusSignatureGateAction?> _abrirAssinaturaStatusDialog(
+    AtendimentoTecnicoModel atendimento,
+    DominioOpcaoModel status,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final String statusLabel = _statusOptionLabel(status);
+    return showDialog<_StatusSignatureGateAction>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          icon: Icon(Icons.draw_rounded, color: colorScheme.error),
+          title: Text(
+            context.t(
+              'atendimentoTecnico.signatureGate.title',
+              fallback: 'Assinatura necessária',
+            ),
+          ),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  context
+                      .t(
+                        'atendimentoTecnico.signatureGate.message',
+                        fallback:
+                            'Para avançar para {status}, envie o link de assinatura ao cliente, assine neste dispositivo ou registre o bypass.',
+                      )
+                      .replaceAll('{status}', statusLabel),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '${atendimento.numero} • ${_clienteLabelAtendimento(atendimento)}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(context.t('common.cancel', fallback: 'Cancelar')),
+            ),
+            OutlinedButton.icon(
+              onPressed:
+                  () => Navigator.of(
+                    dialogContext,
+                  ).pop(_StatusSignatureGateAction.avancarSemAssinatura),
+              icon: const Icon(Icons.warning_amber_rounded),
+              label: Text(
+                context.t(
+                  'atendimentoTecnico.signatureGate.bypass',
+                  fallback: 'Avançar sem assinatura',
+                ),
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed:
+                  () => Navigator.of(
+                    dialogContext,
+                  ).pop(_StatusSignatureGateAction.assinarNesteDispositivo),
+              icon: const Icon(Icons.edit_note_rounded),
+              label: Text(
+                context.t(
+                  'atendimentoTecnico.signatureGate.signHere',
+                  fallback: 'Assinar neste dispositivo',
+                ),
+              ),
+            ),
+            FilledButton.icon(
+              onPressed:
+                  () => Navigator.of(
+                    dialogContext,
+                  ).pop(_StatusSignatureGateAction.enviarLink),
+              icon: const Icon(Icons.ios_share_rounded),
+              label: Text(
+                context.t(
+                  'atendimentoTecnico.signatureGate.sendLink',
+                  fallback: 'Enviar link ao cliente',
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _mostrarMensagem(String mensagem) {
@@ -967,7 +1348,9 @@ class _AtendimentosTecnicosListaWebPageState
             final isCompact = constraints.maxWidth < 920;
             final horizontalPadding = isCompact ? 16.0 : 28.0;
             return Container(
-              color: theme.colorScheme.surfaceVariant.withOpacity(0.16),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.16,
+              ),
               child: Column(
                 children: <Widget>[
                   _buildHeader(
@@ -1055,7 +1438,7 @@ class _AtendimentosTecnicosListaWebPageState
 
   Widget _buildLoading(ThemeData theme) {
     return Container(
-      color: theme.colorScheme.surfaceVariant.withOpacity(0.16),
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.16),
       child: Center(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -1063,7 +1446,7 @@ class _AtendimentosTecnicosListaWebPageState
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.12),
+              color: theme.colorScheme.outline.withValues(alpha: 0.12),
             ),
           ),
           child: const Row(
@@ -1096,7 +1479,7 @@ class _AtendimentosTecnicosListaWebPageState
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.10),
+            color: colorScheme.primary.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(
@@ -1126,7 +1509,7 @@ class _AtendimentosTecnicosListaWebPageState
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: colorScheme.onSurface.withOpacity(0.66),
+                  color: colorScheme.onSurface.withValues(alpha: 0.66),
                 ),
               ),
             ],
@@ -1170,11 +1553,13 @@ class _AtendimentosTecnicosListaWebPageState
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
-          bottom: BorderSide(color: colorScheme.outline.withOpacity(0.14)),
+          bottom: BorderSide(
+            color: colorScheme.outline.withValues(alpha: 0.14),
+          ),
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -1275,6 +1660,7 @@ class _AtendimentosTecnicosListaWebPageState
                   possuiFiltrosAtivos ? saldoFiltradoHelper : 'Saldo pendente',
               icon: Icons.payments_outlined,
               highlight: true,
+              highlightColor: theme.colorScheme.error,
             ),
           ],
         );
@@ -1291,24 +1677,26 @@ class _AtendimentosTecnicosListaWebPageState
     required String helper,
     required IconData icon,
     bool highlight = false,
+    Color? highlightColor,
   }) {
     final colorScheme = theme.colorScheme;
+    final Color destaque = highlightColor ?? colorScheme.primary;
     return SizedBox(
       width: width,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: highlight ? colorScheme.primary : colorScheme.surface,
+          color: highlight ? destaque : colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color:
                 highlight
-                    ? colorScheme.primary
-                    : colorScheme.outline.withOpacity(0.12),
+                    ? destaque
+                    : colorScheme.outline.withValues(alpha: 0.12),
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -1322,8 +1710,8 @@ class _AtendimentosTecnicosListaWebPageState
               decoration: BoxDecoration(
                 color:
                     highlight
-                        ? Colors.white.withOpacity(0.15)
-                        : colorScheme.primary.withOpacity(0.08),
+                        ? Colors.white.withValues(alpha: 0.15)
+                        : colorScheme.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
@@ -1344,8 +1732,8 @@ class _AtendimentosTecnicosListaWebPageState
                     style: TextStyle(
                       color:
                           highlight
-                              ? Colors.white.withOpacity(0.86)
-                              : colorScheme.onSurface.withOpacity(0.62),
+                              ? Colors.white.withValues(alpha: 0.86)
+                              : colorScheme.onSurface.withValues(alpha: 0.62),
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -1380,8 +1768,8 @@ class _AtendimentosTecnicosListaWebPageState
                     style: TextStyle(
                       color:
                           highlight
-                              ? Colors.white.withOpacity(0.78)
-                              : colorScheme.onSurface.withOpacity(0.56),
+                              ? Colors.white.withValues(alpha: 0.78)
+                              : colorScheme.onSurface.withValues(alpha: 0.56),
                       fontSize: 12,
                     ),
                   ),
@@ -1413,7 +1801,7 @@ class _AtendimentosTecnicosListaWebPageState
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -1437,6 +1825,9 @@ class _AtendimentosTecnicosListaWebPageState
             width: isCompact ? constraints.maxWidth : 250,
             options: statusFiltroOptions,
             total: atendimentos.length,
+          );
+          final filtroStatusPagamento = _statusPagamentoFilterMenu(
+            width: isCompact ? constraints.maxWidth : 230,
           );
           final limparFiltros =
               _possuiFiltrosAtivos
@@ -1487,7 +1878,7 @@ class _AtendimentosTecnicosListaWebPageState
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide(
-                    color: colorScheme.outline.withOpacity(0.12),
+                    color: colorScheme.outline.withValues(alpha: 0.12),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
@@ -1503,7 +1894,7 @@ class _AtendimentosTecnicosListaWebPageState
 
           final bool useWrappedFilters =
               isCompact ||
-              constraints.maxWidth < (_possuiFiltrosAtivos ? 1480 : 1320);
+              constraints.maxWidth < (_possuiFiltrosAtivos ? 1710 : 1550);
 
           if (useWrappedFilters) {
             return Wrap(
@@ -1515,6 +1906,7 @@ class _AtendimentosTecnicosListaWebPageState
                 filtroData,
                 filtroTecnico,
                 filtroStatus,
+                filtroStatusPagamento,
                 if (limparFiltros != null) limparFiltros,
                 if (!isCompact) auditoria,
               ],
@@ -1531,6 +1923,8 @@ class _AtendimentosTecnicosListaWebPageState
               filtroTecnico,
               const SizedBox(width: 12),
               filtroStatus,
+              const SizedBox(width: 12),
+              filtroStatusPagamento,
               const SizedBox(width: 12),
               if (limparFiltros != null) ...<Widget>[
                 limparFiltros,
@@ -1560,6 +1954,8 @@ class _AtendimentosTecnicosListaWebPageState
       _dataInicioFiltro = result.dataInicio;
       _dataFimFiltro = result.dataFim;
     });
+    _usuarioAlterouFiltros = true;
+    _salvarPreferenciasAtendimentosCriados();
   }
 
   Widget _filterTrigger(
@@ -1596,7 +1992,7 @@ class _AtendimentosTecnicosListaWebPageState
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
       ),
       child: Row(
         children: <Widget>[
@@ -1611,7 +2007,7 @@ class _AtendimentosTecnicosListaWebPageState
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: colorScheme.onSurface.withOpacity(0.58),
+                    color: colorScheme.onSurface.withValues(alpha: 0.58),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1656,6 +2052,8 @@ class _AtendimentosTecnicosListaWebPageState
         setState(() {
           _tecnicoFiltroKey = value == _todosTecnicosKey ? null : value;
         });
+        _usuarioAlterouFiltros = true;
+        _salvarPreferenciasAtendimentosCriados();
       },
     );
   }
@@ -1670,14 +2068,57 @@ class _AtendimentosTecnicosListaWebPageState
       label: 'Status',
       displayValue: _statusFiltroDisplayLabel(options),
       tooltip: 'Filtrar por status',
-      selectedLabel: _statusFiltroLabel,
+      selectedKey: _statusFiltroKey,
       todosKey: _todosStatusKey,
       total: total,
       options: options,
       onChanged: (value) {
         setState(() {
-          _statusFiltroLabel = value == _todosStatusKey ? null : value;
+          _statusFiltroKey = value == _todosStatusKey ? null : value;
         });
+        _usuarioAlterouFiltros = true;
+        _salvarPreferenciasAtendimentosCriados();
+      },
+    );
+  }
+
+  Widget _statusPagamentoFilterMenu({required double width}) {
+    final String todosKey =
+        AtendimentosCriadosStatusPagamentoFiltro.todos.codigo;
+    return _TecnicoFiltroDropdown(
+      width: width,
+      label: context.t(
+        'atendimentoTecnico.filters.paymentStatus.label',
+        fallback: 'Status pagamento',
+      ),
+      displayValue: _statusPagamentoFiltroLabel(_statusPagamentoFiltro),
+      tooltip: context.t(
+        'atendimentoTecnico.filters.paymentStatus.tooltip',
+        fallback: 'Filtrar por status do pagamento',
+      ),
+      icon: Icons.account_balance_wallet_outlined,
+      selectedKey:
+          _statusPagamentoFiltro ==
+                  AtendimentosCriadosStatusPagamentoFiltro.todos
+              ? null
+              : _statusPagamentoFiltro.codigo,
+      todosKey: todosKey,
+      todosLabel: _statusPagamentoFiltroLabel(
+        AtendimentosCriadosStatusPagamentoFiltro.todos,
+      ),
+      todosIcon: Icons.receipt_long_outlined,
+      itemIcon: Icons.account_balance_wallet_outlined,
+      options: _statusPagamentoFiltroOptions(),
+      onChanged: (value) {
+        setState(() {
+          _statusPagamentoFiltro =
+              AtendimentosCriadosStatusPagamentoFiltroApi.fromCodigo(
+                value,
+                AtendimentosCriadosStatusPagamentoFiltro.todos,
+              );
+        });
+        _usuarioAlterouFiltros = true;
+        _salvarPreferenciasAtendimentosCriados();
       },
     );
   }
@@ -1690,8 +2131,11 @@ class _AtendimentosTecnicosListaWebPageState
   ) {
     final statusTexto = _statusLabel(atendimento, status);
     final colorScheme = theme.colorScheme;
-    final bool pendente = !atendimento.operacaoLiquidada;
+    final bool pagamentoAberto = _pagamentoEmAberto(atendimento);
     final bool entregaAtrasada = _entregaAtrasada(atendimento);
+    final bool clienteNaoAssinou = _clienteNaoAssinouAtendimentoAberto(
+      atendimento,
+    );
     final clienteSnapshot = atendimento.nomeClienteSnapshot?.trim() ?? '';
     final String cliente =
         clienteSnapshot.isNotEmpty ? clienteSnapshot : 'Cliente não informado';
@@ -1703,7 +2147,7 @@ class _AtendimentosTecnicosListaWebPageState
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.08),
+            color: colorScheme.primary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(
@@ -1733,11 +2177,13 @@ class _AtendimentosTecnicosListaWebPageState
                     const SizedBox(width: 10),
                     _coloredChip(
                       theme,
-                      pendente ? 'Financeiro aberto' : 'Financeiro liquidado',
-                      pendente
+                      pagamentoAberto
+                          ? 'Financeiro aberto'
+                          : 'Financeiro liquidado',
+                      pagamentoAberto
                           ? Icons.account_balance_wallet_outlined
                           : Icons.price_check_rounded,
-                      pendente ? colorScheme.error : colorScheme.primary,
+                      pagamentoAberto ? colorScheme.error : colorScheme.primary,
                     ),
                   ],
                 ],
@@ -1759,7 +2205,7 @@ class _AtendimentosTecnicosListaWebPageState
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: colorScheme.onSurface.withOpacity(0.72),
+                    color: colorScheme.onSurface.withValues(alpha: 0.72),
                     height: 1.25,
                   ),
                 ),
@@ -1770,9 +2216,10 @@ class _AtendimentosTecnicosListaWebPageState
                 runSpacing: 8,
                 children: <Widget>[
                   if (isCompact)
-                    atendimento.operacaoLiquidada
-                        ? _liquidadaChip(theme)
-                        : _naoLiquidadaChip(theme),
+                    pagamentoAberto
+                        ? _naoLiquidadaChip(theme)
+                        : _liquidadaChip(theme),
+                  if (clienteNaoAssinou) _customerNotSignedChip(theme),
                   if (atendimento.assinaturaAprovada) _signedChip(theme),
                   if (atendimento.requerNovaAssinatura)
                     _pendingSignatureChip(theme),
@@ -1804,12 +2251,14 @@ class _AtendimentosTecnicosListaWebPageState
                     _formatarMoeda(atendimento.valorTotalAtendimento),
                     Icons.payments_outlined,
                   ),
-                  _metricChip(
-                    theme,
-                    'Aberto',
-                    _formatarMoeda(atendimento.valorEmAberto),
-                    Icons.account_balance_wallet_outlined,
-                  ),
+                  if (atendimento.valorEmAberto > 0)
+                    _metricChip(
+                      theme,
+                      'Aberto',
+                      _formatarMoeda(atendimento.valorEmAberto),
+                      Icons.account_balance_wallet_outlined,
+                      emphasisColor: colorScheme.error,
+                    ),
                   _chip(
                     theme,
                     'Atualização ${_formatarDataCurta(atendimento.dataAtualizacao)}',
@@ -1899,10 +2348,12 @@ class _AtendimentosTecnicosListaWebPageState
           padding: EdgeInsets.all(isCompact ? 14 : 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: colorScheme.outline.withOpacity(0.13)),
+            border: Border.all(
+              color: colorScheme.outline.withValues(alpha: 0.13),
+            ),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Colors.black.withOpacity(0.035),
+                color: Colors.black.withValues(alpha: 0.035),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -2526,9 +2977,9 @@ class _AtendimentosTecnicosListaWebPageState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withOpacity(0.62),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.62),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.10)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.10)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -2548,32 +2999,42 @@ class _AtendimentosTecnicosListaWebPageState
     ThemeData theme,
     String label,
     String value,
-    IconData icon,
-  ) {
+    IconData icon, {
+    Color? emphasisColor,
+  }) {
     final colorScheme = theme.colorScheme;
+    final Color? destaque = emphasisColor;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: destaque?.withValues(alpha: 0.08) ?? colorScheme.surface,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(
+          color:
+              destaque?.withValues(alpha: 0.30) ??
+              colorScheme.outline.withValues(alpha: 0.12),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
+          Icon(icon, size: 14, color: destaque ?? colorScheme.onSurfaceVariant),
           const SizedBox(width: 6),
           Text(
             '$label ',
             style: TextStyle(
-              color: colorScheme.onSurfaceVariant,
+              color: destaque ?? colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w700,
               fontSize: 12,
             ),
           ),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
+            style: TextStyle(
+              color: destaque,
+              fontWeight: FontWeight.w900,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
@@ -2584,9 +3045,13 @@ class _AtendimentosTecnicosListaWebPageState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.72),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.72,
+        ),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.08)),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.08),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -2613,6 +3078,16 @@ class _AtendimentosTecnicosListaWebPageState
     theme,
     'Nova assinatura pendente',
     Icons.pending_actions_rounded,
+    theme.colorScheme.error,
+  );
+
+  Widget _customerNotSignedChip(ThemeData theme) => _coloredChip(
+    theme,
+    context.t(
+      'atendimentoTecnico.customerNotSigned',
+      fallback: 'Cliente não assinou',
+    ),
+    Icons.assignment_late_outlined,
     theme.colorScheme.error,
   );
 
@@ -2684,7 +3159,7 @@ class _EmptyState extends StatelessWidget {
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: theme.colorScheme.outline.withOpacity(0.12),
+            color: theme.colorScheme.outline.withValues(alpha: 0.12),
           ),
         ),
         child: Column(
@@ -2737,7 +3212,7 @@ class _ErrorState extends StatelessWidget {
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: theme.colorScheme.outline.withOpacity(0.12),
+            color: theme.colorScheme.outline.withValues(alpha: 0.12),
           ),
         ),
         child: Column(
@@ -2777,6 +3252,296 @@ class _ErrorState extends StatelessWidget {
 
 typedef _SalvarStatusAtendimento =
     Future<bool> Function(DominioOpcaoModel status, String? observacao);
+
+enum _StatusSignatureGateAction {
+  enviarLink,
+  assinarNesteDispositivo,
+  avancarSemAssinatura,
+}
+
+class _AssinaturaDispositivoWebResult {
+  const _AssinaturaDispositivoWebResult({
+    required this.nomeAssinante,
+    required this.documentoAssinante,
+    required this.assinaturaDataUrl,
+    required this.observacao,
+  });
+
+  final String nomeAssinante;
+  final String documentoAssinante;
+  final String assinaturaDataUrl;
+  final String observacao;
+}
+
+class _AssinaturaDispositivoWebDialog extends StatefulWidget {
+  const _AssinaturaDispositivoWebDialog({
+    required this.atendimento,
+    required this.statusLabel,
+  });
+
+  final AtendimentoTecnicoModel atendimento;
+  final String statusLabel;
+
+  @override
+  State<_AssinaturaDispositivoWebDialog> createState() =>
+      _AssinaturaDispositivoWebDialogState();
+}
+
+class _AssinaturaDispositivoWebDialogState
+    extends State<_AssinaturaDispositivoWebDialog> {
+  late final TextEditingController _nomeController;
+  final TextEditingController _documentoController = TextEditingController();
+  final TextEditingController _observacaoController = TextEditingController();
+  late final SignatureController _signatureController;
+  String? _erro;
+
+  @override
+  void initState() {
+    super.initState();
+    final String cliente = widget.atendimento.nomeClienteSnapshot?.trim() ?? '';
+    _nomeController = TextEditingController(text: cliente);
+    _signatureController = SignatureController(
+      penStrokeWidth: 2.4,
+      penColor: Colors.black87,
+      exportBackgroundColor: Colors.white,
+    );
+  }
+
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _documentoController.dispose();
+    _observacaoController.dispose();
+    _signatureController.dispose();
+    super.dispose();
+  }
+
+  void _confirmar() {
+    final String nome = _nomeController.text.trim();
+    if (nome.isEmpty) {
+      setState(() {
+        _erro = context.t(
+          'atendimentoTecnico.signatureGate.deviceSignerRequired',
+          fallback: 'Informe o nome de quem está assinando.',
+        );
+      });
+      return;
+    }
+    if (_signatureController.isEmpty) {
+      setState(() {
+        _erro = context.t(
+          'atendimentoTecnico.signatureGate.deviceSignatureRequired',
+          fallback: 'Faça a assinatura no quadro indicado.',
+        );
+      });
+      return;
+    }
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final String assinaturaDataUrl = _assinaturaSvgDataUrl(
+      _signatureController,
+      colorScheme.surface,
+      colorScheme.onSurface,
+    );
+    if (assinaturaDataUrl.isEmpty) {
+      setState(() {
+        _erro = context.t(
+          'atendimentoTecnico.signatureGate.deviceSignatureRequired',
+          fallback: 'Faça a assinatura no quadro indicado.',
+        );
+      });
+      return;
+    }
+    Navigator.of(context).pop(
+      _AssinaturaDispositivoWebResult(
+        nomeAssinante: nome,
+        documentoAssinante: _documentoController.text.trim(),
+        assinaturaDataUrl: assinaturaDataUrl,
+        observacao: _observacaoController.text.trim(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    return AlertDialog(
+      icon: Icon(Icons.draw_rounded, color: colorScheme.primary),
+      title: Text(
+        context.t(
+          'atendimentoTecnico.signatureGate.deviceTitle',
+          fallback: 'Coletar assinatura',
+        ),
+      ),
+      content: SizedBox(
+        width: 560,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Text(
+                context
+                    .t(
+                      'atendimentoTecnico.signatureGate.deviceMessage',
+                      fallback:
+                          'Registre a assinatura para avançar para {status}.',
+                    )
+                    .replaceAll('{status}', widget.statusLabel),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _nomeController,
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  labelText: context.t(
+                    'atendimentoTecnico.signatureGate.deviceSigner',
+                    fallback: 'Nome de quem assina',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _documentoController,
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  labelText: context.t(
+                    'atendimentoTecnico.signatureGate.deviceDocument',
+                    fallback: 'Documento opcional',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                context.t(
+                  'atendimentoTecnico.signatureGate.deviceSignatureField',
+                  fallback: 'Assinatura',
+                ),
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                height: 190,
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: colorScheme.outlineVariant),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Signature(
+                  controller: _signatureController,
+                  backgroundColor: colorScheme.surface,
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () {
+                    _signatureController.clear();
+                    setState(() => _erro = null);
+                  },
+                  icon: const Icon(Icons.cleaning_services_rounded),
+                  label: Text(context.t('common.clear', fallback: 'Limpar')),
+                ),
+              ),
+              TextField(
+                controller: _observacaoController,
+                minLines: 2,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: context.t(
+                    'atendimentoTecnico.signatureGate.deviceObservation',
+                    fallback: 'Observação opcional',
+                  ),
+                ),
+              ),
+              if (_erro != null) ...<Widget>[
+                const SizedBox(height: 10),
+                Text(
+                  _erro!,
+                  style: TextStyle(
+                    color: colorScheme.error,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(context.t('common.cancel', fallback: 'Cancelar')),
+        ),
+        FilledButton.icon(
+          onPressed: _confirmar,
+          icon: const Icon(Icons.check_rounded),
+          label: Text(
+            context.t(
+              'atendimentoTecnico.signatureGate.deviceSave',
+              fallback: 'Registrar assinatura',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _assinaturaSvgDataUrl(
+  SignatureController controller,
+  Color backgroundColor,
+  Color penColor,
+) {
+  if (controller.isEmpty) return '';
+
+  final double minX = controller.minXValue ?? 0;
+  final double minY = controller.minYValue ?? 0;
+  final double stroke = controller.penStrokeWidth;
+  final int width =
+      ((controller.maxXValue ?? minX) - minX + stroke * 2)
+          .ceil()
+          .clamp(1, 4096)
+          .toInt();
+  final int height =
+      ((controller.maxYValue ?? minY) - minY + stroke * 2)
+          .ceil()
+          .clamp(1, 4096)
+          .toInt();
+  final String points = controller.points
+      .map((Point point) {
+        final double dx = point.offset.dx - minX + stroke;
+        final double dy = point.offset.dy - minY + stroke;
+        return '${dx.toStringAsFixed(2)},${dy.toStringAsFixed(2)}';
+      })
+      .join(' ');
+
+  if (points.trim().isEmpty) return '';
+
+  final String svg =
+      '<svg viewBox="0 0 $width $height" width="$width" height="$height" xmlns="http://www.w3.org/2000/svg">'
+      '<rect width="100%" height="100%" fill="${_svgColor(backgroundColor)}"/>'
+      '<polyline fill="none" stroke="${_svgColor(penColor)}" stroke-linecap="round" stroke-linejoin="round" stroke-width="${stroke.toStringAsFixed(2)}" points="$points"/>'
+      '</svg>';
+  return 'data:image/svg+xml;base64,${base64Encode(utf8.encode(svg))}';
+}
+
+String _svgColor(Color color) {
+  return '#${_svgColorChannel(color.r).toRadixString(16).padLeft(2, '0')}'
+      '${_svgColorChannel(color.g).toRadixString(16).padLeft(2, '0')}'
+      '${_svgColorChannel(color.b).toRadixString(16).padLeft(2, '0')}';
+}
+
+int _svgColorChannel(double value) {
+  return (value * 255).round().clamp(0, 255).toInt();
+}
 
 class _AlterarStatusAtendimentoWebDialog extends StatefulWidget {
   const _AlterarStatusAtendimentoWebDialog({
@@ -2867,10 +3632,10 @@ class _AlterarStatusAtendimentoWebDialogState
                       compact ? 16 : 18,
                     ),
                     decoration: BoxDecoration(
-                      color: colorScheme.primary.withOpacity(0.06),
+                      color: colorScheme.primary.withValues(alpha: 0.06),
                       border: Border(
                         bottom: BorderSide(
-                          color: colorScheme.outline.withOpacity(0.14),
+                          color: colorScheme.outline.withValues(alpha: 0.14),
                         ),
                       ),
                     ),
@@ -2881,7 +3646,7 @@ class _AlterarStatusAtendimentoWebDialogState
                           width: 52,
                           height: 52,
                           decoration: BoxDecoration(
-                            color: colorScheme.primary.withOpacity(0.12),
+                            color: colorScheme.primary.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(18),
                           ),
                           child: Icon(
@@ -2974,7 +3739,7 @@ class _AlterarStatusAtendimentoWebDialogState
                       color: colorScheme.surface,
                       border: Border(
                         top: BorderSide(
-                          color: colorScheme.outline.withOpacity(0.12),
+                          color: colorScheme.outline.withValues(alpha: 0.12),
                         ),
                       ),
                     ),
@@ -3041,9 +3806,9 @@ class _StatusContextCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant.withOpacity(0.22),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3052,7 +3817,7 @@ class _StatusContextCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: colorScheme.primary.withOpacity(0.10),
+              color: colorScheme.primary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(15),
             ),
             child: Icon(
@@ -3125,7 +3890,7 @@ class _StatusPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -3252,13 +4017,13 @@ class _StatusWebSelectorState extends State<_StatusWebSelector> {
           color:
               widget.enabled
                   ? colorScheme.surface
-                  : colorScheme.surfaceVariant.withOpacity(0.35),
+                  : colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color:
                 _opened
                     ? colorScheme.primary
-                    : colorScheme.outline.withOpacity(0.18),
+                    : colorScheme.outline.withValues(alpha: 0.18),
           ),
         ),
         child: Row(
@@ -3267,7 +4032,7 @@ class _StatusWebSelectorState extends State<_StatusWebSelector> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: colorScheme.primary.withOpacity(0.10),
+                color: colorScheme.primary.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(13),
               ),
               child: Icon(
@@ -3595,6 +4360,9 @@ class _TecnicoFiltroDropdown extends StatefulWidget {
     required this.todosKey,
     required this.options,
     required this.onChanged,
+    this.todosLabel = 'Todos os técnicos',
+    this.todosIcon = Icons.groups_2_outlined,
+    this.itemIcon = Icons.engineering_outlined,
   });
 
   final double width;
@@ -3606,6 +4374,9 @@ class _TecnicoFiltroDropdown extends StatefulWidget {
   final String todosKey;
   final List<_TecnicoFiltroOption> options;
   final ValueChanged<String> onChanged;
+  final String todosLabel;
+  final IconData todosIcon;
+  final IconData itemIcon;
 
   @override
   State<_TecnicoFiltroDropdown> createState() => _TecnicoFiltroDropdownState();
@@ -3650,8 +4421,8 @@ class _TecnicoFiltroDropdownState extends State<_TecnicoFiltroDropdown> {
           height: 48,
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           child: _TecnicoFiltroMenuItem(
-            label: 'Todos os técnicos',
-            icon: Icons.groups_2_outlined,
+            label: widget.todosLabel,
+            icon: widget.todosIcon,
             selected: widget.selectedKey == null,
             colorScheme: theme.colorScheme,
           ),
@@ -3664,7 +4435,7 @@ class _TecnicoFiltroDropdownState extends State<_TecnicoFiltroDropdown> {
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             child: _TecnicoFiltroMenuItem(
               label: option.label,
-              icon: Icons.engineering_outlined,
+              icon: widget.itemIcon,
               selected: widget.selectedKey == option.key,
               colorScheme: theme.colorScheme,
             ),
@@ -3850,7 +4621,7 @@ class _StatusFiltroDropdown extends StatefulWidget {
     required this.label,
     required this.displayValue,
     required this.tooltip,
-    required this.selectedLabel,
+    required this.selectedKey,
     required this.todosKey,
     required this.total,
     required this.options,
@@ -3861,7 +4632,7 @@ class _StatusFiltroDropdown extends StatefulWidget {
   final String label;
   final String displayValue;
   final String tooltip;
-  final String? selectedLabel;
+  final String? selectedKey;
   final String todosKey;
   final int total;
   final List<_StatusFiltroOption> options;
@@ -3912,20 +4683,20 @@ class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
           child: _TecnicoFiltroMenuItem(
             label: 'Todos os status (${widget.total})',
             icon: Icons.flag_outlined,
-            selected: widget.selectedLabel == null,
+            selected: widget.selectedKey == null,
             colorScheme: theme.colorScheme,
           ),
         ),
         if (widget.options.isNotEmpty) const PopupMenuDivider(height: 8),
         ...widget.options.map(
           (option) => PopupMenuItem<String>(
-            value: option.label,
+            value: option.key,
             height: 48,
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             child: _TecnicoFiltroMenuItem(
               label: '${option.label} (${option.count})',
               icon: Icons.flag_outlined,
-              selected: widget.selectedLabel == option.label,
+              selected: widget.selectedKey == option.key,
               colorScheme: theme.colorScheme,
             ),
           ),
@@ -3935,7 +4706,7 @@ class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
 
     if (!mounted) return;
     setState(() => _opened = false);
-    final currentKey = widget.selectedLabel ?? widget.todosKey;
+    final currentKey = widget.selectedKey ?? widget.todosKey;
     if (selected != null && selected != currentKey) widget.onChanged(selected);
   }
 
@@ -3943,7 +4714,7 @@ class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final bool active = widget.selectedLabel != null;
+    final bool active = widget.selectedKey != null;
     final bool emphasized = _opened || _hovered || active;
     return SizedBox(
       key: _fieldKey,
@@ -4056,8 +4827,13 @@ class _TecnicoFiltroOption {
 }
 
 class _StatusFiltroOption {
-  const _StatusFiltroOption({required this.label, required this.count});
+  const _StatusFiltroOption({
+    required this.key,
+    required this.label,
+    required this.count,
+  });
 
+  final String key;
   final String label;
   final int count;
 }

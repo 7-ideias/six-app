@@ -13,6 +13,7 @@ import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/date_selector_mobile_bottom_sheet.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
+import '../components/mobile_motion.dart';
 import 'cliente_usuario_cadastro_mobile_screen.dart';
 import 'produto_list_mobile_screen.dart';
 
@@ -527,6 +528,15 @@ class _AtendimentoTecnicoMobileScreenState
     return context.read<LocaleSettingsProvider>().formatCurrency(value);
   }
 
+  String _itemsCountLabel(int count) {
+    final String fallback = count == 1 ? '1 item' : '$count itens';
+    final String key =
+        count == 1
+            ? 'procedimentos.itemCount.one'
+            : 'procedimentos.itemCount.other';
+    return _t(key, fallback).replaceAll('{count}', count.toString());
+  }
+
   void _mostrarMensagem(String mensagem) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -598,6 +608,15 @@ class _AtendimentoTecnicoMobileScreenState
 
   Widget _buildHeader() {
     final String? responsavel = _responsavelSelecionado?.nome;
+    final String subtitle =
+        responsavel != null && responsavel.trim().isNotEmpty
+            ? '${_t('atendimentoTecnico.mobile.responsible', 'Responsável')}: $responsavel'
+            : _itens.isEmpty
+            ? _t(
+              'atendimentoTecnico.mobile.createHeaderSubtitle',
+              'Cliente, equipamento e defeito em uma tela rápida para balcão.',
+            )
+            : '${_itemsCountLabel(_quantidadeItens)} • ${_formatarMoeda(_totalItens)}';
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -624,7 +643,10 @@ class _AtendimentoTecnicoMobileScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  'Iniciar assistência',
+                  _t(
+                    'atendimentoTecnico.mobile.createHeaderTitle',
+                    'Iniciar assistência',
+                  ),
                   style: TextStyle(
                     color: _onPrimaryColor,
                     fontSize: 18,
@@ -633,11 +655,7 @@ class _AtendimentoTecnicoMobileScreenState
                 ),
                 SizedBox(height: 6),
                 Text(
-                  responsavel != null && responsavel.trim().isNotEmpty
-                      ? 'Responsável: $responsavel'
-                      : _itens.isEmpty
-                      ? 'Cliente, equipamento e defeito em uma tela rápida para balcão.'
-                      : '$_quantidadeItens item(ns) • ${_formatarMoeda(_totalItens)}',
+                  subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -701,172 +719,591 @@ class _AtendimentoTecnicoMobileScreenState
   }
 
   Widget _buildFormCard() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        SixStaggeredEntry(
+          delay: Duration(milliseconds: 50),
+          child: _contextChipsCard(),
+        ),
+        SizedBox(height: 14),
+        SixStaggeredEntry(
+          delay: Duration(milliseconds: 90),
+          child: _sectionCard(
+            title: _t(
+              'atendimentoTecnico.mobile.mainDataSection',
+              'Dados principais',
+            ),
+            icon: Icons.assignment_outlined,
+            children: <Widget>[
+              _clienteSelectorField(),
+              SizedBox(height: 12),
+              _responsavelSelectorField(),
+              SizedBox(height: 12),
+              TextField(
+                controller: _descricaoController,
+                decoration: _inputDecoration(
+                  label: _t(
+                    'atendimentoTecnico.mobile.internalDescription',
+                    'Descrição interna',
+                  ),
+                  hint: _t(
+                    'atendimentoTecnico.mobile.internalDescriptionHint',
+                    'Ex.: Troca de tela iPhone 11',
+                  ),
+                  icon: Icons.notes_outlined,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 14),
+        SixStaggeredEntry(
+          delay: Duration(milliseconds: 130),
+          child: _sectionCard(
+            title: _t('atendimentoTecnico.equipment', 'Equipamento'),
+            icon: Icons.devices_other_outlined,
+            children: <Widget>[
+              TextField(
+                controller: _tipoEquipamentoController,
+                decoration: _inputDecoration(
+                  label: _t(
+                    'atendimentoTecnico.mobile.equipmentType',
+                    'Tipo de equipamento',
+                  ),
+                  icon: Icons.devices_other_outlined,
+                ),
+              ),
+              SizedBox(height: 12),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: TextField(
+                      controller: _marcaController,
+                      decoration: _inputDecoration(
+                        label: _t('atendimentoTecnico.mobile.brand', 'Marca'),
+                        icon: Icons.business_outlined,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _modeloController,
+                      decoration: _inputDecoration(
+                        label: _t('atendimentoTecnico.mobile.model', 'Modelo'),
+                        icon: Icons.category_outlined,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: TextField(
+                      controller: _numeroSerieController,
+                      decoration: _inputDecoration(
+                        label: _t(
+                          'atendimentoTecnico.mobile.serialNumber',
+                          'Nº série',
+                        ),
+                        icon: Icons.confirmation_number_outlined,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _imeiController,
+                      decoration: _inputDecoration(
+                        label: _t('atendimentoTecnico.mobile.imei', 'IMEI'),
+                        icon: Icons.qr_code_2_outlined,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12),
+              TextField(
+                controller: _acessoriosController,
+                minLines: 2,
+                maxLines: 3,
+                decoration: _inputDecoration(
+                  label: _t(
+                    'atendimentoTecnico.mobile.accessoriesNotes',
+                    'Acessórios / observações',
+                  ),
+                  hint: _t(
+                    'atendimentoTecnico.mobile.accessoriesNotesHint',
+                    'Ex.: sem carregador, com capa, tela trincada...',
+                  ),
+                  icon: Icons.cable_outlined,
+                  alignLabelWithHint: true,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 14),
+        SixStaggeredEntry(
+          delay: Duration(milliseconds: 170),
+          child: _sectionCard(
+            title: _t(
+              'atendimentoTecnico.mobile.technicalReportSection',
+              'Relato técnico',
+            ),
+            icon: Icons.report_problem_outlined,
+            children: <Widget>[
+              TextField(
+                controller: _defeitoController,
+                minLines: 3,
+                maxLines: 5,
+                decoration: _inputDecoration(
+                  label: _t(
+                    'atendimentoTecnico.mobile.customerIssue',
+                    'Defeito relatado pelo cliente',
+                  ),
+                  hint: _t(
+                    'atendimentoTecnico.mobile.customerIssueHint',
+                    'Descreva o problema informado no balcão.',
+                  ),
+                  icon: Icons.report_problem_outlined,
+                  alignLabelWithHint: true,
+                ),
+              ),
+              SizedBox(height: 12),
+              TextField(
+                controller: _diagnosticoController,
+                minLines: 2,
+                maxLines: 4,
+                decoration: _inputDecoration(
+                  label: _t(
+                    'atendimentoTecnico.mobile.initialDiagnosis',
+                    'Diagnóstico técnico inicial',
+                  ),
+                  hint: _t(
+                    'atendimentoTecnico.mobile.initialDiagnosisHint',
+                    'Opcional neste primeiro momento.',
+                  ),
+                  icon: Icons.engineering_outlined,
+                  alignLabelWithHint: true,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 14),
+        SixStaggeredEntry(
+          delay: Duration(milliseconds: 210),
+          child: _datesCard(),
+        ),
+        SizedBox(height: 14),
+        SixStaggeredEntry(
+          delay: Duration(milliseconds: 250),
+          child: _financialPreviewCard(),
+        ),
+        SizedBox(height: 14),
+        SixStaggeredEntry(
+          delay: Duration(milliseconds: 290),
+          child: _itensSection(),
+        ),
+        SizedBox(height: 18),
+        SixStaggeredEntry(
+          delay: Duration(milliseconds: 330),
+          child: _saveButton(),
+        ),
+      ],
+    );
+  }
+
+  Widget _contextChipsCard() {
     return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
         children: <Widget>[
-          _sectionTitle('Dados principais'),
-          SizedBox(height: 12),
-          _clienteSelectorField(),
-          SizedBox(height: 12),
-          _responsavelSelectorField(),
-          SizedBox(height: 12),
-          TextField(
-            controller: _descricaoController,
-            decoration: _inputDecoration(
-              label: 'Descrição interna',
-              hint: 'Ex.: Troca de tela iPhone 11',
-              icon: Icons.notes_outlined,
-            ),
+          _contextChip(
+            _t('atendimentoTecnico.mobile.serviceChip', 'Assistência'),
+            Icons.handyman_outlined,
           ),
-          SizedBox(height: 16),
-          _sectionTitle('Equipamento'),
-          SizedBox(height: 12),
-          TextField(
-            controller: _tipoEquipamentoController,
-            decoration: _inputDecoration(
-              label: 'Tipo de equipamento',
-              icon: Icons.devices_other_outlined,
-            ),
+          _contextChip(
+            _t('atendimentoTecnico.mobile.quoteChip', 'Orçamento'),
+            Icons.request_quote_outlined,
           ),
-          SizedBox(height: 12),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: TextField(
-                  controller: _marcaController,
-                  decoration: _inputDecoration(
-                    label: 'Marca',
-                    icon: Icons.business_outlined,
-                  ),
-                ),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: TextField(
-                  controller: _modeloController,
-                  decoration: _inputDecoration(
-                    label: 'Modelo',
-                    icon: Icons.category_outlined,
-                  ),
-                ),
-              ),
-            ],
+          _contextChip(
+            _itens.isEmpty
+                ? _t('atendimentoTecnico.mobile.noItemsChip', 'Sem itens')
+                : _itemsCountLabel(_quantidadeItens),
+            Icons.inventory_2_outlined,
           ),
-          SizedBox(height: 12),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: TextField(
-                  controller: _numeroSerieController,
-                  decoration: _inputDecoration(
-                    label: 'Nº série',
-                    icon: Icons.confirmation_number_outlined,
-                  ),
-                ),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: TextField(
-                  controller: _imeiController,
-                  decoration: _inputDecoration(
-                    label: 'IMEI',
-                    icon: Icons.qr_code_2_outlined,
-                  ),
-                ),
-              ),
-            ],
+          _contextChip(
+            _formatarMoeda(_totalItens),
+            Icons.account_balance_wallet_outlined,
           ),
-          SizedBox(height: 12),
-          TextField(
-            controller: _acessoriosController,
-            minLines: 2,
-            maxLines: 3,
-            decoration: _inputDecoration(
-              label: 'Acessórios / observações',
-              hint: 'Ex.: sem carregador, com capa, tela trincada...',
-              icon: Icons.cable_outlined,
-              alignLabelWithHint: true,
-            ),
-          ),
-          SizedBox(height: 16),
-          _sectionTitle('Relato técnico'),
-          SizedBox(height: 12),
-          TextField(
-            controller: _defeitoController,
-            minLines: 3,
-            maxLines: 5,
-            decoration: _inputDecoration(
-              label: 'Defeito relatado pelo cliente',
-              hint: 'Descreva o problema informado no balcão.',
-              icon: Icons.report_problem_outlined,
-              alignLabelWithHint: true,
-            ),
-          ),
-          SizedBox(height: 12),
-          TextField(
-            controller: _diagnosticoController,
-            minLines: 2,
-            maxLines: 4,
-            decoration: _inputDecoration(
-              label: 'Diagnóstico técnico inicial',
-              hint: 'Opcional neste primeiro momento.',
-              icon: Icons.engineering_outlined,
-              alignLabelWithHint: true,
-            ),
-          ),
-          SizedBox(height: 16),
-          _sectionTitle('Datas'),
-          SizedBox(height: 12),
-          _dateTile(
-            label: 'Entrega prevista',
-            value: _formatarData(_dataEntregaPrevista),
-            onTap: _selecionarDataEntregaPrevista,
-          ),
-          SizedBox(height: 10),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: _dateTile(
-                  label: 'Validade',
-                  value: _formatarData(_validadeOrcamentoEm),
-                  onTap: _selecionarValidadeOrcamento,
-                ),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: _dateTile(
-                  label: 'Vencimento financeiro',
-                  value: _formatarData(_vencimentoFinanceiroEm),
-                  onTap: _selecionarVencimentoFinanceiro,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 16),
-          _itensSection(),
-          SizedBox(height: 22),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: FilledButton.icon(
-              onPressed: _salvando ? null : _salvar,
-              icon:
-                  _salvando
-                      ? SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2.3),
-                      )
-                      : Icon(Icons.playlist_add_check_rounded),
-              label: Text(
-                _salvando
-                    ? 'Iniciando atendimento...'
-                    : 'Iniciar atendimento técnico',
+        ],
+      ),
+    );
+  }
+
+  Widget _contextChip(String label, IconData icon) {
+    return Container(
+      constraints: BoxConstraints(maxWidth: 190),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: _softSurfaceColor,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: _borderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 14, color: _accentColor),
+          SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: _titleTextColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _sectionCard({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              _sectionIcon(icon),
+              SizedBox(width: 10),
+              Expanded(child: _sectionTitle(title)),
+            ],
+          ),
+          SizedBox(height: 14),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionIcon(IconData icon) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: _softAccentSurfaceColor,
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Icon(icon, color: _accentColor, size: 19),
+    );
+  }
+
+  Widget _datesCard() {
+    return _sectionCard(
+      title: _t('atendimentoTecnico.mobile.datesSection', 'Datas'),
+      icon: Icons.calendar_month_outlined,
+      children: <Widget>[
+        _dateTile(
+          label: _t('atendimentoTecnico.expectedDelivery', 'Entrega prevista'),
+          value: _formatarData(_dataEntregaPrevista),
+          onTap: _selecionarDataEntregaPrevista,
+        ),
+        SizedBox(height: 10),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: _dateTile(
+                label: _t('atendimentoTecnico.mobile.validity', 'Validade'),
+                value: _formatarData(_validadeOrcamentoEm),
+                onTap: _selecionarValidadeOrcamento,
+              ),
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              child: _dateTile(
+                label: _t(
+                  'atendimentoTecnico.mobile.financialDueDate',
+                  'Vencimento financeiro',
+                ),
+                value: _formatarData(_vencimentoFinanceiroEm),
+                onTap: _selecionarVencimentoFinanceiro,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _financialPreviewCard() {
+    final _PaymentStampData stamp = _paymentStampData();
+    return _sectionCard(
+      title: _t(
+        'atendimentoTecnico.mobile.financialPreviewSection',
+        'Prévia financeira',
+      ),
+      icon: Icons.payments_outlined,
+      children: <Widget>[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                _t(
+                  'atendimentoTecnico.mobile.financialPreviewDescription',
+                  'O valor fica em aberto até registrar um recebimento.',
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: _mutedTextColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  height: 1.3,
+                ),
+              ),
+            ),
+            SizedBox(width: 10),
+            _paymentStamp(stamp),
+          ],
+        ),
+        SizedBox(height: 14),
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool singleColumn = constraints.maxWidth < 330;
+            final double cardWidth =
+                singleColumn
+                    ? constraints.maxWidth
+                    : (constraints.maxWidth - 12) / 2;
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: <Widget>[
+                SizedBox(
+                  width: cardWidth,
+                  child: _financialValueCard(
+                    title: _t(
+                      'atendimentoTecnico.mobile.valorOriginal',
+                      'Valor original',
+                    ),
+                    value: _totalItens,
+                    icon: Icons.receipt_long_outlined,
+                  ),
+                ),
+                SizedBox(
+                  width: cardWidth,
+                  child: _financialValueCard(
+                    title: _t(
+                      'atendimentoTecnico.mobile.valorConfirmado',
+                      'Confirmado',
+                    ),
+                    value: 0,
+                    icon: Icons.verified_outlined,
+                  ),
+                ),
+                SizedBox(
+                  width: singleColumn ? cardWidth : constraints.maxWidth,
+                  child: _financialValueCard(
+                    title: _t(
+                      'atendimentoTecnico.mobile.valorEmAberto',
+                      'Em aberto',
+                    ),
+                    value: _totalItens,
+                    icon: Icons.account_balance_wallet_outlined,
+                    highlighted: _totalItens > 0,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  _PaymentStampData _paymentStampData() {
+    if (_totalItens <= 0) {
+      return _PaymentStampData(
+        label: _t('atendimentoTecnico.mobile.paymentStampNoValue', 'SEM VALOR'),
+        color: _mutedTextColor,
+      );
+    }
+
+    return _PaymentStampData(
+      label: _t('atendimentoTecnico.mobile.paymentStampOpen', 'EM ABERTO'),
+      color: _accentColor,
+    );
+  }
+
+  Widget _paymentStamp(_PaymentStampData stamp) {
+    return Semantics(
+      label:
+          '${_t('atendimentoTecnico.filters.paymentStatus.label', 'Status pagamento')}: ${stamp.label}',
+      child: IgnorePointer(
+        child: Transform.rotate(
+          angle: -0.12,
+          child: Opacity(
+            opacity: 0.94,
+            child: Container(
+              constraints: BoxConstraints(maxWidth: 118),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: stamp.color.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: stamp.color, width: 2.2),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: stamp.color.withValues(alpha: 0.10),
+                    blurRadius: 12,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Text(
+                stamp.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: stamp.color,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _financialValueCard({
+    required String title,
+    required double value,
+    required IconData icon,
+    bool highlighted = false,
+  }) {
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+    final Color borderColor =
+        highlighted ? SixMobilePalette.highlightedBorder : _borderColor;
+    final Color foregroundColor = highlighted ? _accentColor : _titleTextColor;
+
+    return Container(
+      padding: EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: highlighted ? _softAccentSurfaceColor : _softSurfaceColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: <Widget>[
+          _smallIconBox(
+            icon,
+            foreground: highlighted ? _accentColor : _titleTextColor,
+          ),
+          SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: _mutedTextColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 5),
+                reduceMotion
+                    ? _moneyText(value, foregroundColor)
+                    : TweenAnimationBuilder<double>(
+                      key: ValueKey<String>('finance_${title}_$value'),
+                      tween: Tween<double>(begin: 0, end: value),
+                      duration: Duration(milliseconds: 620),
+                      curve: Curves.easeOutCubic,
+                      builder: (
+                        BuildContext context,
+                        double animatedValue,
+                        Widget? child,
+                      ) {
+                        return _moneyText(animatedValue, foregroundColor);
+                      },
+                    ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _smallIconBox(IconData icon, {Color? foreground}) {
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: SixMobilePalette.iconSurface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, color: foreground ?? _accentColor, size: 18),
+    );
+  }
+
+  Widget _moneyText(double value, Color color) {
+    return Text(
+      _formatarMoeda(value),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.w900),
+    );
+  }
+
+  Widget _saveButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: FilledButton.icon(
+        onPressed: _salvando ? null : _salvar,
+        icon:
+            _salvando
+                ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2.3),
+                )
+                : Icon(Icons.playlist_add_check_rounded),
+        label: Text(
+          _salvando
+              ? _t(
+                'atendimentoTecnico.mobile.savingService',
+                'Iniciando atendimento...',
+              )
+              : _t(
+                'atendimentoTecnico.mobile.startServiceAction',
+                'Iniciar atendimento técnico',
+              ),
+        ),
       ),
     );
   }
@@ -1229,6 +1666,13 @@ class _AtendimentoTecnicoMobileScreenState
       contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 13),
     );
   }
+}
+
+class _PaymentStampData {
+  const _PaymentStampData({required this.label, required this.color});
+
+  final String label;
+  final Color color;
 }
 
 class _AtendimentoItemMobile {
