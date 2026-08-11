@@ -28,10 +28,10 @@ import 'package:sixpos/presentation/screens/categorias_produtos_servicos_web_pag
 import 'package:sixpos/presentation/screens/recebimento_pagamento_web.dart';
 import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/workspace_home_web.dart';
+import 'package:sixpos/presentation/theme/web_pdv_theme.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/sub_painel_cadastro_produto.dart';
 import 'package:sixpos/domain/models/pdv_visual_theme.dart';
-import 'package:sixpos/domain/services/aparencia/pdv_visual_theme_resolver.dart';
 import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -159,12 +159,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return;
     }
 
-    setState(() {
-      _pdvTheme = PdvVisualThemeResolver.resolve(
-        _themeResolver.paleta,
-        tema: _themeResolver.tema,
-      );
-    });
+    setState(() {});
   }
 
   // void _limparFiltrosCockpit() {
@@ -252,10 +247,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
     _iaPulseController.repeat(reverse: true);
 
-    _pdvTheme = PdvVisualThemeResolver.resolve(
-      _themeResolver.paleta,
-      tema: _themeResolver.tema,
-    );
+    _pdvTheme = PdvVisualTheme.defaultTheme();
     _themeResolver.addListener(_onThemeChanged);
     _atualizarCamposDerivados();
 
@@ -2857,6 +2849,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    _pdvTheme = WebPdvTheme.resolve(theme);
     final double total = _calcularTotal();
     final bool modoExpandidoAtivo =
         _moduloAtual == ModuloCentralPDV.vendas && _modoExpandidoFrenteCaixa;

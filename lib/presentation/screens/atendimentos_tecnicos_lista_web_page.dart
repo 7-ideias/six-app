@@ -20,6 +20,7 @@ import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
 import '../components/web/six_web_recebimento_dialog.dart';
+import '../theme/web_theme_tokens.dart';
 import 'atendimento_tecnico_editar_dialog.dart';
 import 'atendimentos_tecnicos_web_page.dart';
 
@@ -684,8 +685,44 @@ class _AtendimentosTecnicosListaWebPageState
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status,
   ) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final current = _statusEtapaAtual(atendimento, _statusFlowSteps(status));
-    return _colorFromHex(current?.cor, theme.colorScheme.primary);
+    final Color configuredColor = _colorFromHex(current?.cor, tokens.info);
+    return _statusAccentForSurface(theme, configuredColor, tokens);
+  }
+
+  Color _statusAccentForSurface(
+    ThemeData theme,
+    Color color,
+    WebThemeTokens tokens,
+  ) {
+    if (theme.colorScheme.brightness != Brightness.dark) {
+      return color;
+    }
+
+    if (_contrastRatio(color, tokens.cardBackground) >= 3.0) {
+      return color;
+    }
+
+    final HSLColor hsl = HSLColor.fromColor(color);
+    return hsl
+        .withLightness(hsl.lightness < 0.60 ? 0.68 : hsl.lightness)
+        .withSaturation(hsl.saturation < 0.38 ? 0.48 : hsl.saturation)
+        .toColor();
+  }
+
+  double _contrastRatio(Color foreground, Color background) {
+    final double foregroundLuminance = foreground.computeLuminance();
+    final double backgroundLuminance = background.computeLuminance();
+    final double lighter =
+        foregroundLuminance > backgroundLuminance
+            ? foregroundLuminance
+            : backgroundLuminance;
+    final double darker =
+        foregroundLuminance > backgroundLuminance
+            ? backgroundLuminance
+            : foregroundLuminance;
+    return (lighter + 0.05) / (darker + 0.05);
   }
 
   bool _statusAtendimentoEntregue(AtendimentoTecnicoModel atendimento) {
@@ -1222,13 +1259,13 @@ class _AtendimentosTecnicosListaWebPageState
     DominioOpcaoModel status,
   ) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final tokens = WebThemeTokens.of(context);
     final String statusLabel = _statusOptionLabel(status);
     return showDialog<_StatusSignatureGateAction>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          icon: Icon(Icons.draw_rounded, color: colorScheme.error),
+          icon: Icon(Icons.draw_rounded, color: tokens.warning),
           title: Text(
             context.t(
               'atendimentoTecnico.signatureGate.title',
@@ -1254,7 +1291,7 @@ class _AtendimentosTecnicosListaWebPageState
                 Text(
                   '${atendimento.numero} • ${_clienteLabelAtendimento(atendimento)}',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1328,6 +1365,7 @@ class _AtendimentosTecnicosListaWebPageState
     );
 
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     final content = FutureBuilder<_ListaAtendimentosState>(
       future: _future,
       builder: (context, snapshot) {
@@ -1347,10 +1385,10 @@ class _AtendimentosTecnicosListaWebPageState
           builder: (context, constraints) {
             final isCompact = constraints.maxWidth < 920;
             final horizontalPadding = isCompact ? 16.0 : 28.0;
-            return Container(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(
-                alpha: 0.16,
-              ),
+            return AnimatedContainer(
+              duration: WebThemeTokens.transitionDuration,
+              curve: WebThemeTokens.transitionCurve,
+              color: tokens.workspaceBackground,
               child: Column(
                 children: <Widget>[
                   _buildHeader(
@@ -1444,28 +1482,35 @@ class _AtendimentosTecnicosListaWebPageState
   }
 
   Widget _buildLoading(ThemeData theme) {
-    return Container(
-      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.16),
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return AnimatedContainer(
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      color: tokens.workspaceBackground,
       child: Center(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
+            color: tokens.cardBackground,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.12),
-            ),
+            border: Border.all(color: tokens.cardBorder),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              SizedBox(
+              const SizedBox(
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(strokeWidth: 2.4),
               ),
-              SizedBox(width: 12),
-              Text('Carregando atendimentos...'),
+              const SizedBox(width: 12),
+              Text(
+                'Carregando atendimentos...',
+                style: TextStyle(
+                  color: tokens.primaryText,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ],
           ),
         ),
@@ -1479,21 +1524,17 @@ class _AtendimentosTecnicosListaWebPageState
     required int filtrados,
     required bool isCompact,
   }) {
-    final colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final titleBlock = Row(
       children: <Widget>[
         Container(
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: colorScheme.primary.withValues(alpha: 0.10),
+            color: tokens.info.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Icon(
-            Icons.fact_check_outlined,
-            color: colorScheme.primary,
-            size: 27,
-          ),
+          child: Icon(Icons.fact_check_outlined, color: tokens.info, size: 27),
         ),
         const SizedBox(width: 14),
         Expanded(
@@ -1507,7 +1548,7 @@ class _AtendimentosTecnicosListaWebPageState
                 style: TextStyle(
                   fontSize: isCompact ? 21 : 24,
                   fontWeight: FontWeight.w900,
-                  color: colorScheme.onSurface,
+                  color: tokens.primaryText,
                 ),
               ),
               const SizedBox(height: 3),
@@ -1515,9 +1556,7 @@ class _AtendimentosTecnicosListaWebPageState
                 'Consulte, receba, edite, audite e gere assinatura.',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: colorScheme.onSurface.withValues(alpha: 0.66),
-                ),
+                style: TextStyle(color: tokens.secondaryText),
               ),
             ],
           ),
@@ -1549,7 +1588,9 @@ class _AtendimentosTecnicosListaWebPageState
       ],
     );
 
-    return Container(
+    return AnimatedContainer(
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(
         isCompact ? 16 : 28,
@@ -1558,15 +1599,14 @@ class _AtendimentosTecnicosListaWebPageState
         isCompact ? 14 : 18,
       ),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: colorScheme.outline.withValues(alpha: 0.14),
-          ),
-        ),
+        color: tokens.surface,
+        border: Border(bottom: BorderSide(color: tokens.cardBorder)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(
+              alpha:
+                  theme.colorScheme.brightness == Brightness.dark ? 0.14 : 0.05,
+            ),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -1667,7 +1707,7 @@ class _AtendimentosTecnicosListaWebPageState
                   possuiFiltrosAtivos ? saldoFiltradoHelper : 'Saldo pendente',
               icon: Icons.payments_outlined,
               highlight: true,
-              highlightColor: theme.colorScheme.error,
+              highlightColor: WebThemeTokens.of(context).financialNegative,
             ),
           ],
         );
@@ -1686,24 +1726,27 @@ class _AtendimentosTecnicosListaWebPageState
     bool highlight = false,
     Color? highlightColor,
   }) {
-    final colorScheme = theme.colorScheme;
-    final Color destaque = highlightColor ?? colorScheme.primary;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color destaque = highlightColor ?? tokens.info;
+    final bool dark = theme.colorScheme.brightness == Brightness.dark;
     return SizedBox(
       width: width,
-      child: Container(
+      child: AnimatedContainer(
+        duration: WebThemeTokens.transitionDuration,
+        curve: WebThemeTokens.transitionCurve,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: highlight ? destaque : colorScheme.surface,
+          color: tokens.cardBackground,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color:
                 highlight
-                    ? destaque
-                    : colorScheme.outline.withValues(alpha: 0.12),
+                    ? destaque.withValues(alpha: dark ? 0.45 : 0.34)
+                    : tokens.cardBorder,
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Colors.black.withValues(alpha: dark ? 0.12 : 0.04),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -1717,13 +1760,13 @@ class _AtendimentosTecnicosListaWebPageState
               decoration: BoxDecoration(
                 color:
                     highlight
-                        ? Colors.white.withValues(alpha: 0.15)
-                        : colorScheme.primary.withValues(alpha: 0.08),
+                        ? destaque.withValues(alpha: dark ? 0.14 : 0.10)
+                        : tokens.info.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
                 icon,
-                color: highlight ? Colors.white : colorScheme.primary,
+                color: highlight ? destaque : tokens.info,
                 size: 21,
               ),
             ),
@@ -1737,10 +1780,7 @@ class _AtendimentosTecnicosListaWebPageState
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color:
-                          highlight
-                              ? Colors.white.withValues(alpha: 0.86)
-                              : colorScheme.onSurface.withValues(alpha: 0.62),
+                      color: tokens.secondaryText,
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -1759,8 +1799,7 @@ class _AtendimentosTecnicosListaWebPageState
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color:
-                              highlight ? Colors.white : colorScheme.onSurface,
+                          color: highlight ? destaque : tokens.primaryText,
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
                         ),
@@ -1772,13 +1811,7 @@ class _AtendimentosTecnicosListaWebPageState
                     helper,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color:
-                          highlight
-                              ? Colors.white.withValues(alpha: 0.78)
-                              : colorScheme.onSurface.withValues(alpha: 0.56),
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: tokens.mutedText, fontSize: 12),
                   ),
                 ],
               ),
@@ -1796,19 +1829,21 @@ class _AtendimentosTecnicosListaWebPageState
     List<ColaboradorUsuarioResumo> tecnicos,
     List<DominioOpcaoModel> statusOptions,
   ) {
-    final colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final tecnicoOptions = _tecnicoOptions(atendimentos, tecnicos);
     final statusFiltroOptions = _statusFiltroOptions(
       atendimentos,
       statusOptions,
     );
-    return Container(
+    return AnimatedContainer(
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
       width: double.infinity,
       padding: EdgeInsets.all(isCompact ? 12 : 14),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -1865,10 +1900,7 @@ class _AtendimentosTecnicosListaWebPageState
               decoration: InputDecoration(
                 hintText:
                     'Buscar por cliente, técnico, status, equipamento ou número...',
-                prefixIcon: Icon(
-                  Icons.search_rounded,
-                  color: colorScheme.primary,
-                ),
+                prefixIcon: Icon(Icons.search_rounded, color: tokens.info),
                 suffixIcon:
                     _buscaController.text.trim().isEmpty
                         ? null
@@ -1877,21 +1909,19 @@ class _AtendimentosTecnicosListaWebPageState
                           onPressed: () => _buscaController.clear(),
                         ),
                 filled: true,
-                fillColor: colorScheme.surface,
+                fillColor: tokens.inputBackground,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 14,
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: colorScheme.outline.withValues(alpha: 0.12),
-                  ),
+                  borderSide: BorderSide(color: tokens.cardBorder),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide(
-                    color: colorScheme.primary,
+                    color: tokens.selectedBorder,
                     width: 1.4,
                   ),
                 ),
@@ -1993,17 +2023,17 @@ class _AtendimentosTecnicosListaWebPageState
     required String value,
     required IconData icon,
   }) {
-    final colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: tokens.inputBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         children: <Widget>[
-          Icon(icon, color: colorScheme.primary, size: 19),
+          Icon(icon, color: tokens.info, size: 19),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -2014,7 +2044,7 @@ class _AtendimentosTecnicosListaWebPageState
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: colorScheme.onSurface.withValues(alpha: 0.58),
+                    color: tokens.mutedText,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -2025,7 +2055,7 @@ class _AtendimentosTecnicosListaWebPageState
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: colorScheme.onSurface,
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -2033,10 +2063,7 @@ class _AtendimentosTecnicosListaWebPageState
             ),
           ),
           const SizedBox(width: 8),
-          Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: colorScheme.onSurfaceVariant,
-          ),
+          Icon(Icons.keyboard_arrow_down_rounded, color: tokens.secondaryText),
         ],
       ),
     );
@@ -2137,7 +2164,7 @@ class _AtendimentosTecnicosListaWebPageState
     bool isCompact,
   ) {
     final statusTexto = _statusLabel(atendimento, status);
-    final colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool pagamentoAberto = _pagamentoEmAberto(atendimento);
     final bool entregaAtrasada = _entregaAtrasada(atendimento);
     final bool clienteNaoAssinou = _clienteNaoAssinouAtendimentoAberto(
@@ -2154,12 +2181,12 @@ class _AtendimentosTecnicosListaWebPageState
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: colorScheme.primary.withValues(alpha: 0.08),
+            color: tokens.info.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(
             Icons.devices_other_outlined,
-            color: colorScheme.primary,
+            color: tokens.info,
             size: 25,
           ),
         ),
@@ -2177,6 +2204,7 @@ class _AtendimentosTecnicosListaWebPageState
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w900,
+                        color: tokens.primaryText,
                       ),
                     ),
                   ),
@@ -2190,7 +2218,9 @@ class _AtendimentosTecnicosListaWebPageState
                       pagamentoAberto
                           ? Icons.account_balance_wallet_outlined
                           : Icons.price_check_rounded,
-                      pagamentoAberto ? colorScheme.error : colorScheme.primary,
+                      pagamentoAberto
+                          ? tokens.financialNegative
+                          : tokens.success,
                     ),
                   ],
                 ],
@@ -2201,7 +2231,7 @@ class _AtendimentosTecnicosListaWebPageState
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
+                  color: tokens.secondaryText,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -2211,10 +2241,7 @@ class _AtendimentosTecnicosListaWebPageState
                   atendimento.defeitoRelatado!,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: colorScheme.onSurface.withValues(alpha: 0.72),
-                    height: 1.25,
-                  ),
+                  style: TextStyle(color: tokens.secondaryText, height: 1.25),
                 ),
               ],
               const SizedBox(height: 12),
@@ -2264,7 +2291,7 @@ class _AtendimentosTecnicosListaWebPageState
                       'Aberto',
                       _formatarMoeda(atendimento.valorEmAberto),
                       Icons.account_balance_wallet_outlined,
-                      emphasisColor: colorScheme.error,
+                      emphasisColor: tokens.financialNegative,
                     ),
                   _chip(
                     theme,
@@ -2345,22 +2372,26 @@ class _AtendimentosTecnicosListaWebPageState
     );
 
     return Material(
-      color: colorScheme.surface,
+      color: tokens.cardBackground,
       borderRadius: BorderRadius.circular(22),
       child: InkWell(
         borderRadius: BorderRadius.circular(22),
         onTap: () => _abrirDetalhes(atendimento, status),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: WebThemeTokens.transitionDuration,
+          curve: WebThemeTokens.transitionCurve,
           padding: EdgeInsets.all(isCompact ? 14 : 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: colorScheme.outline.withValues(alpha: 0.13),
-            ),
+            border: Border.all(color: tokens.cardBorder),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.035),
+                color: Colors.black.withValues(
+                  alpha:
+                      theme.colorScheme.brightness == Brightness.dark
+                          ? 0.12
+                          : 0.035,
+                ),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -2576,6 +2607,7 @@ class _AtendimentosTecnicosListaWebPageState
   }
 
   Widget _detailLine(String label, String value) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 7),
       child: Row(
@@ -2585,10 +2617,15 @@ class _AtendimentosTecnicosListaWebPageState
             width: 130,
             child: Text(
               label,
-              style: const TextStyle(fontWeight: FontWeight.w800),
+              style: TextStyle(
+                color: tokens.secondaryText,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
-          Expanded(child: Text(value)),
+          Expanded(
+            child: Text(value, style: TextStyle(color: tokens.primaryText)),
+          ),
         ],
       ),
     );
@@ -2600,7 +2637,7 @@ class _AtendimentosTecnicosListaWebPageState
     List<DominioOpcaoModel> status,
   ) {
     if (status.isEmpty) return const SizedBox.shrink();
-    final colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final progress = _statusProgressValue(atendimento, status);
     final color = _statusProgressColor(theme, atendimento, status);
     final steps = _statusFlowSteps(status);
@@ -2615,9 +2652,9 @@ class _AtendimentosTecnicosListaWebPageState
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.055),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(17),
-        border: Border.all(color: color.withValues(alpha: 0.20)),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2628,7 +2665,7 @@ class _AtendimentosTecnicosListaWebPageState
                 width: 30,
                 height: 30,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.13),
+                  color: color.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(11),
                 ),
                 child: Icon(Icons.route_outlined, size: 17, color: color),
@@ -2646,7 +2683,7 @@ class _AtendimentosTecnicosListaWebPageState
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: colorScheme.onSurfaceVariant,
+                        color: tokens.secondaryText,
                         fontSize: 12,
                         fontWeight: FontWeight.w900,
                       ),
@@ -2657,7 +2694,7 @@ class _AtendimentosTecnicosListaWebPageState
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: colorScheme.onSurface,
+                        color: tokens.primaryText,
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                       ),
@@ -2690,6 +2727,7 @@ class _AtendimentosTecnicosListaWebPageState
           const SizedBox(height: 11),
           _statusBulletProgressBar(
             theme: theme,
+            tokens: tokens,
             progress: progress,
             steps: steps,
             color: color,
@@ -2704,12 +2742,12 @@ class _AtendimentosTecnicosListaWebPageState
 
   Widget _statusBulletProgressBar({
     required ThemeData theme,
+    required WebThemeTokens tokens,
     required double progress,
     required List<DominioOpcaoModel> steps,
     required Color color,
     required String valueKey,
   }) {
-    final colorScheme = theme.colorScheme;
     const double trackHeight = 10;
     const double bulletSize = 22;
     final int safeSteps = steps.isEmpty ? 1 : steps.length;
@@ -2741,14 +2779,12 @@ class _AtendimentosTecnicosListaWebPageState
                     child: Container(
                       height: trackHeight,
                       decoration: BoxDecoration(
-                        color: colorScheme.surface.withValues(alpha: 0.92),
+                        color: tokens.cardBackground,
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: colorScheme.outline.withValues(alpha: 0.10),
-                        ),
+                        border: Border.all(color: tokens.cardBorder),
                         boxShadow: <BoxShadow>[
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
+                            color: Colors.black.withValues(alpha: 0.08),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -2797,7 +2833,7 @@ class _AtendimentosTecnicosListaWebPageState
                       steps: safeSteps,
                       currentStep: currentStep,
                       color: color,
-                      colorScheme: colorScheme,
+                      tokens: tokens,
                     ),
                 ],
               ),
@@ -2827,10 +2863,8 @@ class _AtendimentosTecnicosListaWebPageState
                           style: TextStyle(
                             color:
                                 index < currentStep
-                                    ? colorScheme.onSurface
-                                    : colorScheme.onSurfaceVariant.withValues(
-                                      alpha: 0.76,
-                                    ),
+                                    ? tokens.primaryText
+                                    : tokens.mutedText,
                             fontSize: 10.5,
                             fontWeight:
                                 index < currentStep
@@ -2857,7 +2891,7 @@ class _AtendimentosTecnicosListaWebPageState
     required int steps,
     required int currentStep,
     required Color color,
-    required ColorScheme colorScheme,
+    required WebThemeTokens tokens,
   }) {
     final double position = steps == 1 ? 0 : index / (steps - 1);
     final bool reached = index < currentStep;
@@ -2870,13 +2904,10 @@ class _AtendimentosTecnicosListaWebPageState
         width: bulletSize,
         height: bulletSize,
         decoration: BoxDecoration(
-          color: reached ? color : colorScheme.surface,
+          color: reached ? color : tokens.cardBackground,
           shape: BoxShape.circle,
           border: Border.all(
-            color:
-                reached
-                    ? color
-                    : colorScheme.outlineVariant.withValues(alpha: 0.90),
+            color: reached ? color : tokens.cardBorder,
             width: reached ? (active ? 2.8 : 2) : 1.3,
           ),
           boxShadow: <BoxShadow>[
@@ -2900,17 +2931,23 @@ class _AtendimentosTecnicosListaWebPageState
                 ? Icon(
                   Icons.check_rounded,
                   size: bulletSize * 0.62,
-                  color: Colors.white,
+                  color: _foregroundForStatusColor(color),
                 )
                 : Container(
                   margin: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.72),
+                    color: tokens.divider,
                     shape: BoxShape.circle,
                   ),
                 ),
       ),
     );
+  }
+
+  Color _foregroundForStatusColor(Color background) {
+    return ThemeData.estimateBrightnessForColor(background) == Brightness.dark
+        ? Colors.white
+        : Colors.black;
   }
 
   Widget _headerButton(
@@ -2919,11 +2956,15 @@ class _AtendimentosTecnicosListaWebPageState
     String label,
     VoidCallback? onPressed,
   ) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return OutlinedButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 18),
       label: Text(label),
       style: OutlinedButton.styleFrom(
+        foregroundColor: tokens.info,
+        backgroundColor: tokens.surfaceMuted,
+        side: BorderSide(color: tokens.cardBorder),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
@@ -2937,6 +2978,7 @@ class _AtendimentosTecnicosListaWebPageState
     required VoidCallback? onPressed,
     bool filled = false,
   }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(14),
     );
@@ -2953,13 +2995,20 @@ class _AtendimentosTecnicosListaWebPageState
       onPressed: onPressed,
       icon: Icon(icon, size: 17),
       label: Text(label),
-      style: OutlinedButton.styleFrom(padding: padding, shape: shape),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: tokens.info,
+        backgroundColor: tokens.surfaceMuted,
+        side: BorderSide(color: tokens.cardBorder),
+        padding: padding,
+        shape: shape,
+      ),
     );
   }
 
   Widget _closeButton(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Material(
-      color: const Color(0xFFE53935),
+      color: tokens.surfaceMuted,
       borderRadius: BorderRadius.circular(999),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
@@ -2970,32 +3019,40 @@ class _AtendimentosTecnicosListaWebPageState
           }
           Navigator.of(context).maybePop();
         },
-        child: const SizedBox(
+        child: SizedBox(
           width: 46,
           height: 46,
-          child: Icon(Icons.close_rounded, color: Colors.white, size: 26),
+          child: Icon(
+            Icons.close_rounded,
+            color: tokens.secondaryText,
+            size: 26,
+          ),
         ),
       ),
     );
   }
 
   Widget _metricBadge(ThemeData theme, String label, IconData icon) {
-    final colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.62),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.10)),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 15, color: colorScheme.onSurfaceVariant),
+          Icon(icon, size: 15, color: tokens.secondaryText),
           const SizedBox(width: 7),
           Text(
             label,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+            style: TextStyle(
+              color: tokens.primaryText,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
@@ -3009,28 +3066,26 @@ class _AtendimentosTecnicosListaWebPageState
     IconData icon, {
     Color? emphasisColor,
   }) {
-    final colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final Color? destaque = emphasisColor;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: destaque?.withValues(alpha: 0.08) ?? colorScheme.surface,
+        color: destaque?.withValues(alpha: 0.08) ?? tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color:
-              destaque?.withValues(alpha: 0.30) ??
-              colorScheme.outline.withValues(alpha: 0.12),
+          color: destaque?.withValues(alpha: 0.30) ?? tokens.cardBorder,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 14, color: destaque ?? colorScheme.onSurfaceVariant),
+          Icon(icon, size: 14, color: destaque ?? tokens.secondaryText),
           const SizedBox(width: 6),
           Text(
             '$label ',
             style: TextStyle(
-              color: destaque ?? colorScheme.onSurfaceVariant,
+              color: destaque ?? tokens.secondaryText,
               fontWeight: FontWeight.w700,
               fontSize: 12,
             ),
@@ -3038,7 +3093,7 @@ class _AtendimentosTecnicosListaWebPageState
           Text(
             value,
             style: TextStyle(
-              color: destaque,
+              color: destaque ?? tokens.primaryText,
               fontWeight: FontWeight.w900,
               fontSize: 12,
             ),
@@ -3049,25 +3104,26 @@ class _AtendimentosTecnicosListaWebPageState
   }
 
   Widget _chip(ThemeData theme, String label, IconData icon) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.72,
-        ),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.08),
-        ),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
+          Icon(icon, size: 14, color: tokens.secondaryText),
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+            style: TextStyle(
+              color: tokens.primaryText,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
@@ -3078,14 +3134,14 @@ class _AtendimentosTecnicosListaWebPageState
     theme,
     'Assinado',
     Icons.verified_rounded,
-    theme.colorScheme.primary,
+    WebThemeTokens.of(context).success,
   );
 
   Widget _pendingSignatureChip(ThemeData theme) => _coloredChip(
     theme,
     'Nova assinatura pendente',
     Icons.pending_actions_rounded,
-    theme.colorScheme.error,
+    WebThemeTokens.of(context).warning,
   );
 
   Widget _customerNotSignedChip(ThemeData theme) => _coloredChip(
@@ -3095,28 +3151,28 @@ class _AtendimentosTecnicosListaWebPageState
       fallback: 'Cliente não assinou',
     ),
     Icons.assignment_late_outlined,
-    theme.colorScheme.error,
+    WebThemeTokens.of(context).warning,
   );
 
   Widget _lateDeliveryChip(ThemeData theme) => _coloredChip(
     theme,
     'Entrega atrasada',
     Icons.warning_amber_rounded,
-    theme.colorScheme.error,
+    WebThemeTokens.of(context).danger,
   );
 
   Widget _liquidadaChip(ThemeData theme) => _coloredChip(
     theme,
     'Financeiro liquidado',
     Icons.price_check_rounded,
-    theme.colorScheme.primary,
+    WebThemeTokens.of(context).success,
   );
 
   Widget _naoLiquidadaChip(ThemeData theme) => _coloredChip(
     theme,
     'Financeiro aberto',
     Icons.account_balance_wallet_outlined,
-    theme.colorScheme.error,
+    WebThemeTokens.of(context).financialNegative,
   );
 
   Widget _coloredChip(
@@ -3159,35 +3215,31 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Center(
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: tokens.cardBackground,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: theme.colorScheme.outline.withValues(alpha: 0.12),
-          ),
+          border: Border.all(color: tokens.cardBorder),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(
-              Icons.search_off_rounded,
-              color: theme.colorScheme.primary,
-              size: 38,
-            ),
+            Icon(Icons.search_off_rounded, color: tokens.info, size: 38),
             const SizedBox(height: 10),
             Text(
               'Nenhum atendimento encontrado.',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w900,
+                color: tokens.primaryText,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               'Ajuste a busca ou atualize a lista.',
-              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+              style: TextStyle(color: tokens.secondaryText),
             ),
             const SizedBox(height: 14),
             OutlinedButton.icon(
@@ -3211,38 +3263,34 @@ class _ErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Center(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 520),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: tokens.cardBackground,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: theme.colorScheme.outline.withValues(alpha: 0.12),
-          ),
+          border: Border.all(color: tokens.cardBorder),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(
-              Icons.error_outline_rounded,
-              color: theme.colorScheme.error,
-              size: 38,
-            ),
+            Icon(Icons.error_outline_rounded, color: tokens.danger, size: 38),
             const SizedBox(height: 10),
             Text(
               'Não foi possível carregar os atendimentos.',
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w900,
+                color: tokens.primaryText,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               mensagem,
               textAlign: TextAlign.center,
-              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+              style: TextStyle(color: tokens.secondaryText),
             ),
             const SizedBox(height: 14),
             OutlinedButton.icon(
@@ -3616,7 +3664,7 @@ class _AlterarStatusAtendimentoWebDialogState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final tokens = WebThemeTokens.of(context);
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       clipBehavior: Clip.antiAlias,
@@ -3639,11 +3687,9 @@ class _AlterarStatusAtendimentoWebDialogState
                       compact ? 16 : 18,
                     ),
                     decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha: 0.06),
+                      color: tokens.surfaceMuted,
                       border: Border(
-                        bottom: BorderSide(
-                          color: colorScheme.outline.withValues(alpha: 0.14),
-                        ),
+                        bottom: BorderSide(color: tokens.cardBorder),
                       ),
                     ),
                     child: Row(
@@ -3653,12 +3699,12 @@ class _AlterarStatusAtendimentoWebDialogState
                           width: 52,
                           height: 52,
                           decoration: BoxDecoration(
-                            color: colorScheme.primary.withValues(alpha: 0.12),
+                            color: tokens.info.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(18),
                           ),
                           child: Icon(
                             Icons.swap_horiz_rounded,
-                            color: colorScheme.primary,
+                            color: tokens.info,
                             size: 27,
                           ),
                         ),
@@ -3673,6 +3719,7 @@ class _AlterarStatusAtendimentoWebDialogState
                                 overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.w900,
+                                  color: tokens.primaryText,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -3681,7 +3728,7 @@ class _AlterarStatusAtendimentoWebDialogState
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
+                                  color: tokens.secondaryText,
                                   height: 1.35,
                                 ),
                               ),
@@ -3743,12 +3790,8 @@ class _AlterarStatusAtendimentoWebDialogState
                       compact ? 18 : 20,
                     ),
                     decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      border: Border(
-                        top: BorderSide(
-                          color: colorScheme.outline.withValues(alpha: 0.12),
-                        ),
-                      ),
+                      color: tokens.surface,
+                      border: Border(top: BorderSide(color: tokens.cardBorder)),
                     ),
                     child: Wrap(
                       spacing: 10,
@@ -3809,13 +3852,13 @@ class _StatusContextCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.22),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3824,13 +3867,10 @@ class _StatusContextCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.10),
+              color: tokens.info.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: Icon(
-              Icons.devices_other_outlined,
-              color: colorScheme.primary,
-            ),
+            child: Icon(Icons.devices_other_outlined, color: tokens.info),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -3843,6 +3883,7 @@ class _StatusContextCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w900,
+                    color: tokens.primaryText,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -3851,7 +3892,7 @@ class _StatusContextCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -3891,23 +3932,23 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 15, color: colorScheme.primary),
+          Icon(icon, size: 15, color: tokens.info),
           const SizedBox(width: 6),
           Text(
             '$label: ',
             style: theme.textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
+              color: tokens.secondaryText,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -3917,7 +3958,7 @@ class _StatusPill extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelSmall?.copyWith(
-                color: colorScheme.onSurface,
+                color: tokens.primaryText,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -3972,11 +4013,13 @@ class _StatusWebSelectorState extends State<_StatusWebSelector> {
     );
 
     setState(() => _opened = true);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final selected = await showMenu<DominioOpcaoModel>(
       context: context,
       position: position,
       constraints: BoxConstraints.tightFor(width: renderBox.size.width),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      color: tokens.menuBackground,
       items:
           widget.options
               .map(
@@ -3992,11 +4035,7 @@ class _StatusWebSelectorState extends State<_StatusWebSelector> {
                         ),
                       ),
                       if (option.id == widget.value?.id)
-                        Icon(
-                          Icons.check_rounded,
-                          size: 18,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                        Icon(Icons.check_rounded, size: 18, color: tokens.info),
                     ],
                   ),
                 ),
@@ -4011,7 +4050,7 @@ class _StatusWebSelectorState extends State<_StatusWebSelector> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final tokens = WebThemeTokens.of(context);
     final value = widget.value?.nomePadraoPtBr ?? 'Selecione um status';
     return InkWell(
       key: _fieldKey,
@@ -4023,14 +4062,11 @@ class _StatusWebSelectorState extends State<_StatusWebSelector> {
         decoration: BoxDecoration(
           color:
               widget.enabled
-                  ? colorScheme.surface
-                  : colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+                  ? tokens.inputBackground
+                  : tokens.disabledBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color:
-                _opened
-                    ? colorScheme.primary
-                    : colorScheme.outline.withValues(alpha: 0.18),
+            color: _opened ? tokens.selectedBorder : tokens.cardBorder,
           ),
         ),
         child: Row(
@@ -4039,14 +4075,10 @@ class _StatusWebSelectorState extends State<_StatusWebSelector> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: colorScheme.primary.withValues(alpha: 0.10),
+                color: tokens.info.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(13),
               ),
-              child: Icon(
-                Icons.flag_outlined,
-                color: colorScheme.primary,
-                size: 20,
-              ),
+              child: Icon(Icons.flag_outlined, color: tokens.info, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -4058,7 +4090,7 @@ class _StatusWebSelectorState extends State<_StatusWebSelector> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                      color: tokens.secondaryText,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -4071,8 +4103,8 @@ class _StatusWebSelectorState extends State<_StatusWebSelector> {
                       fontWeight: FontWeight.w900,
                       color:
                           widget.enabled
-                              ? colorScheme.onSurface
-                              : colorScheme.onSurfaceVariant,
+                              ? tokens.primaryText
+                              : tokens.disabledForeground,
                     ),
                   ),
                 ],
@@ -4084,7 +4116,7 @@ class _StatusWebSelectorState extends State<_StatusWebSelector> {
               duration: const Duration(milliseconds: 160),
               child: Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: colorScheme.onSurfaceVariant,
+                color: tokens.secondaryText,
               ),
             ),
           ],
@@ -4131,7 +4163,7 @@ class _PeriodoFiltroWebDialogState extends State<_PeriodoFiltroWebDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final tokens = WebThemeTokens.of(context);
     final now = DateTime.now();
     return AlertDialog(
       title: const Text('Filtrar por data'),
@@ -4143,7 +4175,7 @@ class _PeriodoFiltroWebDialogState extends State<_PeriodoFiltroWebDialog> {
           children: <Widget>[
             Text(
               'Use a data de atualização do atendimento.',
-              style: TextStyle(color: colorScheme.onSurfaceVariant),
+              style: TextStyle(color: tokens.secondaryText),
             ),
             const SizedBox(height: 14),
             Row(
@@ -4170,7 +4202,7 @@ class _PeriodoFiltroWebDialogState extends State<_PeriodoFiltroWebDialog> {
               Text(
                 _erro!,
                 style: TextStyle(
-                  color: colorScheme.error,
+                  color: tokens.danger,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -4247,25 +4279,23 @@ class _PeriodoFiltroWebDialogState extends State<_PeriodoFiltroWebDialog> {
     required TextEditingController controller,
     required String label,
   }) {
-    final colorScheme = theme.colorScheme;
+    final tokens = WebThemeTokens.of(context);
     return TextField(
       controller: controller,
       keyboardType: TextInputType.datetime,
       decoration: InputDecoration(
         labelText: label,
         hintText: 'dd/mm/aaaa',
-        prefixIcon: Icon(Icons.event_outlined, color: colorScheme.primary),
+        prefixIcon: Icon(Icons.event_outlined, color: tokens.info),
         filled: true,
-        fillColor: colorScheme.surface,
+        fillColor: tokens.inputBackground,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
-            color: colorScheme.outline.withValues(alpha: 0.16),
-          ),
+          borderSide: BorderSide(color: tokens.cardBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
+          borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
         ),
       ),
       onSubmitted: (_) => _aplicar(),
@@ -4412,7 +4442,7 @@ class _TecnicoFiltroDropdownState extends State<_TecnicoFiltroDropdown> {
       ),
       Offset.zero & overlay.size,
     );
-    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
 
     setState(() => _opened = true);
     final selected = await showMenu<String>(
@@ -4421,7 +4451,7 @@ class _TecnicoFiltroDropdownState extends State<_TecnicoFiltroDropdown> {
       constraints: BoxConstraints.tightFor(width: renderBox.size.width),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       elevation: 12,
-      color: theme.colorScheme.surface,
+      color: tokens.menuBackground,
       items: <PopupMenuEntry<String>>[
         PopupMenuItem<String>(
           value: widget.todosKey,
@@ -4431,7 +4461,7 @@ class _TecnicoFiltroDropdownState extends State<_TecnicoFiltroDropdown> {
             label: widget.todosLabel,
             icon: widget.todosIcon,
             selected: widget.selectedKey == null,
-            colorScheme: theme.colorScheme,
+            tokens: tokens,
           ),
         ),
         if (widget.options.isNotEmpty) const PopupMenuDivider(height: 8),
@@ -4444,7 +4474,7 @@ class _TecnicoFiltroDropdownState extends State<_TecnicoFiltroDropdown> {
               label: option.label,
               icon: widget.itemIcon,
               selected: widget.selectedKey == option.key,
-              colorScheme: theme.colorScheme,
+              tokens: tokens,
             ),
           ),
         ),
@@ -4459,8 +4489,7 @@ class _TecnicoFiltroDropdownState extends State<_TecnicoFiltroDropdown> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final tokens = WebThemeTokens.of(context);
     final bool active = widget.selectedKey != null;
     final bool emphasized = _opened || _hovered || active;
     return SizedBox(
@@ -4492,24 +4521,24 @@ class _TecnicoFiltroDropdownState extends State<_TecnicoFiltroDropdown> {
                   decoration: BoxDecoration(
                     color:
                         emphasized
-                            ? colorScheme.primary.withValues(alpha: 0.05)
-                            : colorScheme.surface,
+                            ? tokens.hoverBackground
+                            : tokens.inputBackground,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color:
                           _opened
-                              ? colorScheme.primary
+                              ? tokens.selectedBorder
                               : active
-                              ? colorScheme.primary.withValues(alpha: 0.34)
-                              : colorScheme.outline.withValues(
-                                alpha: _hovered ? 0.24 : 0.12,
-                              ),
+                              ? tokens.selectedBorder
+                              : _hovered
+                              ? tokens.selectedBorder.withValues(alpha: 0.52)
+                              : tokens.cardBorder,
                       width: _opened ? 1.4 : 1,
                     ),
                   ),
                   child: Row(
                     children: <Widget>[
-                      Icon(widget.icon, color: colorScheme.primary, size: 19),
+                      Icon(widget.icon, color: tokens.info, size: 19),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -4520,9 +4549,7 @@ class _TecnicoFiltroDropdownState extends State<_TecnicoFiltroDropdown> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: colorScheme.onSurface.withValues(
-                                  alpha: 0.58,
-                                ),
+                                color: tokens.mutedText,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -4533,7 +4560,7 @@ class _TecnicoFiltroDropdownState extends State<_TecnicoFiltroDropdown> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: colorScheme.onSurface,
+                                color: tokens.primaryText,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
@@ -4547,7 +4574,7 @@ class _TecnicoFiltroDropdownState extends State<_TecnicoFiltroDropdown> {
                         curve: Curves.easeOutCubic,
                         child: Icon(
                           Icons.keyboard_arrow_down_rounded,
-                          color: colorScheme.onSurfaceVariant,
+                          color: tokens.secondaryText,
                         ),
                       ),
                     ],
@@ -4567,23 +4594,20 @@ class _TecnicoFiltroMenuItem extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.selected,
-    required this.colorScheme,
+    required this.tokens,
   });
 
   final String label;
   final IconData icon;
   final bool selected;
-  final ColorScheme colorScheme;
+  final WebThemeTokens tokens;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color:
-            selected
-                ? colorScheme.primary.withValues(alpha: 0.08)
-                : Colors.transparent,
+        color: selected ? tokens.selectedBackground : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -4591,8 +4615,7 @@ class _TecnicoFiltroMenuItem extends StatelessWidget {
           Icon(
             icon,
             size: 18,
-            color:
-                selected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            color: selected ? tokens.info : tokens.secondaryText,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -4601,7 +4624,7 @@ class _TecnicoFiltroMenuItem extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: selected ? colorScheme.primary : colorScheme.onSurface,
+                color: selected ? tokens.info : tokens.primaryText,
                 fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
               ),
             ),
@@ -4610,11 +4633,7 @@ class _TecnicoFiltroMenuItem extends StatelessWidget {
           AnimatedOpacity(
             opacity: selected ? 1 : 0,
             duration: const Duration(milliseconds: 120),
-            child: Icon(
-              Icons.check_rounded,
-              size: 18,
-              color: colorScheme.primary,
-            ),
+            child: Icon(Icons.check_rounded, size: 18, color: tokens.info),
           ),
         ],
       ),
@@ -4672,7 +4691,7 @@ class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
       ),
       Offset.zero & overlay.size,
     );
-    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
 
     setState(() => _opened = true);
     final selected = await showMenu<String>(
@@ -4681,7 +4700,7 @@ class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
       constraints: BoxConstraints.tightFor(width: renderBox.size.width),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       elevation: 12,
-      color: theme.colorScheme.surface,
+      color: tokens.menuBackground,
       items: <PopupMenuEntry<String>>[
         PopupMenuItem<String>(
           value: widget.todosKey,
@@ -4691,7 +4710,7 @@ class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
             label: 'Todos os status (${widget.total})',
             icon: Icons.flag_outlined,
             selected: widget.selectedKey == null,
-            colorScheme: theme.colorScheme,
+            tokens: tokens,
           ),
         ),
         if (widget.options.isNotEmpty) const PopupMenuDivider(height: 8),
@@ -4704,7 +4723,7 @@ class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
               label: '${option.label} (${option.count})',
               icon: Icons.flag_outlined,
               selected: widget.selectedKey == option.key,
-              colorScheme: theme.colorScheme,
+              tokens: tokens,
             ),
           ),
         ),
@@ -4719,8 +4738,7 @@ class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final tokens = WebThemeTokens.of(context);
     final bool active = widget.selectedKey != null;
     final bool emphasized = _opened || _hovered || active;
     return SizedBox(
@@ -4752,28 +4770,24 @@ class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
                   decoration: BoxDecoration(
                     color:
                         emphasized
-                            ? colorScheme.primary.withValues(alpha: 0.05)
-                            : colorScheme.surface,
+                            ? tokens.hoverBackground
+                            : tokens.inputBackground,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color:
                           _opened
-                              ? colorScheme.primary
+                              ? tokens.selectedBorder
                               : active
-                              ? colorScheme.primary.withValues(alpha: 0.34)
-                              : colorScheme.outline.withValues(
-                                alpha: _hovered ? 0.24 : 0.12,
-                              ),
+                              ? tokens.selectedBorder
+                              : _hovered
+                              ? tokens.selectedBorder.withValues(alpha: 0.52)
+                              : tokens.cardBorder,
                       width: _opened ? 1.4 : 1,
                     ),
                   ),
                   child: Row(
                     children: <Widget>[
-                      Icon(
-                        Icons.flag_outlined,
-                        color: colorScheme.primary,
-                        size: 19,
-                      ),
+                      Icon(Icons.flag_outlined, color: tokens.info, size: 19),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -4784,9 +4798,7 @@ class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: colorScheme.onSurface.withValues(
-                                  alpha: 0.58,
-                                ),
+                                color: tokens.mutedText,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -4797,7 +4809,7 @@ class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: colorScheme.onSurface,
+                                color: tokens.primaryText,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
@@ -4811,7 +4823,7 @@ class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
                         curve: Curves.easeOutCubic,
                         child: Icon(
                           Icons.keyboard_arrow_down_rounded,
-                          color: colorScheme.onSurfaceVariant,
+                          color: tokens.secondaryText,
                         ),
                       ),
                     ],
