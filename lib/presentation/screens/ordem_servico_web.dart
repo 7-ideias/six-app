@@ -1,14 +1,12 @@
 import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:sixpos/sub_painel_cadastro_cliente.dart';
 import 'package:sixpos/sub_painel_cadastro_colaborador.dart';
-import 'package:sixpos/sub_painel_cadastro_produto.dart';
-import 'package:sixpos/sub_painel_configuracoes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 
 import '../../data/models/produto_model.dart';
 import '../../mock_cadastros_store.dart';
-import '../../top_navigation_bar_web.dart';
 
 class OrdemServicoWeb extends StatefulWidget {
   const OrdemServicoWeb({super.key, this.embedded = false, this.onBack});
@@ -1112,40 +1110,6 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
     );
   }
 
-  List<TopNavItemData> _navItems() {
-    return <TopNavItemData>[
-      TopNavItemData(
-        title: 'Início',
-        subItems: const <String>['Preferências do Sistema', 'Painel Administrativo'],
-        onSelect: (String value) {
-          if (value == 'Painel Administrativo') {
-            showSubPainelConfiguracoes(context, 'Configurações');
-          }
-        },
-      ),
-      const TopNavItemData(title: 'Permitir', subItems: <String>['Gerenciar Permissões', 'Alterar Configurações']),
-      TopNavItemData(
-        title: 'Cadastros',
-        subItems: const <String>['Clientes', 'Colaboradores', 'Produtos'],
-        onSelect: (String value) {
-          if (value == 'Clientes') {
-            showSubPainelCadastroCliente(context, 'Cadastro de Clientes');
-          }
-          if (value == 'Colaboradores') {
-            showSubPainelCadastroColaborador(context, 'Cadastro de Colaboradores');
-          }
-          if (value == 'Produtos') {
-            showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
-          }
-        },
-      ),
-      const TopNavItemData(title: 'Relatórios', subItems: <String>['Vendas', 'Estoque', 'Financeiro']),
-      const TopNavItemData(title: 'Executar', subItems: <String>['Processar Pagamentos', 'Fechar Caixa']),
-      const TopNavItemData(title: 'Configurações', subItems: <String>['Sistema', 'Usuários']),
-      const TopNavItemData(title: 'Ajuda', subItems: <String>['Suporte', 'Sobre']),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -1212,7 +1176,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
       return Container(color: theme.colorScheme.surfaceContainerLowest, child: body);
     }
 
-    return Scaffold(appBar: TopNavigationBarWeb(items: _navItems(), onNotificationPressed: () {}), body: body);
+    return Scaffold(appBar: AppBar(title: Text(context.t('web.standalone.serviceOrder', fallback: 'Ordem de serviço'))), body: body);
   }
 }
 

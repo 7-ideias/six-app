@@ -28,9 +28,7 @@ import 'package:sixpos/presentation/screens/categorias_produtos_servicos_web_pag
 import 'package:sixpos/presentation/screens/recebimento_pagamento_web.dart';
 import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/workspace_home_web.dart';
-import 'package:sixpos/sub_painel_cadastro_cliente.dart';
 import 'package:sixpos/sub_painel_cadastro_produto.dart';
-import 'package:sixpos/sub_painel_configuracoes.dart';
 import 'package:sixpos/domain/models/pdv_visual_theme.dart';
 import 'package:sixpos/domain/services/aparencia/pdv_visual_theme_resolver.dart';
 import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
@@ -42,7 +40,6 @@ import 'package:sixpos/l10n/six_i18n.dart';
 
 import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'package:sixpos/l10n/app_localizations.dart';
-import 'package:sixpos/sub_painel_cadastro_colaborador.dart';
 
 import 'data/models/cliente_usuario_model.dart';
 import 'data/models/caixa_models.dart';
@@ -62,14 +59,9 @@ import 'providers/locale_settings_provider.dart';
 import 'providers/colaborador_autorizacoes_provider.dart';
 import 'providers/empresa_provider.dart';
 import 'providers/streak_provider.dart';
-import 'top_navigation_bar_web.dart';
 
 part 'pdv_page_web_cockpit_section.dart';
 part 'presentation/screens/pdv_web.dart';
-
-// Fallback local enquanto o TopNavigationBarWeb ainda existe:
-// true usa AuthenticatedWebShell + Sidebar; false restaura o menu superior antigo.
-const bool _useWebShellNavigation = true;
 
 class PaginaPrincipalWeb extends StatefulWidget {
   const PaginaPrincipalWeb({super.key});
@@ -527,20 +519,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     );
   }
 
-  Widget _buildAreaNotificacoesEConexao() {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: <Widget>[
-        _buildIAAssistente(),
-        _buildIndicadorComunicacaoBackend(),
-        _buildNotificationBellButton(),
-        _buildLogoutButton(),
-      ],
-    );
-  }
-
   List<Widget> _buildWebShellHeaderActions() {
     return <Widget>[
       _buildIAAssistente(),
@@ -723,47 +701,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       case ModuloCentralPDV.configuracoes:
         return 'configuracoes_web';
     }
-  }
-
-  Widget _buildLogoutButton() {
-    return Tooltip(
-      message: 'Sair da conta',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(999),
-          onTap: _confirmarLogout,
-          child: Container(
-            height: 36,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: _pdvTheme.backgroundSurface,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: _pdvTheme.cardBorder),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(
-                  Icons.logout_rounded,
-                  size: 16,
-                  color: _pdvTheme.iconColor,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'Sair',
-                  style: TextStyle(
-                    color: _pdvTheme.primaryText,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildUserMenuButton() {
@@ -2430,7 +2367,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   Widget _buildConteudoCentral(double total) {
-    final VoidCallback? voltarParaInicio = _voltarParaInicioSeModoLegado();
+    const VoidCallback? voltarParaInicio = null;
     switch (_moduloAtual) {
       case ModuloCentralPDV.cockpit:
         return _buildCockpitEstrategico();
@@ -2584,23 +2521,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     }
   }
 
-  VoidCallback? _voltarParaInicioSeModoLegado() {
-    if (_useWebShellNavigation) {
-      return null;
-    }
-
-    return () {
-      setState(() {
-        _moduloAtual = ModuloCentralPDV.seletor;
-      });
-    };
-  }
-
   VoidCallback? _voltarDeOperacoesCaixaSeNecessario() {
-    if (!_useWebShellNavigation) {
-      return _voltarDeOperacoesCaixa;
-    }
-
     final ModuloCentralPDV? retorno = _moduloRetornoOperacoesCaixa;
     if (retorno == null || retorno == ModuloCentralPDV.seletor) {
       return null;
@@ -2887,17 +2808,12 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     final double total = _calcularTotal();
     final bool modoExpandidoAtivo =
         _moduloAtual == ModuloCentralPDV.vendas && _modoExpandidoFrenteCaixa;
-    final ColaboradorAutorizacoesProvider? autorizacoesProvider =
-        _useWebShellNavigation
-            ? context.watch<ColaboradorAutorizacoesProvider>()
-            : null;
+    final ColaboradorAutorizacoesProvider autorizacoesProvider =
+        context.watch<ColaboradorAutorizacoesProvider>();
     final List<WebNavigationItem> webNavigationItems =
-        autorizacoesProvider != null
-            ? _webNavigationItemsPermitidos(autorizacoesProvider)
-            : WebNavigationRegistry.activeItems;
+        _webNavigationItemsPermitidos(autorizacoesProvider);
 
-    if (autorizacoesProvider != null &&
-        !modoExpandidoAtivo &&
+    if (!modoExpandidoAtivo &&
         WebNavigationPermissionAdapter.canApplySidebarFiltering(
           autorizacoesProvider,
         )) {
@@ -2908,132 +2824,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       canPop: false,
       child: Scaffold(
         backgroundColor: _pdvTheme.backgroundPage,
-        appBar:
-            modoExpandidoAtivo || _useWebShellNavigation
-                ? null
-                : TopNavigationBarWeb(
-                  items: <TopNavItemData>[
-                    TopNavItemData(
-                      title: 'Início',
-                      subItems: const <String>[
-                        'Meu Perfil',
-                        'Preferências do Sistema',
-                        'Painel Administrativo',
-                      ],
-                      onSelect: (String value) {
-                        if (value == 'Meu Perfil') {
-                          showMeuPerfilWebDialog(context);
-                        }
-
-                        if (value == 'Painel Administrativo') {
-                          showSubPainelConfiguracoes(context, 'Configurações');
-                        }
-                      },
-                    ),
-                    const TopNavItemData(
-                      title: 'Permitir',
-                      subItems: <String>[
-                        'Gerenciar Permissões',
-                        'Alterar Configurações',
-                      ],
-                    ),
-                    TopNavItemData(
-                      title: 'Cadastros',
-                      subItems: const <String>[
-                        'Clientes',
-                        'Clientes List',
-                        'Produtos',
-                        'Categorias',
-                        'Colaboradores',
-                        'Colaboradores List',
-                        'Fornecedores',
-                        'Produtos List',
-                      ],
-                      onSelect: (String value) {
-                        if (value == 'Produtos') {
-                          showSubPainelCadastroProduto(
-                            context,
-                            'Cadastro de Produtos',
-                          );
-                        }
-
-                        if (value == 'Clientes') {
-                          showSubPainelCadastroCliente(
-                            context,
-                            'Cadastro de Clientes',
-                          );
-                        }
-
-                        if (value == 'Clientes List') {
-                          setState(() {
-                            _moduloAtual = ModuloCentralPDV.clientesList;
-                          });
-                        }
-
-                        if (value == 'Colaboradores') {
-                          showSubPainelCadastroColaborador(
-                            context,
-                            'Cadastro de Colaboradores',
-                          );
-                        }
-
-                        if (value == 'Colaboradores List') {
-                          setState(() {
-                            _moduloAtual = ModuloCentralPDV.colaboradoresList;
-                          });
-                        }
-
-                        if (value == 'Produtos List') {
-                          _abrirListaProdutosParaEdicao();
-                        }
-
-                        if (value == 'Categorias') {
-                          setState(() {
-                            _moduloAtual = ModuloCentralPDV.categorias;
-                          });
-                        }
-                      },
-                    ),
-                    TopNavItemData(
-                      title: 'Configurações',
-                      subItems: const <String>[
-                        'formas de recebimentos',
-                        'exibição aos colaboradores (ex.: habilita so o pdv e esconde o administrativo)',
-                        'Sistema',
-                        'Usuários',
-                        'Preferências do Six',
-                      ],
-                      onSelect: (String value) {
-                        if (value == 'Preferências do Six') {
-                          setState(() {
-                            _moduloAtual = ModuloCentralPDV.configuracoes;
-                          });
-                        }
-                      },
-                    ),
-                    const TopNavItemData(
-                      title: 'Relatórios',
-                      subItems: <String>['Vendas', 'Estoque', 'Financeiro'],
-                    ),
-                    const TopNavItemData(
-                      title: 'Executar',
-                      subItems: <String>[
-                        'Processar Pagamentos',
-                        'Fechar Caixa',
-                      ],
-                    ),
-                    const TopNavItemData(
-                      title: 'Automações',
-                      subItems: <String>['Tarefas Agendadas'],
-                    ),
-                    const TopNavItemData(
-                      title: 'Ajuda',
-                      subItems: <String>['Suporte', 'Sobre'],
-                    ),
-                  ],
-                  notificationWidget: _buildAreaNotificacoesEConexao(),
-                  onNotificationPressed: _abrirPainelNotificacoes,
-                ),
         body:
             modoExpandidoAtivo
                 ? SafeArea(
@@ -3041,8 +2831,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                     children: <Widget>[_buildConteudoCentral(total)],
                   ),
                 )
-                : _useWebShellNavigation
-                ? AuthenticatedWebShell(
+                : AuthenticatedWebShell(
                   navigationItems: webNavigationItems,
                   resolver: _webNavigationResolver,
                   activeDestination:
@@ -3051,8 +2840,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                   currentCommerceName: _nomeEmpresaAtualParaHeader(),
                   headerActions: _buildWebShellHeaderActions(),
                   child: _buildConteudoPrincipalWeb(total),
-                )
-                : _buildConteudoPrincipalWeb(total),
+                ),
       ),
     );
   }
