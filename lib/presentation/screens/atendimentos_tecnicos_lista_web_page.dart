@@ -1413,14 +1413,21 @@ class _AtendimentosTecnicosListaWebPageState
       },
     );
 
+    final bool podeFecharTela = widget.onBack != null || !widget.embedded;
+    final Widget focusedContent = Focus(
+      autofocus: podeFecharTela,
+      child: content,
+    );
     final Widget escAwareContent = CallbackShortcuts(
       bindings: <ShortcutActivator, VoidCallback>{
         const SingleActivator(LogicalKeyboardKey.escape): _fechar,
       },
-      child: Focus(autofocus: true, child: content),
+      child: focusedContent,
     );
 
-    if (widget.embedded) return escAwareContent;
+    if (widget.embedded) {
+      return podeFecharTela ? escAwareContent : focusedContent;
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Atendimentos criados'),

@@ -218,7 +218,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   @override
   Widget build(BuildContext context) {
-    final content = Shortcuts(
+    final bool podeFecharTela = widget.onBack != null || !widget.embedded;
+    final Widget content = Focus(
+      autofocus: podeFecharTela,
+      child: _buildContent(context),
+    );
+    final Widget closeAwareContent = Shortcuts(
       shortcuts: const <ShortcutActivator, Intent>{
         SingleActivator(LogicalKeyboardKey.escape): _SairDaTelaIntent(),
       },
@@ -231,15 +236,17 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             },
           ),
         },
-        child: Focus(autofocus: true, child: _buildContent(context)),
+        child: content,
       ),
     );
 
-    if (widget.embedded) return content;
+    if (widget.embedded) {
+      return podeFecharTela ? closeAwareContent : content;
+    }
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
-      body: SafeArea(child: content),
+      body: SafeArea(child: closeAwareContent),
     );
   }
 
@@ -410,7 +417,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       title: 'Operações de caixa',
       subtitle:
           '$empresa • $movimentos movimento(s) • ${_temCaixaAberto ? 'Caixa aberto' : 'Aguardando abertura'}',
-      onBack: _sairDaTela,
+      onBack: widget.embedded && widget.onBack == null ? null : _sairDaTela,
       actions: <Widget>[
         OutlinedButton.icon(
           onPressed: _isLoading ? null : () => _carregarDadosIniciais(),

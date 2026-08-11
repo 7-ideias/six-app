@@ -1490,47 +1490,53 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   @override
   Widget build(BuildContext context) {
+    final bool podeFecharTela = widget.onBack != null || !widget.embedded;
     if (widget.embedded && widget.onBack != null && !_estaDentroDeDialog()) {
       return const SizedBox.shrink();
     }
     final theme = Theme.of(context);
-    return CallbackShortcuts(
-      bindings: <ShortcutActivator, VoidCallback>{
-        const SingleActivator(LogicalKeyboardKey.escape): _fechar,
-      },
-      child: Focus(
-        autofocus: true,
-        child: Material(
-          color: theme.colorScheme.surface,
-          child: SafeArea(
-            child: RefreshIndicator(
-              onRefresh: () => _consultar(mostrarFeedback: true),
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: <Widget>[
-                  _buildHeader(theme),
-                  const SizedBox(height: 14),
-                  _buildFiltros(theme),
-                  if (_carregando || _executandoAcao) ...const <Widget>[
-                    SizedBox(height: 10),
-                    LinearProgressIndicator(minHeight: 3),
-                  ],
-                  const SizedBox(height: 14),
-                  _buildResumo(theme),
-                  const SizedBox(height: 18),
-                  _buildAbas(theme),
-                  const SizedBox(height: 16),
-                  _buildConteudoAba(theme),
-                ],
-              ),
-            ),
-          ),
+    final Widget content = Focus(
+      autofocus: podeFecharTela,
+      child: RefreshIndicator(
+        onRefresh: () => _consultar(mostrarFeedback: true),
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: <Widget>[
+            _buildHeader(theme, showCloseButton: podeFecharTela),
+            const SizedBox(height: 14),
+            _buildFiltros(theme),
+            if (_carregando || _executandoAcao) ...const <Widget>[
+              SizedBox(height: 10),
+              LinearProgressIndicator(minHeight: 3),
+            ],
+            const SizedBox(height: 14),
+            _buildResumo(theme),
+            const SizedBox(height: 18),
+            _buildAbas(theme),
+            const SizedBox(height: 16),
+            _buildConteudoAba(theme),
+          ],
         ),
+      ),
+    );
+
+    return Material(
+      color: theme.colorScheme.surface,
+      child: SafeArea(
+        child:
+            podeFecharTela
+                ? CallbackShortcuts(
+                  bindings: <ShortcutActivator, VoidCallback>{
+                    const SingleActivator(LogicalKeyboardKey.escape): _fechar,
+                  },
+                  child: content,
+                )
+                : content,
       ),
     );
   }
 
-  Widget _buildHeader(ThemeData theme) => Card(
+  Widget _buildHeader(ThemeData theme, {required bool showCloseButton}) => Card(
     elevation: 1,
     child: Padding(
       padding: const EdgeInsets.all(18),
@@ -1579,12 +1585,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             icon: const Icon(Icons.add_rounded),
             label: const Text('Novo lançamento'),
           ),
-          const SizedBox(width: 10),
-          IconButton.filled(
-            onPressed: _fechar,
-            icon: const Icon(Icons.close_rounded),
-            tooltip: 'Fechar',
-          ),
+          if (showCloseButton) ...<Widget>[
+            const SizedBox(width: 10),
+            IconButton.filled(
+              onPressed: _fechar,
+              icon: const Icon(Icons.close_rounded),
+              tooltip: 'Fechar',
+            ),
+          ],
         ],
       ),
     ),

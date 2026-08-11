@@ -79,22 +79,29 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   // =========================
 
   // Geral
-  final TextEditingController _nomeEmpresaController =
-  TextEditingController(text: 'Six Assistência Premium');
-  final TextEditingController _nomeFantasiaController =
-  TextEditingController(text: 'Six Repair Center');
+  final TextEditingController _nomeEmpresaController = TextEditingController(
+    text: 'Six Assistência Premium',
+  );
+  final TextEditingController _nomeFantasiaController = TextEditingController(
+    text: 'Six Repair Center',
+  );
   final TextEditingController _documentoFiscalController =
-  TextEditingController(text: '12.345.678/0001-90');
-  final TextEditingController _telefoneController =
-  TextEditingController(text: '+55 (47) 99999-8888');
-  final TextEditingController _whatsAppController =
-  TextEditingController(text: '+55 (47) 99999-7777');
-  final TextEditingController _emailController =
-  TextEditingController(text: 'contato@sixrepair.com');
-  final TextEditingController _siteController =
-  TextEditingController(text: 'www.sixrepair.com');
-  final TextEditingController _enderecoController =
-  TextEditingController(text: 'Av. Central, 1500 - Centro - Itajaí/SC');
+      TextEditingController(text: '12.345.678/0001-90');
+  final TextEditingController _telefoneController = TextEditingController(
+    text: '+55 (47) 99999-8888',
+  );
+  final TextEditingController _whatsAppController = TextEditingController(
+    text: '+55 (47) 99999-7777',
+  );
+  final TextEditingController _emailController = TextEditingController(
+    text: 'contato@sixrepair.com',
+  );
+  final TextEditingController _siteController = TextEditingController(
+    text: 'www.sixrepair.com',
+  );
+  final TextEditingController _enderecoController = TextEditingController(
+    text: 'Av. Central, 1500 - Centro - Itajaí/SC',
+  );
 
   // Regionalização
   String _idiomaSelecionado = 'Português (Brasil)';
@@ -129,19 +136,17 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   bool _envioAutomaticoStatus = true;
   bool _envioManualPermitido = true;
   String _canalPreferencialCliente = 'WhatsApp';
-  final TextEditingController _assinaturaMensagemController =
-  TextEditingController(
+  final TextEditingController
+  _assinaturaMensagemController = TextEditingController(
     text:
-    'Equipe Six agradece o seu contato. Qualquer dúvida, estamos à disposição.',
+        'Equipe Six agradece o seu contato. Qualquer dúvida, estamos à disposição.',
   );
   final TextEditingController _mensagemOrdemCriadaController =
-  TextEditingController(
-    text: 'Sua ordem de serviço foi criada com sucesso.',
-  );
+      TextEditingController(
+        text: 'Sua ordem de serviço foi criada com sucesso.',
+      );
   final TextEditingController _mensagemProntoRetiradaController =
-  TextEditingController(
-    text: 'Seu equipamento está pronto para retirada.',
-  );
+      TextEditingController(text: 'Seu equipamento está pronto para retirada.');
 
   // Documentos
   String _modeloOrcamentoSelecionado = 'Modelo corporativo moderno';
@@ -153,15 +158,15 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   String _tamanhoPapelSelecionado = 'A4';
   String _idiomaDocumentoSelecionado = 'Mesmo idioma do sistema';
   String _moedaDocumentoSelecionada = 'Mesma moeda da empresa';
-  final TextEditingController _rodapeDocumentoController =
-  TextEditingController(
+  final TextEditingController
+  _rodapeDocumentoController = TextEditingController(
     text:
-    'Obrigado pela preferência. Este documento foi gerado automaticamente pelo Six.',
+        'Obrigado pela preferência. Este documento foi gerado automaticamente pelo Six.',
   );
-  final TextEditingController _termosCondicoesController =
-  TextEditingController(
+  final TextEditingController
+  _termosCondicoesController = TextEditingController(
     text:
-    'Após aprovação do orçamento, poderá haver necessidade de peças adicionais conforme análise técnica.',
+        'Após aprovação do orçamento, poderá haver necessidade de peças adicionais conforme análise técnica.',
   );
 
   // Operação
@@ -269,21 +274,20 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
       final configuracaoRegionalizacao = localeProvider.companyConfig.copyWith(
         languageCode: locale.languageCode,
-        countryCode: locale.countryCode ?? localeProvider.companyConfig.countryCode,
+        countryCode:
+            locale.countryCode ?? localeProvider.companyConfig.countryCode,
         formatting: AppRegionalFormatting(
           currencyCode: _mapMoedaSelecionadaParaCurrencyCode(_moedaSelecionada),
           timeZone: _fusoSelecionado,
           dateFormat: _formatoDataSelecionado,
           timeFormat: _formatoHoraSelecionado == '24 horas' ? '24h' : '12h',
           decimalSeparator:
-          _separadorDecimalSelecionado == 'Vírgula' ? ',' : '.',
+              _separadorDecimalSelecionado == 'Vírgula' ? ',' : '.',
           thousandSeparator: _mapSeparadorMilhar(_separadorMilharSelecionado),
-          firstDayOfWeek: _primeiroDiaSemanaSelecionado == 'Domingo'
-              ? 'SUNDAY'
-              : 'MONDAY',
-          numberPattern: _formatoNumeroSelecionado == '1,234.56'
-              ? '#,##0.00'
-              : '#.##0,00',
+          firstDayOfWeek:
+              _primeiroDiaSemanaSelecionado == 'Domingo' ? 'SUNDAY' : 'MONDAY',
+          numberPattern:
+              _formatoNumeroSelecionado == '1,234.56' ? '#,##0.00' : '#.##0,00',
           decimalPlaces: int.tryParse(_casasDecimaisSelecionadas) ?? 2,
           allowMultipleCurrencies: _permitirMultiplasMoedas,
           applyFinancialRounding: _aplicarArredondamentoFinanceiro,
@@ -441,7 +445,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     );
   }
 
-  Widget _buildResumoSidebar() {
+  Widget _buildResumoSidebar({double width = 330}) {
     final theme = Theme.of(context);
 
     final itens = [
@@ -483,7 +487,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     ];
 
     return Container(
-      width: 330,
+      width: width,
       padding: const EdgeInsets.fromLTRB(4, 14, 4, 14),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,
@@ -699,10 +703,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -772,44 +773,44 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
     final itens = [
       (
-      secao: SecaoConfiguracaoSix.geral,
-      titulo: 'Geral',
-      icone: Icons.apartment_rounded,
+        secao: SecaoConfiguracaoSix.geral,
+        titulo: 'Geral',
+        icone: Icons.apartment_rounded,
       ),
       (
-      secao: SecaoConfiguracaoSix.regionalizacao,
-      titulo: 'Regionalização',
-      icone: Icons.public_rounded,
+        secao: SecaoConfiguracaoSix.regionalizacao,
+        titulo: 'Regionalização',
+        icone: Icons.public_rounded,
       ),
       (
-      secao: SecaoConfiguracaoSix.aparencia,
-      titulo: 'Aparência',
-      icone: Icons.palette_rounded,
+        secao: SecaoConfiguracaoSix.aparencia,
+        titulo: 'Aparência',
+        icone: Icons.palette_rounded,
       ),
       (
-      secao: SecaoConfiguracaoSix.comunicacao,
-      titulo: 'Comunicação',
-      icone: Icons.markunread_outlined,
+        secao: SecaoConfiguracaoSix.comunicacao,
+        titulo: 'Comunicação',
+        icone: Icons.markunread_outlined,
       ),
       (
-      secao: SecaoConfiguracaoSix.documentos,
-      titulo: 'Documentos',
-      icone: Icons.picture_as_pdf_rounded,
+        secao: SecaoConfiguracaoSix.documentos,
+        titulo: 'Documentos',
+        icone: Icons.picture_as_pdf_rounded,
       ),
       (
-      secao: SecaoConfiguracaoSix.operacao,
-      titulo: 'Operação',
-      icone: Icons.settings_suggest_rounded,
+        secao: SecaoConfiguracaoSix.operacao,
+        titulo: 'Operação',
+        icone: Icons.settings_suggest_rounded,
       ),
       (
-      secao: SecaoConfiguracaoSix.seguranca,
-      titulo: 'Segurança',
-      icone: Icons.security_rounded,
+        secao: SecaoConfiguracaoSix.seguranca,
+        titulo: 'Segurança',
+        icone: Icons.security_rounded,
       ),
       (
-      secao: SecaoConfiguracaoSix.preferenciasUsuario,
-      titulo: 'Usuário',
-      icone: Icons.person_outline_rounded,
+        secao: SecaoConfiguracaoSix.preferenciasUsuario,
+        titulo: 'Usuário',
+        icone: Icons.person_outline_rounded,
       ),
     ];
 
@@ -850,14 +851,16 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     vertical: 14,
                   ),
                   decoration: BoxDecoration(
-                    color: selecionado
-                        ? theme.colorScheme.primary.withOpacity(0.10)
-                        : theme.colorScheme.surface,
+                    color:
+                        selecionado
+                            ? theme.colorScheme.primary.withOpacity(0.10)
+                            : theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: selecionado
-                          ? theme.colorScheme.primary.withOpacity(0.25)
-                          : theme.colorScheme.outlineVariant,
+                      color:
+                          selecionado
+                              ? theme.colorScheme.primary.withOpacity(0.25)
+                              : theme.colorScheme.outlineVariant,
                     ),
                   ),
                   child: Row(
@@ -866,9 +869,10 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                          color: selecionado
-                              ? theme.colorScheme.primary.withOpacity(0.12)
-                              : theme.colorScheme.surfaceContainerHighest,
+                          color:
+                              selecionado
+                                  ? theme.colorScheme.primary.withOpacity(0.12)
+                                  : theme.colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Icon(
@@ -882,9 +886,10 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                           item.titulo,
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
-                            color: selecionado
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.onSurface,
+                            color:
+                                selecionado
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -928,11 +933,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               color: theme.colorScheme.primary.withOpacity(0.10),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Icon(
-              icone,
-              size: 30,
-              color: theme.colorScheme.primary,
-            ),
+            child: Icon(icone, size: 30, color: theme.colorScheme.primary),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -1014,10 +1015,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                   ],
                 ),
               ),
-              if (trailing != null) ...[
-                const SizedBox(width: 16),
-                trailing,
-              ],
+              if (trailing != null) ...[const SizedBox(width: 16), trailing],
             ],
           ),
           const SizedBox(height: 20),
@@ -1045,9 +1043,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
       ),
     );
   }
@@ -1066,18 +1062,15 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       },
       decoration: InputDecoration(
         labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
       ),
-      items: items
-          .map(
-            (item) => DropdownMenuItem<String>(
-          value: item,
-          child: Text(item),
-        ),
-      )
-          .toList(),
+      items:
+          items
+              .map(
+                (item) =>
+                    DropdownMenuItem<String>(value: item, child: Text(item)),
+              )
+              .toList(),
     );
   }
 
@@ -1164,31 +1157,37 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: opcoes.map((opcao) {
-              final selecionado = opcao.value == color.value;
-              return InkWell(
-                borderRadius: BorderRadius.circular(999),
-                onTap: () {
-                  onColorSelected(opcao);
-                  _marcarAlteracao();
-                },
-                child: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: opcao,
+            children:
+                opcoes.map((opcao) {
+                  final selecionado = opcao.value == color.value;
+                  return InkWell(
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: selecionado ? Colors.black : Colors.transparent,
-                      width: 3,
+                    onTap: () {
+                      onColorSelected(opcao);
+                      _marcarAlteracao();
+                    },
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: opcao,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color:
+                              selecionado ? Colors.black : Colors.transparent,
+                          width: 3,
+                        ),
+                      ),
+                      child:
+                          selecionado
+                              ? const Icon(
+                                Icons.check_rounded,
+                                color: Colors.white,
+                              )
+                              : null,
                     ),
-                  ),
-                  child: selecionado
-                      ? const Icon(Icons.check_rounded, color: Colors.white)
-                      : null,
-                ),
-              );
-            }).toList(),
+                  );
+                }).toList(),
           ),
         ],
       ),
@@ -1236,9 +1235,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         });
         _marcarAlteracao();
       },
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(999),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
     );
   }
 
@@ -1275,11 +1272,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                   ),
                 ],
               ),
-              child: Icon(
-                icon,
-                color: theme.colorScheme.primary,
-                size: 22,
-              ),
+              child: Icon(icon, color: theme.colorScheme.primary, size: 22),
             ),
           ),
         ),
@@ -1295,10 +1288,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.18),
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.30),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.30), width: 1),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.12),
@@ -1335,9 +1325,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primary.withOpacity(0.92),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.18),
-                      ),
+                      border: Border.all(color: Colors.white.withOpacity(0.18)),
                       boxShadow: [
                         BoxShadow(
                           color: theme.colorScheme.primary.withOpacity(0.28),
@@ -1408,7 +1396,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         _buildBigCard(
           title: 'Identidade do comércio',
           subtitle:
-          'Informações usadas em cabeçalhos de documentos, relatórios, ordens de serviço e comunicações da loja.',
+              'Informações usadas em cabeçalhos de documentos, relatórios, ordens de serviço e comunicações da loja.',
           trailing: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
@@ -1493,7 +1481,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         _buildBigCard(
           title: 'Branding institucional',
           subtitle:
-          'Estruture a apresentação da marca para a web, PDFs e comunicações futuras do sistema.',
+              'Estruture a apresentação da marca para a web, PDFs e comunicações futuras do sistema.',
           child: Wrap(
             spacing: 16,
             runSpacing: 16,
@@ -1501,14 +1489,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               _buildSwitchTile(
                 title: 'Exibir nome fantasia como principal',
                 subtitle:
-                'Quando ativo, o Six prioriza o nome fantasia em documentos e cabeçalhos.',
+                    'Quando ativo, o Six prioriza o nome fantasia em documentos e cabeçalhos.',
                 value: true,
                 onChanged: (_) {},
               ),
               _buildSwitchTile(
                 title: 'Permitir capa personalizada na web',
                 subtitle:
-                'Prepara a plataforma para futura imagem institucional na tela de login web.',
+                    'Prepara a plataforma para futura imagem institucional na tela de login web.',
                 value: true,
                 onChanged: (_) {},
               ),
@@ -1521,7 +1509,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
   String _i18n(String key, String fallback) {
     final locale = _mapIdiomaSelecionadoParaLocale(_idiomaSelecionado);
-    return WebI18nStore.instance.string(locale.toLanguageTag(), key) ?? fallback;
+    return WebI18nStore.instance.string(locale.toLanguageTag(), key) ??
+        fallback;
   }
 
   Widget _buildSecaoRegionalizacao() {
@@ -1536,7 +1525,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         _buildBigCard(
           title: 'Idioma e convenções regionais',
           subtitle:
-          'Defina a experiência local da empresa, incluindo idioma, fuso e padrões de exibição.',
+              'Defina a experiência local da empresa, incluindo idioma, fuso e padrões de exibição.',
           child: Wrap(
             spacing: 16,
             runSpacing: 16,
@@ -1599,11 +1588,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildDropdownField(
                   label: 'Formato de data',
                   value: _formatoDataSelecionado,
-                  items: const [
-                    'dd/MM/yyyy',
-                    'MM/dd/yyyy',
-                    'yyyy-MM-dd',
-                  ],
+                  items: const ['dd/MM/yyyy', 'MM/dd/yyyy', 'yyyy-MM-dd'],
                   onChanged: (valor) {
                     setState(() {
                       _formatoDataSelecionado = valor!;
@@ -1616,10 +1601,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildDropdownField(
                   label: 'Formato de hora',
                   value: _formatoHoraSelecionado,
-                  items: const [
-                    '24 horas',
-                    '12 horas',
-                  ],
+                  items: const ['24 horas', '12 horas'],
                   onChanged: (valor) {
                     setState(() {
                       _formatoHoraSelecionado = valor!;
@@ -1632,10 +1614,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildDropdownField(
                   label: 'Primeiro dia da semana',
                   value: _primeiroDiaSemanaSelecionado,
-                  items: const [
-                    'Segunda-feira',
-                    'Domingo',
-                  ],
+                  items: const ['Segunda-feira', 'Domingo'],
                   onChanged: (valor) {
                     setState(() {
                       _primeiroDiaSemanaSelecionado = valor!;
@@ -1648,10 +1627,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildDropdownField(
                   label: 'Formato numérico',
                   value: _formatoNumeroSelecionado,
-                  items: const [
-                    '1.234,56',
-                    '1,234.56',
-                  ],
+                  items: const ['1.234,56', '1,234.56'],
                   onChanged: (valor) {
                     setState(() {
                       _formatoNumeroSelecionado = valor!;
@@ -1666,7 +1642,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         _buildBigCard(
           title: 'Moeda e padronização financeira',
           subtitle:
-          'Essas definições influenciam dashboards, vendas, ordem de serviço, orçamentos e documentos.',
+              'Essas definições influenciam dashboards, vendas, ordem de serviço, orçamentos e documentos.',
           child: Column(
             children: [
               Wrap(
@@ -1696,10 +1672,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     child: _buildDropdownField(
                       label: 'Posição do símbolo',
                       value: _posicaoSimboloSelecionada,
-                      items: const [
-                        'Antes do valor',
-                        'Depois do valor',
-                      ],
+                      items: const ['Antes do valor', 'Depois do valor'],
                       onChanged: (valor) {
                         setState(() {
                           _posicaoSimboloSelecionada = valor!;
@@ -1712,11 +1685,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     child: _buildDropdownField(
                       label: 'Casas decimais',
                       value: _casasDecimaisSelecionadas,
-                      items: const [
-                        '0',
-                        '2',
-                        '3',
-                      ],
+                      items: const ['0', '2', '3'],
                       onChanged: (valor) {
                         setState(() {
                           _casasDecimaisSelecionadas = valor!;
@@ -1729,10 +1698,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     child: _buildDropdownField(
                       label: 'Separador decimal',
                       value: _separadorDecimalSelecionado,
-                      items: const [
-                        'Vírgula',
-                        'Ponto',
-                      ],
+                      items: const ['Vírgula', 'Ponto'],
                       onChanged: (valor) {
                         setState(() {
                           _separadorDecimalSelecionado = valor!;
@@ -1745,11 +1711,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     child: _buildDropdownField(
                       label: 'Separador de milhar',
                       value: _separadorMilharSelecionado,
-                      items: const [
-                        'Ponto',
-                        'Vírgula',
-                        'Espaço',
-                      ],
+                      items: const ['Ponto', 'Vírgula', 'Espaço'],
                       onChanged: (valor) {
                         setState(() {
                           _separadorMilharSelecionado = valor!;
@@ -1769,7 +1731,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     child: _buildSwitchTile(
                       title: 'Permitir múltiplas moedas',
                       subtitle:
-                      'Mantém a base preparada para cenários internacionais e conversão futura.',
+                          'Mantém a base preparada para cenários internacionais e conversão futura.',
                       value: _permitirMultiplasMoedas,
                       onChanged: (valor) {
                         setState(() {
@@ -1783,7 +1745,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     child: _buildSwitchTile(
                       title: 'Aplicar arredondamento financeiro',
                       subtitle:
-                      'Padroniza cálculos e evita divergências de centavos em documentos e totais.',
+                          'Padroniza cálculos e evita divergências de centavos em documentos e totais.',
                       value: _aplicarArredondamentoFinanceiro,
                       onChanged: (valor) {
                         setState(() {
@@ -1813,7 +1775,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         _buildBigCard(
           title: 'Tema e densidade visual',
           subtitle:
-          'Ajuste a experiência visual do operador para diferentes perfis de uso e ambientes.',
+              'Ajuste a experiência visual do operador para diferentes perfis de uso e ambientes.',
           child: Wrap(
             spacing: 16,
             runSpacing: 16,
@@ -1823,11 +1785,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildDropdownField(
                   label: 'Tema do sistema',
                   value: _temaSelecionado,
-                  items: const [
-                    'Claro',
-                    'Escuro',
-                    'Automático',
-                  ],
+                  items: const ['Claro', 'Escuro', 'Automático'],
                   onChanged: (valor) {
                     setState(() {
                       _temaSelecionado = valor!;
@@ -1842,11 +1800,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildDropdownField(
                   label: 'Densidade visual',
                   value: _densidadeSelecionada,
-                  items: const [
-                    'Confortável',
-                    'Compacta',
-                    'Expandida',
-                  ],
+                  items: const ['Confortável', 'Compacta', 'Expandida'],
                   onChanged: (valor) {
                     setState(() {
                       _densidadeSelecionada = valor!;
@@ -1863,7 +1817,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         _buildBigCard(
           title: 'Paleta do sistema',
           subtitle:
-          'Essas cores serão úteis para branding do comércio, dashboards e futura personalização premium.',
+              'Essas cores serão úteis para branding do comércio, dashboards e futura personalização premium.',
           child: Wrap(
             spacing: 16,
             runSpacing: 16,
@@ -1874,12 +1828,12 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                   label: 'Cor primária',
                   color: _corPrimaria,
                   onColorSelected: (valor) {
-                setState(() {
-                  _corPrimaria = valor;
-                });
-                _aplicarAparenciaPreview();
-                _marcarAlteracao();
-              },
+                    setState(() {
+                      _corPrimaria = valor;
+                    });
+                    _aplicarAparenciaPreview();
+                    _marcarAlteracao();
+                  },
                 ),
               ),
               SizedBox(
@@ -1943,7 +1897,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         _buildBigCard(
           title: 'Canais e automações',
           subtitle:
-          'Defina como o Six deve se comunicar com clientes durante o ciclo de venda e assistência técnica.',
+              'Defina como o Six deve se comunicar com clientes durante o ciclo de venda e assistência técnica.',
           child: Wrap(
             spacing: 16,
             runSpacing: 16,
@@ -1966,7 +1920,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildSwitchTile(
                   title: 'Notificar por WhatsApp',
                   subtitle:
-                  'Ideal para atualizações rápidas de orçamento e status.',
+                      'Ideal para atualizações rápidas de orçamento e status.',
                   value: _notificarPorWhatsApp,
                   onChanged: (valor) {
                     setState(() {
@@ -1980,7 +1934,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildSwitchTile(
                   title: 'Notificar por Telegram',
                   subtitle:
-                  'Mantém a base pronta para futuras integrações opcionais.',
+                      'Mantém a base pronta para futuras integrações opcionais.',
                   value: _notificarPorTelegram,
                   onChanged: (valor) {
                     setState(() {
@@ -1994,7 +1948,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildSwitchTile(
                   title: 'Envio automático de status',
                   subtitle:
-                  'Dispara mensagens conforme as etapas da assistência técnica.',
+                      'Dispara mensagens conforme as etapas da assistência técnica.',
                   value: _envioAutomaticoStatus,
                   onChanged: (valor) {
                     setState(() {
@@ -2008,7 +1962,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildSwitchTile(
                   title: 'Permitir envio manual',
                   subtitle:
-                  'Usuários podem complementar o contato diretamente pela tela.',
+                      'Usuários podem complementar o contato diretamente pela tela.',
                   value: _envioManualPermitido,
                   onChanged: (valor) {
                     setState(() {
@@ -2022,12 +1976,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildDropdownField(
                   label: 'Canal preferencial do cliente',
                   value: _canalPreferencialCliente,
-                  items: const [
-                    'WhatsApp',
-                    'Email',
-                    'Telegram',
-                    'SMS',
-                  ],
+                  items: const ['WhatsApp', 'Email', 'Telegram', 'SMS'],
                   onChanged: (valor) {
                     setState(() {
                       _canalPreferencialCliente = valor!;
@@ -2042,7 +1991,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         _buildBigCard(
           title: 'Textos padrão',
           subtitle:
-          'Esses textos mockados já deixam a tela pronta para evoluir depois com templates vindos do backend.',
+              'Esses textos mockados já deixam a tela pronta para evoluir depois com templates vindos do backend.',
           child: Wrap(
             spacing: 16,
             runSpacing: 16,
@@ -2090,7 +2039,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         _buildBigCard(
           title: 'Modelos principais',
           subtitle:
-          'Escolha os padrões visuais que serão aplicados em orçamentos, ordem de serviço e comprovantes.',
+              'Escolha os padrões visuais que serão aplicados em orçamentos, ordem de serviço e comprovantes.',
           child: Wrap(
             spacing: 16,
             runSpacing: 16,
@@ -2151,11 +2100,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildDropdownField(
                   label: 'Tamanho do papel',
                   value: _tamanhoPapelSelecionado,
-                  items: const [
-                    'A4',
-                    'Carta',
-                    '80mm térmico',
-                  ],
+                  items: const ['A4', 'Carta', '80mm térmico'],
                   onChanged: (valor) {
                     setState(() {
                       _tamanhoPapelSelecionado = valor!;
@@ -2186,12 +2131,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildDropdownField(
                   label: 'Moeda do documento',
                   value: _moedaDocumentoSelecionada,
-                  items: const [
-                    'Mesma moeda da empresa',
-                    'BRL',
-                    'USD',
-                    'EUR',
-                  ],
+                  items: const ['Mesma moeda da empresa', 'BRL', 'USD', 'EUR'],
                   onChanged: (valor) {
                     setState(() {
                       _moedaDocumentoSelecionada = valor!;
@@ -2206,7 +2146,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         _buildBigCard(
           title: 'Composição visual do PDF',
           subtitle:
-          'Ajustes que impactam o compartilhamento via email, WhatsApp e a apresentação final do documento.',
+              'Ajustes que impactam o compartilhamento via email, WhatsApp e a apresentação final do documento.',
           child: Column(
             children: [
               Wrap(
@@ -2231,7 +2171,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     child: _buildSwitchTile(
                       title: 'Exibir assinatura do cliente',
                       subtitle:
-                      'Mantém a tela pronta para futuros fluxos de assinatura.',
+                          'Mantém a tela pronta para futuros fluxos de assinatura.',
                       value: _exibirAssinaturaCliente,
                       onChanged: (valor) {
                         setState(() {
@@ -2245,7 +2185,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     child: _buildSwitchTile(
                       title: 'Exibir QR Code',
                       subtitle:
-                      'Pode ser usado para validação, consulta ou link temporário no futuro.',
+                          'Pode ser usado para validação, consulta ou link temporário no futuro.',
                       value: _exibirQrCode,
                       onChanged: (valor) {
                         setState(() {
@@ -2298,7 +2238,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         _buildBigCard(
           title: 'Venda, estoque e caixa',
           subtitle:
-          'Defina o comportamento operacional padrão do Six no balcão e na rotina do caixa.',
+              'Defina o comportamento operacional padrão do Six no balcão e na rotina do caixa.',
           child: Column(
             children: [
               Wrap(
@@ -2310,7 +2250,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     child: _buildSwitchTile(
                       title: 'Controlar estoque',
                       subtitle:
-                      'Atualiza saldo de produtos e permite relatórios operacionais.',
+                          'Atualiza saldo de produtos e permite relatórios operacionais.',
                       value: _controlarEstoque,
                       onChanged: (valor) {
                         setState(() {
@@ -2324,7 +2264,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     child: _buildSwitchTile(
                       title: 'Exigir cliente na venda',
                       subtitle:
-                      'Garante rastreabilidade de compras e histórico por pessoa.',
+                          'Garante rastreabilidade de compras e histórico por pessoa.',
                       value: _exigirClienteNaVenda,
                       onChanged: (valor) {
                         setState(() {
@@ -2338,7 +2278,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     child: _buildSwitchTile(
                       title: 'Abertura de caixa obrigatória',
                       subtitle:
-                      'Impede operações antes da abertura formal do caixa.',
+                          'Impede operações antes da abertura formal do caixa.',
                       value: _abrirCaixaObrigatorio,
                       onChanged: (valor) {
                         setState(() {
@@ -2352,7 +2292,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     child: _buildSwitchTile(
                       title: 'Permitir venda sem estoque',
                       subtitle:
-                      'Útil para cenários específicos, mas exige cuidado operacional.',
+                          'Útil para cenários específicos, mas exige cuidado operacional.',
                       value: _permitirVendaSemEstoque,
                       onChanged: (valor) {
                         setState(() {
@@ -2366,7 +2306,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     child: _buildSwitchTile(
                       title: 'Gerar comissão para colaborador',
                       subtitle:
-                      'Prepara o sistema para metas, comissão e dashboards futuros.',
+                          'Prepara o sistema para metas, comissão e dashboards futuros.',
                       value: _gerarComissaoColaborador,
                       onChanged: (valor) {
                         setState(() {
@@ -2380,7 +2320,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     child: _buildSwitchTile(
                       title: 'Permitir edição após fechamento',
                       subtitle:
-                      'Quando desligado, a operação passa a ser mais rígida e auditável.',
+                          'Quando desligado, a operação passa a ser mais rígida e auditável.',
                       value: _permitirEdicaoAposFechamento,
                       onChanged: (valor) {
                         setState(() {
@@ -2414,8 +2354,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     Text(
                       'Defina se o operador pode conceder descontos e qual limite padrão.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color:
-                        Theme.of(context).colorScheme.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         height: 1.4,
                       ),
                     ),
@@ -2430,7 +2369,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                           child: _buildSwitchTile(
                             title: 'Permitir desconto manual',
                             subtitle:
-                            'Libera desconto direto pelo operador no fluxo.',
+                                'Libera desconto direto pelo operador no fluxo.',
                             value: _descontoManualPermitido,
                             onChanged: (valor) {
                               setState(() {
@@ -2478,7 +2417,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         _buildBigCard(
           title: 'Assistência técnica',
           subtitle:
-          'Parametrize o fluxo de reparo para refletir a operação real da loja.',
+              'Parametrize o fluxo de reparo para refletir a operação real da loja.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -2491,7 +2430,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     child: _buildSwitchTile(
                       title: 'Exigir número de série / IMEI',
                       subtitle:
-                      'Ajuda a identificar corretamente o equipamento recebido.',
+                          'Ajuda a identificar corretamente o equipamento recebido.',
                       value: _exigirSerialImei,
                       onChanged: (valor) {
                         setState(() {
@@ -2505,7 +2444,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     child: _buildSwitchTile(
                       title: 'Exigir técnico responsável',
                       subtitle:
-                      'Fortalece rastreabilidade e produtividade do time técnico.',
+                          'Fortalece rastreabilidade e produtividade do time técnico.',
                       value: _exigirTecnicoResponsavel,
                       onChanged: (valor) {
                         setState(() {
@@ -2519,9 +2458,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               const SizedBox(height: 20),
               Text(
                 'Fluxo de status da assistência',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 8),
               Text(
@@ -2555,7 +2494,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         _buildBigCard(
           title: 'Proteção da conta',
           subtitle:
-          'Centralize políticas de sessão, autenticação e comportamento de login da operação.',
+              'Centralize políticas de sessão, autenticação e comportamento de login da operação.',
           child: Wrap(
             spacing: 16,
             runSpacing: 16,
@@ -2565,7 +2504,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildSwitchTile(
                   title: 'Habilitar MFA',
                   subtitle:
-                  'Mantém a conta mais protegida para administradores e usuários sensíveis.',
+                      'Mantém a conta mais protegida para administradores e usuários sensíveis.',
                   value: _mfaHabilitado,
                   onChanged: (valor) {
                     setState(() {
@@ -2579,7 +2518,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildSwitchTile(
                   title: 'Encerrar sessões inativas',
                   subtitle:
-                  'Reduz risco operacional em computadores compartilhados.',
+                      'Reduz risco operacional em computadores compartilhados.',
                   value: _encerrarSessoesInativas,
                   onChanged: (valor) {
                     setState(() {
@@ -2593,7 +2532,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildSwitchTile(
                   title: 'Permitir login simultâneo',
                   subtitle:
-                  'Controla se o mesmo usuário pode operar em mais de um dispositivo ao mesmo tempo.',
+                      'Controla se o mesmo usuário pode operar em mais de um dispositivo ao mesmo tempo.',
                   value: _permitirLoginMultiplo,
                   onChanged: (valor) {
                     setState(() {
@@ -2607,7 +2546,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildSwitchTile(
                   title: 'Exigir troca periódica de senha',
                   subtitle:
-                  'Prepara o produto para políticas corporativas mais rígidas.',
+                      'Prepara o produto para políticas corporativas mais rígidas.',
                   value: _exigirTrocaSenhaPeriodica,
                   onChanged: (valor) {
                     setState(() {
@@ -2621,12 +2560,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildDropdownField(
                   label: 'Tempo de sessão',
                   value: _tempoSessaoSelecionado,
-                  items: const [
-                    '2 horas',
-                    '8 horas',
-                    '12 horas',
-                    '24 horas',
-                  ],
+                  items: const ['2 horas', '8 horas', '12 horas', '24 horas'],
                   onChanged: (valor) {
                     setState(() {
                       _tempoSessaoSelecionado = valor!;
@@ -2646,15 +2580,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       children: [
         _buildSectionHeader(
           titulo: 'Preferências do usuário',
-          descricao:
-          _descricaoSecao(SecaoConfiguracaoSix.preferenciasUsuario),
+          descricao: _descricaoSecao(SecaoConfiguracaoSix.preferenciasUsuario),
           icone: Icons.person_outline_rounded,
         ),
         const SizedBox(height: 20),
         _buildBigCard(
           title: 'Experiência pessoal de uso',
           subtitle:
-          'Essas opções ajudam o operador a trabalhar melhor no dia a dia sem misturar com as configurações globais da empresa.',
+              'Essas opções ajudam o operador a trabalhar melhor no dia a dia sem misturar com as configurações globais da empresa.',
           child: Wrap(
             spacing: 16,
             runSpacing: 16,
@@ -2695,7 +2628,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildSwitchTile(
                   title: 'Notificações desktop',
                   subtitle:
-                  'Mantém alertas visíveis durante o uso do sistema na web.',
+                      'Mantém alertas visíveis durante o uso do sistema na web.',
                   value: _receberNotificacoesDesktop,
                   onChanged: (valor) {
                     setState(() {
@@ -2708,8 +2641,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 width: 420,
                 child: _buildSwitchTile(
                   title: 'Mostrar dicas contextuais',
-                  subtitle:
-                  'Ajuda novos operadores durante a curva de adoção.',
+                  subtitle: 'Ajuda novos operadores durante a curva de adoção.',
                   value: _mostrarDicasContextuais,
                   onChanged: (valor) {
                     setState(() {
@@ -2725,7 +2657,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         _buildBigCard(
           title: 'Atalhos favoritos',
           subtitle:
-          'Deixe acessos rápidos para os fluxos mais usados na operação.',
+              'Deixe acessos rápidos para os fluxos mais usados na operação.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -2787,14 +2719,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                width: 300,
-                child: _buildMenuLateralSecoes(),
-              ),
+              SizedBox(width: 300, child: _buildMenuLateralSecoes()),
               const SizedBox(width: 20),
-              Expanded(
-                child: _buildConteudoSecao(),
-              ),
+              Expanded(child: _buildConteudoSecao()),
             ],
           );
         },
@@ -2804,41 +2731,55 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bodyContent = Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (_mostrarResumoLateral) ...[
-            _buildResumoSidebar(),
-            const SizedBox(width: 20),
-          ] else ...[
-            _buildResumoSidebarCollapsed(),
-          ],
-          Expanded(
-            child: Card(
-              elevation: 6,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
+    final bodyContent = LayoutBuilder(
+      builder: (context, constraints) {
+        final bool compactShell =
+            widget.embedded && constraints.maxWidth < 1160;
+        final double outerPadding = compactShell ? 12 : 16;
+        final double sideGap = compactShell ? 14 : 20;
+        final double cardPadding = compactShell ? 14 : 18;
+        final double resumoWidth = compactShell ? 300 : 330;
+
+        return Padding(
+          padding: EdgeInsets.all(outerPadding),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_mostrarResumoLateral) ...[
+                _buildResumoSidebar(width: resumoWidth),
+                SizedBox(width: sideGap),
+              ] else ...[
+                _buildResumoSidebarCollapsed(),
+              ],
+              Expanded(
+                child: Card(
+                  elevation: 6,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(cardPadding),
+                    child: _buildConteudoPrincipal(),
+                  ),
+                ),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(18.0),
-                child: _buildConteudoPrincipal(),
-              ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
+
+    final bool compactActions =
+        widget.embedded && MediaQuery.of(context).size.width < 1280;
 
     final contentWithFab = Stack(
       children: [
         Positioned.fill(child: bodyContent),
         Positioned(
-          right: 36,
-          bottom: 36,
+          right: compactActions ? 24 : 36,
+          bottom: compactActions ? 24 : 36,
           child: _buildFloatingActions(),
-        )
+        ),
       ],
     );
 
@@ -2846,9 +2787,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       return contentWithFab;
     }
 
-    return Scaffold(
-      body: SafeArea(child: contentWithFab),
-    );
+    return Scaffold(body: SafeArea(child: contentWithFab));
   }
 
   Locale _mapIdiomaSelecionadoParaLocale(String idioma) {
@@ -2914,5 +2853,4 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       }
     }
   }
-
 }

@@ -2,19 +2,33 @@ import 'dart:async';
 
 import 'package:sixpos/presentation/components/dashboard_inicio_web.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_panel.dart';
+import 'package:sixpos/presentation/layouts/authenticated_web_shell.dart';
+import 'package:sixpos/presentation/navigation/web_navigation_destination_mapper.dart';
+import 'package:sixpos/presentation/navigation/modulo_central_pdv.dart';
+import 'package:sixpos/presentation/navigation/pagina_principal_web_navigation_actions.dart';
+import 'package:sixpos/presentation/navigation/web_navigation_destination_resolver.dart';
+import 'package:sixpos/presentation/navigation/web_navigation_item.dart';
+import 'package:sixpos/presentation/navigation/web_navigation_permission_adapter.dart';
+import 'package:sixpos/presentation/navigation/web_navigation_registry.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_web.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
+import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_web_page.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/configuracoes_six_web_page.dart';
+import 'package:sixpos/presentation/screens/desempenho_colaborador_web_page.dart';
+import 'package:sixpos/presentation/screens/estoque_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/meu_perfil_web_screen.dart';
 import 'package:sixpos/presentation/screens/operacoes_caixa_web_page.dart';
 import 'package:sixpos/presentation/screens/ordem_servico_web.dart';
 import 'package:sixpos/presentation/screens/pdv_cliente_identificacao_dialog.dart';
 import 'package:sixpos/presentation/screens/pdv_page_web_orcamento.dart';
+import 'package:sixpos/presentation/screens/produto_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_web_page.dart';
 import 'package:sixpos/presentation/screens/recebimento_pagamento_web.dart';
+import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
+import 'package:sixpos/presentation/screens/workspace_home_web.dart';
 import 'package:sixpos/sub_painel_cadastro_cliente.dart';
 import 'package:sixpos/sub_painel_cadastro_produto.dart';
 import 'package:sixpos/sub_painel_configuracoes.dart';
@@ -36,6 +50,7 @@ import 'data/models/caixa_models.dart';
 import 'data/models/produto_model.dart';
 import 'data/models/operacao_models.dart';
 import 'data/models/streak_models.dart';
+import 'core/config/app_config.dart';
 import 'core/di/caixa_module.dart';
 import 'core/di/operacao_module.dart';
 import 'core/services/auth_service.dart';
@@ -45,11 +60,21 @@ import 'design_system/themes/zebra_list_item.dart';
 import 'domain/services/caixa/caixa_service.dart';
 import 'domain/services/operacao/operacao_service.dart';
 import 'providers/locale_settings_provider.dart';
+import 'providers/colaborador_autorizacoes_provider.dart';
+import 'providers/empresa_provider.dart';
 import 'providers/streak_provider.dart';
 import 'top_navigation_bar_web.dart';
 
 part 'pdv_page_web_cockpit_section.dart';
 part 'presentation/screens/pdv_web.dart';
+
+// Fallback local enquanto o TopNavigationBarWeb ainda existe:
+// true usa AuthenticatedWebShell + Sidebar; false restaura o menu superior antigo.
+const bool _useWebShellNavigation = true;
+
+// Fallback local da Home durante validação interna:
+// true usa "Meu dia no SixApp"; false restaura DashboardInicioWeb.
+const bool _useWorkspaceHome = true;
 
 class PaginaPrincipalWeb extends StatefulWidget {
   const PaginaPrincipalWeb({super.key});
@@ -58,25 +83,11 @@ class PaginaPrincipalWeb extends StatefulWidget {
   State<PaginaPrincipalWeb> createState() => _PaginaPrincipalWebState();
 }
 
-enum ModuloCentralPDV {
-  seletor,
-  cockpit,
-  vendas,
-  recebimento,
-  clientesList,
-  colaboradoresList,
-  orcamento,
-  operacoesCaixa,
-  ordemServico,
-  agendaFinanceira,
-  atendimentoTecnico,
-  categorias,
-  configuracoes,
-}
-
 enum StatusComunicacaoBackend { conectando, conectado, desconectado }
 
 enum _PdvItemVisualFeedback { itemAdded, quantityIncreased, quantityDecreased }
+
+enum _WebHeaderUserAction { profile, logout }
 
 class _PdvItemMutationResult {
   const _PdvItemMutationResult({
@@ -109,6 +120,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
   final OperacaoService _operacaoService = OperacaoModule.operacaoService;
   final CaixaService _caixaService = CaixaModule.caixaService;
+
+  late final WebNavigationDestinationResolver _webNavigationResolver;
 
   ModuloCentralPDV _moduloAtual = ModuloCentralPDV.seletor;
   ModuloCentralPDV? _moduloRetornoOperacoesCaixa;
@@ -231,6 +244,14 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   @override
   void initState() {
     super.initState();
+
+    _webNavigationResolver = WebNavigationDestinationResolver(
+      actions: PaginaPrincipalWebNavigationActions(
+        abrirModuloCentral: _abrirModuloCentralPelaNavegacaoWeb,
+        abrirFrenteCaixa: _iniciarVenda,
+        abrirCaixa: () => _abrirOperacoesCaixa(),
+      ),
+    );
 
     _iaPulseController = AnimationController(
       vsync: this,
@@ -525,6 +546,15 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     );
   }
 
+  List<Widget> _buildWebShellHeaderActions() {
+    return <Widget>[
+      _buildIAAssistente(),
+      _buildIndicadorComunicacaoBackend(),
+      _buildNotificationBellButton(),
+      _buildUserMenuButton(),
+    ];
+  }
+
   Widget _buildIAAssistente() {
     final AppLocalizations? l10n = AppLocalizations.of(context);
     final String tooltip = l10n?.aiAssistantAsk ?? 'Perguntar à IA';
@@ -644,12 +674,17 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return 'clientes';
       case ModuloCentralPDV.colaboradoresList:
         return 'colaboradores';
+      case ModuloCentralPDV.desempenho:
+        return 'colaboradores';
       case ModuloCentralPDV.operacoesCaixa:
         return 'caixa';
       case ModuloCentralPDV.ordemServico:
       case ModuloCentralPDV.atendimentoTecnico:
         return 'assistencia_tecnica';
       case ModuloCentralPDV.categorias:
+      case ModuloCentralPDV.produtos:
+      case ModuloCentralPDV.servicos:
+      case ModuloCentralPDV.estoque:
         return 'produtos';
       case ModuloCentralPDV.configuracoes:
         return 'configuracoes';
@@ -670,6 +705,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return 'clientes_lista_web';
       case ModuloCentralPDV.colaboradoresList:
         return 'colaboradores_lista_web';
+      case ModuloCentralPDV.desempenho:
+        return 'desempenho_colaborador_web';
       case ModuloCentralPDV.orcamento:
         return 'orcamento_web';
       case ModuloCentralPDV.operacoesCaixa:
@@ -680,6 +717,12 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return 'agenda_financeira_web';
       case ModuloCentralPDV.atendimentoTecnico:
         return 'atendimentos_tecnicos_web';
+      case ModuloCentralPDV.produtos:
+        return 'produtos_dashboard_web';
+      case ModuloCentralPDV.servicos:
+        return 'servicos_dashboard_web';
+      case ModuloCentralPDV.estoque:
+        return 'estoque_dashboard_web';
       case ModuloCentralPDV.categorias:
         return 'categorias_web';
       case ModuloCentralPDV.configuracoes:
@@ -722,6 +765,84 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserMenuButton() {
+    return Tooltip(
+      message: context.t('web.header.userMenu', fallback: 'Usuário'),
+      child: PopupMenuButton<_WebHeaderUserAction>(
+        tooltip: '',
+        position: PopupMenuPosition.under,
+        onSelected: (_WebHeaderUserAction action) {
+          switch (action) {
+            case _WebHeaderUserAction.profile:
+              showMeuPerfilWebDialog(context);
+              return;
+            case _WebHeaderUserAction.logout:
+              _confirmarLogout();
+              return;
+          }
+        },
+        itemBuilder:
+            (BuildContext context) => <PopupMenuEntry<_WebHeaderUserAction>>[
+              PopupMenuItem<_WebHeaderUserAction>(
+                value: _WebHeaderUserAction.profile,
+                child: Row(
+                  children: <Widget>[
+                    Icon(
+                      Icons.person_outline_rounded,
+                      size: 18,
+                      color: _pdvTheme.iconColor,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      context.t('web.header.myProfile', fallback: 'Meu perfil'),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem<_WebHeaderUserAction>(
+                value: _WebHeaderUserAction.logout,
+                child: Row(
+                  children: <Widget>[
+                    Icon(
+                      Icons.logout_rounded,
+                      size: 18,
+                      color: _pdvTheme.iconColor,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(context.t('web.header.logout', fallback: 'Sair')),
+                  ],
+                ),
+              ),
+            ],
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 11),
+          decoration: BoxDecoration(
+            color: _pdvTheme.backgroundSurface,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: _pdvTheme.cardBorder),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                Icons.account_circle_outlined,
+                size: 18,
+                color: _pdvTheme.iconColor,
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 16,
+                color: _pdvTheme.iconColor,
+              ),
+            ],
           ),
         ),
       ),
@@ -1088,6 +1209,62 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         _focarCodigoBarras();
       }
     });
+  }
+
+  Future<void> _abrirNovoAtendimentoTecnico() async {
+    if (!mounted) {
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        final Size size = MediaQuery.of(dialogContext).size;
+
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: SizedBox(
+            width: size.width * 0.96,
+            height: size.height * 0.92,
+            child: AtendimentosTecnicosWebPage(
+              embedded: true,
+              onBack: () => Navigator.of(dialogContext).pop(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _abrirModuloCentralPelaNavegacaoWeb(ModuloCentralPDV modulo) {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _moduloRetornoOperacoesCaixa = null;
+      _moduloAtual = modulo;
+    });
+  }
+
+  void _acionarDestinoNavegacaoWeb(WebNavigationDestination destination) {
+    final WebNavigationResolutionResult result = _webNavigationResolver.resolve(
+      destination,
+    );
+
+    assert(
+      result.handled,
+      'Destino de navegacao Web nao resolvido: '
+      '${destination.name}. ${result.reason ?? result.status.name}',
+    );
   }
 
   void _abrirOperacoesCaixa({
@@ -2231,6 +2408,26 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     }
   }
 
+  String? _nomeEmpresaAtualParaHeader() {
+    try {
+      final EmpresaProvider empresaProvider = context.watch<EmpresaProvider>();
+      final empresa = empresaProvider.empresa;
+      final String nomeFantasia = empresa?.nomeFantasia.trim() ?? '';
+      if (nomeFantasia.isNotEmpty) {
+        return nomeFantasia;
+      }
+
+      final String nomeEmpresa = empresa?.nomeEmpresa.trim() ?? '';
+      if (nomeEmpresa.isNotEmpty) {
+        return nomeEmpresa;
+      }
+    } catch (_) {
+      return null;
+    }
+
+    return null;
+  }
+
   String _clienteAtualLabel() {
     final ClienteUsuario? cliente = _clienteIdentificado;
     if (cliente != null) {
@@ -2250,6 +2447,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   Widget _buildConteudoCentral(double total) {
+    final VoidCallback? voltarParaInicio = _voltarParaInicioSeModoLegado();
     switch (_moduloAtual) {
       case ModuloCentralPDV.cockpit:
         return _buildCockpitEstrategico();
@@ -2290,11 +2488,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return Expanded(
           child: ClientesUsuarioListPage(
             embedded: true,
-            onBack: () {
-              setState(() {
-                _moduloAtual = ModuloCentralPDV.seletor;
-              });
-            },
+            onBack: voltarParaInicio,
           ),
         );
 
@@ -2302,11 +2496,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return Expanded(
           child: ColaboradoresUsuarioListPage(
             embedded: true,
-            onBack: () {
-              setState(() {
-                _moduloAtual = ModuloCentralPDV.seletor;
-              });
-            },
+            onBack: voltarParaInicio,
           ),
         );
 
@@ -2314,7 +2504,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return Expanded(
           child: OperacoesCaixaWebPage(
             embedded: true,
-            onBack: _voltarDeOperacoesCaixa,
+            onBack: _voltarDeOperacoesCaixaSeNecessario(),
           ),
         );
 
@@ -2344,37 +2534,57 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
       case ModuloCentralPDV.agendaFinanceira:
         return Expanded(
-          child: AgendaFinanceiraWeb(
-            embedded: true,
-            onBack: () {
-              setState(() {
-                _moduloAtual = ModuloCentralPDV.seletor;
-              });
-            },
-          ),
+          child: AgendaFinanceiraWeb(embedded: true, onBack: voltarParaInicio),
         );
 
       case ModuloCentralPDV.atendimentoTecnico:
         return Expanded(
           child: AtendimentosTecnicosListaWebPage(
             embedded: true,
-            onBack: () {
-              setState(() {
-                _moduloAtual = ModuloCentralPDV.seletor;
-              });
-            },
+            onBack: voltarParaInicio,
           ),
+        );
+
+      case ModuloCentralPDV.produtos:
+        return Expanded(
+          child: ProdutoDashboardWebPage(
+            onBack: voltarParaInicio,
+            onNovoProduto: () {
+              showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
+            },
+            onOpenListaCompleta: _abrirListaProdutosParaEdicao,
+          ),
+        );
+
+      case ModuloCentralPDV.servicos:
+        return Expanded(
+          child: ServicoDashboardWebPage(
+            onBack: voltarParaInicio,
+            onNovoServico: () {
+              showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
+            },
+            onOpenListaCompleta: _abrirListaProdutosParaEdicao,
+          ),
+        );
+
+      case ModuloCentralPDV.estoque:
+        return Expanded(
+          child: EstoqueDashboardWebPage(
+            onBack: voltarParaInicio,
+            onOpenListaCompleta: _abrirListaProdutosParaEdicao,
+          ),
+        );
+
+      case ModuloCentralPDV.desempenho:
+        return Expanded(
+          child: DesempenhoColaboradorWebPage(onBack: voltarParaInicio),
         );
 
       case ModuloCentralPDV.configuracoes:
         return Expanded(
           child: ConfiguracoesSixWebPage(
             embedded: true,
-            onBack: () {
-              setState(() {
-                _moduloAtual = ModuloCentralPDV.seletor;
-              });
-            },
+            onBack: voltarParaInicio,
           ),
         );
 
@@ -2382,17 +2592,103 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return Expanded(
           child: CategoriasProdutosServicosWebPage(
             embedded: true,
-            onBack: () {
-              setState(() {
-                _moduloAtual = ModuloCentralPDV.seletor;
-              });
-            },
+            onBack: voltarParaInicio,
           ),
         );
 
       case ModuloCentralPDV.seletor:
         return _buildSeletorModoOperacao();
     }
+  }
+
+  VoidCallback? _voltarParaInicioSeModoLegado() {
+    if (_useWebShellNavigation) {
+      return null;
+    }
+
+    return () {
+      setState(() {
+        _moduloAtual = ModuloCentralPDV.seletor;
+      });
+    };
+  }
+
+  VoidCallback? _voltarDeOperacoesCaixaSeNecessario() {
+    if (!_useWebShellNavigation) {
+      return _voltarDeOperacoesCaixa;
+    }
+
+    final ModuloCentralPDV? retorno = _moduloRetornoOperacoesCaixa;
+    if (retorno == null || retorno == ModuloCentralPDV.seletor) {
+      return null;
+    }
+
+    return _voltarDeOperacoesCaixa;
+  }
+
+  List<WebNavigationItem> _webNavigationItemsPermitidos(
+    ColaboradorAutorizacoesProvider autorizacoesProvider,
+  ) {
+    final Set<WebNavigationPermission> permissions =
+        WebNavigationPermissionAdapter.permissionsFor(autorizacoesProvider);
+
+    return WebNavigationRegistry.activeItemsForPermissions(
+      permissions,
+      includeUnresolved: WebNavigationPermissionAdapter.includeUnresolvedFor(
+        autorizacoesProvider,
+      ),
+    );
+  }
+
+  void _garantirModuloAtualPermitido(List<WebNavigationItem> navigationItems) {
+    final WebNavigationDestination? destinoAtual =
+        webNavigationDestinationForModuloCentralPdv(_moduloAtual);
+
+    if (destinoAtual == null ||
+        destinoAtual == WebNavigationDestination.home ||
+        _navigationItemsContainDestination(navigationItems, destinoAtual)) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final ColaboradorAutorizacoesProvider autorizacoesProvider =
+          context.read<ColaboradorAutorizacoesProvider>();
+      final List<WebNavigationItem> currentNavigationItems =
+          _webNavigationItemsPermitidos(autorizacoesProvider);
+      final WebNavigationDestination? destinoAindaAtual =
+          webNavigationDestinationForModuloCentralPdv(_moduloAtual);
+      if (destinoAindaAtual == WebNavigationDestination.home ||
+          _navigationItemsContainDestination(
+            currentNavigationItems,
+            destinoAindaAtual,
+          )) {
+        return;
+      }
+
+      setState(() {
+        _moduloRetornoOperacoesCaixa = null;
+        _moduloAtual = ModuloCentralPDV.seletor;
+      });
+    });
+  }
+
+  bool _navigationItemsContainDestination(
+    List<WebNavigationItem> navigationItems,
+    WebNavigationDestination? destination,
+  ) {
+    if (destination == null) return false;
+
+    for (final WebNavigationItem item in navigationItems) {
+      for (final WebNavigationItem flattenedItem in item.flatten()) {
+        if (flattenedItem.destination == destination) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   // Widget _buildModoOperacaoButton({
@@ -2561,7 +2857,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     return Expanded(
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final bool compact = constraints.maxWidth < 860;
+          final bool compact = constraints.maxWidth < 1040;
           final EdgeInsets padding = EdgeInsets.fromLTRB(
             compact ? 12 : 24,
             compact ? 12 : 18,
@@ -2571,18 +2867,48 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
           return Padding(
             padding: padding,
-            child: DashboardInicioWeb(
-              compact: compact,
-              onIniciarVenda: _iniciarVenda,
-              onAbrirAtendimentoTecnico: () {
-                setState(() {
-                  _moduloAtual = ModuloCentralPDV.atendimentoTecnico;
-                });
-              },
-            ),
+            child:
+                _useWorkspaceHome
+                    ? WorkspaceHomeWeb(
+                      compact: compact,
+                      resolver: _webNavigationResolver,
+                      onNovoAtendimentoTecnico: _abrirNovoAtendimentoTecnico,
+                    )
+                    : DashboardInicioWeb(
+                      compact: compact,
+                      onIniciarVenda: () {
+                        _acionarDestinoNavegacaoWeb(
+                          WebNavigationDestination.operationsPointOfSale,
+                        );
+                      },
+                      onAbrirAtendimentoTecnico: () {
+                        _acionarDestinoNavegacaoWeb(
+                          WebNavigationDestination.operationsTechnicalServices,
+                        );
+                      },
+                    ),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildConteudoPrincipalWeb(double total) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool inicio = _moduloAtual == ModuloCentralPDV.seletor;
+        final bool compact = constraints.maxWidth < 760;
+        final EdgeInsets padding =
+            inicio ? EdgeInsets.zero : EdgeInsets.all(compact ? 12 : 16);
+
+        return Padding(
+          padding: padding,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(compact ? 16 : 22),
+            child: Column(children: <Widget>[_buildConteudoCentral(total)]),
+          ),
+        );
+      },
     );
   }
 
@@ -2593,13 +2919,29 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     final double total = _calcularTotal();
     final bool modoExpandidoAtivo =
         _moduloAtual == ModuloCentralPDV.vendas && _modoExpandidoFrenteCaixa;
+    final ColaboradorAutorizacoesProvider? autorizacoesProvider =
+        _useWebShellNavigation
+            ? context.watch<ColaboradorAutorizacoesProvider>()
+            : null;
+    final List<WebNavigationItem> webNavigationItems =
+        autorizacoesProvider != null
+            ? _webNavigationItemsPermitidos(autorizacoesProvider)
+            : WebNavigationRegistry.activeItems;
+
+    if (autorizacoesProvider != null &&
+        !modoExpandidoAtivo &&
+        WebNavigationPermissionAdapter.canApplySidebarFiltering(
+          autorizacoesProvider,
+        )) {
+      _garantirModuloAtualPermitido(webNavigationItems);
+    }
 
     return PopScope(
       canPop: false,
       child: Scaffold(
         backgroundColor: _pdvTheme.backgroundPage,
         appBar:
-            modoExpandidoAtivo
+            modoExpandidoAtivo || _useWebShellNavigation
                 ? null
                 : TopNavigationBarWeb(
                   items: <TopNavItemData>[
@@ -2731,27 +3073,18 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                     children: <Widget>[_buildConteudoCentral(total)],
                   ),
                 )
-                : LayoutBuilder(
-                  builder: (BuildContext context, BoxConstraints constraints) {
-                    final bool inicio =
-                        _moduloAtual == ModuloCentralPDV.seletor;
-                    final bool compact = constraints.maxWidth < 760;
-                    final EdgeInsets padding =
-                        inicio
-                            ? EdgeInsets.zero
-                            : EdgeInsets.all(compact ? 12 : 16);
-
-                    return Padding(
-                      padding: padding,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(compact ? 16 : 22),
-                        child: Column(
-                          children: <Widget>[_buildConteudoCentral(total)],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                : _useWebShellNavigation
+                ? AuthenticatedWebShell(
+                  navigationItems: webNavigationItems,
+                  resolver: _webNavigationResolver,
+                  activeDestination:
+                      webNavigationDestinationForModuloCentralPdv(_moduloAtual),
+                  appVersion: AppConfig.appVersion,
+                  currentCommerceName: _nomeEmpresaAtualParaHeader(),
+                  headerActions: _buildWebShellHeaderActions(),
+                  child: _buildConteudoPrincipalWeb(total),
+                )
+                : _buildConteudoPrincipalWeb(total),
       ),
     );
   }
