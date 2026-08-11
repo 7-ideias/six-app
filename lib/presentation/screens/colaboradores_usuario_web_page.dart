@@ -7,6 +7,7 @@ import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.d
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/web_dashboard_widgets.dart';
+import '../theme/web_theme_tokens.dart';
 import 'colaborador_convite_web_body.dart';
 
 class ColaboradoresUsuarioListPage extends StatefulWidget {
@@ -147,13 +148,20 @@ class _ColaboradoresUsuarioListPageState
   }
 
   Future<void> _openNovoColaborador() async {
+    final WebThemeTokens pageTokens = WebThemeTokens.of(context);
     await showDialog<void>(
       context: context,
       barrierDismissible: true,
+      barrierColor: pageTokens.workspaceBackground.withValues(
+        alpha: Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42,
+      ),
       builder: (BuildContext dialogContext) {
+        final WebThemeTokens tokens = WebThemeTokens.of(dialogContext);
         final Size size = MediaQuery.of(dialogContext).size;
         return _EscCloseScope(
           child: Dialog(
+            backgroundColor: tokens.surfaceElevated,
+            surfaceTintColor: Colors.transparent,
             insetPadding: const EdgeInsets.symmetric(
               horizontal: 24,
               vertical: 24,
@@ -161,6 +169,7 @@ class _ColaboradoresUsuarioListPageState
             clipBehavior: Clip.antiAlias,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(28),
+              side: BorderSide(color: tokens.cardBorder),
             ),
             child: SizedBox(
               width: size.width * 0.78,
@@ -184,19 +193,20 @@ class _ColaboradoresUsuarioListPageState
       );
       if (!mounted) return;
 
-      final Map<String, dynamic>? payload =
-          await showDialog<Map<String, dynamic>>(
-            context: context,
-            barrierDismissible: true,
-            builder: (BuildContext dialogContext) {
-              return _EscCloseScope(
-                child: _EditarColaboradorDialog(
-                  resumo: resumo,
-                  detalhe: detalhe,
-                ),
-              );
-            },
+      final WebThemeTokens pageTokens = WebThemeTokens.of(context);
+      final Map<String, dynamic>?
+      payload = await showDialog<Map<String, dynamic>>(
+        context: context,
+        barrierDismissible: true,
+        barrierColor: pageTokens.workspaceBackground.withValues(
+          alpha: Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42,
+        ),
+        builder: (BuildContext dialogContext) {
+          return _EscCloseScope(
+            child: _EditarColaboradorDialog(resumo: resumo, detalhe: detalhe),
           );
+        },
+      );
 
       if (payload == null) {
         return;
@@ -238,6 +248,7 @@ class _ColaboradoresUsuarioListPageState
   @override
   Widget build(BuildContext context) {
     context.watch<LocaleSettingsProvider>();
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
 
     final Widget content = Column(
       children: <Widget>[_header(), Expanded(child: _body())],
@@ -249,13 +260,13 @@ class _ColaboradoresUsuarioListPageState
 
     if (widget.embedded) {
       return Material(
-        color: Theme.of(context).colorScheme.surface,
+        color: tokens.workspaceBackground,
         child: closeAwareContent,
       );
     }
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: tokens.workspaceBackground,
       body: SafeArea(child: closeAwareContent),
     );
   }
@@ -408,6 +419,7 @@ class _ColaboradoresUsuarioListPageState
   }
 
   Widget _searchSection() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return SixWebSectionCard(
       title: _t('colaboradores.searchAndFilters', 'Busca e filtros'),
       subtitle: _t(
@@ -424,6 +436,8 @@ class _ColaboradoresUsuarioListPageState
             'Buscar nome, e-mail, celular ou apelido...',
           ),
           prefixIcon: const Icon(Icons.search_rounded),
+          filled: true,
+          fillColor: tokens.inputBackground,
           suffixIcon:
               _search.text.isEmpty
                   ? null
@@ -435,6 +449,14 @@ class _ColaboradoresUsuarioListPageState
                       setState(() => _filter = '');
                     },
                   ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: tokens.cardBorder),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
+          ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
         ),
       ),
@@ -443,6 +465,7 @@ class _ColaboradoresUsuarioListPageState
 
   Widget _card(ColaboradorUsuarioResumo colaborador) {
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: SixWebEntry(
@@ -456,13 +479,11 @@ class _ColaboradoresUsuarioListPageState
                 children: <Widget>[
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: theme.colorScheme.primary.withValues(
-                      alpha: 0.10,
-                    ),
+                    backgroundColor: tokens.info.withValues(alpha: 0.10),
                     child: Text(
                       _initials(colaborador.nome),
                       style: TextStyle(
-                        color: theme.colorScheme.primary,
+                        color: tokens.info,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -485,13 +506,18 @@ class _ColaboradoresUsuarioListPageState
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.titleMedium?.copyWith(
+                                  color: tokens.primaryText,
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
                             ),
                             _status(
-                              _t('common.active', 'Ativo'),
-                              Colors.green.shade700,
+                              colaborador.ativo
+                                  ? _t('common.active', 'Ativo')
+                                  : _colaboradorStatusLabel(colaborador.status),
+                              colaborador.ativo
+                                  ? tokens.success
+                                  : tokens.statusNeutral,
                             ),
                           ],
                         ),
@@ -506,7 +532,7 @@ class _ColaboradoresUsuarioListPageState
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                            color: tokens.secondaryText,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -599,21 +625,20 @@ class _ColaboradoresUsuarioListPageState
 
   Widget _accessHint(ColaboradorUsuarioResumo colaborador) {
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withValues(alpha: 0.06),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.14),
-        ),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         children: <Widget>[
           Icon(
             Icons.admin_panel_settings_outlined,
-            color: theme.colorScheme.primary,
+            color: tokens.info,
             size: 20,
           ),
           const SizedBox(width: 10),
@@ -631,6 +656,7 @@ class _ColaboradoresUsuarioListPageState
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall?.copyWith(
+                color: tokens.primaryText,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -646,6 +672,7 @@ class _ColaboradoresUsuarioListPageState
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
       child: Text(
         label,
@@ -659,11 +686,35 @@ class _ColaboradoresUsuarioListPageState
   }
 
   Widget _info(IconData icon, String label) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Chip(
-      avatar: Icon(icon, size: 14),
-      label: Text(label, overflow: TextOverflow.ellipsis),
+      avatar: Icon(icon, size: 14, color: tokens.secondaryText),
+      label: Text(
+        label,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(color: tokens.secondaryText),
+      ),
       visualDensity: VisualDensity.compact,
+      backgroundColor: tokens.surfaceMuted,
+      side: BorderSide(color: tokens.cardBorder),
     );
+  }
+
+  String _colaboradorStatusLabel(String status) {
+    switch (status.trim().toUpperCase()) {
+      case 'INATIVO':
+        return _t('common.inactive', 'Inativo');
+      case 'BLOQUEADO':
+        return _t('colaboradores.blocked', 'Bloqueado');
+      case 'PENDENTE':
+        return _t('colaboradores.pending', 'Pendente');
+      case 'ATIVO':
+        return _t('common.active', 'Ativo');
+      default:
+        return status.trim().isEmpty
+            ? _t('colaboradores.notActive', 'Não ativo')
+            : status;
+    }
   }
 
   Widget _empty() {
@@ -715,45 +766,57 @@ class _ColaboradoresUsuarioListPageState
   }
 
   Widget _inlineError(String message) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Theme.of(
-          context,
-        ).colorScheme.errorContainer.withValues(alpha: 0.35),
+        color: tokens.danger.withValues(alpha: 0.10),
+        border: Border.all(color: tokens.danger.withValues(alpha: 0.24)),
       ),
-      child: Text(message),
+      child: Text(message, style: TextStyle(color: tokens.primaryText)),
     );
   }
 
   void _showDetails(ColaboradorUsuarioResumo colaborador) {
+    final WebThemeTokens pageTokens = WebThemeTokens.of(context);
     showDialog<void>(
       context: context,
       barrierDismissible: true,
-      builder:
-          (_) => _EscCloseScope(
-            child: AlertDialog(
-              title: Text(
-                colaborador.nome.isEmpty
-                    ? _t('colaboradores.collaborator', 'Colaborador')
-                    : colaborador.nome,
-              ),
-              content: Text(
-                '${_t('colaboradores.nickname', 'Nome de guerra')}: ${colaborador.nomeDeGuerra.isEmpty ? '-' : colaborador.nomeDeGuerra}\n'
-                '${_t('colaboradores.phone', 'Celular')}: ${colaborador.celularDeAcesso.isEmpty ? '-' : colaborador.celularDeAcesso}\n'
-                '${_t('colaboradores.email', 'E-mail')}: ${colaborador.email.isEmpty ? '-' : colaborador.email}\n'
-                '${_t('colaboradores.identifier', 'Identificador')}: ${colaborador.idUnicoPessoal}',
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(_t('common.close', 'Fechar')),
-                ),
-              ],
+      barrierColor: pageTokens.workspaceBackground.withValues(
+        alpha: Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42,
+      ),
+      builder: (BuildContext dialogContext) {
+        final WebThemeTokens tokens = WebThemeTokens.of(dialogContext);
+        return _EscCloseScope(
+          child: AlertDialog(
+            backgroundColor: tokens.surfaceElevated,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: BorderSide(color: tokens.cardBorder),
             ),
+            title: Text(
+              colaborador.nome.isEmpty
+                  ? _t('colaboradores.collaborator', 'Colaborador')
+                  : colaborador.nome,
+            ),
+            content: Text(
+              '${_t('colaboradores.nickname', 'Nome de guerra')}: ${colaborador.nomeDeGuerra.isEmpty ? '-' : colaborador.nomeDeGuerra}\n'
+              '${_t('colaboradores.phone', 'Celular')}: ${colaborador.celularDeAcesso.isEmpty ? '-' : colaborador.celularDeAcesso}\n'
+              '${_t('colaboradores.email', 'E-mail')}: ${colaborador.email.isEmpty ? '-' : colaborador.email}\n'
+              '${_t('colaboradores.identifier', 'Identificador')}: ${colaborador.idUnicoPessoal}',
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(_t('common.close', 'Fechar')),
+              ),
+            ],
           ),
+        );
+      },
     );
   }
 
@@ -783,6 +846,7 @@ class _HoverableColaboradorCardState extends State<_HoverableColaboradorCard> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
@@ -793,16 +857,10 @@ class _HoverableColaboradorCardState extends State<_HoverableColaboradorCard> {
         transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color:
-              _hovered
-                  ? theme.colorScheme.primary.withValues(alpha: 0.025)
-                  : theme.colorScheme.surface,
+          color: _hovered ? tokens.hoverBackground : tokens.cardBackground,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color:
-                _hovered
-                    ? theme.colorScheme.primary.withValues(alpha: 0.30)
-                    : theme.colorScheme.outlineVariant,
+            color: _hovered ? tokens.selectedBorder : tokens.cardBorder,
           ),
           boxShadow:
               _hovered
@@ -997,7 +1055,14 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return AlertDialog(
+      backgroundColor: tokens.surfaceElevated,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: tokens.cardBorder),
+      ),
       title: Text(_t('colaboradores.editCollaborator', 'Editar colaborador')),
       content: SizedBox(
         width: 680,
@@ -1145,9 +1210,20 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
   }
 
   InputDecoration _input(String label, IconData icon) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon),
+      prefixIcon: Icon(icon, color: tokens.info),
+      filled: true,
+      fillColor: tokens.inputBackground,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: tokens.cardBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
+      ),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
     );
   }
@@ -1158,12 +1234,30 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
     bool value,
     ValueChanged<bool> onChanged,
   ) {
-    return SwitchListTile(
-      contentPadding: EdgeInsets.zero,
-      value: value,
-      onChanged: onChanged,
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-      subtitle: Text(subtitle),
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: value ? tokens.selectedBackground : tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: value ? tokens.selectedBorder : tokens.cardBorder,
+        ),
+      ),
+      child: SwitchListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        value: value,
+        onChanged: onChanged,
+        activeThumbColor: tokens.info,
+        title: Text(
+          title,
+          style: TextStyle(
+            color: tokens.primaryText,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        subtitle: Text(subtitle, style: TextStyle(color: tokens.secondaryText)),
+      ),
     );
   }
 

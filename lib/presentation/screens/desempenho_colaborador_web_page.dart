@@ -5,6 +5,7 @@ import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/desempenho_colaborador_model.dart';
 import '../../data/services/desempenho_colaborador/desempenho_colaborador_api_client.dart';
 import '../components/six_backend_loading.dart';
+import '../theme/web_theme_tokens.dart';
 
 class DesempenhoColaboradorWebPage extends StatefulWidget {
   const DesempenhoColaboradorWebPage({super.key, this.onBack});
@@ -131,8 +132,9 @@ class _DesempenhoColaboradorWebPageState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Material(
-      color: theme.colorScheme.surface,
+      color: tokens.workspaceBackground,
       child: Column(
         children: <Widget>[
           _buildHeader(theme),
@@ -150,13 +152,12 @@ class _DesempenhoColaboradorWebPageState
   }
 
   Widget _buildHeader(ThemeData theme) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.06),
-        border: Border(
-          bottom: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
+        color: tokens.surfaceMuted,
+        border: Border(bottom: BorderSide(color: tokens.cardBorder)),
       ),
       child: Row(
         children: <Widget>[
@@ -169,6 +170,7 @@ class _DesempenhoColaboradorWebPageState
                 Text(
                   'Desempenho do colaborador',
                   style: theme.textTheme.headlineSmall?.copyWith(
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -176,7 +178,7 @@ class _DesempenhoColaboradorWebPageState
                 Text(
                   'Resumo executivo de metas, vendas, serviços e atendimentos por participante.',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                     height: 1.35,
                   ),
                 ),
@@ -212,14 +214,15 @@ class _DesempenhoColaboradorWebPageState
   }
 
   Widget _headerIcon(ThemeData theme, IconData icon) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       width: 54,
       height: 54,
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.12),
+        color: tokens.info.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(18),
       ),
-      child: Icon(icon, color: theme.colorScheme.primary, size: 28),
+      child: Icon(icon, color: tokens.info, size: 28),
     );
   }
 
@@ -235,6 +238,7 @@ class _DesempenhoColaboradorWebPageState
     }
 
     if (_error != null) {
+      final WebThemeTokens tokens = WebThemeTokens.of(context);
       return Center(
         key: const ValueKey<String>('desempenho-error'),
         child: _InfoCard(
@@ -242,11 +246,12 @@ class _DesempenhoColaboradorWebPageState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              const Icon(Icons.warning_amber_rounded, color: Color(0xFFB45309)),
+              Icon(Icons.warning_amber_rounded, color: tokens.warning),
               const SizedBox(height: 10),
               Text(
                 'Não foi possível carregar o desempenho.',
                 style: theme.textTheme.titleMedium?.copyWith(
+                  color: tokens.primaryText,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -257,7 +262,7 @@ class _DesempenhoColaboradorWebPageState
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: tokens.secondaryText,
                 ),
               ),
               const SizedBox(height: 14),
@@ -368,18 +373,22 @@ class _DesempenhoColaboradorWebPageState
     bool selected,
     VoidCallback onTap,
   ) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return ChoiceChip(
       selected: selected,
       label: Text(label),
-      selectedColor: theme.colorScheme.primary.withOpacity(0.12),
+      selectedColor: tokens.selectedBackground,
+      backgroundColor: tokens.surfaceMuted,
       labelStyle: TextStyle(
-        color:
-            selected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.onSurfaceVariant,
+        color: selected ? tokens.info : tokens.secondaryText,
         fontWeight: FontWeight.w800,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(999),
+        side: BorderSide(
+          color: selected ? tokens.selectedBorder : tokens.cardBorder,
+        ),
+      ),
       onSelected: (_) => onTap(),
     );
   }
@@ -390,19 +399,23 @@ class _DesempenhoColaboradorWebPageState
     _SituacaoParticipante value,
     int total,
   ) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool selected = _situacao == value;
     return ChoiceChip(
       selected: selected,
       label: Text('$label ($total)'),
-      selectedColor: theme.colorScheme.primary.withOpacity(0.12),
+      selectedColor: tokens.selectedBackground,
+      backgroundColor: tokens.surfaceMuted,
       labelStyle: TextStyle(
-        color:
-            selected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.onSurfaceVariant,
+        color: selected ? tokens.info : tokens.secondaryText,
         fontWeight: FontWeight.w800,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(999),
+        side: BorderSide(
+          color: selected ? tokens.selectedBorder : tokens.cardBorder,
+        ),
+      ),
       onSelected: (_) {
         setState(() {
           _situacao = value;
@@ -486,10 +499,11 @@ class _DesempenhoColaboradorWebPageState
   }
 
   Widget _resultTile(ThemeData theme, DesempenhoColaboradorItemModel item) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final DesempenhoIndicadorOption indicador = indicadorPorCodigo(
       item.indicador,
     );
-    final Color color = _statusColor(item.status);
+    final Color color = _statusColor(item.status, tokens);
     final double progress =
         (item.percentualAtingido / 100).clamp(0.0, 1.0).toDouble();
 
@@ -497,9 +511,9 @@ class _DesempenhoColaboradorWebPageState
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -514,6 +528,7 @@ class _DesempenhoColaboradorWebPageState
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -525,7 +540,7 @@ class _DesempenhoColaboradorWebPageState
           Text(
             indicador.label,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+              color: tokens.secondaryText,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -535,7 +550,7 @@ class _DesempenhoColaboradorWebPageState
             child: LinearProgressIndicator(
               minHeight: 9,
               value: progress,
-              backgroundColor: theme.colorScheme.outlineVariant,
+              backgroundColor: tokens.cardBorder,
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),
@@ -548,6 +563,7 @@ class _DesempenhoColaboradorWebPageState
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -589,6 +605,7 @@ class _DesempenhoColaboradorWebPageState
   }
 
   Widget _metaTile(ThemeData theme, MetaColaboradorModel meta) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final DesempenhoIndicadorOption indicador = indicadorPorCodigo(
       meta.indicador,
     );
@@ -601,9 +618,9 @@ class _DesempenhoColaboradorWebPageState
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+            color: tokens.surfaceMuted,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
+            border: Border.all(color: tokens.cardBorder),
           ),
           child: Row(
             children: <Widget>[
@@ -611,14 +628,10 @@ class _DesempenhoColaboradorWebPageState
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.10),
+                  color: tokens.info.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(
-                  Icons.flag_outlined,
-                  color: theme.colorScheme.primary,
-                  size: 20,
-                ),
+                child: Icon(Icons.flag_outlined, color: tokens.info, size: 20),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -632,6 +645,7 @@ class _DesempenhoColaboradorWebPageState
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyLarge?.copyWith(
+                        color: tokens.primaryText,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -641,13 +655,13 @@ class _DesempenhoColaboradorWebPageState
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: tokens.secondaryText,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.edit_outlined, size: 18),
+              Icon(Icons.edit_outlined, size: 18, color: tokens.secondaryText),
             ],
           ),
         ),
@@ -662,26 +676,36 @@ class _DesempenhoColaboradorWebPageState
       return;
     }
 
+    final WebThemeTokens pageTokens = WebThemeTokens.of(context);
     final Map<String, dynamic>? payload =
         await showDialog<Map<String, dynamic>>(
           context: context,
-          builder:
-              (BuildContext context) => Dialog(
-                insetPadding: const EdgeInsets.all(24),
-                clipBehavior: Clip.antiAlias,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 620),
-                  child: _GoalForm(
-                    participantes: participantes,
-                    inicioPadrao: _inicio,
-                    fimPadrao: _fim,
-                    meta: meta,
-                  ),
+          barrierColor: pageTokens.workspaceBackground.withValues(
+            alpha:
+                Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42,
+          ),
+          builder: (BuildContext context) {
+            final WebThemeTokens tokens = WebThemeTokens.of(context);
+            return Dialog(
+              backgroundColor: tokens.surfaceElevated,
+              surfaceTintColor: Colors.transparent,
+              insetPadding: const EdgeInsets.all(24),
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+                side: BorderSide(color: tokens.cardBorder),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 620),
+                child: _GoalForm(
+                  participantes: participantes,
+                  inicioPadrao: _inicio,
+                  fimPadrao: _fim,
+                  meta: meta,
                 ),
               ),
+            );
+          },
         );
 
     if (payload == null) return;
@@ -711,24 +735,33 @@ class _DesempenhoColaboradorWebPageState
   }
 
   Future<void> _selectParticipant() async {
+    final WebThemeTokens pageTokens = WebThemeTokens.of(context);
     final String? selected = await showDialog<String>(
       context: context,
-      builder:
-          (BuildContext context) => Dialog(
-            insetPadding: const EdgeInsets.all(24),
-            clipBehavior: Clip.antiAlias,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(26),
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560, maxHeight: 620),
-              child: _ParticipantSelectorDialog(
-                participantes: _participantesVisiveis,
-                selectedId: _idParticipante,
-                allowAll: true,
-              ),
+      barrierColor: pageTokens.workspaceBackground.withValues(
+        alpha: Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42,
+      ),
+      builder: (BuildContext context) {
+        final WebThemeTokens tokens = WebThemeTokens.of(context);
+        return Dialog(
+          backgroundColor: tokens.surfaceElevated,
+          surfaceTintColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(24),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(26),
+            side: BorderSide(color: tokens.cardBorder),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560, maxHeight: 620),
+            child: _ParticipantSelectorDialog(
+              participantes: _participantesVisiveis,
+              selectedId: _idParticipante,
+              allowAll: true,
             ),
           ),
+        );
+      },
     );
 
     if (!mounted || selected == null) return;
@@ -817,18 +850,18 @@ class _DesempenhoColaboradorWebPageState
     }
   }
 
-  Color _statusColor(String status) {
+  Color _statusColor(String status, WebThemeTokens tokens) {
     switch (status) {
       case 'ACIMA_DA_META':
-        return const Color(0xFF16A34A);
+        return tokens.success;
       case 'EM_PROGRESSO':
-        return const Color(0xFF2563EB);
+        return tokens.info;
       case 'EM_RISCO':
-        return const Color(0xFFD97706);
+        return tokens.warning;
       case 'CRITICO':
-        return const Color(0xFFDC2626);
+        return tokens.danger;
       default:
-        return const Color(0xFF64748B);
+        return tokens.statusNeutral;
     }
   }
 
@@ -901,6 +934,7 @@ class _GoalFormState extends State<_GoalForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Padding(
       padding: const EdgeInsets.all(18),
       child: Form(
@@ -916,6 +950,7 @@ class _GoalFormState extends State<_GoalForm> {
                     child: Text(
                       widget.meta == null ? 'Nova meta' : 'Editar meta',
                       style: theme.textTheme.titleLarge?.copyWith(
+                        color: tokens.primaryText,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -936,6 +971,7 @@ class _GoalFormState extends State<_GoalForm> {
               Text(
                 'Indicador',
                 style: theme.textTheme.titleSmall?.copyWith(
+                  color: tokens.primaryText,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -948,6 +984,24 @@ class _GoalFormState extends State<_GoalForm> {
                       return ChoiceChip(
                         selected: _indicador == option.codigo,
                         label: Text(option.label),
+                        selectedColor: tokens.selectedBackground,
+                        backgroundColor: tokens.surfaceMuted,
+                        labelStyle: TextStyle(
+                          color:
+                              _indicador == option.codigo
+                                  ? tokens.info
+                                  : tokens.secondaryText,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                          side: BorderSide(
+                            color:
+                                _indicador == option.codigo
+                                    ? tokens.selectedBorder
+                                    : tokens.cardBorder,
+                          ),
+                        ),
                         onSelected:
                             (_) => setState(() => _indicador = option.codigo),
                       );
@@ -963,10 +1017,7 @@ class _GoalFormState extends State<_GoalForm> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
-                      decoration: const InputDecoration(
-                        labelText: 'Valor alvo',
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: _inputDecoration(labelText: 'Valor alvo'),
                       validator: _validatePositiveNumber,
                     ),
                   ),
@@ -978,10 +1029,7 @@ class _GoalFormState extends State<_GoalForm> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
-                      decoration: const InputDecoration(
-                        labelText: 'Peso',
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: _inputDecoration(labelText: 'Peso'),
                       validator: _validatePositiveNumber,
                     ),
                   ),
@@ -993,10 +1041,9 @@ class _GoalFormState extends State<_GoalForm> {
                   Expanded(
                     child: TextFormField(
                       controller: _inicioController,
-                      decoration: const InputDecoration(
+                      decoration: _inputDecoration(
                         labelText: 'Início',
                         hintText: 'dd/mm/aaaa',
-                        border: OutlineInputBorder(),
                       ),
                       validator: _validateDate,
                     ),
@@ -1005,10 +1052,9 @@ class _GoalFormState extends State<_GoalForm> {
                   Expanded(
                     child: TextFormField(
                       controller: _fimController,
-                      decoration: const InputDecoration(
+                      decoration: _inputDecoration(
                         labelText: 'Fim',
                         hintText: 'dd/mm/aaaa',
-                        border: OutlineInputBorder(),
                       ),
                       validator: _validateDate,
                     ),
@@ -1023,6 +1069,24 @@ class _GoalFormState extends State<_GoalForm> {
                       return ChoiceChip(
                         selected: _status == status,
                         label: Text(_statusText(status)),
+                        selectedColor: tokens.selectedBackground,
+                        backgroundColor: tokens.surfaceMuted,
+                        labelStyle: TextStyle(
+                          color:
+                              _status == status
+                                  ? tokens.info
+                                  : tokens.secondaryText,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                          side: BorderSide(
+                            color:
+                                _status == status
+                                    ? tokens.selectedBorder
+                                    : tokens.cardBorder,
+                          ),
+                        ),
                         onSelected: (_) => setState(() => _status = status),
                       );
                     })
@@ -1047,24 +1111,33 @@ class _GoalFormState extends State<_GoalForm> {
   }
 
   Future<void> _selectParticipant() async {
+    final WebThemeTokens pageTokens = WebThemeTokens.of(context);
     final String? selected = await showDialog<String>(
       context: context,
-      builder:
-          (BuildContext context) => Dialog(
-            insetPadding: const EdgeInsets.all(24),
-            clipBehavior: Clip.antiAlias,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(26),
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560, maxHeight: 620),
-              child: _ParticipantSelectorDialog(
-                participantes: widget.participantes,
-                selectedId: _participante.idUnicoPessoal,
-                allowAll: false,
-              ),
+      barrierColor: pageTokens.workspaceBackground.withValues(
+        alpha: Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42,
+      ),
+      builder: (BuildContext context) {
+        final WebThemeTokens tokens = WebThemeTokens.of(context);
+        return Dialog(
+          backgroundColor: tokens.surfaceElevated,
+          surfaceTintColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(24),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(26),
+            side: BorderSide(color: tokens.cardBorder),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560, maxHeight: 620),
+            child: _ParticipantSelectorDialog(
+              participantes: widget.participantes,
+              selectedId: _participante.idUnicoPessoal,
+              allowAll: false,
             ),
           ),
+        );
+      },
     );
     if (selected == null || !mounted) return;
     setState(() {
@@ -1073,6 +1146,35 @@ class _GoalFormState extends State<_GoalForm> {
         orElse: () => _participante,
       );
     });
+  }
+
+  InputDecoration _inputDecoration({
+    required String labelText,
+    String? hintText,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      filled: true,
+      fillColor: tokens.inputBackground,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: tokens.cardBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: tokens.danger),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: tokens.danger, width: 1.4),
+      ),
+    );
   }
 
   void _submit() {
@@ -1172,6 +1274,7 @@ class _ParticipantSelectorDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Padding(
       padding: const EdgeInsets.all(18),
       child: Column(
@@ -1183,6 +1286,7 @@ class _ParticipantSelectorDialog extends StatelessWidget {
                 child: Text(
                   'Selecionar participante',
                   style: theme.textTheme.titleLarge?.copyWith(
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -1252,13 +1356,14 @@ class _InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     final Widget card = Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x0F0B1F3A),
@@ -1280,6 +1385,7 @@ class _InfoCard extends StatelessWidget {
                       Text(
                         title!,
                         style: theme.textTheme.titleMedium?.copyWith(
+                          color: tokens.primaryText,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -1288,7 +1394,7 @@ class _InfoCard extends StatelessWidget {
                         Text(
                           subtitle!,
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                            color: tokens.secondaryText,
                           ),
                         ),
                       ],
@@ -1327,12 +1433,13 @@ class _KpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x0F0B1F3A),
@@ -1347,10 +1454,10 @@ class _KpiCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.10),
+              color: tokens.info.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(data.icon, color: theme.colorScheme.primary),
+            child: Icon(data.icon, color: tokens.info),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1363,7 +1470,7 @@ class _KpiCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -1373,6 +1480,7 @@ class _KpiCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleLarge?.copyWith(
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -1382,7 +1490,7 @@ class _KpiCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                   ),
                 ),
               ],
@@ -1406,9 +1514,8 @@ class _SelectorButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Material(
-      color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+      color: WebThemeTokens.of(context).inputBackground,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -1417,21 +1524,27 @@ class _SelectorButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
+            border: Border.all(color: WebThemeTokens.of(context).cardBorder),
           ),
           child: Row(
             children: <Widget>[
-              Icon(icon, color: theme.colorScheme.primary, size: 20),
+              Icon(icon, color: WebThemeTokens.of(context).info, size: 20),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    color: WebThemeTokens.of(context).primaryText,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
-              const Icon(Icons.keyboard_arrow_down_rounded),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: WebThemeTokens.of(context).secondaryText,
+              ),
             ],
           ),
         ),
@@ -1458,13 +1571,11 @@ class _SelectorTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color:
-            selected
-                ? theme.colorScheme.primary.withOpacity(0.10)
-                : theme.colorScheme.surface,
+        color: selected ? tokens.selectedBackground : tokens.cardBackground,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -1473,11 +1584,16 @@ class _SelectorTile extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
+              border: Border.all(
+                color: selected ? tokens.selectedBorder : tokens.cardBorder,
+              ),
             ),
             child: Row(
               children: <Widget>[
-                Icon(icon, color: theme.colorScheme.primary),
+                Icon(
+                  icon,
+                  color: selected ? tokens.info : tokens.secondaryText,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -1487,7 +1603,10 @@ class _SelectorTile extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w900),
+                        style: TextStyle(
+                          color: tokens.primaryText,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                       const SizedBox(height: 3),
                       Text(
@@ -1495,17 +1614,14 @@ class _SelectorTile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                          color: tokens.secondaryText,
                         ),
                       ),
                     ],
                   ),
                 ),
                 if (selected)
-                  Icon(
-                    Icons.check_circle_rounded,
-                    color: theme.colorScheme.primary,
-                  ),
+                  Icon(Icons.check_circle_rounded, color: tokens.info),
               ],
             ),
           ),
@@ -1525,9 +1641,9 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.11),
+        color: color.withValues(alpha: 0.11),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Text(
         label,
@@ -1554,29 +1670,33 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
         children: <Widget>[
-          Icon(icon, color: theme.colorScheme.onSurfaceVariant),
+          Icon(icon, color: tokens.secondaryText),
           const SizedBox(height: 8),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w900),
+            style: TextStyle(
+              color: tokens.primaryText,
+              fontWeight: FontWeight.w900,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             subtitle,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+              color: tokens.secondaryText,
             ),
           ),
         ],

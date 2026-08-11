@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart' as sharing;
 import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/core/services/auto_customer_token_service.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
 Future<void> showClienteAutoCadastroLinkDialog(
   BuildContext context, {
@@ -10,13 +11,23 @@ Future<void> showClienteAutoCadastroLinkDialog(
   String? initialDocumento,
   bool actionsOnly = false,
 }) {
+  final WebThemeTokens pageTokens = WebThemeTokens.of(context);
   return showDialog<void>(
     context: context,
     barrierDismissible: true,
+    barrierColor: pageTokens.workspaceBackground.withValues(
+      alpha: Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42,
+    ),
     builder: (BuildContext dialogContext) {
+      final WebThemeTokens tokens = WebThemeTokens.of(dialogContext);
       return Dialog(
+        backgroundColor: tokens.surfaceElevated,
+        surfaceTintColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+          side: BorderSide(color: tokens.cardBorder),
+        ),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 760),
           child: SingleChildScrollView(
@@ -31,21 +42,30 @@ Future<void> showClienteAutoCadastroLinkDialog(
                       width: 46,
                       height: 46,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
+                        color: tokens.info.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Icon(Icons.link_outlined, color: Theme.of(context).colorScheme.primary),
+                      child: Icon(Icons.link_outlined, color: tokens.info),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Text('Auto cadastro', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+                          Text(
+                            'Auto cadastro',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleLarge?.copyWith(
+                              color: tokens.primaryText,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                           const SizedBox(height: 3),
                           Text(
                             'Gere e compartilhe o link público para o cliente completar os dados.',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: tokens.secondaryText),
                           ),
                         ],
                       ),
@@ -88,17 +108,23 @@ class ClienteAutoCadastroLinkSection extends StatefulWidget {
   final bool actionsOnly;
 
   @override
-  State<ClienteAutoCadastroLinkSection> createState() => _ClienteAutoCadastroLinkSectionState();
+  State<ClienteAutoCadastroLinkSection> createState() =>
+      _ClienteAutoCadastroLinkSectionState();
 }
 
-class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLinkSection> {
-  final AutoCustomerTokenService _autoCustomerTokenService = AutoCustomerTokenService();
+class _ClienteAutoCadastroLinkSectionState
+    extends State<ClienteAutoCadastroLinkSection> {
+  final AutoCustomerTokenService _autoCustomerTokenService =
+      AutoCustomerTokenService();
   final TextEditingController _empresaController = TextEditingController();
-  final TextEditingController _canalController = TextEditingController(text: 'WhatsApp');
+  final TextEditingController _canalController = TextEditingController(
+    text: 'WhatsApp',
+  );
   final TextEditingController _destinoController = TextEditingController();
   final TextEditingController _linkController = TextEditingController();
   final TextEditingController _mensagemController = TextEditingController(
-    text: 'Olá! Use este link para concluir seu auto-cadastro e liberar compras no crediário.',
+    text:
+        'Olá! Use este link para concluir seu auto-cadastro e liberar compras no crediário.',
   );
 
   bool _habilitado = true;
@@ -145,35 +171,37 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
   }
 
   InputDecoration _dec(String label, IconData icon, {String? hintText}) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return InputDecoration(
       labelText: label,
       hintText: hintText,
-      prefixIcon: Icon(icon, size: 20),
+      prefixIcon: Icon(icon, size: 20, color: tokens.info),
       filled: true,
-      fillColor: colorScheme.surface,
+      fillColor: tokens.inputBackground,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.18)),
+        borderSide: BorderSide(color: tokens.cardBorder),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
+        borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.error),
+        borderSide: BorderSide(color: tokens.danger),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.error, width: 1.4),
+        borderSide: BorderSide(color: tokens.danger, width: 1.4),
       ),
     );
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
   }
 
   Future<String?> _gerarLink({bool mostrarMensagem = true}) async {
@@ -185,17 +213,21 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
 
     setState(() => _loading = true);
     try {
-      final AutoCustomerTokenApiResponse response = await _autoCustomerTokenService.gerarToken(
-        idUnicoDaEmpresa: empresaId,
-        tipoPessoa: _tipoPessoa,
-        documento: widget.initialDocumento,
-        validadeMinutos: 1440,
-      );
+      final AutoCustomerTokenApiResponse response =
+          await _autoCustomerTokenService.gerarToken(
+            idUnicoDaEmpresa: empresaId,
+            tipoPessoa: _tipoPessoa,
+            documento: widget.initialDocumento,
+            validadeMinutos: 1440,
+          );
 
       if (!mounted) return null;
-      final String message = response.message.trim().isNotEmpty
-          ? response.message.trim()
-          : (response.isSuccess ? 'Token de auto-cadastro criado com sucesso.' : _fallbackErroGeracaoLink(response));
+      final String message =
+          response.message.trim().isNotEmpty
+              ? response.message.trim()
+              : (response.isSuccess
+                  ? 'Token de auto-cadastro criado com sucesso.'
+                  : _fallbackErroGeracaoLink(response));
 
       if (!response.isSuccess) {
         _showSnack(message);
@@ -204,7 +236,9 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
 
       await Clipboard.setData(ClipboardData(text: response.link));
       setState(() => _linkController.text = response.link);
-      if (mostrarMensagem) _showSnack('$message Link copiado para a área de transferência.');
+      if (mostrarMensagem) {
+        _showSnack('$message Link copiado para a área de transferência.');
+      }
       return response.link;
     } catch (error) {
       if (!mounted) return null;
@@ -230,21 +264,27 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
     if (link.isEmpty) link = (await _gerarLink(mostrarMensagem: false)) ?? '';
     if (link.isEmpty) return;
 
-    final String mensagem = _mensagemController.text.trim().isEmpty
-        ? 'Use este link para concluir seu auto-cadastro.'
-        : _mensagemController.text.trim();
+    final String mensagem =
+        _mensagemController.text.trim().isEmpty
+            ? 'Use este link para concluir seu auto-cadastro.'
+            : _mensagemController.text.trim();
     final String textoCompartilhamento = <String>[mensagem, link].join('\n\n');
-    await sharing.Share.share(textoCompartilhamento, subject: 'Auto-cadastro de cliente');
+    await sharing.Share.share(
+      textoCompartilhamento,
+      subject: 'Auto-cadastro de cliente',
+    );
   }
 
   Widget _switchTile() {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: _habilitado ? colorScheme.primary.withOpacity(0.05) : colorScheme.surface,
+        color: _habilitado ? tokens.selectedBackground : tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _habilitado ? colorScheme.primary.withOpacity(0.18) : colorScheme.outline.withOpacity(0.16)),
+        border: Border.all(
+          color: _habilitado ? tokens.selectedBorder : tokens.cardBorder,
+        ),
       ),
       child: Row(
         children: <Widget>[
@@ -252,19 +292,37 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const Text('Habilitar auto-cadastro', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.w800)),
+                Text(
+                  'Habilitar auto-cadastro',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   'Quando ativo, o cliente recebe um link para revisar e completar os dados.',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant, height: 1.25),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: tokens.secondaryText,
+                    height: 1.25,
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 12),
-          Switch.adaptive(value: _habilitado, onChanged: _loading ? null : (bool value) => setState(() => _habilitado = value)),
+          Switch.adaptive(
+            value: _habilitado,
+            onChanged:
+                _loading
+                    ? null
+                    : (bool value) => setState(() => _habilitado = value),
+          ),
         ],
       ),
     );
@@ -295,9 +353,14 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
         width: compact ? double.infinity : null,
         child: OutlinedButton.icon(
           onPressed: _loading ? null : () => _gerarLink(),
-          icon: _loading
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.auto_awesome_outlined),
+          icon:
+              _loading
+                  ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                  : const Icon(Icons.auto_awesome_outlined),
           label: Text(_loading ? 'Gerando...' : 'Gerar link'),
         ),
       ),
@@ -351,17 +414,29 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
             SizedBox(
               width: smallFieldWidth,
               child: DropdownButtonFormField<String>(
-                value: _tipoPessoa,
+                initialValue: _tipoPessoa,
                 isExpanded: true,
                 decoration: _dec('Tipo pessoa', Icons.apartment_outlined),
                 items: const <DropdownMenuItem<String>>[
                   DropdownMenuItem<String>(value: 'PF', child: Text('PF')),
                   DropdownMenuItem<String>(value: 'PJ', child: Text('PJ')),
                 ],
-                onChanged: !_habilitado || _loading ? null : (String? value) => setState(() => _tipoPessoa = value ?? 'PF'),
+                onChanged:
+                    !_habilitado || _loading
+                        ? null
+                        : (String? value) =>
+                            setState(() => _tipoPessoa = value ?? 'PF'),
               ),
             ),
-            SizedBox(width: smallFieldWidth, child: _field(_canalController, 'Canal de envio', Icons.alt_route_outlined, hintText: 'WhatsApp, E-mail, SMS')),
+            SizedBox(
+              width: smallFieldWidth,
+              child: _field(
+                _canalController,
+                'Canal de envio',
+                Icons.alt_route_outlined,
+                hintText: 'WhatsApp, E-mail, SMS',
+              ),
+            ),
             SizedBox(
               width: largeFieldWidth,
               child: _field(
@@ -375,9 +450,19 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
           ],
         ),
         const SizedBox(height: 16),
-        _field(_linkController, 'Link de auto-cadastro', Icons.link, readOnly: true),
+        _field(
+          _linkController,
+          'Link de auto-cadastro',
+          Icons.link,
+          readOnly: true,
+        ),
         const SizedBox(height: 16),
-        _field(_mensagemController, 'Mensagem de convite', Icons.message_outlined, maxLines: compact ? 4 : 3),
+        _field(
+          _mensagemController,
+          'Mensagem de convite',
+          Icons.message_outlined,
+          maxLines: compact ? 4 : 3,
+        ),
         const SizedBox(height: 16),
         Wrap(spacing: 12, runSpacing: 12, children: actions),
       ],
@@ -388,18 +473,19 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final bool actionsOnly = widget.actionsOnly || constraints.maxWidth < 560;
+        final bool actionsOnly =
+            widget.actionsOnly || constraints.maxWidth < 560;
         final Widget content = _buildContent(constraints);
         if (!widget.showAsCard) return content;
 
-        final ColorScheme colorScheme = Theme.of(context).colorScheme;
+        final WebThemeTokens tokens = WebThemeTokens.of(context);
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: colorScheme.surface,
+            color: tokens.cardBackground,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: colorScheme.outlineVariant),
+            border: Border.all(color: tokens.cardBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,17 +496,32 @@ class _ClienteAutoCadastroLinkSectionState extends State<ClienteAutoCadastroLink
                     Container(
                       width: 42,
                       height: 42,
-                      decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.10), borderRadius: BorderRadius.circular(14)),
-                      child: Icon(Icons.link_outlined, color: colorScheme.primary),
+                      decoration: BoxDecoration(
+                        color: tokens.info.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(Icons.link_outlined, color: tokens.info),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Text('Auto-cadastro por link', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+                          Text(
+                            'Auto-cadastro por link',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleMedium?.copyWith(
+                              color: tokens.primaryText,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                           const SizedBox(height: 4),
-                          Text('Gere, copie e envie o link para o cliente finalizar cadastro.', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+                          Text(
+                            'Gere, copie e envie o link para o cliente finalizar cadastro.',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: tokens.secondaryText),
+                          ),
                         ],
                       ),
                     ),

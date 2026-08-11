@@ -14,6 +14,7 @@ import 'package:sixpos/providers/usuario_provider.dart';
 import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
 
 import '../../providers/locale_settings_provider.dart';
+import '../theme/web_theme_tokens.dart';
 
 class AgendaFinanceiraWeb extends StatefulWidget {
   const AgendaFinanceiraWeb({super.key, this.embedded = false, this.onBack});
@@ -237,17 +238,22 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     widget.onBack?.call();
     await Future<void>.delayed(Duration.zero);
     if (!rootContext.mounted) return true;
+    final WebThemeTokens pageTokens = WebThemeTokens.of(rootContext);
     await showDialog<void>(
       context: rootContext,
+      barrierColor: pageTokens.workspaceBackground.withValues(alpha: 0.72),
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         final Size size = MediaQuery.of(dialogContext).size;
+        final WebThemeTokens tokens = WebThemeTokens.of(dialogContext);
         return _EscOverlayScope(
           child: Dialog(
             insetPadding: const EdgeInsets.symmetric(
               horizontal: 24,
               vertical: 24,
             ),
+            backgroundColor: tokens.surfaceElevated,
+            surfaceTintColor: Colors.transparent,
             clipBehavior: Clip.antiAlias,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(28),
@@ -915,8 +921,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         item['liquidacoes'] =
             confirmado['liquidacoes'] ?? <Map<String, dynamic>>[];
         if (_toDouble(confirmado['valorConfirmado']) > 0 &&
-            _toDouble(confirmado['valorRestante']) > 0)
+            _toDouble(confirmado['valorRestante']) > 0) {
           item['status'] = 'Parcial';
+        }
       }
     }
   }
@@ -951,8 +958,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     bool fallback = false;
     setState(() => _executandoAcao = true);
     try {
-      if (id.trim().isNotEmpty)
+      if (id.trim().isNotEmpty) {
         detalhe = await _service.buscarDetalheLancamento(id);
+      }
       if (detalhe.isEmpty) fallback = true;
     } catch (_) {
       fallback = true;
@@ -960,8 +968,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       if (mounted) setState(() => _executandoAcao = false);
     }
     if (!mounted) return;
+    final pageTokens = WebThemeTokens.of(context);
     final alterado = await showDialog<bool>(
       context: context,
+      barrierColor: pageTokens.workspaceBackground.withValues(alpha: 0.72),
       barrierDismissible: true,
       builder:
           (dialogContext) => _LancamentoDetalhesDialog(
@@ -987,6 +997,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     if (id.trim().isEmpty) return false;
     final confirmado = await showDialog<bool>(
       context: context,
+      barrierColor: WebThemeTokens.of(
+        context,
+      ).workspaceBackground.withValues(alpha: 0.72),
       barrierDismissible: false,
       builder:
           (dialogContext) => AlertDialog(
@@ -1004,7 +1017,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 icon: const Icon(Icons.delete_forever_outlined),
                 label: const Text('Excluir lançamento'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: Theme.of(dialogContext).colorScheme.error,
+                  backgroundColor: WebThemeTokens.of(dialogContext).danger,
                   foregroundColor: Theme.of(dialogContext).colorScheme.onError,
                 ),
               ),
@@ -1015,18 +1028,20 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     try {
       setState(() => _executandoAcao = true);
       await _service.excluirLancamento(id);
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Lançamento excluído com sucesso.')),
         );
+      }
       return true;
     } on AgendaFinanceiraLancamentoApiException catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Falha ao excluir lançamento (${e.statusCode}).'),
           ),
         );
+      }
       return false;
     } finally {
       if (mounted) setState(() => _executandoAcao = false);
@@ -1051,6 +1066,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
     final confirmado = await showDialog<bool>(
       context: context,
+      barrierColor: WebThemeTokens.of(
+        context,
+      ).workspaceBackground.withValues(alpha: 0.72),
       barrierDismissible: false,
       builder:
           (dialogContext) => AlertDialog(
@@ -1068,7 +1086,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 icon: const Icon(Icons.delete_outline_rounded),
                 label: const Text('Excluir parcial'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: Theme.of(dialogContext).colorScheme.error,
+                  backgroundColor: WebThemeTokens.of(dialogContext).danger,
                   foregroundColor: Theme.of(dialogContext).colorScheme.onError,
                 ),
               ),
@@ -1082,18 +1100,20 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         idLancamento: idLancamento,
         idLiquidacao: idLiquidacao,
       );
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Parcial excluída com sucesso.')),
         );
+      }
       return true;
     } on AgendaFinanceiraLancamentoApiException catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Falha ao excluir parcial (${e.statusCode}).'),
           ),
         );
+      }
       return false;
     } finally {
       if (mounted) setState(() => _executandoAcao = false);
@@ -1129,6 +1149,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     String? erroValor;
     final resultado = await showDialog<_ParcialLancamentoResultado>(
       context: context,
+      barrierColor: WebThemeTokens.of(
+        context,
+      ).workspaceBackground.withValues(alpha: 0.72),
       builder:
           (dialogContext) => StatefulBuilder(
             builder:
@@ -1284,6 +1307,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     String? erroForma;
     final codigoTipoRecebimento = await showDialog<String>(
       context: context,
+      barrierColor: WebThemeTokens.of(
+        context,
+      ).workspaceBackground.withValues(alpha: 0.72),
       builder:
           (dialogContext) => StatefulBuilder(
             builder:
@@ -1319,7 +1345,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                           Text(
                             erroForma!,
                             style: TextStyle(
-                              color: Theme.of(dialogContext).colorScheme.error,
+                              color: WebThemeTokens.of(dialogContext).danger,
                               fontWeight: FontWeight.w700,
                               fontSize: 12,
                             ),
@@ -1488,71 +1514,180 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     Navigator.of(context).maybePop();
   }
 
+  ThemeData _agendaWebTheme(ThemeData baseTheme) {
+    final ThemeData webTheme = WebThemeTokens.applyTo(baseTheme);
+    final WebThemeTokens tokens = WebThemeTokens.resolve(webTheme);
+    final OutlineInputBorder inputBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16),
+      borderSide: BorderSide(color: tokens.cardBorder),
+    );
+
+    return webTheme.copyWith(
+      scaffoldBackgroundColor: tokens.workspaceBackground,
+      textTheme: webTheme.textTheme.apply(
+        bodyColor: tokens.primaryText,
+        displayColor: tokens.primaryText,
+      ),
+      cardTheme: webTheme.cardTheme.copyWith(
+        color: tokens.cardBackground,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: tokens.cardBorder),
+        ),
+      ),
+      inputDecorationTheme: webTheme.inputDecorationTheme.copyWith(
+        filled: true,
+        fillColor: tokens.inputBackground,
+        hintStyle: TextStyle(color: tokens.mutedText),
+        labelStyle: TextStyle(color: tokens.secondaryText),
+        helperStyle: TextStyle(color: tokens.mutedText),
+        errorStyle: TextStyle(
+          color: tokens.danger,
+          fontWeight: FontWeight.w700,
+        ),
+        enabledBorder: inputBorder,
+        disabledBorder: inputBorder.copyWith(
+          borderSide: BorderSide(color: tokens.disabledBackground),
+        ),
+        focusedBorder: inputBorder.copyWith(
+          borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
+        ),
+        errorBorder: inputBorder.copyWith(
+          borderSide: BorderSide(color: tokens.danger),
+        ),
+        focusedErrorBorder: inputBorder.copyWith(
+          borderSide: BorderSide(color: tokens.danger, width: 1.4),
+        ),
+      ),
+      chipTheme: webTheme.chipTheme.copyWith(
+        backgroundColor: tokens.surfaceMuted,
+        selectedColor: tokens.selectedBackground,
+        secondarySelectedColor: tokens.selectedBackground,
+        disabledColor: tokens.disabledBackground,
+        labelStyle: TextStyle(
+          color: tokens.secondaryText,
+          fontWeight: FontWeight.w700,
+        ),
+        secondaryLabelStyle: TextStyle(
+          color: tokens.primaryText,
+          fontWeight: FontWeight.w800,
+        ),
+        side: BorderSide(color: tokens.cardBorder),
+      ),
+      dataTableTheme: webTheme.dataTableTheme.copyWith(
+        headingRowColor: WidgetStatePropertyAll<Color>(tokens.surfaceMuted),
+        dataRowColor: WidgetStateProperty.resolveWith<Color?>(
+          (Set<WidgetState> states) =>
+              states.contains(WidgetState.hovered)
+                  ? tokens.hoverBackground
+                  : tokens.cardBackground,
+        ),
+        headingTextStyle: TextStyle(
+          color: tokens.secondaryText,
+          fontWeight: FontWeight.w900,
+        ),
+        dataTextStyle: TextStyle(
+          color: tokens.primaryText,
+          fontWeight: FontWeight.w600,
+        ),
+        dividerThickness: 1,
+      ),
+      dialogTheme: webTheme.dialogTheme.copyWith(
+        backgroundColor: tokens.surfaceElevated,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      popupMenuTheme: webTheme.popupMenuTheme.copyWith(
+        color: tokens.menuBackground,
+        surfaceTintColor: Colors.transparent,
+        elevation: 10,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool podeFecharTela = widget.onBack != null || !widget.embedded;
     if (widget.embedded && widget.onBack != null && !_estaDentroDeDialog()) {
       return const SizedBox.shrink();
     }
-    final theme = Theme.of(context);
-    final Widget content = Focus(
-      autofocus: podeFecharTela,
-      child: RefreshIndicator(
-        onRefresh: () => _consultar(mostrarFeedback: true),
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: <Widget>[
-            _buildHeader(theme, showCloseButton: podeFecharTela),
-            const SizedBox(height: 14),
-            _buildFiltros(theme),
-            if (_carregando || _executandoAcao) ...const <Widget>[
-              SizedBox(height: 10),
-              LinearProgressIndicator(minHeight: 3),
-            ],
-            const SizedBox(height: 14),
-            _buildResumo(theme),
-            const SizedBox(height: 18),
-            _buildAbas(theme),
-            const SizedBox(height: 16),
-            _buildConteudoAba(theme),
-          ],
-        ),
-      ),
-    );
+    final ThemeData agendaTheme = _agendaWebTheme(Theme.of(context));
+    final WebThemeTokens tokens = WebThemeTokens.resolve(agendaTheme);
 
-    return Material(
-      color: theme.colorScheme.surface,
-      child: SafeArea(
-        child:
-            podeFecharTela
-                ? CallbackShortcuts(
-                  bindings: <ShortcutActivator, VoidCallback>{
-                    const SingleActivator(LogicalKeyboardKey.escape): _fechar,
-                  },
-                  child: content,
-                )
-                : content,
+    return Theme(
+      data: agendaTheme,
+      child: Builder(
+        builder: (BuildContext context) {
+          final theme = Theme.of(context);
+          final Widget content = Focus(
+            autofocus: podeFecharTela,
+            child: RefreshIndicator(
+              onRefresh: () => _consultar(mostrarFeedback: true),
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: <Widget>[
+                  _buildHeader(theme, showCloseButton: podeFecharTela),
+                  const SizedBox(height: 14),
+                  _buildFiltros(theme),
+                  if (_carregando || _executandoAcao) ...const <Widget>[
+                    SizedBox(height: 10),
+                    LinearProgressIndicator(minHeight: 3),
+                  ],
+                  const SizedBox(height: 14),
+                  _buildResumo(theme),
+                  const SizedBox(height: 18),
+                  _buildAbas(theme),
+                  const SizedBox(height: 16),
+                  _buildConteudoAba(theme),
+                ],
+              ),
+            ),
+          );
+
+          return Material(
+            color: tokens.workspaceBackground,
+            child: SafeArea(
+              child:
+                  podeFecharTela
+                      ? CallbackShortcuts(
+                        bindings: <ShortcutActivator, VoidCallback>{
+                          const SingleActivator(LogicalKeyboardKey.escape):
+                              _fechar,
+                        },
+                        child: content,
+                      )
+                      : content,
+            ),
+          );
+        },
       ),
     );
   }
 
   Widget _buildHeader(ThemeData theme, {required bool showCloseButton}) => Card(
-    elevation: 1,
     child: Padding(
       padding: const EdgeInsets.all(18),
       child: Row(
         children: <Widget>[
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(
-              Icons.account_balance_wallet_outlined,
-              color: theme.colorScheme.primary,
-            ),
+          Builder(
+            builder: (BuildContext context) {
+              final tokens = WebThemeTokens.of(context);
+              return Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: tokens.selectedBackground,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Icon(
+                  Icons.account_balance_wallet_outlined,
+                  color: tokens.info,
+                ),
+              );
+            },
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -1758,28 +1893,114 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
   }
 
+  Color _agendaTipoAccent(String? tipo) {
+    final tokens = WebThemeTokens.of(context);
+    return tipo == 'pagar'
+        ? tokens.financialNegative
+        : tokens.financialPositive;
+  }
+
+  Color _agendaStatusAccent(String? status) {
+    final tokens = WebThemeTokens.of(context);
+    switch ((status ?? '').trim().toUpperCase()) {
+      case 'VENCIDO':
+        return tokens.danger;
+      case 'VENCE HOJE':
+      case 'VENCE_HOJE':
+      case 'PARCIAL':
+        return tokens.warning;
+      case 'PAGO':
+      case 'RECEBIDO':
+      case 'QUITADO':
+        return tokens.success;
+      case 'CANCELADO':
+      case 'CANCELADA':
+        return tokens.statusNeutral;
+      case 'PREVISTO':
+        return tokens.info;
+      case 'PENDENTE':
+      case 'ABERTO':
+      default:
+        return tokens.statusNeutral;
+    }
+  }
+
+  Widget _agendaPill(String label, Color accent, {IconData? icon}) {
+    final tokens = WebThemeTokens.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: Color.alphaBlend(
+          accent.withValues(alpha: 0.10),
+          tokens.cardBackground,
+        ),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: accent.withValues(alpha: 0.30)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (icon != null) ...<Widget>[
+            Icon(icon, size: 15, color: accent),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: accent,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _resumoCard(ThemeData theme, Map<String, dynamic> card) {
+    final tokens = WebThemeTokens.of(context);
     final valor = _toDouble(card['valor']);
+    final titulo = card['titulo'] as String;
+    final Color accent =
+        titulo.contains('receber') || titulo.contains('Recebido')
+            ? tokens.financialPositive
+            : titulo.contains('pagar') || titulo.contains('Pago')
+            ? tokens.financialNegative
+            : tokens.info;
     return Card(
-      elevation: 1,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: <Widget>[
-            Icon(card['icone'] as IconData, color: theme.colorScheme.primary),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Color.alphaBlend(
+                  accent.withValues(alpha: 0.10),
+                  tokens.cardBackground,
+                ),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(card['icone'] as IconData, color: accent, size: 20),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    card['titulo'] as String,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    titulo,
+                    style: TextStyle(
+                      color: tokens.secondaryText,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _formatarMoeda(valor),
                     style: theme.textTheme.titleMedium?.copyWith(
+                      color: tokens.primaryText,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -1813,13 +2034,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Widget _buildAgenda(ThemeData theme) {
     final itens = _itensAgenda;
-    if (itens.isEmpty)
+    if (itens.isEmpty) {
       return const Card(
         child: Padding(
           padding: EdgeInsets.all(24),
           child: Text('Nenhum lançamento encontrado.'),
         ),
       );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: itens.map((item) => _cardLancamento(theme, item)).toList(),
@@ -1828,12 +2050,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Widget _cardLancamento(ThemeData theme, Map<String, dynamic> item) {
     final tipoEntrada = item['tipo'] == 'receber';
+    final tokens = WebThemeTokens.of(context);
+    final Color tipoAccent = _agendaTipoAccent(item['tipo']?.toString());
+    final Color statusAccent = _agendaStatusAccent(item['status']?.toString());
     final acoes = List<String>.from(
       (item['acoes'] as List?)?.map((e) => e.toString()) ?? const <String>[],
     );
     if (!acoes.contains('Detalhes')) acoes.add('Detalhes');
     return Card(
-      elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -1847,20 +2071,35 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 spacing: 8,
                 runSpacing: 8,
                 children: <Widget>[
-                  Chip(label: Text(tipoEntrada ? 'Receber' : 'Pagar')),
-                  Chip(label: Text(item['status']?.toString() ?? '-')),
-                  Chip(label: Text(item['formaPagamento']?.toString() ?? '-')),
+                  _agendaPill(
+                    tipoEntrada ? 'Receber' : 'Pagar',
+                    tipoAccent,
+                    icon:
+                        tipoEntrada
+                            ? Icons.south_west_rounded
+                            : Icons.north_east_rounded,
+                  ),
+                  _agendaPill(
+                    item['status']?.toString() ?? '-',
+                    statusAccent,
+                    icon: Icons.flag_outlined,
+                  ),
+                  _agendaPill(
+                    item['formaPagamento']?.toString() ?? '-',
+                    tokens.info,
+                    icon: Icons.payments_outlined,
+                  ),
                   if (_toDouble(item['valorConfirmado']) > 0)
-                    Chip(
-                      label: Text(
-                        'Confirmado: ${_formatarMoeda(_toDouble(item['valorConfirmado']))}',
-                      ),
+                    _agendaPill(
+                      'Confirmado: ${_formatarMoeda(_toDouble(item['valorConfirmado']))}',
+                      tokens.success,
+                      icon: Icons.verified_outlined,
                     ),
                   if (_toDouble(item['valorRestante']) > 0)
-                    Chip(
-                      label: Text(
-                        'Aberto: ${_formatarMoeda(_toDouble(item['valorRestante']))}',
-                      ),
+                    _agendaPill(
+                      'Aberto: ${_formatarMoeda(_toDouble(item['valorRestante']))}',
+                      statusAccent,
+                      icon: Icons.account_balance_wallet_outlined,
                     ),
                 ],
               ),
@@ -1868,15 +2107,22 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
               Text(
                 item['descricao']?.toString() ?? '',
                 style: theme.textTheme.titleMedium?.copyWith(
+                  color: tokens.primaryText,
                   fontWeight: FontWeight.w900,
                 ),
               ),
               const SizedBox(height: 6),
-              Text('${item['contato']} • Vence em ${item['vencimento']}'),
+              Text(
+                '${item['contato']} • Vence em ${item['vencimento']}',
+                style: TextStyle(color: tokens.secondaryText),
+              ),
               const SizedBox(height: 8),
               Text(
                 'Original: ${_formatarMoeda(_toDouble(item['valorOriginal']))}',
-                style: const TextStyle(fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  color: tokens.primaryText,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -1911,37 +2157,49 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Widget _buildValoresConfirmados(ThemeData theme) {
     final itens = _itensConfirmadosFiltrados;
-    if (itens.isEmpty)
+    if (itens.isEmpty) {
       return const Card(
         child: Padding(
           padding: EdgeInsets.all(24),
           child: Text('Nenhum valor confirmado no período.'),
         ),
       );
+    }
     return Column(
       children:
-          itens
-              .map(
-                (item) => Card(
-                  child: ListTile(
-                    onTap: () => _mostrarDetalhesLancamento(item),
-                    leading: Icon(
-                      item['tipo'] == 'receber'
-                          ? Icons.south_west_rounded
-                          : Icons.north_east_rounded,
-                    ),
-                    title: Text(item['descricao']?.toString() ?? ''),
-                    subtitle: Text(
-                      '${item['contato']} • ${item['data']} • ${item['formaPagamento']} • Restante: ${_formatarMoeda(_toDouble(item['valorRestante']))}',
-                    ),
-                    trailing: Text(
-                      _formatarMoeda(_toDouble(item['valorConfirmado'])),
-                      style: const TextStyle(fontWeight: FontWeight.w900),
-                    ),
+          itens.map((item) {
+            final tokens = WebThemeTokens.of(context);
+            final accent = _agendaTipoAccent(item['tipo']?.toString());
+            return Card(
+              child: ListTile(
+                onTap: () => _mostrarDetalhesLancamento(item),
+                leading: Icon(
+                  item['tipo'] == 'receber'
+                      ? Icons.south_west_rounded
+                      : Icons.north_east_rounded,
+                  color: accent,
+                ),
+                title: Text(
+                  item['descricao']?.toString() ?? '',
+                  style: TextStyle(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-              )
-              .toList(),
+                subtitle: Text(
+                  '${item['contato']} • ${item['data']} • ${item['formaPagamento']} • Restante: ${_formatarMoeda(_toDouble(item['valorRestante']))}',
+                  style: TextStyle(color: tokens.secondaryText),
+                ),
+                trailing: Text(
+                  _formatarMoeda(_toDouble(item['valorConfirmado'])),
+                  style: TextStyle(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
     );
   }
 
@@ -1951,13 +2209,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         b['vencimento']?.toString() ?? '',
       ),
     );
-    if (itens.isEmpty)
+    if (itens.isEmpty) {
       return const Card(
         child: Padding(
           padding: EdgeInsets.all(24),
           child: Text('Nenhum lançamento encontrado no calendário.'),
         ),
       );
+    }
     return Card(
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -2098,12 +2357,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       final descricaoConfigurada =
           _descricaoPorBackendFormaPagamento[codigoConfigurado];
       if (descricaoConfigurada != null &&
-          descricaoConfigurada.trim().isNotEmpty)
+          descricaoConfigurada.trim().isNotEmpty) {
         return descricaoConfigurada;
+      }
     }
     final configurada = _descricaoPorBackendFormaPagamento[backend];
-    if (configurada != null && configurada.trim().isNotEmpty)
+    if (configurada != null && configurada.trim().isNotEmpty) {
       return configurada;
+    }
     return _descricaoPorBackendFormaPagamento[backend] ??
         (formaPagamento?.toString().trim().isNotEmpty == true
             ? formaPagamento!
@@ -2134,8 +2395,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   String? _codigoTipoRecebimentoItem(Map<String, dynamic> item) {
     final codigo =
         item['codigoTipoRecebimento']?.toString().trim().toLowerCase();
-    if (codigo != null && RegExp(r'^tipo(10|[1-9])$').hasMatch(codigo))
+    if (codigo != null && RegExp(r'^tipo(10|[1-9])$').hasMatch(codigo)) {
       return codigo;
+    }
     return _codigoTipoPorBackendFormaPagamento(
       item['formaPagamento']?.toString() ?? '',
     );
@@ -2165,9 +2427,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     if (text.contains('/')) return text;
     return _formatarDataIsoParaBr(text);
   }
-
-  String _formatarDataHora(DateTime data) =>
-      '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year} ${data.hour.toString().padLeft(2, '0')}:${data.minute.toString().padLeft(2, '0')}';
 
   double _toDouble(dynamic value) {
     if (value is num) return value.toDouble();
@@ -2236,7 +2495,7 @@ class _AgendaFilterDropdownState extends State<_AgendaFilterDropdown> {
     final RenderBox overlay =
         Overlay.of(context).context.findRenderObject()! as RenderBox;
     final Offset position = box.localToGlobal(Offset.zero, ancestor: overlay);
-    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final String safeValue = _safeValue;
 
     final String? selected = await showMenu<String>(
@@ -2252,7 +2511,7 @@ class _AgendaFilterDropdownState extends State<_AgendaFilterDropdown> {
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       elevation: 12,
-      color: theme.colorScheme.surface,
+      color: tokens.menuBackground,
       constraints: BoxConstraints.tightFor(width: box.size.width),
       items:
           widget.values
@@ -2267,7 +2526,6 @@ class _AgendaFilterDropdownState extends State<_AgendaFilterDropdown> {
                   child: _AgendaFilterMenuItem(
                     label: item,
                     selected: item == safeValue,
-                    colorScheme: theme.colorScheme,
                   ),
                 ),
               )
@@ -2329,7 +2587,7 @@ class _AgendaMultiSelectDropdownState
     final RenderBox overlay =
         Overlay.of(context).context.findRenderObject()! as RenderBox;
     final Offset position = box.localToGlobal(Offset.zero, ancestor: overlay);
-    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
 
     final Set<String>? selected = await showMenu<Set<String>>(
       context: context,
@@ -2344,7 +2602,7 @@ class _AgendaMultiSelectDropdownState
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       elevation: 12,
-      color: theme.colorScheme.surface,
+      color: tokens.menuBackground,
       constraints: BoxConstraints(
         minWidth: box.size.width,
         maxWidth: box.size.width < 320 ? 320 : box.size.width,
@@ -2354,7 +2612,6 @@ class _AgendaMultiSelectDropdownState
           label: widget.label,
           values: widget.values,
           selectedValues: widget.selectedValues,
-          colorScheme: theme.colorScheme,
         ),
       ],
     );
@@ -2384,13 +2641,11 @@ class _AgendaMultiSelectMenuEntry extends PopupMenuEntry<Set<String>> {
     required this.label,
     required this.values,
     required this.selectedValues,
-    required this.colorScheme,
   });
 
   final String label;
   final List<String> values;
   final Set<String> selectedValues;
-  final ColorScheme colorScheme;
 
   @override
   double get height {
@@ -2435,6 +2690,7 @@ class _AgendaMultiSelectMenuEntryState
 
   @override
   Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return SizedBox(
       height: widget.height,
       child: Padding(
@@ -2445,11 +2701,7 @@ class _AgendaMultiSelectMenuEntryState
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(
-                  Icons.payments_outlined,
-                  color: widget.colorScheme.primary,
-                  size: 18,
-                ),
+                Icon(Icons.payments_outlined, color: tokens.info, size: 18),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -2457,7 +2709,7 @@ class _AgendaMultiSelectMenuEntryState
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: widget.colorScheme.onSurface,
+                      color: tokens.primaryText,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -2465,7 +2717,7 @@ class _AgendaMultiSelectMenuEntryState
                 Text(
                   _selection.isEmpty ? 'Todos' : '${_selection.length}',
                   style: TextStyle(
-                    color: widget.colorScheme.primary,
+                    color: tokens.info,
                     fontWeight: FontWeight.w800,
                     fontSize: 12,
                   ),
@@ -2480,7 +2732,6 @@ class _AgendaMultiSelectMenuEntryState
                     _AgendaMultiSelectMenuTile(
                       label: 'Todos',
                       selected: _selection.isEmpty,
-                      colorScheme: widget.colorScheme,
                       onTap: () => setState(_selection.clear),
                     ),
                     const SizedBox(height: 4),
@@ -2488,7 +2739,6 @@ class _AgendaMultiSelectMenuEntryState
                       (value) => _AgendaMultiSelectMenuTile(
                         label: value,
                         selected: _selection.contains(value),
-                        colorScheme: widget.colorScheme,
                         onTap: () => _toggle(value),
                       ),
                     ),
@@ -2530,17 +2780,16 @@ class _AgendaMultiSelectMenuTile extends StatelessWidget {
   const _AgendaMultiSelectMenuTile({
     required this.label,
     required this.selected,
-    required this.colorScheme,
     required this.onTap,
   });
 
   final String label;
   final bool selected;
-  final ColorScheme colorScheme;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Semantics(
       button: true,
       selected: selected,
@@ -2553,10 +2802,7 @@ class _AgendaMultiSelectMenuTile extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
             decoration: BoxDecoration(
-              color:
-                  selected
-                      ? colorScheme.primary.withValues(alpha: 0.08)
-                      : Colors.transparent,
+              color: selected ? tokens.selectedBackground : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -2565,10 +2811,7 @@ class _AgendaMultiSelectMenuTile extends StatelessWidget {
                   selected
                       ? Icons.check_box_rounded
                       : Icons.check_box_outline_blank_rounded,
-                  color:
-                      selected
-                          ? colorScheme.primary
-                          : colorScheme.onSurfaceVariant,
+                  color: selected ? tokens.info : tokens.mutedText,
                   size: 18,
                 ),
                 const SizedBox(width: 10),
@@ -2578,7 +2821,7 @@ class _AgendaMultiSelectMenuTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: colorScheme.onSurface,
+                      color: tokens.primaryText,
                       fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                     ),
                   ),
@@ -2619,17 +2862,13 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool enabled = widget.onTap != null;
     final bool active = enabled && (widget.open || _hover);
     final Color borderColor =
-        active
-            ? colorScheme.primary.withValues(alpha: 0.42)
-            : colorScheme.outline.withValues(alpha: 0.36);
+        active ? tokens.selectedBorder : tokens.cardBorder;
     final Color backgroundColor =
-        active
-            ? colorScheme.primary.withValues(alpha: 0.05)
-            : colorScheme.surface;
+        active ? tokens.selectedBackground : tokens.inputBackground;
     final Widget content = Semantics(
       button: true,
       enabled: enabled,
@@ -2663,9 +2902,7 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
                       active
                           ? <BoxShadow>[
                             BoxShadow(
-                              color: colorScheme.primary.withValues(
-                                alpha: 0.10,
-                              ),
+                              color: tokens.info.withValues(alpha: 0.10),
                               blurRadius: 18,
                               offset: const Offset(0, 8),
                             ),
@@ -2674,7 +2911,7 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
                 ),
                 child: Row(
                   children: <Widget>[
-                    Icon(widget.icon, size: 18, color: colorScheme.primary),
+                    Icon(widget.icon, size: 18, color: tokens.info),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -2686,7 +2923,7 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
+                              color: tokens.secondaryText,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -2696,7 +2933,7 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurface,
+                              color: tokens.primaryText,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -2710,10 +2947,7 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
                       curve: Curves.easeOutCubic,
                       child: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color:
-                            active
-                                ? colorScheme.primary
-                                : colorScheme.onSurfaceVariant,
+                        color: active ? tokens.info : tokens.mutedText,
                         size: 20,
                       ),
                     ),
@@ -2732,36 +2966,26 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
 }
 
 class _AgendaFilterMenuItem extends StatelessWidget {
-  const _AgendaFilterMenuItem({
-    required this.label,
-    required this.selected,
-    required this.colorScheme,
-  });
+  const _AgendaFilterMenuItem({required this.label, required this.selected});
 
   final String label;
   final bool selected;
-  final ColorScheme colorScheme;
 
   @override
   Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
-        color:
-            selected
-                ? colorScheme.primary.withValues(alpha: 0.08)
-                : Colors.transparent,
+        color: selected ? tokens.selectedBackground : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: <Widget>[
           Icon(
             selected ? Icons.check_circle_rounded : Icons.arrow_right_rounded,
-            color:
-                selected
-                    ? colorScheme.primary
-                    : colorScheme.primary.withValues(alpha: 0.78),
+            color: selected ? tokens.info : tokens.mutedText,
             size: 18,
           ),
           const SizedBox(width: 10),
@@ -2771,7 +2995,7 @@ class _AgendaFilterMenuItem extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: colorScheme.onSurface,
+                color: tokens.primaryText,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
@@ -2836,6 +3060,7 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     final contato = _mapa(detalhe['contato']);
     final origem = _mapa(detalhe['origem']);
     final categoria = _mapa(detalhe['categoria']);
@@ -2856,11 +3081,14 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     final valorAberto = _numero(detalhe['valorAberto'], item['valorRestante']);
     final descricao = _texto(detalhe['descricao'], item['descricao']);
     final stamp = _stampData(
+      tokens,
       _texto(detalhe['status'], item['status']),
       valorAberto,
     );
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 28),
+      backgroundColor: tokens.surfaceElevated,
+      surfaceTintColor: Colors.transparent,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 980, maxHeight: 760),
         child: Column(
@@ -2869,7 +3097,8 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
+                color: tokens.surfaceMuted,
+                border: Border(bottom: BorderSide(color: tokens.cardBorder)),
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(28),
                 ),
@@ -2882,16 +3111,13 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                       children: <Widget>[
                         const Text(
                           'Detalhes do lançamento',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 6),
                         Text(
                           descricao,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: tokens.primaryText,
                             fontSize: 24,
                             fontWeight: FontWeight.w900,
                           ),
@@ -2902,16 +3128,17 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                   TextButton.icon(
                     onPressed: () async {
                       final excluido = await onExcluirLancamento();
-                      if (excluido && context.mounted)
+                      if (excluido && context.mounted) {
                         Navigator.of(context).pop(true);
+                      }
                     },
                     icon: const Icon(Icons.delete_forever_outlined),
                     label: const Text('Excluir lançamento'),
-                    style: TextButton.styleFrom(foregroundColor: Colors.white),
+                    style: TextButton.styleFrom(foregroundColor: tokens.danger),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(false),
-                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    icon: Icon(Icons.close_rounded, color: tokens.mutedText),
                     tooltip: 'Fechar',
                   ),
                 ],
@@ -3156,17 +3383,24 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     );
   }
 
-  _DetalheStatusStampData? _stampData(String status, double valorAberto) {
+  _DetalheStatusStampData? _stampData(
+    WebThemeTokens tokens,
+    String status,
+    double valorAberto,
+  ) {
     final normalized = status.trim().toUpperCase().replaceAll(' ', '_');
     if (normalized == 'PAGO' ||
         normalized == 'RECEBIDO' ||
         valorAberto <= 0 &&
-            (normalized == 'FINALIZADA' || normalized == 'FINALIZADO'))
-      return const _DetalheStatusStampData('PAGO', Color(0xFF16A34A));
-    if (normalized == 'PARCIAL')
-      return const _DetalheStatusStampData('PARCIAL', Color(0xFFF59E0B));
-    if (normalized == 'CANCELADO' || normalized == 'CANCELADA')
-      return const _DetalheStatusStampData('CANCELADO', Color(0xFFDC2626));
+            (normalized == 'FINALIZADA' || normalized == 'FINALIZADO')) {
+      return _DetalheStatusStampData('PAGO', tokens.success);
+    }
+    if (normalized == 'PARCIAL') {
+      return _DetalheStatusStampData('PARCIAL', tokens.warning);
+    }
+    if (normalized == 'CANCELADO' || normalized == 'CANCELADA') {
+      return _DetalheStatusStampData('CANCELADO', tokens.statusNeutral);
+    }
     return null;
   }
 
@@ -3178,12 +3412,12 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
           decoration: BoxDecoration(
-            color: stamp.color.withOpacity(0.055),
+            color: stamp.color.withValues(alpha: 0.055),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: stamp.color, width: 3),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: stamp.color.withOpacity(0.10),
+                color: stamp.color.withValues(alpha: 0.10),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -3207,8 +3441,9 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 14),
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: theme.colorScheme.secondaryContainer.withOpacity(0.60),
+      color: WebThemeTokens.resolve(theme).surfaceMuted,
       borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: WebThemeTokens.resolve(theme).cardBorder),
     ),
     child: const Text(
       'Não foi possível carregar o detalhe completo do backend. Exibindo os dados disponíveis na agenda filtrada.',
@@ -3218,7 +3453,8 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
 
   Widget _chip(ThemeData theme, String label) => Chip(
     label: Text(label),
-    backgroundColor: theme.colorScheme.primary.withOpacity(0.08),
+    backgroundColor: WebThemeTokens.resolve(theme).selectedBackground,
+    side: BorderSide(color: WebThemeTokens.resolve(theme).selectedBorder),
   );
 
   Widget _valorCard(
@@ -3229,13 +3465,13 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
   ) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.42),
+      color: WebThemeTokens.resolve(theme).surfaceMuted,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: theme.colorScheme.outline.withOpacity(0.10)),
+      border: Border.all(color: WebThemeTokens.resolve(theme).cardBorder),
     ),
     child: Row(
       children: <Widget>[
-        Icon(icon, color: theme.colorScheme.primary),
+        Icon(icon, color: WebThemeTokens.resolve(theme).info),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -3267,16 +3503,16 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 14),
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: theme.colorScheme.surface,
+      color: WebThemeTokens.resolve(theme).cardBackground,
       borderRadius: BorderRadius.circular(22),
-      border: Border.all(color: theme.colorScheme.outline.withOpacity(0.12)),
+      border: Border.all(color: WebThemeTokens.resolve(theme).cardBorder),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Row(
           children: <Widget>[
-            Icon(icon, color: theme.colorScheme.primary, size: 20),
+            Icon(icon, color: WebThemeTokens.resolve(theme).info, size: 20),
             const SizedBox(width: 8),
             Text(
               title,
@@ -3314,13 +3550,15 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     Map<String, dynamic> liquidacao,
   ) {
     final idLiquidacao = liquidacao['id']?.toString() ?? '';
+    final tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.35),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3357,14 +3595,13 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                 TextButton.icon(
                   onPressed: () async {
                     final excluiu = await onExcluirLiquidacao(liquidacao);
-                    if (excluiu && context.mounted)
+                    if (excluiu && context.mounted) {
                       Navigator.of(context).pop(true);
+                    }
                   },
                   icon: const Icon(Icons.delete_outline_rounded, size: 18),
                   label: const Text('Excluir parcial'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: theme.colorScheme.error,
-                  ),
+                  style: TextButton.styleFrom(foregroundColor: tokens.danger),
                 ),
             ],
           ),
