@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:sixpos/presentation/components/dashboard_inicio_web.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_panel.dart';
 import 'package:sixpos/presentation/layouts/authenticated_web_shell.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_destination_mapper.dart';
@@ -71,10 +70,6 @@ part 'presentation/screens/pdv_web.dart';
 // Fallback local enquanto o TopNavigationBarWeb ainda existe:
 // true usa AuthenticatedWebShell + Sidebar; false restaura o menu superior antigo.
 const bool _useWebShellNavigation = true;
-
-// Fallback local da Home durante validação interna:
-// true usa "Meu dia no SixApp"; false restaura DashboardInicioWeb.
-const bool _useWorkspaceHome = true;
 
 class PaginaPrincipalWeb extends StatefulWidget {
   const PaginaPrincipalWeb({super.key});
@@ -1253,18 +1248,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       _moduloRetornoOperacoesCaixa = null;
       _moduloAtual = modulo;
     });
-  }
-
-  void _acionarDestinoNavegacaoWeb(WebNavigationDestination destination) {
-    final WebNavigationResolutionResult result = _webNavigationResolver.resolve(
-      destination,
-    );
-
-    assert(
-      result.handled,
-      'Destino de navegacao Web nao resolvido: '
-      '${destination.name}. ${result.reason ?? result.status.name}',
-    );
   }
 
   void _abrirOperacoesCaixa({
@@ -2867,26 +2850,11 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
           return Padding(
             padding: padding,
-            child:
-                _useWorkspaceHome
-                    ? WorkspaceHomeWeb(
-                      compact: compact,
-                      resolver: _webNavigationResolver,
-                      onNovoAtendimentoTecnico: _abrirNovoAtendimentoTecnico,
-                    )
-                    : DashboardInicioWeb(
-                      compact: compact,
-                      onIniciarVenda: () {
-                        _acionarDestinoNavegacaoWeb(
-                          WebNavigationDestination.operationsPointOfSale,
-                        );
-                      },
-                      onAbrirAtendimentoTecnico: () {
-                        _acionarDestinoNavegacaoWeb(
-                          WebNavigationDestination.operationsTechnicalServices,
-                        );
-                      },
-                    ),
+            child: WorkspaceHomeWeb(
+              compact: compact,
+              resolver: _webNavigationResolver,
+              onNovoAtendimentoTecnico: _abrirNovoAtendimentoTecnico,
+            ),
           );
         },
       ),
