@@ -10,6 +10,7 @@ import '../../data/services/aparencia/aparencia_api_client.dart';
 import '../../domain/models/aparencia_models.dart';
 import '../../domain/services/aparencia/aparencia_service.dart';
 import '../../design_system/helpers/six_theme_resolver.dart';
+import '../theme/web_theme_tokens.dart';
 
 class ConfiguracoesSixWebPage extends StatefulWidget {
   final bool embedded;
@@ -41,6 +42,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   SecaoConfiguracaoSix _secaoAtual = SecaoConfiguracaoSix.geral;
   bool _mostrarResumoLateral = true;
   bool _possuiAlteracoesNaoSalvas = false;
+  final ScrollController _conteudoScrollController = ScrollController();
+  final GlobalKey _conteudoSecaoKey = GlobalKey();
+  bool _ultimoLayoutEmpilhado = false;
   // ignore: unused_field — estado de loading da aparência (ainda não exibido na UI)
   bool _carregandoAparencia = false;
   late final AparenciaService _aparenciaService;
@@ -225,6 +229,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     _mensagemProntoRetiradaController.dispose();
     _rodapeDocumentoController.dispose();
     _termosCondicoesController.dispose();
+    _conteudoScrollController.dispose();
     super.dispose();
   }
 
@@ -238,6 +243,36 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         _possuiAlteracoesNaoSalvas = true;
       });
     }
+  }
+
+  void _selecionarSecao(SecaoConfiguracaoSix secao) {
+    setState(() {
+      _secaoAtual = secao;
+    });
+    _garantirConteudoSelecionadoVisivel();
+  }
+
+  void _garantirConteudoSelecionadoVisivel() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_ultimoLayoutEmpilhado) return;
+      final BuildContext? sectionContext = _conteudoSecaoKey.currentContext;
+      if (sectionContext == null) return;
+
+      Scrollable.ensureVisible(
+        sectionContext,
+        alignment: 0.02,
+        duration: WebThemeTokens.transitionDuration,
+        curve: WebThemeTokens.transitionCurve,
+      );
+    });
+  }
+
+  void _selecionarTemaVisual(String tema) {
+    setState(() {
+      _temaSelecionado = tema;
+    });
+    _aplicarAparenciaPreview();
+    _marcarAlteracao();
   }
 
   void _aplicarAparenciaPreview() {
@@ -322,21 +357,23 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       });
 
       if (mounted) {
+        final tokens = WebThemeTokens.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Configurações salvas com sucesso.'),
+          SnackBar(
+            content: const Text('Configurações salvas com sucesso.'),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.green,
+            backgroundColor: tokens.success,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
+        final tokens = WebThemeTokens.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro ao salvar configurações: $e'),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.red,
+            backgroundColor: tokens.danger,
           ),
         );
       }
@@ -348,12 +385,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   }
 
   void _restaurarPadraoDaSecao() {
+    final tokens = WebThemeTokens.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           'Os valores padrão da seção "${_tituloSecao(_secaoAtual)}" foram restaurados (mock).',
         ),
         behavior: SnackBarBehavior.floating,
+        backgroundColor: tokens.info,
       ),
     );
   }
@@ -402,6 +441,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
   Widget _buildResumoSidebarHeader() {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(4, 2, 4, 12),
@@ -412,7 +452,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               'Configs',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w900,
-                color: theme.colorScheme.primary,
+                color: tokens.primaryText,
               ),
             ),
           ),
@@ -429,14 +469,11 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
+                  color: tokens.surfaceMuted,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                  border: Border.all(color: tokens.cardBorder),
                 ),
-                child: Icon(
-                  Icons.chevron_left_rounded,
-                  color: theme.colorScheme.primary,
-                ),
+                child: Icon(Icons.chevron_left_rounded, color: tokens.info),
               ),
             ),
           ),
@@ -447,6 +484,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
   Widget _buildResumoSidebar({double width = 330}) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
 
     final itens = [
       {
@@ -490,8 +528,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       width: width,
       padding: const EdgeInsets.fromLTRB(4, 14, 4, 14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -501,14 +540,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary.withOpacity(0.08),
-                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.70),
-                ],
-              ),
+              color: tokens.surfaceMuted,
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
+              border: Border.all(color: tokens.cardBorder),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -517,14 +551,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                   'Painel inteligente',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: theme.colorScheme.primary,
+                    color: tokens.primaryText,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Visualize rapidamente os principais parâmetros operacionais e de branding antes de salvar.',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                     height: 1.35,
                   ),
                 ),
@@ -559,13 +593,15 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     required String value,
   }) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
 
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
+    return AnimatedContainer(
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(22),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
@@ -576,10 +612,10 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.10),
+                color: tokens.surfaceMuted,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(icon, color: theme.colorScheme.primary),
+              child: Icon(icon, color: tokens.info),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -589,7 +625,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                   Text(
                     title,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: tokens.secondaryText,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -598,7 +634,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     value,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: theme.colorScheme.onSurface,
+                      color: tokens.primaryText,
                       height: 1.25,
                     ),
                   ),
@@ -613,13 +649,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
   Widget _buildPreviewBrandingCard() {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        color: theme.colorScheme.surface,
+        border: Border.all(color: tokens.cardBorder),
+        color: tokens.cardBackground,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -628,7 +665,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             'Preview visual',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
-              color: theme.colorScheme.primary,
+              color: tokens.primaryText,
             ),
           ),
           const SizedBox(height: 14),
@@ -637,12 +674,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
-              gradient: LinearGradient(
-                colors: [
-                  _corPrimaria.withOpacity(0.16),
-                  _corSecundaria.withOpacity(0.10),
-                ],
-              ),
+              color: tokens.surfaceMuted,
+              border: Border.all(color: tokens.cardBorder),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -661,7 +694,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                   'Tema $_temaSelecionado • Moeda ${_moedaSelecionada.split(' - ').first} • Idioma ${_idiomaSelecionado.split(' ').first}',
                   style: TextStyle(
                     fontSize: 13,
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -685,11 +718,16 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   }
 
   Widget _buildColorBadge(Color color, String label) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.16),
+        color: Color.alphaBlend(
+          color.withValues(alpha: 0.16),
+          tokens.surfaceMuted,
+        ),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -703,14 +741,20 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             ),
           ),
           const SizedBox(width: 8),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: tokens.primaryText,
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildResumoSidebarCollapsed() {
-    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
 
     return Padding(
       padding: const EdgeInsets.only(top: 14, right: 12),
@@ -727,12 +771,12 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             width: 72,
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
+              color: tokens.surface,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
+              border: Border.all(color: tokens.cardBorder),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 6),
                 ),
@@ -740,10 +784,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             ),
             child: Column(
               children: [
-                Icon(
-                  Icons.dashboard_customize_outlined,
-                  color: theme.colorScheme.primary,
-                ),
+                Icon(Icons.dashboard_customize_outlined, color: tokens.info),
                 const SizedBox(height: 10),
                 RotatedBox(
                   quarterTurns: 3,
@@ -751,15 +792,12 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     'Resumo',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
-                      color: theme.colorScheme.primary,
+                      color: tokens.primaryText,
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: theme.colorScheme.primary,
-                ),
+                Icon(Icons.chevron_right_rounded, color: tokens.info),
               ],
             ),
           ),
@@ -770,6 +808,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
   Widget _buildMenuLateralSecoes() {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
 
     final itens = [
       (
@@ -817,9 +856,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -828,7 +867,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             'Seções',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w900,
-              color: theme.colorScheme.primary,
+              color: tokens.primaryText,
             ),
           ),
           const SizedBox(height: 14),
@@ -840,12 +879,11 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               child: InkWell(
                 borderRadius: BorderRadius.circular(18),
                 onTap: () {
-                  setState(() {
-                    _secaoAtual = item.secao;
-                  });
+                  _selecionarSecao(item.secao);
                 },
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
+                  duration: WebThemeTokens.transitionDuration,
+                  curve: WebThemeTokens.transitionCurve,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 14,
@@ -853,14 +891,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                   decoration: BoxDecoration(
                     color:
                         selecionado
-                            ? theme.colorScheme.primary.withOpacity(0.10)
-                            : theme.colorScheme.surface,
+                            ? tokens.selectedBackground
+                            : tokens.cardBackground,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
                       color:
                           selecionado
-                              ? theme.colorScheme.primary.withOpacity(0.25)
-                              : theme.colorScheme.outlineVariant,
+                              ? tokens.selectedBorder
+                              : tokens.cardBorder,
                     ),
                   ),
                   child: Row(
@@ -871,13 +909,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                         decoration: BoxDecoration(
                           color:
                               selecionado
-                                  ? theme.colorScheme.primary.withOpacity(0.12)
-                                  : theme.colorScheme.surfaceContainerHighest,
+                                  ? tokens.surfaceElevated
+                                  : tokens.surfaceMuted,
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Icon(
                           item.icone,
-                          color: theme.colorScheme.primary,
+                          color:
+                              selecionado ? tokens.info : tokens.secondaryText,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -888,14 +927,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                             fontWeight: FontWeight.w800,
                             color:
                                 selecionado
-                                    ? theme.colorScheme.primary
-                                    : theme.colorScheme.onSurface,
+                                    ? tokens.primaryText
+                                    : tokens.secondaryText,
                           ),
                         ),
                       ),
                       Icon(
                         Icons.chevron_right_rounded,
-                        color: theme.colorScheme.primary,
+                        color: selecionado ? tokens.info : tokens.mutedText,
                       ),
                     ],
                   ),
@@ -914,14 +953,15 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     required IconData icone,
   }) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -930,10 +970,10 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             width: 62,
             height: 62,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.10),
+              color: tokens.surfaceMuted,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Icon(icone, size: 30, color: theme.colorScheme.primary),
+            child: Icon(icone, size: 30, color: tokens.info),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -944,7 +984,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                   titulo,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w900,
-                    color: theme.colorScheme.primary,
+                    color: tokens.primaryText,
                     height: 1.1,
                   ),
                 ),
@@ -952,7 +992,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 Text(
                   descricao,
                   style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                     height: 1.45,
                     fontWeight: FontWeight.w500,
                   ),
@@ -972,17 +1012,18 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     Widget? trailing,
   }) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1001,14 +1042,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                       title,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
-                        color: theme.colorScheme.onSurface,
+                        color: tokens.primaryText,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       subtitle,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: tokens.secondaryText,
                         height: 1.4,
                       ),
                     ),
@@ -1032,6 +1073,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     int maxLines = 1,
     TextInputType? keyboardType,
   }) {
+    final tokens = WebThemeTokens.of(context);
     return TextField(
       controller: controller,
       maxLines: maxLines,
@@ -1043,6 +1085,18 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
+        filled: true,
+        fillColor: tokens.inputBackground,
+        labelStyle: TextStyle(color: tokens.secondaryText),
+        hintStyle: TextStyle(color: tokens.mutedText),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: tokens.cardBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
+        ),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
       ),
     );
@@ -1054,16 +1108,30 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     required List<String> items,
     required ValueChanged<String?> onChanged,
   }) {
+    final tokens = WebThemeTokens.of(context);
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       onChanged: (novo) {
         onChanged(novo);
         _marcarAlteracao();
       },
       decoration: InputDecoration(
         labelText: label,
+        filled: true,
+        fillColor: tokens.inputBackground,
+        labelStyle: TextStyle(color: tokens.secondaryText),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: tokens.cardBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
+        ),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
       ),
+      dropdownColor: tokens.menuBackground,
+      style: TextStyle(color: tokens.primaryText, fontWeight: FontWeight.w700),
       items:
           items
               .map(
@@ -1081,13 +1149,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     required ValueChanged<bool> onChanged,
   }) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1100,14 +1169,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                   title,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: theme.colorScheme.onSurface,
+                    color: tokens.primaryText,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   subtitle,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                     height: 1.35,
                   ),
                 ),
@@ -1117,6 +1186,10 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           const SizedBox(width: 16),
           Switch(
             value: value,
+            activeThumbColor: tokens.success,
+            activeTrackColor: tokens.success.withValues(alpha: 0.28),
+            inactiveThumbColor: tokens.disabledForeground,
+            inactiveTrackColor: tokens.disabledBackground,
             onChanged: (novo) {
               onChanged(novo);
               _marcarAlteracao();
@@ -1132,6 +1205,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     required Color color,
     required ValueChanged<Color> onColorSelected,
   }) {
+    final tokens = WebThemeTokens.of(context);
     final opcoes = [
       const Color(0xFF1F3C88),
       const Color(0xFF5E81F4),
@@ -1147,19 +1221,26 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        color: tokens.surfaceMuted,
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              color: tokens.primaryText,
+            ),
+          ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 10,
             runSpacing: 10,
             children:
                 opcoes.map((opcao) {
-                  final selecionado = opcao.value == color.value;
+                  final selecionado = opcao.toARGB32() == color.toARGB32();
                   return InkWell(
                     borderRadius: BorderRadius.circular(999),
                     onTap: () {
@@ -1174,7 +1255,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(
                           color:
-                              selecionado ? Colors.black : Colors.transparent,
+                              selecionado
+                                  ? tokens.selectedBorder
+                                  : tokens.cardBorder,
                           width: 3,
                         ),
                       ),
@@ -1195,29 +1278,24 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   }
 
   Widget _buildStatusChip(String label) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.18),
-        ),
+        color: tokens.selectedBackground,
+        border: Border.all(color: tokens.selectedBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.drag_indicator_rounded,
-            size: 16,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          Icon(Icons.drag_indicator_rounded, size: 16, color: tokens.info),
           const SizedBox(width: 8),
           Text(
             label,
             style: TextStyle(
               fontWeight: FontWeight.w700,
-              color: Theme.of(context).colorScheme.primary,
+              color: tokens.primaryText,
             ),
           ),
         ],
@@ -1226,6 +1304,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   }
 
   Widget _buildShortcutChip(String label) {
+    final tokens = WebThemeTokens.of(context);
     return Chip(
       label: Text(label),
       avatar: const Icon(Icons.flash_on_rounded, size: 18),
@@ -1235,12 +1314,177 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         });
         _marcarAlteracao();
       },
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      backgroundColor: tokens.surfaceMuted,
+      labelStyle: TextStyle(
+        color: tokens.primaryText,
+        fontWeight: FontWeight.w700,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(999),
+        side: BorderSide(color: tokens.cardBorder),
+      ),
+    );
+  }
+
+  Widget _buildThemeOptionCard({
+    required String label,
+    required String description,
+    required IconData icon,
+  }) {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+    final bool selected = _temaSelecionado == label;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'Tema $label',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: () => _selecionarTemaVisual(label),
+          child: AnimatedContainer(
+            duration: WebThemeTokens.transitionDuration,
+            curve: WebThemeTokens.transitionCurve,
+            width: 300,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: selected ? tokens.selectedBackground : tokens.surfaceMuted,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: selected ? tokens.selectedBorder : tokens.cardBorder,
+                width: selected ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color:
+                        selected
+                            ? tokens.surfaceElevated
+                            : tokens.inputBackground,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color:
+                          selected ? tokens.selectedBorder : tokens.cardBorder,
+                    ),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: selected ? tokens.info : tokens.mutedText,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                color: tokens.primaryText,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          AnimatedSwitcher(
+                            duration: WebThemeTokens.transitionDuration,
+                            child:
+                                selected
+                                    ? Icon(
+                                      Icons.check_circle_rounded,
+                                      key: const ValueKey('selected'),
+                                      color: tokens.info,
+                                      size: 20,
+                                    )
+                                    : Icon(
+                                      Icons.radio_button_unchecked_rounded,
+                                      key: const ValueKey('not-selected'),
+                                      color: tokens.mutedText,
+                                      size: 20,
+                                    ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        description,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: tokens.secondaryText,
+                          height: 1.35,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (selected) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: tokens.surfaceElevated,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: tokens.selectedBorder),
+                          ),
+                          child: Text(
+                            'Selecionado',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: tokens.primaryText,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeOptions() {
+    return Wrap(
+      spacing: 16,
+      runSpacing: 16,
+      children: [
+        _buildThemeOptionCard(
+          label: 'Claro',
+          description: 'Superfícies claras para ambientes com muita luz.',
+          icon: Icons.light_mode_rounded,
+        ),
+        _buildThemeOptionCard(
+          label: 'Escuro',
+          description: 'Base fria e confortável para operação prolongada.',
+          icon: Icons.dark_mode_rounded,
+        ),
+        _buildThemeOptionCard(
+          label: 'Automático',
+          description: 'Segue a preferência do sistema quando disponível.',
+          icon: Icons.brightness_auto_rounded,
+        ),
+      ],
     );
   }
 
   Widget _buildFloatingActions() {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
 
     Widget secondaryAction({
       required IconData icon,
@@ -1258,21 +1502,18 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface.withOpacity(0.55),
+                color: tokens.surfaceElevated,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.35),
-                  width: 1,
-                ),
+                border: Border.all(color: tokens.cardBorder, width: 1),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.10),
+                    color: Colors.black.withValues(alpha: 0.10),
                     blurRadius: 12,
                     offset: const Offset(0, 6),
                   ),
                 ],
               ),
-              child: Icon(icon, color: theme.colorScheme.primary, size: 22),
+              child: Icon(icon, color: tokens.info, size: 22),
             ),
           ),
         ),
@@ -1286,12 +1527,12 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.18),
+            color: tokens.surface.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: Colors.white.withOpacity(0.30), width: 1),
+            border: Border.all(color: tokens.cardBorder, width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.12),
+                color: Colors.black.withValues(alpha: 0.12),
                 blurRadius: 24,
                 offset: const Offset(0, 10),
               ),
@@ -1323,12 +1564,18 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     height: 56,
                     padding: const EdgeInsets.symmetric(horizontal: 18),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.92),
+                      color: theme.colorScheme.primary,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.18)),
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withValues(
+                          alpha: 0.42,
+                        ),
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.colorScheme.primary.withOpacity(0.28),
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.28,
+                          ),
                           blurRadius: 18,
                           offset: const Offset(0, 8),
                         ),
@@ -1385,6 +1632,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   }
 
   Widget _buildSecaoGeral() {
+    final tokens = WebThemeTokens.of(context);
+
     return Column(
       children: [
         _buildSectionHeader(
@@ -1401,13 +1650,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
+              color: tokens.selectedBackground,
+              border: Border.all(color: tokens.selectedBorder),
             ),
             child: Text(
               'Obrigatório',
               style: TextStyle(
                 fontWeight: FontWeight.w800,
-                color: Theme.of(context).colorScheme.primary,
+                color: tokens.primaryText,
               ),
             ),
           ),
@@ -1776,39 +2026,31 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           title: 'Tema e densidade visual',
           subtitle:
               'Ajuste a experiência visual do operador para diferentes perfis de uso e ambientes.',
-          child: Wrap(
-            spacing: 16,
-            runSpacing: 16,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                width: 320,
-                child: _buildDropdownField(
-                  label: 'Tema do sistema',
-                  value: _temaSelecionado,
-                  items: const ['Claro', 'Escuro', 'Automático'],
-                  onChanged: (valor) {
-                    setState(() {
-                      _temaSelecionado = valor!;
-                    });
-                    _aplicarAparenciaPreview();
-                    _marcarAlteracao();
-                  },
-                ),
-              ),
-              SizedBox(
-                width: 320,
-                child: _buildDropdownField(
-                  label: 'Densidade visual',
-                  value: _densidadeSelecionada,
-                  items: const ['Confortável', 'Compacta', 'Expandida'],
-                  onChanged: (valor) {
-                    setState(() {
-                      _densidadeSelecionada = valor!;
-                    });
-                    _aplicarAparenciaPreview();
-                    _marcarAlteracao();
-                  },
-                ),
+              _buildThemeOptions(),
+              const SizedBox(height: 20),
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  SizedBox(
+                    width: 320,
+                    child: _buildDropdownField(
+                      label: 'Densidade visual',
+                      value: _densidadeSelecionada,
+                      items: const ['Confortável', 'Compacta', 'Expandida'],
+                      onChanged: (valor) {
+                        setState(() {
+                          _densidadeSelecionada = valor!;
+                        });
+                        _aplicarAparenciaPreview();
+                        _marcarAlteracao();
+                      },
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -2227,6 +2469,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   }
 
   Widget _buildSecaoOperacao() {
+    final tokens = WebThemeTokens.of(context);
+
     return Column(
       children: [
         _buildSectionHeader(
@@ -2337,9 +2581,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                  ),
+                  color: tokens.surfaceMuted,
+                  border: Border.all(color: tokens.cardBorder),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -2348,13 +2591,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                       'Política de desconto',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
+                        color: tokens.primaryText,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Defina se o operador pode conceder descontos e qual limite padrão.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        color: tokens.secondaryText,
                         height: 1.4,
                       ),
                     ),
@@ -2702,16 +2946,22 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
   Widget _buildConteudoPrincipal() {
     return SingleChildScrollView(
+      controller: _conteudoScrollController,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final bool layoutEmpilhado = constraints.maxWidth < 1180;
+          _ultimoLayoutEmpilhado = layoutEmpilhado;
+          final Widget conteudoSecao = KeyedSubtree(
+            key: _conteudoSecaoKey,
+            child: _buildConteudoSecao(),
+          );
 
           if (layoutEmpilhado) {
             return Column(
               children: [
                 _buildMenuLateralSecoes(),
                 const SizedBox(height: 20),
-                _buildConteudoSecao(),
+                conteudoSecao,
               ],
             );
           }
@@ -2721,7 +2971,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             children: [
               SizedBox(width: 300, child: _buildMenuLateralSecoes()),
               const SizedBox(width: 20),
-              Expanded(child: _buildConteudoSecao()),
+              Expanded(child: conteudoSecao),
             ],
           );
         },
@@ -2731,10 +2981,13 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     final bodyContent = LayoutBuilder(
       builder: (context, constraints) {
         final bool compactShell =
             widget.embedded && constraints.maxWidth < 1160;
+        final bool hideResumoLateral = constraints.maxWidth < 1040;
         final double outerPadding = compactShell ? 12 : 16;
         final double sideGap = compactShell ? 14 : 20;
         final double cardPadding = compactShell ? 14 : 18;
@@ -2745,17 +2998,19 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (_mostrarResumoLateral) ...[
+              if (_mostrarResumoLateral && !hideResumoLateral) ...[
                 _buildResumoSidebar(width: resumoWidth),
                 SizedBox(width: sideGap),
-              ] else ...[
+              ] else if (!hideResumoLateral) ...[
                 _buildResumoSidebarCollapsed(),
               ],
               Expanded(
                 child: Card(
-                  elevation: 6,
+                  elevation: 0,
+                  color: tokens.surface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
+                    side: BorderSide(color: tokens.cardBorder),
                   ),
                   child: Padding(
                     padding: EdgeInsets.all(cardPadding),
@@ -2772,22 +3027,35 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     final bool compactActions =
         widget.embedded && MediaQuery.of(context).size.width < 1280;
 
-    final contentWithFab = Stack(
-      children: [
-        Positioned.fill(child: bodyContent),
-        Positioned(
-          right: compactActions ? 24 : 36,
-          bottom: compactActions ? 24 : 36,
-          child: _buildFloatingActions(),
-        ),
-      ],
+    final contentWithFab = AnimatedContainer(
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      color: tokens.workspaceBackground,
+      child: Stack(
+        children: [
+          Positioned.fill(child: bodyContent),
+          Positioned(
+            right: compactActions ? 24 : 36,
+            bottom: compactActions ? 24 : 36,
+            child: _buildFloatingActions(),
+          ),
+        ],
+      ),
+    );
+
+    final themedContent = Theme(
+      data: WebThemeTokens.applyTo(theme),
+      child: contentWithFab,
     );
 
     if (widget.embedded) {
-      return contentWithFab;
+      return themedContent;
     }
 
-    return Scaffold(body: SafeArea(child: contentWithFab));
+    return Scaffold(
+      backgroundColor: tokens.workspaceBackground,
+      body: SafeArea(child: themedContent),
+    );
   }
 
   Locale _mapIdiomaSelecionadoParaLocale(String idioma) {
@@ -2842,7 +3110,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         SnackBar(
           content: Text('Erro ao carregar idioma: $e'),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red,
+          backgroundColor: WebThemeTokens.of(context).danger,
         ),
       );
     } finally {
