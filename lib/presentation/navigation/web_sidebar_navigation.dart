@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
 import 'web_navigation_item.dart';
 import 'web_navigation_registry.dart';
@@ -29,16 +30,19 @@ class WebSidebarNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final List<WebNavigationItem> mainItems = _mainNavigationItems(items);
     final WebNavigationItem? settingsItem = _settingsNavigationItem(items);
 
     return Material(
-      color: colorScheme.surface,
-      child: Container(
+      color: tokens.sidebarBackground,
+      child: AnimatedContainer(
+        key: const Key('web-sidebar-container'),
+        duration: WebThemeTokens.transitionDuration,
+        curve: WebThemeTokens.transitionCurve,
         decoration: BoxDecoration(
-          border: Border(right: BorderSide(color: colorScheme.outlineVariant)),
+          color: tokens.sidebarBackground,
+          border: Border(right: BorderSide(color: tokens.sidebarBorder)),
         ),
         child: SafeArea(
           child: Column(
@@ -105,7 +109,7 @@ class _SidebarFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final WebNavigationItem? item = settingsItem;
 
     return Padding(
@@ -115,7 +119,7 @@ class _SidebarFooter extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Divider(height: 14, color: colorScheme.outlineVariant),
+          Divider(height: 14, color: tokens.divider),
           if (item != null) ...<Widget>[
             _SidebarItem(
               item: item,
@@ -143,6 +147,11 @@ class _SidebarBrand extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color brandBackground = Color.alphaBlend(
+      colorScheme.primary.withValues(alpha: 0.10),
+      tokens.surfaceMuted,
+    );
 
     return SizedBox(
       height: 62,
@@ -157,16 +166,17 @@ class _SidebarBrand extends StatelessWidget {
               height: 40,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
+                color: brandBackground,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: colorScheme.primary.withValues(alpha: 0.16),
-                ),
+                border: Border.all(color: tokens.selectedBorder),
               ),
               child: Text(
                 'S',
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color: colorScheme.onPrimaryContainer,
+                  color:
+                      colorScheme.brightness == Brightness.dark
+                          ? tokens.info
+                          : colorScheme.primary,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -179,7 +189,7 @@ class _SidebarBrand extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: colorScheme.onSurface,
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -332,11 +342,13 @@ class _CollapsedSidebarItem extends StatelessWidget {
     final RenderObject? overlayObject =
         Navigator.of(context).overlay?.context.findRenderObject();
     if (overlayObject is! RenderBox) return;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
 
     final Offset offset = renderObject.localToGlobal(Offset.zero);
     final Size size = renderObject.size;
     final WebNavigationItem? selected = await showMenu<WebNavigationItem>(
       context: context,
+      color: tokens.menuBackground,
       position: RelativeRect.fromRect(
         Rect.fromLTWH(offset.dx + size.width + 6, offset.dy, 1, size.height),
         Offset.zero & overlayObject.size,
@@ -381,32 +393,35 @@ class _SidebarTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool highlighted = active || groupActive;
-    final Color foreground =
-        highlighted ? colorScheme.primary : colorScheme.onSurfaceVariant;
+    final Color accent =
+        colorScheme.brightness == Brightness.dark
+            ? tokens.info
+            : colorScheme.primary;
+    final Color foreground = highlighted ? accent : tokens.secondaryText;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
+        overlayColor: _sidebarOverlayColor(tokens),
         onTap: onTap,
         child: AnimatedContainer(
+          key: ValueKey<String>('web-sidebar-tile-$label'),
           duration: const Duration(milliseconds: 160),
           height: 42,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             color:
                 active
-                    ? colorScheme.primary.withValues(alpha: 0.10)
+                    ? tokens.selectedBackground
                     : groupActive
-                    ? colorScheme.primary.withValues(alpha: 0.06)
+                    ? tokens.hoverBackground
                     : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color:
-                  active
-                      ? colorScheme.primary.withValues(alpha: 0.28)
-                      : Colors.transparent,
+              color: active ? tokens.selectedBorder : Colors.transparent,
             ),
           ),
           child: Row(
@@ -416,7 +431,7 @@ class _SidebarTile extends StatelessWidget {
                 width: 3,
                 height: active ? 24 : 0,
                 decoration: BoxDecoration(
-                  color: colorScheme.primary,
+                  color: accent,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
@@ -430,9 +445,7 @@ class _SidebarTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelLarge?.copyWith(
                     color:
-                        highlighted
-                            ? colorScheme.onSurface
-                            : colorScheme.onSurfaceVariant,
+                        highlighted ? tokens.primaryText : tokens.secondaryText,
                     fontWeight: highlighted ? FontWeight.w800 : FontWeight.w700,
                   ),
                 ),
@@ -493,27 +506,29 @@ class _SidebarIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent =
+        colorScheme.brightness == Brightness.dark
+            ? tokens.info
+            : colorScheme.primary;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
+        overlayColor: _sidebarOverlayColor(tokens),
         onTap: onTap,
         child: AnimatedContainer(
+          key: ValueKey<String>('web-sidebar-icon-${icon.codePoint}'),
           duration: const Duration(milliseconds: 160),
           height: 46,
           decoration: BoxDecoration(
-            color:
-                active
-                    ? colorScheme.primary.withValues(alpha: 0.10)
-                    : Colors.transparent,
+            color: active ? tokens.selectedBackground : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color:
-                  active
-                      ? colorScheme.primary.withValues(alpha: 0.26)
-                      : Colors.transparent,
+              color: active ? tokens.selectedBorder : Colors.transparent,
             ),
           ),
           child: Stack(
@@ -522,8 +537,7 @@ class _SidebarIconButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 21,
-                color:
-                    active ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                color: active ? accent : tokens.secondaryText,
               ),
               Positioned(
                 left: 4,
@@ -532,7 +546,7 @@ class _SidebarIconButton extends StatelessWidget {
                   width: 3,
                   height: active ? 24 : 0,
                   decoration: BoxDecoration(
-                    color: colorScheme.primary,
+                    color: accent,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -555,13 +569,18 @@ class _CollapsedChildMenuEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent =
+        colorScheme.brightness == Brightness.dark
+            ? tokens.info
+            : colorScheme.primary;
 
     return Row(
       children: <Widget>[
         Icon(
           item.icon,
           size: 18,
-          color: active ? colorScheme.primary : colorScheme.onSurfaceVariant,
+          color: active ? accent : tokens.secondaryText,
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -570,7 +589,7 @@ class _CollapsedChildMenuEntry extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.labelLarge?.copyWith(
-              color: active ? colorScheme.primary : colorScheme.onSurface,
+              color: active ? accent : tokens.primaryText,
               fontWeight: active ? FontWeight.w800 : FontWeight.w600,
             ),
           ),
@@ -589,7 +608,7 @@ class _SidebarVersionPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final String label = _navigationText(
       context,
       'web.shell.version',
@@ -609,9 +628,9 @@ class _SidebarVersionPill extends StatelessWidget {
           ),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.46),
+            color: tokens.surfaceMuted,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colorScheme.outlineVariant),
+            border: Border.all(color: tokens.cardBorder),
           ),
           child:
               expanded
@@ -620,14 +639,14 @@ class _SidebarVersionPill extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                      color: tokens.mutedText,
                       fontWeight: FontWeight.w800,
                     ),
                   )
                   : Icon(
                     Icons.info_outline_rounded,
                     size: 18,
-                    color: colorScheme.onSurfaceVariant,
+                    color: tokens.mutedText,
                   ),
         ),
       ),
@@ -671,4 +690,17 @@ bool _containsActiveDestination(
     (WebNavigationItem child) =>
         _containsActiveDestination(child, activeDestination),
   );
+}
+
+WidgetStateProperty<Color?> _sidebarOverlayColor(WebThemeTokens tokens) {
+  return WidgetStateProperty.resolveWith((Set<WidgetState> states) {
+    if (states.contains(WidgetState.pressed)) {
+      return tokens.selectedBackground;
+    }
+    if (states.contains(WidgetState.hovered) ||
+        states.contains(WidgetState.focused)) {
+      return tokens.hoverBackground;
+    }
+    return null;
+  });
 }

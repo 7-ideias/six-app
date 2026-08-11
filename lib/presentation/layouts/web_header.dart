@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
 class WebHeader extends StatelessWidget {
   const WebHeader({
@@ -22,14 +23,17 @@ class WebHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
 
-    return Container(
+    return AnimatedContainer(
+      key: const Key('web-header-container'),
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
       height: height,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
+        color: tokens.headerBackground,
+        border: Border(bottom: BorderSide(color: tokens.headerBorder)),
       ),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
@@ -38,6 +42,12 @@ class WebHeader extends StatelessWidget {
           return Row(
             children: <Widget>[
               IconButton(
+                style: IconButton.styleFrom(
+                  foregroundColor: tokens.secondaryText,
+                  hoverColor: tokens.hoverBackground,
+                  focusColor: tokens.hoverBackground,
+                  highlightColor: tokens.selectedBackground,
+                ),
                 tooltip: _headerText(
                   context,
                   sidebarExpanded
@@ -63,7 +73,7 @@ class WebHeader extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: colorScheme.onSurface,
+                        color: tokens.primaryText,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -109,7 +119,7 @@ class _CommerceContextPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final String commerceName = currentCommerceName?.trim() ?? '';
     final String value =
         commerceName.isEmpty
@@ -124,9 +134,9 @@ class _CommerceContextPill extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 260),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -134,7 +144,7 @@ class _CommerceContextPill extends StatelessWidget {
           Icon(
             Icons.storefront_outlined,
             size: 16,
-            color: colorScheme.onSurfaceVariant,
+            color: tokens.secondaryText,
           ),
           const SizedBox(width: 8),
           Flexible(
@@ -151,7 +161,7 @@ class _CommerceContextPill extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                    color: tokens.mutedText,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -160,7 +170,7 @@ class _CommerceContextPill extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelMedium?.copyWith(
-                    color: colorScheme.onSurface,
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w800,
                   ),
                 ),

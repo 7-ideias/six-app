@@ -8,6 +8,7 @@ import 'package:sixpos/presentation/navigation/web_navigation_destination_resolv
 import 'package:sixpos/presentation/navigation/web_navigation_item.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_registry.dart';
 import 'package:sixpos/presentation/navigation/web_sidebar_navigation.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
 void main() {
   group('AuthenticatedWebShell', () {
@@ -228,6 +229,139 @@ void main() {
       }
     });
 
+    testWidgets('aplica tokens Web no Shell, Header e Sidebar', (
+      WidgetTester tester,
+    ) async {
+      for (final ThemeMode themeMode in <ThemeMode>[
+        ThemeMode.light,
+        ThemeMode.dark,
+      ]) {
+        final ThemeData theme =
+            themeMode == ThemeMode.dark
+                ? ThemeData.dark(useMaterial3: true)
+                : ThemeData.light(useMaterial3: true);
+        final WebThemeTokens tokens = WebThemeTokens.resolve(theme);
+        final _RecordingActions actions = _RecordingActions();
+
+        await _pumpShell(tester, actions: actions, themeMode: themeMode);
+
+        expect(
+          _animatedContainerColor(tester, const Key('web-shell-workspace')),
+          tokens.workspaceBackground,
+        );
+        expect(
+          _animatedContainerColor(tester, const Key('web-sidebar-container')),
+          tokens.sidebarBackground,
+        );
+        expect(
+          _animatedContainerColor(tester, const Key('web-header-container')),
+          tokens.headerBackground,
+        );
+      }
+    });
+
+    testWidgets('usa tokens no item selecionado da Sidebar expandida', (
+      WidgetTester tester,
+    ) async {
+      final _RecordingActions actions = _RecordingActions();
+      final WebThemeTokens tokens = WebThemeTokens.resolve(
+        ThemeData.dark(useMaterial3: true),
+      );
+
+      await _pumpShell(
+        tester,
+        actions: actions,
+        themeMode: ThemeMode.dark,
+        activeDestination: WebNavigationDestination.catalogProducts,
+      );
+
+      final AnimatedContainer selectedTile = tester.widget(
+        find.byKey(const ValueKey<String>('web-sidebar-tile-Produtos')),
+      );
+      final BoxDecoration decoration =
+          selectedTile.decoration! as BoxDecoration;
+
+      expect(decoration.color, tokens.selectedBackground);
+      expect(decoration.border, isNotNull);
+    });
+
+    testWidgets('usa tokens no item selecionado da Sidebar recolhida', (
+      WidgetTester tester,
+    ) async {
+      final _RecordingActions actions = _RecordingActions();
+      final WebThemeTokens tokens = WebThemeTokens.resolve(
+        ThemeData.dark(useMaterial3: true),
+      );
+
+      await _pumpShell(
+        tester,
+        actions: actions,
+        themeMode: ThemeMode.dark,
+        size: const Size(920, 768),
+        activeDestination: WebNavigationDestination.catalogProducts,
+      );
+
+      final WebSidebarNavigation sidebar = tester.widget(
+        find.byType(WebSidebarNavigation),
+      );
+      final AnimatedContainer selectedIcon = tester.widget(
+        find.byKey(
+          ValueKey<String>(
+            'web-sidebar-icon-${Icons.inventory_2_outlined.codePoint}',
+          ),
+        ),
+      );
+      final BoxDecoration decoration =
+          selectedIcon.decoration! as BoxDecoration;
+
+      expect(sidebar.expanded, isFalse);
+      expect(decoration.color, tokens.selectedBackground);
+    });
+
+    testWidgets('preserva grupo aberto, recolhimento e child ao trocar tema', (
+      WidgetTester tester,
+    ) async {
+      int childMounts = 0;
+
+      await tester.binding.setSurfaceSize(const Size(1366, 768));
+      addTearDown(() async {
+        await tester.binding.setSurfaceSize(null);
+      });
+
+      await tester.pumpWidget(
+        _ThemeSwitchingShellTestApp(onChildMounted: () => childMounts++),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Catálogo'));
+      await tester.pumpAndSettle();
+      expect(find.text('Produtos'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('toggle-theme')));
+      await tester.pumpAndSettle();
+      expect(find.text('Produtos'), findsOneWidget);
+      expect(childMounts, 1);
+
+      await tester.tap(find.byIcon(Icons.menu_open_rounded));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<WebSidebarNavigation>(find.byType(WebSidebarNavigation))
+            .expanded,
+        isFalse,
+      );
+
+      await tester.tap(find.byKey(const Key('toggle-theme')));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<WebSidebarNavigation>(find.byType(WebSidebarNavigation))
+            .expanded,
+        isFalse,
+      );
+      expect(childMounts, 1);
+    });
+
     testWidgets('possui traducoes locais da navegacao em pt, en e es', (
       WidgetTester tester,
     ) async {
@@ -396,6 +530,13 @@ Finder _headerTitle(String text) {
   return find.descendant(of: find.byType(WebHeader), matching: find.text(text));
 }
 
+Color? _animatedContainerColor(WidgetTester tester, Key key) {
+  final AnimatedContainer container = tester.widget(find.byKey(key));
+  final Decoration? decoration = container.decoration;
+  expect(decoration, isA<BoxDecoration>());
+  return (decoration! as BoxDecoration).color;
+}
+
 class _InteractiveShellTestApp extends StatefulWidget {
   const _InteractiveShellTestApp();
 
@@ -441,6 +582,89 @@ class _InteractiveShellTestAppState extends State<_InteractiveShellTestApp> {
         ),
       ),
     );
+  }
+}
+
+class _ThemeSwitchingShellTestApp extends StatefulWidget {
+  const _ThemeSwitchingShellTestApp({required this.onChildMounted});
+
+  final VoidCallback onChildMounted;
+
+  @override
+  State<_ThemeSwitchingShellTestApp> createState() =>
+      _ThemeSwitchingShellTestAppState();
+}
+
+class _ThemeSwitchingShellTestAppState
+    extends State<_ThemeSwitchingShellTestApp> {
+  ThemeMode _themeMode = ThemeMode.light;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      theme: ThemeData.light(useMaterial3: true),
+      darkTheme: ThemeData.dark(useMaterial3: true),
+      themeMode: _themeMode,
+      locale: const Locale('pt'),
+      localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: const <Locale>[
+        Locale('pt'),
+        Locale('en'),
+        Locale('es'),
+      ],
+      home: Scaffold(
+        body: AuthenticatedWebShell(
+          navigationItems: WebNavigationRegistry.activeItems,
+          resolver: WebNavigationDestinationResolver(
+            actions: _RecordingActions(),
+          ),
+          activeDestination: WebNavigationDestination.home,
+          appVersion: 'test',
+          currentCommerceName: 'Comércio Teste',
+          headerActions: <Widget>[
+            IconButton(
+              key: const Key('toggle-theme'),
+              onPressed: () {
+                setState(() {
+                  _themeMode =
+                      _themeMode == ThemeMode.light
+                          ? ThemeMode.dark
+                          : ThemeMode.light;
+                });
+              },
+              icon: const Icon(Icons.dark_mode_outlined),
+            ),
+          ],
+          child: _MountCounterChild(onMounted: widget.onChildMounted),
+        ),
+      ),
+    );
+  }
+}
+
+class _MountCounterChild extends StatefulWidget {
+  const _MountCounterChild({required this.onMounted});
+
+  final VoidCallback onMounted;
+
+  @override
+  State<_MountCounterChild> createState() => _MountCounterChildState();
+}
+
+class _MountCounterChildState extends State<_MountCounterChild> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onMounted();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox.expand(key: Key('web-shell-content'));
   }
 }
 

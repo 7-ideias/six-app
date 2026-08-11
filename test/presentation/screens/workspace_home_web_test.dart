@@ -10,8 +10,11 @@ import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.da
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
 import 'package:sixpos/domain/services/workspace_home/workspace_home_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/layouts/authenticated_web_shell.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_destination_resolver.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_item.dart';
+import 'package:sixpos/presentation/navigation/web_navigation_registry.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/presentation/screens/workspace_home_web.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
@@ -141,6 +144,49 @@ void main() {
       expect(actions.calls, isEmpty);
     });
 
+    testWidgets('troca de tema no WebShell nao recarrega a Home', (
+      WidgetTester tester,
+    ) async {
+      final _CountingWorkspaceHomeService service =
+          _CountingWorkspaceHomeService(_home());
+
+      await tester.binding.setSurfaceSize(const Size(1366, 768));
+      addTearDown(() async {
+        await tester.binding.setSurfaceSize(null);
+      });
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<EmpresaProvider>.value(
+              value: EmpresaProvider(),
+            ),
+            ChangeNotifierProvider<ColaboradorAutorizacoesProvider>.value(
+              value: _FakeAutorizacoesProvider(admin: true),
+            ),
+            ChangeNotifierProvider<LocaleSettingsProvider>(
+              create:
+                  (_) => LocaleSettingsProvider(
+                    regionalizacaoService: RegionalizacaoService(
+                      apiClient: _FakeRegionalizacaoApiClient(),
+                    ),
+                  ),
+            ),
+          ],
+          child: _ThemeSwitchingWorkspaceShell(service: service),
+        ),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(service.calls, 1);
+
+      await tester.tap(find.byKey(const Key('toggle-home-shell-theme')));
+      await tester.pumpAndSettle();
+
+      expect(service.calls, 1);
+    });
+
     testWidgets('usa estado vazio quando não há alertas positivos', (
       WidgetTester tester,
     ) async {
@@ -185,6 +231,258 @@ void main() {
 
         expect(tester.takeException(), isNull, reason: themeMode.name);
       }
+    });
+
+    testWidgets('usa WebThemeTokens nas superficies da Home em Light e Dark', (
+      WidgetTester tester,
+    ) async {
+      for (final ThemeMode themeMode in <ThemeMode>[
+        ThemeMode.light,
+        ThemeMode.dark,
+      ]) {
+        final ThemeData theme =
+            themeMode == ThemeMode.dark
+                ? ThemeData.dark(useMaterial3: true)
+                : ThemeData.light(useMaterial3: true);
+        final WebThemeTokens tokens = WebThemeTokens.resolve(theme);
+
+        await _pumpHome(
+          tester,
+          service: _FakeWorkspaceHomeService(_home()),
+          permissions: _FakeAutorizacoesProvider(admin: true),
+          themeMode: themeMode,
+        );
+
+        expect(
+          _animatedContainerColor(tester, const Key('workspace-home-root')),
+          tokens.workspaceBackground,
+        );
+        expect(
+          _animatedContainerColor(tester, const Key('workspace-home-header')),
+          tokens.surface,
+        );
+        expect(
+          _animatedContainerBorderColor(
+            tester,
+            const Key('workspace-home-header'),
+          ),
+          tokens.cardBorder,
+        );
+        expect(
+          _animatedContainerColor(
+            tester,
+            const Key('workspace-home-section-today'),
+          ),
+          tokens.surface,
+        );
+        expect(
+          _animatedContainerColor(
+            tester,
+            const Key('workspace-home-situation-receivable-today'),
+          ),
+          tokens.cardBackground,
+        );
+        expect(
+          _animatedContainerBorderColor(
+            tester,
+            const Key('workspace-home-situation-receivable-today'),
+          ),
+          tokens.cardBorder,
+        );
+      }
+    });
+
+    testWidgets('alertas usam tokens semanticos no Dark sem fundo solido', (
+      WidgetTester tester,
+    ) async {
+      final ThemeData theme = ThemeData.dark(useMaterial3: true);
+      final WebThemeTokens tokens = WebThemeTokens.resolve(theme);
+
+      await _pumpHome(
+        tester,
+        service: _FakeWorkspaceHomeService(_home()),
+        permissions: _FakeAutorizacoesProvider(admin: true),
+        themeMode: ThemeMode.dark,
+      );
+
+      expect(
+        _animatedContainerColor(
+          tester,
+          const Key('workspace-home-attention-late-services'),
+        ),
+        tokens.cardBackground,
+      );
+      expect(
+        _animatedContainerBorderColor(
+          tester,
+          const Key('workspace-home-attention-late-services'),
+        ),
+        _expectedTint(
+          tokens.danger,
+          tokens.cardBorder,
+          Brightness.dark,
+          lightAlpha: 0.18,
+          darkAlpha: 0.26,
+        ),
+      );
+      final TextButton lateServicesAction = tester.widget<TextButton>(
+        find.byKey(const Key('workspace-home-attention-action-late-services')),
+      );
+      expect(
+        lateServicesAction.style?.foregroundColor?.resolve(<WidgetState>{}),
+        tokens.info,
+      );
+      expect(
+        _animatedContainerBorderColor(
+          tester,
+          const Key('workspace-home-attention-waiting-approval'),
+        ),
+        _expectedTint(
+          tokens.warning,
+          tokens.cardBorder,
+          Brightness.dark,
+          lightAlpha: 0.18,
+          darkAlpha: 0.26,
+        ),
+      );
+      expect(
+        _animatedContainerBorderColor(
+          tester,
+          const Key('workspace-home-attention-ready-for-pickup'),
+        ),
+        _expectedTint(
+          tokens.info,
+          tokens.cardBorder,
+          Brightness.dark,
+          lightAlpha: 0.18,
+          darkAlpha: 0.26,
+        ),
+      );
+      expect(
+        _animatedContainerBorderColor(
+          tester,
+          const Key('workspace-home-attention-overdue-receivable'),
+        ),
+        _expectedTint(
+          tokens.financialNegative,
+          tokens.cardBorder,
+          Brightness.dark,
+          lightAlpha: 0.18,
+          darkAlpha: 0.26,
+        ),
+      );
+      expect(
+        _animatedContainerBorderColor(
+          tester,
+          const Key('workspace-home-attention-stock-negative'),
+        ),
+        _expectedTint(
+          tokens.stockCritical,
+          tokens.cardBorder,
+          Brightness.dark,
+          lightAlpha: 0.18,
+          darkAlpha: 0.26,
+        ),
+      );
+      expect(
+        _animatedContainerBorderColor(
+          tester,
+          const Key('workspace-home-attention-stock-below'),
+        ),
+        _expectedTint(
+          tokens.stockWarning,
+          tokens.cardBorder,
+          Brightness.dark,
+          lightAlpha: 0.18,
+          darkAlpha: 0.26,
+        ),
+      );
+    });
+
+    testWidgets('quick actions usam tokens e mantem hierarquia no Dark', (
+      WidgetTester tester,
+    ) async {
+      final ThemeData theme = ThemeData.dark(useMaterial3: true);
+      final ColorScheme colorScheme = theme.colorScheme;
+      final WebThemeTokens tokens = WebThemeTokens.resolve(theme);
+
+      await _pumpHome(
+        tester,
+        service: _FakeWorkspaceHomeService(_home()),
+        permissions: _FakeAutorizacoesProvider(admin: true),
+        themeMode: ThemeMode.dark,
+      );
+
+      final FilledButton newSale = tester.widget<FilledButton>(
+        find.byKey(const Key('workspace-home-quick-action-new-sale')),
+      );
+      final FilledButton cash = tester.widget<FilledButton>(
+        find.byKey(const Key('workspace-home-quick-action-cash')),
+      );
+
+      expect(
+        newSale.style?.backgroundColor?.resolve(<WidgetState>{}),
+        colorScheme.primary,
+      );
+      expect(
+        newSale.style?.foregroundColor?.resolve(<WidgetState>{}),
+        colorScheme.onPrimary,
+      );
+      expect(
+        cash.style?.backgroundColor?.resolve(<WidgetState>{}),
+        tokens.surfaceMuted,
+      );
+      expect(
+        cash.style?.foregroundColor?.resolve(<WidgetState>{}),
+        tokens.primaryText,
+      );
+      expect(
+        cash.style?.side?.resolve(<WidgetState>{})?.color,
+        tokens.cardBorder,
+      );
+    });
+
+    testWidgets('erro inicial usa tokens sem transformar a tela em falha', (
+      WidgetTester tester,
+    ) async {
+      final WebThemeTokens tokens = WebThemeTokens.resolve(
+        ThemeData.dark(useMaterial3: true),
+      );
+
+      await _pumpHome(
+        tester,
+        service: const _FailingWorkspaceHomeService(),
+        permissions: _FakeAutorizacoesProvider(admin: true),
+        themeMode: ThemeMode.dark,
+      );
+
+      expect(
+        find.text('Não foi possível carregar o resumo do dia.'),
+        findsOneWidget,
+      );
+      expect(
+        _animatedContainerColor(tester, const Key('workspace-home-error')),
+        _expectedTint(
+          tokens.danger,
+          tokens.cardBackground,
+          Brightness.dark,
+          lightAlpha: 0.045,
+          darkAlpha: 0.075,
+        ),
+      );
+      expect(
+        _animatedContainerBorderColor(
+          tester,
+          const Key('workspace-home-error'),
+        ),
+        _expectedTint(
+          tokens.danger,
+          tokens.cardBorder,
+          Brightness.dark,
+          lightAlpha: 0.18,
+          darkAlpha: 0.26,
+        ),
+      );
     });
 
     testWidgets('possui traduções locais da Home em pt, en e es', (
@@ -293,6 +591,38 @@ Future<void> _pumpHome(
   await tester.pumpAndSettle();
 }
 
+Color? _animatedContainerColor(WidgetTester tester, Key key) {
+  return _animatedContainerDecoration(tester, key).color;
+}
+
+Color? _animatedContainerBorderColor(WidgetTester tester, Key key) {
+  final BoxBorder? border = _animatedContainerDecoration(tester, key).border;
+  expect(border, isA<Border>());
+  return (border! as Border).top.color;
+}
+
+BoxDecoration _animatedContainerDecoration(WidgetTester tester, Key key) {
+  final AnimatedContainer container = tester.widget(find.byKey(key));
+  final Decoration? decoration = container.decoration;
+  expect(decoration, isA<BoxDecoration>());
+  return decoration! as BoxDecoration;
+}
+
+Color _expectedTint(
+  Color accent,
+  Color base,
+  Brightness brightness, {
+  required double lightAlpha,
+  required double darkAlpha,
+}) {
+  return Color.alphaBlend(
+    accent.withValues(
+      alpha: brightness == Brightness.dark ? darkAlpha : lightAlpha,
+    ),
+    base,
+  );
+}
+
 const List<Size> _responsiveValidationSizes = <Size>[
   Size(1920, 1080),
   Size(1440, 900),
@@ -308,6 +638,96 @@ class _FakeWorkspaceHomeService implements WorkspaceHomeService {
 
   @override
   Future<WorkspaceHomeModel> buscarHome() async => _home;
+}
+
+class _FailingWorkspaceHomeService implements WorkspaceHomeService {
+  const _FailingWorkspaceHomeService();
+
+  @override
+  Future<WorkspaceHomeModel> buscarHome() {
+    return Future<WorkspaceHomeModel>.error(StateError('offline'));
+  }
+}
+
+class _CountingWorkspaceHomeService implements WorkspaceHomeService {
+  _CountingWorkspaceHomeService(this._home);
+
+  final WorkspaceHomeModel _home;
+  int calls = 0;
+
+  @override
+  Future<WorkspaceHomeModel> buscarHome() async {
+    calls++;
+    return _home;
+  }
+}
+
+class _ThemeSwitchingWorkspaceShell extends StatefulWidget {
+  const _ThemeSwitchingWorkspaceShell({required this.service});
+
+  final WorkspaceHomeService service;
+
+  @override
+  State<_ThemeSwitchingWorkspaceShell> createState() =>
+      _ThemeSwitchingWorkspaceShellState();
+}
+
+class _ThemeSwitchingWorkspaceShellState
+    extends State<_ThemeSwitchingWorkspaceShell> {
+  ThemeMode _themeMode = ThemeMode.light;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      theme: ThemeData.light(useMaterial3: true),
+      darkTheme: ThemeData.dark(useMaterial3: true),
+      themeMode: _themeMode,
+      locale: const Locale('pt'),
+      localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: const <Locale>[
+        Locale('pt'),
+        Locale('en'),
+        Locale('es'),
+      ],
+      home: Scaffold(
+        body: AuthenticatedWebShell(
+          navigationItems: WebNavigationRegistry.activeItems,
+          resolver: WebNavigationDestinationResolver(
+            actions: _RecordingActions(),
+          ),
+          activeDestination: WebNavigationDestination.home,
+          appVersion: 'test',
+          currentCommerceName: 'Comércio Teste',
+          headerActions: <Widget>[
+            IconButton(
+              key: const Key('toggle-home-shell-theme'),
+              onPressed: () {
+                setState(() {
+                  _themeMode =
+                      _themeMode == ThemeMode.light
+                          ? ThemeMode.dark
+                          : ThemeMode.light;
+                });
+              },
+              icon: const Icon(Icons.dark_mode_outlined),
+            ),
+          ],
+          child: WorkspaceHomeWeb(
+            compact: false,
+            resolver: WebNavigationDestinationResolver(
+              actions: _RecordingActions(),
+            ),
+            onNovoAtendimentoTecnico: () {},
+            service: widget.service,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _FakeRegionalizacaoApiClient implements RegionalizacaoApiClient {

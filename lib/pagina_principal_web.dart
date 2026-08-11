@@ -28,6 +28,7 @@ import 'package:sixpos/presentation/screens/categorias_produtos_servicos_web_pag
 import 'package:sixpos/presentation/screens/recebimento_pagamento_web.dart';
 import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/workspace_home_web.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/sub_painel_cadastro_produto.dart';
 import 'package:sixpos/domain/models/pdv_visual_theme.dart';
 import 'package:sixpos/domain/services/aparencia/pdv_visual_theme_resolver.dart';
@@ -447,14 +448,14 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     }
   }
 
-  Color _corStatusBackend() {
+  Color _corStatusBackend(WebThemeTokens tokens) {
     switch (_statusComunicacaoBackend) {
       case StatusComunicacaoBackend.conectado:
-        return Colors.green.shade500;
+        return tokens.success;
       case StatusComunicacaoBackend.conectando:
-        return Colors.orange.shade500;
+        return tokens.warning;
       case StatusComunicacaoBackend.desconectado:
-        return Colors.red.shade500;
+        return tokens.danger;
     }
   }
 
@@ -469,8 +470,35 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     }
   }
 
+  Color _webHeaderAccentColor(ColorScheme colorScheme, WebThemeTokens tokens) {
+    return colorScheme.brightness == Brightness.dark
+        ? tokens.info
+        : colorScheme.primary;
+  }
+
+  Color _foregroundForBackground(Color background) {
+    return ThemeData.estimateBrightnessForColor(background) == Brightness.dark
+        ? const Color(0xFFF8FAFC)
+        : const Color(0xFF0F172A);
+  }
+
+  WidgetStateProperty<Color?> _webHeaderActionOverlay(WebThemeTokens tokens) {
+    return WidgetStateProperty.resolveWith((Set<WidgetState> states) {
+      if (states.contains(WidgetState.pressed)) {
+        return tokens.selectedBackground;
+      }
+      if (states.contains(WidgetState.hovered) ||
+          states.contains(WidgetState.focused)) {
+        return tokens.hoverBackground;
+      }
+      return null;
+    });
+  }
+
   Widget _buildIndicadorComunicacaoBackend() {
-    final Color corStatus = _corStatusBackend();
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color corStatus = _corStatusBackend(tokens);
     final String tooltip =
         _ultimaValidacaoBackend == null
             ? _textoStatusBackend()
@@ -478,13 +506,16 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
     return Tooltip(
       message: tooltip,
-      child: Container(
+      child: AnimatedContainer(
+        key: const Key('web-header-backend-status'),
+        duration: WebThemeTokens.transitionDuration,
+        curve: WebThemeTokens.transitionCurve,
         height: 36,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
-          color: _pdvTheme.backgroundSurface,
+          color: tokens.surfaceMuted,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: _pdvTheme.cardBorder),
+          border: Border.all(color: tokens.cardBorder),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -507,9 +538,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             const SizedBox(width: 8),
             Text(
               'online',
-              style: TextStyle(
-                color: _pdvTheme.primaryText,
-                fontSize: 12,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: tokens.primaryText,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -529,6 +559,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   Widget _buildIAAssistente() {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent = _webHeaderAccentColor(colorScheme, tokens);
     final AppLocalizations? l10n = AppLocalizations.of(context);
     final String tooltip = l10n?.aiAssistantAsk ?? 'Perguntar à IA';
 
@@ -538,14 +572,18 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(999),
+          overlayColor: _webHeaderActionOverlay(tokens),
           onTap: _abrirAssistenteIA,
-          child: Container(
+          child: AnimatedContainer(
+            key: const Key('web-header-ai-action'),
+            duration: WebThemeTokens.transitionDuration,
+            curve: WebThemeTokens.transitionCurve,
             height: 36,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: _pdvTheme.backgroundSurface,
+              color: tokens.surfaceMuted,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: _pdvTheme.cardBorder),
+              border: Border.all(color: tokens.cardBorder),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -555,15 +593,14 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                   child: Icon(
                     Icons.auto_awesome_outlined,
                     size: 16,
-                    color: _pdvTheme.iconColor,
+                    color: accent,
                   ),
                 ),
                 const SizedBox(width: 6),
                 Text(
                   'IA',
-                  style: TextStyle(
-                    color: _pdvTheme.primaryText,
-                    fontSize: 12,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -704,11 +741,17 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   Widget _buildUserMenuButton() {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent = _webHeaderAccentColor(colorScheme, tokens);
+
     return Tooltip(
       message: context.t('web.header.userMenu', fallback: 'Usuário'),
       child: PopupMenuButton<_WebHeaderUserAction>(
         tooltip: '',
         position: PopupMenuPosition.under,
+        color: tokens.menuBackground,
         onSelected: (_WebHeaderUserAction action) {
           switch (action) {
             case _WebHeaderUserAction.profile:
@@ -725,14 +768,14 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                 value: _WebHeaderUserAction.profile,
                 child: Row(
                   children: <Widget>[
-                    Icon(
-                      Icons.person_outline_rounded,
-                      size: 18,
-                      color: _pdvTheme.iconColor,
-                    ),
+                    Icon(Icons.person_outline_rounded, size: 18, color: accent),
                     const SizedBox(width: 10),
                     Text(
                       context.t('web.header.myProfile', fallback: 'Meu perfil'),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: tokens.primaryText,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -741,38 +784,39 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                 value: _WebHeaderUserAction.logout,
                 child: Row(
                   children: <Widget>[
-                    Icon(
-                      Icons.logout_rounded,
-                      size: 18,
-                      color: _pdvTheme.iconColor,
-                    ),
+                    Icon(Icons.logout_rounded, size: 18, color: accent),
                     const SizedBox(width: 10),
-                    Text(context.t('web.header.logout', fallback: 'Sair')),
+                    Text(
+                      context.t('web.header.logout', fallback: 'Sair'),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: tokens.primaryText,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
-        child: Container(
+        child: AnimatedContainer(
+          key: const Key('web-header-user-action'),
+          duration: WebThemeTokens.transitionDuration,
+          curve: WebThemeTokens.transitionCurve,
           height: 36,
           padding: const EdgeInsets.symmetric(horizontal: 11),
           decoration: BoxDecoration(
-            color: _pdvTheme.backgroundSurface,
+            color: tokens.surfaceMuted,
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: _pdvTheme.cardBorder),
+            border: Border.all(color: tokens.cardBorder),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(
-                Icons.account_circle_outlined,
-                size: 18,
-                color: _pdvTheme.iconColor,
-              ),
+              Icon(Icons.account_circle_outlined, size: 18, color: accent),
               const SizedBox(width: 4),
               Icon(
                 Icons.keyboard_arrow_down_rounded,
                 size: 16,
-                color: _pdvTheme.iconColor,
+                color: tokens.secondaryText,
               ),
             ],
           ),
@@ -1000,8 +1044,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   Widget _buildNotificationBellButton() {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent = _webHeaderAccentColor(colorScheme, tokens);
     final bool temNaoLidas = _quantidadeNotificacoesNaoLidas > 0;
     final String badgeTexto = _badgeNotificacaoTexto();
+    final Color badgeForeground = _foregroundForBackground(tokens.warning);
 
     return AnimatedBuilder(
       animation: _bellRotationAnimation,
@@ -1018,20 +1067,24 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(999),
+              overlayColor: _webHeaderActionOverlay(tokens),
               onTap: _abrirPainelNotificacoes,
-              child: Container(
+              child: AnimatedContainer(
+                key: const Key('web-header-notification-action'),
+                duration: WebThemeTokens.transitionDuration,
+                curve: WebThemeTokens.transitionCurve,
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: _pdvTheme.backgroundSurface,
+                  color: tokens.surfaceMuted,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: _pdvTheme.cardBorder),
+                  border: Border.all(color: tokens.cardBorder),
                 ),
                 child: Icon(
                   temNaoLidas
                       ? Icons.notifications_active_rounded
                       : Icons.notifications_none_rounded,
-                  color: _pdvTheme.iconColor,
+                  color: temNaoLidas ? tokens.warning : accent,
                 ),
               ),
             ),
@@ -1043,11 +1096,11 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _pdvTheme.warningColor,
+                  color: tokens.warning,
                   borderRadius: BorderRadius.circular(999),
                   boxShadow: <BoxShadow>[
                     BoxShadow(
-                      color: _pdvTheme.warningColor.withValues(alpha: 0.35),
+                      color: tokens.warning.withValues(alpha: 0.35),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -1055,9 +1108,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                 ),
                 child: Text(
                   badgeTexto,
-                  style: TextStyle(
-                    color: _pdvTheme.badgeText,
-                    fontSize: 11,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: badgeForeground,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -2808,6 +2860,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     final double total = _calcularTotal();
     final bool modoExpandidoAtivo =
         _moduloAtual == ModuloCentralPDV.vendas && _modoExpandidoFrenteCaixa;
+    final WebThemeTokens webTokens = WebThemeTokens.of(context);
     final ColaboradorAutorizacoesProvider autorizacoesProvider =
         context.watch<ColaboradorAutorizacoesProvider>();
     final List<WebNavigationItem> webNavigationItems =
@@ -2823,7 +2876,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: _pdvTheme.backgroundPage,
+        backgroundColor:
+            modoExpandidoAtivo
+                ? _pdvTheme.backgroundPage
+                : webTokens.workspaceBackground,
         body:
             modoExpandidoAtivo
                 ? SafeArea(

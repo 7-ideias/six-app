@@ -12,10 +12,10 @@ import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
 import '../../providers/workspace_home_provider.dart';
 import '../components/six_backend_loading.dart';
-import '../components/web_dashboard_widgets.dart';
 import '../navigation/web_navigation_destination_resolver.dart';
 import '../navigation/web_navigation_item.dart';
 import '../navigation/web_navigation_permission_adapter.dart';
+import '../theme/web_theme_tokens.dart';
 
 class WorkspaceHomeWeb extends StatelessWidget {
   const WorkspaceHomeWeb({
@@ -62,134 +62,147 @@ class _WorkspaceHomeContent extends StatelessWidget {
     final EmpresaModel? empresa = context.watch<EmpresaProvider>().empresa;
     final ColaboradorAutorizacoesProvider autorizacoes =
         context.watch<ColaboradorAutorizacoesProvider>();
+    final ThemeData webTheme = WebThemeTokens.applyTo(Theme.of(context));
 
-    return Consumer<WorkspaceHomeProvider>(
-      builder: (
-        BuildContext context,
-        WorkspaceHomeProvider provider,
-        Widget? _,
-      ) {
-        final WorkspaceHomeModel? home = provider.home;
-        final bool initialLoading = provider.loading && home == null;
-        final bool initialError = provider.hasError && home == null;
+    return AnimatedTheme(
+      data: webTheme,
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      child: Consumer<WorkspaceHomeProvider>(
+        builder: (
+          BuildContext context,
+          WorkspaceHomeProvider provider,
+          Widget? _,
+        ) {
+          final WebThemeTokens tokens = WebThemeTokens.of(context);
+          final WorkspaceHomeModel? home = provider.home;
+          final bool initialLoading = provider.loading && home == null;
+          final bool initialError = provider.hasError && home == null;
 
-        return LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final bool narrow = compact || constraints.maxWidth < 900;
-            final double horizontalPadding = narrow ? 14 : 24;
+          return LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool narrow = compact || constraints.maxWidth < 900;
+              final double horizontalPadding = narrow ? 14 : 24;
 
-            return ColoredBox(
-              color: Theme.of(context).colorScheme.surfaceContainerLowest,
-              child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(
-                  horizontalPadding,
-                  narrow ? 14 : 20,
-                  horizontalPadding,
-                  narrow ? 18 : 24,
-                ),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1280),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        _WorkspaceHomeHeader(
-                          userName: _resolveUserName(context),
-                          companyName: _resolveCompanyName(context, empresa),
-                          home: home,
-                          regionalizacao: regionalizacao,
-                          loading: provider.loading,
-                          onRefresh: provider.reload,
-                        ),
-                        const SizedBox(height: 18),
-                        if (initialLoading)
-                          _WorkspaceHomeLoading(compact: narrow)
-                        else if (initialError)
-                          _WorkspaceHomeError(onRetry: provider.reload)
-                        else if (home != null) ...<Widget>[
-                          _WorkspaceHomeSection(
-                            title: _text(
-                              context,
-                              'workspaceHome.section.today',
-                              'Situação de hoje',
-                            ),
-                            icon: Icons.today_outlined,
-                            child: _TodaySituationGrid(
-                              home: home,
-                              regionalizacao: regionalizacao,
-                            ),
+              return AnimatedContainer(
+                key: const Key('workspace-home-root'),
+                duration: WebThemeTokens.transitionDuration,
+                curve: WebThemeTokens.transitionCurve,
+                decoration: BoxDecoration(color: tokens.workspaceBackground),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalPadding,
+                    narrow ? 14 : 20,
+                    horizontalPadding,
+                    narrow ? 18 : 24,
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1280),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          _WorkspaceHomeHeader(
+                            userName: _resolveUserName(context),
+                            companyName: _resolveCompanyName(context, empresa),
+                            home: home,
+                            regionalizacao: regionalizacao,
+                            loading: provider.loading,
+                            onRefresh: provider.reload,
                           ),
-                          const SizedBox(height: 16),
-                          _WorkspaceHomeSection(
-                            title: _text(
-                              context,
-                              'workspaceHome.section.attention',
-                              'Precisa da sua atenção',
+                          const SizedBox(height: 18),
+                          if (initialLoading)
+                            _WorkspaceHomeLoading(compact: narrow)
+                          else if (initialError)
+                            _WorkspaceHomeError(onRetry: provider.reload)
+                          else if (home != null) ...<Widget>[
+                            _WorkspaceHomeSection(
+                              id: 'today',
+                              title: _text(
+                                context,
+                                'workspaceHome.section.today',
+                                'Situação de hoje',
+                              ),
+                              icon: Icons.today_outlined,
+                              child: _TodaySituationGrid(
+                                home: home,
+                                regionalizacao: regionalizacao,
+                              ),
                             ),
-                            icon: Icons.priority_high_rounded,
-                            child: _AttentionList(
-                              home: home,
-                              regionalizacao: regionalizacao,
-                              onOpenTechnicalServices:
-                                  () => _resolve(
-                                    context,
-                                    WebNavigationDestination
-                                        .operationsTechnicalServices,
-                                  ),
-                              onOpenFinancial:
-                                  () => _resolve(
-                                    context,
-                                    WebNavigationDestination.financialAgenda,
-                                  ),
-                              onOpenStock:
-                                  () => _resolve(
-                                    context,
-                                    WebNavigationDestination.catalogStock,
-                                  ),
+                            const SizedBox(height: 16),
+                            _WorkspaceHomeSection(
+                              id: 'attention',
+                              title: _text(
+                                context,
+                                'workspaceHome.section.attention',
+                                'Precisa da sua atenção',
+                              ),
+                              icon: Icons.priority_high_rounded,
+                              child: _AttentionList(
+                                home: home,
+                                regionalizacao: regionalizacao,
+                                onOpenTechnicalServices:
+                                    () => _resolve(
+                                      context,
+                                      WebNavigationDestination
+                                          .operationsTechnicalServices,
+                                    ),
+                                onOpenFinancial:
+                                    () => _resolve(
+                                      context,
+                                      WebNavigationDestination.financialAgenda,
+                                    ),
+                                onOpenStock:
+                                    () => _resolve(
+                                      context,
+                                      WebNavigationDestination.catalogStock,
+                                    ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          _WorkspaceHomeSection(
-                            title: _text(
-                              context,
-                              'workspaceHome.section.quickActions',
-                              'Ações rápidas',
+                            const SizedBox(height: 16),
+                            _WorkspaceHomeSection(
+                              id: 'quick-actions',
+                              title: _text(
+                                context,
+                                'workspaceHome.section.quickActions',
+                                'Ações rápidas',
+                              ),
+                              icon: Icons.flash_on_outlined,
+                              child: _QuickActions(
+                                permissions:
+                                    WebNavigationPermissionAdapter.permissionsFor(
+                                      autorizacoes,
+                                    ),
+                                onNewSale:
+                                    () => _resolve(
+                                      context,
+                                      WebNavigationDestination
+                                          .operationsPointOfSale,
+                                    ),
+                                onNewTechnicalService: onNovoAtendimentoTecnico,
+                                onOpenCash:
+                                    () => _resolve(
+                                      context,
+                                      WebNavigationDestination.cash,
+                                    ),
+                                onOpenFinancialAgenda:
+                                    () => _resolve(
+                                      context,
+                                      WebNavigationDestination.financialAgenda,
+                                    ),
+                              ),
                             ),
-                            icon: Icons.flash_on_outlined,
-                            child: _QuickActions(
-                              permissions:
-                                  WebNavigationPermissionAdapter.permissionsFor(
-                                    autorizacoes,
-                                  ),
-                              onNewSale:
-                                  () => _resolve(
-                                    context,
-                                    WebNavigationDestination
-                                        .operationsPointOfSale,
-                                  ),
-                              onNewTechnicalService: onNovoAtendimentoTecnico,
-                              onOpenCash:
-                                  () => _resolve(
-                                    context,
-                                    WebNavigationDestination.cash,
-                                  ),
-                              onOpenFinancialAgenda:
-                                  () => _resolve(
-                                    context,
-                                    WebNavigationDestination.financialAgenda,
-                                  ),
-                            ),
-                          ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
-        );
-      },
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -238,22 +251,23 @@ class _WorkspaceHomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final WorkspaceHomeModel? currentHome = home;
     final String? operationalDate =
         currentHome == null
             ? null
             : regionalizacao.formatDate(currentHome.date);
 
-    return Container(
+    return AnimatedContainer(
+      key: const Key('workspace-home-header'),
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.72),
-        ),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
@@ -265,7 +279,7 @@ class _WorkspaceHomeHeader extends StatelessWidget {
               Text(
                 _text(context, 'workspaceHome.title', 'Meu dia no SixApp'),
                 style: theme.textTheme.labelLarge?.copyWith(
-                  color: colorScheme.primary,
+                  color: tokens.info,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -280,6 +294,7 @@ class _WorkspaceHomeHeader extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.headlineSmall?.copyWith(
+                  color: tokens.primaryText,
                   fontWeight: FontWeight.w900,
                   height: 1.1,
                 ),
@@ -290,7 +305,7 @@ class _WorkspaceHomeHeader extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+                  color: tokens.secondaryText,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -320,6 +335,7 @@ class _WorkspaceHomeHeader extends StatelessWidget {
                   'Atualizar resumo do dia',
                 ),
                 child: OutlinedButton.icon(
+                  style: _homeOutlinedButtonStyle(tokens: tokens),
                   onPressed: loading ? null : onRefresh,
                   icon:
                       loading
@@ -328,7 +344,7 @@ class _WorkspaceHomeHeader extends StatelessWidget {
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: colorScheme.primary,
+                              color: tokens.info,
                             ),
                           )
                           : const Icon(Icons.refresh_rounded, size: 18),
@@ -370,20 +386,22 @@ class _WorkspaceHomeMetaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
 
-    return Container(
+    return AnimatedContainer(
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.62),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
+          Icon(icon, size: 16, color: tokens.secondaryText),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
@@ -391,7 +409,7 @@ class _WorkspaceHomeMetaChip extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+                color: tokens.secondaryText,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -409,9 +427,13 @@ class _WorkspaceHomeLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
     return Column(
       children: <Widget>[
         SixBackendLoading(
+          backgroundColor: tokens.cardBackground,
+          borderColor: tokens.cardBorder,
           title: _text(
             context,
             'workspaceHome.loading.title',
@@ -429,9 +451,9 @@ class _WorkspaceHomeLoading extends StatelessWidget {
         _ResponsiveCardGrid(
           minCardWidth: compact ? 240 : 220,
           children: const <Widget>[
-            SixWebLoadingBlock(height: 112),
-            SixWebLoadingBlock(height: 112),
-            SixWebLoadingBlock(height: 112),
+            _WorkspaceHomeLoadingBlock(index: 0, height: 112),
+            _WorkspaceHomeLoadingBlock(index: 1, height: 112),
+            _WorkspaceHomeLoadingBlock(index: 2, height: 112),
           ],
         ),
       ],
@@ -448,19 +470,41 @@ class _WorkspaceHomeError extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final _HomeToneStyle tone = _homeToneStyle(
+      context,
+      tokens,
+      _HomeTone.danger,
+      baseBackground: tokens.cardBackground,
+    );
 
-    return Container(
+    return AnimatedContainer(
+      key: const Key('workspace-home-error'),
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: colorScheme.errorContainer.withValues(alpha: 0.20),
+        color: tone.background,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colorScheme.error.withValues(alpha: 0.24)),
+        border: Border.all(color: tone.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(Icons.error_outline_rounded, color: colorScheme.error),
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: tone.iconBackground,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.error_outline_rounded,
+              color: tone.accent,
+              size: 20,
+            ),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -473,6 +517,7 @@ class _WorkspaceHomeError extends StatelessWidget {
                     'Não foi possível carregar o resumo do dia.',
                   ),
                   style: theme.textTheme.titleSmall?.copyWith(
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -480,6 +525,10 @@ class _WorkspaceHomeError extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                    ),
                     onPressed: onRetry,
                     icon: const Icon(Icons.refresh_rounded),
                     label: Text(
@@ -498,18 +547,178 @@ class _WorkspaceHomeError extends StatelessWidget {
 
 class _WorkspaceHomeSection extends StatelessWidget {
   const _WorkspaceHomeSection({
+    required this.id,
     required this.title,
     required this.icon,
     required this.child,
   });
 
+  final String id;
   final String title;
   final IconData icon;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return SixWebSectionCard(title: title, icon: icon, child: child);
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    return AnimatedContainer(
+      key: Key('workspace-home-section-$id'),
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: _homeTint(
+                    tokens.info,
+                    tokens.surface,
+                    Theme.of(context).brightness,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: tokens.info, size: 19),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _WorkspaceHomeLoadingBlock extends StatelessWidget {
+  const _WorkspaceHomeLoadingBlock({required this.index, required this.height});
+
+  final int index;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    return AnimatedContainer(
+      key: Key('workspace-home-loading-block-$index'),
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      height: height,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: AnimatedContainer(
+            duration: WebThemeTokens.transitionDuration,
+            curve: WebThemeTokens.transitionCurve,
+            width: 120,
+            height: 14,
+            decoration: BoxDecoration(
+              color: tokens.surfaceMuted,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WorkspaceHomeNoData extends StatelessWidget {
+  const _WorkspaceHomeNoData({
+    required this.keySuffix,
+    required this.text,
+    this.height = 180,
+    this.tone = _HomeTone.statusNeutral,
+  });
+
+  final String keySuffix;
+  final String text;
+  final double height;
+  final _HomeTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final _HomeToneStyle toneStyle = _homeToneStyle(
+      context,
+      tokens,
+      tone,
+      baseBackground: tokens.surfaceMuted,
+    );
+
+    return AnimatedContainer(
+      key: Key('workspace-home-empty-$keySuffix'),
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      width: double.infinity,
+      height: height,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: toneStyle.background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: toneStyle.border),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(
+            tone == _HomeTone.success
+                ? Icons.check_circle_outline_rounded
+                : Icons.info_outline_rounded,
+            size: 18,
+            color: toneStyle.accent,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: tokens.secondaryText,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -527,6 +736,7 @@ class _TodaySituationGrid extends StatelessWidget {
       if (home.financial.available && home.financial.receivableToday != null)
         _financialCard(
           context,
+          keySuffix: 'receivable-today',
           icon: Icons.south_west_rounded,
           title: _text(
             context,
@@ -538,6 +748,7 @@ class _TodaySituationGrid extends StatelessWidget {
       if (home.financial.available && home.financial.payableToday != null)
         _financialCard(
           context,
+          keySuffix: 'payable-today',
           icon: Icons.north_east_rounded,
           title: _text(
             context,
@@ -550,7 +761,8 @@ class _TodaySituationGrid extends StatelessWidget {
     ];
 
     if (cards.isEmpty) {
-      return SixWebNoData(
+      return _WorkspaceHomeNoData(
+        keySuffix: 'today',
         height: 128,
         text: _text(
           context,
@@ -584,6 +796,7 @@ class _TodaySituationGrid extends StatelessWidget {
     }
 
     return _SituationCard(
+      keySuffix: 'cash',
       icon: Icons.payments_outlined,
       title: _text(context, 'workspaceHome.cash.title', 'Caixa'),
       value:
@@ -591,12 +804,14 @@ class _TodaySituationGrid extends StatelessWidget {
               ? _text(context, 'workspaceHome.cash.open', 'Aberto')
               : _text(context, 'workspaceHome.cash.closed', 'Fechado'),
       details: details,
+      tone: aberto ? _HomeTone.success : _HomeTone.statusNeutral,
     );
   }
 
   Widget _technicalServicesCard(BuildContext context) {
     final int active = home.technicalServices.active ?? 0;
     return _SituationCard(
+      keySuffix: 'technical-services',
       icon: Icons.engineering_outlined,
       title: _text(context, 'workspaceHome.technical.title', 'Assistências'),
       value: _plural(
@@ -640,11 +855,13 @@ class _TodaySituationGrid extends StatelessWidget {
 
   Widget _financialCard(
     BuildContext context, {
+    required String keySuffix,
     required IconData icon,
     required String title,
     required WorkspaceHomeFinancialSummary summary,
   }) {
     return _SituationCard(
+      keySuffix: keySuffix,
       icon: icon,
       title: title,
       value: regionalizacao.formatCurrency(summary.amount),
@@ -687,6 +904,7 @@ class _TodaySituationGrid extends StatelessWidget {
     ];
 
     return _SituationCard(
+      keySuffix: 'stock',
       icon: Icons.warehouse_outlined,
       title: _text(context, 'workspaceHome.stock.title', 'Estoque'),
       value:
@@ -705,44 +923,69 @@ class _TodaySituationGrid extends StatelessWidget {
                 'Sem alertas críticos',
               ),
       details: details,
+      tone: _stockSituationTone(
+        negative: negative,
+        withoutStock: withoutStock,
+        belowMinimum: belowMinimum,
+      ),
     );
   }
 }
 
 class _SituationCard extends StatelessWidget {
   const _SituationCard({
+    required this.keySuffix,
     required this.icon,
     required this.title,
     required this.value,
     this.details = const <String>[],
+    this.tone = _HomeTone.neutral,
   });
 
+  final String keySuffix;
   final IconData icon;
   final String title;
   final String value;
   final List<String> details;
+  final _HomeTone tone;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final _HomeToneStyle toneStyle = _homeToneStyle(
+      context,
+      tokens,
+      tone,
+      neutralAccent: tokens.info,
+      baseBackground: tokens.cardBackground,
+    );
 
-    return Container(
+    return AnimatedContainer(
+      key: Key('workspace-home-situation-$keySuffix'),
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
       constraints: const BoxConstraints(minHeight: 112),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.75),
-        ),
+        border: Border.all(color: toneStyle.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(icon, size: 18, color: colorScheme.primary),
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: toneStyle.iconBackground,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 17, color: toneStyle.accent),
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -750,7 +993,7 @@ class _SituationCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -763,6 +1006,7 @@ class _SituationCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.titleLarge?.copyWith(
+              color: tokens.primaryText,
               fontWeight: FontWeight.w900,
               height: 1.12,
             ),
@@ -779,7 +1023,7 @@ class _SituationCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                      color: tokens.mutedText,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -812,13 +1056,15 @@ class _AttentionList extends StatelessWidget {
     final List<_AttentionEntry> entries = _entries(context);
 
     if (entries.isEmpty) {
-      return SixWebNoData(
+      return _WorkspaceHomeNoData(
+        keySuffix: 'attention',
         height: 132,
         text: _text(
           context,
           'workspaceHome.empty.attention',
           'Nenhuma pendência importante agora.',
         ),
+        tone: _HomeTone.success,
       );
     }
 
@@ -843,7 +1089,8 @@ class _AttentionList extends StatelessWidget {
       if (late > 0) {
         entries.add(
           _AttentionEntry(
-            severity: _AttentionSeverity.critical,
+            keySuffix: 'late-services',
+            tone: _HomeTone.danger,
             icon: Icons.warning_amber_rounded,
             title: _plural(
               context,
@@ -866,7 +1113,8 @@ class _AttentionList extends StatelessWidget {
       if (waitingApproval > 0) {
         entries.add(
           _AttentionEntry(
-            severity: _AttentionSeverity.warning,
+            keySuffix: 'waiting-approval',
+            tone: _HomeTone.warning,
             icon: Icons.rate_review_outlined,
             title: _plural(
               context,
@@ -889,7 +1137,8 @@ class _AttentionList extends StatelessWidget {
       if (readyForPickup > 0) {
         entries.add(
           _AttentionEntry(
-            severity: _AttentionSeverity.info,
+            keySuffix: 'ready-for-pickup',
+            tone: _HomeTone.info,
             icon: Icons.inventory_outlined,
             title: _plural(
               context,
@@ -919,7 +1168,8 @@ class _AttentionList extends StatelessWidget {
       if (overdueReceivable != null && overdueReceivable.count > 0) {
         entries.add(
           _AttentionEntry(
-            severity: _AttentionSeverity.critical,
+            keySuffix: 'overdue-receivable',
+            tone: _HomeTone.financialNegative,
             icon: Icons.account_balance_wallet_outlined,
             title: _plural(
               context,
@@ -943,7 +1193,8 @@ class _AttentionList extends StatelessWidget {
       if (overduePayable != null && overduePayable.count > 0) {
         entries.add(
           _AttentionEntry(
-            severity: _AttentionSeverity.warning,
+            keySuffix: 'overdue-payable',
+            tone: _HomeTone.financialNegative,
             icon: Icons.request_quote_outlined,
             title: _plural(
               context,
@@ -973,7 +1224,8 @@ class _AttentionList extends StatelessWidget {
       if (negative > 0) {
         entries.add(
           _AttentionEntry(
-            severity: _AttentionSeverity.critical,
+            keySuffix: 'stock-negative',
+            tone: _HomeTone.stockCritical,
             icon: Icons.remove_circle_outline,
             title: _plural(
               context,
@@ -996,7 +1248,8 @@ class _AttentionList extends StatelessWidget {
       if (withoutStock > 0) {
         entries.add(
           _AttentionEntry(
-            severity: _AttentionSeverity.warning,
+            keySuffix: 'stock-without',
+            tone: _HomeTone.stockCritical,
             icon: Icons.inventory_2_outlined,
             title: _plural(
               context,
@@ -1019,7 +1272,8 @@ class _AttentionList extends StatelessWidget {
       if (belowMinimum > 0) {
         entries.add(
           _AttentionEntry(
-            severity: _AttentionSeverity.info,
+            keySuffix: 'stock-below',
+            tone: _HomeTone.stockWarning,
             icon: Icons.low_priority_outlined,
             title: _plural(
               context,
@@ -1044,11 +1298,10 @@ class _AttentionList extends StatelessWidget {
   }
 }
 
-enum _AttentionSeverity { critical, warning, info }
-
 class _AttentionEntry {
   const _AttentionEntry({
-    required this.severity,
+    required this.keySuffix,
+    required this.tone,
     required this.icon,
     required this.title,
     required this.actionLabel,
@@ -1056,7 +1309,8 @@ class _AttentionEntry {
     this.subtitle,
   });
 
-  final _AttentionSeverity severity;
+  final String keySuffix;
+  final _HomeTone tone;
   final IconData icon;
   final String title;
   final String? subtitle;
@@ -1072,15 +1326,23 @@ class _AttentionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color accent = _accentColor(colorScheme, entry.severity);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final _HomeToneStyle tone = _homeToneStyle(
+      context,
+      tokens,
+      entry.tone,
+      baseBackground: tokens.cardBackground,
+    );
 
-    return Container(
+    return AnimatedContainer(
+      key: Key('workspace-home-attention-${entry.keySuffix}'),
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withValues(alpha: 0.28)),
+        border: Border.all(color: tone.border),
       ),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
@@ -1089,10 +1351,10 @@ class _AttentionCard extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.12),
+              color: tone.iconBackground,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(entry.icon, color: accent, size: 20),
+            child: Icon(entry.icon, color: tone.accent, size: 20),
           );
           final Widget text = Expanded(
             child: Column(
@@ -1103,6 +1365,7 @@ class _AttentionCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -1113,7 +1376,7 @@ class _AttentionCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                      color: tokens.secondaryText,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -1124,6 +1387,8 @@ class _AttentionCard extends StatelessWidget {
           final Widget action = Align(
             alignment: stack ? Alignment.centerLeft : Alignment.centerRight,
             child: TextButton.icon(
+              key: Key('workspace-home-attention-action-${entry.keySuffix}'),
+              style: _homeTextButtonStyle(tokens: tokens),
               onPressed: entry.onAction,
               icon: const Icon(Icons.arrow_forward_rounded, size: 18),
               label: Text(entry.actionLabel),
@@ -1157,17 +1422,6 @@ class _AttentionCard extends StatelessWidget {
       ),
     );
   }
-
-  Color _accentColor(ColorScheme colorScheme, _AttentionSeverity severity) {
-    switch (severity) {
-      case _AttentionSeverity.critical:
-        return colorScheme.error;
-      case _AttentionSeverity.warning:
-        return colorScheme.tertiary;
-      case _AttentionSeverity.info:
-        return colorScheme.primary;
-    }
-  }
 }
 
 class _QuickActions extends StatelessWidget {
@@ -1190,6 +1444,7 @@ class _QuickActions extends StatelessWidget {
     final List<_QuickActionEntry> actions = <_QuickActionEntry>[
       if (permissions.contains(WebNavigationPermission.podeFazerVenda))
         _QuickActionEntry(
+          keySuffix: 'new-sale',
           icon: Icons.point_of_sale_outlined,
           label: _text(
             context,
@@ -1203,6 +1458,7 @@ class _QuickActions extends StatelessWidget {
         WebNavigationPermission.podeLancarAssistenciaTecnica,
       ))
         _QuickActionEntry(
+          keySuffix: 'new-technical-service',
           icon: Icons.add_task_outlined,
           label: _text(
             context,
@@ -1214,12 +1470,14 @@ class _QuickActions extends StatelessWidget {
       if (permissions.contains(WebNavigationPermission.podeReceberNoCaixa) ||
           permissions.contains(WebNavigationPermission.podeAcessarFinanceiro))
         _QuickActionEntry(
+          keySuffix: 'cash',
           icon: Icons.payments_outlined,
           label: _text(context, 'workspaceHome.quickAction.cash', 'Caixa'),
           onPressed: onOpenCash,
         ),
       if (permissions.contains(WebNavigationPermission.podeAcessarFinanceiro))
         _QuickActionEntry(
+          keySuffix: 'financial-agenda',
           icon: Icons.event_note_outlined,
           label: _text(
             context,
@@ -1231,7 +1489,8 @@ class _QuickActions extends StatelessWidget {
     ];
 
     if (actions.isEmpty) {
-      return SixWebNoData(
+      return _WorkspaceHomeNoData(
+        keySuffix: 'quick-actions',
         height: 112,
         text: _text(
           context,
@@ -1254,12 +1513,14 @@ class _QuickActions extends StatelessWidget {
 
 class _QuickActionEntry {
   const _QuickActionEntry({
+    required this.keySuffix,
     required this.icon,
     required this.label,
     required this.onPressed,
     this.primary = false,
   });
 
+  final String keySuffix;
   final IconData icon;
   final String label;
   final VoidCallback onPressed;
@@ -1273,15 +1534,45 @@ class _QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final ButtonStyle style = ButtonStyle(
       minimumSize: const WidgetStatePropertyAll<Size>(Size(0, 42)),
       padding: const WidgetStatePropertyAll<EdgeInsetsGeometry>(
         EdgeInsets.symmetric(horizontal: 14),
       ),
+      shape: WidgetStatePropertyAll<OutlinedBorder>(
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      side: WidgetStatePropertyAll<BorderSide>(
+        BorderSide(
+          color: action.primary ? tokens.selectedBorder : tokens.cardBorder,
+        ),
+      ),
+      backgroundColor: WidgetStatePropertyAll<Color>(
+        action.primary ? colorScheme.primary : tokens.surfaceMuted,
+      ),
+      foregroundColor: WidgetStatePropertyAll<Color>(
+        action.primary ? colorScheme.onPrimary : tokens.primaryText,
+      ),
+      overlayColor:
+          action.primary
+              ? WidgetStateProperty.resolveWith<Color?>((
+                Set<WidgetState> states,
+              ) {
+                if (!_hasInteractiveState(states)) return null;
+                return colorScheme.onPrimary.withValues(alpha: 0.12);
+              })
+              : _homeOverlay(tokens),
+      textStyle: WidgetStatePropertyAll<TextStyle?>(
+        theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+      ),
     );
 
     if (action.primary) {
       return FilledButton.icon(
+        key: Key('workspace-home-quick-action-${action.keySuffix}'),
         style: style,
         onPressed: action.onPressed,
         icon: Icon(action.icon, size: 18),
@@ -1290,12 +1581,211 @@ class _QuickActionButton extends StatelessWidget {
     }
 
     return FilledButton.tonalIcon(
+      key: Key('workspace-home-quick-action-${action.keySuffix}'),
       style: style,
       onPressed: action.onPressed,
-      icon: Icon(action.icon, size: 18),
+      icon: Icon(action.icon, size: 18, color: tokens.info),
       label: Text(action.label),
     );
   }
+}
+
+enum _HomeTone {
+  neutral,
+  statusNeutral,
+  success,
+  warning,
+  danger,
+  info,
+  financialNegative,
+  stockCritical,
+  stockWarning,
+}
+
+@immutable
+class _HomeToneStyle {
+  const _HomeToneStyle({
+    required this.accent,
+    required this.background,
+    required this.border,
+    required this.iconBackground,
+  });
+
+  final Color accent;
+  final Color background;
+  final Color border;
+  final Color iconBackground;
+}
+
+_HomeToneStyle _homeToneStyle(
+  BuildContext context,
+  WebThemeTokens tokens,
+  _HomeTone tone, {
+  Color? neutralAccent,
+  Color? baseBackground,
+}) {
+  final Brightness brightness = Theme.of(context).brightness;
+  final Color base = baseBackground ?? tokens.cardBackground;
+  final Color accent = _homeAccentFor(
+    context,
+    tokens,
+    tone,
+    neutralAccent: neutralAccent,
+  );
+  final bool neutral =
+      tone == _HomeTone.neutral || tone == _HomeTone.statusNeutral;
+
+  return _HomeToneStyle(
+    accent: accent,
+    background:
+        neutral
+            ? base
+            : _homeTint(
+              accent,
+              base,
+              brightness,
+              lightAlpha: 0.045,
+              darkAlpha: 0.075,
+            ),
+    border:
+        neutral
+            ? tokens.cardBorder
+            : _homeTint(
+              accent,
+              tokens.cardBorder,
+              brightness,
+              lightAlpha: 0.18,
+              darkAlpha: 0.26,
+            ),
+    iconBackground: _homeTint(
+      accent,
+      base,
+      brightness,
+      lightAlpha: 0.09,
+      darkAlpha: 0.16,
+    ),
+  );
+}
+
+Color _homeAccentFor(
+  BuildContext context,
+  WebThemeTokens tokens,
+  _HomeTone tone, {
+  Color? neutralAccent,
+}) {
+  switch (tone) {
+    case _HomeTone.neutral:
+      return neutralAccent ?? Theme.of(context).colorScheme.primary;
+    case _HomeTone.statusNeutral:
+      return tokens.statusNeutral;
+    case _HomeTone.success:
+      return tokens.success;
+    case _HomeTone.warning:
+      return tokens.warning;
+    case _HomeTone.danger:
+      return tokens.danger;
+    case _HomeTone.info:
+      return tokens.info;
+    case _HomeTone.financialNegative:
+      return tokens.financialNegative;
+    case _HomeTone.stockCritical:
+      return tokens.stockCritical;
+    case _HomeTone.stockWarning:
+      return tokens.stockWarning;
+  }
+}
+
+Color _homeTint(
+  Color accent,
+  Color base,
+  Brightness brightness, {
+  double lightAlpha = 0.08,
+  double darkAlpha = 0.14,
+}) {
+  return Color.alphaBlend(
+    accent.withValues(
+      alpha: brightness == Brightness.dark ? darkAlpha : lightAlpha,
+    ),
+    base,
+  );
+}
+
+_HomeTone _stockSituationTone({
+  required int negative,
+  required int withoutStock,
+  required int belowMinimum,
+}) {
+  if (negative > 0 || withoutStock > 0) {
+    return _HomeTone.stockCritical;
+  }
+
+  if (belowMinimum > 0) {
+    return _HomeTone.stockWarning;
+  }
+
+  return _HomeTone.success;
+}
+
+ButtonStyle _homeOutlinedButtonStyle({required WebThemeTokens tokens}) {
+  return ButtonStyle(
+    backgroundColor: WidgetStateProperty.resolveWith<Color>((
+      Set<WidgetState> states,
+    ) {
+      return states.contains(WidgetState.disabled)
+          ? tokens.disabledBackground
+          : tokens.surfaceMuted;
+    }),
+    foregroundColor: WidgetStateProperty.resolveWith<Color>((
+      Set<WidgetState> states,
+    ) {
+      return states.contains(WidgetState.disabled)
+          ? tokens.disabledForeground
+          : tokens.info;
+    }),
+    side: WidgetStateProperty.resolveWith<BorderSide>((
+      Set<WidgetState> states,
+    ) {
+      return BorderSide(
+        color:
+            states.contains(WidgetState.disabled)
+                ? tokens.cardBorder
+                : tokens.selectedBorder,
+      );
+    }),
+    overlayColor: _homeOverlay(tokens),
+    shape: WidgetStatePropertyAll<OutlinedBorder>(
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ),
+    textStyle: const WidgetStatePropertyAll<TextStyle>(
+      TextStyle(fontWeight: FontWeight.w800),
+    ),
+  );
+}
+
+ButtonStyle _homeTextButtonStyle({required WebThemeTokens tokens}) {
+  return ButtonStyle(
+    foregroundColor: WidgetStatePropertyAll<Color>(tokens.info),
+    overlayColor: _homeOverlay(tokens),
+    textStyle: const WidgetStatePropertyAll<TextStyle>(
+      TextStyle(fontWeight: FontWeight.w800),
+    ),
+  );
+}
+
+WidgetStateProperty<Color?> _homeOverlay(WebThemeTokens tokens) {
+  return WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
+    if (!_hasInteractiveState(states)) {
+      return null;
+    }
+
+    return tokens.hoverBackground.withValues(alpha: 0.72);
+  });
+}
+
+bool _hasInteractiveState(Set<WidgetState> states) {
+  return states.contains(WidgetState.hovered) ||
+      states.contains(WidgetState.focused) ||
+      states.contains(WidgetState.pressed);
 }
 
 class _ResponsiveCardGrid extends StatelessWidget {

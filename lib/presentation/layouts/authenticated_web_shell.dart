@@ -3,6 +3,7 @@ import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_destination_resolver.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_item.dart';
 import 'package:sixpos/presentation/navigation/web_sidebar_navigation.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
 import 'web_header.dart';
 
@@ -55,7 +56,9 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ThemeData webTheme = WebThemeTokens.applyTo(theme);
+    final WebThemeTokens tokens = WebThemeTokens.resolve(theme);
     final String activeTitle = _activeTitle(context);
 
     return LayoutBuilder(
@@ -68,33 +71,46 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
                 ? WebSidebarNavigation.expandedWidth
                 : WebSidebarNavigation.collapsedWidth;
 
-        return DecoratedBox(
-          decoration: BoxDecoration(color: colorScheme.surfaceContainerLowest),
+        return AnimatedContainer(
+          key: const Key('web-shell-workspace'),
+          duration: WebThemeTokens.transitionDuration,
+          curve: WebThemeTokens.transitionCurve,
+          decoration: BoxDecoration(color: tokens.workspaceBackground),
           child: Row(
             children: <Widget>[
               AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOutCubic,
                 width: sidebarWidth,
-                child: WebSidebarNavigation(
-                  items: widget.navigationItems,
-                  activeDestination: widget.activeDestination,
-                  expanded: expanded,
-                  expandedGroupIds: _expandedGroupIds,
-                  onToggleGroup: _toggleGroup,
-                  onDestinationSelected: _resolveDestination,
-                  appVersion: widget.appVersion,
+                child: AnimatedTheme(
+                  data: webTheme,
+                  duration: WebThemeTokens.transitionDuration,
+                  curve: WebThemeTokens.transitionCurve,
+                  child: WebSidebarNavigation(
+                    items: widget.navigationItems,
+                    activeDestination: widget.activeDestination,
+                    expanded: expanded,
+                    expandedGroupIds: _expandedGroupIds,
+                    onToggleGroup: _toggleGroup,
+                    onDestinationSelected: _resolveDestination,
+                    appVersion: widget.appVersion,
+                  ),
                 ),
               ),
               Expanded(
                 child: Column(
                   children: <Widget>[
-                    WebHeader(
-                      title: activeTitle,
-                      sidebarExpanded: expanded,
-                      onToggleSidebar: _toggleSidebar,
-                      currentCommerceName: widget.currentCommerceName,
-                      actions: widget.headerActions,
+                    AnimatedTheme(
+                      data: webTheme,
+                      duration: WebThemeTokens.transitionDuration,
+                      curve: WebThemeTokens.transitionCurve,
+                      child: WebHeader(
+                        title: activeTitle,
+                        sidebarExpanded: expanded,
+                        onToggleSidebar: _toggleSidebar,
+                        currentCommerceName: widget.currentCommerceName,
+                        actions: widget.headerActions,
+                      ),
                     ),
                     Expanded(child: widget.child),
                   ],
