@@ -48,5 +48,24 @@ void main() {
         expect(source, isNot(contains('Key(themeMode)')));
       },
     );
+
+    test('modal Selecionar itens usa superficies Web tokenizadas', () {
+      final String paginaSource =
+          File('lib/pagina_principal_web.dart').readAsStringSync();
+      final String selectorSource =
+          File(
+            'lib/presentation/screens/produto_lista_sub_painel_web.dart',
+          ).readAsStringSync();
+
+      expect(paginaSource, contains('dialogTokens.surfaceElevated'));
+      expect(
+        paginaSource,
+        contains('barrierColor: tokens.workspaceBackground'),
+      );
+      expect(selectorSource, contains('_usarTokensSelecaoWeb'));
+      expect(selectorSource, contains('tokens.surfaceElevated'));
+      expect(selectorSource, contains('tokens.selectedBackground'));
+      expect(selectorSource, contains('tokens.selectedBorder'));
+    });
   });
 }

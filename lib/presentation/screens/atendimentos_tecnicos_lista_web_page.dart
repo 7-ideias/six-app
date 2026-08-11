@@ -2427,19 +2427,44 @@ class _AtendimentosTecnicosListaWebPageState
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status,
   ) async {
+    final WebThemeTokens pageTokens = WebThemeTokens.of(context);
+    final bool dark = Theme.of(context).brightness == Brightness.dark;
     await showDialog<void>(
       context: context,
-      builder:
-          (dialogContext) => AlertDialog(
-            title: Text(
-              '${atendimento.numero} • versão ${atendimento.versaoOrcamento}',
-            ),
-            content: SizedBox(
-              width: 860,
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
+      barrierColor: pageTokens.workspaceBackground.withValues(
+        alpha: dark ? 0.62 : 0.34,
+      ),
+      builder: (dialogContext) {
+        final ThemeData theme = Theme.of(dialogContext);
+        final WebThemeTokens tokens = WebThemeTokens.of(dialogContext);
+        return AlertDialog(
+          backgroundColor: tokens.surfaceElevated,
+          surfaceTintColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 28,
+            vertical: 28,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+            side: BorderSide(color: tokens.cardBorder),
+          ),
+          titleTextStyle: theme.textTheme.titleLarge?.copyWith(
+            color: tokens.primaryText,
+            fontWeight: FontWeight.w900,
+          ),
+          contentTextStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: tokens.primaryText,
+          ),
+          title: Text(
+            '${atendimento.numero} • versão ${atendimento.versaoOrcamento}',
+          ),
+          content: SizedBox(
+            width: 860,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _detailSection('Resumo financeiro', <Widget>[
                     _detailLine(
                       'Liquidação',
                       atendimento.operacaoLiquidada
@@ -2465,6 +2490,9 @@ class _AtendimentosTecnicosListaWebPageState
                         'Assinatura',
                         'Pendente para a versão atual do orçamento',
                       ),
+                  ]),
+                  const SizedBox(height: 16),
+                  _detailSection('Atendimento', <Widget>[
                     _detailLine(
                       'Cliente',
                       atendimento.nomeClienteSnapshot ??
@@ -2488,14 +2516,11 @@ class _AtendimentosTecnicosListaWebPageState
                         'Diagnóstico',
                         atendimento.diagnosticoTecnico!,
                       ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Recebimentos',
-                      style: TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                    const SizedBox(height: 8),
+                  ]),
+                  const SizedBox(height: 16),
+                  _detailSection('Recebimentos', <Widget>[
                     if (atendimento.recebimentos.isEmpty)
-                      const Text('Nenhum recebimento lançado.')
+                      _detailMutedText('Nenhum recebimento lançado.')
                     else
                       ...atendimento.recebimentos.reversed.map(
                         (item) => _detailLine(
@@ -2503,14 +2528,11 @@ class _AtendimentosTecnicosListaWebPageState
                           '${_formatarMoeda(item.valor)} • ${_formatarData(item.dataHora)}${(item.observacao ?? '').trim().isEmpty ? '' : ' • ${item.observacao}'}',
                         ),
                       ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Itens',
-                      style: TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                    const SizedBox(height: 8),
+                  ]),
+                  const SizedBox(height: 16),
+                  _detailSection('Itens', <Widget>[
                     if (atendimento.itens.isEmpty)
-                      const Text('Nenhum item vinculado.')
+                      _detailMutedText('Nenhum item vinculado.')
                     else
                       ...atendimento.itens.map(
                         (item) => _detailLine(
@@ -2520,31 +2542,22 @@ class _AtendimentosTecnicosListaWebPageState
                           '${item.descricaoSnapshot} • ${item.quantidade.toStringAsFixed(0)} x ${_formatarMoeda(item.valorUnitario)}',
                         ),
                       ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Histórico de auditoria',
-                      style: TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                    const SizedBox(height: 8),
+                  ]),
+                  const SizedBox(height: 16),
+                  _detailSection('Histórico de auditoria', <Widget>[
                     if (atendimento.historicoAuditoria.isEmpty)
-                      const Text('Nenhuma auditoria registrada.')
+                      _detailMutedText('Nenhuma auditoria registrada.')
                     else
                       ...atendimento.historicoAuditoria.reversed.map(
-                        (item) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Text(
-                            '${_formatarData(item.dataHora)} • v${item.versaoOrcamento} • ${item.tipo}${(item.observacao ?? '').trim().isEmpty ? '' : ' • ${item.observacao}'}',
-                          ),
+                        (item) => _detailLongText(
+                          '${_formatarData(item.dataHora)} • v${item.versaoOrcamento} • ${item.tipo}${(item.observacao ?? '').trim().isEmpty ? '' : ' • ${item.observacao}'}',
                         ),
                       ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Histórico de status',
-                      style: TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                    const SizedBox(height: 8),
+                  ]),
+                  const SizedBox(height: 16),
+                  _detailSection('Histórico de status', <Widget>[
                     if (atendimento.historicoStatus.isEmpty)
-                      const Text('Nenhuma mudança registrada.')
+                      _detailMutedText('Nenhuma mudança registrada.')
                     else
                       ...atendimento.historicoStatus.reversed.map((item) {
                         final anterior =
@@ -2557,52 +2570,82 @@ class _AtendimentosTecnicosListaWebPageState
                             item.statusNomePtBr ??
                             _statusLabelPorCodigo(item.statusCodigo, status);
                         final observacao = item.observacao?.trim() ?? '';
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Text(
-                            '${_formatarData(item.dataHora)} • $anterior → $novo${observacao.isEmpty ? '' : ' • $observacao'}',
-                          ),
+                        return _detailLongText(
+                          '${_formatarData(item.dataHora)} • $anterior → $novo${observacao.isEmpty ? '' : ' • $observacao'}',
                         );
                       }),
-                  ],
+                  ]),
+                ],
+              ),
+            ),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+          actions: <Widget>[
+            FilledButton.icon(
+              onPressed:
+                  atendimento.operacaoLiquidada
+                      ? null
+                      : () => _abrirRecebimento(atendimento),
+              icon: const Icon(Icons.payments_outlined),
+              label: const Text('Receber'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => _abrirEditarAtendimento(atendimento),
+              icon: const Icon(Icons.edit_note_rounded),
+              label: const Text('Editar'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => _gerarLinkAssinatura(atendimento),
+              icon: const Icon(Icons.draw_outlined),
+              label: const Text('Link assinatura'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => _gerarLinkStatusPublico(atendimento),
+              icon: const Icon(Icons.ios_share_rounded),
+              label: Text(
+                context.t(
+                  'atendimentoTecnico.publicStatus.action',
+                  fallback: 'Status público',
                 ),
               ),
             ),
-            actions: <Widget>[
-              FilledButton.icon(
-                onPressed:
-                    atendimento.operacaoLiquidada
-                        ? null
-                        : () => _abrirRecebimento(atendimento),
-                icon: const Icon(Icons.payments_outlined),
-                label: const Text('Receber'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => _abrirEditarAtendimento(atendimento),
-                icon: const Icon(Icons.edit_note_rounded),
-                label: const Text('Editar'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => _gerarLinkAssinatura(atendimento),
-                icon: const Icon(Icons.draw_outlined),
-                label: const Text('Link assinatura'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => _gerarLinkStatusPublico(atendimento),
-                icon: const Icon(Icons.ios_share_rounded),
-                label: Text(
-                  context.t(
-                    'atendimentoTecnico.publicStatus.action',
-                    fallback: 'Status público',
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Fechar'),
-              ),
-            ],
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Fechar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _detailSection(String title, List<Widget> children) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return AnimatedContainer(
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: tokens.primaryText,
+              fontWeight: FontWeight.w900,
+            ),
           ),
+          const SizedBox(height: 10),
+          ...children,
+        ],
+      ),
     );
   }
 
@@ -2627,6 +2670,25 @@ class _AtendimentosTecnicosListaWebPageState
             child: Text(value, style: TextStyle(color: tokens.primaryText)),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _detailMutedText(String value) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 7),
+      child: Text(value, style: TextStyle(color: tokens.secondaryText)),
+    );
+  }
+
+  Widget _detailLongText(String value) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        value,
+        style: TextStyle(color: tokens.primaryText, height: 1.35),
       ),
     );
   }
@@ -3666,170 +3728,201 @@ class _AlterarStatusAtendimentoWebDialogState
     final theme = Theme.of(context);
     final tokens = WebThemeTokens.of(context);
     return Dialog(
+      backgroundColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 620),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final bool compact = constraints.maxWidth < 520;
-            return SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Container(
-                    padding: EdgeInsets.fromLTRB(
-                      compact ? 18 : 24,
-                      compact ? 18 : 22,
-                      compact ? 12 : 16,
-                      compact ? 16 : 18,
-                    ),
-                    decoration: BoxDecoration(
-                      color: tokens.surfaceMuted,
-                      border: Border(
-                        bottom: BorderSide(color: tokens.cardBorder),
+      child: AnimatedContainer(
+        duration: WebThemeTokens.transitionDuration,
+        curve: WebThemeTokens.transitionCurve,
+        decoration: BoxDecoration(
+          color: tokens.surfaceElevated,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: tokens.cardBorder),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withValues(
+                alpha:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? 0.24
+                        : 0.10,
+              ),
+              blurRadius: 30,
+              offset: const Offset(0, 18),
+            ),
+          ],
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 620),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final bool compact = constraints.maxWidth < 520;
+              return SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Container(
+                      padding: EdgeInsets.fromLTRB(
+                        compact ? 18 : 24,
+                        compact ? 18 : 22,
+                        compact ? 12 : 16,
+                        compact ? 16 : 18,
+                      ),
+                      decoration: BoxDecoration(
+                        color: tokens.surfaceMuted,
+                        border: Border(
+                          bottom: BorderSide(color: tokens.cardBorder),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: tokens.info.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Icon(
+                              Icons.swap_horiz_rounded,
+                              color: tokens.info,
+                              size: 27,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  'Mudar status',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    color: tokens.primaryText,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Registre a próxima etapa do atendimento técnico.',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: tokens.secondaryText,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton.filledTonal(
+                            onPressed:
+                                _salvando
+                                    ? null
+                                    : () => Navigator.of(context).pop(false),
+                            tooltip: 'Fechar',
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: tokens.info.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: Icon(
-                            Icons.swap_horiz_rounded,
-                            color: tokens.info,
-                            size: 27,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Text(
-                                'Mudar status',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  color: tokens.primaryText,
-                                ),
+                    ColoredBox(
+                      color: tokens.surfaceElevated,
+                      child: Padding(
+                        padding: EdgeInsets.all(compact ? 18 : 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            _StatusContextCard(
+                              numero: widget.atendimento.numero,
+                              equipamento: _equipamento,
+                              cliente: _cliente,
+                              statusAtual: widget.statusAtualLabel,
+                            ),
+                            const SizedBox(height: 16),
+                            _StatusWebSelector(
+                              label: 'Novo status',
+                              value: _statusSelecionado,
+                              options: widget.status,
+                              enabled: !_salvando,
+                              onChanged:
+                                  (value) => setState(
+                                    () => _statusSelecionado = value,
+                                  ),
+                            ),
+                            const SizedBox(height: 14),
+                            TextField(
+                              controller: _observacaoController,
+                              enabled: !_salvando,
+                              minLines: 3,
+                              maxLines: 5,
+                              decoration: InputDecoration(
+                                labelText: 'Observação da mudança',
+                                hintText:
+                                    'Informe um detalhe útil para o histórico, se necessário.',
+                                filled: true,
+                                fillColor: tokens.inputBackground,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Registre a próxima etapa do atendimento técnico.',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: tokens.secondaryText,
-                                  height: 1.35,
-                                ),
-                              ),
-                            ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: EdgeInsets.fromLTRB(
+                        compact ? 18 : 24,
+                        14,
+                        compact ? 18 : 24,
+                        compact ? 18 : 20,
+                      ),
+                      decoration: BoxDecoration(
+                        color: tokens.surface,
+                        border: Border(
+                          top: BorderSide(color: tokens.cardBorder),
+                        ),
+                      ),
+                      child: Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        alignment:
+                            compact ? WrapAlignment.start : WrapAlignment.end,
+                        children: <Widget>[
+                          OutlinedButton(
+                            onPressed:
+                                _salvando
+                                    ? null
+                                    : () => Navigator.of(context).pop(false),
+                            child: const Text('Cancelar'),
                           ),
-                        ),
-                        IconButton.filledTonal(
-                          onPressed:
-                              _salvando
-                                  ? null
-                                  : () => Navigator.of(context).pop(false),
-                          tooltip: 'Fechar',
-                          icon: const Icon(Icons.close_rounded),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(compact ? 18 : 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        _StatusContextCard(
-                          numero: widget.atendimento.numero,
-                          equipamento: _equipamento,
-                          cliente: _cliente,
-                          statusAtual: widget.statusAtualLabel,
-                        ),
-                        const SizedBox(height: 16),
-                        _StatusWebSelector(
-                          label: 'Novo status',
-                          value: _statusSelecionado,
-                          options: widget.status,
-                          enabled: !_salvando,
-                          onChanged:
-                              (value) =>
-                                  setState(() => _statusSelecionado = value),
-                        ),
-                        const SizedBox(height: 14),
-                        TextField(
-                          controller: _observacaoController,
-                          enabled: !_salvando,
-                          minLines: 3,
-                          maxLines: 5,
-                          decoration: const InputDecoration(
-                            labelText: 'Observação da mudança',
-                            hintText:
-                                'Informe um detalhe útil para o histórico, se necessário.',
+                          FilledButton.icon(
+                            onPressed:
+                                _statusSelecionado == null || _salvando
+                                    ? null
+                                    : _salvar,
+                            icon:
+                                _salvando
+                                    ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.2,
+                                      ),
+                                    )
+                                    : const Icon(Icons.check_rounded),
+                            label: Text(_salvando ? 'Salvando...' : 'Salvar'),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.fromLTRB(
-                      compact ? 18 : 24,
-                      14,
-                      compact ? 18 : 24,
-                      compact ? 18 : 20,
-                    ),
-                    decoration: BoxDecoration(
-                      color: tokens.surface,
-                      border: Border(top: BorderSide(color: tokens.cardBorder)),
-                    ),
-                    child: Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      alignment:
-                          compact ? WrapAlignment.start : WrapAlignment.end,
-                      children: <Widget>[
-                        OutlinedButton(
-                          onPressed:
-                              _salvando
-                                  ? null
-                                  : () => Navigator.of(context).pop(false),
-                          child: const Text('Cancelar'),
-                        ),
-                        FilledButton.icon(
-                          onPressed:
-                              _statusSelecionado == null || _salvando
-                                  ? null
-                                  : _salvar,
-                          icon:
-                              _salvando
-                                  ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.2,
-                                    ),
-                                  )
-                                  : const Icon(Icons.check_rounded),
-                          label: Text(_salvando ? 'Salvando...' : 'Salvar'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -4021,26 +4114,51 @@ class _StatusWebSelectorState extends State<_StatusWebSelector> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       color: tokens.menuBackground,
       items:
-          widget.options
-              .map(
-                (option) => PopupMenuItem<DominioOpcaoModel>(
-                  value: option,
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          option.nomePadraoPtBr,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+          widget.options.map((option) {
+            final bool selected = option.id == widget.value?.id;
+            return PopupMenuItem<DominioOpcaoModel>(
+              value: option,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: AnimatedContainer(
+                duration: WebThemeTokens.transitionDuration,
+                curve: WebThemeTokens.transitionCurve,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 9,
+                ),
+                decoration: BoxDecoration(
+                  color:
+                      selected ? tokens.selectedBackground : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  border:
+                      selected
+                          ? Border.all(color: tokens.selectedBorder)
+                          : null,
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        option.nomePadraoPtBr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color:
+                              selected
+                                  ? tokens.primaryText
+                                  : tokens.secondaryText,
+                          fontWeight:
+                              selected ? FontWeight.w900 : FontWeight.w800,
                         ),
                       ),
-                      if (option.id == widget.value?.id)
-                        Icon(Icons.check_rounded, size: 18, color: tokens.info),
-                    ],
-                  ),
+                    ),
+                    if (selected)
+                      Icon(Icons.check_rounded, size: 18, color: tokens.info),
+                  ],
                 ),
-              )
-              .toList(),
+              ),
+            );
+          }).toList(),
     );
     if (!mounted) return;
     setState(() => _opened = false);

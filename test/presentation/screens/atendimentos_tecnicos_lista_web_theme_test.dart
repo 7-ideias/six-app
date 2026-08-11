@@ -40,5 +40,17 @@ void main() {
       );
       expect(source, isNot(contains('pagamentoAberto ? colorScheme.error')));
     });
+
+    test('tokeniza modais de detalhe e mudanca de status', () {
+      expect(source, contains('barrierColor: pageTokens.workspaceBackground'));
+      expect(source, contains('backgroundColor: tokens.surfaceElevated'));
+      expect(source, contains('surfaceTintColor: Colors.transparent'));
+      expect(source, contains("_detailSection('Resumo financeiro'"));
+      expect(source, contains("_detailSection('Histórico de auditoria'"));
+      expect(source, contains('color: tokens.surfaceMuted'));
+      expect(source, contains('color: tokens.inputBackground'));
+      expect(source, contains('tokens.selectedBackground'));
+      expect(source, contains('tokens.selectedBorder'));
+    });
   });
 }

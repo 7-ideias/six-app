@@ -362,6 +362,33 @@ void main() {
       expect(childMounts, 1);
     });
 
+    testWidgets('preserva grupos da Sidebar ao alternar PDV expandido', (
+      WidgetTester tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(1366, 768));
+      addTearDown(() async {
+        await tester.binding.setSurfaceSize(null);
+      });
+
+      await tester.pumpWidget(const _ExpandedPdvShellTestApp());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Catálogo'));
+      await tester.pumpAndSettle();
+      expect(find.text('Produtos'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('enter-pdv-expanded')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('pdv-expanded-overlay')), findsOneWidget);
+
+      final _ExpandedPdvShellTestAppState state = tester.state(
+        find.byType(_ExpandedPdvShellTestApp),
+      );
+      state.exitExpandedMode();
+      await tester.pumpAndSettle();
+      expect(find.text('Produtos'), findsOneWidget);
+    });
+
     testWidgets('possui traducoes locais da navegacao em pt, en e es', (
       WidgetTester tester,
     ) async {
@@ -640,6 +667,93 @@ class _ThemeSwitchingShellTestAppState
             ),
           ],
           child: _MountCounterChild(onMounted: widget.onChildMounted),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpandedPdvShellTestApp extends StatefulWidget {
+  const _ExpandedPdvShellTestApp();
+
+  @override
+  State<_ExpandedPdvShellTestApp> createState() =>
+      _ExpandedPdvShellTestAppState();
+}
+
+class _ExpandedPdvShellTestAppState extends State<_ExpandedPdvShellTestApp> {
+  bool _expanded = false;
+
+  void exitExpandedMode() {
+    setState(() => _expanded = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      theme: ThemeData.light(useMaterial3: true),
+      locale: const Locale('pt'),
+      localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: const <Locale>[
+        Locale('pt'),
+        Locale('en'),
+        Locale('es'),
+      ],
+      home: Scaffold(
+        body: Stack(
+          children: <Widget>[
+            Offstage(
+              offstage: _expanded,
+              child: TickerMode(
+                enabled: !_expanded,
+                child: IgnorePointer(
+                  ignoring: _expanded,
+                  child: AuthenticatedWebShell(
+                    navigationItems: WebNavigationRegistry.activeItems,
+                    resolver: WebNavigationDestinationResolver(
+                      actions: _RecordingActions(),
+                    ),
+                    activeDestination:
+                        WebNavigationDestination.operationsPointOfSale,
+                    appVersion: 'test',
+                    currentCommerceName: 'Comércio Teste',
+                    headerActions: <Widget>[
+                      IconButton(
+                        key: const Key('enter-pdv-expanded'),
+                        onPressed: () => setState(() => _expanded = true),
+                        icon: const Icon(Icons.fullscreen_rounded),
+                      ),
+                    ],
+                    child:
+                        _expanded
+                            ? const SizedBox.shrink(
+                              key: Key('pdv-expanded-placeholder'),
+                            )
+                            : const SizedBox.expand(
+                              key: Key('pdv-normal-content'),
+                            ),
+                  ),
+                ),
+              ),
+            ),
+            if (_expanded)
+              Positioned.fill(
+                child: Material(
+                  key: const Key('pdv-expanded-overlay'),
+                  child: Center(
+                    child: FilledButton(
+                      key: const Key('exit-pdv-expanded'),
+                      onPressed: () => setState(() => _expanded = false),
+                      child: const Text('Sair'),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

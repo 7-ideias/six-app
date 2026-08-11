@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/data/models/produto_dashboard_model.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
 class ProdutoDashboardWebPage extends StatefulWidget {
   const ProdutoDashboardWebPage({
@@ -88,8 +89,9 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
 
   @override
   Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Material(
-      color: Theme.of(context).colorScheme.surface,
+      color: tokens.workspaceBackground,
       child: FutureBuilder<ProdutoDashboardModel>(
         future: _dashboardFuture,
         builder: (context, snapshot) {
@@ -154,13 +156,12 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
 
   Widget _buildHeader() {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.06),
-        border: Border(
-          bottom: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
+        color: tokens.surfaceMuted,
+        border: Border(bottom: BorderSide(color: tokens.cardBorder)),
       ),
       child: Row(
         children: <Widget>[
@@ -173,6 +174,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                 Text(
                   'Produtos',
                   style: theme.textTheme.headlineSmall?.copyWith(
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -180,7 +182,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                 Text(
                   'Resumo executivo do catálogo, estoque, valor parado e alertas de reposição.',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                     height: 1.35,
                   ),
                 ),
@@ -196,6 +198,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                 onPressed: _recarregar,
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Atualizar'),
+                style: _headerOutlinedButtonStyle(tokens),
               ),
               FilledButton.icon(
                 onPressed: widget.onNovoProduto,
@@ -206,6 +209,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                 onPressed: widget.onOpenListaCompleta,
                 icon: const Icon(Icons.table_rows_rounded),
                 label: const Text('Lista completa'),
+                style: _headerOutlinedButtonStyle(tokens),
               ),
               if (widget.onBack != null)
                 IconButton.filledTonal(
@@ -221,15 +225,24 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
   }
 
   Widget _headerIcon(IconData icon) {
-    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Container(
       width: 54,
       height: 54,
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.12),
+        color: tokens.info.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(18),
       ),
-      child: Icon(icon, color: theme.colorScheme.primary, size: 28),
+      child: Icon(icon, color: tokens.info, size: 28),
+    );
+  }
+
+  ButtonStyle _headerOutlinedButtonStyle(WebThemeTokens tokens) {
+    return OutlinedButton.styleFrom(
+      foregroundColor: tokens.info,
+      backgroundColor: tokens.surface,
+      side: BorderSide(color: tokens.cardBorder),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     );
   }
 
@@ -475,17 +488,12 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
   }
 
   Widget _kpiCard(_Kpi kpi) {
-    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     final background =
-        kpi.highlight ? theme.colorScheme.primary : theme.colorScheme.surface;
-    final foreground =
-        kpi.highlight
-            ? theme.colorScheme.onPrimary
-            : theme.colorScheme.onSurface;
-    final muted =
-        kpi.highlight
-            ? theme.colorScheme.onPrimary.withOpacity(0.80)
-            : theme.colorScheme.onSurfaceVariant;
+        kpi.highlight ? tokens.surfaceElevated : tokens.cardBackground;
+    final foreground = tokens.primaryText;
+    final muted = tokens.secondaryText;
+    final accent = tokens.info;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -493,10 +501,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
         color: background,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color:
-              kpi.highlight
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.outlineVariant,
+          color: kpi.highlight ? tokens.selectedBorder : tokens.cardBorder,
         ),
       ),
       child: Row(
@@ -507,17 +512,11 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
             decoration: BoxDecoration(
               color:
                   kpi.highlight
-                      ? theme.colorScheme.onPrimary.withOpacity(0.14)
-                      : theme.colorScheme.primary.withOpacity(0.10),
+                      ? accent.withValues(alpha: 0.16)
+                      : accent.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(
-              kpi.icon,
-              color:
-                  kpi.highlight
-                      ? theme.colorScheme.onPrimary
-                      : theme.colorScheme.primary,
-            ),
+            child: Icon(kpi.icon, color: accent),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -568,13 +567,14 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     required Widget child,
   }) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -582,6 +582,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
           Text(
             title,
             style: theme.textTheme.titleMedium?.copyWith(
+              color: tokens.primaryText,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -589,7 +590,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
           Text(
             subtitle,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+              color: tokens.secondaryText,
               height: 1.35,
             ),
           ),
@@ -607,6 +608,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     required ValueChanged<int> onTouchedIndexChanged,
   }) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     final chartItems = itens.take(6).toList();
     if (chartItems.isEmpty) return _noData();
 
@@ -643,7 +645,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                     maxValue <= 0 ? 2.0 : math.max(1.0, maxValue / 4),
                 getDrawingHorizontalLine:
                     (_) => FlLine(
-                      color: theme.colorScheme.outlineVariant.withOpacity(0.55),
+                      color: tokens.divider.withValues(alpha: 0.75),
                       strokeWidth: 1,
                     ),
               ),
@@ -661,7 +663,10 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                       toY: value(chartItems[index]) * itemProgress,
                       width: touched ? 30 : 22,
                       borderRadius: BorderRadius.circular(touched ? 10 : 8),
-                      color: _chartColor(theme, index).withOpacity(opacity),
+                      color: _chartColor(
+                        theme,
+                        index,
+                      ).withValues(alpha: opacity),
                     ),
                   ],
                 );
@@ -691,7 +696,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                     : axisValue.toInt().toString(),
                 style: TextStyle(
                   fontSize: 10,
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: WebThemeTokens.of(context).mutedText,
                 ),
               ),
         ),
@@ -716,7 +721,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 10,
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: WebThemeTokens.of(context).mutedText,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -778,9 +783,12 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                         value: math.max(0.001, item.quantidade * itemProgress),
                         title: itemProgress > 0.72 ? _qty(item.quantidade) : '',
                         radius: touched ? 78 : 54 + (12 * progress),
-                        color: _chartColor(theme, index).withOpacity(opacity),
+                        color: _chartColor(
+                          theme,
+                          index,
+                        ).withValues(alpha: opacity),
                         titleStyle: const TextStyle(
-                          color: Colors.white,
+                          color: Color(0xFFF8FAFC),
                           fontWeight: FontWeight.w900,
                           fontSize: 12,
                         ),
@@ -814,6 +822,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
 
   Widget _alerts(List<ProdutoDashboardAlerta> alertas) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return _sectionCard(
       title: 'Atenção necessária',
       icon: Icons.tips_and_updates_outlined,
@@ -826,14 +835,35 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.08),
+                  color: tokens.surfaceMuted,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: color.withOpacity(0.22)),
+                  border: Border.all(color: tokens.cardBorder),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Icon(_alertIcon(alerta.tipo), color: color),
+                    Container(
+                      width: 3,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        _alertIcon(alerta.tipo),
+                        color: color,
+                        size: 19,
+                      ),
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -849,7 +879,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                           Text(
                             alerta.descricao,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                              color: tokens.secondaryText,
                               height: 1.35,
                             ),
                           ),
@@ -885,7 +915,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
   }
 
   Widget _topStockValue(List<ProdutoDashboardItem> items) {
-    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return _sectionCard(
       title: 'Top produtos por valor em estoque',
       icon: Icons.leaderboard_outlined,
@@ -902,10 +932,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                         ),
                         decoration: BoxDecoration(
                           border: Border(
-                            bottom: BorderSide(
-                              color: theme.colorScheme.outlineVariant
-                                  .withOpacity(0.70),
-                            ),
+                            bottom: BorderSide(color: tokens.divider),
                           ),
                         ),
                         child: Row(
@@ -959,25 +986,27 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     required Widget child,
   }) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(icon, color: theme.colorScheme.primary),
+              Icon(icon, color: tokens.info),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   title,
                   style: theme.textTheme.titleMedium?.copyWith(
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -993,17 +1022,18 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
 
   Widget _compactProduct(ProdutoDashboardItem item) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.45),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         children: <Widget>[
-          Icon(Icons.inventory_outlined, color: theme.colorScheme.primary),
+          Icon(Icons.inventory_outlined, color: tokens.stockWarning),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1014,6 +1044,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -1023,7 +1054,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                   ),
                 ),
               ],
@@ -1033,7 +1064,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
           Text(
             _qty(item.quantidadeEstoque),
             style: TextStyle(
-              color: theme.colorScheme.error,
+              color: tokens.stockWarning,
               fontWeight: FontWeight.w900,
               fontSize: 18,
             ),
@@ -1045,6 +1076,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
 
   Widget _tableText(String value, {bool alignEnd = false, bool bold = false}) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Align(
       alignment: alignEnd ? Alignment.centerRight : Alignment.centerLeft,
       child: Text(
@@ -1052,6 +1084,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: theme.textTheme.bodySmall?.copyWith(
+          color: bold ? tokens.primaryText : tokens.secondaryText,
           fontWeight: bold ? FontWeight.w900 : FontWeight.w600,
         ),
       ),
@@ -1060,6 +1093,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
 
   Widget _legend(Color color, String label) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -1072,7 +1106,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
         Text(
           label,
           style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+            color: tokens.secondaryText,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -1111,20 +1145,15 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
   }
 
   Widget _loadingKpiCard({required bool highlight}) {
-    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+    final Color accent = tokens.info;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color:
-            highlight
-                ? theme.colorScheme.primary.withOpacity(0.90)
-                : theme.colorScheme.surface,
+        color: highlight ? tokens.surfaceElevated : tokens.cardBackground,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color:
-              highlight
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.outlineVariant,
+          color: highlight ? tokens.selectedBorder : tokens.cardBorder,
         ),
       ),
       child: Row(
@@ -1133,10 +1162,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
             width: 48,
             height: 48,
             radius: 16,
-            color:
-                highlight
-                    ? theme.colorScheme.onPrimary.withOpacity(0.16)
-                    : null,
+            color: highlight ? accent.withValues(alpha: 0.16) : null,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1147,19 +1173,13 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                 _skeletonBox(
                   width: 96,
                   height: 10,
-                  color:
-                      highlight
-                          ? theme.colorScheme.onPrimary.withOpacity(0.22)
-                          : null,
+                  color: highlight ? accent.withValues(alpha: 0.22) : null,
                 ),
                 const SizedBox(height: 10),
                 _skeletonBox(
                   width: 134,
                   height: 22,
-                  color:
-                      highlight
-                          ? theme.colorScheme.onPrimary.withOpacity(0.28)
-                          : null,
+                  color: highlight ? accent.withValues(alpha: 0.28) : null,
                 ),
               ],
             ),
@@ -1185,7 +1205,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
   }
 
   Widget _loadingSectionCard({required String title, required int order}) {
-    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return _entry(
       order: order,
       child: _sectionCard(
@@ -1198,11 +1218,9 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
               margin: EdgeInsets.only(bottom: index == 2 ? 0 : 10),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceVariant.withOpacity(0.28),
+                color: tokens.surfaceMuted,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: theme.colorScheme.outlineVariant.withOpacity(0.70),
-                ),
+                border: Border.all(color: tokens.cardBorder),
               ),
               child: Row(
                 children: <Widget>[
@@ -1230,7 +1248,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
   }
 
   Widget _chartSkeleton() {
-    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return SizedBox(
       height: 260,
       child: Stack(
@@ -1240,10 +1258,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: List<Widget>.generate(
                 5,
-                (index) => Container(
-                  height: 1,
-                  color: theme.colorScheme.outlineVariant.withOpacity(0.55),
-                ),
+                (index) => Container(height: 1, color: tokens.divider),
               ),
             ),
           ),
@@ -1272,12 +1287,12 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     double radius = 999,
     Color? color,
   }) {
-    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: color ?? theme.colorScheme.surfaceVariant.withOpacity(0.55),
+        color: color ?? tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(radius),
       ),
     );
@@ -1287,19 +1302,20 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     String text = 'Sem dados suficientes para exibir esta informação.',
   }) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       height: 220,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
         text,
         textAlign: TextAlign.center,
         style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
+          color: tokens.secondaryText,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -1308,6 +1324,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
 
   Widget _buildError(Object? error) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Center(
       child: _entry(
         order: 0,
@@ -1315,25 +1332,20 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
           constraints: const BoxConstraints(maxWidth: 560),
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: theme.colorScheme.errorContainer.withOpacity(0.30),
+            color: tokens.danger.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: theme.colorScheme.error.withOpacity(0.25),
-            ),
+            border: Border.all(color: tokens.danger.withValues(alpha: 0.28)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(
-                Icons.cloud_off_rounded,
-                size: 42,
-                color: theme.colorScheme.error,
-              ),
+              Icon(Icons.cloud_off_rounded, size: 42, color: tokens.danger),
               const SizedBox(height: 14),
               Text(
                 'Não foi possível carregar o resumo de produtos.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium?.copyWith(
+                  color: tokens.primaryText,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -1342,7 +1354,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                 error?.toString() ?? 'Erro desconhecido',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: tokens.secondaryText,
                 ),
               ),
               const SizedBox(height: 18),
@@ -1360,6 +1372,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
 
   Widget _buildEmpty() {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Center(
       child: _entry(
         order: 0,
@@ -1367,21 +1380,19 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
           constraints: const BoxConstraints(maxWidth: 560),
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
+            color: tokens.cardBackground,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
+            border: Border.all(color: tokens.cardBorder),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(
-                Icons.inventory_2_outlined,
-                size: 48,
-                color: theme.colorScheme.primary,
-              ),
+              Icon(Icons.inventory_2_outlined, size: 48, color: tokens.info),
               const SizedBox(height: 14),
               Text(
                 'Nenhum produto cadastrado ainda.',
                 style: theme.textTheme.titleLarge?.copyWith(
+                  color: tokens.primaryText,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -1390,7 +1401,7 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                 'Cadastre os primeiros itens para visualizar valor em estoque, categorias, margem e alertas executivos.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: tokens.secondaryText,
                   height: 1.45,
                 ),
               ),
@@ -1408,30 +1419,31 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
   }
 
   Color _chartColor(ThemeData theme, int index) {
+    final tokens = WebThemeTokens.of(context);
     final colors = <Color>[
-      theme.colorScheme.primary,
-      theme.colorScheme.tertiary,
+      tokens.info,
+      tokens.success,
+      tokens.warning,
+      tokens.stockWarning,
+      tokens.stockCritical,
       theme.colorScheme.secondary,
-      Colors.orange.shade700,
-      Colors.green.shade700,
-      Colors.red.shade600,
-      Colors.indigo.shade500,
-      Colors.blueGrey.shade600,
+      tokens.statusNeutral,
     ];
     return colors[index % colors.length];
   }
 
   Color _alertColor(ThemeData theme, String tipo) {
+    final tokens = WebThemeTokens.of(context);
     switch (tipo.toUpperCase()) {
       case 'CRITICO':
       case 'ALTO':
-        return theme.colorScheme.error;
+        return tokens.danger;
       case 'MEDIO':
-        return Colors.orange.shade700;
+        return tokens.warning;
       case 'OK':
-        return Colors.green.shade700;
+        return tokens.success;
       default:
-        return theme.colorScheme.primary;
+        return tokens.info;
     }
   }
 

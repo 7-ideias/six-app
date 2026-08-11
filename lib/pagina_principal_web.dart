@@ -1120,20 +1120,53 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return;
     }
 
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool dark = Theme.of(context).brightness == Brightness.dark;
     final dynamic result = await showDialog<dynamic>(
       context: context,
+      barrierColor: tokens.workspaceBackground.withValues(
+        alpha: dark ? 0.62 : 0.34,
+      ),
       builder: (BuildContext context) {
+        final ThemeData themedDialog = WebThemeTokens.applyTo(
+          Theme.of(context),
+        );
+        final WebThemeTokens dialogTokens = WebThemeTokens.of(context);
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 28,
+            vertical: 28,
           ),
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.80,
-            height: MediaQuery.of(context).size.height * 0.80,
-            child: SubPainelWebProdutoLista(
-              isSelecao: true,
-              permitirSelecaoMultipla: true,
-              tipoInicial: tipoInicial,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: Theme(
+            data: themedDialog,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: dialogTokens.surfaceElevated,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: dialogTokens.cardBorder),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: dark ? 0.28 : 0.12),
+                    blurRadius: 32,
+                    offset: const Offset(0, 18),
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.80,
+                height: MediaQuery.of(context).size.height * 0.80,
+                child: SubPainelWebProdutoLista(
+                  isSelecao: true,
+                  permitirSelecaoMultipla: true,
+                  tipoInicial: tipoInicial,
+                ),
+              ),
             ),
           ),
         );
@@ -2867,6 +2900,23 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       _garantirModuloAtualPermitido(webNavigationItems);
     }
 
+    final Widget webShell = AuthenticatedWebShell(
+      navigationItems: webNavigationItems,
+      resolver: _webNavigationResolver,
+      activeDestination: webNavigationDestinationForModuloCentralPdv(
+        _moduloAtual,
+      ),
+      appVersion: AppConfig.appVersion,
+      currentCommerceName: _nomeEmpresaAtualParaHeader(),
+      headerActions: _buildWebShellHeaderActions(),
+      child:
+          modoExpandidoAtivo
+              ? const SizedBox.shrink(
+                key: Key('web-shell-pdv-expanded-placeholder'),
+              )
+              : _buildConteudoPrincipalWeb(total),
+    );
+
     return PopScope(
       canPop: false,
       child: Scaffold(
@@ -2874,23 +2924,31 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             modoExpandidoAtivo
                 ? _pdvTheme.backgroundPage
                 : webTokens.workspaceBackground,
-        body:
-            modoExpandidoAtivo
-                ? SafeArea(
-                  child: Column(
-                    children: <Widget>[_buildConteudoCentral(total)],
-                  ),
-                )
-                : AuthenticatedWebShell(
-                  navigationItems: webNavigationItems,
-                  resolver: _webNavigationResolver,
-                  activeDestination:
-                      webNavigationDestinationForModuloCentralPdv(_moduloAtual),
-                  appVersion: AppConfig.appVersion,
-                  currentCommerceName: _nomeEmpresaAtualParaHeader(),
-                  headerActions: _buildWebShellHeaderActions(),
-                  child: _buildConteudoPrincipalWeb(total),
+        body: Stack(
+          children: <Widget>[
+            Offstage(
+              offstage: modoExpandidoAtivo,
+              child: TickerMode(
+                enabled: !modoExpandidoAtivo,
+                child: IgnorePointer(
+                  ignoring: modoExpandidoAtivo,
+                  child: webShell,
                 ),
+              ),
+            ),
+            if (modoExpandidoAtivo)
+              Positioned.fill(
+                child: ColoredBox(
+                  color: _pdvTheme.backgroundPage,
+                  child: SafeArea(
+                    child: Column(
+                      children: <Widget>[_buildConteudoCentral(total)],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

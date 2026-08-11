@@ -7,6 +7,7 @@ import 'package:sixpos/core/utils/pdf_download.dart';
 import 'package:sixpos/core/utils/produto_helper.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 import 'package:sixpos/sub_painel_cadastro_produto.dart';
 
@@ -85,6 +86,8 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       _modoDeExibicaoProdutos == ModoDeExibicaoUsuario.horizontal;
 
   bool get _isProdutoSelecionado => tipoSelecionado == 'PRODUTO';
+
+  bool get _usarTokensSelecaoWeb => widget.isSelecao;
 
   int get _quantidadeSelecionadaTotal => _produtosSelecionados.values.fold<int>(
     0,
@@ -417,11 +420,15 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           builder: (context, constraints) {
             final isCompact = constraints.maxWidth < 920;
             final horizontalPadding = isCompact ? 16.0 : 28.0;
+            final tokens = WebThemeTokens.of(context);
 
-            return Container(
-              color: Theme.of(
-                context,
-              ).colorScheme.surfaceVariant.withOpacity(0.16),
+            return AnimatedContainer(
+              duration: WebThemeTokens.transitionDuration,
+              curve: WebThemeTokens.transitionCurve,
+              color:
+                  widget.isSelecao
+                      ? tokens.surfaceElevated
+                      : tokens.workspaceBackground,
               child: Column(
                 children: <Widget>[
                   _buildHeader(context, itensDaLista.length, isCompact),
@@ -475,7 +482,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Widget _buildHeader(BuildContext context, int totalItens, bool isCompact) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = WebThemeTokens.of(context);
+    final bool selectionMode = _usarTokensSelecaoWeb;
+    final Color accent = tokens.info;
+    final Color titleColor = tokens.primaryText;
+    final Color subtitleColor = tokens.secondaryText;
     final title =
         widget.isSelecao
             ? widget.permitirSelecaoMultipla
@@ -499,14 +510,14 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.10),
+            color: accent.withValues(alpha: selectionMode ? 0.14 : 0.10),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(
             widget.isSelecao
                 ? Icons.add_shopping_cart_rounded
                 : Icons.inventory_2_outlined,
-            color: colorScheme.primary,
+            color: accent,
           ),
         ),
         const SizedBox(width: 14),
@@ -521,7 +532,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 style: TextStyle(
                   fontSize: isCompact ? 21 : 24,
                   fontWeight: FontWeight.w900,
-                  color: colorScheme.onSurface,
+                  color: titleColor,
                 ),
               ),
               const SizedBox(height: 3),
@@ -529,9 +540,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 subtitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: colorScheme.onSurface.withOpacity(0.66),
-                ),
+                style: TextStyle(color: subtitleColor),
               ),
             ],
           ),
@@ -583,13 +592,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         isCompact ? 14 : 18,
       ),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(color: colorScheme.outline.withOpacity(0.14)),
-        ),
+        color: tokens.surfaceMuted,
+        border: Border(bottom: BorderSide(color: tokens.cardBorder)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.10),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -651,34 +658,35 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Widget _closeButton(BuildContext context) {
+    final tokens = WebThemeTokens.of(context);
     return Material(
-      color: const Color(0xFFE53935),
+      color: tokens.danger.withValues(alpha: 0.14),
       borderRadius: BorderRadius.circular(999),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
         onTap: () => Navigator.of(context).pop(),
-        child: const SizedBox(
+        child: SizedBox(
           width: 46,
           height: 46,
-          child: Icon(Icons.close_rounded, color: Colors.white, size: 26),
+          child: Icon(Icons.close_rounded, color: tokens.danger, size: 26),
         ),
       ),
     );
   }
 
   Widget _editBanner(BuildContext context, int totalItens) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: colorScheme.primary.withOpacity(0.06),
+        color: tokens.info.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.primary.withOpacity(0.12)),
+        border: Border.all(color: tokens.info.withValues(alpha: 0.18)),
       ),
       child: Row(
         children: <Widget>[
-          Icon(Icons.edit_note_rounded, color: colorScheme.primary, size: 20),
+          Icon(Icons.edit_note_rounded, color: tokens.info, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -687,7 +695,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontWeight: FontWeight.w700,
-                color: colorScheme.onSurface.withOpacity(0.74),
+                color: tokens.secondaryText,
               ),
             ),
           ),
@@ -697,15 +705,15 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Widget _buildTipoSelector(BuildContext context, bool isCompact) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
 
     return Container(
       width: isCompact ? double.infinity : 420,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         children: <Widget>[
@@ -740,10 +748,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     required bool selected,
     required VoidCallback onTap,
   }) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent = tokens.info;
 
     return Material(
-      color: selected ? colorScheme.primary : Colors.transparent,
+      color: selected ? tokens.selectedBackground : Colors.transparent,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -753,11 +762,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Icon(
-                icon,
-                size: 17,
-                color: selected ? colorScheme.onPrimary : colorScheme.primary,
-              ),
+              Icon(icon, size: 17, color: selected ? accent : accent),
               const SizedBox(width: 7),
               Flexible(
                 child: Text(
@@ -766,10 +771,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
-                    color:
-                        selected
-                            ? colorScheme.onPrimary
-                            : colorScheme.onSurface,
+                    color: selected ? tokens.primaryText : tokens.secondaryText,
                   ),
                 ),
               ),
@@ -781,13 +783,18 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Widget _buildSearchOrderAndPreference(BuildContext context, bool isCompact) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = WebThemeTokens.of(context);
+    final Color accent = tokens.info;
+    final Color inputBackground = tokens.inputBackground;
+    final Color inputBorder = tokens.cardBorder;
 
     final search = TextField(
       controller: _controllerBusca,
+      style: TextStyle(color: tokens.primaryText),
       decoration: InputDecoration(
         hintText: 'Buscar por nome ou código...',
-        prefixIcon: Icon(Icons.search_rounded, color: colorScheme.primary),
+        hintStyle: TextStyle(color: tokens.mutedText),
+        prefixIcon: Icon(Icons.search_rounded, color: accent),
         suffixIcon:
             termoBusca.isEmpty
                 ? null
@@ -800,18 +807,18 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                   },
                 ),
         filled: true,
-        fillColor: colorScheme.surface,
+        fillColor: inputBackground,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 14,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.12)),
+          borderSide: BorderSide(color: inputBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
+          borderSide: BorderSide(color: accent, width: 1.4),
         ),
       ),
       onChanged: (value) {
@@ -824,19 +831,33 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       constraints: const BoxConstraints(minWidth: 220),
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: inputBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: inputBorder),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: ordenacao,
           isExpanded: true,
           borderRadius: BorderRadius.circular(16),
-          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          dropdownColor: tokens.menuBackground,
+          style: TextStyle(
+            color: tokens.primaryText,
+            fontWeight: FontWeight.w700,
+          ),
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: tokens.secondaryText,
+          ),
           items: const <DropdownMenuItem<String>>[
-            DropdownMenuItem(value: 'nome', child: Text('Ordenar por nome')),
-            DropdownMenuItem(value: 'preco', child: Text('Ordenar por preço')),
+            DropdownMenuItem<String>(
+              value: 'nome',
+              child: Text('Ordenar por nome'),
+            ),
+            DropdownMenuItem<String>(
+              value: 'preco',
+              child: Text('Ordenar por preço'),
+            ),
           ],
           onChanged: (value) {
             if (value == null) return;
@@ -877,14 +898,14 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     BuildContext context, {
     required bool expand,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = WebThemeTokens.of(context);
     return Container(
       width: expand ? double.infinity : null,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         children: <Widget>[
@@ -925,9 +946,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     required bool selected,
     required VoidCallback onTap,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = WebThemeTokens.of(context);
+    final Color accent = tokens.info;
     return Material(
-      color: selected ? colorScheme.primary : Colors.transparent,
+      color: selected ? tokens.selectedBackground : Colors.transparent,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -943,15 +965,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: colorScheme.onPrimary,
+                    color: accent,
                   ),
                 )
               else
-                Icon(
-                  icon,
-                  size: 17,
-                  color: selected ? colorScheme.onPrimary : colorScheme.primary,
-                ),
+                Icon(icon, size: 17, color: selected ? accent : accent),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
@@ -961,8 +979,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w900,
-                    color:
-                        selected ? colorScheme.onPrimary : colorScheme.primary,
+                    color: selected ? tokens.primaryText : accent,
                   ),
                 ),
               ),
@@ -1052,26 +1069,26 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Widget _buildSelectionFooter(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final int totalSelecionados = _quantidadeSelecionadaTotal;
     final bool possuiSelecionados = totalSelecionados > 0;
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color:
-              possuiSelecionados
-                  ? colorScheme.primary.withOpacity(0.22)
-                  : colorScheme.outline.withOpacity(0.12),
+          color: possuiSelecionados ? tokens.selectedBorder : tokens.cardBorder,
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(
+              alpha:
+                  Theme.of(context).brightness == Brightness.dark ? 0.16 : 0.06,
+            ),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -1083,13 +1100,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: colorScheme.primary.withOpacity(0.10),
+              color: tokens.info.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(13),
             ),
-            child: Icon(
-              Icons.playlist_add_check_rounded,
-              color: colorScheme.primary,
-            ),
+            child: Icon(Icons.playlist_add_check_rounded, color: tokens.info),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1102,7 +1116,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: colorScheme.onSurface,
+                color:
+                    possuiSelecionados
+                        ? tokens.primaryText
+                        : tokens.secondaryText,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -1129,7 +1146,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Widget _loadingList(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = WebThemeTokens.of(context);
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(0, 0, 12, 2),
       itemCount: 6,
@@ -1139,16 +1156,16 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             height: widget.isSelecao ? 58 : 74,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: colorScheme.surface,
+              color: tokens.cardBackground,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: colorScheme.outline.withOpacity(0.10)),
+              border: Border.all(color: tokens.cardBorder),
             ),
           ),
     );
   }
 
   Widget _emptyState(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = WebThemeTokens.of(context);
     return Align(
       alignment: Alignment.topCenter,
       child: Container(
@@ -1156,9 +1173,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         margin: const EdgeInsets.only(top: 36),
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
-          color: colorScheme.surface,
+          color: tokens.cardBackground,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: colorScheme.outline.withOpacity(0.10)),
+          border: Border.all(color: tokens.cardBorder),
         ),
         child: Row(
           children: <Widget>[
@@ -1166,7 +1183,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               _isProdutoSelecionado
                   ? Icons.inventory_2_outlined
                   : Icons.design_services_outlined,
-              color: colorScheme.primary,
+              color: tokens.info,
               size: 34,
             ),
             const SizedBox(width: 14),
@@ -1182,15 +1199,13 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
-                      color: colorScheme.onSurface,
+                      color: tokens.primaryText,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Ajuste a busca ou atualize a listagem.',
-                    style: TextStyle(
-                      color: colorScheme.onSurface.withOpacity(0.62),
-                    ),
+                    style: TextStyle(color: tokens.secondaryText),
                   ),
                 ],
               ),
@@ -1202,7 +1217,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Widget _productCard(BuildContext context, ProdutoModel produto, int index) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = WebThemeTokens.of(context);
     final duration = Duration(milliseconds: 120 + (index % 8) * 18);
     final bool selecionado =
         widget.isSelecao &&
@@ -1233,19 +1248,21 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             decoration: BoxDecoration(
               color:
                   selecionado
-                      ? colorScheme.primary.withOpacity(0.06)
-                      : colorScheme.surface,
+                      ? tokens.selectedBackground
+                      : tokens.cardBackground,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color:
-                    selecionado
-                        ? colorScheme.primary.withOpacity(0.36)
-                        : colorScheme.outline.withOpacity(0.10),
+                color: selecionado ? tokens.selectedBorder : tokens.cardBorder,
                 width: selecionado ? 1.4 : 1,
               ),
               boxShadow: <BoxShadow>[
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.035),
+                  color: Colors.black.withValues(
+                    alpha:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? 0.12
+                            : 0.035,
+                  ),
                   blurRadius: 12,
                   offset: const Offset(0, 5),
                 ),
@@ -1279,7 +1296,8 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     ProdutoModel produto,
     bool selecionado,
   ) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent = tokens.info;
     final _ProdutoSelecionadoWeb? itemSelecionado =
         _produtosSelecionados[_chaveProduto(produto)];
     final int quantidade = itemSelecionado?.quantidade ?? 0;
@@ -1289,7 +1307,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       required VoidCallback onTap,
     }) {
       return Material(
-        color: colorScheme.primary.withOpacity(0.08),
+        color: tokens.surfaceElevated,
         borderRadius: BorderRadius.circular(10),
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
@@ -1297,7 +1315,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           child: SizedBox(
             width: 32,
             height: 32,
-            child: Icon(icon, size: 18, color: colorScheme.primary),
+            child: Icon(icon, size: 18, color: accent),
           ),
         ),
       );
@@ -1324,7 +1342,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
-                      color: colorScheme.onSurface,
+                      color: tokens.primaryText,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1337,7 +1355,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: colorScheme.onSurfaceVariant,
+                          color: tokens.secondaryText,
                         ),
                       ),
                       Text(
@@ -1345,7 +1363,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w900,
-                          color: colorScheme.onSurface,
+                          color: tokens.primaryText,
                         ),
                       ),
                     ],
@@ -1362,17 +1380,14 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               decoration: BoxDecoration(
                 color:
                     selecionado
-                        ? colorScheme.primary
-                        : colorScheme.primary.withOpacity(0.08),
+                        ? tokens.info.withValues(alpha: 0.18)
+                        : accent.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: colorScheme.primary.withOpacity(0.16),
-                ),
+                border: Border.all(color: accent.withValues(alpha: 0.24)),
               ),
               child: Icon(
                 selecionado ? Icons.check_rounded : Icons.add_rounded,
-                color:
-                    selecionado ? colorScheme.onPrimary : colorScheme.primary,
+                color: selecionado ? accent : accent,
               ),
             ),
           ],
@@ -1382,9 +1397,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color: colorScheme.surface,
+              color: tokens.surfaceMuted,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: colorScheme.primary.withOpacity(0.18)),
+              border: Border.all(color: tokens.selectedBorder),
             ),
             child: Row(
               children: <Widget>[
@@ -1394,13 +1409,13 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: colorScheme.primary.withOpacity(0.08),
+                    color: accent.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     'Selecionado',
                     style: TextStyle(
-                      color: colorScheme.primary,
+                      color: accent,
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1416,7 +1431,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                   child: Text(
                     '$quantidade',
                     style: TextStyle(
-                      color: colorScheme.onSurface,
+                      color: tokens.primaryText,
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1435,7 +1450,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Widget _productWide(BuildContext context, ProdutoModel produto) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = WebThemeTokens.of(context);
     return Row(
       children: <Widget>[
         _thumbnail(context, produto),
@@ -1454,7 +1469,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: colorScheme.onSurface,
+                  color: tokens.primaryText,
                 ),
               ),
               const SizedBox(height: 8),
@@ -1500,7 +1515,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Widget _productCompact(BuildContext context, ProdutoModel produto) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = WebThemeTokens.of(context);
     return Column(
       children: <Widget>[
         Row(
@@ -1517,7 +1532,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: colorScheme.onSurface,
+                  color: tokens.primaryText,
                 ),
               ),
             ),
@@ -1558,33 +1573,31 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     ProdutoModel produto, {
     double size = 52,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = WebThemeTokens.of(context);
+    final Color accent = tokens.info;
     final imageUrl = _primeiraImagemUrl(produto);
     final child =
         imageUrl == null
             ? Icon(
               _iconePorTipo(produto),
-              color: colorScheme.primary,
+              color: accent,
               size: size <= 46 ? 21 : 24,
             )
             : Image.network(
               imageUrl,
               fit: BoxFit.cover,
               errorBuilder:
-                  (_, __, ___) => Icon(
-                    _iconePorTipo(produto),
-                    color: colorScheme.primary,
-                    size: 24,
-                  ),
+                  (_, __, ___) =>
+                      Icon(_iconePorTipo(produto), color: accent, size: 24),
             );
 
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: colorScheme.primary.withOpacity(0.07),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(size <= 46 ? 14 : 16),
-        border: Border.all(color: colorScheme.primary.withOpacity(0.10)),
+        border: Border.all(color: tokens.cardBorder),
       ),
       clipBehavior: Clip.antiAlias,
       child: Center(child: child),
@@ -1616,32 +1629,27 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     String label, {
     bool strong = false,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = WebThemeTokens.of(context);
+    final Color accent = strong ? tokens.info : tokens.secondaryText;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
         color:
-            strong
-                ? colorScheme.primary.withOpacity(0.07)
-                : colorScheme.surfaceVariant.withOpacity(0.32),
+            strong ? tokens.info.withValues(alpha: 0.10) : tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.08)),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(
-            icon,
-            size: 14,
-            color: strong ? colorScheme.primary : colorScheme.onSurfaceVariant,
-          ),
+          Icon(icon, size: 14, color: accent),
           const SizedBox(width: 5),
           Text(
             label,
             style: TextStyle(
               fontSize: 11,
               fontWeight: strong ? FontWeight.w900 : FontWeight.w700,
-              color: colorScheme.onSurface.withOpacity(strong ? 0.88 : 0.68),
+              color: strong ? tokens.primaryText : tokens.secondaryText,
             ),
           ),
         ],
@@ -1650,14 +1658,14 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Widget _statusPill(BuildContext context, bool active) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final color = active ? Colors.green.shade700 : colorScheme.error;
+    final tokens = WebThemeTokens.of(context);
+    final color = active ? tokens.success : tokens.statusNeutral;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.18)),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
       child: Text(
         active ? 'Ativo' : 'Inativo',
