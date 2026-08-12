@@ -8,8 +8,9 @@ class EmpresaModel {
   final String? siteEmpresa;
   final String? endereco;
   final String? logoBase64;
+  final List<HorarioAtendimentoModel> horariosAtendimento;
 
-  EmpresaModel({
+  const EmpresaModel({
     required this.nomeEmpresa,
     required this.nomeFantasia,
     required this.documentoNoBrasilCNPJ,
@@ -19,6 +20,7 @@ class EmpresaModel {
     this.siteEmpresa,
     this.endereco,
     this.logoBase64,
+    this.horariosAtendimento = const <HorarioAtendimentoModel>[],
   });
 
   factory EmpresaModel.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,9 @@ class EmpresaModel {
       siteEmpresa: _optionalString(json['siteEmpresa']),
       endereco: _optionalString(json['endereco']),
       logoBase64: _optionalString(json['logoBase64']),
+      horariosAtendimento: _parseHorariosAtendimento(
+        json['horariosAtendimento'],
+      ),
     );
   }
 
@@ -60,12 +65,82 @@ class EmpresaModel {
     if (logoBase64 != null) {
       json['logoBase64'] = logoBase64;
     }
+    if (horariosAtendimento.isNotEmpty) {
+      json['horariosAtendimento'] =
+          horariosAtendimento.map((horario) => horario.toJson()).toList();
+    }
 
     return json;
+  }
+
+  static List<HorarioAtendimentoModel> _parseHorariosAtendimento(
+    dynamic value,
+  ) {
+    if (value is! List) return const <HorarioAtendimentoModel>[];
+    return value
+        .whereType<Map<String, dynamic>>()
+        .map(HorarioAtendimentoModel.fromJson)
+        .toList(growable: false);
   }
 
   static String? _optionalString(dynamic value) {
     if (value == null) return null;
     return value.toString();
+  }
+}
+
+class HorarioAtendimentoModel {
+  const HorarioAtendimentoModel({
+    required this.diaSemana,
+    required this.fechado,
+    this.inicio,
+    this.fim,
+  });
+
+  final String diaSemana;
+  final bool fechado;
+  final String? inicio;
+  final String? fim;
+
+  factory HorarioAtendimentoModel.fromJson(Map<String, dynamic> json) {
+    return HorarioAtendimentoModel(
+      diaSemana: json['diaSemana']?.toString() ?? '',
+      fechado: json['fechado'] == true,
+      inicio: _optionalString(json['inicio']),
+      fim: _optionalString(json['fim']),
+    );
+  }
+
+  HorarioAtendimentoModel copyWith({
+    String? diaSemana,
+    bool? fechado,
+    String? inicio,
+    String? fim,
+  }) {
+    return HorarioAtendimentoModel(
+      diaSemana: diaSemana ?? this.diaSemana,
+      fechado: fechado ?? this.fechado,
+      inicio: inicio ?? this.inicio,
+      fim: fim ?? this.fim,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> json = <String, dynamic>{
+      'diaSemana': diaSemana,
+      'fechado': fechado,
+    };
+
+    if (!fechado) {
+      json['inicio'] = inicio;
+      json['fim'] = fim;
+    }
+
+    return json;
+  }
+
+  static String? _optionalString(dynamic value) {
+    final String text = value?.toString().trim() ?? '';
+    return text.isEmpty ? null : text;
   }
 }
