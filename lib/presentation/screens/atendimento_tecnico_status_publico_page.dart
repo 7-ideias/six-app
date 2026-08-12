@@ -222,22 +222,6 @@ class _AtendimentoTecnicoStatusPublicoPageState
     }
   }
 
-  IconData _statusIcon(String icon) {
-    return switch (icon.trim()) {
-      'assignment_add' => Icons.assignment_add,
-      'troubleshoot' => Icons.troubleshoot,
-      'request_quote' => Icons.request_quote_outlined,
-      'hourglass_top' => Icons.hourglass_top_rounded,
-      'inventory' => Icons.inventory_2_outlined,
-      'engineering' => Icons.engineering_outlined,
-      'task_alt' => Icons.task_alt_rounded,
-      'verified' => Icons.verified_rounded,
-      'cancel' => Icons.cancel_outlined,
-      'block' => Icons.block,
-      _ => Icons.flag_outlined,
-    };
-  }
-
   String _textoOuVazio(String? value) => value?.trim() ?? '';
 
   String _documentoFiscalLabel(
@@ -1085,158 +1069,237 @@ class _AtendimentoTecnicoStatusPublicoPageState
             ],
           ),
           const SizedBox(height: 12),
-          _bulletProgress(
+          _statusTimeline(
             theme: theme,
             progress: progress,
-            steps: etapas.length,
+            etapas: etapas,
             color: color,
-            height: 34,
-            trackHeight: 8,
-            bulletSize: 18,
-            duration: const Duration(milliseconds: 1350),
             valueKey: 'status-progress-${status.statusCodigo}',
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: etapas.map((etapa) => _stepPill(theme, etapa)).toList(),
           ),
         ],
       ),
     );
   }
 
-  Widget _bulletProgress({
+  Widget _statusTimeline({
     required ThemeData theme,
     required double progress,
-    required int steps,
+    required List<AtendimentoTecnicoStatusPublicoEtapaModel> etapas,
     required Color color,
-    required double height,
-    required double trackHeight,
-    required double bulletSize,
-    required Duration duration,
     required String valueKey,
   }) {
+    if (etapas.isEmpty) return const SizedBox.shrink();
+
     final colorScheme = theme.colorScheme;
-    final int safeSteps = steps <= 0 ? 1 : steps;
-    final double safeProgress = progress.clamp(0, 1).toDouble();
-    final double completedSteps = safeProgress * safeSteps;
-    final int currentStep = completedSteps.ceil().clamp(0, safeSteps).toInt();
-    final double lineProgress =
-        safeSteps <= 1
-            ? safeProgress
-            : ((completedSteps - 1) / (safeSteps - 1)).clamp(0, 1).toDouble();
+    const double nodeSize = 24;
+    const double timelineHeight = 96;
+    const double trackTop = 24;
+    const double labelTop = 54;
+    const double desiredLabelWidth = 132;
+    const double minLabelWidth = 96;
+    const double minLabelGap = 12;
+    final double safeProgress = progress.clamp(0.0, 1.0).toDouble();
+    final int currentIndex =
+        safeProgress <= 0
+            ? -1
+            : ((safeProgress * etapas.length).ceil() - 1)
+                .clamp(0, etapas.length - 1)
+                .toInt();
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double width = constraints.maxWidth;
-        if (!width.isFinite || width <= 0) {
+        final double availableWidth = constraints.maxWidth;
+        if (!availableWidth.isFinite || availableWidth <= 0) {
           return const SizedBox.shrink();
         }
+        final double fittedLabelWidth =
+            etapas.length <= 1
+                ? desiredLabelWidth
+                : ((availableWidth - minLabelGap * (etapas.length - 1)) /
+                        etapas.length)
+                    .clamp(minLabelWidth, desiredLabelWidth)
+                    .toDouble();
+        final double labelWidth = fittedLabelWidth;
+        final double horizontalPadding = labelWidth / 2;
+        final double minSegmentWidth = labelWidth + minLabelGap;
+        final double minTimelineWidth =
+            etapas.length <= 1
+                ? availableWidth
+                : labelWidth + minSegmentWidth * (etapas.length - 1);
+        final double timelineWidth =
+            availableWidth > minTimelineWidth
+                ? availableWidth
+                : minTimelineWidth;
+
         return SizedBox(
-          height: height,
-          child: Stack(
-            alignment: Alignment.centerLeft,
-            children: <Widget>[
-              Positioned(
-                left: bulletSize / 2,
-                right: bulletSize / 2,
-                top: (height - trackHeight) / 2,
-                child: Container(
-                  height: trackHeight,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.82,
+          height: timelineHeight,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: SizedBox(
+              width: timelineWidth,
+              height: timelineHeight,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: <Widget>[
+                  Positioned.fill(
+                    child: TweenAnimationBuilder<double>(
+                      key: ValueKey<String>(valueKey),
+                      tween: Tween<double>(begin: 0, end: 1),
+                      duration: const Duration(milliseconds: 850),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, _) {
+                        return CustomPaint(
+                          painter: _StatusTimelineTrackPainter(
+                            steps: etapas.length,
+                            activeIndex: currentIndex,
+                            trackTop: trackTop,
+                            nodeSize: nodeSize,
+                            horizontalPadding: horizontalPadding,
+                            progressValue: value,
+                            completedColor: color,
+                            pendingColor: colorScheme.outlineVariant.withValues(
+                              alpha: 0.95,
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                    borderRadius: BorderRadius.circular(999),
                   ),
-                ),
-              ),
-              Positioned(
-                left: bulletSize / 2,
-                top: (height - trackHeight) / 2,
-                child: TweenAnimationBuilder<double>(
-                  key: ValueKey<String>(valueKey),
-                  tween: Tween<double>(begin: 0, end: lineProgress),
-                  duration: duration,
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, _) {
-                    return Container(
-                      width: (width - bulletSize) * value,
-                      height: trackHeight,
-                      decoration: BoxDecoration(
+                  for (int index = 0; index < etapas.length; index++) ...[
+                    Positioned(
+                      left:
+                          _timelinePointX(
+                            index: index,
+                            steps: etapas.length,
+                            width: timelineWidth,
+                            horizontalPadding: horizontalPadding,
+                          ) -
+                          nodeSize / 2,
+                      top: trackTop - nodeSize / 2,
+                      child: _timelineNode(
+                        theme: theme,
                         color: color,
-                        borderRadius: BorderRadius.circular(999),
+                        active: index == currentIndex,
+                        completed: index < currentIndex,
                       ),
-                    );
-                  },
-                ),
+                    ),
+                    Positioned(
+                      left: _timelineLabelLeft(
+                        pointX: _timelinePointX(
+                          index: index,
+                          steps: etapas.length,
+                          width: timelineWidth,
+                          horizontalPadding: horizontalPadding,
+                        ),
+                        labelWidth: labelWidth,
+                        timelineWidth: timelineWidth,
+                      ),
+                      top: labelTop,
+                      width: labelWidth,
+                      child: Text(
+                        _etapaLabel(etapas[index]),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          height: 1.2,
+                          color:
+                              index == currentIndex
+                                  ? color
+                                  : index < currentIndex
+                                  ? colorScheme.onSurface
+                                  : colorScheme.onSurfaceVariant,
+                          fontWeight:
+                              index == currentIndex
+                                  ? FontWeight.w900
+                                  : FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-              for (int index = 0; index < safeSteps; index++)
-                _progressBullet(
-                  width: width,
-                  height: height,
-                  bulletSize: bulletSize,
-                  index: index,
-                  steps: safeSteps,
-                  currentStep: currentStep,
-                  color: color,
-                  colorScheme: colorScheme,
-                ),
-            ],
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _progressBullet({
-    required double width,
-    required double height,
-    required double bulletSize,
+  double _timelinePointX({
     required int index,
     required int steps,
-    required int currentStep,
-    required Color color,
-    required ColorScheme colorScheme,
+    required double width,
+    required double horizontalPadding,
   }) {
-    final double position = steps == 1 ? 0 : index / (steps - 1);
-    final bool reached = index < currentStep;
-    return Positioned(
-      left: (width - bulletSize) * position,
-      top: (height - bulletSize) / 2,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 260),
-        width: bulletSize,
-        height: bulletSize,
-        decoration: BoxDecoration(
-          color: reached ? color : colorScheme.surface,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color:
-                reached
-                    ? color
-                    : colorScheme.outlineVariant.withValues(alpha: 0.95),
-            width: reached ? 2 : 1.4,
-          ),
-          boxShadow: <BoxShadow>[
+    if (steps <= 1) return width / 2;
+    return horizontalPadding +
+        (width - horizontalPadding * 2) * index / (steps - 1);
+  }
+
+  double _timelineLabelLeft({
+    required double pointX,
+    required double labelWidth,
+    required double timelineWidth,
+  }) {
+    final double maxLeft = timelineWidth - labelWidth;
+    if (maxLeft <= 0) return 0;
+    return (pointX - labelWidth / 2).clamp(0.0, maxLeft).toDouble();
+  }
+
+  Widget _timelineNode({
+    required ThemeData theme,
+    required Color color,
+    required bool active,
+    required bool completed,
+  }) {
+    final colorScheme = theme.colorScheme;
+    final Color pendingBorder = colorScheme.outlineVariant.withValues(
+      alpha: 0.95,
+    );
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color:
+            completed
+                ? color
+                : active
+                ? colorScheme.surface
+                : colorScheme.surfaceContainerHighest,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: active || completed ? color : pendingBorder,
+          width: active ? 3 : 1.4,
+        ),
+        boxShadow: <BoxShadow>[
+          if (active || completed)
             BoxShadow(
-              color: (reached ? color : Colors.black).withValues(alpha: 0.12),
-              blurRadius: reached ? 10 : 6,
+              color: color.withValues(alpha: active ? 0.2 : 0.14),
+              blurRadius: active ? 12 : 9,
               offset: const Offset(0, 3),
             ),
-          ],
-        ),
-        child:
-            reached
-                ? Icon(
-                  Icons.check_rounded,
-                  size: bulletSize * 0.62,
-                  color: Colors.white,
-                )
-                : null,
+        ],
       ),
+      child:
+          completed
+              ? const Icon(Icons.check_rounded, size: 15, color: Colors.white)
+              : active
+              ? Center(
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              )
+              : null,
     );
   }
 
@@ -1384,65 +1447,6 @@ class _AtendimentoTecnicoStatusPublicoPageState
     );
   }
 
-  Widget _stepPill(
-    ThemeData theme,
-    AtendimentoTecnicoStatusPublicoEtapaModel etapa,
-  ) {
-    final color = _colorFromHex(etapa.cor, theme.colorScheme.primary);
-    final bool active = etapa.atual;
-    final bool done = etapa.concluida;
-    final Color foreground = active || done ? color : theme.colorScheme.outline;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      constraints: const BoxConstraints(maxWidth: 260),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color:
-            active
-                ? color.withValues(alpha: 0.13)
-                : done
-                ? color.withValues(alpha: 0.08)
-                : theme.colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.48,
-                ),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color:
-              active
-                  ? color.withValues(alpha: 0.42)
-                  : theme.colorScheme.outline.withValues(alpha: 0.14),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(
-            done ? Icons.check_circle_rounded : _statusIcon(etapa.icone),
-            color: foreground,
-            size: 17,
-          ),
-          const SizedBox(width: 7),
-          Flexible(
-            child: Text(
-              _etapaLabel(etapa),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color:
-                    active || done
-                        ? theme.colorScheme.onSurface
-                        : theme.colorScheme.onSurfaceVariant,
-                fontSize: 12,
-                fontWeight: active ? FontWeight.w900 : FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _historyRow(
     ThemeData theme,
     AtendimentoTecnicoStatusPublicoHistoricoModel item,
@@ -1563,6 +1567,89 @@ class _ComercioPublicoInfo {
   final String label;
   final String value;
   final VoidCallback? onTap;
+}
+
+class _StatusTimelineTrackPainter extends CustomPainter {
+  const _StatusTimelineTrackPainter({
+    required this.steps,
+    required this.activeIndex,
+    required this.trackTop,
+    required this.nodeSize,
+    required this.horizontalPadding,
+    required this.progressValue,
+    required this.completedColor,
+    required this.pendingColor,
+  });
+
+  final int steps;
+  final int activeIndex;
+  final double trackTop;
+  final double nodeSize;
+  final double horizontalPadding;
+  final double progressValue;
+  final Color completedColor;
+  final Color pendingColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (steps <= 1 || size.width <= horizontalPadding * 2) return;
+
+    final double start = horizontalPadding;
+    final double end = size.width - horizontalPadding;
+    final double y = trackTop;
+    final Paint pendingPaint =
+        Paint()
+          ..color = pendingColor
+          ..strokeWidth = 2
+          ..strokeCap = StrokeCap.round;
+    final Paint completedPaint =
+        Paint()
+          ..color = completedColor
+          ..strokeWidth = 2
+          ..strokeCap = StrokeCap.round;
+
+    _drawDashedLine(canvas, start, end, y, pendingPaint);
+
+    final int clampedActiveIndex = activeIndex.clamp(0, steps - 1).toInt();
+    final double target =
+        start + (end - start) * clampedActiveIndex / (steps - 1);
+    final double animatedEnd =
+        start + (target - start) * progressValue.clamp(0.0, 1.0);
+
+    if (animatedEnd > start) {
+      canvas.drawLine(Offset(start, y), Offset(animatedEnd, y), completedPaint);
+    }
+  }
+
+  void _drawDashedLine(
+    Canvas canvas,
+    double start,
+    double end,
+    double y,
+    Paint paint,
+  ) {
+    const double dashWidth = 8;
+    const double gapWidth = 6;
+    double current = start;
+
+    while (current < end) {
+      final double next = (current + dashWidth).clamp(start, end).toDouble();
+      canvas.drawLine(Offset(current, y), Offset(next, y), paint);
+      current = next + gapWidth;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _StatusTimelineTrackPainter oldDelegate) {
+    return oldDelegate.steps != steps ||
+        oldDelegate.activeIndex != activeIndex ||
+        oldDelegate.trackTop != trackTop ||
+        oldDelegate.nodeSize != nodeSize ||
+        oldDelegate.horizontalPadding != horizontalPadding ||
+        oldDelegate.progressValue != progressValue ||
+        oldDelegate.completedColor != completedColor ||
+        oldDelegate.pendingColor != pendingColor;
+  }
 }
 
 class _LoadingStatusPublico extends StatelessWidget {
