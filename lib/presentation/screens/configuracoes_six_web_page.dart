@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -17,7 +17,65 @@ import '../../domain/models/aparencia_models.dart';
 import '../../domain/services/aparencia/aparencia_service.dart';
 import '../../design_system/helpers/six_theme_resolver.dart';
 import '../components/six_backend_loading.dart';
+import '../components/web/six_web_select_field.dart';
 import '../theme/web_theme_tokens.dart';
+
+void showConfiguracoesSixWebDialog(BuildContext context) {
+  final WebThemeTokens tokens = WebThemeTokens.of(context);
+  final double barrierAlpha =
+      Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42;
+
+  showDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    barrierColor: tokens.workspaceBackground.withValues(alpha: barrierAlpha),
+    builder: (BuildContext dialogContext) {
+      final Size size = MediaQuery.of(dialogContext).size;
+
+      void fecharDialog() {
+        final NavigatorState navigator = Navigator.of(dialogContext);
+        if (navigator.canPop()) {
+          navigator.pop();
+        }
+      }
+
+      return CallbackShortcuts(
+        bindings: <ShortcutActivator, VoidCallback>{
+          const SingleActivator(LogicalKeyboardKey.escape): fecharDialog,
+        },
+        child: Focus(
+          autofocus: true,
+          child: Center(
+            child: Container(
+              width: size.width * 0.9,
+              height: size.height * 0.9,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: tokens.surfaceElevated,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: tokens.cardBorder),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.14),
+                    blurRadius: 32,
+                    offset: const Offset(0, 18),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: tokens.surfaceElevated,
+                child: ConfiguracoesSixWebPage(
+                  embedded: true,
+                  onBack: fecharDialog,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
 
 class ConfiguracoesSixWebPage extends StatefulWidget {
   final bool embedded;
@@ -47,14 +105,141 @@ enum SecaoConfiguracaoSix {
 
 class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   static const int _maxLogoBytes = 1024 * 1024;
+  static const List<String> _visibilidadesCatalogo = <String>[
+    'Público com link',
+    'Privado com aprovação',
+    'Somente clientes cadastrados',
+  ];
+  static const List<String> _validadesCatalogo = <String>[
+    'Sem expiração',
+    '24 horas',
+    '7 dias',
+    '30 dias',
+  ];
+  static const List<String> _modosAtendimentoMesa = <String>[
+    'Mesa e balcão',
+    'Somente mesa',
+    'Mesa, balcão e delivery',
+    'Comanda individual',
+  ];
+  static const List<String> _statusMesa = <String>[
+    'Livre',
+    'Ocupada',
+    'Aguardando pedido',
+    'Em consumo',
+    'Aguardando pagamento',
+    'Fechada',
+  ];
+  static const List<String> _perfisCliente = <String>[
+    'Cliente comum',
+    'Cliente recorrente',
+    'Cliente corporativo',
+    'Cliente com análise de crédito',
+  ];
+  static const List<String> _politicasCredito = <String>[
+    'Aprovação manual',
+    'Aprovação automática por limite',
+    'Sempre exigir aprovação',
+    'Não permitir crédito',
+  ];
+  static const List<String> _prazosFiado = <String>[
+    '7 dias',
+    '15 dias',
+    '30 dias',
+    '45 dias',
+    'Personalizado',
+  ];
+  static const List<String> _tiposDesconto = <String>[
+    'Percentual e valor fixo',
+    'Apenas percentual',
+    'Apenas valor fixo',
+    'Somente com permissão',
+  ];
+  static const List<String> _basesComissao = <String>[
+    'Valor líquido da venda',
+    'Valor bruto da venda',
+    'Apenas serviços',
+    'Apenas produtos',
+  ];
+  static const List<_ConfiguracaoChoiceOption>
+  _atributosGradeDisponiveis = <_ConfiguracaoChoiceOption>[
+    _ConfiguracaoChoiceOption(
+      label: 'Cor',
+      description:
+          'Permite variações como preto, branco, azul e outras cores comerciais.',
+      icon: Icons.palette_outlined,
+    ),
+    _ConfiguracaoChoiceOption(
+      label: 'Tamanho',
+      description:
+          'Útil para acessórios, peças e produtos com medidas comerciais.',
+      icon: Icons.photo_size_select_small_rounded,
+    ),
+    _ConfiguracaoChoiceOption(
+      label: 'Voltagem',
+      description: 'Diferencia itens 110V, 220V, bivolt ou padrões locais.',
+      icon: Icons.bolt_outlined,
+    ),
+    _ConfiguracaoChoiceOption(
+      label: 'Modelo',
+      description: 'Organiza produtos por modelo, geração ou linha compatível.',
+      icon: Icons.devices_other_rounded,
+    ),
+    _ConfiguracaoChoiceOption(
+      label: 'Capacidade',
+      description: 'Ajuda em variações como 64GB, 128GB, ml, kg ou pacote.',
+      icon: Icons.data_usage_rounded,
+    ),
+    _ConfiguracaoChoiceOption(
+      label: 'Condição',
+      description: 'Separa novo, usado, recondicionado ou peça de reposição.',
+      icon: Icons.verified_outlined,
+    ),
+  ];
+  static const List<_ConfiguracaoChoiceOption> _unidadesDisponiveis =
+      <_ConfiguracaoChoiceOption>[
+        _ConfiguracaoChoiceOption(
+          label: 'Unidade',
+          description: 'Peças, acessórios e itens vendidos individualmente.',
+          icon: Icons.inventory_2_outlined,
+        ),
+        _ConfiguracaoChoiceOption(
+          label: 'Área',
+          description: 'm², cm² e serviços medidos por superfície.',
+          icon: Icons.crop_square_rounded,
+        ),
+        _ConfiguracaoChoiceOption(
+          label: 'Distância',
+          description: 'm, km e cobranças por deslocamento.',
+          icon: Icons.straighten_rounded,
+        ),
+        _ConfiguracaoChoiceOption(
+          label: 'Volume',
+          description: 'ml, l e insumos medidos por capacidade.',
+          icon: Icons.water_drop_outlined,
+        ),
+        _ConfiguracaoChoiceOption(
+          label: 'Tempo',
+          description: 'Hora técnica, diária, mensalidade e assinatura.',
+          icon: Icons.schedule_rounded,
+        ),
+        _ConfiguracaoChoiceOption(
+          label: 'Peso',
+          description: 'g, kg e materiais vendidos por massa.',
+          icon: Icons.scale_rounded,
+        ),
+        _ConfiguracaoChoiceOption(
+          label: 'Moeda',
+          description: 'Valores financeiros tratados como unidade de cobrança.',
+          icon: Icons.paid_outlined,
+        ),
+      ];
 
   SecaoConfiguracaoSix _secaoAtual = SecaoConfiguracaoSix.geral;
   bool _mostrarResumoLateral = true;
   bool _possuiAlteracoesNaoSalvas = false;
   bool _possuiAlteracoesGerais = false;
   final ScrollController _conteudoScrollController = ScrollController();
-  final GlobalKey _conteudoSecaoKey = GlobalKey();
-  bool _ultimoLayoutEmpilhado = false;
   // ignore: unused_field — estado de loading da aparência (ainda não exibido na UI)
   bool _carregandoAparencia = false;
   bool _carregandoDadosEmpresa = false;
@@ -366,6 +551,73 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   bool _permitirEdicaoAposFechamento = false;
   bool _descontoManualPermitido = true;
   double _limiteDesconto = 10;
+  bool _permitirVendaCatalogoPorLink = true;
+  bool _exigirClienteNoCatalogo = false;
+  bool _permitirCompartilhamentoCatalogo = true;
+  bool _cadastroGradeProdutos = true;
+  bool _controlarEstoquePorVariacao = true;
+  bool _exigirGradeParaProdutoVariavel = false;
+  bool _vendaPorMesa = false;
+  bool _mesaObrigatoria = true;
+  bool _permitirTransferenciaMesa = true;
+  bool _permitirJuntarMesas = true;
+  bool _cobrarTaxaServicoMesa = true;
+  bool _imprimirComandaMesa = true;
+  bool _fecharMesaSomenteNoCaixa = true;
+  bool _validarDocumentoCliente = true;
+  bool _exigirTelefoneCliente = true;
+  bool _exigirEnderecoClienteParaFiado = true;
+  bool _exigirAceiteUsoDadosCliente = true;
+  bool _permitirVendasFiado = false;
+  bool _exigirAprovacaoCredito = true;
+  bool _permitirLimiteCreditoCliente = true;
+  bool _bloquearClienteInadimplente = true;
+  bool _notificarVencimentoFiado = true;
+  bool _permitirParcelamentoFiado = true;
+  bool _exigirAnexoCadastroCliente = false;
+  bool _produtoApenasComUnidadeMedida = true;
+  bool _exigirJustificativaDesconto = true;
+  bool _aplicarComissaoEmServicos = true;
+  bool _aplicarComissaoEmProdutos = false;
+  String _visibilidadeCatalogo = 'Público com link';
+  String _validadeLinkCatalogo = 'Sem expiração';
+  String _modoAtendimentoMesa = 'Mesa e balcão';
+  String _statusInicialMesa = 'Livre';
+  String _perfilPadraoCliente = 'Cliente comum';
+  String _politicaCreditoSelecionada = 'Aprovação manual';
+  String _prazoPadraoFiado = '30 dias';
+  String _tipoDescontoSelecionado = 'Percentual e valor fixo';
+  String _baseComissaoSelecionada = 'Valor líquido da venda';
+  double _taxaServicoMesaPercentual = 10;
+  double _limiteCreditoPadrao = 500;
+  double _entradaMinimaFiadoPercentual = 0;
+  double _percentualComissaoPadrao = 5;
+  final TextEditingController _nomeCatalogoController = TextEditingController(
+    text: 'Catálogo Six Repair',
+  );
+  final TextEditingController _slugCatalogoController = TextEditingController(
+    text: 'six-repair-center',
+  );
+  final TextEditingController _prefixoMesaController = TextEditingController(
+    text: 'Mesa',
+  );
+  final TextEditingController _quantidadeMesasController =
+      TextEditingController(text: '20');
+  final TextEditingController _diasBloqueioAtrasoController =
+      TextEditingController(text: '7');
+  final Set<String> _atributosGradeSelecionados = <String>{
+    'Cor',
+    'Tamanho',
+    'Modelo',
+  };
+  final Set<String> _unidadesMedidaAutorizadas = <String>{
+    'Unidade',
+    'Área',
+    'Distância',
+    'Volume',
+    'Tempo',
+    'Peso',
+  };
 
   final List<String> _statusAssistencia = [
     'Recebido',
@@ -411,6 +663,11 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     _mensagemProntoRetiradaController.dispose();
     _rodapeDocumentoController.dispose();
     _termosCondicoesController.dispose();
+    _nomeCatalogoController.dispose();
+    _slugCatalogoController.dispose();
+    _prefixoMesaController.dispose();
+    _quantidadeMesasController.dispose();
+    _diasBloqueioAtrasoController.dispose();
     _conteudoScrollController.dispose();
     super.dispose();
   }
@@ -451,21 +708,15 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   }
 
   void _selecionarSecao(SecaoConfiguracaoSix secao) {
+    if (_secaoAtual == secao) return;
+
     setState(() {
       _secaoAtual = secao;
     });
-    _garantirConteudoSelecionadoVisivel();
-  }
-
-  void _garantirConteudoSelecionadoVisivel() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_ultimoLayoutEmpilhado) return;
-      final BuildContext? sectionContext = _conteudoSecaoKey.currentContext;
-      if (sectionContext == null) return;
-
-      Scrollable.ensureVisible(
-        sectionContext,
-        alignment: 0.02,
+      if (!mounted || !_conteudoScrollController.hasClients) return;
+      _conteudoScrollController.animateTo(
+        0,
         duration: WebThemeTokens.transitionDuration,
         curve: WebThemeTokens.transitionCurve,
       );
@@ -625,7 +876,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       case SecaoConfiguracaoSix.documentos:
         return 'Documentos';
       case SecaoConfiguracaoSix.operacao:
-        return 'Operação';
+        return 'Regras operacionais';
       case SecaoConfiguracaoSix.seguranca:
         return 'Segurança';
       case SecaoConfiguracaoSix.preferenciasUsuario:
@@ -646,7 +897,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       case SecaoConfiguracaoSix.documentos:
         return 'Templates, rodapés, termos e componentes visuais de PDFs e comprovantes.';
       case SecaoConfiguracaoSix.operacao:
-        return 'Regras de venda, assistência técnica, controle operacional e comportamento do fluxo.';
+        return 'Catálogo por link, grade de produtos, mesas, clientes, fiado, estoque, caixa, desconto, comissão e unidades de medida.';
       case SecaoConfiguracaoSix.seguranca:
         return 'Sessão, autenticação, acesso, políticas de proteção e gestão de segurança da conta.';
       case SecaoConfiguracaoSix.preferenciasUsuario:
@@ -1021,7 +1272,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     );
   }
 
-  Widget _buildMenuLateralSecoes() {
+  Widget _buildSecoesHeader() {
     final theme = Theme.of(context);
     final tokens = WebThemeTokens.of(context);
 
@@ -1053,7 +1304,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       ),
       (
         secao: SecaoConfiguracaoSix.operacao,
-        titulo: 'Operação',
+        titulo: 'Regras operacionais',
         icone: Icons.settings_suggest_rounded,
       ),
       (
@@ -1069,94 +1320,132 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     ];
 
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: tokens.surface,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Seções',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: tokens.primaryText,
-            ),
-          ),
-          const SizedBox(height: 14),
-          ...itens.map((item) {
-            final selecionado = _secaoAtual == item.secao;
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(18),
-                onTap: () {
-                  _selecionarSecao(item.secao);
-                },
-                child: AnimatedContainer(
-                  duration: WebThemeTokens.transitionDuration,
-                  curve: WebThemeTokens.transitionCurve,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        selecionado
-                            ? tokens.selectedBackground
-                            : tokens.cardBackground,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color:
-                          selecionado
-                              ? tokens.selectedBorder
-                              : tokens.cardBorder,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Configurações',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: tokens.primaryText,
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color:
-                              selecionado
-                                  ? tokens.surfaceElevated
-                                  : tokens.surfaceMuted,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Icon(
-                          item.icone,
-                          color:
-                              selecionado ? tokens.info : tokens.secondaryText,
-                        ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Dados institucionais, regionalização, aparência, documentos, segurança e operação do comércio.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: tokens.secondaryText,
+                        height: 1.35,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          item.titulo,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color:
-                                selecionado
-                                    ? tokens.primaryText
-                                    : tokens.secondaryText,
-                          ),
-                        ),
-                      ),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        color: selecionado ? tokens.info : tokens.mutedText,
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: tokens.selectedBackground,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: tokens.selectedBorder),
+                ),
+                child: Text(
+                  _tituloSecao(_secaoAtual),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-            );
-          }),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children:
+                itens.map((item) {
+                  final bool selecionado = _secaoAtual == item.secao;
+
+                  return Semantics(
+                    button: true,
+                    selected: selecionado,
+                    label: 'Abrir ${item.titulo}',
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () => _selecionarSecao(item.secao),
+                        child: AnimatedContainer(
+                          duration: WebThemeTokens.transitionDuration,
+                          curve: WebThemeTokens.transitionCurve,
+                          constraints: const BoxConstraints(minHeight: 48),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                selecionado
+                                    ? tokens.selectedBackground
+                                    : tokens.cardBackground,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color:
+                                  selecionado
+                                      ? tokens.selectedBorder
+                                      : tokens.cardBorder,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                item.icone,
+                                size: 19,
+                                color:
+                                    selecionado
+                                        ? tokens.info
+                                        : tokens.secondaryText,
+                              ),
+                              const SizedBox(width: 9),
+                              Text(
+                                item.titulo,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color:
+                                      selecionado
+                                          ? tokens.primaryText
+                                          : tokens.secondaryText,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+          ),
         ],
       ),
     );
@@ -1285,39 +1574,53 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     required String label,
     required TextEditingController controller,
     String? hint,
+    String? helperText,
     int maxLines = 1,
     TextInputType? keyboardType,
+    bool enabled = true,
     bool marcarAlteracaoGeral = false,
   }) {
     final tokens = WebThemeTokens.of(context);
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      keyboardType: keyboardType,
-      onChanged: (_) {
-        setState(() {
-          if (marcarAlteracaoGeral) {
-            _possuiAlteracoesGerais = true;
-          }
-        });
-        _marcarAlteracao();
-      },
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        filled: true,
-        fillColor: tokens.inputBackground,
-        labelStyle: TextStyle(color: tokens.secondaryText),
-        hintStyle: TextStyle(color: tokens.mutedText),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: tokens.cardBorder),
+    return AnimatedOpacity(
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      opacity: enabled ? 1 : 0.55,
+      child: TextField(
+        controller: controller,
+        enabled: enabled,
+        maxLines: maxLines,
+        keyboardType: keyboardType,
+        onChanged: (_) {
+          setState(() {
+            if (marcarAlteracaoGeral) {
+              _possuiAlteracoesGerais = true;
+            }
+          });
+          _marcarAlteracao();
+        },
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          helperText: helperText,
+          filled: true,
+          fillColor: tokens.inputBackground,
+          labelStyle: TextStyle(color: tokens.secondaryText),
+          hintStyle: TextStyle(color: tokens.mutedText),
+          helperStyle: TextStyle(color: tokens.mutedText),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide(color: tokens.cardBorder),
+          ),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide(color: tokens.cardBorder),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
+          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
-        ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
       ),
     );
   }
@@ -1327,38 +1630,17 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     required String value,
     required List<String> items,
     required ValueChanged<String?> onChanged,
+    bool enabled = true,
   }) {
-    final tokens = WebThemeTokens.of(context);
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      onChanged: (novo) {
+    return SixWebSelectField(
+      label: label,
+      value: value,
+      items: items,
+      enabled: enabled,
+      onSelected: (String novo) {
         onChanged(novo);
         _marcarAlteracao();
       },
-      decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: tokens.inputBackground,
-        labelStyle: TextStyle(color: tokens.secondaryText),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: tokens.cardBorder),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
-        ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
-      ),
-      dropdownColor: tokens.menuBackground,
-      style: TextStyle(color: tokens.primaryText, fontWeight: FontWeight.w700),
-      items:
-          items
-              .map(
-                (item) =>
-                    DropdownMenuItem<String>(value: item, child: Text(item)),
-              )
-              .toList(),
     );
   }
 
@@ -1367,55 +1649,67 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     required String subtitle,
     required bool value,
     required ValueChanged<bool> onChanged,
+    bool enabled = true,
+    String? disabledSubtitle,
   }) {
     final theme = Theme.of(context);
     final tokens = WebThemeTokens.of(context);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: tokens.surfaceMuted,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: tokens.cardBorder),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: tokens.primaryText,
+    return AnimatedOpacity(
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      opacity: enabled ? 1 : 0.55,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: tokens.surfaceMuted,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: tokens.cardBorder),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: tokens.primaryText,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  subtitle,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: tokens.secondaryText,
-                    height: 1.35,
+                  const SizedBox(height: 6),
+                  Text(
+                    !enabled && disabledSubtitle != null
+                        ? disabledSubtitle
+                        : subtitle,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: tokens.secondaryText,
+                      height: 1.35,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Switch(
-            value: value,
-            activeThumbColor: tokens.success,
-            activeTrackColor: tokens.success.withValues(alpha: 0.28),
-            inactiveThumbColor: tokens.disabledForeground,
-            inactiveTrackColor: tokens.disabledBackground,
-            onChanged: (novo) {
-              onChanged(novo);
-              _marcarAlteracao();
-            },
-          ),
-        ],
+            const SizedBox(width: 16),
+            Switch(
+              value: enabled ? value : false,
+              activeThumbColor: tokens.success,
+              activeTrackColor: tokens.success.withValues(alpha: 0.28),
+              inactiveThumbColor: tokens.disabledForeground,
+              inactiveTrackColor: tokens.disabledBackground,
+              onChanged:
+                  enabled
+                      ? (novo) {
+                        onChanged(novo);
+                        _marcarAlteracao();
+                      }
+                      : null,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -3065,260 +3359,1361 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   }
 
   Widget _buildSecaoOperacao() {
-    final tokens = WebThemeTokens.of(context);
-
     return Column(
       children: [
         _buildSectionHeader(
-          titulo: 'Regras operacionais do comércio',
+          titulo: 'Regras operacionais',
           descricao: _descricaoSecao(SecaoConfiguracaoSix.operacao),
-          icone: Icons.settings_suggest_rounded,
+          icone: Icons.rule_folder_outlined,
         ),
         const SizedBox(height: 20),
-        _buildBigCard(
-          title: 'Venda, estoque e caixa',
-          subtitle:
-              'Defina o comportamento operacional padrão do Six no balcão e na rotina do caixa.',
-          child: Column(
-            children: [
-              Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: [
-                  SizedBox(
-                    width: 420,
-                    child: _buildSwitchTile(
-                      title: 'Controlar estoque',
-                      subtitle:
-                          'Atualiza saldo de produtos e permite relatórios operacionais.',
-                      value: _controlarEstoque,
-                      onChanged: (valor) {
-                        setState(() {
-                          _controlarEstoque = valor;
-                        });
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    width: 420,
-                    child: _buildSwitchTile(
-                      title: 'Exigir cliente na venda',
-                      subtitle:
-                          'Garante rastreabilidade de compras e histórico por pessoa.',
-                      value: _exigirClienteNaVenda,
-                      onChanged: (valor) {
-                        setState(() {
-                          _exigirClienteNaVenda = valor;
-                        });
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    width: 420,
-                    child: _buildSwitchTile(
-                      title: 'Abertura de caixa obrigatória',
-                      subtitle:
-                          'Impede operações antes da abertura formal do caixa.',
-                      value: _abrirCaixaObrigatorio,
-                      onChanged: (valor) {
-                        setState(() {
-                          _abrirCaixaObrigatorio = valor;
-                        });
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    width: 420,
-                    child: _buildSwitchTile(
-                      title: 'Permitir venda sem estoque',
-                      subtitle:
-                          'Útil para cenários específicos, mas exige cuidado operacional.',
-                      value: _permitirVendaSemEstoque,
-                      onChanged: (valor) {
-                        setState(() {
-                          _permitirVendaSemEstoque = valor;
-                        });
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    width: 420,
-                    child: _buildSwitchTile(
-                      title: 'Gerar comissão para colaborador',
-                      subtitle:
-                          'Prepara o sistema para metas, comissão e dashboards futuros.',
-                      value: _gerarComissaoColaborador,
-                      onChanged: (valor) {
-                        setState(() {
-                          _gerarComissaoColaborador = valor;
-                        });
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    width: 420,
-                    child: _buildSwitchTile(
-                      title: 'Permitir edição após fechamento',
-                      subtitle:
-                          'Quando desligado, a operação passa a ser mais rígida e auditável.',
-                      value: _permitirEdicaoAposFechamento,
-                      onChanged: (valor) {
-                        setState(() {
-                          _permitirEdicaoAposFechamento = valor;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  color: tokens.surfaceMuted,
-                  border: Border.all(color: tokens.cardBorder),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Política de desconto',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: tokens.primaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Defina se o operador pode conceder descontos e qual limite padrão.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: tokens.secondaryText,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 420,
-                          child: _buildSwitchTile(
-                            title: 'Permitir desconto manual',
-                            subtitle:
-                                'Libera desconto direto pelo operador no fluxo.',
-                            value: _descontoManualPermitido,
-                            onChanged: (valor) {
-                              setState(() {
-                                _descontoManualPermitido = valor;
-                              });
-                            },
-                          ),
-                        ),
-                        SizedBox(
-                          width: 420,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Limite máximo de desconto: ${_limiteDesconto.toStringAsFixed(0)}%',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              Slider(
-                                value: _limiteDesconto,
-                                min: 0,
-                                max: 50,
-                                divisions: 10,
-                                label: '${_limiteDesconto.toStringAsFixed(0)}%',
-                                onChanged: (valor) {
-                                  setState(() {
-                                    _limiteDesconto = valor;
-                                  });
-                                  _marcarAlteracao();
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildRegrasOperacionaisResumo(),
         const SizedBox(height: 20),
-        _buildBigCard(
-          title: 'Assistência técnica',
-          subtitle:
-              'Parametrize o fluxo de reparo para refletir a operação real da loja.',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: [
-                  SizedBox(
-                    width: 420,
-                    child: _buildSwitchTile(
-                      title: 'Exigir número de série / IMEI',
-                      subtitle:
-                          'Ajuda a identificar corretamente o equipamento recebido.',
-                      value: _exigirSerialImei,
-                      onChanged: (valor) {
-                        setState(() {
-                          _exigirSerialImei = valor;
-                        });
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    width: 420,
-                    child: _buildSwitchTile(
-                      title: 'Exigir técnico responsável',
-                      subtitle:
-                          'Fortalece rastreabilidade e produtividade do time técnico.',
-                      value: _exigirTecnicoResponsavel,
-                      onChanged: (valor) {
-                        setState(() {
-                          _exigirTecnicoResponsavel = valor;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Fluxo de status da assistência',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Mock de status já preparado para futura persistência e personalização por comércio.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: _statusAssistencia.map(_buildStatusChip).toList(),
-              ),
-            ],
-          ),
-        ),
+        _buildCatalogoGradeOperacionalCard(),
+        const SizedBox(height: 20),
+        _buildVendaMesaOperacionalCard(),
+        const SizedBox(height: 20),
+        _buildClienteCreditoOperacionalCard(),
+        const SizedBox(height: 20),
+        _buildEstoqueCaixaOperacionalCard(),
+        const SizedBox(height: 20),
+        _buildDescontoComissaoOperacionalCard(),
+        const SizedBox(height: 20),
+        _buildUnidadesAssistenciaOperacionalCard(),
+        const SizedBox(height: 20),
+        _buildRegrasOperacionaisFooter(),
       ],
+    );
+  }
+
+  Widget _buildRegrasOperacionaisResumo() {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+    final int regrasAtivas =
+        <bool>[
+          _permitirVendaCatalogoPorLink,
+          _cadastroGradeProdutos,
+          _controlarEstoquePorVariacao,
+          _vendaPorMesa,
+          _mesaObrigatoria,
+          _exigirClienteNaVenda,
+          _validarDocumentoCliente,
+          _exigirTelefoneCliente,
+          _permitirVendasFiado,
+          _controlarEstoque,
+          _abrirCaixaObrigatorio,
+          _descontoManualPermitido,
+          _gerarComissaoColaborador,
+          _produtoApenasComUnidadeMedida,
+        ].where((bool value) => value).length;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Wrap(
+        spacing: 18,
+        runSpacing: 16,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: tokens.selectedBackground,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: tokens.selectedBorder),
+            ),
+            child: Icon(Icons.fact_check_outlined, color: tokens.info),
+          ),
+          SizedBox(
+            width: 520,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Regras operacionais sugeridas',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Campos locais para preparar catálogo por link, grade de produtos, venda por mesa, cliente, fiado, crédito, estoque, caixa, desconto, comissão e unidades de medida. Nenhuma integração com backend foi adicionada nesta etapa.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: tokens.secondaryText,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _buildOperationalSummaryPill(
+            icon: Icons.check_circle_outline_rounded,
+            title: '$regrasAtivas regras ativas',
+            subtitle: 'Mock local',
+          ),
+          _buildOperationalSummaryPill(
+            icon: Icons.table_restaurant_outlined,
+            title: _vendaPorMesa ? 'Mesa ativa' : 'Mesa inativa',
+            subtitle: _modoAtendimentoMesa,
+          ),
+          _buildOperationalSummaryPill(
+            icon: Icons.credit_score_outlined,
+            title: _permitirVendasFiado ? 'Fiado ativo' : 'Fiado inativo',
+            subtitle: _politicaCreditoSelecionada,
+          ),
+          _buildOperationalSummaryPill(
+            icon: Icons.view_module_outlined,
+            title: '${_atributosGradeSelecionados.length} atributos',
+            subtitle: 'Grade',
+          ),
+          _buildOperationalSummaryPill(
+            icon: Icons.straighten_rounded,
+            title: '${_unidadesMedidaAutorizadas.length} unidades',
+            subtitle: 'Autorizadas',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCatalogoGradeOperacionalCard() {
+    return _buildBigCard(
+      title: 'Catálogo por link e grade de produtos',
+      subtitle:
+          'Campos sugeridos para vender produtos por um link compartilhável e organizar variações de produto por grade.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Permitir venda por catálogo de produtos por link',
+                  subtitle:
+                      'Habilita uma vitrine compartilhável para o cliente consultar produtos e iniciar uma venda pelo link.',
+                  value: _permitirVendaCatalogoPorLink,
+                  onChanged: (bool value) {
+                    setState(() => _permitirVendaCatalogoPorLink = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Exigir cliente identificado no catálogo',
+                  subtitle:
+                      'Pede dados mínimos do cliente antes de concluir uma intenção de compra pelo link.',
+                  value: _exigirClienteNoCatalogo,
+                  enabled: _permitirVendaCatalogoPorLink,
+                  onChanged: (bool value) {
+                    setState(() => _exigirClienteNoCatalogo = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Permitir compartilhamento do catálogo',
+                  subtitle:
+                      'Prepara o fluxo para compartilhar o link por WhatsApp, email, SMS ou QR Code.',
+                  value: _permitirCompartilhamentoCatalogo,
+                  enabled: _permitirVendaCatalogoPorLink,
+                  onChanged: (bool value) {
+                    setState(() => _permitirCompartilhamentoCatalogo = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildTextField(
+                  label: 'Nome público do catálogo',
+                  controller: _nomeCatalogoController,
+                  enabled: _permitirVendaCatalogoPorLink,
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildTextField(
+                  label: 'Identificador do link',
+                  controller: _slugCatalogoController,
+                  helperText: 'Exemplo futuro: /catalogo/six-repair-center',
+                  enabled: _permitirVendaCatalogoPorLink,
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildDropdownField(
+                  label: 'Visibilidade do catálogo',
+                  value: _visibilidadeCatalogo,
+                  items: _visibilidadesCatalogo,
+                  enabled: _permitirVendaCatalogoPorLink,
+                  onChanged: (String? value) {
+                    if (value == null) return;
+                    setState(() => _visibilidadeCatalogo = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildDropdownField(
+                  label: 'Validade do link',
+                  value: _validadeLinkCatalogo,
+                  items: _validadesCatalogo,
+                  enabled: _permitirVendaCatalogoPorLink,
+                  onChanged: (String? value) {
+                    if (value == null) return;
+                    setState(() => _validadeLinkCatalogo = value);
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Divider(height: 1),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Cadastro de grade de produtos',
+                  subtitle:
+                      'Permite cadastrar variações como cor, tamanho, voltagem, modelo, capacidade ou condição.',
+                  value: _cadastroGradeProdutos,
+                  onChanged: (bool value) {
+                    setState(() {
+                      _cadastroGradeProdutos = value;
+                      if (!value) {
+                        _controlarEstoquePorVariacao = false;
+                        _exigirGradeParaProdutoVariavel = false;
+                      }
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Controlar estoque por variação',
+                  subtitle:
+                      'Separa saldo por item da grade, como película preta, branca, P, M, G ou bivolt.',
+                  value: _controlarEstoquePorVariacao,
+                  enabled: _cadastroGradeProdutos,
+                  onChanged: (bool value) {
+                    setState(() => _controlarEstoquePorVariacao = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Exigir grade para produto variável',
+                  subtitle:
+                      'Impede que produtos com variações sejam cadastrados sem ao menos um atributo de grade.',
+                  value: _exigirGradeParaProdutoVariavel,
+                  enabled: _cadastroGradeProdutos,
+                  onChanged: (bool value) {
+                    setState(() => _exigirGradeParaProdutoVariavel = value);
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildOperationalChoiceSection(
+            title: 'Atributos autorizados para grade',
+            subtitle:
+                'Sugestão inicial de atributos que podem formar variações de produto.',
+            options: _atributosGradeDisponiveis,
+            selectedValues: _atributosGradeSelecionados,
+            enabled: _cadastroGradeProdutos,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVendaMesaOperacionalCard() {
+    return _buildBigCard(
+      title: 'Venda por mesa',
+      subtitle:
+          'Personalização para restaurante, lanchonete, bar ou atendimento em salão com mesa, comanda e fechamento no caixa.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Permitir venda por mesa',
+                  subtitle:
+                      'Habilita atendimento por mesa para registrar consumo aberto até o fechamento da conta.',
+                  value: _vendaPorMesa,
+                  onChanged: (bool value) {
+                    setState(() => _vendaPorMesa = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Mesa obrigatória na venda',
+                  subtitle:
+                      'Exige seleção de mesa antes de lançar itens em operações de salão.',
+                  value: _mesaObrigatoria,
+                  enabled: _vendaPorMesa,
+                  onChanged: (bool value) {
+                    setState(() => _mesaObrigatoria = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Permitir transferência de mesa',
+                  subtitle:
+                      'Permite mover consumo de uma mesa para outra sem perder os itens lançados.',
+                  value: _permitirTransferenciaMesa,
+                  enabled: _vendaPorMesa,
+                  onChanged: (bool value) {
+                    setState(() => _permitirTransferenciaMesa = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Permitir juntar mesas',
+                  subtitle:
+                      'Permite combinar mesas para grupos, eventos ou atendimento compartilhado.',
+                  value: _permitirJuntarMesas,
+                  enabled: _vendaPorMesa,
+                  onChanged: (bool value) {
+                    setState(() => _permitirJuntarMesas = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Imprimir comanda da mesa',
+                  subtitle:
+                      'Prepara emissão de comanda para cozinha, balcão ou conferência do cliente.',
+                  value: _imprimirComandaMesa,
+                  enabled: _vendaPorMesa,
+                  onChanged: (bool value) {
+                    setState(() => _imprimirComandaMesa = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Fechar mesa somente no caixa',
+                  subtitle:
+                      'Mantém o fechamento centralizado no caixa para reduzir divergência de recebimento.',
+                  value: _fecharMesaSomenteNoCaixa,
+                  enabled: _vendaPorMesa,
+                  onChanged: (bool value) {
+                    setState(() => _fecharMesaSomenteNoCaixa = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildDropdownField(
+                  label: 'Modo de atendimento',
+                  value: _modoAtendimentoMesa,
+                  items: _modosAtendimentoMesa,
+                  enabled: _vendaPorMesa,
+                  onChanged: (String? value) {
+                    if (value == null) return;
+                    setState(() => _modoAtendimentoMesa = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildDropdownField(
+                  label: 'Status inicial da mesa',
+                  value: _statusInicialMesa,
+                  items: _statusMesa,
+                  enabled: _vendaPorMesa,
+                  onChanged: (String? value) {
+                    if (value == null) return;
+                    setState(() => _statusInicialMesa = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildTextField(
+                  label: 'Prefixo de identificação',
+                  controller: _prefixoMesaController,
+                  helperText: 'Exemplo: Mesa 01, Balcão 02 ou Comanda 15',
+                  enabled: _vendaPorMesa,
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildTextField(
+                  label: 'Quantidade inicial de mesas',
+                  controller: _quantidadeMesasController,
+                  keyboardType: TextInputType.number,
+                  enabled: _vendaPorMesa,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: 420,
+            child: _buildSwitchTile(
+              title: 'Cobrar taxa de serviço',
+              subtitle:
+                  'Sugere percentual de serviço no fechamento da mesa, sem alterar valores no backend nesta etapa.',
+              value: _cobrarTaxaServicoMesa,
+              enabled: _vendaPorMesa,
+              onChanged: (bool value) {
+                setState(() => _cobrarTaxaServicoMesa = value);
+              },
+            ),
+          ),
+          const SizedBox(height: 18),
+          _buildOperationalSlider(
+            title:
+                'Taxa de serviço sugerida: ${_taxaServicoMesaPercentual.toStringAsFixed(0)}%',
+            subtitle:
+                'Campo pensado para restaurantes e lanchonetes que trabalham com taxa de atendimento no fechamento da mesa.',
+            value: _taxaServicoMesaPercentual,
+            min: 0,
+            max: 20,
+            divisions: 20,
+            enabled: _vendaPorMesa && _cobrarTaxaServicoMesa,
+            onChanged: (double value) {
+              setState(() => _taxaServicoMesaPercentual = value);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClienteCreditoOperacionalCard() {
+    final String limiteCreditoFormatado = context
+        .watch<LocaleSettingsProvider>()
+        .formatCurrency(_limiteCreditoPadrao);
+
+    return _buildBigCard(
+      title: 'Cliente, fiado e crédito',
+      subtitle:
+          'Regras sugeridas para cadastro de clientes, venda fiado, aprovação de crédito, limite e bloqueio por inadimplência.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Cliente obrigatório na venda',
+                  subtitle:
+                      'Exige cliente vinculado para concluir vendas, orçamentos ou assistências técnicas.',
+                  value: _exigirClienteNaVenda,
+                  onChanged: (bool value) {
+                    setState(() => _exigirClienteNaVenda = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Validar documento do cliente',
+                  subtitle:
+                      'Prepara validação de CPF, CNPJ ou documento equivalente conforme regionalização futura.',
+                  value: _validarDocumentoCliente,
+                  onChanged: (bool value) {
+                    setState(() => _validarDocumentoCliente = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Telefone obrigatório no cadastro',
+                  subtitle:
+                      'Garante canal mínimo para contato, cobrança, avisos de assistência e pós-venda.',
+                  value: _exigirTelefoneCliente,
+                  onChanged: (bool value) {
+                    setState(() => _exigirTelefoneCliente = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Endereço obrigatório para venda fiado',
+                  subtitle:
+                      'Exige endereço completo quando a empresa vender a prazo ou precisar de cobrança posterior.',
+                  value: _exigirEnderecoClienteParaFiado,
+                  enabled: _permitirVendasFiado,
+                  onChanged: (bool value) {
+                    setState(() => _exigirEnderecoClienteParaFiado = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Registrar aceite de uso de dados',
+                  subtitle:
+                      'Sugere controle de consentimento para contato, notificações e tratamento de dados do cliente.',
+                  value: _exigirAceiteUsoDadosCliente,
+                  onChanged: (bool value) {
+                    setState(() => _exigirAceiteUsoDadosCliente = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Exigir anexo no cadastro do cliente',
+                  subtitle:
+                      'Permite preparar anexos como documento, comprovante ou contrato de prestação de serviço.',
+                  value: _exigirAnexoCadastroCliente,
+                  onChanged: (bool value) {
+                    setState(() => _exigirAnexoCadastroCliente = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildDropdownField(
+                  label: 'Perfil padrão do cliente',
+                  value: _perfilPadraoCliente,
+                  items: _perfisCliente,
+                  onChanged: (String? value) {
+                    if (value == null) return;
+                    setState(() => _perfilPadraoCliente = value);
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Divider(height: 1),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Permitir vendas fiado',
+                  subtitle:
+                      'Habilita vendas para pagamento posterior, vinculadas ao cliente e à agenda financeira.',
+                  value: _permitirVendasFiado,
+                  onChanged: (bool value) {
+                    setState(() {
+                      _permitirVendasFiado = value;
+                      if (!value) {
+                        _exigirAprovacaoCredito = false;
+                        _permitirLimiteCreditoCliente = false;
+                        _bloquearClienteInadimplente = false;
+                        _notificarVencimentoFiado = false;
+                        _permitirParcelamentoFiado = false;
+                      }
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Exigir aprovação de crédito',
+                  subtitle:
+                      'Antes de vender fiado, exige aprovação de crédito conforme limite, histórico ou permissão.',
+                  value: _exigirAprovacaoCredito,
+                  enabled: _permitirVendasFiado,
+                  onChanged: (bool value) {
+                    setState(() => _exigirAprovacaoCredito = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Definir limite de crédito por cliente',
+                  subtitle:
+                      'Permite controlar quanto cada cliente pode comprar fiado antes de bloquear novas vendas.',
+                  value: _permitirLimiteCreditoCliente,
+                  enabled: _permitirVendasFiado,
+                  onChanged: (bool value) {
+                    setState(() => _permitirLimiteCreditoCliente = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Bloquear cliente inadimplente',
+                  subtitle:
+                      'Impede nova venda fiado quando houver atraso acima da tolerância definida.',
+                  value: _bloquearClienteInadimplente,
+                  enabled: _permitirVendasFiado,
+                  onChanged: (bool value) {
+                    setState(() => _bloquearClienteInadimplente = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Notificar vencimento do fiado',
+                  subtitle:
+                      'Prepara alertas por canais futuros antes e depois do vencimento da conta.',
+                  value: _notificarVencimentoFiado,
+                  enabled: _permitirVendasFiado,
+                  onChanged: (bool value) {
+                    setState(() => _notificarVencimentoFiado = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Permitir parcelamento do fiado',
+                  subtitle:
+                      'Permite dividir a venda fiado em parcelas a receber no financeiro.',
+                  value: _permitirParcelamentoFiado,
+                  enabled: _permitirVendasFiado,
+                  onChanged: (bool value) {
+                    setState(() => _permitirParcelamentoFiado = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildDropdownField(
+                  label: 'Política de crédito',
+                  value: _politicaCreditoSelecionada,
+                  items: _politicasCredito,
+                  enabled: _permitirVendasFiado,
+                  onChanged: (String? value) {
+                    if (value == null) return;
+                    setState(() => _politicaCreditoSelecionada = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildDropdownField(
+                  label: 'Prazo padrão do fiado',
+                  value: _prazoPadraoFiado,
+                  items: _prazosFiado,
+                  enabled: _permitirVendasFiado,
+                  onChanged: (String? value) {
+                    if (value == null) return;
+                    setState(() => _prazoPadraoFiado = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildTextField(
+                  label: 'Dias de tolerância para bloqueio',
+                  controller: _diasBloqueioAtrasoController,
+                  helperText: 'Exemplo: bloquear após 7 dias de atraso',
+                  keyboardType: TextInputType.number,
+                  enabled: _permitirVendasFiado && _bloquearClienteInadimplente,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          _buildOperationalSlider(
+            title: 'Limite de crédito padrão: $limiteCreditoFormatado',
+            subtitle:
+                'Valor inicial sugerido para clientes que ainda não possuem análise individual de crédito.',
+            value: _limiteCreditoPadrao,
+            min: 0,
+            max: 5000,
+            divisions: 20,
+            enabled: _permitirVendasFiado && _permitirLimiteCreditoCliente,
+            valueSuffix: '',
+            onChanged: (double value) {
+              setState(() => _limiteCreditoPadrao = value);
+            },
+          ),
+          const SizedBox(height: 18),
+          _buildOperationalSlider(
+            title:
+                'Entrada mínima no fiado: ${_entradaMinimaFiadoPercentual.toStringAsFixed(0)}%',
+            subtitle:
+                'Percentual mínimo que pode ser exigido no ato da venda para reduzir risco de crédito.',
+            value: _entradaMinimaFiadoPercentual,
+            min: 0,
+            max: 80,
+            divisions: 16,
+            enabled: _permitirVendasFiado,
+            onChanged: (double value) {
+              setState(() => _entradaMinimaFiadoPercentual = value);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEstoqueCaixaOperacionalCard() {
+    return _buildBigCard(
+      title: 'Estoque, venda e caixa',
+      subtitle:
+          'Sugestão de campos para controlar disponibilidade, baixa de estoque, venda negativa e abertura de caixa.',
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 16,
+        children: [
+          SizedBox(
+            width: 420,
+            child: _buildSwitchTile(
+              title: 'Controlar estoque',
+              subtitle:
+                  'Baixa saldo nas vendas e mantém relatórios de movimentação confiáveis.',
+              value: _controlarEstoque,
+              onChanged: (bool value) {
+                setState(() {
+                  _controlarEstoque = value;
+                  if (!value) _permitirVendaSemEstoque = false;
+                });
+              },
+            ),
+          ),
+          SizedBox(
+            width: 420,
+            child: _buildSwitchTile(
+              title: 'Permitir venda sem estoque',
+              subtitle:
+                  'Permite concluir a venda mesmo quando o saldo do produto estiver abaixo de zero.',
+              value: _permitirVendaSemEstoque,
+              enabled: _controlarEstoque,
+              disabledSubtitle:
+                  'Disponível apenas quando o controle de estoque estiver ativo.',
+              onChanged: (bool value) {
+                setState(() => _permitirVendaSemEstoque = value);
+              },
+            ),
+          ),
+          SizedBox(
+            width: 420,
+            child: _buildSwitchTile(
+              title: 'Abertura de caixa obrigatória',
+              subtitle:
+                  'Impede vendas, recebimentos e sangrias antes da abertura formal do caixa.',
+              value: _abrirCaixaObrigatorio,
+              onChanged: (bool value) {
+                setState(() => _abrirCaixaObrigatorio = value);
+              },
+            ),
+          ),
+          SizedBox(
+            width: 420,
+            child: _buildSwitchTile(
+              title: 'Permitir edição após fechamento',
+              subtitle:
+                  'Quando desligado, a operação passa a ser mais rígida e auditável.',
+              value: _permitirEdicaoAposFechamento,
+              onChanged: (bool value) {
+                setState(() => _permitirEdicaoAposFechamento = value);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDescontoComissaoOperacionalCard() {
+    return _buildBigCard(
+      title: 'Descontos e comissão',
+      subtitle:
+          'Campos sugeridos para desconto no balcão, justificativa, limite e comissionamento por colaborador.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Conceder desconto na hora da venda',
+                  subtitle:
+                      'Permite que o operador aplique desconto diretamente no fluxo de venda.',
+                  value: _descontoManualPermitido,
+                  onChanged: (bool value) {
+                    setState(() => _descontoManualPermitido = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Exigir justificativa do desconto',
+                  subtitle:
+                      'Registra o motivo informado pelo operador para auditoria futura.',
+                  value: _exigirJustificativaDesconto,
+                  enabled: _descontoManualPermitido,
+                  onChanged: (bool value) {
+                    setState(() => _exigirJustificativaDesconto = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildDropdownField(
+                  label: 'Tipo de desconto permitido',
+                  value: _tipoDescontoSelecionado,
+                  items: _tiposDesconto,
+                  enabled: _descontoManualPermitido,
+                  onChanged: (String? value) {
+                    if (value == null) return;
+                    setState(() => _tipoDescontoSelecionado = value);
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          _buildOperationalSlider(
+            title:
+                'Limite máximo de desconto: ${_limiteDesconto.toStringAsFixed(0)}%',
+            subtitle:
+                'Campo sugerido para restringir descontos manuais conforme política do comércio.',
+            value: _limiteDesconto,
+            min: 0,
+            max: 50,
+            divisions: 10,
+            enabled: _descontoManualPermitido,
+            onChanged: (double value) {
+              setState(() => _limiteDesconto = value);
+            },
+          ),
+          const SizedBox(height: 22),
+          const Divider(height: 1),
+          const SizedBox(height: 22),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Gerar comissão para colaborador',
+                  subtitle:
+                      'Habilita regra futura para comissionamento por responsável da venda ou serviço.',
+                  value: _gerarComissaoColaborador,
+                  onChanged: (bool value) {
+                    setState(() => _gerarComissaoColaborador = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Aplicar comissão em serviços',
+                  subtitle:
+                      'Inclui mão de obra, assistência técnica e serviços avulsos no cálculo.',
+                  value: _aplicarComissaoEmServicos,
+                  enabled: _gerarComissaoColaborador,
+                  onChanged: (bool value) {
+                    setState(() => _aplicarComissaoEmServicos = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Aplicar comissão em produtos',
+                  subtitle:
+                      'Inclui venda de peças, acessórios e mercadorias no cálculo da comissão.',
+                  value: _aplicarComissaoEmProdutos,
+                  enabled: _gerarComissaoColaborador,
+                  onChanged: (bool value) {
+                    setState(() => _aplicarComissaoEmProdutos = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildDropdownField(
+                  label: 'Base de cálculo da comissão',
+                  value: _baseComissaoSelecionada,
+                  items: _basesComissao,
+                  enabled: _gerarComissaoColaborador,
+                  onChanged: (String? value) {
+                    if (value == null) return;
+                    setState(() => _baseComissaoSelecionada = value);
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          _buildOperationalSlider(
+            title:
+                'Comissão padrão sugerida: ${_percentualComissaoPadrao.toStringAsFixed(0)}%',
+            subtitle:
+                'Valor inicial para novas regras; pode evoluir depois para política por colaborador, produto ou serviço.',
+            value: _percentualComissaoPadrao,
+            min: 0,
+            max: 30,
+            divisions: 15,
+            enabled: _gerarComissaoColaborador,
+            onChanged: (double value) {
+              setState(() => _percentualComissaoPadrao = value);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUnidadesAssistenciaOperacionalCard() {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+
+    return _buildBigCard(
+      title: 'Unidades de medida e assistência técnica',
+      subtitle:
+          'Limite unidades aceitas pela empresa e mantenha os controles técnicos atuais da operação.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 520,
+            child: _buildSwitchTile(
+              title:
+                  'Permitir cadastro de produto apenas por unidade de medida',
+              subtitle:
+                  'Exige unidade informada e restringe o cadastro às categorias autorizadas abaixo.',
+              value: _produtoApenasComUnidadeMedida,
+              onChanged: (bool value) {
+                setState(() => _produtoApenasComUnidadeMedida = value);
+              },
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildOperationalChoiceSection(
+            title: 'Unidades autorizadas para vendas',
+            subtitle:
+                'Categorias disponíveis: unidades, área, distância, volume, tempo, peso e moeda.',
+            options: _unidadesDisponiveis,
+            selectedValues: _unidadesMedidaAutorizadas,
+          ),
+          const SizedBox(height: 22),
+          const Divider(height: 1),
+          const SizedBox(height: 22),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Exigir número de série / IMEI',
+                  subtitle:
+                      'Ajuda a identificar corretamente o equipamento recebido.',
+                  value: _exigirSerialImei,
+                  onChanged: (bool value) {
+                    setState(() => _exigirSerialImei = value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 420,
+                child: _buildSwitchTile(
+                  title: 'Exigir técnico responsável',
+                  subtitle:
+                      'Fortalece rastreabilidade e produtividade do time técnico.',
+                  value: _exigirTecnicoResponsavel,
+                  onChanged: (bool value) {
+                    setState(() => _exigirTecnicoResponsavel = value);
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Fluxo de status da assistência',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: tokens.primaryText,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Mock de status já preparado para futura persistência e personalização por comércio.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: tokens.secondaryText,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: _statusAssistencia.map(_buildStatusChip).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOperationalChoiceSection({
+    required String title,
+    required String subtitle,
+    required List<_ConfiguracaoChoiceOption> options,
+    required Set<String> selectedValues,
+    bool enabled = true,
+  }) {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+
+    return AnimatedOpacity(
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      opacity: enabled ? 1 : 0.55,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: tokens.primaryText,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: tokens.secondaryText,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children:
+                options.map((_ConfiguracaoChoiceOption option) {
+                  final bool selected = selectedValues.contains(option.label);
+                  return _buildOperationalChoiceCard(
+                    option: option,
+                    selected: selected,
+                    enabled: enabled,
+                    onTap: () {
+                      setState(() {
+                        if (selected) {
+                          selectedValues.remove(option.label);
+                        } else {
+                          selectedValues.add(option.label);
+                        }
+                      });
+                    },
+                  );
+                }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOperationalChoiceCard({
+    required _ConfiguracaoChoiceOption option,
+    required bool selected,
+    required VoidCallback onTap,
+    bool enabled = true,
+  }) {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      enabled: enabled,
+      label: option.label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap:
+              enabled
+                  ? () {
+                    onTap();
+                    _marcarAlteracao();
+                  }
+                  : null,
+          child: AnimatedContainer(
+            duration: WebThemeTokens.transitionDuration,
+            curve: WebThemeTokens.transitionCurve,
+            width: 260,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: selected ? tokens.selectedBackground : tokens.surfaceMuted,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: selected ? tokens.selectedBorder : tokens.cardBorder,
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color:
+                        selected
+                            ? tokens.surfaceElevated
+                            : tokens.inputBackground,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: tokens.cardBorder),
+                  ),
+                  child: Icon(
+                    option.icon,
+                    color: selected ? tokens.info : tokens.secondaryText,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              option.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                color: tokens.primaryText,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            selected
+                                ? Icons.check_circle_rounded
+                                : Icons.add_circle_outline_rounded,
+                            color: selected ? tokens.info : tokens.mutedText,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        option.description,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: tokens.secondaryText,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOperationalSummaryPill({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+
+    return Container(
+      width: 184,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: tokens.info),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: tokens.secondaryText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOperationalSlider({
+    required String title,
+    required String subtitle,
+    required double value,
+    required double min,
+    required double max,
+    required int divisions,
+    required ValueChanged<double> onChanged,
+    bool enabled = true,
+    String valueSuffix = '%',
+  }) {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+
+    return AnimatedOpacity(
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      opacity: enabled ? 1 : 0.55,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: tokens.cardBorder),
+          color: tokens.surfaceMuted,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: tokens.primaryText,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: tokens.secondaryText,
+                height: 1.35,
+              ),
+            ),
+            Slider(
+              value: value,
+              min: min,
+              max: max,
+              divisions: divisions,
+              label: '${value.toStringAsFixed(0)}$valueSuffix',
+              onChanged:
+                  enabled
+                      ? (double novo) {
+                        onChanged(novo);
+                        _marcarAlteracao();
+                      }
+                      : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRegrasOperacionaisFooter() {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.spaceBetween,
+        children: [
+          SizedBox(
+            width: 680,
+            child: Text(
+              'Pronto para evoluir: os campos foram desenhados como rascunho de regra operacional e ainda não persistem no backend.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: tokens.secondaryText,
+                height: 1.35,
+              ),
+            ),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  SnackBar(
+                    content: const Text(
+                      'Rascunho das regras operacionais validado localmente. Backend não integrado.',
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: tokens.info,
+                  ),
+                );
+            },
+            icon: const Icon(Icons.check_rounded),
+            label: const Text('Validar rascunho'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -3543,34 +4938,30 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   Widget _buildConteudoPrincipal() {
     return SingleChildScrollView(
       controller: _conteudoScrollController,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final bool layoutEmpilhado = constraints.maxWidth < 1180;
-          _ultimoLayoutEmpilhado = layoutEmpilhado;
-          final Widget conteudoSecao = KeyedSubtree(
-            key: _conteudoSecaoKey,
-            child: _buildConteudoSecao(),
-          );
-
-          if (layoutEmpilhado) {
-            return Column(
-              children: [
-                _buildMenuLateralSecoes(),
-                const SizedBox(height: 20),
-                conteudoSecao,
-              ],
-            );
-          }
-
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(width: 300, child: _buildMenuLateralSecoes()),
-              const SizedBox(width: 20),
-              Expanded(child: conteudoSecao),
-            ],
-          );
-        },
+      child: Column(
+        children: [
+          _buildSecoesHeader(),
+          const SizedBox(height: 20),
+          AnimatedSwitcher(
+            duration: WebThemeTokens.transitionDuration,
+            switchInCurve: WebThemeTokens.transitionCurve,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              final Animation<Offset> offset = Tween<Offset>(
+                begin: const Offset(0, 0.018),
+                end: Offset.zero,
+              ).animate(animation);
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(position: offset, child: child),
+              );
+            },
+            child: KeyedSubtree(
+              key: ValueKey<SecaoConfiguracaoSix>(_secaoAtual),
+              child: _buildConteudoSecao(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -3717,4 +5108,16 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       }
     }
   }
+}
+
+class _ConfiguracaoChoiceOption {
+  const _ConfiguracaoChoiceOption({
+    required this.label,
+    required this.description,
+    required this.icon,
+  });
+
+  final String label;
+  final String description;
+  final IconData icon;
 }

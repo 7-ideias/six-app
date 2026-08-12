@@ -1335,6 +1335,11 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return;
     }
 
+    if (modulo == ModuloCentralPDV.configuracoes) {
+      showConfiguracoesSixWebDialog(context);
+      return;
+    }
+
     setState(() {
       _moduloRetornoOperacoesCaixa = null;
       _moduloAtual = modulo;
