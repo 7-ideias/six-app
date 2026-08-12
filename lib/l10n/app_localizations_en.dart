@@ -19,7 +19,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiAssistantAsk => 'Ask AI';
 
   @override
-  String get aiAssistantHint => 'Type your question';
+  String get aiAssistantHint => 'How can I help today?';
 
   @override
   String get aiAssistantSending => 'Sending...';
@@ -53,6 +53,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiAssistantFeedbackThanks => 'Feedback saved.';
+
+  @override
+  String get aiAssistantWelcomeTitle => 'Hi! I\'m Lis';
+
+  @override
+  String get aiAssistantWelcomeSubtitle =>
+      'I\'m here to help with your requests and answer questions about Six.';
+
+  @override
+  String get aiAssistantAvatarLabel => 'Assistant Lis avatar';
+
+  @override
+  String get aiAssistantExpand => 'Expand assistant';
+
+  @override
+  String get aiAssistantCollapse => 'Collapse assistant';
+
+  @override
+  String get aiAssistantFocusLabel => 'Assistant in focus';
+
+  @override
+  String get aiAssistantMinimize => 'Minimize';
+
+  @override
+  String get aiAssistantMinimizedLabel => 'Lis minimized';
+
+  @override
+  String get aiAssistantMinimizedTooltip => 'Open minimized assistant';
+
+  @override
+  String get aiAssistantNewQuestion => 'New question';
+
+  @override
+  String get aiAssistantAttachUnavailable =>
+      'Attachments are not available yet';
+
+  @override
+  String get aiAssistantSend => 'Send';
+
+  @override
+  String get aiAssistantThinkingTitle => 'Lis is analyzing';
+
+  @override
+  String get aiAssistantThinkingSubtitle =>
+      'Finding the best answer for this screen context.';
 
   @override
   String get pdvWebTitle => 'Front desk';
@@ -1221,7 +1266,7 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
   String get aiAssistantAsk => 'Ask AI';
 
   @override
-  String get aiAssistantHint => 'Type your question';
+  String get aiAssistantHint => 'How can I help today?';
 
   @override
   String get aiAssistantSending => 'Sending...';
@@ -1255,6 +1300,51 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get aiAssistantFeedbackThanks => 'Feedback saved.';
+
+  @override
+  String get aiAssistantWelcomeTitle => 'Hi! I\'m Lis';
+
+  @override
+  String get aiAssistantWelcomeSubtitle =>
+      'I\'m here to help with your requests and answer questions about Six.';
+
+  @override
+  String get aiAssistantAvatarLabel => 'Assistant Lis avatar';
+
+  @override
+  String get aiAssistantExpand => 'Expand assistant';
+
+  @override
+  String get aiAssistantCollapse => 'Collapse assistant';
+
+  @override
+  String get aiAssistantFocusLabel => 'Assistant in focus';
+
+  @override
+  String get aiAssistantMinimize => 'Minimize';
+
+  @override
+  String get aiAssistantMinimizedLabel => 'Lis minimized';
+
+  @override
+  String get aiAssistantMinimizedTooltip => 'Open minimized assistant';
+
+  @override
+  String get aiAssistantNewQuestion => 'New question';
+
+  @override
+  String get aiAssistantAttachUnavailable =>
+      'Attachments are not available yet';
+
+  @override
+  String get aiAssistantSend => 'Send';
+
+  @override
+  String get aiAssistantThinkingTitle => 'Lis is analyzing';
+
+  @override
+  String get aiAssistantThinkingSubtitle =>
+      'Finding the best answer for this screen context.';
 
   @override
   String get procedimentosTitle => 'Procedures';

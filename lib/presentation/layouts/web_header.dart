@@ -38,6 +38,7 @@ class WebHeader extends StatelessWidget {
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool compact = constraints.maxWidth < 900;
+          final bool showCommerceContext = !compact;
 
           return Row(
             children: <Widget>[
@@ -80,27 +81,23 @@ class WebHeader extends StatelessWidget {
                   ],
                 ),
               ),
-              if (!compact) ...<Widget>[
+              if (showCommerceContext || actions.isNotEmpty) ...<Widget>[
                 const SizedBox(width: 16),
-                _CommerceContextPill(currentCommerceName: currentCommerceName),
-              ],
-              if (actions.isNotEmpty) ...<Widget>[
-                const SizedBox(width: 12),
-                Flexible(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    reverse: true,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        for (int index = 0; index < actions.length; index++)
-                          Padding(
-                            padding: EdgeInsets.only(left: index == 0 ? 0 : 8),
-                            child: actions[index],
-                          ),
-                      ],
-                    ),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    if (showCommerceContext)
+                      _CommerceContextPill(
+                        currentCommerceName: currentCommerceName,
+                      ),
+                    for (int index = 0; index < actions.length; index++)
+                      Padding(
+                        padding: EdgeInsets.only(
+                          left: showCommerceContext || index > 0 ? 8 : 0,
+                        ),
+                        child: actions[index],
+                      ),
+                  ],
                 ),
               ],
             ],

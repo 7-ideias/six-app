@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:sixpos/data/models/produto_imagem_model.dart';
+import 'package:sixpos/presentation/components/produto_web_image.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -9,6 +11,7 @@ void main() {
     late String estoqueDashboardSource;
     late String produtoListaSource;
     late String produtoCadastroSource;
+    late String produtoWebImageSource;
     late String dashboardWidgetsSource;
 
     setUpAll(() {
@@ -30,6 +33,10 @@ void main() {
           ).readAsStringSync();
       produtoCadastroSource =
           File('lib/sub_painel_cadastro_produto_web.dart').readAsStringSync();
+      produtoWebImageSource =
+          File(
+            'lib/presentation/components/produto_web_image.dart',
+          ).readAsStringSync();
       dashboardWidgetsSource =
           File(
             'lib/presentation/components/web_dashboard_widgets.dart',
@@ -99,6 +106,20 @@ void main() {
         expect(produtoListaSource, contains('tokens.selectedBackground'));
         expect(produtoListaSource, contains('tokens.selectedBorder'));
         expect(produtoListaSource, contains('tokens.statusNeutral'));
+        expect(produtoListaSource, contains('_thumbnailImageContent'));
+        expect(produtoListaSource, contains('ProdutoWebImage'));
+        expect(produtoListaSource, contains('ProdutoWebImageResolver'));
+        expect(produtoListaSource, contains('hasLocalDataSource'));
+        expect(produtoWebImageSource, contains('image.imagemBase64'));
+        expect(produtoWebImageSource, contains('image.urlMiniatura'));
+        expect(
+          produtoWebImageSource,
+          contains('WebHtmlElementStrategy.prefer'),
+        );
+        expect(
+          produtoWebImageSource,
+          contains('WebHtmlElementStrategy.fallback'),
+        );
 
         expect(
           produtoListaSource,
@@ -128,5 +149,57 @@ void main() {
         expect(produtoCadastroSource, isNot(contains('Colors.white')));
       },
     );
+
+    test('cadastro de produto web renderiza imagens persistidas de upload', () {
+      expect(produtoCadastroSource, contains('_buildImageContent'));
+      expect(produtoCadastroSource, contains('ProdutoWebImage'));
+      expect(
+        produtoCadastroSource,
+        contains('previewBytes: slot.previewBytes'),
+      );
+      expect(produtoWebImageSource, contains('base64.normalize'));
+      expect(produtoWebImageSource, contains('Uri.decodeFull'));
+      expect(produtoWebImageSource, contains('_mimeTypeFromBytes'));
+      expect(produtoCadastroSource, contains('preferThumbnail: true'));
+    });
+
+    test('resolver web trata upload base64 e url externa de produto', () {
+      const String png1x1 =
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p94AAAAASUVORK5CYII=';
+      final ProdutoWebImageSource uploadSource =
+          ProdutoWebImageResolver.resolve(
+            ProdutoImagemModel(origem: 'UPLOAD', imagemBase64: png1x1),
+          );
+
+      expect(uploadSource.dataUrl, startsWith('data:image/png;base64,'));
+      expect(uploadSource.url, isNull);
+      expect(
+        ProdutoWebImageResolver.hasLocalDataSource(
+          ProdutoImagemModel(origem: 'UPLOAD', imagemBase64: png1x1),
+        ),
+        isTrue,
+      );
+
+      const String externalUrl =
+          'https://images.pexels.com/photos/123456/produto.jpeg';
+      final ProdutoWebImageSource externalSource =
+          ProdutoWebImageResolver.resolve(
+            ProdutoImagemModel(origem: 'SUGESTAO', url: externalUrl),
+          );
+
+      expect(externalSource.dataUrl, isNull);
+      expect(externalSource.url, externalUrl);
+
+      final ProdutoWebImageSource mixedSource = ProdutoWebImageResolver.resolve(
+        ProdutoImagemModel(
+          origem: 'UPLOAD',
+          url: externalUrl,
+          imagemBase64: png1x1,
+        ),
+      );
+
+      expect(mixedSource.dataUrl, startsWith('data:image/png;base64,'));
+      expect(mixedSource.url, isNull);
+    });
   });
 }

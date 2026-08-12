@@ -92,6 +92,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.catalog.services': 'Serviços',
     'web.navigation.catalog.stock': 'Estoque',
     'web.navigation.catalog.categories': 'Categorias',
+    'produto.dashboard.importSpreadsheetSoon':
+        'Importar via planilha (em breve)',
     'web.navigation.people': 'Pessoas',
     'web.navigation.people.customers': 'Clientes',
     'web.navigation.people.collaborators': 'Colaboradores',
@@ -1226,6 +1228,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.catalog.services': 'Services',
     'web.navigation.catalog.stock': 'Stock',
     'web.navigation.catalog.categories': 'Categories',
+    'produto.dashboard.importSpreadsheetSoon':
+        'Import via spreadsheet (coming soon)',
     'web.navigation.people': 'People',
     'web.navigation.people.customers': 'Customers',
     'web.navigation.people.collaborators': 'Team members',
@@ -2258,6 +2262,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.catalog.services': 'Servicios',
     'web.navigation.catalog.stock': 'Inventario',
     'web.navigation.catalog.categories': 'Categorías',
+    'produto.dashboard.importSpreadsheetSoon':
+        'Importar por hoja de cálculo (próximamente)',
     'web.navigation.people': 'Personas',
     'web.navigation.people.customers': 'Clientes',
     'web.navigation.people.collaborators': 'Colaboradores',

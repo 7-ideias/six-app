@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/data/models/produto_dashboard_model.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
 class ProdutoDashboardWebPage extends StatefulWidget {
@@ -206,6 +207,17 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
                 label: const Text('Novo produto'),
               ),
               OutlinedButton.icon(
+                onPressed: null,
+                icon: const Icon(Icons.upload_file_outlined),
+                label: Text(
+                  context.t(
+                    'produto.dashboard.importSpreadsheetSoon',
+                    fallback: 'Importar via planilha (em breve)',
+                  ),
+                ),
+                style: _headerComingSoonButtonStyle(tokens),
+              ),
+              OutlinedButton.icon(
                 onPressed: widget.onOpenListaCompleta,
                 icon: const Icon(Icons.table_rows_rounded),
                 label: const Text('Lista completa'),
@@ -241,6 +253,15 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
     return OutlinedButton.styleFrom(
       foregroundColor: tokens.info,
       backgroundColor: tokens.surface,
+      side: BorderSide(color: tokens.cardBorder),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    );
+  }
+
+  ButtonStyle _headerComingSoonButtonStyle(WebThemeTokens tokens) {
+    return OutlinedButton.styleFrom(
+      disabledForegroundColor: tokens.secondaryText.withValues(alpha: 0.72),
+      disabledBackgroundColor: tokens.surface,
       side: BorderSide(color: tokens.cardBorder),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     );

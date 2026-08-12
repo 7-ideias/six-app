@@ -123,7 +123,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiAssistantHint.
   ///
   /// In en, this message translates to:
-  /// **'Type your question'**
+  /// **'How can I help today?'**
   String get aiAssistantHint;
 
   /// No description provided for @aiAssistantSending.
@@ -191,6 +191,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Feedback saved.'**
   String get aiAssistantFeedbackThanks;
+
+  /// No description provided for @aiAssistantWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi! I\'m Lis'**
+  String get aiAssistantWelcomeTitle;
+
+  /// No description provided for @aiAssistantWelcomeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m here to help with your requests and answer questions about Six.'**
+  String get aiAssistantWelcomeSubtitle;
+
+  /// No description provided for @aiAssistantAvatarLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant Lis avatar'**
+  String get aiAssistantAvatarLabel;
+
+  /// No description provided for @aiAssistantExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand assistant'**
+  String get aiAssistantExpand;
+
+  /// No description provided for @aiAssistantCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse assistant'**
+  String get aiAssistantCollapse;
+
+  /// No description provided for @aiAssistantFocusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant in focus'**
+  String get aiAssistantFocusLabel;
+
+  /// No description provided for @aiAssistantMinimize.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimize'**
+  String get aiAssistantMinimize;
+
+  /// No description provided for @aiAssistantMinimizedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Lis minimized'**
+  String get aiAssistantMinimizedLabel;
+
+  /// No description provided for @aiAssistantMinimizedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open minimized assistant'**
+  String get aiAssistantMinimizedTooltip;
+
+  /// No description provided for @aiAssistantNewQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'New question'**
+  String get aiAssistantNewQuestion;
+
+  /// No description provided for @aiAssistantAttachUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments are not available yet'**
+  String get aiAssistantAttachUnavailable;
+
+  /// No description provided for @aiAssistantSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get aiAssistantSend;
+
+  /// No description provided for @aiAssistantThinkingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lis is analyzing'**
+  String get aiAssistantThinkingTitle;
+
+  /// No description provided for @aiAssistantThinkingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding the best answer for this screen context.'**
+  String get aiAssistantThinkingSubtitle;
 
   /// No description provided for @pdvWebTitle.
   ///

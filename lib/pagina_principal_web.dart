@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_button.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_panel.dart';
+import 'package:sixpos/presentation/components/user_profile_avatar_image.dart';
 import 'package:sixpos/presentation/layouts/authenticated_web_shell.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_destination_mapper.dart';
 import 'package:sixpos/presentation/navigation/modulo_central_pdv.dart';
@@ -60,6 +62,7 @@ import 'providers/locale_settings_provider.dart';
 import 'providers/colaborador_autorizacoes_provider.dart';
 import 'providers/empresa_provider.dart';
 import 'providers/streak_provider.dart';
+import 'providers/usuario_provider.dart';
 
 part 'pdv_page_web_cockpit_section.dart';
 part 'presentation/screens/pdv_web.dart';
@@ -99,6 +102,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
   late final AnimationController _iaPulseController;
   late final Animation<double> _iaPulseAnimation;
+  bool _assistenteIAMinimizado = false;
 
   late final AnimationController _bellAnimationController;
   late final Animation<double> _bellRotationAnimation;
@@ -607,33 +611,50 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   Future<void> _abrirAssistenteIA() async {
     final String barrierLabel =
         MaterialLocalizations.of(context).modalBarrierDismissLabel;
+    bool expanded = false;
+    bool minimizarSolicitado = false;
+
+    if (_assistenteIAMinimizado) {
+      setState(() => _assistenteIAMinimizado = false);
+    }
 
     await showGeneralDialog<void>(
       context: context,
       barrierDismissible: true,
       barrierLabel: barrierLabel,
-      barrierColor: Colors.black.withValues(alpha: 0.18),
-      transitionDuration: const Duration(milliseconds: 260),
+      barrierColor: Colors.black.withValues(alpha: 0.20),
+      transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (
         BuildContext dialogContext,
         Animation<double> _,
         Animation<double> __,
       ) {
-        return SafeArea(
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 76, 12, 12),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
+        return StatefulBuilder(
+          builder: (
+            BuildContext context,
+            void Function(VoidCallback fn) setDialogState,
+          ) {
+            return SafeArea(
+              minimum: const EdgeInsets.all(14),
+              child: Center(
                 child: AiAssistantPanel(
                   modulo: _moduloAtualParaIA(),
                   telaAtual: _telaAtualParaIA(),
-                  onClose: () => Navigator.of(dialogContext).pop(),
+                  expanded: expanded,
+                  onClose: () {
+                    minimizarSolicitado = false;
+                    Navigator.of(dialogContext).pop();
+                  },
+                  onMinimize: () {
+                    minimizarSolicitado = true;
+                    Navigator.of(dialogContext).pop();
+                  },
+                  onToggleExpanded:
+                      () => setDialogState(() => expanded = !expanded),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
       transitionBuilder: (
@@ -643,7 +664,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         Widget child,
       ) {
         final Animation<Offset> slideAnimation = Tween<Offset>(
-          begin: const Offset(0.08, 0),
+          begin: const Offset(0, 0.04),
           end: Offset.zero,
         ).animate(
           CurvedAnimation(
@@ -658,6 +679,30 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
           child: SlideTransition(position: slideAnimation, child: child),
         );
       },
+    );
+
+    if (!mounted) return;
+    setState(() => _assistenteIAMinimizado = minimizarSolicitado);
+  }
+
+  Widget _buildAssistenteIAMinimizado() {
+    final AppLocalizations? l10n = AppLocalizations.of(context);
+
+    return Positioned(
+      right: 24,
+      bottom: 24,
+      child: SafeArea(
+        minimum: const EdgeInsets.only(right: 4, bottom: 4),
+        child: AiAssistantButton(
+          onTap: _abrirAssistenteIA,
+          label: l10n?.aiAssistantMinimizedLabel ?? 'Lis minimizada',
+          tooltip:
+              l10n?.aiAssistantMinimizedTooltip ??
+              'Abrir assistente minimizado',
+          extended: true,
+          highlighted: true,
+        ),
+      ),
     );
   }
 
@@ -738,82 +783,114 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final Color accent = _webHeaderAccentColor(colorScheme, tokens);
 
-    return Tooltip(
-      message: context.t('web.header.userMenu', fallback: 'Usuário'),
-      child: PopupMenuButton<_WebHeaderUserAction>(
-        tooltip: '',
-        position: PopupMenuPosition.under,
-        color: tokens.menuBackground,
-        onSelected: (_WebHeaderUserAction action) {
-          switch (action) {
-            case _WebHeaderUserAction.profile:
-              showMeuPerfilWebDialog(context);
-              return;
-            case _WebHeaderUserAction.logout:
-              _confirmarLogout();
-              return;
-          }
-        },
-        itemBuilder:
-            (BuildContext context) => <PopupMenuEntry<_WebHeaderUserAction>>[
-              PopupMenuItem<_WebHeaderUserAction>(
-                value: _WebHeaderUserAction.profile,
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.person_outline_rounded, size: 18, color: accent),
-                    const SizedBox(width: 10),
-                    Text(
-                      context.t('web.header.myProfile', fallback: 'Meu perfil'),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: tokens.primaryText,
-                        fontWeight: FontWeight.w600,
+    return AnimatedBuilder(
+      animation: UsuarioProvider(),
+      builder: (BuildContext context, Widget? child) {
+        final String fotoUsuario = UsuarioProvider().usuario?.foto.trim() ?? '';
+
+        return Tooltip(
+          message: context.t('web.header.userMenu', fallback: 'Usuário'),
+          child: PopupMenuButton<_WebHeaderUserAction>(
+            tooltip: '',
+            position: PopupMenuPosition.under,
+            color: tokens.menuBackground,
+            onSelected: (_WebHeaderUserAction action) {
+              switch (action) {
+                case _WebHeaderUserAction.profile:
+                  showMeuPerfilWebDialog(context);
+                  return;
+                case _WebHeaderUserAction.logout:
+                  _confirmarLogout();
+                  return;
+              }
+            },
+            itemBuilder:
+                (BuildContext context) =>
+                    <PopupMenuEntry<_WebHeaderUserAction>>[
+                      PopupMenuItem<_WebHeaderUserAction>(
+                        value: _WebHeaderUserAction.profile,
+                        child: Row(
+                          children: <Widget>[
+                            Icon(
+                              Icons.person_outline_rounded,
+                              size: 18,
+                              color: accent,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              context.t(
+                                'web.header.myProfile',
+                                fallback: 'Meu perfil',
+                              ),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: tokens.primaryText,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              PopupMenuItem<_WebHeaderUserAction>(
-                value: _WebHeaderUserAction.logout,
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.logout_rounded, size: 18, color: accent),
-                    const SizedBox(width: 10),
-                    Text(
-                      context.t('web.header.logout', fallback: 'Sair'),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: tokens.primaryText,
-                        fontWeight: FontWeight.w600,
+                      PopupMenuItem<_WebHeaderUserAction>(
+                        value: _WebHeaderUserAction.logout,
+                        child: Row(
+                          children: <Widget>[
+                            Icon(Icons.logout_rounded, size: 18, color: accent),
+                            const SizedBox(width: 10),
+                            Text(
+                              context.t('web.header.logout', fallback: 'Sair'),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: tokens.primaryText,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+                    ],
+            child: AnimatedContainer(
+              key: const Key('web-header-user-action'),
+              duration: WebThemeTokens.transitionDuration,
+              curve: WebThemeTokens.transitionCurve,
+              height: 46,
+              padding: const EdgeInsets.fromLTRB(8, 4, 9, 4),
+              decoration: BoxDecoration(
+                color: tokens.surfaceMuted,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: tokens.cardBorder),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Container(
+                    width: 30,
+                    height: 30,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: tokens.surfaceElevated,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: tokens.cardBorder),
                     ),
-                  ],
-                ),
+                    child: UserProfileAvatarImage(
+                      imageValue: fotoUsuario,
+                      fallbackIcon: Icons.account_circle_outlined,
+                      fallbackColor: accent,
+                      fallbackIconSize: 20,
+                      size: 30,
+                      circle: true,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 16,
+                    color: tokens.secondaryText,
+                  ),
+                ],
               ),
-            ],
-        child: AnimatedContainer(
-          key: const Key('web-header-user-action'),
-          duration: WebThemeTokens.transitionDuration,
-          curve: WebThemeTokens.transitionCurve,
-          height: 36,
-          padding: const EdgeInsets.symmetric(horizontal: 11),
-          decoration: BoxDecoration(
-            color: tokens.surfaceMuted,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: tokens.cardBorder),
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(Icons.account_circle_outlined, size: 18, color: accent),
-              const SizedBox(width: 4),
-              Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: 16,
-                color: tokens.secondaryText,
-              ),
-            ],
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -2878,6 +2955,34 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     );
   }
 
+  Widget _buildModoExpandidoFrenteCaixaWeb(double total) {
+    return ColoredBox(
+      key: const Key('pdv-expanded-front-desk-overlay'),
+      color: _pdvTheme.backgroundPage,
+      child: SafeArea(
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool compact = constraints.maxWidth < 760;
+            final EdgeInsets padding = EdgeInsets.all(compact ? 10 : 16);
+
+            return Padding(
+              padding: padding,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(compact ? 16 : 22),
+                child: Material(
+                  color: _pdvTheme.backgroundPage,
+                  child: SizedBox.expand(
+                    child: Column(children: <Widget>[_buildAreaVenda(total)]),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   String labelAgendaFinanceira() => 'Agenda Financeira';
 
   @override
@@ -2888,15 +2993,25 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     final bool modoExpandidoAtivo =
         _moduloAtual == ModuloCentralPDV.vendas && _modoExpandidoFrenteCaixa;
     final WebThemeTokens webTokens = WebThemeTokens.of(context);
+
+    if (modoExpandidoAtivo) {
+      return PopScope(
+        canPop: false,
+        child: Scaffold(
+          backgroundColor: _pdvTheme.backgroundPage,
+          body: _buildModoExpandidoFrenteCaixaWeb(total),
+        ),
+      );
+    }
+
     final ColaboradorAutorizacoesProvider autorizacoesProvider =
         context.watch<ColaboradorAutorizacoesProvider>();
     final List<WebNavigationItem> webNavigationItems =
         _webNavigationItemsPermitidos(autorizacoesProvider);
 
-    if (!modoExpandidoAtivo &&
-        WebNavigationPermissionAdapter.canApplySidebarFiltering(
-          autorizacoesProvider,
-        )) {
+    if (WebNavigationPermissionAdapter.canApplySidebarFiltering(
+      autorizacoesProvider,
+    )) {
       _garantirModuloAtualPermitido(webNavigationItems);
     }
 
@@ -2909,44 +3024,17 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       appVersion: AppConfig.appVersion,
       currentCommerceName: _nomeEmpresaAtualParaHeader(),
       headerActions: _buildWebShellHeaderActions(),
-      child:
-          modoExpandidoAtivo
-              ? const SizedBox.shrink(
-                key: Key('web-shell-pdv-expanded-placeholder'),
-              )
-              : _buildConteudoPrincipalWeb(total),
+      child: _buildConteudoPrincipalWeb(total),
     );
 
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor:
-            modoExpandidoAtivo
-                ? _pdvTheme.backgroundPage
-                : webTokens.workspaceBackground,
+        backgroundColor: webTokens.workspaceBackground,
         body: Stack(
           children: <Widget>[
-            Offstage(
-              offstage: modoExpandidoAtivo,
-              child: TickerMode(
-                enabled: !modoExpandidoAtivo,
-                child: IgnorePointer(
-                  ignoring: modoExpandidoAtivo,
-                  child: webShell,
-                ),
-              ),
-            ),
-            if (modoExpandidoAtivo)
-              Positioned.fill(
-                child: ColoredBox(
-                  color: _pdvTheme.backgroundPage,
-                  child: SafeArea(
-                    child: Column(
-                      children: <Widget>[_buildConteudoCentral(total)],
-                    ),
-                  ),
-                ),
-              ),
+            Positioned.fill(child: webShell),
+            if (_assistenteIAMinimizado) _buildAssistenteIAMinimizado(),
           ],
         ),
       ),

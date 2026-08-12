@@ -14,6 +14,7 @@ import 'package:sixpos/data/models/categoria_catalogo_model.dart';
 import 'package:sixpos/data/services/imagem_sugestao/imagem_sugestao_api_client.dart';
 import 'package:sixpos/data/services/categoria_catalogo/categoria_catalogo_api_client.dart';
 import 'package:sixpos/presentation/components/imagem_sugestoes_section.dart';
+import 'package:sixpos/presentation/components/produto_web_image.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:flutter/material.dart';
@@ -1434,45 +1435,37 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     final bool hasImage = slotAtivo.image != null;
     final bool isSugestao = slotAtivo.image?.origem == 'SUGESTAO';
 
-    Widget imageContent;
-    if (slotAtivo.previewBytes != null) {
-      imageContent = Image.memory(slotAtivo.previewBytes!, fit: BoxFit.cover);
-    } else if (slotAtivo.image?.url != null) {
-      imageContent = Image.network(
-        slotAtivo.image!.url!,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) {
-            return child;
-          }
-          return const Center(child: CircularProgressIndicator(strokeWidth: 2));
-        },
-        errorBuilder:
-            (_, __, ___) => Center(
-              child: Icon(Icons.broken_image_outlined, color: tokens.mutedText),
-            ),
-      );
-    } else {
-      imageContent = Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Icon(Icons.photo_camera_back_outlined, size: 38, color: tokens.info),
-          const SizedBox(height: 8),
-          Text(
-            'Nenhuma imagem no slot ${_slotSelecionadoIndex + 1}',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: tokens.primaryText,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Use o botão de upload ou escolha uma sugestão por IA.',
-            style: TextStyle(fontSize: 12, color: tokens.secondaryText),
-          ),
-        ],
-      );
-    }
+    final Widget imageContent =
+        hasImage
+            ? _buildImageContent(
+              context,
+              slotAtivo,
+              fit: BoxFit.cover,
+              brokenIconSize: 34,
+            )
+            : Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Icon(
+                  Icons.photo_camera_back_outlined,
+                  size: 38,
+                  color: tokens.info,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Nenhuma imagem no slot ${_slotSelecionadoIndex + 1}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: tokens.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Use o botão de upload ou escolha uma sugestão por IA.',
+                  style: TextStyle(fontSize: 12, color: tokens.secondaryText),
+                ),
+              ],
+            );
 
     return Container(
       width: double.infinity,
@@ -1535,30 +1528,17 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     final bool hasImage = slot.image != null;
     final bool isAtivo = index == _slotSelecionadoIndex;
 
-    Widget thumb;
-    if (slot.previewBytes != null) {
-      thumb = Image.memory(slot.previewBytes!, fit: BoxFit.cover);
-    } else if (slot.image?.url != null) {
-      thumb = Image.network(
-        slot.image!.url!,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return const Center(
-            child: SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          );
-        },
-        errorBuilder:
-            (_, __, ___) =>
-                Icon(Icons.broken_image_outlined, color: tokens.mutedText),
-      );
-    } else {
-      thumb = Icon(Icons.add_photo_alternate_outlined, color: tokens.mutedText);
-    }
+    final Widget thumb =
+        hasImage
+            ? _buildImageContent(
+              context,
+              slot,
+              fit: BoxFit.cover,
+              brokenIconSize: 20,
+              loadingSize: 18,
+              preferThumbnail: true,
+            )
+            : Icon(Icons.add_photo_alternate_outlined, color: tokens.mutedText);
 
     return InkWell(
       onTap: () => setState(() => _slotSelecionadoIndex = index),
@@ -1609,6 +1589,32 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               style: TextStyle(fontSize: 10, color: tokens.secondaryText),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageContent(
+    BuildContext context,
+    _ProdutoImagemSlot slot, {
+    required BoxFit fit,
+    double brokenIconSize = 24,
+    double loadingSize = 24,
+    bool preferThumbnail = false,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    return ProdutoWebImage(
+      image: slot.image,
+      previewBytes: slot.previewBytes,
+      fit: fit,
+      loadingSize: loadingSize,
+      preferThumbnail: preferThumbnail,
+      fallback: Center(
+        child: Icon(
+          Icons.broken_image_outlined,
+          color: tokens.mutedText,
+          size: brokenIconSize,
         ),
       ),
     );

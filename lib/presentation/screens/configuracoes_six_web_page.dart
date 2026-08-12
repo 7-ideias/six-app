@@ -1,7 +1,13 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:ui';
 
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+
+import '../../core/services/empresa_service.dart';
+import '../../data/models/empresa_model.dart';
 import '../../domain/models/regionalizacao_models.dart';
 import '../../l10n/web_i18n_store.dart';
 import '../../providers/locale_settings_provider.dart';
@@ -10,6 +16,7 @@ import '../../data/services/aparencia/aparencia_api_client.dart';
 import '../../domain/models/aparencia_models.dart';
 import '../../domain/services/aparencia/aparencia_service.dart';
 import '../../design_system/helpers/six_theme_resolver.dart';
+import '../components/six_backend_loading.dart';
 import '../theme/web_theme_tokens.dart';
 
 class ConfiguracoesSixWebPage extends StatefulWidget {
@@ -39,20 +46,32 @@ enum SecaoConfiguracaoSix {
 }
 
 class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
+  static const int _maxLogoBytes = 1024 * 1024;
+
   SecaoConfiguracaoSix _secaoAtual = SecaoConfiguracaoSix.geral;
   bool _mostrarResumoLateral = true;
   bool _possuiAlteracoesNaoSalvas = false;
+  bool _possuiAlteracoesGerais = false;
   final ScrollController _conteudoScrollController = ScrollController();
   final GlobalKey _conteudoSecaoKey = GlobalKey();
   bool _ultimoLayoutEmpilhado = false;
   // ignore: unused_field — estado de loading da aparência (ainda não exibido na UI)
   bool _carregandoAparencia = false;
+  bool _carregandoDadosEmpresa = false;
+  bool _selecionandoLogo = false;
+  bool _dadosEmpresaCarregados = false;
+  String? _erroDadosEmpresa;
+  String? _logoBase64;
+  final ImagePicker _imagePicker = ImagePicker();
+  late final EmpresaService _empresaService;
   late final AparenciaService _aparenciaService;
 
   @override
   void initState() {
     super.initState();
+    _empresaService = EmpresaService();
     _aparenciaService = AparenciaService(apiClient: HttpAparenciaApiClient());
+    _carregarDadosDaEmpresa();
     _carregarAparencia();
   }
 
@@ -60,6 +79,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     setState(() => _carregandoAparencia = true);
     try {
       final config = await _aparenciaService.buscarAparencia();
+      if (!mounted) return;
       setState(() {
         _temaSelecionado = config.tema.label;
         _densidadeSelecionada = SixThemeResolver().densidade.label;
@@ -74,38 +94,200 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     } catch (e) {
       debugPrint('Erro ao carregar aparência: $e');
     } finally {
-      setState(() => _carregandoAparencia = false);
+      if (mounted) {
+        setState(() => _carregandoAparencia = false);
+      }
     }
   }
 
+  Future<void> _carregarDadosDaEmpresa() async {
+    setState(() {
+      _carregandoDadosEmpresa = true;
+      _erroDadosEmpresa = null;
+    });
+
+    try {
+      final EmpresaModel empresa = await _empresaService.buscarDadosDaEmpresa();
+      if (!mounted) return;
+      setState(() {
+        _aplicarDadosDaEmpresa(empresa);
+        _dadosEmpresaCarregados = true;
+        _possuiAlteracoesGerais = false;
+        _carregandoDadosEmpresa = false;
+      });
+    } catch (e) {
+      debugPrint('Erro ao carregar dados da empresa: $e');
+      if (!mounted) return;
+      setState(() {
+        _dadosEmpresaCarregados = false;
+        _erroDadosEmpresa = _i18n(
+          'empresa.configuracao.loadError',
+          'Não foi possível carregar os dados da empresa.',
+        );
+        _carregandoDadosEmpresa = false;
+      });
+    }
+  }
+
+  void _aplicarDadosDaEmpresa(EmpresaModel empresa) {
+    _nomeEmpresaController.text = _normalizarCampoEmpresa(empresa.nomeEmpresa);
+    _nomeFantasiaController.text = _normalizarCampoEmpresa(
+      empresa.nomeFantasia,
+    );
+    _documentoFiscalController.text = _normalizarCampoEmpresa(
+      empresa.documentoNoBrasilCNPJ,
+    );
+    _telefoneController.text = _normalizarCampoEmpresa(empresa.telefone);
+    _whatsAppController.text = _normalizarCampoEmpresa(empresa.whatsapp);
+    _emailController.text = _normalizarCampoEmpresa(empresa.emailPrincipal);
+    _siteController.text = _normalizarCampoEmpresa(empresa.siteEmpresa);
+    _enderecoController.text = _normalizarCampoEmpresa(empresa.endereco);
+    _logoBase64 = _normalizarLogoEmpresa(empresa.logoBase64);
+  }
+
+  Future<void> _salvarDadosDaEmpresa() async {
+    final String nomeEmpresa = _nomeEmpresaController.text.trim();
+    if (nomeEmpresa.isEmpty) {
+      throw Exception(
+        _i18n(
+          'empresa.configuracao.requiredField',
+          'Informe o nome da empresa.',
+        ),
+      );
+    }
+
+    final EmpresaModel empresa = EmpresaModel(
+      nomeEmpresa: nomeEmpresa,
+      nomeFantasia: _nomeFantasiaController.text.trim(),
+      documentoNoBrasilCNPJ: _documentoFiscalController.text.trim(),
+      telefone: _telefoneController.text.trim(),
+      whatsapp: _whatsAppController.text.trim(),
+      emailPrincipal: _emailController.text.trim(),
+      siteEmpresa: _siteController.text.trim(),
+      endereco: _enderecoController.text.trim(),
+      logoBase64: _logoBase64,
+    );
+
+    final EmpresaModel atualizada = await _empresaService
+        .atualizarDadosDaEmpresa(empresa);
+    if (!mounted) return;
+    setState(() {
+      _aplicarDadosDaEmpresa(atualizada);
+      _dadosEmpresaCarregados = true;
+      _possuiAlteracoesGerais = false;
+      _erroDadosEmpresa = null;
+    });
+  }
+
+  Future<void> _selecionarLogoEmpresa() async {
+    if (_carregandoDadosEmpresa || _selecionandoLogo) return;
+
+    setState(() => _selecionandoLogo = true);
+
+    try {
+      final XFile? arquivo = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 768,
+        maxHeight: 768,
+        imageQuality: 82,
+      );
+
+      if (!mounted) return;
+
+      if (arquivo == null) {
+        setState(() => _selecionandoLogo = false);
+        return;
+      }
+
+      final Uint8List bytes = await arquivo.readAsBytes();
+      if (!mounted) return;
+
+      if (bytes.isEmpty) {
+        throw FormatException(
+          _i18n(
+            'empresa.configuracao.logoLoadError',
+            'Não foi possível carregar o logo.',
+          ),
+        );
+      }
+
+      if (bytes.length > _maxLogoBytes) {
+        throw FormatException(
+          _i18n(
+            'empresa.configuracao.logoTooLarge',
+            'Escolha uma imagem de até 1 MB.',
+          ),
+        );
+      }
+
+      final String mimeType =
+          arquivo.mimeType ?? _mimeTypeFromName(arquivo.name) ?? 'image/jpeg';
+
+      setState(() {
+        _logoBase64 = 'data:$mimeType;base64,${base64Encode(bytes)}';
+        _selecionandoLogo = false;
+        _possuiAlteracoesGerais = true;
+      });
+      _marcarAlteracao();
+    } catch (e) {
+      debugPrint('Erro ao selecionar logo da empresa: $e');
+      if (!mounted) return;
+      setState(() => _selecionandoLogo = false);
+      _mostrarSnackBarConfiguracoes(
+        e is FormatException
+            ? e.message
+            : _i18n(
+              'empresa.configuracao.logoLoadError',
+              'Não foi possível carregar o logo.',
+            ),
+        erro: true,
+      );
+    }
+  }
+
+  void _removerLogoEmpresa() {
+    setState(() {
+      _logoBase64 = '';
+      _possuiAlteracoesGerais = true;
+    });
+    _marcarAlteracao();
+  }
+
+  String _normalizarCampoEmpresa(String? value) {
+    final String normalizado = (value ?? '').trim();
+    return normalizado.toUpperCase() == 'NO DATA' ? '' : normalizado;
+  }
+
+  String _normalizarLogoEmpresa(String? value) {
+    final String normalizado = (value ?? '').trim();
+    return normalizado.toUpperCase() == 'NO DATA' ? '' : normalizado;
+  }
+
+  String? _mimeTypeFromName(String name) {
+    final String lower = name.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.gif')) return 'image/gif';
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
+      return 'image/jpeg';
+    }
+    return null;
+  }
+
   // =========================
-  // MOCKS / ESTADO DA TELA
+  // ESTADO DA TELA
   // =========================
 
   // Geral
-  final TextEditingController _nomeEmpresaController = TextEditingController(
-    text: 'Six Assistência Premium',
-  );
-  final TextEditingController _nomeFantasiaController = TextEditingController(
-    text: 'Six Repair Center',
-  );
+  final TextEditingController _nomeEmpresaController = TextEditingController();
+  final TextEditingController _nomeFantasiaController = TextEditingController();
   final TextEditingController _documentoFiscalController =
-      TextEditingController(text: '12.345.678/0001-90');
-  final TextEditingController _telefoneController = TextEditingController(
-    text: '+55 (47) 99999-8888',
-  );
-  final TextEditingController _whatsAppController = TextEditingController(
-    text: '+55 (47) 99999-7777',
-  );
-  final TextEditingController _emailController = TextEditingController(
-    text: 'contato@sixrepair.com',
-  );
-  final TextEditingController _siteController = TextEditingController(
-    text: 'www.sixrepair.com',
-  );
-  final TextEditingController _enderecoController = TextEditingController(
-    text: 'Av. Central, 1500 - Centro - Itajaí/SC',
-  );
+      TextEditingController();
+  final TextEditingController _telefoneController = TextEditingController();
+  final TextEditingController _whatsAppController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _siteController = TextEditingController();
+  final TextEditingController _enderecoController = TextEditingController();
 
   // Regionalização
   String _idiomaSelecionado = 'Português (Brasil)';
@@ -245,6 +427,29 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     }
   }
 
+  void _mostrarSnackBarConfiguracoes(String mensagem, {bool erro = false}) {
+    if (!mounted) return;
+    final tokens = WebThemeTokens.of(context);
+    if (erro) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(mensagem),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: tokens.danger,
+        ),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensagem),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: tokens.success,
+      ),
+    );
+  }
+
   void _selecionarSecao(SecaoConfiguracaoSix secao) {
     setState(() {
       _secaoAtual = secao;
@@ -299,12 +504,21 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   }
 
   Future<void> _salvarConfiguracoes() async {
+    if (_carregandoDadosEmpresa || _selecionandoLogo) {
+      return;
+    }
+
+    final localeProvider = context.read<LocaleSettingsProvider>();
+
     setState(() {
       _carregandoAparencia = true;
     });
 
     try {
-      final localeProvider = context.read<LocaleSettingsProvider>();
+      if (_dadosEmpresaCarregados || _possuiAlteracoesGerais) {
+        await _salvarDadosDaEmpresa();
+      }
+
       final locale = _mapIdiomaSelecionadoParaLocale(_idiomaSelecionado);
 
       final configuracaoRegionalizacao = localeProvider.companyConfig.copyWith(
@@ -357,39 +571,40 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       });
 
       if (mounted) {
-        final tokens = WebThemeTokens.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Configurações salvas com sucesso.'),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: tokens.success,
+        _mostrarSnackBarConfiguracoes(
+          _i18n(
+            'configuracoes.settingsSaved',
+            'Configurações salvas com sucesso.',
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        final tokens = WebThemeTokens.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao salvar configurações: $e'),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: tokens.danger,
-          ),
+        _mostrarSnackBarConfiguracoes(
+          '${_i18n('configuracoes.settingsSaveError', 'Erro ao salvar configurações')}: $e',
+          erro: true,
         );
       }
     } finally {
-      setState(() {
-        _carregandoAparencia = false;
-      });
+      if (mounted) {
+        setState(() {
+          _carregandoAparencia = false;
+        });
+      }
     }
   }
 
   void _restaurarPadraoDaSecao() {
+    if (_secaoAtual == SecaoConfiguracaoSix.geral) {
+      _carregarDadosDaEmpresa();
+      return;
+    }
+
     final tokens = WebThemeTokens.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Os valores padrão da seção "${_tituloSecao(_secaoAtual)}" foram restaurados (mock).',
+          'Os valores padrão da seção "${_tituloSecao(_secaoAtual)}" foram restaurados.',
         ),
         behavior: SnackBarBehavior.floating,
         backgroundColor: tokens.info,
@@ -1072,6 +1287,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     String? hint,
     int maxLines = 1,
     TextInputType? keyboardType,
+    bool marcarAlteracaoGeral = false,
   }) {
     final tokens = WebThemeTokens.of(context);
     return TextField(
@@ -1079,7 +1295,11 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       maxLines: maxLines,
       keyboardType: keyboardType,
       onChanged: (_) {
-        setState(() {});
+        setState(() {
+          if (marcarAlteracaoGeral) {
+            _possuiAlteracoesGerais = true;
+          }
+        });
         _marcarAlteracao();
       },
       decoration: InputDecoration(
@@ -1559,7 +1779,12 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(20),
-                  onTap: _salvarConfiguracoes,
+                  onTap:
+                      (_carregandoAparencia ||
+                              _carregandoDadosEmpresa ||
+                              _selecionandoLogo)
+                          ? null
+                          : _salvarConfiguracoes,
                   child: Ink(
                     height: 56,
                     padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -1631,21 +1856,470 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     }
   }
 
+  Widget _buildDadosEmpresaForm() {
+    if (_carregandoDadosEmpresa) {
+      return SixBackendLoading(
+        key: const ValueKey('dados-empresa-loading'),
+        title: _i18n(
+          'empresa.configuracao.waitingData',
+          'Aguardando dados da empresa.',
+        ),
+        subtitle: _i18n(
+          'empresa.configuracao.statusSubtitle',
+          'As informações salvas aparecem nos documentos e comprovantes do comércio.',
+        ),
+        animation: SixBackendLoadingAnimation.skeletonPulse,
+        leadingIcon: Icons.domain_verification_rounded,
+        backgroundColor: WebThemeTokens.of(context).surfaceMuted,
+        borderColor: WebThemeTokens.of(context).cardBorder,
+      );
+    }
+
+    return LayoutBuilder(
+      key: const ValueKey('dados-empresa-form'),
+      builder: (context, constraints) {
+        final double available =
+            constraints.maxWidth.isFinite ? constraints.maxWidth : 656;
+        final bool compacto = available < 700;
+        final double fieldWidth = compacto ? available : 320;
+        final double wideFieldWidth = compacto ? available : 656;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_erroDadosEmpresa != null) ...[
+              _buildDadosEmpresaErro(),
+              const SizedBox(height: 16),
+            ],
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                SizedBox(
+                  width: fieldWidth,
+                  child: _buildTextField(
+                    label: _i18n(
+                      'configuracoes.companyName',
+                      'Nome da empresa',
+                    ),
+                    controller: _nomeEmpresaController,
+                    marcarAlteracaoGeral: true,
+                  ),
+                ),
+                SizedBox(
+                  width: fieldWidth,
+                  child: _buildTextField(
+                    label: _i18n('configuracoes.tradeName', 'Nome fantasia'),
+                    controller: _nomeFantasiaController,
+                    marcarAlteracaoGeral: true,
+                  ),
+                ),
+                SizedBox(
+                  width: fieldWidth,
+                  child: _buildTextField(
+                    label: _i18n(
+                      'configuracoes.taxDocument',
+                      'Documento fiscal',
+                    ),
+                    controller: _documentoFiscalController,
+                    marcarAlteracaoGeral: true,
+                  ),
+                ),
+                SizedBox(
+                  width: fieldWidth,
+                  child: _buildTextField(
+                    label: _i18n('configuracoes.phone', 'Telefone'),
+                    controller: _telefoneController,
+                    keyboardType: TextInputType.phone,
+                    marcarAlteracaoGeral: true,
+                  ),
+                ),
+                SizedBox(
+                  width: fieldWidth,
+                  child: _buildTextField(
+                    label: _i18n('configuracoes.whatsapp', 'WhatsApp'),
+                    controller: _whatsAppController,
+                    keyboardType: TextInputType.phone,
+                    marcarAlteracaoGeral: true,
+                  ),
+                ),
+                SizedBox(
+                  width: fieldWidth,
+                  child: _buildTextField(
+                    label: _i18n('configuracoes.mainEmail', 'Email principal'),
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    marcarAlteracaoGeral: true,
+                  ),
+                ),
+                SizedBox(
+                  width: fieldWidth,
+                  child: _buildTextField(
+                    label: _i18n('configuracoes.website', 'Site'),
+                    controller: _siteController,
+                    keyboardType: TextInputType.url,
+                    marcarAlteracaoGeral: true,
+                  ),
+                ),
+                SizedBox(
+                  width: wideFieldWidth,
+                  child: _buildTextField(
+                    label: _i18n('configuracoes.address', 'Endereço'),
+                    controller: _enderecoController,
+                    marcarAlteracaoGeral: true,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDadosEmpresaErro() {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: tokens.danger.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: tokens.danger.withValues(alpha: 0.22)),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final Widget message = Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.error_outline_rounded, color: tokens.danger, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _erroDadosEmpresa!,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w700,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+            ],
+          );
+          final Widget retry = TextButton.icon(
+            onPressed: _carregarDadosDaEmpresa,
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: Text(_i18n('common.tryAgain', 'Tentar novamente')),
+          );
+
+          if (constraints.maxWidth < 520) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [message, const SizedBox(height: 10), retry],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: message),
+              const SizedBox(width: 12),
+              retry,
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildBrandingInstitucionalForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 656),
+          child: _buildEmpresaLogoPicker(),
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: [
+            _buildSwitchTile(
+              title: _i18n(
+                'configuracoes.preferTradeName',
+                'Exibir nome fantasia como principal',
+              ),
+              subtitle: _i18n(
+                'configuracoes.preferTradeNameSubtitle',
+                'Quando ativo, o Six prioriza o nome fantasia em documentos e cabeçalhos.',
+              ),
+              value: true,
+              onChanged: (_) {},
+            ),
+            _buildSwitchTile(
+              title: _i18n(
+                'configuracoes.allowCustomWebCover',
+                'Permitir capa personalizada na web',
+              ),
+              subtitle: _i18n(
+                'configuracoes.allowCustomWebCoverSubtitle',
+                'Prepara a plataforma para futura imagem institucional na tela de login web.',
+              ),
+              value: true,
+              onChanged: (_) {},
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmpresaLogoPicker() {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+    final bool hasLogo = (_logoBase64 ?? '').trim().isNotEmpty;
+    final bool busy = _selecionandoLogo || _carregandoDadosEmpresa;
+
+    return Semantics(
+      container: true,
+      label:
+          hasLogo
+              ? _i18n(
+                'empresa.configuracao.logoSemantics',
+                'Logo cadastrado da empresa.',
+              )
+              : _i18n(
+                'empresa.configuracao.logoEmptySemantics',
+                'Nenhum logo cadastrado.',
+              ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final bool compacto = constraints.maxWidth < 460;
+          final Widget preview = _buildEmpresaLogoPreview(busy: busy);
+          final Widget info = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _i18n('empresa.configuracao.logoTitle', 'Logo da empresa'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: tokens.primaryText,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                hasLogo
+                    ? _i18n(
+                      'empresa.configuracao.logoRegistered',
+                      'Imagem pronta para salvar no cadastro do comércio.',
+                    )
+                    : _i18n(
+                      'empresa.configuracao.logoSubtitle',
+                      'Adicione uma imagem nítida, de preferência quadrada.',
+                    ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: tokens.secondaryText,
+                  height: 1.35,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilledButton.icon(
+                    onPressed: busy ? null : _selecionarLogoEmpresa,
+                    icon: Icon(
+                      hasLogo
+                          ? Icons.change_circle_outlined
+                          : Icons.add_photo_alternate_outlined,
+                      size: 18,
+                    ),
+                    label: Text(
+                      hasLogo
+                          ? _i18n(
+                            'empresa.configuracao.logoChange',
+                            'Trocar logo',
+                          )
+                          : _i18n(
+                            'empresa.configuracao.logoSelect',
+                            'Selecionar logo',
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (hasLogo)
+                    TextButton.icon(
+                      onPressed: busy ? null : _removerLogoEmpresa,
+                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                      label: Text(
+                        _i18n('empresa.configuracao.logoRemove', 'Remover'),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          );
+
+          return Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: tokens.surfaceMuted,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: tokens.cardBorder),
+            ),
+            child:
+                compacto
+                    ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [preview, const SizedBox(height: 14), info],
+                    )
+                    : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        preview,
+                        const SizedBox(width: 14),
+                        Expanded(child: info),
+                      ],
+                    ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEmpresaLogoPreview({required bool busy}) {
+    final tokens = WebThemeTokens.of(context);
+    final Uint8List? bytes = _decodeLogoBytes(_logoBase64);
+    final String value = (_logoBase64 ?? '').trim();
+    final bool isUrl =
+        value.startsWith('http://') || value.startsWith('https://');
+    final Widget content;
+
+    if (bytes != null) {
+      content = Image.memory(
+        bytes,
+        fit: BoxFit.contain,
+        gaplessPlayback: true,
+        errorBuilder: (_, _, _) => _buildEmpresaLogoFallback(),
+      );
+    } else if (isUrl) {
+      content = Image.network(
+        value,
+        fit: BoxFit.contain,
+        errorBuilder: (_, _, _) => _buildEmpresaLogoFallback(),
+      );
+    } else {
+      content = _buildEmpresaLogoFallback();
+    }
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          width: 88,
+          height: 88,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: tokens.cardBackground,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: tokens.cardBorder),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: content,
+        ),
+        if (busy)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: tokens.cardBackground.withValues(alpha: 0.78),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildEmpresaLogoFallback() {
+    final tokens = WebThemeTokens.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.selectedBackground,
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Center(
+        child: Icon(Icons.image_outlined, color: tokens.info, size: 30),
+      ),
+    );
+  }
+
+  Uint8List? _decodeLogoBytes(String? value) {
+    final String normalizado = (value ?? '').trim();
+    if (normalizado.isEmpty ||
+        normalizado.startsWith('http://') ||
+        normalizado.startsWith('https://')) {
+      return null;
+    }
+
+    String payload = normalizado;
+    if (payload.toLowerCase().startsWith('data:') && payload.contains(',')) {
+      payload = payload.substring(payload.indexOf(',') + 1);
+    }
+
+    try {
+      return base64Decode(
+        base64.normalize(
+          payload
+              .replaceAll(RegExp(r'\s+'), '')
+              .replaceAll('-', '+')
+              .replaceAll('_', '/'),
+        ),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   Widget _buildSecaoGeral() {
     final tokens = WebThemeTokens.of(context);
 
     return Column(
       children: [
         _buildSectionHeader(
-          titulo: 'Configurações institucionais',
+          titulo: _i18n(
+            'configuracoes.generalTitle',
+            'Configurações institucionais',
+          ),
           descricao: _descricaoSecao(SecaoConfiguracaoSix.geral),
           icone: Icons.apartment_rounded,
         ),
         const SizedBox(height: 20),
         _buildBigCard(
-          title: 'Identidade do comércio',
-          subtitle:
-              'Informações usadas em cabeçalhos de documentos, relatórios, ordens de serviço e comunicações da loja.',
+          title: _i18n(
+            'configuracoes.businessIdentity',
+            'Identidade do comércio',
+          ),
+          subtitle: _i18n(
+            'configuracoes.businessIdentitySubtitle',
+            'Informações usadas em cabeçalhos de documentos, relatórios, ordens de serviço e comunicações da loja.',
+          ),
           trailing: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
@@ -1654,104 +2328,26 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               border: Border.all(color: tokens.selectedBorder),
             ),
             child: Text(
-              'Obrigatório',
+              _i18n('configuracoes.required', 'Obrigatório'),
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 color: tokens.primaryText,
               ),
             ),
           ),
-          child: Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: [
-              SizedBox(
-                width: 320,
-                child: _buildTextField(
-                  label: 'Nome da empresa',
-                  controller: _nomeEmpresaController,
-                ),
-              ),
-              SizedBox(
-                width: 320,
-                child: _buildTextField(
-                  label: 'Nome fantasia',
-                  controller: _nomeFantasiaController,
-                ),
-              ),
-              SizedBox(
-                width: 320,
-                child: _buildTextField(
-                  label: 'Documento fiscal',
-                  controller: _documentoFiscalController,
-                ),
-              ),
-              SizedBox(
-                width: 320,
-                child: _buildTextField(
-                  label: 'Telefone',
-                  controller: _telefoneController,
-                  keyboardType: TextInputType.phone,
-                ),
-              ),
-              SizedBox(
-                width: 320,
-                child: _buildTextField(
-                  label: 'WhatsApp',
-                  controller: _whatsAppController,
-                  keyboardType: TextInputType.phone,
-                ),
-              ),
-              SizedBox(
-                width: 320,
-                child: _buildTextField(
-                  label: 'Email principal',
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                ),
-              ),
-              SizedBox(
-                width: 320,
-                child: _buildTextField(
-                  label: 'Site',
-                  controller: _siteController,
-                ),
-              ),
-              SizedBox(
-                width: 656,
-                child: _buildTextField(
-                  label: 'Endereço',
-                  controller: _enderecoController,
-                ),
-              ),
-            ],
-          ),
+          child: _buildDadosEmpresaForm(),
         ),
         const SizedBox(height: 20),
         _buildBigCard(
-          title: 'Branding institucional',
-          subtitle:
-              'Estruture a apresentação da marca para a web, PDFs e comunicações futuras do sistema.',
-          child: Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: [
-              _buildSwitchTile(
-                title: 'Exibir nome fantasia como principal',
-                subtitle:
-                    'Quando ativo, o Six prioriza o nome fantasia em documentos e cabeçalhos.',
-                value: true,
-                onChanged: (_) {},
-              ),
-              _buildSwitchTile(
-                title: 'Permitir capa personalizada na web',
-                subtitle:
-                    'Prepara a plataforma para futura imagem institucional na tela de login web.',
-                value: true,
-                onChanged: (_) {},
-              ),
-            ],
+          title: _i18n(
+            'configuracoes.institutionalBranding',
+            'Branding institucional',
           ),
+          subtitle: _i18n(
+            'configuracoes.institutionalBrandingSubtitle',
+            'Estruture a apresentação da marca para a web, PDFs e comunicações futuras do sistema.',
+          ),
+          child: _buildBrandingInstitucionalForm(),
         ),
       ],
     );

@@ -19,7 +19,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiAssistantAsk => 'Preguntar a la IA';
 
   @override
-  String get aiAssistantHint => 'Escribe tu duda';
+  String get aiAssistantHint => '¿Cómo puedo ayudarte hoy?';
 
   @override
   String get aiAssistantSending => 'Enviando...';
@@ -54,6 +54,51 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get aiAssistantFeedbackThanks => 'Feedback registrado.';
+
+  @override
+  String get aiAssistantWelcomeTitle => '¡Hola! Soy Lis';
+
+  @override
+  String get aiAssistantWelcomeSubtitle =>
+      'Estoy aquí para ayudar con tus solicitudes y resolver dudas sobre Six.';
+
+  @override
+  String get aiAssistantAvatarLabel => 'Avatar de la asistente Lis';
+
+  @override
+  String get aiAssistantExpand => 'Expandir asistente';
+
+  @override
+  String get aiAssistantCollapse => 'Reducir asistente';
+
+  @override
+  String get aiAssistantFocusLabel => 'Asistente en foco';
+
+  @override
+  String get aiAssistantMinimize => 'Minimizar';
+
+  @override
+  String get aiAssistantMinimizedLabel => 'Lis minimizada';
+
+  @override
+  String get aiAssistantMinimizedTooltip => 'Abrir asistente minimizado';
+
+  @override
+  String get aiAssistantNewQuestion => 'Nueva pregunta';
+
+  @override
+  String get aiAssistantAttachUnavailable =>
+      'Los adjuntos aún no están disponibles';
+
+  @override
+  String get aiAssistantSend => 'Enviar';
+
+  @override
+  String get aiAssistantThinkingTitle => 'Lis está analizando';
+
+  @override
+  String get aiAssistantThinkingSubtitle =>
+      'Buscando la mejor respuesta para el contexto de esta pantalla.';
 
   @override
   String get pdvWebTitle => 'Frente de caja';

@@ -23,18 +23,49 @@ class AiAssistantHost extends StatefulWidget {
 }
 
 class _AiAssistantHostState extends State<AiAssistantHost> {
-  static const Duration _webPanelAnimationDuration = Duration(milliseconds: 320);
+  static const Duration _webPanelAnimationDuration = Duration(
+    milliseconds: 320,
+  );
   static const Curve _webPanelOpenCurve = Curves.easeOutCubic;
   static const Curve _webPanelCloseCurve = Curves.easeInOutCubic;
 
   bool _panelOpen = false;
+  bool _webPanelExpanded = false;
+  bool _webPanelMinimized = false;
 
-  void _togglePanel() {
+  void _handleAssistantButtonTap() {
     if (kIsWeb) {
-      setState(() => _panelOpen = !_panelOpen);
+      _openWebPanel();
       return;
     }
     _openMobileAssistant();
+  }
+
+  void _openWebPanel() {
+    setState(() {
+      _panelOpen = true;
+      _webPanelMinimized = false;
+    });
+  }
+
+  void _closeWebPanel() {
+    setState(() {
+      _panelOpen = false;
+      _webPanelExpanded = false;
+      _webPanelMinimized = false;
+    });
+  }
+
+  void _minimizeWebPanel() {
+    setState(() {
+      _panelOpen = false;
+      _webPanelExpanded = false;
+      _webPanelMinimized = true;
+    });
+  }
+
+  void _toggleWebPanelExpanded() {
+    setState(() => _webPanelExpanded = !_webPanelExpanded);
   }
 
   Future<void> _openMobileAssistant() async {
@@ -61,27 +92,37 @@ class _AiAssistantHostState extends State<AiAssistantHost> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations? l10n = AppLocalizations.of(context);
-    final String label = l10n?.aiAssistantAsk ?? 'Perguntar a IA';
+    final String label =
+        _webPanelMinimized
+            ? l10n?.aiAssistantMinimizedLabel ?? 'Lis minimizada'
+            : l10n?.aiAssistantAsk ?? 'Perguntar à IA';
+    final String tooltip =
+        _webPanelMinimized
+            ? l10n?.aiAssistantMinimizedTooltip ?? 'Abrir assistente minimizado'
+            : label;
 
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
         widget.child,
         if (kIsWeb) _buildWebAnimatedBackdrop(),
-        Positioned(
-          right: 16,
-          bottom: kIsWeb ? 18 : 90,
-          child: AnimatedScale(
-            scale: kIsWeb && _panelOpen ? 0.96 : 1,
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            child: AiAssistantButton(
-              onTap: _togglePanel,
-              label: label,
-              extended: kIsWeb,
+        if (!kIsWeb || !_panelOpen)
+          Positioned(
+            right: 16,
+            bottom: kIsWeb ? 18 : 90,
+            child: AnimatedScale(
+              scale: kIsWeb && _panelOpen ? 0.96 : 1,
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              child: AiAssistantButton(
+                onTap: _handleAssistantButtonTap,
+                label: label,
+                tooltip: tooltip,
+                extended: kIsWeb,
+                highlighted: kIsWeb && _webPanelMinimized,
+              ),
             ),
           ),
-        ),
         if (kIsWeb) _buildWebAnimatedPanel(),
       ],
     );
@@ -97,7 +138,7 @@ class _AiAssistantHostState extends State<AiAssistantHost> {
           curve: _panelOpen ? _webPanelOpenCurve : _webPanelCloseCurve,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: _togglePanel,
+            onTap: _closeWebPanel,
             child: Container(color: Colors.black.withValues(alpha: 0.18)),
           ),
         ),
@@ -106,14 +147,11 @@ class _AiAssistantHostState extends State<AiAssistantHost> {
   }
 
   Widget _buildWebAnimatedPanel() {
-    return Positioned(
-      top: 0,
-      bottom: 0,
-      right: 0,
+    return Positioned.fill(
       child: IgnorePointer(
         ignoring: !_panelOpen,
         child: AnimatedSlide(
-          offset: _panelOpen ? Offset.zero : const Offset(0.10, 0),
+          offset: _panelOpen ? Offset.zero : const Offset(0, 0.04),
           duration: _webPanelAnimationDuration,
           curve: _panelOpen ? _webPanelOpenCurve : _webPanelCloseCurve,
           child: AnimatedOpacity(
@@ -121,10 +159,18 @@ class _AiAssistantHostState extends State<AiAssistantHost> {
             duration: _webPanelAnimationDuration,
             curve: _panelOpen ? _webPanelOpenCurve : _webPanelCloseCurve,
             child: RepaintBoundary(
-              child: AiAssistantPanel(
-                modulo: widget.modulo,
-                telaAtual: widget.telaAtual,
-                onClose: _togglePanel,
+              child: SafeArea(
+                minimum: const EdgeInsets.all(14),
+                child: Center(
+                  child: AiAssistantPanel(
+                    modulo: widget.modulo,
+                    telaAtual: widget.telaAtual,
+                    onClose: _closeWebPanel,
+                    onMinimize: _minimizeWebPanel,
+                    expanded: _webPanelExpanded,
+                    onToggleExpanded: _toggleWebPanelExpanded,
+                  ),
+                ),
               ),
             ),
           ),

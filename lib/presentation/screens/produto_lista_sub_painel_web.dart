@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/core/utils/pdf_download.dart';
 import 'package:sixpos/core/utils/produto_helper.dart';
+import 'package:sixpos/data/models/produto_imagem_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
+import 'package:sixpos/presentation/components/produto_web_image.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
@@ -1575,20 +1577,19 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }) {
     final tokens = WebThemeTokens.of(context);
     final Color accent = tokens.info;
-    final imageUrl = _primeiraImagemUrl(produto);
-    final child =
-        imageUrl == null
+    final ProdutoImagemModel? image = _primeiraImagem(produto);
+    final Widget child =
+        image == null
             ? Icon(
               _iconePorTipo(produto),
               color: accent,
               size: size <= 46 ? 21 : 24,
             )
-            : Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder:
-                  (_, __, ___) =>
-                      Icon(_iconePorTipo(produto), color: accent, size: 24),
+            : _thumbnailImageContent(
+              produto: produto,
+              image: image,
+              size: size,
+              accent: accent,
             );
 
     return Container(
@@ -1601,6 +1602,27 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       ),
       clipBehavior: Clip.antiAlias,
       child: Center(child: child),
+    );
+  }
+
+  Widget _thumbnailImageContent({
+    required ProdutoModel produto,
+    required ProdutoImagemModel image,
+    required double size,
+    required Color accent,
+  }) {
+    final Widget fallback = Icon(
+      _iconePorTipo(produto),
+      color: accent,
+      size: size <= 46 ? 21 : 24,
+    );
+
+    return ProdutoWebImage(
+      image: image,
+      fit: BoxFit.cover,
+      preferThumbnail: true,
+      loadingSize: size <= 46 ? 16 : 18,
+      fallback: fallback,
     );
   }
 
@@ -1678,14 +1700,25 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     );
   }
 
-  String? _primeiraImagemUrl(ProdutoModel produto) {
+  ProdutoImagemModel? _primeiraImagem(ProdutoModel produto) {
     final imagens = produto.imagens;
     if (imagens == null || imagens.isEmpty) return null;
-    for (final imagem in imagens) {
-      final url = imagem.url?.trim();
-      if (url != null && url.isNotEmpty) return url;
+
+    for (final ProdutoImagemModel imagem in imagens) {
+      if (ProdutoWebImageResolver.hasLocalDataSource(imagem)) return imagem;
+    }
+
+    for (final ProdutoImagemModel imagem in imagens) {
+      if (_hasImageContent(imagem)) return imagem;
     }
     return null;
+  }
+
+  bool _hasImageContent(ProdutoImagemModel image) {
+    return ProdutoWebImageResolver.hasRenderableSource(
+      image,
+      preferThumbnail: true,
+    );
   }
 
   String _normalizarTipoProduto(String tipo) {
