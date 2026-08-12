@@ -4,6 +4,18 @@
   "outputDirectory": "build/web",
   "rewrites": [
     {
+      "source": "/atendimento/status",
+      "destination": "https://api.sixappback.com/atendimento/status"
+    },
+    {
+      "source": "/atendimento/status/assinatura",
+      "destination": "https://api.sixappback.com/atendimento/status/assinatura"
+    },
+    {
+      "source": "/public/status/:path*",
+      "destination": "https://api.sixappback.com/public/status/:path*"
+    },
+    {
       "source": "/((?!.*\\..*).*)",
       "destination": "/index.html"
     }
