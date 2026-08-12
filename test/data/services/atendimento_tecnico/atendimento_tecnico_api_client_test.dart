@@ -110,6 +110,34 @@ void main() {
     expect(body['assinaturaDataUrl'], 'data:image/png;base64,abc');
     expect(body['observacaoAssinatura'], 'Assinou no balcão.');
   });
+
+  test(
+    'consultarStatusPublico parseia comercio institucional no response',
+    () async {
+      late Uri requestedUri;
+      final AtendimentoTecnicoApiClient client = AtendimentoTecnicoApiClient(
+        httpClient: MockClient((http.Request request) async {
+          requestedUri = request.url;
+          expect(request.headers.containsKey('Authorization'), isFalse);
+          return _jsonResponse(_statusPublicoJson);
+        }),
+      );
+
+      final AtendimentoTecnicoStatusPublicoModel result = await client
+          .consultarStatusPublico(
+            idUnicoDaEmpresa: 'empresa-test',
+            token: 'token-publico',
+          );
+
+      expect(requestedUri.path, '/public/api/atendimentos-tecnicos/status');
+      expect(requestedUri.queryParameters['idUnicoDaEmpresa'], 'empresa-test');
+      expect(requestedUri.queryParameters['token'], 'token-publico');
+      expect(result.comercio?.nomeExibicao, 'Sete Ideias Assistência Técnica');
+      expect(result.comercio?.documentoFiscal, '12.345.678/0001-99');
+      expect(result.comercio?.horariosAtendimento, hasLength(2));
+      expect(result.comercio?.horariosAtendimento.first.diaSemana, 'MONDAY');
+    },
+  );
 }
 
 http.Response _jsonResponse(String body) {
@@ -165,5 +193,53 @@ const String _atendimentoJson = '''
   "historicoStatus": [],
   "historicoAuditoria": [],
   "recebimentos": []
+}
+''';
+
+const String _statusPublicoJson = '''
+{
+  "status": "SUCCESS",
+  "code": "TECHNICAL_SERVICE_PUBLIC_STATUS_TOKEN_VALID",
+  "message": "Status público do atendimento técnico disponível.",
+  "token": "token-publico",
+  "idUnicoDaEmpresa": "empresa-test",
+  "comercio": {
+    "nomeEmpresa": "Sete Ideias Assistência Técnica LTDA",
+    "nomeFantasia": "Sete Ideias Assistência Técnica",
+    "documentoFiscal": "12.345.678/0001-99",
+    "tipoDocumentoFiscal": null,
+    "telefone": "(47) 3333-2020",
+    "whatsapp": "(47) 99999-2020",
+    "email": "suporte@empresa.com",
+    "site": "empresa.com",
+    "enderecoPublico": "Rua Central, 123",
+    "logoBase64": "data:image/png;base64,abc",
+    "timeZone": "America/Sao_Paulo",
+    "horariosAtendimento": [
+      {
+        "diaSemana": "MONDAY",
+        "fechado": false,
+        "inicio": "08:00",
+        "fim": "18:00"
+      },
+      {
+        "diaSemana": "SUNDAY",
+        "fechado": true
+      }
+    ]
+  },
+  "numero": "AT-1",
+  "descricao": "Troca de tela",
+  "nomeClienteSnapshot": "Cliente Six",
+  "equipamentoResumo": "Celular Apple iPhone",
+  "defeitoRelatado": "Tela quebrada",
+  "statusId": 60,
+  "statusCodigo": "IN_PROGRESS",
+  "statusI18nKey": "technicalService.status.inProgress",
+  "statusNomePtBr": "Em execução",
+  "assinaturaAprovada": true,
+  "requerNovaAssinatura": false,
+  "etapas": [],
+  "historicoStatus": []
 }
 ''';

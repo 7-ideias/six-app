@@ -83,6 +83,21 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.notInformed': 'Não informada',
     'common.generating': 'Gerando...',
     'common.saving': 'Salvando...',
+    'common.rangeTo': 'a',
+    'common.weekday.monday': 'Segunda-feira',
+    'common.weekday.tuesday': 'Terça-feira',
+    'common.weekday.wednesday': 'Quarta-feira',
+    'common.weekday.thursday': 'Quinta-feira',
+    'common.weekday.friday': 'Sexta-feira',
+    'common.weekday.saturday': 'Sábado',
+    'common.weekday.sunday': 'Domingo',
+    'common.weekdayShort.monday': 'Seg',
+    'common.weekdayShort.tuesday': 'Ter',
+    'common.weekdayShort.wednesday': 'Qua',
+    'common.weekdayShort.thursday': 'Qui',
+    'common.weekdayShort.friday': 'Sex',
+    'common.weekdayShort.saturday': 'Sáb',
+    'common.weekdayShort.sunday': 'Dom',
     'web.navigation.home': 'Início',
     'web.navigation.operations': 'Operações',
     'web.navigation.operations.pos': 'Frente de caixa',
@@ -314,6 +329,16 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Link de assinatura não retornado pelo backend.',
     'atendimentoTecnico.publicStatus.signatureLinkError':
         'Não foi possível abrir a assinatura.',
+    'atendimentoTecnico.publicStatus.responsibleUnit': 'Unidade responsável',
+    'atendimentoTecnico.publicStatus.officialChannel': 'Canal oficial',
+    'atendimentoTecnico.publicStatus.updatedByBusiness':
+        'Status atualizado pelo estabelecimento',
+    'atendimentoTecnico.publicStatus.companyDataSource':
+        'Dados fornecidos pelo estabelecimento.',
+    'atendimentoTecnico.publicStatus.officialServiceChannel':
+        'Canal oficial de acompanhamento do serviço.',
+    'atendimentoTecnico.publicStatus.externalLinkUnavailable':
+        'Não foi possível abrir este contato neste dispositivo.',
     'atendimentoTecnico.mobile.loading': 'Carregando atendimentos técnicos',
     'atendimentoTecnico.mobile.dashboardTitle': 'Dashboard técnico',
     'atendimentoTecnico.mobile.dashboardDescription': '',
@@ -1219,6 +1244,21 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.notInformed': 'Not informed',
     'common.generating': 'Generating...',
     'common.saving': 'Saving...',
+    'common.rangeTo': 'to',
+    'common.weekday.monday': 'Monday',
+    'common.weekday.tuesday': 'Tuesday',
+    'common.weekday.wednesday': 'Wednesday',
+    'common.weekday.thursday': 'Thursday',
+    'common.weekday.friday': 'Friday',
+    'common.weekday.saturday': 'Saturday',
+    'common.weekday.sunday': 'Sunday',
+    'common.weekdayShort.monday': 'Mon',
+    'common.weekdayShort.tuesday': 'Tue',
+    'common.weekdayShort.wednesday': 'Wed',
+    'common.weekdayShort.thursday': 'Thu',
+    'common.weekdayShort.friday': 'Fri',
+    'common.weekdayShort.saturday': 'Sat',
+    'common.weekdayShort.sunday': 'Sun',
     'web.navigation.home': 'Home',
     'web.navigation.operations': 'Operations',
     'web.navigation.operations.pos': 'Point of sale',
@@ -1433,6 +1473,16 @@ const Map<String, Map<String, String>> _fallbacks = {
         'The backend did not return a signature link.',
     'atendimentoTecnico.publicStatus.signatureLinkError':
         'Could not open the signature.',
+    'atendimentoTecnico.publicStatus.responsibleUnit': 'Responsible unit',
+    'atendimentoTecnico.publicStatus.officialChannel': 'Official channel',
+    'atendimentoTecnico.publicStatus.updatedByBusiness':
+        'Status updated by the business',
+    'atendimentoTecnico.publicStatus.companyDataSource':
+        'Data provided by the business.',
+    'atendimentoTecnico.publicStatus.officialServiceChannel':
+        'Official service tracking channel.',
+    'atendimentoTecnico.publicStatus.externalLinkUnavailable':
+        'Could not open this contact on this device.',
     'atendimentoTecnico.mobile.loading': 'Loading technical services',
     'atendimentoTecnico.mobile.emptyFilteredMessage':
         'No services found with the selected filters.',
@@ -2253,6 +2303,21 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.notInformed': 'No informado',
     'common.generating': 'Generando...',
     'common.saving': 'Guardando...',
+    'common.rangeTo': 'a',
+    'common.weekday.monday': 'Lunes',
+    'common.weekday.tuesday': 'Martes',
+    'common.weekday.wednesday': 'Miércoles',
+    'common.weekday.thursday': 'Jueves',
+    'common.weekday.friday': 'Viernes',
+    'common.weekday.saturday': 'Sábado',
+    'common.weekday.sunday': 'Domingo',
+    'common.weekdayShort.monday': 'Lun',
+    'common.weekdayShort.tuesday': 'Mar',
+    'common.weekdayShort.wednesday': 'Mié',
+    'common.weekdayShort.thursday': 'Jue',
+    'common.weekdayShort.friday': 'Vie',
+    'common.weekdayShort.saturday': 'Sáb',
+    'common.weekdayShort.sunday': 'Dom',
     'web.navigation.home': 'Inicio',
     'web.navigation.operations': 'Operaciones',
     'web.navigation.operations.pos': 'Punto de venta',
@@ -2479,6 +2544,16 @@ const Map<String, Map<String, String>> _fallbacks = {
         'El backend no devolvió un link de firma.',
     'atendimentoTecnico.publicStatus.signatureLinkError':
         'No se pudo abrir la firma.',
+    'atendimentoTecnico.publicStatus.responsibleUnit': 'Unidad responsable',
+    'atendimentoTecnico.publicStatus.officialChannel': 'Canal oficial',
+    'atendimentoTecnico.publicStatus.updatedByBusiness':
+        'Estado actualizado por el comercio',
+    'atendimentoTecnico.publicStatus.companyDataSource':
+        'Datos proporcionados por el establecimiento.',
+    'atendimentoTecnico.publicStatus.officialServiceChannel':
+        'Canal oficial de seguimiento del servicio.',
+    'atendimentoTecnico.publicStatus.externalLinkUnavailable':
+        'No fue posible abrir este contacto en este dispositivo.',
     'atendimentoTecnico.mobile.loading': 'Cargando servicios técnicos',
     'atendimentoTecnico.mobile.emptyFilteredMessage':
         'No se encontraron servicios con los filtros seleccionados.',

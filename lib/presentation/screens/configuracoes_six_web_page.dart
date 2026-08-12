@@ -122,6 +122,15 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     'Mesa, balcão e delivery',
     'Comanda individual',
   ];
+  static const List<String> _diasSemanaAtendimento = <String>[
+    'MONDAY',
+    'TUESDAY',
+    'WEDNESDAY',
+    'THURSDAY',
+    'FRIDAY',
+    'SATURDAY',
+    'SUNDAY',
+  ];
   static const List<String> _statusMesa = <String>[
     'Livre',
     'Ocupada',
@@ -328,6 +337,12 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     _siteController.text = _normalizarCampoEmpresa(empresa.siteEmpresa);
     _enderecoController.text = _normalizarCampoEmpresa(empresa.endereco);
     _logoBase64 = _normalizarLogoEmpresa(empresa.logoBase64);
+    _horariosAtendimento = _normalizarHorariosAtendimento(
+      empresa.horariosAtendimento,
+    );
+    _horariosAtendimentoConfiguradosNoBackend =
+        empresa.horariosAtendimento.isNotEmpty;
+    _horariosAtendimentoEditados = false;
   }
 
   Future<void> _salvarDadosDaEmpresa() async {
@@ -340,6 +355,10 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         ),
       );
     }
+    final String? erroHorario = _validarHorariosAtendimento();
+    if (erroHorario != null) {
+      throw Exception(erroHorario);
+    }
 
     final EmpresaModel empresa = EmpresaModel(
       nomeEmpresa: nomeEmpresa,
@@ -351,6 +370,11 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       siteEmpresa: _siteController.text.trim(),
       endereco: _enderecoController.text.trim(),
       logoBase64: _logoBase64,
+      horariosAtendimento:
+          _horariosAtendimentoConfiguradosNoBackend ||
+                  _horariosAtendimentoEditados
+              ? _horariosAtendimento
+              : const <HorarioAtendimentoModel>[],
     );
 
     final EmpresaModel atualizada = await _empresaService
@@ -448,6 +472,235 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     return normalizado.toUpperCase() == 'NO DATA' ? '' : normalizado;
   }
 
+  static List<HorarioAtendimentoModel> _horariosAtendimentoPadrao() {
+    return _diasSemanaAtendimento
+        .map((dia) {
+          final bool fimDeSemana = dia == 'SATURDAY' || dia == 'SUNDAY';
+          return HorarioAtendimentoModel(
+            diaSemana: dia,
+            fechado: fimDeSemana,
+            inicio: fimDeSemana ? null : '08:00',
+            fim: fimDeSemana ? null : '18:00',
+          );
+        })
+        .toList(growable: false);
+  }
+
+  List<HorarioAtendimentoModel> _normalizarHorariosAtendimento(
+    List<HorarioAtendimentoModel> horarios,
+  ) {
+    if (horarios.isEmpty) {
+      return _horariosAtendimentoPadrao();
+    }
+
+    final Map<String, HorarioAtendimentoModel> porDia =
+        <String, HorarioAtendimentoModel>{
+          for (final horario in horarios)
+            horario.diaSemana.trim().toUpperCase(): horario,
+        };
+
+    return _diasSemanaAtendimento
+        .map((dia) {
+          final HorarioAtendimentoModel? horario = porDia[dia];
+          if (horario == null) {
+            return HorarioAtendimentoModel(diaSemana: dia, fechado: true);
+          }
+
+          final String? inicio = _normalizarHora(horario.inicio);
+          final String? fim = _normalizarHora(horario.fim);
+          final bool fechado = horario.fechado || inicio == null || fim == null;
+          return HorarioAtendimentoModel(
+            diaSemana: dia,
+            fechado: fechado,
+            inicio: fechado ? null : inicio,
+            fim: fechado ? null : fim,
+          );
+        })
+        .toList(growable: false);
+  }
+
+  String? _validarHorariosAtendimento() {
+    for (final horario in _horariosAtendimento) {
+      if (horario.fechado) continue;
+
+      final int? inicio = _horaEmMinutos(horario.inicio);
+      final int? fim = _horaEmMinutos(horario.fim);
+      if (inicio == null || fim == null) {
+        return _i18n(
+          'configuracoes.businessHoursInvalid',
+          'Revise os horários de atendimento antes de salvar.',
+        );
+      }
+      if (inicio >= fim) {
+        return _i18n(
+          'configuracoes.businessHoursStartBeforeEnd',
+          'O horário inicial deve ser anterior ao horário final.',
+        );
+      }
+    }
+    return null;
+  }
+
+  void _aplicarHorarioDiasUteis() {
+    setState(() {
+      _horariosAtendimento = _diasSemanaAtendimento
+          .map((dia) {
+            final bool fimDeSemana = dia == 'SATURDAY' || dia == 'SUNDAY';
+            return HorarioAtendimentoModel(
+              diaSemana: dia,
+              fechado: fimDeSemana,
+              inicio: fimDeSemana ? null : '08:00',
+              fim: fimDeSemana ? null : '18:00',
+            );
+          })
+          .toList(growable: false);
+      _horariosAtendimentoEditados = true;
+      _possuiAlteracoesGerais = true;
+    });
+    _marcarAlteracao();
+  }
+
+  void _copiarSegundaParaDiasUteis() {
+    final HorarioAtendimentoModel segunda = _horariosAtendimento.firstWhere(
+      (horario) => horario.diaSemana == 'MONDAY',
+      orElse:
+          () => const HorarioAtendimentoModel(
+            diaSemana: 'MONDAY',
+            fechado: false,
+            inicio: '08:00',
+            fim: '18:00',
+          ),
+    );
+
+    setState(() {
+      _horariosAtendimento = _horariosAtendimento
+          .map((horario) {
+            final bool diaUtil = <String>{
+              'MONDAY',
+              'TUESDAY',
+              'WEDNESDAY',
+              'THURSDAY',
+              'FRIDAY',
+            }.contains(horario.diaSemana);
+            if (!diaUtil) return horario;
+            return HorarioAtendimentoModel(
+              diaSemana: horario.diaSemana,
+              fechado: segunda.fechado,
+              inicio: segunda.fechado ? null : segunda.inicio,
+              fim: segunda.fechado ? null : segunda.fim,
+            );
+          })
+          .toList(growable: false);
+      _horariosAtendimentoEditados = true;
+      _possuiAlteracoesGerais = true;
+    });
+    _marcarAlteracao();
+  }
+
+  void _atualizarHorarioAtendimento(
+    String diaSemana,
+    HorarioAtendimentoModel novoHorario,
+  ) {
+    setState(() {
+      _horariosAtendimento = _horariosAtendimento
+          .map(
+            (horario) => horario.diaSemana == diaSemana ? novoHorario : horario,
+          )
+          .toList(growable: false);
+      _horariosAtendimentoEditados = true;
+      _possuiAlteracoesGerais = true;
+    });
+    _marcarAlteracao();
+  }
+
+  void _alterarDiaAberto(HorarioAtendimentoModel horario, bool aberto) {
+    _atualizarHorarioAtendimento(
+      horario.diaSemana,
+      HorarioAtendimentoModel(
+        diaSemana: horario.diaSemana,
+        fechado: !aberto,
+        inicio: aberto ? (horario.inicio ?? '08:00') : null,
+        fim: aberto ? (horario.fim ?? '18:00') : null,
+      ),
+    );
+  }
+
+  Future<void> _selecionarHorario(
+    HorarioAtendimentoModel horario,
+    bool inicio,
+  ) async {
+    final TimeOfDay? selecionado = await showTimePicker(
+      context: context,
+      initialTime:
+          _parseHora(inicio ? horario.inicio : horario.fim) ??
+          TimeOfDay(hour: inicio ? 8 : 18, minute: 0),
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+    );
+
+    if (selecionado == null || !mounted) return;
+
+    final String valor = _formatarHora(selecionado);
+    _atualizarHorarioAtendimento(
+      horario.diaSemana,
+      HorarioAtendimentoModel(
+        diaSemana: horario.diaSemana,
+        fechado: false,
+        inicio: inicio ? valor : horario.inicio ?? '08:00',
+        fim: inicio ? horario.fim ?? '18:00' : valor,
+      ),
+    );
+  }
+
+  String _labelDiaSemana(String diaSemana) {
+    return switch (diaSemana.trim().toUpperCase()) {
+      'MONDAY' => _i18n('common.weekday.monday', 'Segunda-feira'),
+      'TUESDAY' => _i18n('common.weekday.tuesday', 'Terça-feira'),
+      'WEDNESDAY' => _i18n('common.weekday.wednesday', 'Quarta-feira'),
+      'THURSDAY' => _i18n('common.weekday.thursday', 'Quinta-feira'),
+      'FRIDAY' => _i18n('common.weekday.friday', 'Sexta-feira'),
+      'SATURDAY' => _i18n('common.weekday.saturday', 'Sábado'),
+      'SUNDAY' => _i18n('common.weekday.sunday', 'Domingo'),
+      _ => diaSemana,
+    };
+  }
+
+  String? _normalizarHora(String? value) {
+    final String normalizado = (value ?? '').trim();
+    if (normalizado.length >= 5) {
+      return normalizado.substring(0, 5);
+    }
+    return null;
+  }
+
+  TimeOfDay? _parseHora(String? value) {
+    final String? normalizado = _normalizarHora(value);
+    if (normalizado == null) return null;
+    final List<String> partes = normalizado.split(':');
+    if (partes.length != 2) return null;
+    final int? hora = int.tryParse(partes[0]);
+    final int? minuto = int.tryParse(partes[1]);
+    if (hora == null || minuto == null) return null;
+    if (hora < 0 || hora > 23 || minuto < 0 || minuto > 59) return null;
+    return TimeOfDay(hour: hora, minute: minuto);
+  }
+
+  int? _horaEmMinutos(String? value) {
+    final TimeOfDay? hora = _parseHora(value);
+    if (hora == null) return null;
+    return hora.hour * 60 + hora.minute;
+  }
+
+  String _formatarHora(TimeOfDay value) {
+    final String hora = value.hour.toString().padLeft(2, '0');
+    final String minuto = value.minute.toString().padLeft(2, '0');
+    return '$hora:$minuto';
+  }
+
   String? _mimeTypeFromName(String name) {
     final String lower = name.toLowerCase();
     if (lower.endsWith('.png')) return 'image/png';
@@ -473,6 +726,10 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _siteController = TextEditingController();
   final TextEditingController _enderecoController = TextEditingController();
+  List<HorarioAtendimentoModel> _horariosAtendimento =
+      _horariosAtendimentoPadrao();
+  bool _horariosAtendimentoConfiguradosNoBackend = false;
+  bool _horariosAtendimentoEditados = false;
 
   // Regionalização
   String _idiomaSelecionado = 'Português (Brasil)';
@@ -3199,6 +3456,272 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     }
   }
 
+  Widget _buildHorariosAtendimentoForm() {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool compacto = constraints.maxWidth < 720;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  onPressed:
+                      _carregandoDadosEmpresa ? null : _aplicarHorarioDiasUteis,
+                  icon: const Icon(Icons.work_history_outlined, size: 18),
+                  label: Text(
+                    _i18n(
+                      'configuracoes.businessHoursApplyWeekdays',
+                      'Aplicar segunda a sexta',
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed:
+                      _carregandoDadosEmpresa
+                          ? null
+                          : _copiarSegundaParaDiasUteis,
+                  icon: const Icon(Icons.content_copy_rounded, size: 18),
+                  label: Text(
+                    _i18n(
+                      'configuracoes.businessHoursCopyMonday',
+                      'Copiar segunda para dias úteis',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              _i18n(
+                'configuracoes.businessHoursHelper',
+                'Use fechado para dias sem atendimento. Os horários são salvos por dia da semana e podem ser exibidos no link público do atendimento.',
+              ),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: tokens.secondaryText,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Column(
+              children: _horariosAtendimento
+                  .map(
+                    (horario) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _buildHorarioAtendimentoRow(
+                        horario,
+                        compacto: compacto,
+                      ),
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildHorarioAtendimentoRow(
+    HorarioAtendimentoModel horario, {
+    required bool compacto,
+  }) {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+    final bool aberto = !horario.fechado;
+    final String statusLabel =
+        aberto
+            ? _i18n('configuracoes.businessHoursOpen', 'Aberto')
+            : _i18n('configuracoes.businessHoursClosed', 'Fechado');
+    final Widget day = SizedBox(
+      width: compacto ? double.infinity : 180,
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color:
+                  aberto
+                      ? tokens.selectedBackground
+                      : tokens.disabledBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: aberto ? tokens.selectedBorder : tokens.cardBorder,
+              ),
+            ),
+            child: Icon(
+              aberto ? Icons.schedule_rounded : Icons.do_not_disturb_on,
+              size: 17,
+              color: aberto ? tokens.info : tokens.disabledForeground,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _labelDiaSemana(horario.diaSemana),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: tokens.primaryText,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    final Widget toggle = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Switch(
+          value: aberto,
+          activeThumbColor: tokens.success,
+          activeTrackColor: tokens.success.withValues(alpha: 0.28),
+          inactiveThumbColor: tokens.disabledForeground,
+          inactiveTrackColor: tokens.disabledBackground,
+          onChanged:
+              _carregandoDadosEmpresa
+                  ? null
+                  : (valor) => _alterarDiaAberto(horario, valor),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          statusLabel,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: aberto ? tokens.primaryText : tokens.secondaryText,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+    final Widget times =
+        aberto
+            ? Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                _buildHorarioTimeButton(
+                  label: _i18n('configuracoes.businessHoursStart', 'Início'),
+                  value: horario.inicio ?? '08:00',
+                  onTap: () => _selecionarHorario(horario, true),
+                ),
+                Text(
+                  _i18n('configuracoes.businessHoursTo', 'às'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: tokens.secondaryText,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                _buildHorarioTimeButton(
+                  label: _i18n('configuracoes.businessHoursEnd', 'Fim'),
+                  value: horario.fim ?? '18:00',
+                  onTap: () => _selecionarHorario(horario, false),
+                ),
+              ],
+            )
+            : Text(
+              _i18n(
+                'configuracoes.businessHoursClosedDescription',
+                'Sem atendimento neste dia.',
+              ),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: tokens.secondaryText,
+                fontWeight: FontWeight.w600,
+              ),
+            );
+
+    return AnimatedContainer(
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: aberto ? tokens.selectedBorder : tokens.cardBorder,
+        ),
+      ),
+      child:
+          compacto
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  day,
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 14,
+                    runSpacing: 10,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [toggle, times],
+                  ),
+                ],
+              )
+              : Row(
+                children: [
+                  day,
+                  const SizedBox(width: 12),
+                  SizedBox(width: 142, child: toggle),
+                  const SizedBox(width: 12),
+                  Expanded(child: times),
+                ],
+              ),
+    );
+  }
+
+  Widget _buildHorarioTimeButton({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+
+    return Tooltip(
+      message: label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: _carregandoDadosEmpresa ? null : onTap,
+        child: Container(
+          width: 96,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: tokens.inputBackground,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: tokens.cardBorder),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.access_time_rounded, color: tokens.info, size: 16),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSecaoGeral() {
     final tokens = WebThemeTokens.of(context);
 
@@ -3238,6 +3761,18 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             ),
           ),
           child: _buildDadosEmpresaForm(),
+        ),
+        const SizedBox(height: 20),
+        _buildBigCard(
+          title: _i18n(
+            'configuracoes.businessHoursTitle',
+            'Horário de atendimento',
+          ),
+          subtitle: _i18n(
+            'configuracoes.businessHoursSubtitle',
+            'Defina quando o comércio atende clientes e mostre essa informação no acompanhamento público do serviço.',
+          ),
+          child: _buildHorariosAtendimentoForm(),
         ),
         const SizedBox(height: 20),
         _buildBigCard(

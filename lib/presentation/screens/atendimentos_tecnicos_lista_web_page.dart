@@ -63,6 +63,7 @@ class _AtendimentosTecnicosListaWebPageState
   DateTime? _dataFimFiltro;
   String? _tecnicoFiltroKey;
   String? _statusFiltroKey;
+  String? _atendimentoExpandidoKey;
   AtendimentosCriadosStatusPagamentoFiltro _statusPagamentoFiltro =
       AtendimentosCriadosStatusPagamentoFiltro.todos;
 
@@ -216,6 +217,7 @@ class _AtendimentosTecnicosListaWebPageState
   void _recarregar() {
     setState(() {
       _future = _carregar();
+      _atendimentoExpandidoKey = null;
     });
   }
 
@@ -1433,13 +1435,19 @@ class _AtendimentosTecnicosListaWebPageState
                                 itemCount: atendimentos.length,
                                 separatorBuilder:
                                     (_, __) => const SizedBox(height: 10),
-                                itemBuilder:
-                                    (context, index) => _buildAtendimentoCard(
-                                      theme,
-                                      atendimentos[index],
-                                      statusOptions,
-                                      isCompact,
-                                    ),
+                                itemBuilder: (context, index) {
+                                  final atendimento = atendimentos[index];
+                                  final expanded =
+                                      _atendimentoExpandidoKey ==
+                                      _atendimentoExpansionKey(atendimento);
+                                  return _buildAtendimentoCard(
+                                    theme,
+                                    atendimento,
+                                    statusOptions,
+                                    isCompact,
+                                    expanded: expanded,
+                                  );
+                                },
                               ),
                     ),
                   ),
@@ -2157,170 +2165,482 @@ class _AtendimentosTecnicosListaWebPageState
     );
   }
 
+  String _atendimentoExpansionKey(AtendimentoTecnicoModel atendimento) {
+    final id = atendimento.id.trim();
+    if (id.isNotEmpty) return id;
+    final numero = atendimento.numero.trim();
+    if (numero.isNotEmpty) return numero;
+    final data = atendimento.dataAtualizacao?.toIso8601String() ?? '';
+    return '${atendimento.statusCodigo}-$data-${atendimento.hashCode}';
+  }
+
+  void _alternarAtendimentoExpandido(AtendimentoTecnicoModel atendimento) {
+    final key = _atendimentoExpansionKey(atendimento);
+    setState(() {
+      _atendimentoExpandidoKey = _atendimentoExpandidoKey == key ? null : key;
+    });
+  }
+
   Widget _buildAtendimentoCard(
     ThemeData theme,
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status,
-    bool isCompact,
-  ) {
-    final statusTexto = _statusLabel(atendimento, status);
+    bool isCompact, {
+    required bool expanded,
+  }) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final bool pagamentoAberto = _pagamentoEmAberto(atendimento);
-    final bool entregaAtrasada = _entregaAtrasada(atendimento);
-    final bool clienteNaoAssinou = _clienteNaoAssinouAtendimentoAberto(
-      atendimento,
+    final Color statusColor = _statusProgressColor(theme, atendimento, status);
+    final bool dark = theme.colorScheme.brightness == Brightness.dark;
+    return AnimatedContainer(
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color:
+              expanded
+                  ? statusColor.withValues(alpha: dark ? 0.56 : 0.42)
+                  : tokens.cardBorder,
+        ),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: dark ? 0.12 : 0.035),
+            blurRadius: expanded ? 16 : 12,
+            offset: Offset(0, expanded ? 8 : 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            _buildAtendimentoResumo(
+              theme,
+              atendimento,
+              status,
+              isCompact,
+              expanded: expanded,
+              statusColor: statusColor,
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child:
+                  expanded
+                      ? _buildAtendimentoDetalhesExpandido(
+                        theme,
+                        atendimento,
+                        status,
+                        isCompact,
+                      )
+                      : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      ),
     );
-    final clienteSnapshot = atendimento.nomeClienteSnapshot?.trim() ?? '';
-    final String cliente =
-        clienteSnapshot.isNotEmpty ? clienteSnapshot : 'Cliente não informado';
+  }
 
-    final content = Row(
+  Widget _buildAtendimentoResumo(
+    ThemeData theme,
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+    bool isCompact, {
+    required bool expanded,
+    required Color statusColor,
+  }) {
+    final Widget identity = _buildAtendimentoIdentity(
+      theme,
+      atendimento,
+      statusColor: statusColor,
+    );
+    final Widget metrics = _buildResumoRapidoAtendimento(
+      theme,
+      atendimento,
+      status,
+      statusColor: statusColor,
+    );
+    final Widget primaryActions = _buildAcoesPrincipaisAtendimento(
+      theme,
+      atendimento,
+      isCompact: isCompact,
+    );
+    final Widget expandControl = _expandControl(
+      theme,
+      expanded: expanded,
+      onPressed: () => _alternarAtendimentoExpandido(atendimento),
+    );
+    final Widget tapTarget = _summaryTapTarget(
+      theme,
+      expanded: expanded,
+      onTap: () => _alternarAtendimentoExpandido(atendimento),
+      child:
+          isCompact
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(child: identity),
+                      const SizedBox(width: 8),
+                      expandControl,
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  metrics,
+                ],
+              )
+              : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(flex: 5, child: identity),
+                  const SizedBox(width: 14),
+                  Expanded(flex: 7, child: metrics),
+                ],
+              ),
+    );
+
+    return Padding(
+      padding: EdgeInsets.all(isCompact ? 12 : 14),
+      child:
+          isCompact
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  tapTarget,
+                  const SizedBox(height: 12),
+                  primaryActions,
+                ],
+              )
+              : Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Expanded(child: tapTarget),
+                  const SizedBox(width: 12),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 250),
+                    child: primaryActions,
+                  ),
+                  const SizedBox(width: 8),
+                  expandControl,
+                ],
+              ),
+    );
+  }
+
+  Widget _summaryTapTarget(
+    ThemeData theme, {
+    required bool expanded,
+    required VoidCallback onTap,
+    required Widget child,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final String label = context.t(
+      expanded
+          ? 'atendimentoTecnico.lista.collapseDetails'
+          : 'atendimentoTecnico.lista.expandDetails',
+      fallback: expanded ? 'Recolher detalhes' : 'Expandir detalhes',
+    );
+    return Semantics(
+      button: true,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: WebThemeTokens.transitionDuration,
+              curve: WebThemeTokens.transitionCurve,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color:
+                    expanded
+                        ? tokens.selectedBackground.withValues(alpha: 0.58)
+                        : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAtendimentoIdentity(
+    ThemeData theme,
+    AtendimentoTecnicoModel atendimento, {
+    required Color statusColor,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final String cliente = _clienteLabelAtendimento(atendimento);
+    final String tecnico = _tecnicoLabelAtendimento(atendimento);
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Container(
-          width: 48,
-          height: 48,
+          width: 46,
+          height: 46,
           decoration: BoxDecoration(
-            color: tokens.info.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(16),
+            color: statusColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(15),
           ),
           child: Icon(
-            Icons.devices_other_outlined,
-            color: tokens.info,
-            size: 25,
+            _equipamentoIcon(atendimento),
+            color: statusColor,
+            size: 24,
           ),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      _equipamentoTitulo(atendimento),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: tokens.primaryText,
-                      ),
-                    ),
-                  ),
-                  if (!isCompact) ...<Widget>[
-                    const SizedBox(width: 10),
-                    _coloredChip(
-                      theme,
-                      pagamentoAberto
-                          ? 'Financeiro aberto'
-                          : 'Financeiro liquidado',
-                      pagamentoAberto
-                          ? Icons.account_balance_wallet_outlined
-                          : Icons.price_check_rounded,
-                      pagamentoAberto
-                          ? tokens.financialNegative
-                          : tokens.success,
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 5),
               Text(
-                '${atendimento.numero} • $cliente',
+                _equipamentoTitulo(atendimento),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: tokens.secondaryText,
-                  fontWeight: FontWeight.w700,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: tokens.primaryText,
                 ),
               ),
-              if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  atendimento.defeitoRelatado!,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: tokens.secondaryText, height: 1.25),
-                ),
-              ],
-              const SizedBox(height: 12),
+              const SizedBox(height: 7),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: 7,
+                runSpacing: 7,
                 children: <Widget>[
-                  if (isCompact)
-                    pagamentoAberto
-                        ? _naoLiquidadaChip(theme)
-                        : _liquidadaChip(theme),
-                  if (clienteNaoAssinou) _customerNotSignedChip(theme),
-                  if (atendimento.assinaturaAprovada) _signedChip(theme),
-                  if (atendimento.requerNovaAssinatura)
-                    _pendingSignatureChip(theme),
-                  if (entregaAtrasada) _lateDeliveryChip(theme),
-                  _chip(theme, statusTexto, Icons.flag_outlined),
-                  _chip(
+                  _summaryMetaPill(
                     theme,
-                    'v${atendimento.versaoOrcamento}',
-                    Icons.tag_outlined,
+                    atendimento.numero,
+                    Icons.confirmation_number_outlined,
+                    maxWidth: 150,
                   ),
-                  _chip(
+                  _summaryMetaPill(
                     theme,
-                    '${atendimento.itens.length} item(ns)',
-                    Icons.inventory_2_outlined,
+                    cliente,
+                    Icons.person_outline_rounded,
                   ),
-                  _chip(
-                    theme,
-                    '${atendimento.historicoAuditoria.length} aud.',
-                    Icons.manage_history_rounded,
-                  ),
-                  _chip(
-                    theme,
-                    _tecnicoLabelAtendimento(atendimento),
-                    Icons.engineering_outlined,
-                  ),
-                  _metricChip(
-                    theme,
-                    'Total',
-                    _formatarMoeda(atendimento.valorTotalAtendimento),
-                    Icons.payments_outlined,
-                  ),
-                  if (atendimento.valorEmAberto > 0)
-                    _metricChip(
-                      theme,
-                      'Aberto',
-                      _formatarMoeda(atendimento.valorEmAberto),
-                      Icons.account_balance_wallet_outlined,
-                      emphasisColor: tokens.financialNegative,
-                    ),
-                  _chip(
-                    theme,
-                    'Atualização ${_formatarDataCurta(atendimento.dataAtualizacao)}',
-                    Icons.update_rounded,
-                  ),
-                  if (atendimento.dataEntregaPrevista != null)
-                    _chip(
-                      theme,
-                      'Entrega ${_formatarDataCurta(atendimento.dataEntregaPrevista)}',
-                      Icons.assignment_turned_in_outlined,
-                    ),
-                  _chip(
-                    theme,
-                    'Validade ${_formatarDataCurta(atendimento.validadeOrcamentoEm)}',
-                    Icons.event_available_outlined,
-                  ),
+                  _summaryMetaPill(theme, tecnico, Icons.engineering_outlined),
                 ],
               ),
-              const SizedBox(height: 12),
-              _statusProgressBar(theme, atendimento, status),
             ],
           ),
         ),
       ],
     );
+  }
 
-    final actions = Wrap(
-      direction: isCompact ? Axis.horizontal : Axis.vertical,
+  Widget _buildResumoRapidoAtendimento(
+    ThemeData theme,
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status, {
+    required Color statusColor,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double maxWidth = constraints.maxWidth;
+        final int columns =
+            maxWidth >= 780
+                ? 5
+                : maxWidth >= 620
+                ? 4
+                : maxWidth >= 460
+                ? 3
+                : 2;
+        final double spacing = 8;
+        final double rawItemWidth =
+            (maxWidth - ((columns - 1) * spacing)) / columns;
+        final double itemWidth =
+            maxWidth < 116
+                ? maxWidth
+                : rawItemWidth.clamp(116.0, maxWidth).toDouble();
+        return Wrap(
+          spacing: spacing,
+          runSpacing: 8,
+          children: <Widget>[
+            _summaryMetricBlock(
+              theme,
+              width: itemWidth,
+              label: context.t(
+                'atendimentoTecnico.lista.summary.status',
+                fallback: 'Status',
+              ),
+              value: _statusLabel(atendimento, status),
+              icon: Icons.flag_outlined,
+              emphasisColor: statusColor,
+            ),
+            _summaryMetricBlock(
+              theme,
+              width: itemWidth,
+              label: context.t(
+                'atendimentoTecnico.lista.summary.total',
+                fallback: 'Total',
+              ),
+              value: _formatarMoeda(atendimento.valorTotalAtendimento),
+              icon: Icons.payments_outlined,
+            ),
+            _summaryMetricBlock(
+              theme,
+              width: itemWidth,
+              label: context.t(
+                'atendimentoTecnico.lista.summary.openAmount',
+                fallback: 'Aberto',
+              ),
+              value: _formatarMoeda(atendimento.valorEmAberto),
+              icon: Icons.account_balance_wallet_outlined,
+              emphasisColor:
+                  atendimento.valorEmAberto > 0
+                      ? tokens.financialNegative
+                      : null,
+            ),
+            _summaryMetricBlock(
+              theme,
+              width: itemWidth,
+              label: context.t(
+                'atendimentoTecnico.lista.summary.delivery',
+                fallback: 'Entrega',
+              ),
+              value: _formatarDataCurta(atendimento.dataEntregaPrevista),
+              icon: Icons.assignment_turned_in_outlined,
+              emphasisColor:
+                  _entregaAtrasada(atendimento) ? tokens.danger : null,
+            ),
+            _summaryMetricBlock(
+              theme,
+              width: itemWidth,
+              label: context.t(
+                'atendimentoTecnico.lista.summary.validity',
+                fallback: 'Validade',
+              ),
+              value: _formatarDataCurta(atendimento.validadeOrcamentoEm),
+              icon: Icons.event_available_outlined,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _summaryMetricBlock(
+    ThemeData theme, {
+    required double width,
+    required String label,
+    required String value,
+    required IconData icon,
+    Color? emphasisColor,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color foreground = emphasisColor ?? tokens.primaryText;
+    final Color iconColor = emphasisColor ?? tokens.secondaryText;
+    return SizedBox(
+      width: width,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 52),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color:
+              emphasisColor == null
+                  ? tokens.surfaceMuted
+                  : emphasisColor.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color:
+                emphasisColor == null
+                    ? tokens.cardBorder
+                    : emphasisColor.withValues(alpha: 0.28),
+          ),
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(icon, size: 16, color: iconColor),
+            const SizedBox(width: 7),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: tokens.mutedText,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: foreground,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _summaryMetaPill(
+    ThemeData theme,
+    String label,
+    IconData icon, {
+    double maxWidth = 260,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+        decoration: BoxDecoration(
+          color: tokens.surfaceMuted,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: tokens.cardBorder),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(icon, size: 14, color: tokens.secondaryText),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: tokens.primaryText,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAcoesPrincipaisAtendimento(
+    ThemeData theme,
+    AtendimentoTecnicoModel atendimento, {
+    required bool isCompact,
+  }) {
+    return Wrap(
       spacing: 8,
       runSpacing: 8,
       alignment: isCompact ? WrapAlignment.start : WrapAlignment.end,
@@ -2341,6 +2661,123 @@ class _AtendimentosTecnicosListaWebPageState
           icon: Icons.edit_note_rounded,
           onPressed: () => _abrirEditarAtendimento(atendimento),
         ),
+      ],
+    );
+  }
+
+  Widget _expandControl(
+    ThemeData theme, {
+    required bool expanded,
+    required VoidCallback onPressed,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final String tooltip = context.t(
+      expanded
+          ? 'atendimentoTecnico.lista.collapseDetails'
+          : 'atendimentoTecnico.lista.expandDetails',
+      fallback: expanded ? 'Recolher detalhes' : 'Expandir detalhes',
+    );
+    return Tooltip(
+      message: tooltip,
+      child: IconButton.filledTonal(
+        onPressed: onPressed,
+        style: IconButton.styleFrom(
+          backgroundColor:
+              expanded ? tokens.selectedBackground : tokens.surfaceMuted,
+          foregroundColor: expanded ? tokens.info : tokens.secondaryText,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        icon: AnimatedRotation(
+          turns: expanded ? 0.5 : 0,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          child: const Icon(Icons.keyboard_arrow_down_rounded),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAtendimentoDetalhesExpandido(
+    ThemeData theme,
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+    bool isCompact,
+  ) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool pagamentoAberto = _pagamentoEmAberto(atendimento);
+    final bool entregaAtrasada = _entregaAtrasada(atendimento);
+    final bool clienteNaoAssinou = _clienteNaoAssinouAtendimentoAberto(
+      atendimento,
+    );
+    final List<Widget> chips = <Widget>[
+      pagamentoAberto ? _naoLiquidadaChip(theme) : _liquidadaChip(theme),
+      if (clienteNaoAssinou) _customerNotSignedChip(theme),
+      if (atendimento.assinaturaAprovada) _signedChip(theme),
+      if (atendimento.requerNovaAssinatura) _pendingSignatureChip(theme),
+      if (entregaAtrasada) _lateDeliveryChip(theme),
+      _chip(theme, _statusLabel(atendimento, status), Icons.flag_outlined),
+      _chip(theme, 'v${atendimento.versaoOrcamento}', Icons.tag_outlined),
+      _chip(
+        theme,
+        '${atendimento.itens.length} item(ns)',
+        Icons.inventory_2_outlined,
+      ),
+      _chip(
+        theme,
+        '${atendimento.historicoAuditoria.length} aud.',
+        Icons.manage_history_rounded,
+      ),
+      _chip(
+        theme,
+        'Atualização ${_formatarDataCurta(atendimento.dataAtualizacao)}',
+        Icons.update_rounded,
+      ),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.surface.withValues(alpha: 0.52),
+        border: Border(top: BorderSide(color: tokens.cardBorder)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        isCompact ? 14 : 18,
+        16,
+        isCompact ? 14 : 18,
+        isCompact ? 16 : 18,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Wrap(spacing: 8, runSpacing: 8, children: chips),
+          const SizedBox(height: 14),
+          _statusProgressBar(theme, atendimento, status),
+          const SizedBox(height: 14),
+          _buildAcoesSecundariasAtendimento(
+            theme,
+            atendimento,
+            status,
+            isCompact: isCompact,
+          ),
+          const SizedBox(height: 16),
+          _buildDetalhesInlineAtendimento(theme, atendimento, status),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAcoesSecundariasAtendimento(
+    ThemeData theme,
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status, {
+    required bool isCompact,
+  }) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      alignment: isCompact ? WrapAlignment.start : WrapAlignment.end,
+      children: <Widget>[
         _actionButton(
           theme,
           label:
@@ -2360,7 +2797,8 @@ class _AtendimentosTecnicosListaWebPageState
           theme,
           label: _gerandoLink ? 'Gerando...' : 'Link assinatura',
           icon: Icons.draw_outlined,
-          onPressed: () => _gerarLinkAssinatura(atendimento),
+          onPressed:
+              _gerandoLink ? null : () => _gerarLinkAssinatura(atendimento),
         ),
         _actionButton(
           theme,
@@ -2370,248 +2808,131 @@ class _AtendimentosTecnicosListaWebPageState
         ),
       ],
     );
-
-    return Material(
-      color: tokens.cardBackground,
-      borderRadius: BorderRadius.circular(22),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
-        onTap: () => _abrirDetalhes(atendimento, status),
-        child: AnimatedContainer(
-          duration: WebThemeTokens.transitionDuration,
-          curve: WebThemeTokens.transitionCurve,
-          padding: EdgeInsets.all(isCompact ? 14 : 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: tokens.cardBorder),
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: Colors.black.withValues(
-                  alpha:
-                      theme.colorScheme.brightness == Brightness.dark
-                          ? 0.12
-                          : 0.035,
-                ),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child:
-              isCompact
-                  ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      content,
-                      const SizedBox(height: 14),
-                      actions,
-                    ],
-                  )
-                  : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Expanded(child: content),
-                      const SizedBox(width: 14),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(minWidth: 164),
-                        child: actions,
-                      ),
-                    ],
-                  ),
-        ),
-      ),
-    );
   }
 
-  Future<void> _abrirDetalhes(
+  Widget _buildDetalhesInlineAtendimento(
+    ThemeData theme,
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status,
-  ) async {
-    final WebThemeTokens pageTokens = WebThemeTokens.of(context);
-    final bool dark = Theme.of(context).brightness == Brightness.dark;
-    await showDialog<void>(
-      context: context,
-      barrierColor: pageTokens.workspaceBackground.withValues(
-        alpha: dark ? 0.62 : 0.34,
-      ),
-      builder: (dialogContext) {
-        final ThemeData theme = Theme.of(dialogContext);
-        final WebThemeTokens tokens = WebThemeTokens.of(dialogContext);
-        return AlertDialog(
-          backgroundColor: tokens.surfaceElevated,
-          surfaceTintColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 28,
-            vertical: 28,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-            side: BorderSide(color: tokens.cardBorder),
-          ),
-          titleTextStyle: theme.textTheme.titleLarge?.copyWith(
-            color: tokens.primaryText,
-            fontWeight: FontWeight.w900,
-          ),
-          contentTextStyle: theme.textTheme.bodyMedium?.copyWith(
-            color: tokens.primaryText,
-          ),
-          title: Text(
-            '${atendimento.numero} • versão ${atendimento.versaoOrcamento}',
-          ),
-          content: SizedBox(
-            width: 860,
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  _detailSection('Resumo financeiro', <Widget>[
-                    _detailLine(
-                      'Liquidação',
-                      atendimento.operacaoLiquidada
-                          ? 'Liquidada'
-                          : 'Não liquidada',
-                    ),
-                    _detailLine(
-                      'Total',
-                      _formatarMoeda(atendimento.valorTotalAtendimento),
-                    ),
-                    _detailLine(
-                      'Recebido',
-                      _formatarMoeda(atendimento.valorRecebido),
-                    ),
-                    _detailLine(
-                      'Em aberto',
-                      _formatarMoeda(atendimento.valorEmAberto),
-                    ),
-                    if (atendimento.assinaturaAprovada)
-                      _detailLine('Assinatura', _assinaturaResumo(atendimento)),
-                    if (atendimento.requerNovaAssinatura)
-                      _detailLine(
-                        'Assinatura',
-                        'Pendente para a versão atual do orçamento',
-                      ),
-                  ]),
-                  const SizedBox(height: 16),
-                  _detailSection('Atendimento', <Widget>[
-                    _detailLine(
-                      'Cliente',
-                      atendimento.nomeClienteSnapshot ??
-                          'Cliente não informado',
-                    ),
-                    _detailLine('Status', _statusLabel(atendimento, status)),
-                    _detailLine(
-                      'Validade',
-                      _formatarDataCurta(atendimento.validadeOrcamentoEm),
-                    ),
-                    _detailLine(
-                      'Entrega prevista',
-                      _formatarDataCurta(atendimento.dataEntregaPrevista),
-                    ),
-                    if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty)
-                      _detailLine('Defeito', atendimento.defeitoRelatado!),
-                    if ((atendimento.diagnosticoTecnico ?? '')
-                        .trim()
-                        .isNotEmpty)
-                      _detailLine(
-                        'Diagnóstico',
-                        atendimento.diagnosticoTecnico!,
-                      ),
-                  ]),
-                  const SizedBox(height: 16),
-                  _detailSection('Recebimentos', <Widget>[
-                    if (atendimento.recebimentos.isEmpty)
-                      _detailMutedText('Nenhum recebimento lançado.')
-                    else
-                      ...atendimento.recebimentos.reversed.map(
-                        (item) => _detailLine(
-                          item.nomeFormaRecebimento,
-                          '${_formatarMoeda(item.valor)} • ${_formatarData(item.dataHora)}${(item.observacao ?? '').trim().isEmpty ? '' : ' • ${item.observacao}'}',
-                        ),
-                      ),
-                  ]),
-                  const SizedBox(height: 16),
-                  _detailSection('Itens', <Widget>[
-                    if (atendimento.itens.isEmpty)
-                      _detailMutedText('Nenhum item vinculado.')
-                    else
-                      ...atendimento.itens.map(
-                        (item) => _detailLine(
-                          item.tipoItemCodigo == 'SERVICE'
-                              ? 'Serviço'
-                              : 'Produto',
-                          '${item.descricaoSnapshot} • ${item.quantidade.toStringAsFixed(0)} x ${_formatarMoeda(item.valorUnitario)}',
-                        ),
-                      ),
-                  ]),
-                  const SizedBox(height: 16),
-                  _detailSection('Histórico de auditoria', <Widget>[
-                    if (atendimento.historicoAuditoria.isEmpty)
-                      _detailMutedText('Nenhuma auditoria registrada.')
-                    else
-                      ...atendimento.historicoAuditoria.reversed.map(
-                        (item) => _detailLongText(
-                          '${_formatarData(item.dataHora)} • v${item.versaoOrcamento} • ${item.tipo}${(item.observacao ?? '').trim().isEmpty ? '' : ' • ${item.observacao}'}',
-                        ),
-                      ),
-                  ]),
-                  const SizedBox(height: 16),
-                  _detailSection('Histórico de status', <Widget>[
-                    if (atendimento.historicoStatus.isEmpty)
-                      _detailMutedText('Nenhuma mudança registrada.')
-                    else
-                      ...atendimento.historicoStatus.reversed.map((item) {
-                        final anterior =
-                            item.statusAnteriorNomePtBr ??
-                            _statusLabelPorCodigo(
-                              item.statusAnteriorCodigo,
-                              status,
-                            );
-                        final novo =
-                            item.statusNomePtBr ??
-                            _statusLabelPorCodigo(item.statusCodigo, status);
-                        final observacao = item.observacao?.trim() ?? '';
-                        return _detailLongText(
-                          '${_formatarData(item.dataHora)} • $anterior → $novo${observacao.isEmpty ? '' : ' • $observacao'}',
-                        );
-                      }),
-                  ]),
-                ],
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool twoColumns = constraints.maxWidth >= 860;
+        final double spacing = 18;
+        final double columnWidth =
+            twoColumns
+                ? ((constraints.maxWidth - spacing) / 2)
+                : constraints.maxWidth;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: 18,
+          children: <Widget>[
+            _inlineDetailSection('Resumo financeiro', <Widget>[
+              _detailLine(
+                'Liquidação',
+                atendimento.operacaoLiquidada ? 'Liquidada' : 'Não liquidada',
               ),
-            ),
-          ),
-          actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
-          actions: <Widget>[
-            FilledButton.icon(
-              onPressed:
-                  atendimento.operacaoLiquidada
-                      ? null
-                      : () => _abrirRecebimento(atendimento),
-              icon: const Icon(Icons.payments_outlined),
-              label: const Text('Receber'),
-            ),
-            OutlinedButton.icon(
-              onPressed: () => _abrirEditarAtendimento(atendimento),
-              icon: const Icon(Icons.edit_note_rounded),
-              label: const Text('Editar'),
-            ),
-            OutlinedButton.icon(
-              onPressed: () => _gerarLinkAssinatura(atendimento),
-              icon: const Icon(Icons.draw_outlined),
-              label: const Text('Link assinatura'),
-            ),
-            OutlinedButton.icon(
-              onPressed: () => _gerarLinkStatusPublico(atendimento),
-              icon: const Icon(Icons.ios_share_rounded),
-              label: Text(
-                context.t(
-                  'atendimentoTecnico.publicStatus.action',
-                  fallback: 'Status público',
+              _detailLine(
+                'Total',
+                _formatarMoeda(atendimento.valorTotalAtendimento),
+              ),
+              _detailLine(
+                'Recebido',
+                _formatarMoeda(atendimento.valorRecebido),
+              ),
+              _detailLine(
+                'Em aberto',
+                _formatarMoeda(atendimento.valorEmAberto),
+              ),
+              if (atendimento.assinaturaAprovada)
+                _detailLine('Assinatura', _assinaturaResumo(atendimento)),
+              if (atendimento.requerNovaAssinatura)
+                _detailLine(
+                  'Assinatura',
+                  'Pendente para a versão atual do orçamento',
                 ),
+            ], width: columnWidth),
+            _inlineDetailSection('Atendimento', <Widget>[
+              _detailLine('Cliente', _clienteLabelAtendimento(atendimento)),
+              _detailLine('Técnico', _tecnicoLabelAtendimento(atendimento)),
+              _detailLine('Status', _statusLabel(atendimento, status)),
+              _detailLine(
+                'Validade',
+                _formatarDataCurta(atendimento.validadeOrcamentoEm),
               ),
+              _detailLine(
+                'Entrega prevista',
+                _formatarDataCurta(atendimento.dataEntregaPrevista),
+              ),
+              if ((atendimento.descricao ?? '').trim().isNotEmpty)
+                _detailLine('Descrição', atendimento.descricao!.trim()),
+              if ((atendimento.defeitoRelatado ?? '').trim().isNotEmpty)
+                _detailLine('Defeito', atendimento.defeitoRelatado!.trim()),
+              if ((atendimento.diagnosticoTecnico ?? '').trim().isNotEmpty)
+                _detailLine(
+                  'Diagnóstico',
+                  atendimento.diagnosticoTecnico!.trim(),
+                ),
+            ], width: columnWidth),
+            _inlineDetailSection('Recebimentos', <Widget>[
+              if (atendimento.recebimentos.isEmpty)
+                _detailMutedText('Nenhum recebimento lançado.')
+              else
+                ...atendimento.recebimentos.reversed.map(
+                  (item) => _detailLine(
+                    item.nomeFormaRecebimento,
+                    '${_formatarMoeda(item.valor)} • ${_formatarData(item.dataHora)}${(item.observacao ?? '').trim().isEmpty ? '' : ' • ${item.observacao}'}',
+                  ),
+                ),
+            ], width: columnWidth),
+            _inlineDetailSection('Itens', <Widget>[
+              if (atendimento.itens.isEmpty)
+                _detailMutedText('Nenhum item vinculado.')
+              else
+                ...atendimento.itens.map(
+                  (item) => _detailLine(
+                    item.tipoItemCodigo == 'SERVICE' ? 'Serviço' : 'Produto',
+                    '${item.descricaoSnapshot} • ${_formatarInteiro(item.quantidade)} x ${_formatarMoeda(item.valorUnitario)}',
+                  ),
+                ),
+            ], width: columnWidth),
+            _inlineDetailSection(
+              'Histórico de auditoria',
+              <Widget>[
+                if (atendimento.historicoAuditoria.isEmpty)
+                  _detailMutedText('Nenhuma auditoria registrada.')
+                else
+                  ...atendimento.historicoAuditoria.reversed.map(
+                    (item) => _detailLongText(
+                      '${_formatarData(item.dataHora)} • v${item.versaoOrcamento} • ${item.tipo}${(item.observacao ?? '').trim().isEmpty ? '' : ' • ${item.observacao}'}',
+                    ),
+                  ),
+              ],
+              width: twoColumns ? constraints.maxWidth : columnWidth,
             ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Fechar'),
+            _inlineDetailSection(
+              'Histórico de status',
+              <Widget>[
+                if (atendimento.historicoStatus.isEmpty)
+                  _detailMutedText('Nenhuma mudança registrada.')
+                else
+                  ...atendimento.historicoStatus.reversed.map((item) {
+                    final anterior =
+                        item.statusAnteriorNomePtBr ??
+                        _statusLabelPorCodigo(
+                          item.statusAnteriorCodigo,
+                          status,
+                        );
+                    final novo =
+                        item.statusNomePtBr ??
+                        _statusLabelPorCodigo(item.statusCodigo, status);
+                    final observacao = item.observacao?.trim() ?? '';
+                    return _detailLongText(
+                      '${_formatarData(item.dataHora)} • $anterior → $novo${observacao.isEmpty ? '' : ' • $observacao'}',
+                    );
+                  }),
+              ],
+              width: twoColumns ? constraints.maxWidth : columnWidth,
             ),
           ],
         );
@@ -2619,34 +2940,63 @@ class _AtendimentosTecnicosListaWebPageState
     );
   }
 
-  Widget _detailSection(String title, List<Widget> children) {
+  Widget _inlineDetailSection(
+    String title,
+    List<Widget> children, {
+    required double width,
+  }) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return AnimatedContainer(
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: tokens.cardBackground,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: tokens.cardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            title,
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: tokens.primaryText,
-              fontWeight: FontWeight.w900,
+    return SizedBox(
+      width: width,
+      child: Container(
+        padding: const EdgeInsets.only(left: 12),
+        decoration: BoxDecoration(
+          border: Border(left: BorderSide(color: tokens.cardBorder, width: 2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: tokens.primaryText,
+                fontWeight: FontWeight.w900,
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          ...children,
-        ],
+            const SizedBox(height: 9),
+            ...children,
+          ],
+        ),
       ),
     );
+  }
+
+  IconData _equipamentoIcon(AtendimentoTecnicoModel atendimento) {
+    final String tipo =
+        atendimento.equipamento?.tipo?.trim().toUpperCase() ?? '';
+    if (tipo.contains('SMARTPHONE') ||
+        tipo.contains('CELULAR') ||
+        tipo.contains('PHONE') ||
+        tipo.contains('IPHONE')) {
+      return Icons.phone_iphone_rounded;
+    }
+    if (tipo.contains('NOTEBOOK') || tipo.contains('LAPTOP')) {
+      return Icons.laptop_mac_rounded;
+    }
+    if (tipo.contains('TABLET')) return Icons.tablet_mac_rounded;
+    if (tipo.contains('IMPRESSORA') || tipo.contains('PRINTER')) {
+      return Icons.print_rounded;
+    }
+    if (tipo.contains('COMPUTADOR') ||
+        tipo == 'PC' ||
+        tipo.contains('DESKTOP')) {
+      return Icons.computer_rounded;
+    }
+    if (tipo.contains('TV') || tipo.contains('TELEVISAO')) {
+      return Icons.tv_rounded;
+    }
+    return Icons.devices_other_outlined;
   }
 
   Widget _detailLine(String label, String value) {
@@ -3113,50 +3463,6 @@ class _AtendimentosTecnicosListaWebPageState
             style: TextStyle(
               color: tokens.primaryText,
               fontWeight: FontWeight.w800,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _metricChip(
-    ThemeData theme,
-    String label,
-    String value,
-    IconData icon, {
-    Color? emphasisColor,
-  }) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Color? destaque = emphasisColor;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: destaque?.withValues(alpha: 0.08) ?? tokens.surfaceMuted,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: destaque?.withValues(alpha: 0.30) ?? tokens.cardBorder,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 14, color: destaque ?? tokens.secondaryText),
-          const SizedBox(width: 6),
-          Text(
-            '$label ',
-            style: TextStyle(
-              color: destaque ?? tokens.secondaryText,
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              color: destaque ?? tokens.primaryText,
-              fontWeight: FontWeight.w900,
               fontSize: 12,
             ),
           ),

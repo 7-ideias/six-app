@@ -1,3 +1,4 @@
+import 'empresa_model.dart';
 import 'recebimento_forma_input.dart';
 
 class AtendimentoTecnicoEquipamentoModel {
@@ -521,6 +522,7 @@ class AtendimentoTecnicoStatusPublicoModel {
     required this.statusI18nKey,
     required this.etapas,
     required this.historicoStatus,
+    this.comercio,
     this.expiraEm,
     this.descricao,
     this.nomeClienteSnapshot,
@@ -541,6 +543,7 @@ class AtendimentoTecnicoStatusPublicoModel {
   final String message;
   final String token;
   final String idUnicoDaEmpresa;
+  final AtendimentoTecnicoComercioPublicoModel? comercio;
   final DateTime? expiraEm;
   final String numero;
   final String? descricao;
@@ -570,6 +573,7 @@ class AtendimentoTecnicoStatusPublicoModel {
       message: json['message']?.toString() ?? '',
       token: json['token']?.toString() ?? '',
       idUnicoDaEmpresa: json['idUnicoDaEmpresa']?.toString() ?? '',
+      comercio: _parseComercio(json['comercio']),
       expiraEm: DateTime.tryParse(json['expiraEm']?.toString() ?? ''),
       numero: json['numero']?.toString() ?? '',
       descricao: json['descricao']?.toString(),
@@ -596,6 +600,11 @@ class AtendimentoTecnicoStatusPublicoModel {
     );
   }
 
+  static AtendimentoTecnicoComercioPublicoModel? _parseComercio(dynamic value) {
+    if (value is! Map<String, dynamic>) return null;
+    return AtendimentoTecnicoComercioPublicoModel.fromJson(value);
+  }
+
   static List<AtendimentoTecnicoStatusPublicoEtapaModel> _parseEtapas(
     dynamic value,
   ) {
@@ -615,6 +624,90 @@ class AtendimentoTecnicoStatusPublicoModel {
         .whereType<Map<String, dynamic>>()
         .map(AtendimentoTecnicoStatusPublicoHistoricoModel.fromJson)
         .toList(growable: false);
+  }
+}
+
+class AtendimentoTecnicoComercioPublicoModel {
+  const AtendimentoTecnicoComercioPublicoModel({
+    this.nomeEmpresa,
+    this.nomeFantasia,
+    this.documentoFiscal,
+    this.tipoDocumentoFiscal,
+    this.telefone,
+    this.whatsapp,
+    this.email,
+    this.site,
+    this.enderecoPublico,
+    this.logoBase64,
+    this.timeZone,
+    this.horariosAtendimento = const <HorarioAtendimentoModel>[],
+  });
+
+  final String? nomeEmpresa;
+  final String? nomeFantasia;
+  final String? documentoFiscal;
+  final String? tipoDocumentoFiscal;
+  final String? telefone;
+  final String? whatsapp;
+  final String? email;
+  final String? site;
+  final String? enderecoPublico;
+  final String? logoBase64;
+  final String? timeZone;
+  final List<HorarioAtendimentoModel> horariosAtendimento;
+
+  factory AtendimentoTecnicoComercioPublicoModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return AtendimentoTecnicoComercioPublicoModel(
+      nomeEmpresa: _optionalString(json['nomeEmpresa']),
+      nomeFantasia: _optionalString(json['nomeFantasia']),
+      documentoFiscal: _optionalString(json['documentoFiscal']),
+      tipoDocumentoFiscal: _optionalString(json['tipoDocumentoFiscal']),
+      telefone: _optionalString(json['telefone']),
+      whatsapp: _optionalString(json['whatsapp']),
+      email: _optionalString(json['email']),
+      site: _optionalString(json['site']),
+      enderecoPublico: _optionalString(json['enderecoPublico']),
+      logoBase64: _optionalString(json['logoBase64']),
+      timeZone: _optionalString(json['timeZone']),
+      horariosAtendimento: _parseHorariosAtendimento(
+        json['horariosAtendimento'],
+      ),
+    );
+  }
+
+  String get nomeExibicao {
+    final String fantasia = nomeFantasia?.trim() ?? '';
+    if (fantasia.isNotEmpty) return fantasia;
+    return nomeEmpresa?.trim() ?? '';
+  }
+
+  bool get possuiInformacaoPublica {
+    return nomeExibicao.isNotEmpty ||
+        (documentoFiscal?.trim().isNotEmpty ?? false) ||
+        (telefone?.trim().isNotEmpty ?? false) ||
+        (whatsapp?.trim().isNotEmpty ?? false) ||
+        (email?.trim().isNotEmpty ?? false) ||
+        (site?.trim().isNotEmpty ?? false) ||
+        (enderecoPublico?.trim().isNotEmpty ?? false) ||
+        (logoBase64?.trim().isNotEmpty ?? false) ||
+        horariosAtendimento.isNotEmpty;
+  }
+
+  static List<HorarioAtendimentoModel> _parseHorariosAtendimento(
+    dynamic value,
+  ) {
+    if (value is! List) return const <HorarioAtendimentoModel>[];
+    return value
+        .whereType<Map<String, dynamic>>()
+        .map(HorarioAtendimentoModel.fromJson)
+        .toList(growable: false);
+  }
+
+  static String? _optionalString(dynamic value) {
+    final String text = value?.toString().trim() ?? '';
+    return text.isEmpty ? null : text;
   }
 }
 
