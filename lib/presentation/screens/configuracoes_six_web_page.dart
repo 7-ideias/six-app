@@ -1219,6 +1219,607 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     );
   }
 
+  Color _paletteForeground(Color color) {
+    return ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+        ? Colors.white
+        : const Color(0xFF0F172A);
+  }
+
+  Widget _buildPaletteExperiencePreview() {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+    final String brandName =
+        _nomeFantasiaController.text.trim().isEmpty
+            ? 'Sua marca aqui'
+            : _nomeFantasiaController.text.trim();
+    final Color primaryFg = _paletteForeground(_corPrimaria);
+    final Color secondaryFg = _paletteForeground(_corSecundaria);
+    final Color successFg = _paletteForeground(_corDestaque);
+    final Color warningFg = _paletteForeground(_corAlerta);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool compact = constraints.maxWidth < 920;
+
+        return Container(
+          width: double.infinity,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: tokens.surfaceMuted,
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: tokens.cardBorder),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: _corPrimaria,
+                  border: Border(bottom: BorderSide(color: tokens.cardBorder)),
+                ),
+                child: Wrap(
+                  spacing: 14,
+                  runSpacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: _corSecundaria,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: primaryFg.withValues(alpha: 0.24),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.storefront_rounded,
+                        color: secondaryFg,
+                        size: 22,
+                      ),
+                    ),
+                    SizedBox(
+                      width: compact ? double.infinity : 300,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            brandName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: primaryFg,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'Balcão de venda • Hoje',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: primaryFg.withValues(alpha: 0.78),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _buildPaletteNavChip(
+                      label: 'Painel',
+                      color: _corSecundaria,
+                      foreground: secondaryFg,
+                      selected: true,
+                    ),
+                    _buildPaletteNavChip(
+                      label: 'Vendas',
+                      color: primaryFg,
+                      foreground: _corPrimaria,
+                    ),
+                    _buildPaletteNavChip(
+                      label: 'Estoque',
+                      color: primaryFg,
+                      foreground: _corPrimaria,
+                    ),
+                    _buildPaletteHeaderStatus(
+                      label: 'Caixa aberto',
+                      color: _corDestaque,
+                      foreground: successFg,
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(18),
+                child:
+                    compact
+                        ? Column(
+                          children: [
+                            _buildPaletteDashboardPreview(),
+                            const SizedBox(height: 16),
+                            _buildPaletteOrderPreview(),
+                          ],
+                        )
+                        : Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: _buildPaletteDashboardPreview()),
+                            const SizedBox(width: 16),
+                            Expanded(child: _buildPaletteOrderPreview()),
+                          ],
+                        ),
+              ),
+              Container(
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  alignment: WrapAlignment.spaceBetween,
+                  children: [
+                    _buildPaletteAlert(
+                      icon: Icons.warning_amber_rounded,
+                      title: '2 itens abaixo do mínimo',
+                      subtitle:
+                          'Estoque mínimo atingido em produtos de alto giro.',
+                      color: _corAlerta,
+                      foreground: warningFg,
+                    ),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () {},
+                          icon: Icon(Icons.tune_rounded, color: _corSecundaria),
+                          label: const Text('Filtrar'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: tokens.primaryText,
+                            side: BorderSide(
+                              color: _corSecundaria.withValues(alpha: 0.38),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 15,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                        ),
+                        FilledButton.icon(
+                          onPressed: () {},
+                          icon: Icon(Icons.add_rounded, color: successFg),
+                          label: const Text('Nova venda'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _corDestaque,
+                            foregroundColor: successFg,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 15,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPaletteDashboardPreview() {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Resumo do dia',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              _buildPaletteTag('Meta 84%', _corDestaque),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _buildPaletteMetric(
+                icon: Icons.point_of_sale_rounded,
+                label: 'Vendas',
+                value: '28',
+                color: _corPrimaria,
+              ),
+              _buildPaletteMetric(
+                icon: Icons.build_circle_outlined,
+                label: 'Assistências',
+                value: '11',
+                color: _corSecundaria,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildPaletteProgressLine('Produtos', 0.78, _corPrimaria),
+          const SizedBox(height: 10),
+          _buildPaletteProgressLine('Serviços', 0.56, _corSecundaria),
+          const SizedBox(height: 10),
+          _buildPaletteProgressLine('Recebidos', 0.88, _corDestaque),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaletteOrderPreview() {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Pedido em andamento',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              _buildPaletteTag('Prioridade', _corAlerta),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _buildPaletteTimelineItem(
+            icon: Icons.check_rounded,
+            title: 'Cliente identificado',
+            subtitle: 'Maria Oliveira',
+            color: _corDestaque,
+          ),
+          _buildPaletteTimelineItem(
+            icon: Icons.shopping_bag_outlined,
+            title: 'Itens no carrinho',
+            subtitle: '3 produtos • 1 serviço',
+            color: _corPrimaria,
+          ),
+          _buildPaletteTimelineItem(
+            icon: Icons.credit_card_rounded,
+            title: 'Pagamento',
+            subtitle: 'Aguardando confirmação',
+            color: _corAlerta,
+            isLast: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaletteNavChip({
+    required String label,
+    required Color color,
+    required Color foreground,
+    bool selected = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+      decoration: BoxDecoration(
+        color:
+            selected
+                ? color
+                : Color.alphaBlend(
+                  foreground.withValues(alpha: 0.12),
+                  Colors.transparent,
+                ),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: foreground.withValues(alpha: 0.22)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: selected ? foreground : color,
+          fontWeight: FontWeight.w800,
+          fontSize: 13,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaletteHeaderStatus({
+    required String label,
+    required Color color,
+    required Color foreground,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: foreground,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              color: foreground,
+              fontWeight: FontWeight.w900,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaletteMetric({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+
+    return Container(
+      width: 150,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Color.alphaBlend(
+          color.withValues(alpha: 0.10),
+          tokens.surfaceMuted,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: tokens.secondaryText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaletteProgressLine(String label, double value, Color color) {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+
+    return Row(
+      children: [
+        SizedBox(
+          width: 82,
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: tokens.secondaryText,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: value,
+              minHeight: 9,
+              backgroundColor: tokens.surfaceMuted,
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPaletteTag(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: Color.alphaBlend(
+          color.withValues(alpha: 0.14),
+          Theme.of(context).colorScheme.surface,
+        ),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.26)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w900,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaletteTimelineItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    bool isLast = false,
+  }) {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: Color.alphaBlend(
+                    color.withValues(alpha: 0.14),
+                    tokens.surfaceMuted,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              if (!isLast)
+                Container(
+                  width: 2,
+                  height: 22,
+                  margin: const EdgeInsets.only(top: 6),
+                  color: tokens.cardBorder,
+                ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: tokens.secondaryText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaletteAlert({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required Color foreground,
+  }) {
+    final theme = Theme.of(context);
+
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 460),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: foreground, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: foreground,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: foreground.withValues(alpha: 0.82),
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildResumoSidebarCollapsed() {
     final tokens = WebThemeTokens.of(context);
 
@@ -1999,126 +2600,133 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   Widget _buildFloatingActions() {
     final theme = Theme.of(context);
     final tokens = WebThemeTokens.of(context);
+    final bool salvando =
+        _carregandoAparencia || _carregandoDadosEmpresa || _selecionandoLogo;
+    final bool compact = MediaQuery.of(context).size.width < 760;
 
-    Widget secondaryAction({
-      required IconData icon,
-      required String tooltip,
-      required VoidCallback onPressed,
-    }) {
-      return Tooltip(
-        message: tooltip,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: onPressed,
-            child: Ink(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: tokens.surfaceElevated,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: tokens.cardBorder, width: 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.10),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Icon(icon, color: tokens.info, size: 22),
-            ),
+    Widget statusBadge() {
+      final bool pendente = _possuiAlteracoesNaoSalvas;
+      final Color color = pendente ? tokens.warning : tokens.success;
+
+      return Container(
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: Color.alphaBlend(
+            color.withValues(alpha: 0.12),
+            tokens.surfaceElevated,
           ),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: 0.28)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              pendente ? 'Alterações pendentes' : 'Tudo salvo',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: tokens.primaryText,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ),
       );
     }
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
+      borderRadius: BorderRadius.circular(999),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: tokens.surface.withValues(alpha: 0.92),
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(999),
             border: Border.all(color: tokens.cardBorder, width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
+                color: Colors.black.withValues(alpha: 0.10),
                 blurRadius: 24,
                 offset: const Offset(0, 10),
               ),
             ],
           ),
-          child: Column(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (!compact) ...[statusBadge(), const SizedBox(width: 8)],
               if (widget.embedded && widget.onBack != null) ...[
-                secondaryAction(
-                  icon: Icons.arrow_back_rounded,
-                  tooltip: 'Voltar',
-                  onPressed: widget.onBack!,
+                OutlinedButton.icon(
+                  onPressed: widget.onBack,
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  label: const Text('Fechar'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: tokens.primaryText,
+                    side: BorderSide(color: tokens.cardBorder),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
+                    shape: const StadiumBorder(),
+                  ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(width: 8),
               ],
-              secondaryAction(
-                icon: Icons.restart_alt_rounded,
-                tooltip: 'Restaurar padrão',
-                onPressed: _restaurarPadraoDaSecao,
+              Tooltip(
+                message: 'Restaurar valores padrão da seção atual',
+                child: OutlinedButton(
+                  onPressed: _restaurarPadraoDaSecao,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: tokens.info,
+                    side: BorderSide(color: tokens.cardBorder),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compact ? 12 : 14,
+                      vertical: 14,
+                    ),
+                    shape: const StadiumBorder(),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.restart_alt_rounded, size: 18),
+                      if (!compact) ...[
+                        const SizedBox(width: 8),
+                        const Text('Restaurar'),
+                      ],
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 14),
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(20),
-                  onTap:
-                      (_carregandoAparencia ||
-                              _carregandoDadosEmpresa ||
-                              _selecionandoLogo)
-                          ? null
-                          : _salvarConfiguracoes,
-                  child: Ink(
-                    height: 56,
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: theme.colorScheme.primary.withValues(
-                          alpha: 0.42,
-                        ),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.28,
-                          ),
-                          blurRadius: 18,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.save_rounded,
-                          color: theme.colorScheme.onPrimary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Salvar',
-                          style: TextStyle(
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: salvando ? null : _salvarConfiguracoes,
+                icon:
+                    salvando
+                        ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
                             color: theme.colorScheme.onPrimary,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
                           ),
-                        ),
-                      ],
-                    ),
+                        )
+                        : const Icon(Icons.save_outlined, size: 18),
+                label: Text(salvando ? 'Salvando...' : 'Salvar'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                  shape: const StadiumBorder(),
+                  textStyle: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
@@ -2950,66 +3558,73 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           title: 'Paleta do sistema',
           subtitle:
               'Essas cores serão úteis para branding do comércio, dashboards e futura personalização premium.',
-          child: Wrap(
-            spacing: 16,
-            runSpacing: 16,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                width: 320,
-                child: _buildColorSelector(
-                  label: 'Cor primária',
-                  color: _corPrimaria,
-                  onColorSelected: (valor) {
-                    setState(() {
-                      _corPrimaria = valor;
-                    });
-                    _aplicarAparenciaPreview();
-                    _marcarAlteracao();
-                  },
-                ),
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  SizedBox(
+                    width: 320,
+                    child: _buildColorSelector(
+                      label: 'Cor primária',
+                      color: _corPrimaria,
+                      onColorSelected: (valor) {
+                        setState(() {
+                          _corPrimaria = valor;
+                        });
+                        _aplicarAparenciaPreview();
+                        _marcarAlteracao();
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 320,
+                    child: _buildColorSelector(
+                      label: 'Cor secundária',
+                      color: _corSecundaria,
+                      onColorSelected: (valor) {
+                        setState(() {
+                          _corSecundaria = valor;
+                        });
+                        _aplicarAparenciaPreview();
+                        _marcarAlteracao();
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 320,
+                    child: _buildColorSelector(
+                      label: 'Cor de destaque',
+                      color: _corDestaque,
+                      onColorSelected: (valor) {
+                        setState(() {
+                          _corDestaque = valor;
+                        });
+                        _aplicarAparenciaPreview();
+                        _marcarAlteracao();
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 320,
+                    child: _buildColorSelector(
+                      label: 'Cor de alerta',
+                      color: _corAlerta,
+                      onColorSelected: (valor) {
+                        setState(() {
+                          _corAlerta = valor;
+                        });
+                        _aplicarAparenciaPreview();
+                        _marcarAlteracao();
+                      },
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(
-                width: 320,
-                child: _buildColorSelector(
-                  label: 'Cor secundária',
-                  color: _corSecundaria,
-                  onColorSelected: (valor) {
-                    setState(() {
-                      _corSecundaria = valor;
-                    });
-                    _aplicarAparenciaPreview();
-                    _marcarAlteracao();
-                  },
-                ),
-              ),
-              SizedBox(
-                width: 320,
-                child: _buildColorSelector(
-                  label: 'Cor de destaque',
-                  color: _corDestaque,
-                  onColorSelected: (valor) {
-                    setState(() {
-                      _corDestaque = valor;
-                    });
-                    _aplicarAparenciaPreview();
-                    _marcarAlteracao();
-                  },
-                ),
-              ),
-              SizedBox(
-                width: 320,
-                child: _buildColorSelector(
-                  label: 'Cor de alerta',
-                  color: _corAlerta,
-                  onColorSelected: (valor) {
-                    setState(() {
-                      _corAlerta = valor;
-                    });
-                    _aplicarAparenciaPreview();
-                    _marcarAlteracao();
-                  },
-                ),
-              ),
+              const SizedBox(height: 22),
+              _buildPaletteExperiencePreview(),
             ],
           ),
         ),
