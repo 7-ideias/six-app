@@ -5,7 +5,6 @@ import 'package:sixpos/data/models/operacao_models.dart';
 import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
 import 'package:sixpos/domain/services/operacao/operacao_service.dart';
 import 'package:sixpos/l10n/app_localizations.dart';
-import 'package:sixpos/top_navigation_bar_web.dart';
 
 class RecebimentoPagamentoSelecaoResultado {
   const RecebimentoPagamentoSelecaoResultado({
@@ -1277,45 +1276,11 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
     }
 
     return Scaffold(
-      appBar: TopNavigationBarWeb(
-        items: const <TopNavItemData>[
-          TopNavItemData(
-            title: 'Início',
-            subItems: <String>[
-              'Preferências do Sistema',
-              'Painel Administrativo',
-            ],
-          ),
-          TopNavItemData(
-            title: 'Permitir',
-            subItems: <String>['Gerenciar Permissões', 'Alterar Configurações'],
-          ),
-          TopNavItemData(
-            title: 'Cadastros',
-            subItems: <String>['Clientes', 'Produtos', 'Fornecedores'],
-          ),
-          TopNavItemData(
-            title: 'Relatórios',
-            subItems: <String>['Vendas', 'Estoque', 'Financeiro'],
-          ),
-          TopNavItemData(
-            title: 'Executar',
-            subItems: <String>['Processar Pagamentos', 'Fechar Caixa'],
-          ),
-          TopNavItemData(
-            title: 'Configurações',
-            subItems: <String>['Sistema', 'Usuários'],
-          ),
-          TopNavItemData(
-            title: 'Automações',
-            subItems: <String>['Tarefas Agendadas'],
-          ),
-          TopNavItemData(
-            title: 'Ajuda',
-            subItems: <String>['Suporte', 'Sobre'],
-          ),
-        ],
-        onNotificationPressed: () {},
+      appBar: AppBar(
+        title: Text(
+          AppLocalizations.of(context)?.pdvWebPaymentOverlayTitle ??
+              'Recebimento',
+        ),
       ),
       body: Padding(padding: const EdgeInsets.all(16), child: conteudo),
     );

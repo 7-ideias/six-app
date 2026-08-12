@@ -19,6 +19,9 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   bool _loading = false;
   String? _erro;
   String? _idUnicoDoUsuarioCarregado;
+  String _tipoPerfilUsuario = 'DESCONHECIDO';
+  bool _ehAdministrador = false;
+  bool _autorizacoesCarregadasComSucesso = false;
 
   ColaboradorAutorizacoesModel get autorizacoes =>
       _autorizacoes ?? ColaboradorAutorizacoesModel.permitirTudo();
@@ -26,6 +29,10 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   bool get loading => _loading;
   String? get erro => _erro;
   String? get idUnicoDoUsuarioCarregado => _idUnicoDoUsuarioCarregado;
+  String get tipoPerfilUsuario => _tipoPerfilUsuario;
+  bool get ehAdministrador => _ehAdministrador;
+  bool get autorizacoesCarregadasComSucesso =>
+      _autorizacoesCarregadasComSucesso;
 
   bool get podeFazerVenda => autorizacoes.objVendasPode.fazVenda;
   bool get podeLancarAssistenciaTecnica =>
@@ -39,16 +46,26 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       podeCadastrarProduto || podeEditarProduto || podeVerEstoqueDeProduto;
   bool get podeGerarRelatorio =>
       autorizacoes.objRelatoriosPode.geraRelatorioDeVendas;
+  bool get podeReceberNoCaixa =>
+      autorizacoes.objLancamentosFinanceirosPode.podeReceberNoCaixa;
+  bool get podeVerQuantoVendeu =>
+      autorizacoes.objLancamentosFinanceirosPode.podeVerQuantoVendeu;
   bool get podeAcessarFinanceiro =>
       autorizacoes.objLancamentosFinanceirosPode.podeReceberNoCaixa ||
       autorizacoes.objLancamentosFinanceirosPode.podeVerQuantoVendeu;
 
   Future<void> carregarAutorizacoesDoUsuarioLogado({bool force = false}) async {
     final String? idUnicoDoUsuario = await _authService.getUserId();
+    final String tipoPerfilUsuario = await _authService.getUserProfileType();
+    final bool perfilAdmin = tipoPerfilUsuario == 'ADMIN';
+    _tipoPerfilUsuario = tipoPerfilUsuario;
+    _ehAdministrador = perfilAdmin;
+
     if (idUnicoDoUsuario == null || idUnicoDoUsuario.trim().isEmpty) {
       _autorizacoes = ColaboradorAutorizacoesModel.permitirTudo();
       _idUnicoDoUsuarioCarregado = null;
       _erro = null;
+      _autorizacoesCarregadasComSucesso = perfilAdmin;
       notifyListeners();
       return;
     }
@@ -73,14 +90,18 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       final ColaboradorAutorizacoesModel carregadas =
           ColaboradorAutorizacoesModel.fromJson(autorizacoesJson);
 
+      final bool administradorSemVinculo = _deveAssumirAdministradorSemVinculo(
+        detalhe: detalhe,
+        autorizacoes: carregadas,
+      );
+
+      _ehAdministrador = perfilAdmin || administradorSemVinculo;
       _autorizacoes =
-          _deveAssumirAdministradorSemVinculo(
-                detalhe: detalhe,
-                autorizacoes: carregadas,
-              )
+          _ehAdministrador
               ? ColaboradorAutorizacoesModel.permitirTudo()
               : carregadas;
       _idUnicoDoUsuarioCarregado = idUnicoDoUsuario;
+      _autorizacoesCarregadasComSucesso = true;
     } catch (e) {
       _erro = e.toString();
       _autorizacoes ??= ColaboradorAutorizacoesModel.permitirTudo();
@@ -95,6 +116,9 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     _loading = false;
     _erro = null;
     _idUnicoDoUsuarioCarregado = null;
+    _tipoPerfilUsuario = 'DESCONHECIDO';
+    _ehAdministrador = false;
+    _autorizacoesCarregadasComSucesso = false;
     notifyListeners();
   }
 

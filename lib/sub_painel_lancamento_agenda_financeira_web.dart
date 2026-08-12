@@ -1,16 +1,93 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:sixpos/data/models/caixa_models.dart';
 import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
-import 'package:sixpos/design_system/components/web/sub_painel_web_general.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
-class SubPainelLancamentoAgendaFinanceiraWeb extends SubPainelWebGeneral {
+class SubPainelLancamentoAgendaFinanceiraWeb extends StatelessWidget {
   const SubPainelLancamentoAgendaFinanceiraWeb({
     super.key,
-    required super.body,
-    required super.textoDaAppBar,
+    required this.body,
+    required this.textoDaAppBar,
   });
+
+  final Widget body;
+  final String textoDaAppBar;
+
+  void _fecharSubPainel(BuildContext context) {
+    final NavigatorState navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = WebThemeTokens.applyTo(Theme.of(context));
+    final WebThemeTokens tokens = WebThemeTokens.resolve(theme);
+    return Theme(
+      data: theme,
+      child: CallbackShortcuts(
+        bindings: <ShortcutActivator, VoidCallback>{
+          const SingleActivator(LogicalKeyboardKey.escape):
+              () => _fecharSubPainel(context),
+        },
+        child: Focus(
+          autofocus: true,
+          child: Center(
+            child: AnimatedContainer(
+              duration: WebThemeTokens.transitionDuration,
+              curve: WebThemeTokens.transitionCurve,
+              width: MediaQuery.of(context).size.width * 0.9,
+              height: MediaQuery.of(context).size.height * 0.9,
+              decoration: BoxDecoration(
+                color: tokens.surfaceElevated,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: tokens.cardBorder),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: theme.colorScheme.shadow.withValues(alpha: 0.18),
+                    blurRadius: 34,
+                    offset: const Offset(0, 18),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Scaffold(
+                backgroundColor: tokens.workspaceBackground,
+                appBar: AppBar(
+                  titleSpacing: 22,
+                  title: Text(
+                    textoDaAppBar,
+                    style: TextStyle(
+                      color: tokens.primaryText,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  backgroundColor: tokens.surfaceMuted,
+                  foregroundColor: tokens.primaryText,
+                  surfaceTintColor: Colors.transparent,
+                  elevation: 0,
+                  shape: Border(bottom: BorderSide(color: tokens.cardBorder)),
+                  actions: <Widget>[
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => _fecharSubPainel(context),
+                      tooltip: 'Fechar',
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ),
+                body: body,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
@@ -22,6 +99,9 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
 }) {
   return showDialog<Map<String, dynamic>>(
     context: context,
+    barrierColor: WebThemeTokens.of(
+      context,
+    ).workspaceBackground.withValues(alpha: 0.72),
     barrierDismissible: true,
     builder: (BuildContext dialogContext) {
       return SubPainelLancamentoAgendaFinanceiraWeb(
@@ -662,8 +742,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
           context: context,
           barrierDismissible: false,
           builder: (BuildContext dialogContext) {
-            final ColorScheme colorScheme = Theme.of(dialogContext).colorScheme;
+            final WebThemeTokens tokens = WebThemeTokens.of(dialogContext);
             return AlertDialog(
+              backgroundColor: tokens.surfaceElevated,
+              surfaceTintColor: Colors.transparent,
               title: const Text('Excluir lançamento?'),
               content: const Text(
                 'Esta ação vai apagar de forma definitiva este lançamento financeiro. Essa operação não pode ser desfeita.',
@@ -678,8 +760,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   icon: const Icon(Icons.delete_forever_outlined),
                   label: const Text('Excluir/apagar'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: colorScheme.error,
-                    foregroundColor: colorScheme.onError,
+                    backgroundColor: tokens.danger,
+                    foregroundColor:
+                        Theme.of(dialogContext).colorScheme.onError,
                   ),
                 ),
               ],
@@ -728,31 +811,29 @@ class _LancamentoAgendaFinanceiraWebBodyState
     IconData? icon,
     Widget? suffixIcon,
   }) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return InputDecoration(
       labelText: label,
       hintText: hintText,
       prefixIcon: icon == null ? null : Icon(icon, size: 20),
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: colorScheme.surface,
+      fillColor: tokens.inputBackground,
+      labelStyle: TextStyle(color: tokens.secondaryText),
+      hintStyle: TextStyle(color: tokens.mutedText),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(
-          color: colorScheme.outline.withValues(alpha: 0.22),
-        ),
+        borderSide: BorderSide(color: tokens.cardBorder),
       ),
       disabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(
-          color: colorScheme.outline.withValues(alpha: 0.14),
-        ),
+        borderSide: BorderSide(color: tokens.disabledBackground),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
+        borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
       ),
     );
   }
@@ -849,28 +930,24 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   Widget _buildAvisoLancamentoConfirmado() {
     if (!_bloquearTipoStatus) return const SizedBox.shrink();
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: colorScheme.primary.withValues(alpha: 0.08),
+        color: tokens.selectedBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.22)),
+        border: Border.all(color: tokens.selectedBorder),
       ),
       child: Row(
         children: <Widget>[
-          Icon(
-            Icons.lock_outline_rounded,
-            color: colorScheme.primary,
-            size: 20,
-          ),
+          Icon(Icons.lock_outline_rounded, color: tokens.info, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               'Este lançamento já foi confirmado em sua totalidade. Tipo, status e marcação de quitação ficam bloqueados para evitar inconsistência financeira.',
               style: TextStyle(
-                color: colorScheme.onSurface,
+                color: tokens.primaryText,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -890,17 +967,18 @@ class _LancamentoAgendaFinanceiraWebBodyState
     required IconData icon,
     required Widget child,
   }) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
+        border: Border.all(color: tokens.cardBorder),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.04),
+            color: theme.colorScheme.shadow.withValues(alpha: 0.04),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -916,10 +994,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.10),
+                  color: tokens.selectedBackground,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: colorScheme.primary),
+                child: Icon(icon, color: tokens.info),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -928,7 +1006,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   children: <Widget>[
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
+                        color: tokens.primaryText,
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
                       ),
@@ -938,7 +1017,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                       subtitle,
                       style: TextStyle(
                         fontSize: 13,
-                        color: colorScheme.onSurface.withValues(alpha: 0.66),
+                        color: tokens.secondaryText,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -955,18 +1034,19 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   Widget _buildHeader() {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool isReceber = _tipoSelecionado == 'Receber';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
+        border: Border.all(color: tokens.cardBorder),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.05),
+            color: theme.colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 22,
             offset: const Offset(0, 10),
           ),
@@ -979,14 +1059,14 @@ class _LancamentoAgendaFinanceiraWebBodyState
             width: 54,
             height: 54,
             decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.10),
+              color: tokens.selectedBackground,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Icon(
               widget.modoEdicao
                   ? Icons.edit_note_rounded
                   : Icons.add_card_rounded,
-              color: colorScheme.primary,
+              color: tokens.info,
               size: 28,
             ),
           ),
@@ -999,7 +1079,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   widget.modoEdicao
                       ? 'Editar lançamento financeiro'
                       : 'Novo lançamento financeiro',
-                  style: const TextStyle(
+                  style: TextStyle(
+                    color: tokens.primaryText,
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
                   ),
@@ -1008,7 +1089,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                 Text(
                   'Organize vencimento, classificação e contato sem alterar o fluxo da Agenda Financeira.',
                   style: TextStyle(
-                    color: colorScheme.onSurface.withValues(alpha: 0.68),
+                    color: tokens.secondaryText,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1043,23 +1124,23 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   Widget _buildHeaderChip({required IconData icon, required String label}) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: colorScheme.primary.withValues(alpha: 0.07),
+        color: tokens.selectedBackground,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.10)),
+        border: Border.all(color: tokens.selectedBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 16, color: colorScheme.primary),
+          Icon(icon, size: 16, color: tokens.info),
           const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
-              color: colorScheme.primary,
+              color: tokens.info,
               fontSize: 12,
               fontWeight: FontWeight.w800,
             ),
@@ -1070,17 +1151,18 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   Widget _buildActionsBar() {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
+        border: Border.all(color: tokens.cardBorder),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.04),
+            color: theme.colorScheme.shadow.withValues(alpha: 0.04),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -1092,11 +1174,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
           final Widget copy = Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(
-                Icons.fact_check_outlined,
-                color: colorScheme.primary,
-                size: 22,
-              ),
+              Icon(Icons.fact_check_outlined, color: tokens.info, size: 22),
               const SizedBox(width: 12),
               const Flexible(
                 child: Text(
@@ -1117,8 +1195,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   icon: const Icon(Icons.delete_outline_rounded),
                   label: const Text('Excluir/apagar'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: colorScheme.error,
-                    side: BorderSide(color: colorScheme.error),
+                    foregroundColor: tokens.danger,
+                    side: BorderSide(color: tokens.danger),
                   ),
                 ),
               OutlinedButton(
@@ -1167,22 +1245,16 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   Widget _buildConfirmationCard() {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color:
-            _statusQuitada
-                ? colorScheme.primary.withValues(alpha: 0.08)
-                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.42),
+        color: _statusQuitada ? tokens.selectedBackground : tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color:
-              _statusQuitada
-                  ? colorScheme.primary.withValues(alpha: 0.22)
-                  : colorScheme.outline.withValues(alpha: 0.12),
+          color: _statusQuitada ? tokens.selectedBorder : tokens.cardBorder,
         ),
       ),
       child: Wrap(
@@ -1223,7 +1295,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   ? 'Este lançamento já foi confirmado e mantém tipo, status e quitação bloqueados.'
                   : 'Use esta opção apenas quando o lançamento já nasceu quitado.',
               style: TextStyle(
-                color: colorScheme.onSurface.withValues(alpha: 0.72),
+                color: tokens.secondaryText,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1598,8 +1670,7 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
     final RenderBox overlay =
         Overlay.of(context).context.findRenderObject()! as RenderBox;
     final Offset position = box.localToGlobal(Offset.zero, ancestor: overlay);
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final String safeValue = _safeValue;
 
     final String? selected = await showMenu<String>(
@@ -1615,7 +1686,7 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       elevation: 12,
-      color: colorScheme.surface,
+      color: tokens.menuBackground,
       constraints: BoxConstraints.tightFor(width: box.size.width),
       items:
           widget.items
@@ -1630,7 +1701,6 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
                   child: _SixWebSelectMenuItem(
                     label: item,
                     selected: item == safeValue,
-                    colorScheme: colorScheme,
                   ),
                 ),
               )
@@ -1647,18 +1717,14 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool active = widget.enabled && (_open || _hover);
     final Color borderColor =
-        active
-            ? colorScheme.primary.withValues(alpha: 0.42)
-            : colorScheme.outline.withValues(alpha: 0.22);
+        active ? tokens.selectedBorder : tokens.cardBorder;
     final Color backgroundColor =
         widget.enabled
-            ? (active
-                ? colorScheme.primary.withValues(alpha: 0.05)
-                : colorScheme.surface)
-            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.34);
+            ? (active ? tokens.selectedBackground : tokens.inputBackground)
+            : tokens.disabledBackground;
 
     return Semantics(
       button: true,
@@ -1696,9 +1762,7 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
                       active
                           ? <BoxShadow>[
                             BoxShadow(
-                              color: colorScheme.primary.withValues(
-                                alpha: 0.10,
-                              ),
+                              color: tokens.info.withValues(alpha: 0.10),
                               blurRadius: 18,
                               offset: const Offset(0, 8),
                             ),
@@ -1712,8 +1776,8 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
                       size: 20,
                       color:
                           widget.enabled
-                              ? colorScheme.primary
-                              : colorScheme.onSurfaceVariant,
+                              ? tokens.info
+                              : tokens.disabledForeground,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -1726,7 +1790,7 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
+                              color: tokens.secondaryText,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -1736,7 +1800,10 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurface,
+                              color:
+                                  widget.enabled
+                                      ? tokens.primaryText
+                                      : tokens.disabledForeground,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -1754,10 +1821,7 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
                       curve: Curves.easeOutCubic,
                       child: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color:
-                            active
-                                ? colorScheme.primary
-                                : colorScheme.onSurfaceVariant,
+                        color: active ? tokens.info : tokens.mutedText,
                         size: 20,
                       ),
                     ),
@@ -1773,36 +1837,26 @@ class _SixWebSelectFieldState extends State<_SixWebSelectField> {
 }
 
 class _SixWebSelectMenuItem extends StatelessWidget {
-  const _SixWebSelectMenuItem({
-    required this.label,
-    required this.selected,
-    required this.colorScheme,
-  });
+  const _SixWebSelectMenuItem({required this.label, required this.selected});
 
   final String label;
   final bool selected;
-  final ColorScheme colorScheme;
 
   @override
   Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
-        color:
-            selected
-                ? colorScheme.primary.withValues(alpha: 0.08)
-                : Colors.transparent,
+        color: selected ? tokens.selectedBackground : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: <Widget>[
           Icon(
             selected ? Icons.check_circle_rounded : Icons.arrow_right_rounded,
-            color:
-                selected
-                    ? colorScheme.primary
-                    : colorScheme.primary.withValues(alpha: 0.78),
+            color: selected ? tokens.info : tokens.mutedText,
             size: 18,
           ),
           const SizedBox(width: 10),
@@ -1812,7 +1866,7 @@ class _SixWebSelectMenuItem extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: colorScheme.onSurface,
+                color: tokens.primaryText,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
               ),
             ),

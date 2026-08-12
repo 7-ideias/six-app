@@ -1,13 +1,11 @@
 import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:sixpos/sub_painel_cadastro_cliente.dart';
 import 'package:sixpos/sub_painel_cadastro_colaborador.dart';
-import 'package:sixpos/sub_painel_cadastro_produto.dart';
-import 'package:sixpos/sub_painel_configuracoes.dart';
 import 'package:flutter/material.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 
 import '../../data/models/produto_model.dart';
 import '../../mock_cadastros_store.dart';
-import '../../top_navigation_bar_web.dart';
 
 class OrcamentoWeb extends StatefulWidget {
   const OrcamentoWeb({super.key, this.embedded = false, this.onBack});
@@ -800,44 +798,6 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
     );
   }
 
-  List<TopNavItemData> _navItems() {
-    return <TopNavItemData>[
-      TopNavItemData(
-        title: 'Início',
-        subItems: const <String>['Preferências do Sistema', 'Painel Administrativo'],
-        onSelect: (String value) {
-          if (value == 'Painel Administrativo') {
-            showSubPainelConfiguracoes(context, 'Configurações');
-          }
-        },
-      ),
-      const TopNavItemData(title: 'Permitir', subItems: <String>['Gerenciar Permissões', 'Alterar Configurações']),
-      TopNavItemData(
-        title: 'Cadastros',
-        subItems: const <String>['Clientes', 'Colaboradores', 'Produtos', 'Produtos List'],
-        onSelect: (String value) {
-          if (value == 'Clientes') {
-            showSubPainelCadastroCliente(context, 'Cadastro de Clientes');
-          }
-          if (value == 'Colaboradores') {
-            showSubPainelCadastroColaborador(context, 'Cadastro de Colaboradores');
-          }
-          if (value == 'Produtos') {
-            showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
-          }
-          if (value == 'Produtos List') {
-            _abrirSelecaoProdutoWeb();
-          }
-        },
-      ),
-      const TopNavItemData(title: 'Relatórios', subItems: <String>['Vendas', 'Estoque', 'Financeiro']),
-      const TopNavItemData(title: 'Executar', subItems: <String>['Processar Pagamentos', 'Fechar Caixa']),
-      const TopNavItemData(title: 'Configurações', subItems: <String>['Sistema', 'Usuários']),
-      const TopNavItemData(title: 'Automações', subItems: <String>['Tarefas Agendadas']),
-      const TopNavItemData(title: 'Ajuda', subItems: <String>['Suporte', 'Sobre']),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = <Widget>[_stepCliente(), _stepEquipamento(), _stepDiagnostico(), _stepItens(), _stepCondicoes()];
@@ -884,10 +844,6 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
       );
     }
 
-    return Scaffold(
-      appBar: TopNavigationBarWeb(items: _navItems(), onNotificationPressed: () {}),
-      body: body,
-    );
+    return Scaffold(appBar: AppBar(title: Text(context.t('web.standalone.quote', fallback: 'Orçamento'))), body: body);
   }
 }
-

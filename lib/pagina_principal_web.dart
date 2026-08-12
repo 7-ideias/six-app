@@ -1,25 +1,39 @@
 import 'dart:async';
 
-import 'package:sixpos/presentation/components/dashboard_inicio_web.dart';
+import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_button.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_panel.dart';
+import 'package:sixpos/presentation/components/user_profile_avatar_image.dart';
+import 'package:sixpos/presentation/layouts/authenticated_web_shell.dart';
+import 'package:sixpos/presentation/navigation/web_navigation_destination_mapper.dart';
+import 'package:sixpos/presentation/navigation/modulo_central_pdv.dart';
+import 'package:sixpos/presentation/navigation/pagina_principal_web_navigation_actions.dart';
+import 'package:sixpos/presentation/navigation/web_navigation_destination_resolver.dart';
+import 'package:sixpos/presentation/navigation/web_navigation_item.dart';
+import 'package:sixpos/presentation/navigation/web_navigation_permission_adapter.dart';
+import 'package:sixpos/presentation/navigation/web_navigation_registry.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_web.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
+import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_web_page.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/configuracoes_six_web_page.dart';
+import 'package:sixpos/presentation/screens/desempenho_colaborador_web_page.dart';
+import 'package:sixpos/presentation/screens/estoque_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/meu_perfil_web_screen.dart';
 import 'package:sixpos/presentation/screens/operacoes_caixa_web_page.dart';
 import 'package:sixpos/presentation/screens/ordem_servico_web.dart';
 import 'package:sixpos/presentation/screens/pdv_cliente_identificacao_dialog.dart';
 import 'package:sixpos/presentation/screens/pdv_page_web_orcamento.dart';
+import 'package:sixpos/presentation/screens/produto_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_web_page.dart';
 import 'package:sixpos/presentation/screens/recebimento_pagamento_web.dart';
-import 'package:sixpos/sub_painel_cadastro_cliente.dart';
+import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
+import 'package:sixpos/presentation/screens/workspace_home_web.dart';
+import 'package:sixpos/presentation/theme/web_pdv_theme.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/sub_painel_cadastro_produto.dart';
-import 'package:sixpos/sub_painel_configuracoes.dart';
 import 'package:sixpos/domain/models/pdv_visual_theme.dart';
-import 'package:sixpos/domain/services/aparencia/pdv_visual_theme_resolver.dart';
 import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -29,13 +43,13 @@ import 'package:sixpos/l10n/six_i18n.dart';
 
 import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'package:sixpos/l10n/app_localizations.dart';
-import 'package:sixpos/sub_painel_cadastro_colaborador.dart';
 
 import 'data/models/cliente_usuario_model.dart';
 import 'data/models/caixa_models.dart';
 import 'data/models/produto_model.dart';
 import 'data/models/operacao_models.dart';
 import 'data/models/streak_models.dart';
+import 'core/config/app_config.dart';
 import 'core/di/caixa_module.dart';
 import 'core/di/operacao_module.dart';
 import 'core/services/auth_service.dart';
@@ -45,8 +59,10 @@ import 'design_system/themes/zebra_list_item.dart';
 import 'domain/services/caixa/caixa_service.dart';
 import 'domain/services/operacao/operacao_service.dart';
 import 'providers/locale_settings_provider.dart';
+import 'providers/colaborador_autorizacoes_provider.dart';
+import 'providers/empresa_provider.dart';
 import 'providers/streak_provider.dart';
-import 'top_navigation_bar_web.dart';
+import 'providers/usuario_provider.dart';
 
 part 'pdv_page_web_cockpit_section.dart';
 part 'presentation/screens/pdv_web.dart';
@@ -58,25 +74,11 @@ class PaginaPrincipalWeb extends StatefulWidget {
   State<PaginaPrincipalWeb> createState() => _PaginaPrincipalWebState();
 }
 
-enum ModuloCentralPDV {
-  seletor,
-  cockpit,
-  vendas,
-  recebimento,
-  clientesList,
-  colaboradoresList,
-  orcamento,
-  operacoesCaixa,
-  ordemServico,
-  agendaFinanceira,
-  atendimentoTecnico,
-  categorias,
-  configuracoes,
-}
-
 enum StatusComunicacaoBackend { conectando, conectado, desconectado }
 
 enum _PdvItemVisualFeedback { itemAdded, quantityIncreased, quantityDecreased }
+
+enum _WebHeaderUserAction { profile, logout }
 
 class _PdvItemMutationResult {
   const _PdvItemMutationResult({
@@ -100,6 +102,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
   late final AnimationController _iaPulseController;
   late final Animation<double> _iaPulseAnimation;
+  bool _assistenteIAMinimizado = false;
 
   late final AnimationController _bellAnimationController;
   late final Animation<double> _bellRotationAnimation;
@@ -109,6 +112,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
   final OperacaoService _operacaoService = OperacaoModule.operacaoService;
   final CaixaService _caixaService = CaixaModule.caixaService;
+
+  late final WebNavigationDestinationResolver _webNavigationResolver;
 
   ModuloCentralPDV _moduloAtual = ModuloCentralPDV.seletor;
   ModuloCentralPDV? _moduloRetornoOperacoesCaixa;
@@ -158,12 +163,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return;
     }
 
-    setState(() {
-      _pdvTheme = PdvVisualThemeResolver.resolve(
-        _themeResolver.paleta,
-        tema: _themeResolver.tema,
-      );
-    });
+    setState(() {});
   }
 
   // void _limparFiltrosCockpit() {
@@ -232,6 +232,14 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   void initState() {
     super.initState();
 
+    _webNavigationResolver = WebNavigationDestinationResolver(
+      actions: PaginaPrincipalWebNavigationActions(
+        abrirModuloCentral: _abrirModuloCentralPelaNavegacaoWeb,
+        abrirFrenteCaixa: _iniciarVenda,
+        abrirCaixa: () => _abrirOperacoesCaixa(),
+      ),
+    );
+
     _iaPulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
@@ -243,10 +251,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
     _iaPulseController.repeat(reverse: true);
 
-    _pdvTheme = PdvVisualThemeResolver.resolve(
-      _themeResolver.paleta,
-      tema: _themeResolver.tema,
-    );
+    _pdvTheme = PdvVisualTheme.defaultTheme();
     _themeResolver.addListener(_onThemeChanged);
     _atualizarCamposDerivados();
 
@@ -439,14 +444,14 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     }
   }
 
-  Color _corStatusBackend() {
+  Color _corStatusBackend(WebThemeTokens tokens) {
     switch (_statusComunicacaoBackend) {
       case StatusComunicacaoBackend.conectado:
-        return Colors.green.shade500;
+        return tokens.success;
       case StatusComunicacaoBackend.conectando:
-        return Colors.orange.shade500;
+        return tokens.warning;
       case StatusComunicacaoBackend.desconectado:
-        return Colors.red.shade500;
+        return tokens.danger;
     }
   }
 
@@ -461,8 +466,35 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     }
   }
 
+  Color _webHeaderAccentColor(ColorScheme colorScheme, WebThemeTokens tokens) {
+    return colorScheme.brightness == Brightness.dark
+        ? tokens.info
+        : colorScheme.primary;
+  }
+
+  Color _foregroundForBackground(Color background) {
+    return ThemeData.estimateBrightnessForColor(background) == Brightness.dark
+        ? const Color(0xFFF8FAFC)
+        : const Color(0xFF0F172A);
+  }
+
+  WidgetStateProperty<Color?> _webHeaderActionOverlay(WebThemeTokens tokens) {
+    return WidgetStateProperty.resolveWith((Set<WidgetState> states) {
+      if (states.contains(WidgetState.pressed)) {
+        return tokens.selectedBackground;
+      }
+      if (states.contains(WidgetState.hovered) ||
+          states.contains(WidgetState.focused)) {
+        return tokens.hoverBackground;
+      }
+      return null;
+    });
+  }
+
   Widget _buildIndicadorComunicacaoBackend() {
-    final Color corStatus = _corStatusBackend();
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color corStatus = _corStatusBackend(tokens);
     final String tooltip =
         _ultimaValidacaoBackend == null
             ? _textoStatusBackend()
@@ -470,13 +502,16 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
     return Tooltip(
       message: tooltip,
-      child: Container(
+      child: AnimatedContainer(
+        key: const Key('web-header-backend-status'),
+        duration: WebThemeTokens.transitionDuration,
+        curve: WebThemeTokens.transitionCurve,
         height: 36,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
-          color: _pdvTheme.backgroundSurface,
+          color: tokens.surfaceMuted,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: _pdvTheme.cardBorder),
+          border: Border.all(color: tokens.cardBorder),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -499,9 +534,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             const SizedBox(width: 8),
             Text(
               'online',
-              style: TextStyle(
-                color: _pdvTheme.primaryText,
-                fontSize: 12,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: tokens.primaryText,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -511,21 +545,20 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     );
   }
 
-  Widget _buildAreaNotificacoesEConexao() {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: <Widget>[
-        _buildIAAssistente(),
-        _buildIndicadorComunicacaoBackend(),
-        _buildNotificationBellButton(),
-        _buildLogoutButton(),
-      ],
-    );
+  List<Widget> _buildWebShellHeaderActions() {
+    return <Widget>[
+      _buildIAAssistente(),
+      _buildIndicadorComunicacaoBackend(),
+      _buildNotificationBellButton(),
+      _buildUserMenuButton(),
+    ];
   }
 
   Widget _buildIAAssistente() {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent = _webHeaderAccentColor(colorScheme, tokens);
     final AppLocalizations? l10n = AppLocalizations.of(context);
     final String tooltip = l10n?.aiAssistantAsk ?? 'Perguntar à IA';
 
@@ -535,14 +568,18 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(999),
+          overlayColor: _webHeaderActionOverlay(tokens),
           onTap: _abrirAssistenteIA,
-          child: Container(
+          child: AnimatedContainer(
+            key: const Key('web-header-ai-action'),
+            duration: WebThemeTokens.transitionDuration,
+            curve: WebThemeTokens.transitionCurve,
             height: 36,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: _pdvTheme.backgroundSurface,
+              color: tokens.surfaceMuted,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: _pdvTheme.cardBorder),
+              border: Border.all(color: tokens.cardBorder),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -552,15 +589,14 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                   child: Icon(
                     Icons.auto_awesome_outlined,
                     size: 16,
-                    color: _pdvTheme.iconColor,
+                    color: accent,
                   ),
                 ),
                 const SizedBox(width: 6),
                 Text(
                   'IA',
-                  style: TextStyle(
-                    color: _pdvTheme.primaryText,
-                    fontSize: 12,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -575,33 +611,50 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   Future<void> _abrirAssistenteIA() async {
     final String barrierLabel =
         MaterialLocalizations.of(context).modalBarrierDismissLabel;
+    bool expanded = false;
+    bool minimizarSolicitado = false;
+
+    if (_assistenteIAMinimizado) {
+      setState(() => _assistenteIAMinimizado = false);
+    }
 
     await showGeneralDialog<void>(
       context: context,
       barrierDismissible: true,
       barrierLabel: barrierLabel,
-      barrierColor: Colors.black.withValues(alpha: 0.18),
-      transitionDuration: const Duration(milliseconds: 260),
+      barrierColor: Colors.black.withValues(alpha: 0.20),
+      transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (
         BuildContext dialogContext,
         Animation<double> _,
         Animation<double> __,
       ) {
-        return SafeArea(
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 76, 12, 12),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
+        return StatefulBuilder(
+          builder: (
+            BuildContext context,
+            void Function(VoidCallback fn) setDialogState,
+          ) {
+            return SafeArea(
+              minimum: const EdgeInsets.all(14),
+              child: Center(
                 child: AiAssistantPanel(
                   modulo: _moduloAtualParaIA(),
                   telaAtual: _telaAtualParaIA(),
-                  onClose: () => Navigator.of(dialogContext).pop(),
+                  expanded: expanded,
+                  onClose: () {
+                    minimizarSolicitado = false;
+                    Navigator.of(dialogContext).pop();
+                  },
+                  onMinimize: () {
+                    minimizarSolicitado = true;
+                    Navigator.of(dialogContext).pop();
+                  },
+                  onToggleExpanded:
+                      () => setDialogState(() => expanded = !expanded),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
       transitionBuilder: (
@@ -611,7 +664,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         Widget child,
       ) {
         final Animation<Offset> slideAnimation = Tween<Offset>(
-          begin: const Offset(0.08, 0),
+          begin: const Offset(0, 0.04),
           end: Offset.zero,
         ).animate(
           CurvedAnimation(
@@ -626,6 +679,30 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
           child: SlideTransition(position: slideAnimation, child: child),
         );
       },
+    );
+
+    if (!mounted) return;
+    setState(() => _assistenteIAMinimizado = minimizarSolicitado);
+  }
+
+  Widget _buildAssistenteIAMinimizado() {
+    final AppLocalizations? l10n = AppLocalizations.of(context);
+
+    return Positioned(
+      right: 24,
+      bottom: 24,
+      child: SafeArea(
+        minimum: const EdgeInsets.only(right: 4, bottom: 4),
+        child: AiAssistantButton(
+          onTap: _abrirAssistenteIA,
+          label: l10n?.aiAssistantMinimizedLabel ?? 'Lis minimizada',
+          tooltip:
+              l10n?.aiAssistantMinimizedTooltip ??
+              'Abrir assistente minimizado',
+          extended: true,
+          highlighted: true,
+        ),
+      ),
     );
   }
 
@@ -644,12 +721,17 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return 'clientes';
       case ModuloCentralPDV.colaboradoresList:
         return 'colaboradores';
+      case ModuloCentralPDV.desempenho:
+        return 'colaboradores';
       case ModuloCentralPDV.operacoesCaixa:
         return 'caixa';
       case ModuloCentralPDV.ordemServico:
       case ModuloCentralPDV.atendimentoTecnico:
         return 'assistencia_tecnica';
       case ModuloCentralPDV.categorias:
+      case ModuloCentralPDV.produtos:
+      case ModuloCentralPDV.servicos:
+      case ModuloCentralPDV.estoque:
         return 'produtos';
       case ModuloCentralPDV.configuracoes:
         return 'configuracoes';
@@ -670,6 +752,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return 'clientes_lista_web';
       case ModuloCentralPDV.colaboradoresList:
         return 'colaboradores_lista_web';
+      case ModuloCentralPDV.desempenho:
+        return 'desempenho_colaborador_web';
       case ModuloCentralPDV.orcamento:
         return 'orcamento_web';
       case ModuloCentralPDV.operacoesCaixa:
@@ -680,6 +764,12 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return 'agenda_financeira_web';
       case ModuloCentralPDV.atendimentoTecnico:
         return 'atendimentos_tecnicos_web';
+      case ModuloCentralPDV.produtos:
+        return 'produtos_dashboard_web';
+      case ModuloCentralPDV.servicos:
+        return 'servicos_dashboard_web';
+      case ModuloCentralPDV.estoque:
+        return 'estoque_dashboard_web';
       case ModuloCentralPDV.categorias:
         return 'categorias_web';
       case ModuloCentralPDV.configuracoes:
@@ -687,44 +777,120 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     }
   }
 
-  Widget _buildLogoutButton() {
-    return Tooltip(
-      message: 'Sair da conta',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(999),
-          onTap: _confirmarLogout,
-          child: Container(
-            height: 36,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: _pdvTheme.backgroundSurface,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: _pdvTheme.cardBorder),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(
-                  Icons.logout_rounded,
-                  size: 16,
-                  color: _pdvTheme.iconColor,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'Sair',
-                  style: TextStyle(
-                    color: _pdvTheme.primaryText,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
+  Widget _buildUserMenuButton() {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent = _webHeaderAccentColor(colorScheme, tokens);
+
+    return AnimatedBuilder(
+      animation: UsuarioProvider(),
+      builder: (BuildContext context, Widget? child) {
+        final String fotoUsuario = UsuarioProvider().usuario?.foto.trim() ?? '';
+
+        return Tooltip(
+          message: context.t('web.header.userMenu', fallback: 'Usuário'),
+          child: PopupMenuButton<_WebHeaderUserAction>(
+            tooltip: '',
+            position: PopupMenuPosition.under,
+            color: tokens.menuBackground,
+            onSelected: (_WebHeaderUserAction action) {
+              switch (action) {
+                case _WebHeaderUserAction.profile:
+                  showMeuPerfilWebDialog(context);
+                  return;
+                case _WebHeaderUserAction.logout:
+                  _confirmarLogout();
+                  return;
+              }
+            },
+            itemBuilder:
+                (BuildContext context) =>
+                    <PopupMenuEntry<_WebHeaderUserAction>>[
+                      PopupMenuItem<_WebHeaderUserAction>(
+                        value: _WebHeaderUserAction.profile,
+                        child: Row(
+                          children: <Widget>[
+                            Icon(
+                              Icons.person_outline_rounded,
+                              size: 18,
+                              color: accent,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              context.t(
+                                'web.header.myProfile',
+                                fallback: 'Meu perfil',
+                              ),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: tokens.primaryText,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<_WebHeaderUserAction>(
+                        value: _WebHeaderUserAction.logout,
+                        child: Row(
+                          children: <Widget>[
+                            Icon(Icons.logout_rounded, size: 18, color: accent),
+                            const SizedBox(width: 10),
+                            Text(
+                              context.t('web.header.logout', fallback: 'Sair'),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: tokens.primaryText,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+            child: AnimatedContainer(
+              key: const Key('web-header-user-action'),
+              duration: WebThemeTokens.transitionDuration,
+              curve: WebThemeTokens.transitionCurve,
+              height: 46,
+              padding: const EdgeInsets.fromLTRB(8, 4, 9, 4),
+              decoration: BoxDecoration(
+                color: tokens.surfaceMuted,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: tokens.cardBorder),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Container(
+                    width: 30,
+                    height: 30,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: tokens.surfaceElevated,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: tokens.cardBorder),
+                    ),
+                    child: UserProfileAvatarImage(
+                      imageValue: fotoUsuario,
+                      fallbackIcon: Icons.account_circle_outlined,
+                      fallbackColor: accent,
+                      fallbackIconSize: 20,
+                      size: 30,
+                      circle: true,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 16,
+                    color: tokens.secondaryText,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -947,8 +1113,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   Widget _buildNotificationBellButton() {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent = _webHeaderAccentColor(colorScheme, tokens);
     final bool temNaoLidas = _quantidadeNotificacoesNaoLidas > 0;
     final String badgeTexto = _badgeNotificacaoTexto();
+    final Color badgeForeground = _foregroundForBackground(tokens.warning);
 
     return AnimatedBuilder(
       animation: _bellRotationAnimation,
@@ -965,20 +1136,24 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(999),
+              overlayColor: _webHeaderActionOverlay(tokens),
               onTap: _abrirPainelNotificacoes,
-              child: Container(
+              child: AnimatedContainer(
+                key: const Key('web-header-notification-action'),
+                duration: WebThemeTokens.transitionDuration,
+                curve: WebThemeTokens.transitionCurve,
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: _pdvTheme.backgroundSurface,
+                  color: tokens.surfaceMuted,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: _pdvTheme.cardBorder),
+                  border: Border.all(color: tokens.cardBorder),
                 ),
                 child: Icon(
                   temNaoLidas
                       ? Icons.notifications_active_rounded
                       : Icons.notifications_none_rounded,
-                  color: _pdvTheme.iconColor,
+                  color: temNaoLidas ? tokens.warning : accent,
                 ),
               ),
             ),
@@ -990,11 +1165,11 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _pdvTheme.warningColor,
+                  color: tokens.warning,
                   borderRadius: BorderRadius.circular(999),
                   boxShadow: <BoxShadow>[
                     BoxShadow(
-                      color: _pdvTheme.warningColor.withValues(alpha: 0.35),
+                      color: tokens.warning.withValues(alpha: 0.35),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -1002,9 +1177,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                 ),
                 child: Text(
                   badgeTexto,
-                  style: TextStyle(
-                    color: _pdvTheme.badgeText,
-                    fontSize: 11,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: badgeForeground,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -1023,20 +1197,53 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return;
     }
 
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool dark = Theme.of(context).brightness == Brightness.dark;
     final dynamic result = await showDialog<dynamic>(
       context: context,
+      barrierColor: tokens.workspaceBackground.withValues(
+        alpha: dark ? 0.62 : 0.34,
+      ),
       builder: (BuildContext context) {
+        final ThemeData themedDialog = WebThemeTokens.applyTo(
+          Theme.of(context),
+        );
+        final WebThemeTokens dialogTokens = WebThemeTokens.of(context);
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 28,
+            vertical: 28,
           ),
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.80,
-            height: MediaQuery.of(context).size.height * 0.80,
-            child: SubPainelWebProdutoLista(
-              isSelecao: true,
-              permitirSelecaoMultipla: true,
-              tipoInicial: tipoInicial,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: Theme(
+            data: themedDialog,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: dialogTokens.surfaceElevated,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: dialogTokens.cardBorder),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: dark ? 0.28 : 0.12),
+                    blurRadius: 32,
+                    offset: const Offset(0, 18),
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.80,
+                height: MediaQuery.of(context).size.height * 0.80,
+                child: SubPainelWebProdutoLista(
+                  isSelecao: true,
+                  permitirSelecaoMultipla: true,
+                  tipoInicial: tipoInicial,
+                ),
+              ),
             ),
           ),
         );
@@ -1087,6 +1294,55 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       if (mounted) {
         _focarCodigoBarras();
       }
+    });
+  }
+
+  Future<void> _abrirNovoAtendimentoTecnico() async {
+    if (!mounted) {
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        final Size size = MediaQuery.of(dialogContext).size;
+
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: SizedBox(
+            width: size.width * 0.96,
+            height: size.height * 0.92,
+            child: AtendimentosTecnicosWebPage(
+              embedded: true,
+              onBack: () => Navigator.of(dialogContext).pop(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _abrirModuloCentralPelaNavegacaoWeb(ModuloCentralPDV modulo) {
+    if (!mounted) {
+      return;
+    }
+
+    if (modulo == ModuloCentralPDV.configuracoes) {
+      showConfiguracoesSixWebDialog(context);
+      return;
+    }
+
+    setState(() {
+      _moduloRetornoOperacoesCaixa = null;
+      _moduloAtual = modulo;
     });
   }
 
@@ -2231,6 +2487,26 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     }
   }
 
+  String? _nomeEmpresaAtualParaHeader() {
+    try {
+      final EmpresaProvider empresaProvider = context.watch<EmpresaProvider>();
+      final empresa = empresaProvider.empresa;
+      final String nomeFantasia = empresa?.nomeFantasia.trim() ?? '';
+      if (nomeFantasia.isNotEmpty) {
+        return nomeFantasia;
+      }
+
+      final String nomeEmpresa = empresa?.nomeEmpresa.trim() ?? '';
+      if (nomeEmpresa.isNotEmpty) {
+        return nomeEmpresa;
+      }
+    } catch (_) {
+      return null;
+    }
+
+    return null;
+  }
+
   String _clienteAtualLabel() {
     final ClienteUsuario? cliente = _clienteIdentificado;
     if (cliente != null) {
@@ -2250,6 +2526,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   Widget _buildConteudoCentral(double total) {
+    const VoidCallback? voltarParaInicio = null;
     switch (_moduloAtual) {
       case ModuloCentralPDV.cockpit:
         return _buildCockpitEstrategico();
@@ -2290,11 +2567,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return Expanded(
           child: ClientesUsuarioListPage(
             embedded: true,
-            onBack: () {
-              setState(() {
-                _moduloAtual = ModuloCentralPDV.seletor;
-              });
-            },
+            onBack: voltarParaInicio,
           ),
         );
 
@@ -2302,11 +2575,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return Expanded(
           child: ColaboradoresUsuarioListPage(
             embedded: true,
-            onBack: () {
-              setState(() {
-                _moduloAtual = ModuloCentralPDV.seletor;
-              });
-            },
+            onBack: voltarParaInicio,
           ),
         );
 
@@ -2314,7 +2583,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return Expanded(
           child: OperacoesCaixaWebPage(
             embedded: true,
-            onBack: _voltarDeOperacoesCaixa,
+            onBack: _voltarDeOperacoesCaixaSeNecessario(),
           ),
         );
 
@@ -2344,37 +2613,57 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
       case ModuloCentralPDV.agendaFinanceira:
         return Expanded(
-          child: AgendaFinanceiraWeb(
-            embedded: true,
-            onBack: () {
-              setState(() {
-                _moduloAtual = ModuloCentralPDV.seletor;
-              });
-            },
-          ),
+          child: AgendaFinanceiraWeb(embedded: true, onBack: voltarParaInicio),
         );
 
       case ModuloCentralPDV.atendimentoTecnico:
         return Expanded(
           child: AtendimentosTecnicosListaWebPage(
             embedded: true,
-            onBack: () {
-              setState(() {
-                _moduloAtual = ModuloCentralPDV.seletor;
-              });
-            },
+            onBack: voltarParaInicio,
           ),
+        );
+
+      case ModuloCentralPDV.produtos:
+        return Expanded(
+          child: ProdutoDashboardWebPage(
+            onBack: voltarParaInicio,
+            onNovoProduto: () {
+              showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
+            },
+            onOpenListaCompleta: _abrirListaProdutosParaEdicao,
+          ),
+        );
+
+      case ModuloCentralPDV.servicos:
+        return Expanded(
+          child: ServicoDashboardWebPage(
+            onBack: voltarParaInicio,
+            onNovoServico: () {
+              showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
+            },
+            onOpenListaCompleta: _abrirListaProdutosParaEdicao,
+          ),
+        );
+
+      case ModuloCentralPDV.estoque:
+        return Expanded(
+          child: EstoqueDashboardWebPage(
+            onBack: voltarParaInicio,
+            onOpenListaCompleta: _abrirListaProdutosParaEdicao,
+          ),
+        );
+
+      case ModuloCentralPDV.desempenho:
+        return Expanded(
+          child: DesempenhoColaboradorWebPage(onBack: voltarParaInicio),
         );
 
       case ModuloCentralPDV.configuracoes:
         return Expanded(
           child: ConfiguracoesSixWebPage(
             embedded: true,
-            onBack: () {
-              setState(() {
-                _moduloAtual = ModuloCentralPDV.seletor;
-              });
-            },
+            onBack: voltarParaInicio,
           ),
         );
 
@@ -2382,17 +2671,87 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return Expanded(
           child: CategoriasProdutosServicosWebPage(
             embedded: true,
-            onBack: () {
-              setState(() {
-                _moduloAtual = ModuloCentralPDV.seletor;
-              });
-            },
+            onBack: voltarParaInicio,
           ),
         );
 
       case ModuloCentralPDV.seletor:
         return _buildSeletorModoOperacao();
     }
+  }
+
+  VoidCallback? _voltarDeOperacoesCaixaSeNecessario() {
+    final ModuloCentralPDV? retorno = _moduloRetornoOperacoesCaixa;
+    if (retorno == null || retorno == ModuloCentralPDV.seletor) {
+      return null;
+    }
+
+    return _voltarDeOperacoesCaixa;
+  }
+
+  List<WebNavigationItem> _webNavigationItemsPermitidos(
+    ColaboradorAutorizacoesProvider autorizacoesProvider,
+  ) {
+    final Set<WebNavigationPermission> permissions =
+        WebNavigationPermissionAdapter.permissionsFor(autorizacoesProvider);
+
+    return WebNavigationRegistry.activeItemsForPermissions(
+      permissions,
+      includeUnresolved: WebNavigationPermissionAdapter.includeUnresolvedFor(
+        autorizacoesProvider,
+      ),
+    );
+  }
+
+  void _garantirModuloAtualPermitido(List<WebNavigationItem> navigationItems) {
+    final WebNavigationDestination? destinoAtual =
+        webNavigationDestinationForModuloCentralPdv(_moduloAtual);
+
+    if (destinoAtual == null ||
+        destinoAtual == WebNavigationDestination.home ||
+        _navigationItemsContainDestination(navigationItems, destinoAtual)) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final ColaboradorAutorizacoesProvider autorizacoesProvider =
+          context.read<ColaboradorAutorizacoesProvider>();
+      final List<WebNavigationItem> currentNavigationItems =
+          _webNavigationItemsPermitidos(autorizacoesProvider);
+      final WebNavigationDestination? destinoAindaAtual =
+          webNavigationDestinationForModuloCentralPdv(_moduloAtual);
+      if (destinoAindaAtual == WebNavigationDestination.home ||
+          _navigationItemsContainDestination(
+            currentNavigationItems,
+            destinoAindaAtual,
+          )) {
+        return;
+      }
+
+      setState(() {
+        _moduloRetornoOperacoesCaixa = null;
+        _moduloAtual = ModuloCentralPDV.seletor;
+      });
+    });
+  }
+
+  bool _navigationItemsContainDestination(
+    List<WebNavigationItem> navigationItems,
+    WebNavigationDestination? destination,
+  ) {
+    if (destination == null) return false;
+
+    for (final WebNavigationItem item in navigationItems) {
+      for (final WebNavigationItem flattenedItem in item.flatten()) {
+        if (flattenedItem.destination == destination) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   // Widget _buildModoOperacaoButton({
@@ -2561,7 +2920,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     return Expanded(
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final bool compact = constraints.maxWidth < 860;
+          final bool compact = constraints.maxWidth < 1040;
           final EdgeInsets padding = EdgeInsets.fromLTRB(
             compact ? 12 : 24,
             compact ? 12 : 18,
@@ -2571,17 +2930,60 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
           return Padding(
             padding: padding,
-            child: DashboardInicioWeb(
+            child: WorkspaceHomeWeb(
               compact: compact,
-              onIniciarVenda: _iniciarVenda,
-              onAbrirAtendimentoTecnico: () {
-                setState(() {
-                  _moduloAtual = ModuloCentralPDV.atendimentoTecnico;
-                });
-              },
+              resolver: _webNavigationResolver,
+              onNovoAtendimentoTecnico: _abrirNovoAtendimentoTecnico,
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildConteudoPrincipalWeb(double total) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool inicio = _moduloAtual == ModuloCentralPDV.seletor;
+        final bool compact = constraints.maxWidth < 760;
+        final EdgeInsets padding =
+            inicio ? EdgeInsets.zero : EdgeInsets.all(compact ? 12 : 16);
+
+        return Padding(
+          padding: padding,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(compact ? 16 : 22),
+            child: Column(children: <Widget>[_buildConteudoCentral(total)]),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildModoExpandidoFrenteCaixaWeb(double total) {
+    return ColoredBox(
+      key: const Key('pdv-expanded-front-desk-overlay'),
+      color: _pdvTheme.backgroundPage,
+      child: SafeArea(
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool compact = constraints.maxWidth < 760;
+            final EdgeInsets padding = EdgeInsets.all(compact ? 10 : 16);
+
+            return Padding(
+              padding: padding,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(compact ? 16 : 22),
+                child: Material(
+                  color: _pdvTheme.backgroundPage,
+                  child: SizedBox.expand(
+                    child: Column(children: <Widget>[_buildAreaVenda(total)]),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -2590,168 +2992,56 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    _pdvTheme = WebPdvTheme.resolve(theme);
     final double total = _calcularTotal();
     final bool modoExpandidoAtivo =
         _moduloAtual == ModuloCentralPDV.vendas && _modoExpandidoFrenteCaixa;
+    final WebThemeTokens webTokens = WebThemeTokens.of(context);
+
+    if (modoExpandidoAtivo) {
+      return PopScope(
+        canPop: false,
+        child: Scaffold(
+          backgroundColor: _pdvTheme.backgroundPage,
+          body: _buildModoExpandidoFrenteCaixaWeb(total),
+        ),
+      );
+    }
+
+    final ColaboradorAutorizacoesProvider autorizacoesProvider =
+        context.watch<ColaboradorAutorizacoesProvider>();
+    final List<WebNavigationItem> webNavigationItems =
+        _webNavigationItemsPermitidos(autorizacoesProvider);
+
+    if (WebNavigationPermissionAdapter.canApplySidebarFiltering(
+      autorizacoesProvider,
+    )) {
+      _garantirModuloAtualPermitido(webNavigationItems);
+    }
+
+    final Widget webShell = AuthenticatedWebShell(
+      navigationItems: webNavigationItems,
+      resolver: _webNavigationResolver,
+      activeDestination: webNavigationDestinationForModuloCentralPdv(
+        _moduloAtual,
+      ),
+      appVersion: AppConfig.appVersion,
+      currentCommerceName: _nomeEmpresaAtualParaHeader(),
+      headerActions: _buildWebShellHeaderActions(),
+      child: _buildConteudoPrincipalWeb(total),
+    );
 
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: _pdvTheme.backgroundPage,
-        appBar:
-            modoExpandidoAtivo
-                ? null
-                : TopNavigationBarWeb(
-                  items: <TopNavItemData>[
-                    TopNavItemData(
-                      title: 'Início',
-                      subItems: const <String>[
-                        'Meu Perfil',
-                        'Preferências do Sistema',
-                        'Painel Administrativo',
-                      ],
-                      onSelect: (String value) {
-                        if (value == 'Meu Perfil') {
-                          showMeuPerfilWebDialog(context);
-                        }
-
-                        if (value == 'Painel Administrativo') {
-                          showSubPainelConfiguracoes(context, 'Configurações');
-                        }
-                      },
-                    ),
-                    const TopNavItemData(
-                      title: 'Permitir',
-                      subItems: <String>[
-                        'Gerenciar Permissões',
-                        'Alterar Configurações',
-                      ],
-                    ),
-                    TopNavItemData(
-                      title: 'Cadastros',
-                      subItems: const <String>[
-                        'Clientes',
-                        'Clientes List',
-                        'Produtos',
-                        'Categorias',
-                        'Colaboradores',
-                        'Colaboradores List',
-                        'Fornecedores',
-                        'Produtos List',
-                      ],
-                      onSelect: (String value) {
-                        if (value == 'Produtos') {
-                          showSubPainelCadastroProduto(
-                            context,
-                            'Cadastro de Produtos',
-                          );
-                        }
-
-                        if (value == 'Clientes') {
-                          showSubPainelCadastroCliente(
-                            context,
-                            'Cadastro de Clientes',
-                          );
-                        }
-
-                        if (value == 'Clientes List') {
-                          setState(() {
-                            _moduloAtual = ModuloCentralPDV.clientesList;
-                          });
-                        }
-
-                        if (value == 'Colaboradores') {
-                          showSubPainelCadastroColaborador(
-                            context,
-                            'Cadastro de Colaboradores',
-                          );
-                        }
-
-                        if (value == 'Colaboradores List') {
-                          setState(() {
-                            _moduloAtual = ModuloCentralPDV.colaboradoresList;
-                          });
-                        }
-
-                        if (value == 'Produtos List') {
-                          _abrirListaProdutosParaEdicao();
-                        }
-
-                        if (value == 'Categorias') {
-                          setState(() {
-                            _moduloAtual = ModuloCentralPDV.categorias;
-                          });
-                        }
-                      },
-                    ),
-                    TopNavItemData(
-                      title: 'Configurações',
-                      subItems: const <String>[
-                        'formas de recebimentos',
-                        'exibição aos colaboradores (ex.: habilita so o pdv e esconde o administrativo)',
-                        'Sistema',
-                        'Usuários',
-                        'Preferências do Six',
-                      ],
-                      onSelect: (String value) {
-                        if (value == 'Preferências do Six') {
-                          setState(() {
-                            _moduloAtual = ModuloCentralPDV.configuracoes;
-                          });
-                        }
-                      },
-                    ),
-                    const TopNavItemData(
-                      title: 'Relatórios',
-                      subItems: <String>['Vendas', 'Estoque', 'Financeiro'],
-                    ),
-                    const TopNavItemData(
-                      title: 'Executar',
-                      subItems: <String>[
-                        'Processar Pagamentos',
-                        'Fechar Caixa',
-                      ],
-                    ),
-                    const TopNavItemData(
-                      title: 'Automações',
-                      subItems: <String>['Tarefas Agendadas'],
-                    ),
-                    const TopNavItemData(
-                      title: 'Ajuda',
-                      subItems: <String>['Suporte', 'Sobre'],
-                    ),
-                  ],
-                  notificationWidget: _buildAreaNotificacoesEConexao(),
-                  onNotificationPressed: _abrirPainelNotificacoes,
-                ),
-        body:
-            modoExpandidoAtivo
-                ? SafeArea(
-                  child: Column(
-                    children: <Widget>[_buildConteudoCentral(total)],
-                  ),
-                )
-                : LayoutBuilder(
-                  builder: (BuildContext context, BoxConstraints constraints) {
-                    final bool inicio =
-                        _moduloAtual == ModuloCentralPDV.seletor;
-                    final bool compact = constraints.maxWidth < 760;
-                    final EdgeInsets padding =
-                        inicio
-                            ? EdgeInsets.zero
-                            : EdgeInsets.all(compact ? 12 : 16);
-
-                    return Padding(
-                      padding: padding,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(compact ? 16 : 22),
-                        child: Column(
-                          children: <Widget>[_buildConteudoCentral(total)],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+        backgroundColor: webTokens.workspaceBackground,
+        body: Stack(
+          children: <Widget>[
+            Positioned.fill(child: webShell),
+            if (_assistenteIAMinimizado) _buildAssistenteIAMinimizado(),
+          ],
+        ),
       ),
     );
   }

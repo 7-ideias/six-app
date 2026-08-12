@@ -11,6 +11,7 @@ import '../../providers/empresa_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
 import '../components/web_dashboard_widgets.dart';
+import '../theme/web_theme_tokens.dart';
 
 class OperacoesCaixaWebPage extends StatefulWidget {
   const OperacoesCaixaWebPage({super.key, this.embedded = false, this.onBack});
@@ -218,7 +219,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   @override
   Widget build(BuildContext context) {
-    final content = Shortcuts(
+    final bool podeFecharTela = widget.onBack != null || !widget.embedded;
+    final Widget content = Focus(
+      autofocus: podeFecharTela,
+      child: _buildContent(context),
+    );
+    final Widget closeAwareContent = Shortcuts(
       shortcuts: const <ShortcutActivator, Intent>{
         SingleActivator(LogicalKeyboardKey.escape): _SairDaTelaIntent(),
       },
@@ -231,20 +237,24 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             },
           ),
         },
-        child: Focus(autofocus: true, child: _buildContent(context)),
+        child: content,
       ),
     );
 
-    if (widget.embedded) return content;
+    if (widget.embedded) {
+      return podeFecharTela ? closeAwareContent : content;
+    }
 
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
-      body: SafeArea(child: content),
+      backgroundColor: tokens.workspaceBackground,
+      body: SafeArea(child: closeAwareContent),
     );
   }
 
   Widget _buildContent(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     final initialLoading =
         _isLoading && _sessaoAtual == null && _resumo == null;
     final Widget body =
@@ -361,13 +371,15 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             );
 
     return Material(
-      color: theme.colorScheme.surface,
+      color: tokens.workspaceBackground,
       child: Column(
         children: <Widget>[
           _buildHeader(theme),
           Expanded(
-            child: ColoredBox(
-              color: theme.colorScheme.surfaceContainerLowest,
+            child: AnimatedContainer(
+              duration: WebThemeTokens.transitionDuration,
+              curve: WebThemeTokens.transitionCurve,
+              color: tokens.workspaceBackground,
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 280),
                 switchInCurve: Curves.easeOutCubic,
@@ -410,7 +422,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       title: 'Operações de caixa',
       subtitle:
           '$empresa • $movimentos movimento(s) • ${_temCaixaAberto ? 'Caixa aberto' : 'Aguardando abertura'}',
-      onBack: _sairDaTela,
+      onBack: widget.embedded && widget.onBack == null ? null : _sairDaTela,
       actions: <Widget>[
         OutlinedButton.icon(
           onPressed: _isLoading ? null : () => _carregarDadosIniciais(),
@@ -509,22 +521,21 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     bool highlight = false,
   }) {
     final colorScheme = theme.colorScheme;
+    final tokens = WebThemeTokens.of(context);
+    final Color accent = highlight ? tokens.info : colorScheme.primary;
     return SizedBox(
       width: width,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: highlight ? colorScheme.primary : colorScheme.surface,
+          color: highlight ? tokens.surfaceMuted : tokens.cardBackground,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color:
-                highlight
-                    ? colorScheme.primary
-                    : colorScheme.outline.withOpacity(0.12),
+            color: highlight ? tokens.selectedBorder : tokens.cardBorder,
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: colorScheme.shadow.withValues(alpha: 0.05),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -537,16 +548,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               height: 42,
               decoration: BoxDecoration(
                 color:
-                    highlight
-                        ? Colors.white.withOpacity(0.15)
-                        : colorScheme.primary.withOpacity(0.08),
+                    highlight ? tokens.selectedBackground : tokens.surfaceMuted,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
-                icon,
-                color: highlight ? Colors.white : colorScheme.primary,
-                size: 21,
-              ),
+              child: Icon(icon, color: accent, size: 21),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -558,10 +563,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color:
-                          highlight
-                              ? Colors.white.withOpacity(0.86)
-                              : colorScheme.onSurface.withOpacity(0.62),
+                      color: tokens.secondaryText,
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -573,13 +575,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                     helper,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color:
-                          highlight
-                              ? Colors.white.withOpacity(0.78)
-                              : colorScheme.onSurface.withOpacity(0.56),
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: tokens.mutedText, fontSize: 12),
                   ),
                 ],
               ),
@@ -599,7 +595,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     TextAlign textAlign = TextAlign.end,
   }) {
     final regionalizacao = context.watch<LocaleSettingsProvider>();
-    final color = highlight ? Colors.white : theme.colorScheme.onSurface;
+    final color = WebThemeTokens.of(context).primaryText;
     return TweenAnimationBuilder<double>(
       key: ValueKey<String>(
         '$animationKey:${regionalizacao.currencyCode}:${value.toStringAsFixed(4)}',
@@ -789,48 +785,49 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   Widget _buildAtalhosOperacao(ThemeData theme) {
+    final tokens = WebThemeTokens.of(context);
     final cards = <_AtalhoOperacaoData>[
       _AtalhoOperacaoData(
         tipo: OperacaoCaixaTipo.suprimento,
         titulo: 'Suprimento',
         descricao: 'Adicionar valores ao caixa para reforço operacional.',
         icone: Icons.add_card_rounded,
-        cor: const Color(0xff0f766e),
+        cor: tokens.financialPositive,
       ),
       _AtalhoOperacaoData(
         tipo: OperacaoCaixaTipo.sangria,
         titulo: 'Sangria',
         descricao: 'Retirar excesso de numerário para segurança.',
         icone: Icons.outbox_rounded,
-        cor: const Color(0xffb45309),
+        cor: tokens.financialNegative,
       ),
       _AtalhoOperacaoData(
         tipo: OperacaoCaixaTipo.retiradaDespesa,
         titulo: 'Despesa',
         descricao: 'Registrar saída operacional com justificativa.',
         icone: Icons.receipt_long_rounded,
-        cor: const Color(0xffbe123c),
+        cor: tokens.financialNegative,
       ),
       _AtalhoOperacaoData(
         tipo: OperacaoCaixaTipo.ajuste,
         titulo: 'Ajuste',
         descricao: 'Corrigir diferenças operacionais com rastreabilidade.',
         icone: Icons.tune_rounded,
-        cor: const Color(0xff4338ca),
+        cor: tokens.info,
       ),
       _AtalhoOperacaoData(
         tipo: OperacaoCaixaTipo.recebimentoAvulso,
         titulo: 'Recebimento avulso',
         descricao: 'Entrada operacional sem vínculo direto com venda.',
         icone: Icons.arrow_downward_rounded,
-        cor: const Color(0xff047857),
+        cor: tokens.financialPositive,
       ),
       _AtalhoOperacaoData(
         tipo: OperacaoCaixaTipo.pagamentoAvulso,
         titulo: 'Pagamento avulso',
         descricao: 'Saída operacional pontual com justificativa.',
         icone: Icons.arrow_upward_rounded,
-        cor: const Color(0xff991b1b),
+        cor: tokens.financialNegative,
       ),
     ];
 
@@ -907,8 +904,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   Widget _operationCard(ThemeData theme, _AtalhoOperacaoData item) {
     final selected = _tipoSelecionado == item.tipo;
+    final tokens = WebThemeTokens.of(context);
     return Material(
-      color: selected ? item.cor.withOpacity(.08) : theme.colorScheme.surface,
+      color: selected ? tokens.selectedBackground : tokens.cardBackground,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -924,10 +922,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color:
-                  selected
-                      ? item.cor.withOpacity(.55)
-                      : theme.colorScheme.outline.withOpacity(0.12),
+              color: selected ? tokens.selectedBorder : tokens.cardBorder,
               width: selected ? 1.4 : 1,
             ),
           ),
@@ -954,7 +949,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: tokens.secondaryText,
                         height: 1.35,
                         fontSize: 12.6,
                       ),
@@ -1182,13 +1177,14 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   Widget _buildMovimentoCard(ThemeData theme, MovimentoCaixa movimento) {
     final cor = _corPorNatureza(movimento.natureza);
     final forma = _descricaoTipoRecebimentoMovimento(movimento);
+    final tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -1200,7 +1196,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: cor.withOpacity(.10),
+                  color: Color.alphaBlend(
+                    cor.withValues(alpha: 0.10),
+                    tokens.cardBackground,
+                  ),
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Icon(
@@ -1232,7 +1231,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                           _corPorStatus(movimento.status),
                         ),
                         _statusPill(_labelNatureza(movimento.natureza), cor),
-                        _statusPill(forma, theme.colorScheme.primary),
+                        _statusPill(forma, tokens.info),
                       ],
                     ),
                     const SizedBox(height: 7),
@@ -1241,7 +1240,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                           ? 'Sem observação informada.'
                           : movimento.observacao,
                       style: TextStyle(
-                        color: theme.colorScheme.onSurface.withOpacity(0.70),
+                        color: tokens.secondaryText,
                         height: 1.35,
                       ),
                     ),
@@ -1287,7 +1286,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               Text(
                 _formatDateTime(movimento.dataHoraMovimento),
                 style: TextStyle(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: tokens.mutedText,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1539,6 +1538,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     required String subtitle,
     required IconData icon,
   }) {
+    final tokens = WebThemeTokens.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -1546,10 +1546,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.10),
+            color: tokens.selectedBackground,
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(icon, color: theme.colorScheme.primary, size: 22),
+          child: Icon(icon, color: tokens.info, size: 22),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -1561,6 +1561,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.titleMedium?.copyWith(
+                  color: tokens.primaryText,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -1570,7 +1571,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: tokens.secondaryText,
                 ),
               ),
             ],
@@ -1618,6 +1619,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     required bool checked,
     required String title,
   }) {
+    final tokens = WebThemeTokens.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -1625,8 +1627,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           Icon(
             checked ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
             size: 19,
-            color:
-                checked ? const Color(0xff16a34a) : theme.colorScheme.outline,
+            color: checked ? tokens.success : tokens.statusNeutral,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -1641,12 +1642,16 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   Widget _statusPill(String label, Color color) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(.10),
+        color: Color.alphaBlend(
+          color.withValues(alpha: 0.10),
+          tokens.cardBackground,
+        ),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(.18)),
+        border: Border.all(color: color.withValues(alpha: 0.36)),
       ),
       child: Text(
         label,
@@ -1662,17 +1667,18 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   Widget _inlineInfo(ThemeData theme, IconData icon, String text) {
+    final tokens = WebThemeTokens.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Icon(icon, size: 15, color: theme.colorScheme.onSurfaceVariant),
+        Icon(icon, size: 15, color: tokens.mutedText),
         const SizedBox(width: 6),
         Flexible(
           child: Text(
             text,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: theme.colorScheme.onSurfaceVariant,
+              color: tokens.secondaryText,
               fontSize: 12.8,
               fontWeight: FontWeight.w600,
             ),
@@ -1688,13 +1694,14 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     required String label,
     required Widget child,
   }) {
+    final tokens = WebThemeTokens.of(context);
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
           label,
           style: TextStyle(
-            color: theme.colorScheme.onSurfaceVariant,
+            color: tokens.secondaryText,
             fontSize: 13,
             fontWeight: FontWeight.w800,
           ),
@@ -1709,6 +1716,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   Widget _buildReadOnlyField(ThemeData theme, String value) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
       height: 52,
       alignment: Alignment.centerLeft,
@@ -1717,7 +1725,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       child: Text(
         value,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontWeight: FontWeight.w800),
+        style: TextStyle(
+          color: tokens.primaryText,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }
@@ -1742,9 +1753,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     required String Function(T item) itemLabel,
     String? hint,
   }) {
+    final tokens = WebThemeTokens.of(context);
     return DropdownButtonFormField<T>(
-      value: items.contains(value) ? value : null,
+      initialValue: items.contains(value) ? value : null,
       isExpanded: true,
+      dropdownColor: tokens.menuBackground,
+      style: TextStyle(color: tokens.primaryText, fontWeight: FontWeight.w700),
       decoration: _inputDecoration(theme, hint: hint),
       items:
           items
@@ -1771,13 +1785,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     required String hint,
     required String emptyMessage,
   }) {
+    final tokens = WebThemeTokens.of(context);
     final T? selectedValue = items.contains(value) ? value : null;
     final String selectedLabel =
         selectedValue == null ? hint : itemLabel(selectedValue);
     final Color borderColor =
-        selectedValue == null
-            ? theme.colorScheme.outline.withValues(alpha: 0.12)
-            : theme.colorScheme.primary.withValues(alpha: 0.35);
+        selectedValue == null ? tokens.cardBorder : tokens.selectedBorder;
 
     return Semantics(
       button: true,
@@ -1802,7 +1815,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           height: 52,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
+            color: tokens.inputBackground,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: borderColor,
@@ -1815,10 +1828,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 selectedValue == null
                     ? Icons.tune_rounded
                     : itemIcon(selectedValue),
-                color:
-                    selectedValue == null
-                        ? theme.colorScheme.onSurfaceVariant
-                        : theme.colorScheme.primary,
+                color: selectedValue == null ? tokens.mutedText : tokens.info,
                 size: 20,
               ),
               const SizedBox(width: 10),
@@ -1830,8 +1840,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   style: TextStyle(
                     color:
                         selectedValue == null
-                            ? theme.colorScheme.onSurfaceVariant
-                            : theme.colorScheme.onSurface,
+                            ? tokens.secondaryText
+                            : tokens.primaryText,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -1839,7 +1849,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               const SizedBox(width: 8),
               Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: theme.colorScheme.onSurfaceVariant,
+                color: tokens.mutedText,
                 size: 22,
               ),
             ],
@@ -1858,8 +1868,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     required IconData Function(T item) itemIcon,
     required String emptyMessage,
   }) {
+    final tokens = WebThemeTokens.of(context);
     return showDialog<T>(
       context: context,
+      barrierColor: tokens.workspaceBackground.withValues(alpha: 0.72),
       builder:
           (context) => _WebSelectorDialog<T>(
             width: menuWidth,
@@ -1878,34 +1890,39 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     required String? hint,
     String? prefixText,
   }) {
+    final tokens = WebThemeTokens.of(context);
     return InputDecoration(
       hintText: hint,
       prefixText: prefixText,
       filled: true,
-      fillColor: theme.colorScheme.surface,
+      fillColor: tokens.inputBackground,
+      hintStyle: TextStyle(color: tokens.mutedText),
+      prefixStyle: TextStyle(
+        color: tokens.secondaryText,
+        fontWeight: FontWeight.w700,
+      ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(
-          color: theme.colorScheme.outline.withOpacity(0.12),
-        ),
+        borderSide: BorderSide(color: tokens.cardBorder),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.4),
+        borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
       ),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
     );
   }
 
   BoxDecoration _cardDecoration(ThemeData theme) {
+    final tokens = WebThemeTokens.of(context);
     return BoxDecoration(
-      color: theme.colorScheme.surface,
+      color: tokens.cardBackground,
       borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: theme.colorScheme.outline.withOpacity(0.13)),
+      border: Border.all(color: tokens.cardBorder),
       boxShadow: <BoxShadow>[
         BoxShadow(
-          color: Colors.black.withOpacity(0.035),
+          color: theme.colorScheme.shadow.withValues(alpha: 0.045),
           blurRadius: 12,
           offset: const Offset(0, 6),
         ),
@@ -1914,10 +1931,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   BoxDecoration _softBox(ThemeData theme, {double radius = 18}) {
+    final tokens = WebThemeTokens.of(context);
     return BoxDecoration(
-      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.42),
+      color: tokens.surfaceMuted,
       borderRadius: BorderRadius.circular(radius),
-      border: Border.all(color: theme.colorScheme.outline.withOpacity(0.10)),
+      border: Border.all(color: tokens.cardBorder),
     );
   }
 
@@ -2153,28 +2171,18 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       return;
     }
 
+    final tokens = WebThemeTokens.of(context);
     final confirmou =
         await showDialog<bool>(
           context: context,
+          barrierColor: tokens.workspaceBackground.withValues(alpha: 0.72),
           builder:
-              (context) => AlertDialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                title: const Text('Encerrar sessão?'),
-                content: const Text(
-                  'Esta ação encerrará o caixa atual. Você ainda poderá consultar o histórico da sessão.',
-                ),
-                actions: <Widget>[
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Voltar'),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Encerrar'),
-                  ),
-                ],
+              (context) => _buildConfirmDialog(
+                title: 'Encerrar sessão?',
+                message:
+                    'Esta ação encerrará o caixa atual. Você ainda poderá consultar o histórico da sessão.',
+                cancelLabel: 'Voltar',
+                confirmLabel: 'Encerrar',
               ),
         ) ??
         false;
@@ -2199,28 +2207,19 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   Future<void> _cancelarMovimento(MovimentoCaixa movimento) async {
     final forma = _descricaoTipoRecebimentoMovimento(movimento);
+    final tokens = WebThemeTokens.of(context);
     final confirmou =
         await showDialog<bool>(
           context: context,
+          barrierColor: tokens.workspaceBackground.withValues(alpha: 0.72),
           builder:
-              (context) => AlertDialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                title: const Text('Cancelar movimentação?'),
-                content: Text(
-                  'Deseja cancelar a operação ${_labelTipo(movimento.tipoMovimento)} em $forma no valor de ${_formatCurrency(movimento.valor)}?',
-                ),
-                actions: <Widget>[
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Voltar'),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Cancelar operação'),
-                  ),
-                ],
+              (context) => _buildConfirmDialog(
+                title: 'Cancelar movimentação?',
+                message:
+                    'Deseja cancelar a operação ${_labelTipo(movimento.tipoMovimento)} em $forma no valor de ${_formatCurrency(movimento.valor)}?',
+                cancelLabel: 'Voltar',
+                confirmLabel: 'Cancelar operação',
+                danger: true,
               ),
         ) ??
         false;
@@ -2242,26 +2241,68 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     }
   }
 
+  AlertDialog _buildConfirmDialog({
+    required String title,
+    required String message,
+    required String cancelLabel,
+    required String confirmLabel,
+    bool danger = false,
+  }) {
+    final tokens = WebThemeTokens.of(context);
+    return AlertDialog(
+      backgroundColor: tokens.surfaceElevated,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: tokens.primaryText,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+      content: Text(message, style: TextStyle(color: tokens.secondaryText)),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text(cancelLabel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          style:
+              danger
+                  ? FilledButton.styleFrom(
+                    backgroundColor: tokens.danger,
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                  )
+                  : null,
+          child: Text(confirmLabel),
+        ),
+      ],
+    );
+  }
+
   Color _corPorNatureza(String? natureza) {
-    if (natureza == null) return const Color(0xff7a8394);
+    final tokens = WebThemeTokens.of(context);
+    if (natureza == null) return tokens.statusNeutral;
     return natureza.toLowerCase() == 'entrada'
-        ? const Color(0xff15803d)
-        : const Color(0xffb91c1c);
+        ? tokens.financialPositive
+        : tokens.financialNegative;
   }
 
   Color _corPorStatus(String? status) {
-    if (status == null) return const Color(0xff7a8394);
+    final tokens = WebThemeTokens.of(context);
+    if (status == null) return tokens.statusNeutral;
     switch (status.toLowerCase()) {
       case 'aberta':
-        return const Color(0xff1d4ed8);
+        return tokens.info;
       case 'concluida':
-        return const Color(0xff15803d);
+        return tokens.success;
       case 'cancelada':
-        return const Color(0xffb91c1c);
+        return tokens.danger;
       case 'pendenteconferencia':
-        return const Color(0xffb45309);
+        return tokens.warning;
       default:
-        return const Color(0xff7a8394);
+        return tokens.statusNeutral;
     }
   }
 
@@ -2459,10 +2500,12 @@ class _WebSelectorDialog<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
 
     return Dialog(
       insetPadding: const EdgeInsets.all(24),
+      backgroundColor: tokens.surfaceElevated,
+      surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: ConstrainedBox(
         constraints: BoxConstraints(
@@ -2480,7 +2523,7 @@ class _WebSelectorDialog<T> extends StatelessWidget {
                       emptyMessage,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: tokens.secondaryText,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
@@ -2524,8 +2567,8 @@ class _WebSelectorMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final accent = theme.colorScheme.primary;
+    final tokens = WebThemeTokens.of(context);
+    final accent = tokens.info;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -2533,13 +2576,10 @@ class _WebSelectorMenuItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: selected ? accent.withValues(alpha: 0.10) : Colors.transparent,
+          color: selected ? tokens.selectedBackground : tokens.surfaceMuted,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color:
-                selected
-                    ? accent.withValues(alpha: 0.42)
-                    : theme.colorScheme.outline.withValues(alpha: 0.10),
+            color: selected ? tokens.selectedBorder : tokens.cardBorder,
           ),
         ),
         child: Row(
@@ -2549,11 +2589,7 @@ class _WebSelectorMenuItem extends StatelessWidget {
               height: 34,
               decoration: BoxDecoration(
                 color:
-                    selected
-                        ? theme.colorScheme.surface
-                        : theme.colorScheme.surfaceContainerHighest.withValues(
-                          alpha: 0.50,
-                        ),
+                    selected ? tokens.cardBackground : tokens.inputBackground,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: accent, size: 19),
@@ -2568,7 +2604,7 @@ class _WebSelectorMenuItem extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: theme.colorScheme.onSurface,
+                      color: tokens.primaryText,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -2579,7 +2615,7 @@ class _WebSelectorMenuItem extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: tokens.secondaryText,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -2593,7 +2629,7 @@ class _WebSelectorMenuItem extends StatelessWidget {
               selected
                   ? Icons.check_circle_rounded
                   : Icons.chevron_right_rounded,
-              color: selected ? accent : theme.colorScheme.onSurfaceVariant,
+              color: selected ? accent : tokens.mutedText,
               size: 21,
             ),
           ],

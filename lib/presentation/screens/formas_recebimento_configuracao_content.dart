@@ -4,6 +4,7 @@ import '../../data/models/caixa_models.dart';
 import '../../data/services/caixa/caixa_api_client.dart';
 import '../../domain/services/caixa/caixa_service.dart';
 import '../components/six_backend_loading.dart';
+import '../components/web/six_web_select_field.dart';
 import '../components/web_dashboard_widgets.dart';
 
 class FormasRecebimentoConfiguracaoContent extends StatefulWidget {
@@ -48,7 +49,8 @@ class _FormasRecebimentoConfiguracaoContentState
     });
 
     try {
-      final List<TiposRecebimento> tipos = await _caixaService.listarTiposRecebimentoConfiguraveis();
+      final List<TiposRecebimento> tipos =
+          await _caixaService.listarTiposRecebimentoConfiguraveis();
       if (!mounted) return;
       setState(() {
         _tipos = tipos;
@@ -91,7 +93,9 @@ class _FormasRecebimentoConfiguracaoContentState
     final TiposRecebimento? atualizado = await showDialog<TiposRecebimento>(
       context: context,
       barrierDismissible: true,
-      builder: (BuildContext dialogContext) => _TipoRecebimentoEditDialog(tipo: tipo),
+      builder:
+          (BuildContext dialogContext) =>
+              _TipoRecebimentoEditDialog(tipo: tipo),
     );
 
     if (atualizado == null) return;
@@ -108,37 +112,45 @@ class _FormasRecebimentoConfiguracaoContentState
       _mostrarMensagem('Forma de recebimento atualizada com sucesso.');
     } on CaixaApiException catch (error) {
       if (!mounted) return;
-      _mostrarMensagem(_mensagemErro(error.statusCode, alteracao: true), erro: true);
+      _mostrarMensagem(
+        _mensagemErro(error.statusCode, alteracao: true),
+        erro: true,
+      );
     } catch (_) {
       if (!mounted) return;
-      _mostrarMensagem('Não foi possível salvar a forma de recebimento.', erro: true);
+      _mostrarMensagem(
+        'Não foi possível salvar a forma de recebimento.',
+        erro: true,
+      );
     } finally {
       if (mounted) setState(() => _salvandoCodigo = null);
     }
   }
 
   Future<void> _restaurarPadrao() async {
-    final bool confirmar = await showDialog<bool>(
+    final bool confirmar =
+        await showDialog<bool>(
           context: context,
           barrierDismissible: true,
-          builder: (BuildContext dialogContext) => AlertDialog(
-            icon: const Icon(Icons.restart_alt_rounded),
-            title: const Text('Restaurar padrão'),
-            content: const Text(
-              'Esta ação restaura os tipos de recebimento para a configuração padrão da empresa.',
-            ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton.icon(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
+          builder:
+              (BuildContext dialogContext) => AlertDialog(
                 icon: const Icon(Icons.restart_alt_rounded),
-                label: const Text('Restaurar padrão'),
+                title: const Text('Restaurar padrão'),
+                content: const Text(
+                  'Esta ação restaura os tipos de recebimento para a configuração padrão da empresa.',
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                    child: const Text('Cancelar'),
+                  ),
+                  FilledButton.icon(
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                    icon: const Icon(Icons.restart_alt_rounded),
+                    label: const Text('Restaurar padrão'),
+                  ),
+                ],
               ),
-            ],
-          ),
         ) ??
         false;
 
@@ -153,10 +165,16 @@ class _FormasRecebimentoConfiguracaoContentState
       _mostrarMensagem('Configuração padrão restaurada com sucesso.');
     } on CaixaApiException catch (error) {
       if (!mounted) return;
-      _mostrarMensagem(_mensagemErro(error.statusCode, alteracao: true), erro: true);
+      _mostrarMensagem(
+        _mensagemErro(error.statusCode, alteracao: true),
+        erro: true,
+      );
     } catch (_) {
       if (!mounted) return;
-      _mostrarMensagem('Não foi possível restaurar a configuração padrão.', erro: true);
+      _mostrarMensagem(
+        'Não foi possível restaurar a configuração padrão.',
+        erro: true,
+      );
     } finally {
       if (mounted) setState(() => _restaurandoPadrao = false);
     }
@@ -169,7 +187,8 @@ class _FormasRecebimentoConfiguracaoContentState
       SnackBar(
         content: Text(texto),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: erro ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+        backgroundColor:
+            erro ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
       ),
     );
   }
@@ -177,13 +196,22 @@ class _FormasRecebimentoConfiguracaoContentState
   @override
   Widget build(BuildContext context) {
     final List<TiposRecebimento> tipos = _tiposOrdenados;
-    final int ativos = tipos.where((TiposRecebimento item) => item.ativo).length;
-    final int imediatos = tipos
-        .where((TiposRecebimento item) => item.naturezaRecebimento.trim().toUpperCase() == 'IMEDIATO')
-        .length;
-    final int futuros = tipos
-        .where((TiposRecebimento item) => item.naturezaRecebimento.trim().toUpperCase() == 'FUTURO')
-        .length;
+    final int ativos =
+        tipos.where((TiposRecebimento item) => item.ativo).length;
+    final int imediatos =
+        tipos
+            .where(
+              (TiposRecebimento item) =>
+                  item.naturezaRecebimento.trim().toUpperCase() == 'IMEDIATO',
+            )
+            .length;
+    final int futuros =
+        tipos
+            .where(
+              (TiposRecebimento item) =>
+                  item.naturezaRecebimento.trim().toUpperCase() == 'FUTURO',
+            )
+            .length;
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -205,7 +233,10 @@ class _FormasRecebimentoConfiguracaoContentState
               child: LinearProgressIndicator(minHeight: 2),
             ),
           if (_erro != null && _tipos.isNotEmpty) ...<Widget>[
-            _InlineErrorCard(mensagem: _erro!, onRetry: _carregando ? null : _carregarTipos),
+            _InlineErrorCard(
+              mensagem: _erro!,
+              onRetry: _carregando ? null : _carregarTipos,
+            ),
             const SizedBox(height: 10),
           ],
           Expanded(child: _buildBody(tipos)),
@@ -290,15 +321,24 @@ class _FormasRecebimentoConfiguracaoContentState
             runSpacing: 10,
             children: <Widget>[
               OutlinedButton.icon(
-                onPressed: (_carregando || bloqueado) ? null : () => _carregarTipos(),
+                onPressed:
+                    (_carregando || bloqueado) ? null : () => _carregarTipos(),
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Atualizar'),
               ),
               FilledButton.icon(
-                onPressed: (_carregando || bloqueado || _tipos.isEmpty) ? null : _restaurarPadrao,
-                icon: _restaurandoPadrao
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.restart_alt_rounded),
+                onPressed:
+                    (_carregando || bloqueado || _tipos.isEmpty)
+                        ? null
+                        : _restaurarPadrao,
+                icon:
+                    _restaurandoPadrao
+                        ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.restart_alt_rounded),
                 label: const Text('Restaurar padrão'),
               ),
             ],
@@ -309,14 +349,22 @@ class _FormasRecebimentoConfiguracaoContentState
               children: <Widget>[info, const SizedBox(height: 10), actions],
             );
           }
-          return Row(children: <Widget>[Expanded(child: info), const SizedBox(width: 12), actions]);
+          return Row(
+            children: <Widget>[
+              Expanded(child: info),
+              const SizedBox(width: 12),
+              actions,
+            ],
+          );
         },
       ),
     );
   }
 
   int _numeroTipo(String codigoTipo) {
-    final RegExpMatch? match = RegExp(r'^tipo(\d+)$').firstMatch(codigoTipo.trim().toLowerCase());
+    final RegExpMatch? match = RegExp(
+      r'^tipo(\d+)$',
+    ).firstMatch(codigoTipo.trim().toLowerCase());
     if (match == null) return 999;
     return int.tryParse(match.group(1) ?? '') ?? 999;
   }
@@ -350,10 +398,26 @@ class _ResumoFormasRecebimentoCard extends StatelessWidget {
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool compacto = constraints.maxWidth < 860;
           final List<_MiniMetric> metricas = <_MiniMetric>[
-            _MiniMetric(icon: Icons.payments_rounded, label: 'Tipos configurados', value: '$total'),
-            _MiniMetric(icon: Icons.verified_rounded, label: 'Ativos', value: '$ativos'),
-            _MiniMetric(icon: Icons.flash_on_rounded, label: 'Natureza imediata', value: '$imediatos'),
-            _MiniMetric(icon: Icons.schedule_rounded, label: 'Natureza futura', value: '$futuros'),
+            _MiniMetric(
+              icon: Icons.payments_rounded,
+              label: 'Tipos configurados',
+              value: '$total',
+            ),
+            _MiniMetric(
+              icon: Icons.verified_rounded,
+              label: 'Ativos',
+              value: '$ativos',
+            ),
+            _MiniMetric(
+              icon: Icons.flash_on_rounded,
+              label: 'Natureza imediata',
+              value: '$imediatos',
+            ),
+            _MiniMetric(
+              icon: Icons.schedule_rounded,
+              label: 'Natureza futura',
+              value: '$futuros',
+            ),
           ];
           if (compacto) {
             return Column(
@@ -361,7 +425,12 @@ class _ResumoFormasRecebimentoCard extends StatelessWidget {
               children: <Widget>[
                 _ResumoHeader(theme: theme),
                 const SizedBox(height: 14),
-                Wrap(spacing: 10, runSpacing: 10, children: metricas.map((m) => _MiniMetricCard(data: m)).toList()),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children:
+                      metricas.map((m) => _MiniMetricCard(data: m)).toList(),
+                ),
               ],
             );
           }
@@ -369,7 +438,12 @@ class _ResumoFormasRecebimentoCard extends StatelessWidget {
             children: <Widget>[
               Expanded(child: _ResumoHeader(theme: theme)),
               const SizedBox(width: 16),
-              ...metricas.map((m) => Padding(padding: const EdgeInsets.only(left: 10), child: _MiniMetricCard(data: m))),
+              ...metricas.map(
+                (m) => Padding(
+                  padding: const EdgeInsets.only(left: 10),
+                  child: _MiniMetricCard(data: m),
+                ),
+              ),
             ],
           );
         },
@@ -390,7 +464,7 @@ class _ResumoHeader extends StatelessWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.10),
+            color: theme.colorScheme.primary.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(Icons.payments_rounded, color: theme.colorScheme.primary),
@@ -400,11 +474,18 @@ class _ResumoHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text('Formas de recebimento', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+              Text(
+                'Formas de recebimento',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
               const SizedBox(height: 2),
               Text(
                 'Configure os tipos exibidos no PDV, agenda financeira e recebimentos.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -415,7 +496,11 @@ class _ResumoHeader extends StatelessWidget {
 }
 
 class _MiniMetric {
-  const _MiniMetric({required this.icon, required this.label, required this.value});
+  const _MiniMetric({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
   final IconData icon;
   final String label;
   final String value;
@@ -432,7 +517,9 @@ class _MiniMetricCard extends StatelessWidget {
       width: 150,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.45),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.45,
+        ),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -443,8 +530,19 @@ class _MiniMetricCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(data.value, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-                Text(data.label, maxLines: 2, overflow: TextOverflow.ellipsis, style: theme.textTheme.labelSmall),
+                Text(
+                  data.value,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                  ),
+                ),
+                Text(
+                  data.label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall,
+                ),
               ],
             ),
           ),
@@ -455,7 +553,11 @@ class _MiniMetricCard extends StatelessWidget {
 }
 
 class _TipoRecebimentoCard extends StatelessWidget {
-  const _TipoRecebimentoCard({required this.tipo, required this.salvando, required this.onEditar});
+  const _TipoRecebimentoCard({
+    required this.tipo,
+    required this.salvando,
+    required this.onEditar,
+  });
 
   final TiposRecebimento tipo;
   final bool salvando;
@@ -464,22 +566,40 @@ class _TipoRecebimentoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final Color cor = _parseColor(tipo.corHex, fallback: theme.colorScheme.primary);
+    final Color cor = _parseColor(
+      tipo.corHex,
+      fallback: theme.colorScheme.primary,
+    );
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: theme.colorScheme.outlineVariant),
-        boxShadow: <BoxShadow>[BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 16, offset: const Offset(0, 8))],
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Row(
         children: <Widget>[
           Container(
             width: 52,
             height: 52,
-            decoration: BoxDecoration(color: cor.withOpacity(0.12), borderRadius: BorderRadius.circular(18)),
-            child: Icon(_resolverIcone(tipo.icone, naturezaRecebimento: tipo.naturezaRecebimento), color: cor),
+            decoration: BoxDecoration(
+              color: cor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(
+              _resolverIcone(
+                tipo.icone,
+                naturezaRecebimento: tipo.naturezaRecebimento,
+              ),
+              color: cor,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -491,10 +611,18 @@ class _TipoRecebimentoCard extends StatelessWidget {
                   runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: <Widget>[
-                    Text(tipo.descricaoExibicao, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+                    Text(
+                      tipo.descricaoExibicao,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                     _Badge(text: tipo.codigoTipo.toUpperCase()),
                     _Badge(text: tipo.naturezaRecebimento),
-                    _Badge(text: tipo.ativo ? 'Ativo' : 'Inativo', destaque: tipo.ativo),
+                    _Badge(
+                      text: tipo.ativo ? 'Ativo' : 'Inativo',
+                      destaque: tipo.ativo,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -502,15 +630,26 @@ class _TipoRecebimentoCard extends StatelessWidget {
                   'Ordem ${tipo.ordemExibicao} • ${tipo.aceitaParcelamento ? 'Aceita parcelamento' : 'Sem parcelamento'} • ${tipo.exigeCliente ? 'Exige cliente' : 'Cliente opcional'}',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 12),
           salvando
-              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-              : OutlinedButton.icon(onPressed: onEditar, icon: const Icon(Icons.edit_outlined), label: const Text('Editar')),
+              ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+              : OutlinedButton.icon(
+                onPressed: onEditar,
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Editar'),
+              ),
         ],
       ),
     );
@@ -528,13 +667,19 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: destaque ? const Color(0xFFDCFCE7) : theme.colorScheme.surfaceContainerHighest,
+        color:
+            destaque
+                ? const Color(0xFFDCFCE7)
+                : theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         text,
         style: TextStyle(
-          color: destaque ? const Color(0xFF166534) : theme.colorScheme.onSurfaceVariant,
+          color:
+              destaque
+                  ? const Color(0xFF166534)
+                  : theme.colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w800,
           fontSize: 11,
         ),
@@ -548,10 +693,12 @@ class _TipoRecebimentoEditDialog extends StatefulWidget {
   final TiposRecebimento tipo;
 
   @override
-  State<_TipoRecebimentoEditDialog> createState() => _TipoRecebimentoEditDialogState();
+  State<_TipoRecebimentoEditDialog> createState() =>
+      _TipoRecebimentoEditDialogState();
 }
 
-class _TipoRecebimentoEditDialogState extends State<_TipoRecebimentoEditDialog> {
+class _TipoRecebimentoEditDialogState
+    extends State<_TipoRecebimentoEditDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _descricaoController;
   late final TextEditingController _ordemController;
@@ -579,15 +726,22 @@ class _TipoRecebimentoEditDialogState extends State<_TipoRecebimentoEditDialog> 
   @override
   void initState() {
     super.initState();
-    _descricaoController = TextEditingController(text: widget.tipo.descricaoExibicao);
-    _ordemController = TextEditingController(text: widget.tipo.ordemExibicao.toString());
-    _corController = TextEditingController(text: widget.tipo.corHex.trim().isEmpty ? '#2563EB' : widget.tipo.corHex);
+    _descricaoController = TextEditingController(
+      text: widget.tipo.descricaoExibicao,
+    );
+    _ordemController = TextEditingController(
+      text: widget.tipo.ordemExibicao.toString(),
+    );
+    _corController = TextEditingController(
+      text: widget.tipo.corHex.trim().isEmpty ? '#2563EB' : widget.tipo.corHex,
+    );
     _ativo = widget.tipo.ativo;
     _aceitaParcelamento = widget.tipo.aceitaParcelamento;
     _exigeCliente = widget.tipo.exigeCliente;
-    _natureza = _naturezas.contains(widget.tipo.naturezaRecebimento.toUpperCase())
-        ? widget.tipo.naturezaRecebimento.toUpperCase()
-        : 'IMEDIATO';
+    _natureza =
+        _naturezas.contains(widget.tipo.naturezaRecebimento.toUpperCase())
+            ? widget.tipo.naturezaRecebimento.toUpperCase()
+            : 'IMEDIATO';
     _icone = _normalizarIconeParaEdicao(widget.tipo.icone);
   }
 
@@ -613,12 +767,22 @@ class _TipoRecebimentoEditDialogState extends State<_TipoRecebimentoEditDialog> 
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Text('Código: ${widget.tipo.codigoTipo.toUpperCase()}', style: theme.textTheme.labelLarge),
+                Text(
+                  'Código: ${widget.tipo.codigoTipo.toUpperCase()}',
+                  style: theme.textTheme.labelLarge,
+                ),
                 const SizedBox(height: 14),
                 TextFormField(
                   controller: _descricaoController,
-                  decoration: const InputDecoration(labelText: 'Descrição de exibição', border: OutlineInputBorder()),
-                  validator: (String? value) => (value ?? '').trim().isEmpty ? 'Informe a descrição.' : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Descrição de exibição',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator:
+                      (String? value) =>
+                          (value ?? '').trim().isEmpty
+                              ? 'Informe a descrição.'
+                              : null,
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -627,36 +791,41 @@ class _TipoRecebimentoEditDialogState extends State<_TipoRecebimentoEditDialog> 
                       child: TextFormField(
                         controller: _ordemController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Ordem', border: OutlineInputBorder()),
+                        decoration: const InputDecoration(
+                          labelText: 'Ordem',
+                          border: OutlineInputBorder(),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: TextFormField(
                         controller: _corController,
-                        decoration: const InputDecoration(labelText: 'Cor HEX', border: OutlineInputBorder()),
+                        decoration: const InputDecoration(
+                          labelText: 'Cor HEX',
+                          border: OutlineInputBorder(),
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
+                SixWebSelectField(
+                  label: 'Natureza',
                   value: _natureza,
-                  decoration: const InputDecoration(labelText: 'Natureza', border: OutlineInputBorder()),
-                  items: _naturezas.map((String item) => DropdownMenuItem<String>(value: item, child: Text(item))).toList(),
-                  onChanged: (String? value) {
-                    if (value != null) setState(() => _natureza = value);
+                  items: _naturezas,
+                  onSelected: (String value) {
+                    setState(() => _natureza = value);
                   },
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: _iconesDisponiveis.contains(_icone) ? _icone : 'payments',
-                  decoration: const InputDecoration(labelText: 'Ícone', border: OutlineInputBorder()),
-                  items: _iconesDisponiveis
-                      .map((String item) => DropdownMenuItem<String>(value: item, child: Text(item)))
-                      .toList(),
-                  onChanged: (String? value) {
-                    if (value != null) setState(() => _icone = value);
+                SixWebSelectField(
+                  label: 'Ícone',
+                  value:
+                      _iconesDisponiveis.contains(_icone) ? _icone : 'payments',
+                  items: _iconesDisponiveis,
+                  onSelected: (String value) {
+                    setState(() => _icone = value);
                   },
                 ),
                 const SizedBox(height: 12),
@@ -670,13 +839,16 @@ class _TipoRecebimentoEditDialogState extends State<_TipoRecebimentoEditDialog> 
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Aceita parcelamento'),
                   value: _aceitaParcelamento,
-                  onChanged: (bool value) => setState(() => _aceitaParcelamento = value),
+                  onChanged:
+                      (bool value) =>
+                          setState(() => _aceitaParcelamento = value),
                 ),
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Exige cliente'),
                   value: _exigeCliente,
-                  onChanged: (bool value) => setState(() => _exigeCliente = value),
+                  onChanged:
+                      (bool value) => setState(() => _exigeCliente = value),
                 ),
               ],
             ),
@@ -684,8 +856,15 @@ class _TipoRecebimentoEditDialogState extends State<_TipoRecebimentoEditDialog> 
         ),
       ),
       actions: <Widget>[
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
-        FilledButton.icon(onPressed: _salvar, icon: const Icon(Icons.save_outlined), label: const Text('Salvar')),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton.icon(
+          onPressed: _salvar,
+          icon: const Icon(Icons.save_outlined),
+          label: const Text('Salvar'),
+        ),
       ],
     );
   }
@@ -700,8 +879,13 @@ class _TipoRecebimentoEditDialogState extends State<_TipoRecebimentoEditDialog> 
         ativo: _ativo,
         aceitaParcelamento: _aceitaParcelamento,
         exigeCliente: _exigeCliente,
-        ordemExibicao: int.tryParse(_ordemController.text.trim()) ?? widget.tipo.ordemExibicao,
-        corHex: _corController.text.trim().isEmpty ? '#2563EB' : _corController.text.trim(),
+        ordemExibicao:
+            int.tryParse(_ordemController.text.trim()) ??
+            widget.tipo.ordemExibicao,
+        corHex:
+            _corController.text.trim().isEmpty
+                ? '#2563EB'
+                : _corController.text.trim(),
         icone: _icone,
       ),
     );
@@ -760,7 +944,12 @@ class _EmptyStateCard extends StatelessWidget {
 }
 
 class _MessageCard extends StatelessWidget {
-  const _MessageCard({required this.icon, required this.title, required this.actionLabel, required this.onAction});
+  const _MessageCard({
+    required this.icon,
+    required this.title,
+    required this.actionLabel,
+    required this.onAction,
+  });
   final IconData icon;
   final String title;
   final String actionLabel;
@@ -782,9 +971,17 @@ class _MessageCard extends StatelessWidget {
         children: <Widget>[
           Icon(icon, color: theme.colorScheme.primary, size: 36),
           const SizedBox(height: 10),
-          Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w800)),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(onPressed: onAction, icon: const Icon(Icons.refresh_rounded), label: Text(actionLabel)),
+          OutlinedButton.icon(
+            onPressed: onAction,
+            icon: const Icon(Icons.refresh_rounded),
+            label: Text(actionLabel),
+          ),
         ],
       ),
     );
@@ -792,7 +989,10 @@ class _MessageCard extends StatelessWidget {
 }
 
 IconData _resolverIcone(String value, {required String naturezaRecebimento}) {
-  final String normalized = value.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  final String normalized = value.trim().toLowerCase().replaceAll(
+    RegExp(r'[^a-z0-9]'),
+    '',
+  );
   const Map<String, IconData> icones = <String, IconData>{
     'payments': Icons.payments_rounded,
     'paymentsrounded': Icons.payments_rounded,
@@ -820,18 +1020,31 @@ IconData _resolverIcone(String value, {required String naturezaRecebimento}) {
   };
   final IconData? icon = icones[normalized];
   if (icon != null) return icon;
-  if (naturezaRecebimento.trim().toUpperCase() == 'FUTURO') return Icons.schedule_rounded;
+  if (naturezaRecebimento.trim().toUpperCase() == 'FUTURO') {
+    return Icons.schedule_rounded;
+  }
   return Icons.payments_rounded;
 }
 
 String _normalizarIconeParaEdicao(String value) {
-  final String normalized = value.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  final String normalized = value.trim().toLowerCase().replaceAll(
+    RegExp(r'[^a-z0-9]'),
+    '',
+  );
   if (normalized.contains('pix') || normalized.contains('qrcode')) return 'pix';
   if (normalized.contains('credit')) return 'credit_card';
   if (normalized.contains('debit')) return 'debit_card';
-  if (normalized.contains('boleto') || normalized.contains('receipt') || normalized.contains('invoice')) return 'boleto';
-  if (normalized.contains('schedule') || normalized.contains('future')) return 'schedule';
-  if (normalized.contains('wallet') || normalized.contains('accountbalance')) return 'wallet';
+  if (normalized.contains('boleto') ||
+      normalized.contains('receipt') ||
+      normalized.contains('invoice')) {
+    return 'boleto';
+  }
+  if (normalized.contains('schedule') || normalized.contains('future')) {
+    return 'schedule';
+  }
+  if (normalized.contains('wallet') || normalized.contains('accountbalance')) {
+    return 'wallet';
+  }
   if (normalized.contains('money')) return 'money';
   if (normalized.contains('cash')) return 'cash';
   return 'payments';

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../components/web/six_web_select_field.dart';
+
 class RegrasOperacionaisConfiguracaoContent extends StatefulWidget {
   const RegrasOperacionaisConfiguracaoContent({super.key});
 
@@ -60,12 +62,15 @@ class _RegrasOperacionaisConfiguracaoContentState
   double _limiteDescontoPercentual = 10;
   double _percentualComissaoPadrao = 5;
 
-  final TextEditingController _nomeCatalogoController =
-      TextEditingController(text: 'Catálogo Six Repair');
-  final TextEditingController _slugCatalogoController =
-      TextEditingController(text: 'six-repair-center');
-  final TextEditingController _prefixoMesaController =
-      TextEditingController(text: 'Mesa');
+  final TextEditingController _nomeCatalogoController = TextEditingController(
+    text: 'Catálogo Six Repair',
+  );
+  final TextEditingController _slugCatalogoController = TextEditingController(
+    text: 'six-repair-center',
+  );
+  final TextEditingController _prefixoMesaController = TextEditingController(
+    text: 'Mesa',
+  );
   final TextEditingController _quantidadeMesasController =
       TextEditingController(text: '20');
   final TextEditingController _diasBloqueioAtrasoController =
@@ -151,16 +156,18 @@ class _RegrasOperacionaisConfiguracaoContentState
     'Apenas produtos',
   ];
 
-  static const List<_OpcaoOperacional> _atributosGradeDisponiveis =
-      <_OpcaoOperacional>[
+  static const List<_OpcaoOperacional>
+  _atributosGradeDisponiveis = <_OpcaoOperacional>[
     _OpcaoOperacional(
       label: 'Cor',
-      description: 'Permite variações como preto, branco, azul e outras cores comerciais.',
+      description:
+          'Permite variações como preto, branco, azul e outras cores comerciais.',
       icon: Icons.palette_outlined,
     ),
     _OpcaoOperacional(
       label: 'Tamanho',
-      description: 'Útil para acessórios, peças e produtos com medidas comerciais.',
+      description:
+          'Útil para acessórios, peças e produtos com medidas comerciais.',
       icon: Icons.photo_size_select_small_rounded,
     ),
     _OpcaoOperacional(
@@ -185,43 +192,44 @@ class _RegrasOperacionaisConfiguracaoContentState
     ),
   ];
 
-  static const List<_OpcaoOperacional> _unidadesDisponiveis = <_OpcaoOperacional>[
-    _OpcaoOperacional(
-      label: 'Unidade',
-      description: 'Peças, acessórios e itens vendidos individualmente.',
-      icon: Icons.inventory_2_outlined,
-    ),
-    _OpcaoOperacional(
-      label: 'Área',
-      description: 'm², cm² e serviços medidos por superfície.',
-      icon: Icons.crop_square_rounded,
-    ),
-    _OpcaoOperacional(
-      label: 'Distância',
-      description: 'm, km e cobranças por deslocamento.',
-      icon: Icons.straighten_rounded,
-    ),
-    _OpcaoOperacional(
-      label: 'Volume',
-      description: 'ml, l e insumos medidos por capacidade.',
-      icon: Icons.water_drop_outlined,
-    ),
-    _OpcaoOperacional(
-      label: 'Tempo',
-      description: 'Hora técnica, diária, mensalidade e assinatura.',
-      icon: Icons.schedule_rounded,
-    ),
-    _OpcaoOperacional(
-      label: 'Peso',
-      description: 'g, kg e materiais vendidos por massa.',
-      icon: Icons.scale_rounded,
-    ),
-    _OpcaoOperacional(
-      label: 'Moeda',
-      description: 'Valores financeiros tratados como unidade de cobrança.',
-      icon: Icons.paid_outlined,
-    ),
-  ];
+  static const List<_OpcaoOperacional> _unidadesDisponiveis =
+      <_OpcaoOperacional>[
+        _OpcaoOperacional(
+          label: 'Unidade',
+          description: 'Peças, acessórios e itens vendidos individualmente.',
+          icon: Icons.inventory_2_outlined,
+        ),
+        _OpcaoOperacional(
+          label: 'Área',
+          description: 'm², cm² e serviços medidos por superfície.',
+          icon: Icons.crop_square_rounded,
+        ),
+        _OpcaoOperacional(
+          label: 'Distância',
+          description: 'm, km e cobranças por deslocamento.',
+          icon: Icons.straighten_rounded,
+        ),
+        _OpcaoOperacional(
+          label: 'Volume',
+          description: 'ml, l e insumos medidos por capacidade.',
+          icon: Icons.water_drop_outlined,
+        ),
+        _OpcaoOperacional(
+          label: 'Tempo',
+          description: 'Hora técnica, diária, mensalidade e assinatura.',
+          icon: Icons.schedule_rounded,
+        ),
+        _OpcaoOperacional(
+          label: 'Peso',
+          description: 'g, kg e materiais vendidos por massa.',
+          icon: Icons.scale_rounded,
+        ),
+        _OpcaoOperacional(
+          label: 'Moeda',
+          description: 'Valores financeiros tratados como unidade de cobrança.',
+          icon: Icons.paid_outlined,
+        ),
+      ];
 
   @override
   void dispose() {
@@ -255,7 +263,9 @@ class _RegrasOperacionaisConfiguracaoContentState
               );
             },
             child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight - 48,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
@@ -286,20 +296,21 @@ class _RegrasOperacionaisConfiguracaoContentState
   }
 
   Widget _buildIntroCard(ThemeData theme) {
-    final int regrasAtivas = <bool>[
-      _permitirVendaCatalogoPorLink,
-      _cadastroGradeProdutos,
-      _vendaPorMesa,
-      _clienteObrigatorioNaVenda,
-      _permitirVendasFiado,
-      _exigirAprovacaoCredito,
-      _controlarEstoque,
-      _venderComEstoqueNegativo,
-      _concederDescontoNaVenda,
-      _aberturaCaixaObrigatoria,
-      _gerarComissaoColaborador,
-      _produtoApenasComUnidadeMedida,
-    ].where((bool value) => value).length;
+    final int regrasAtivas =
+        <bool>[
+          _permitirVendaCatalogoPorLink,
+          _cadastroGradeProdutos,
+          _vendaPorMesa,
+          _clienteObrigatorioNaVenda,
+          _permitirVendasFiado,
+          _exigirAprovacaoCredito,
+          _controlarEstoque,
+          _venderComEstoqueNegativo,
+          _concederDescontoNaVenda,
+          _aberturaCaixaObrigatoria,
+          _gerarComissaoColaborador,
+          _produtoApenasComUnidadeMedida,
+        ].where((bool value) => value).length;
 
     return Container(
       padding: const EdgeInsets.all(22),
@@ -307,8 +318,8 @@ class _RegrasOperacionaisConfiguracaoContentState
         borderRadius: BorderRadius.circular(26),
         gradient: LinearGradient(
           colors: <Color>[
-            theme.colorScheme.primary.withOpacity(0.10),
-            theme.colorScheme.surfaceContainerHighest.withOpacity(0.62),
+            theme.colorScheme.primary.withValues(alpha: 0.10),
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.62),
           ],
         ),
         border: Border.all(color: theme.colorScheme.outlineVariant),
@@ -322,10 +333,14 @@ class _RegrasOperacionaisConfiguracaoContentState
             width: 58,
             height: 58,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.12),
+              color: theme.colorScheme.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Icon(Icons.rule_folder_outlined, color: theme.colorScheme.primary, size: 30),
+            child: Icon(
+              Icons.rule_folder_outlined,
+              color: theme.colorScheme.primary,
+              size: 30,
+            ),
           ),
           SizedBox(
             width: 560,
@@ -518,7 +533,9 @@ class _RegrasOperacionaisConfiguracaoContentState
           const SizedBox(height: 18),
           Text(
             'Atributos autorizados para grade',
-            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w900,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -532,24 +549,27 @@ class _RegrasOperacionaisConfiguracaoContentState
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: _atributosGradeDisponiveis.map((_OpcaoOperacional atributo) {
-              final bool selected = _atributosGradeSelecionados.contains(atributo.label);
-              return _buildChoiceCard(
-                theme,
-                option: atributo,
-                selected: selected,
-                enabled: _cadastroGradeProdutos,
-                onTap: () {
-                  setState(() {
-                    if (selected) {
-                      _atributosGradeSelecionados.remove(atributo.label);
-                    } else {
-                      _atributosGradeSelecionados.add(atributo.label);
-                    }
-                  });
-                },
-              );
-            }).toList(),
+            children:
+                _atributosGradeDisponiveis.map((_OpcaoOperacional atributo) {
+                  final bool selected = _atributosGradeSelecionados.contains(
+                    atributo.label,
+                  );
+                  return _buildChoiceCard(
+                    theme,
+                    option: atributo,
+                    selected: selected,
+                    enabled: _cadastroGradeProdutos,
+                    onTap: () {
+                      setState(() {
+                        if (selected) {
+                          _atributosGradeSelecionados.remove(atributo.label);
+                        } else {
+                          _atributosGradeSelecionados.add(atributo.label);
+                        }
+                      });
+                    },
+                  );
+                }).toList(),
           ),
         ],
       ),
@@ -688,7 +708,8 @@ class _RegrasOperacionaisConfiguracaoContentState
           const SizedBox(height: 18),
           _buildSliderBox(
             theme: theme,
-            title: 'Taxa de serviço sugerida: ${_taxaServicoMesaPercentual.toStringAsFixed(0)}%',
+            title:
+                'Taxa de serviço sugerida: ${_taxaServicoMesaPercentual.toStringAsFixed(0)}%',
             subtitle:
                 'Campo pensado para restaurantes e lanchonetes que trabalham com taxa de atendimento no fechamento da mesa.',
             value: _taxaServicoMesaPercentual,
@@ -908,7 +929,8 @@ class _RegrasOperacionaisConfiguracaoContentState
           const SizedBox(height: 18),
           _buildSliderBox(
             theme: theme,
-            title: 'Limite de crédito padrão: R\$ ${_limiteCreditoPadrao.toStringAsFixed(0)}',
+            title:
+                'Limite de crédito padrão: R\$ ${_limiteCreditoPadrao.toStringAsFixed(0)}',
             subtitle:
                 'Valor inicial sugerido para clientes que ainda não possuem análise individual de crédito.',
             value: _limiteCreditoPadrao,
@@ -924,7 +946,8 @@ class _RegrasOperacionaisConfiguracaoContentState
           const SizedBox(height: 18),
           _buildSliderBox(
             theme: theme,
-            title: 'Entrada mínima no fiado: ${_entradaMinimaFiadoPercentual.toStringAsFixed(0)}%',
+            title:
+                'Entrada mínima no fiado: ${_entradaMinimaFiadoPercentual.toStringAsFixed(0)}%',
             subtitle:
                 'Percentual mínimo que pode ser exigido no ato da venda para reduzir risco de crédito.',
             value: _entradaMinimaFiadoPercentual,
@@ -955,7 +978,8 @@ class _RegrasOperacionaisConfiguracaoContentState
           _buildRuleSwitch(
             theme: theme,
             title: 'Controlar estoque',
-            subtitle: 'Baixa saldo nas vendas e mantém relatórios de movimentação confiáveis.',
+            subtitle:
+                'Baixa saldo nas vendas e mantém relatórios de movimentação confiáveis.',
             value: _controlarEstoque,
             onChanged: (bool value) {
               setState(() {
@@ -971,7 +995,8 @@ class _RegrasOperacionaisConfiguracaoContentState
                 'Permite concluir a venda mesmo quando o saldo do produto estiver abaixo de zero.',
             value: _venderComEstoqueNegativo,
             enabled: _controlarEstoque,
-            disabledHint: 'Disponível apenas quando o controle de estoque estiver ativo.',
+            disabledHint:
+                'Disponível apenas quando o controle de estoque estiver ativo.',
             onChanged: (bool value) {
               setState(() => _venderComEstoqueNegativo = value);
             },
@@ -979,7 +1004,8 @@ class _RegrasOperacionaisConfiguracaoContentState
           _buildRuleSwitch(
             theme: theme,
             title: 'Abertura de caixa obrigatória',
-            subtitle: 'Impede vendas, recebimentos e sangrias antes da abertura formal do caixa.',
+            subtitle:
+                'Impede vendas, recebimentos e sangrias antes da abertura formal do caixa.',
             value: _aberturaCaixaObrigatoria,
             onChanged: (bool value) {
               setState(() => _aberturaCaixaObrigatoria = value);
@@ -994,7 +1020,8 @@ class _RegrasOperacionaisConfiguracaoContentState
     return _buildSectionCard(
       theme: theme,
       title: 'Descontos na venda',
-      subtitle: 'Campos sugeridos para liberar desconto no balcão sem perder governança operacional.',
+      subtitle:
+          'Campos sugeridos para liberar desconto no balcão sem perder governança operacional.',
       icon: Icons.percent_rounded,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1006,7 +1033,8 @@ class _RegrasOperacionaisConfiguracaoContentState
               _buildRuleSwitch(
                 theme: theme,
                 title: 'Conceder desconto na hora da venda',
-                subtitle: 'Permite que o operador aplique desconto diretamente no fluxo de venda.',
+                subtitle:
+                    'Permite que o operador aplique desconto diretamente no fluxo de venda.',
                 value: _concederDescontoNaVenda,
                 onChanged: (bool value) {
                   setState(() => _concederDescontoNaVenda = value);
@@ -1015,7 +1043,8 @@ class _RegrasOperacionaisConfiguracaoContentState
               _buildRuleSwitch(
                 theme: theme,
                 title: 'Exigir justificativa do desconto',
-                subtitle: 'Registra o motivo informado pelo operador para auditoria futura.',
+                subtitle:
+                    'Registra o motivo informado pelo operador para auditoria futura.',
                 value: _exigirJustificativaDesconto,
                 enabled: _concederDescontoNaVenda,
                 onChanged: (bool value) {
@@ -1038,8 +1067,10 @@ class _RegrasOperacionaisConfiguracaoContentState
           const SizedBox(height: 18),
           _buildSliderBox(
             theme: theme,
-            title: 'Limite máximo de desconto: ${_limiteDescontoPercentual.toStringAsFixed(0)}%',
-            subtitle: 'Campo sugerido para restringir descontos manuais conforme política do comércio.',
+            title:
+                'Limite máximo de desconto: ${_limiteDescontoPercentual.toStringAsFixed(0)}%',
+            subtitle:
+                'Campo sugerido para restringir descontos manuais conforme política do comércio.',
             value: _limiteDescontoPercentual,
             min: 0,
             max: 50,
@@ -1058,7 +1089,8 @@ class _RegrasOperacionaisConfiguracaoContentState
     return _buildSectionCard(
       theme: theme,
       title: 'Comissão de colaboradores',
-      subtitle: 'Campos sugeridos para calcular comissão por venda, serviço técnico ou produto.',
+      subtitle:
+          'Campos sugeridos para calcular comissão por venda, serviço técnico ou produto.',
       icon: Icons.groups_2_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1080,7 +1112,8 @@ class _RegrasOperacionaisConfiguracaoContentState
               _buildRuleSwitch(
                 theme: theme,
                 title: 'Aplicar comissão em serviços',
-                subtitle: 'Inclui mão de obra, assistência técnica e serviços avulsos no cálculo.',
+                subtitle:
+                    'Inclui mão de obra, assistência técnica e serviços avulsos no cálculo.',
                 value: _aplicarComissaoEmServicos,
                 enabled: _gerarComissaoColaborador,
                 onChanged: (bool value) {
@@ -1090,7 +1123,8 @@ class _RegrasOperacionaisConfiguracaoContentState
               _buildRuleSwitch(
                 theme: theme,
                 title: 'Aplicar comissão em produtos',
-                subtitle: 'Inclui venda de peças, acessórios e mercadorias no cálculo da comissão.',
+                subtitle:
+                    'Inclui venda de peças, acessórios e mercadorias no cálculo da comissão.',
                 value: _aplicarComissaoEmProdutos,
                 enabled: _gerarComissaoColaborador,
                 onChanged: (bool value) {
@@ -1113,7 +1147,8 @@ class _RegrasOperacionaisConfiguracaoContentState
           const SizedBox(height: 18),
           _buildSliderBox(
             theme: theme,
-            title: 'Comissão padrão sugerida: ${_percentualComissaoPadrao.toStringAsFixed(0)}%',
+            title:
+                'Comissão padrão sugerida: ${_percentualComissaoPadrao.toStringAsFixed(0)}%',
             subtitle:
                 'Valor inicial para novas regras; pode evoluir depois para política por colaborador, produto ou serviço.',
             value: _percentualComissaoPadrao,
@@ -1134,7 +1169,8 @@ class _RegrasOperacionaisConfiguracaoContentState
     return _buildSectionCard(
       theme: theme,
       title: 'Unidades de medida',
-      subtitle: 'Campos sugeridos para limitar cadastro e venda de produtos às unidades aceitas pela empresa.',
+      subtitle:
+          'Campos sugeridos para limitar cadastro e venda de produtos às unidades aceitas pela empresa.',
       icon: Icons.category_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1145,7 +1181,8 @@ class _RegrasOperacionaisConfiguracaoContentState
             children: <Widget>[
               _buildRuleSwitch(
                 theme: theme,
-                title: 'Permitir cadastro de produto apenas por unidade de medida',
+                title:
+                    'Permitir cadastro de produto apenas por unidade de medida',
                 subtitle:
                     'Exige unidade informada e restringe o cadastro às categorias autorizadas abaixo.',
                 value: _produtoApenasComUnidadeMedida,
@@ -1158,7 +1195,9 @@ class _RegrasOperacionaisConfiguracaoContentState
           const SizedBox(height: 18),
           Text(
             'Unidades autorizadas para vendas',
-            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w900,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -1172,23 +1211,26 @@ class _RegrasOperacionaisConfiguracaoContentState
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: _unidadesDisponiveis.map((_OpcaoOperacional unidade) {
-              final bool selected = _unidadesMedidaAutorizadas.contains(unidade.label);
-              return _buildChoiceCard(
-                theme,
-                option: unidade,
-                selected: selected,
-                onTap: () {
-                  setState(() {
-                    if (selected) {
-                      _unidadesMedidaAutorizadas.remove(unidade.label);
-                    } else {
-                      _unidadesMedidaAutorizadas.add(unidade.label);
-                    }
-                  });
-                },
-              );
-            }).toList(),
+            children:
+                _unidadesDisponiveis.map((_OpcaoOperacional unidade) {
+                  final bool selected = _unidadesMedidaAutorizadas.contains(
+                    unidade.label,
+                  );
+                  return _buildChoiceCard(
+                    theme,
+                    option: unidade,
+                    selected: selected,
+                    onTap: () {
+                      setState(() {
+                        if (selected) {
+                          _unidadesMedidaAutorizadas.remove(unidade.label);
+                        } else {
+                          _unidadesMedidaAutorizadas.add(unidade.label);
+                        }
+                      });
+                    },
+                  );
+                }).toList(),
           ),
         ],
       ),
@@ -1205,7 +1247,7 @@ class _RegrasOperacionaisConfiguracaoContentState
       width: 180,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withOpacity(0.82),
+        color: theme.colorScheme.surface.withValues(alpha: 0.82),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
@@ -1221,7 +1263,9 @@ class _RegrasOperacionaisConfiguracaoContentState
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 Text(
                   subtitle,
@@ -1254,7 +1298,7 @@ class _RegrasOperacionaisConfiguracaoContentState
         border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -1270,7 +1314,7 @@ class _RegrasOperacionaisConfiguracaoContentState
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.10),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(icon, color: theme.colorScheme.primary),
@@ -1282,7 +1326,9 @@ class _RegrasOperacionaisConfiguracaoContentState
                   children: <Widget>[
                     Text(
                       title,
-                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -1333,7 +1379,9 @@ class _RegrasOperacionaisConfiguracaoContentState
                 children: <Widget>[
                   Text(
                     title,
-                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -1398,21 +1446,12 @@ class _RegrasOperacionaisConfiguracaoContentState
       opacity: enabled ? 1 : 0.55,
       child: SizedBox(
         width: 430,
-        child: DropdownButtonFormField<String>(
+        child: SixWebSelectField(
+          label: label,
           value: value,
-          onChanged: enabled ? onChanged : null,
-          decoration: InputDecoration(
-            labelText: label,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
-          ),
-          items: items
-              .map(
-                (String item) => DropdownMenuItem<String>(
-                  value: item,
-                  child: Text(item),
-                ),
-              )
-              .toList(),
+          items: items,
+          enabled: enabled,
+          onSelected: (String selected) => onChanged(selected),
         ),
       ),
     );
@@ -1444,7 +1483,12 @@ class _RegrasOperacionaisConfiguracaoContentState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+            Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
+            ),
             const SizedBox(height: 4),
             Text(
               subtitle,
@@ -1486,14 +1530,16 @@ class _RegrasOperacionaisConfiguracaoContentState
           width: 260,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: selected
-                ? theme.colorScheme.primary.withOpacity(0.10)
-                : theme.colorScheme.surfaceContainerLowest,
+            color:
+                selected
+                    ? theme.colorScheme.primary.withValues(alpha: 0.10)
+                    : theme.colorScheme.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: selected
-                  ? theme.colorScheme.primary.withOpacity(0.35)
-                  : theme.colorScheme.outlineVariant,
+              color:
+                  selected
+                      ? theme.colorScheme.primary.withValues(alpha: 0.35)
+                      : theme.colorScheme.outlineVariant,
             ),
           ),
           child: Row(
@@ -1503,9 +1549,10 @@ class _RegrasOperacionaisConfiguracaoContentState
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: selected
-                      ? theme.colorScheme.primary.withOpacity(0.12)
-                      : theme.colorScheme.surfaceContainerHighest,
+                  color:
+                      selected
+                          ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                          : theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(option.icon, color: theme.colorScheme.primary),
@@ -1522,11 +1569,15 @@ class _RegrasOperacionaisConfiguracaoContentState
                             option.label,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                         ),
                         Icon(
-                          selected ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
+                          selected
+                              ? Icons.check_circle_rounded
+                              : Icons.add_circle_outline_rounded,
                           color: theme.colorScheme.primary,
                           size: 20,
                         ),
@@ -1582,7 +1633,9 @@ class _RegrasOperacionaisConfiguracaoContentState
                 ..hideCurrentSnackBar()
                 ..showSnackBar(
                   const SnackBar(
-                    content: Text('Rascunho das regras operacionais validado localmente. Backend não integrado.'),
+                    content: Text(
+                      'Rascunho das regras operacionais validado localmente. Backend não integrado.',
+                    ),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );

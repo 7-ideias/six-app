@@ -274,12 +274,13 @@ extension _PdvWeb on _PaginaPrincipalWebState {
   }
 
   Widget _buildSessaoCaixaPdvChip(AppLocalizations? l10n) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     if (_carregandoSessaoCaixaPdv) {
       return _buildStatusChip(
         label: l10n?.pdvCashSessionChecking ?? 'Verificando sessão do caixa',
         icon: Icons.sync_rounded,
-        foregroundColor: _pdvTheme.iconColor,
-        backgroundColor: _pdvTheme.iconColor.withValues(alpha: 0.11),
+        foregroundColor: tokens.info,
+        backgroundColor: tokens.info.withValues(alpha: 0.11),
       );
     }
 
@@ -287,8 +288,8 @@ extension _PdvWeb on _PaginaPrincipalWebState {
       return _buildStatusChip(
         label: l10n?.pdvCashSessionUnavailable ?? 'Sessão indisponível',
         icon: Icons.cloud_off_outlined,
-        foregroundColor: _pdvTheme.warningColor,
-        backgroundColor: _pdvTheme.warningColor.withValues(alpha: 0.15),
+        foregroundColor: tokens.danger,
+        backgroundColor: tokens.danger.withValues(alpha: 0.12),
       );
     }
 
@@ -297,20 +298,19 @@ extension _PdvWeb on _PaginaPrincipalWebState {
       return _buildStatusChip(
         label: l10n?.pdvCashSessionNotOpen ?? 'Sem sessão aberta',
         icon: Icons.point_of_sale_outlined,
-        foregroundColor: _pdvTheme.warningColor,
-        backgroundColor: _pdvTheme.warningColor.withValues(alpha: 0.15),
+        foregroundColor: tokens.statusNeutral,
+        backgroundColor: tokens.surfaceMuted,
       );
     }
 
     final bool aberta = _sessaoCaixaPdvAberta(sessao);
+    final Color foreground = aberta ? tokens.success : tokens.statusNeutral;
     return _buildStatusChip(
       label: _labelSessaoCaixaPdv(sessao, l10n),
       icon: aberta ? Icons.point_of_sale_outlined : Icons.lock_clock_outlined,
-      foregroundColor: aberta ? _pdvTheme.successColor : _pdvTheme.warningColor,
+      foregroundColor: foreground,
       backgroundColor:
-          aberta
-              ? _pdvTheme.successColor.withValues(alpha: 0.12)
-              : _pdvTheme.warningColor.withValues(alpha: 0.15),
+          aberta ? tokens.success.withValues(alpha: 0.12) : tokens.surfaceMuted,
     );
   }
 
@@ -663,6 +663,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
     final String itemKey = _itemVisualKey(produto);
     final _PdvItemVisualFeedback? feedback = _itemVisualFeedbackForKey(itemKey);
     final bool podeEditarVenda = _pdvPodeLancarVenda;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final Color baseColor =
         index.isEven ? _pdvTheme.backgroundSurface : _pdvTheme.backgroundPage;
     final Color rowColor =
@@ -798,9 +799,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                           podeEditarVenda
                               ? () => _removerProduto(produto)
                               : null,
-                      foregroundColor: Theme.of(
-                        context,
-                      ).colorScheme.error.withValues(alpha: 0.75),
+                      foregroundColor: tokens.danger,
                     ),
                   ],
                 ),
@@ -974,6 +973,9 @@ extension _PdvWeb on _PaginaPrincipalWebState {
 
   Widget _buildResumoVendaLateral() {
     final AppLocalizations? l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool dark = theme.colorScheme.brightness == Brightness.dark;
     final double total = _calcularTotal();
     final String cliente =
         _clienteSelecionadoNaVenda
@@ -1084,8 +1086,9 @@ extension _PdvWeb on _PaginaPrincipalWebState {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _pdvTheme.iconColor,
+                color: dark ? tokens.surfaceElevated : _pdvTheme.iconColor,
                 borderRadius: BorderRadius.circular(12),
+                border: dark ? Border.all(color: tokens.selectedBorder) : null,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1093,7 +1096,10 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                   Text(
                     l10n?.pdvWebTotalLabel ?? 'Total',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.82),
+                      color:
+                          dark
+                              ? tokens.secondaryText
+                              : Colors.white.withValues(alpha: 0.82),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -1108,10 +1114,10 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                     curve: Curves.easeOutCubic,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
-                      color: Colors.white,
+                      color: dark ? tokens.info : Colors.white,
                     ),
                   ),
                 ],
@@ -1484,8 +1490,12 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                   icon: const Icon(Icons.delete_sweep_outlined),
                   label: Text(l10n?.pdvWebClearSaleAction ?? 'Limpar venda'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _pdvTheme.warningColor,
-                    side: BorderSide(color: _pdvTheme.warningColor),
+                    foregroundColor: WebThemeTokens.of(context).danger,
+                    side: BorderSide(
+                      color: WebThemeTokens.of(
+                        context,
+                      ).danger.withValues(alpha: 0.58),
+                    ),
                   ),
                 ),
             ],
@@ -1500,9 +1510,8 @@ extension _PdvWeb on _PaginaPrincipalWebState {
       return const SizedBox.shrink();
     }
 
-    final ThemeData theme = Theme.of(context);
-    final Color color =
-        _erroSessaoCaixaPdv ? theme.colorScheme.error : _pdvTheme.warningColor;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color color = _erroSessaoCaixaPdv ? tokens.danger : tokens.warning;
     final String title =
         _carregandoSessaoCaixaPdv
             ? context.t(

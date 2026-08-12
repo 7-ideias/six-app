@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/services/colaborador_convite_web_service.dart';
 import '../../data/models/colaborador_convite_model.dart';
 import '../components/web_dashboard_widgets.dart';
+import '../theme/web_theme_tokens.dart';
 
 class ColaboradorConviteWebBody extends StatefulWidget {
   const ColaboradorConviteWebBody({super.key});
@@ -133,20 +134,20 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
   }
 
   InputDecoration _decoration(String label, IconData icon) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon),
+      prefixIcon: Icon(icon, color: tokens.info),
       filled: true,
-      fillColor: colorScheme.surface,
+      fillColor: tokens.inputBackground,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.outlineVariant),
+        borderSide: BorderSide(color: tokens.cardBorder),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
+        borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
       ),
     );
   }
@@ -178,20 +179,30 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool disabled = _isLoading;
+    final Color foreground =
+        disabled ? tokens.disabledForeground : tokens.primaryText;
+    final Color secondary =
+        disabled ? tokens.disabledForeground : tokens.secondaryText;
+    final Color accent =
+        disabled
+            ? tokens.disabledForeground
+            : value
+            ? tokens.info
+            : tokens.statusNeutral;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color:
-            value
-                ? colorScheme.primary.withValues(alpha: 0.05)
-                : colorScheme.surface,
+            disabled
+                ? tokens.disabledBackground
+                : value
+                ? tokens.selectedBackground
+                : tokens.surfaceMuted,
         border: Border.all(
-          color:
-              value
-                  ? colorScheme.primary.withValues(alpha: 0.20)
-                  : colorScheme.outlineVariant,
+          color: value && !disabled ? tokens.selectedBorder : tokens.cardBorder,
         ),
         borderRadius: BorderRadius.circular(18),
       ),
@@ -202,18 +213,12 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
             height: 38,
             decoration: BoxDecoration(
               color:
-                  value
-                      ? colorScheme.primary.withValues(alpha: 0.12)
-                      : colorScheme.surfaceContainerHighest.withValues(
-                        alpha: 0.50,
-                      ),
+                  value && !disabled
+                      ? tokens.info.withValues(alpha: 0.12)
+                      : tokens.cardBackground,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(
-              icon,
-              color: value ? colorScheme.primary : colorScheme.onSurfaceVariant,
-              size: 20,
-            ),
+            child: Icon(icon, color: accent, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -224,7 +229,10 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    color: foreground,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -232,7 +240,7 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
+                    color: secondary,
                     fontSize: 12,
                     height: 1.25,
                   ),
@@ -252,8 +260,9 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
 
   @override
   Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Material(
-      color: Theme.of(context).colorScheme.surface,
+      color: tokens.surfaceElevated,
       child: Column(
         children: <Widget>[
           SixWebDashboardHeader(
@@ -452,14 +461,15 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
   Widget _actionsBar(bool compact) {
     final ColaboradorConviteResponse? convite = _ultimoConvite;
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child:
           compact
@@ -483,7 +493,7 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: tokens.secondaryText,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -542,16 +552,15 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
 
   Widget _conviteCard(ColaboradorConviteResponse convite) {
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final String link = _linkConvite(convite);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withValues(alpha: 0.06),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.18),
-        ),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
@@ -563,13 +572,10 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                  color: tokens.info.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(
-                  Icons.mark_email_read_outlined,
-                  color: theme.colorScheme.primary,
-                ),
+                child: Icon(Icons.mark_email_read_outlined, color: tokens.info),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -581,6 +587,7 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(
+                        color: tokens.primaryText,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -592,7 +599,7 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: tokens.secondaryText,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -603,17 +610,15 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
+                        color: tokens.inputBackground,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: theme.colorScheme.outlineVariant,
-                        ),
+                        border: Border.all(color: tokens.cardBorder),
                       ),
                       child: SelectableText(
                         link,
                         maxLines: 2,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface,
+                          color: tokens.primaryText,
                           fontWeight: FontWeight.w700,
                         ),
                       ),

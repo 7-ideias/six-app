@@ -5,6 +5,7 @@ import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/desempenho_colaborador_model.dart';
 import '../../data/services/desempenho_colaborador/desempenho_colaborador_api_client.dart';
 import '../components/six_backend_loading.dart';
+import '../theme/web_theme_tokens.dart';
 
 class DesempenhoColaboradorWebPage extends StatefulWidget {
   const DesempenhoColaboradorWebPage({super.key, this.onBack});
@@ -84,31 +85,44 @@ class _DesempenhoColaboradorWebPageState
   List<ColaboradorUsuarioResumo> get _participantesVisiveis {
     switch (_situacao) {
       case _SituacaoParticipante.ativos:
-        return _participantes.where((item) => item.ativo).toList(growable: false);
+        return _participantes
+            .where((item) => item.ativo)
+            .toList(growable: false);
       case _SituacaoParticipante.inativos:
-        return _participantes.where((item) => !item.ativo).toList(growable: false);
+        return _participantes
+            .where((item) => !item.ativo)
+            .toList(growable: false);
       case _SituacaoParticipante.todos:
         return _participantes;
     }
   }
 
-  Set<String> get _idsVisiveis => _participantesVisiveis
-      .map((item) => item.idUnicoPessoal)
-      .where((id) => id.trim().isNotEmpty)
-      .toSet();
+  Set<String> get _idsVisiveis =>
+      _participantesVisiveis
+          .map((item) => item.idUnicoPessoal)
+          .where((id) => id.trim().isNotEmpty)
+          .toSet();
 
   List<MetaColaboradorModel> get _metasVisiveis {
-    return _metas.where((meta) {
-      if (_idParticipante != null) return meta.idColaborador == _idParticipante;
-      return _idsVisiveis.contains(meta.idColaborador);
-    }).toList(growable: false);
+    return _metas
+        .where((meta) {
+          if (_idParticipante != null) {
+            return meta.idColaborador == _idParticipante;
+          }
+          return _idsVisiveis.contains(meta.idColaborador);
+        })
+        .toList(growable: false);
   }
 
   List<DesempenhoColaboradorItemModel> get _resultadosVisiveis {
-    return _resumo.resultados.where((item) {
-      if (_idParticipante != null) return item.idColaborador == _idParticipante;
-      return _idsVisiveis.contains(item.idColaborador);
-    }).toList(growable: false);
+    return _resumo.resultados
+        .where((item) {
+          if (_idParticipante != null) {
+            return item.idColaborador == _idParticipante;
+          }
+          return _idsVisiveis.contains(item.idColaborador);
+        })
+        .toList(growable: false);
   }
 
   int get _totalAtivos => _participantes.where((item) => item.ativo).length;
@@ -118,8 +132,9 @@ class _DesempenhoColaboradorWebPageState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Material(
-      color: theme.colorScheme.surface,
+      color: tokens.workspaceBackground,
       child: Column(
         children: <Widget>[
           _buildHeader(theme),
@@ -137,11 +152,12 @@ class _DesempenhoColaboradorWebPageState
   }
 
   Widget _buildHeader(ThemeData theme) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.06),
-        border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
+        color: tokens.surfaceMuted,
+        border: Border(bottom: BorderSide(color: tokens.cardBorder)),
       ),
       child: Row(
         children: <Widget>[
@@ -154,6 +170,7 @@ class _DesempenhoColaboradorWebPageState
                 Text(
                   'Desempenho do colaborador',
                   style: theme.textTheme.headlineSmall?.copyWith(
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -161,7 +178,7 @@ class _DesempenhoColaboradorWebPageState
                 Text(
                   'Resumo executivo de metas, vendas, serviços e atendimentos por participante.',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                     height: 1.35,
                   ),
                 ),
@@ -183,11 +200,12 @@ class _DesempenhoColaboradorWebPageState
                 icon: const Icon(Icons.add_rounded),
                 label: const Text('Nova meta'),
               ),
-              IconButton.filledTonal(
-                onPressed: widget.onBack,
-                tooltip: 'Fechar',
-                icon: const Icon(Icons.close_rounded),
-              ),
+              if (widget.onBack != null)
+                IconButton.filledTonal(
+                  onPressed: widget.onBack,
+                  tooltip: 'Fechar',
+                  icon: const Icon(Icons.close_rounded),
+                ),
             ],
           ),
         ],
@@ -196,14 +214,15 @@ class _DesempenhoColaboradorWebPageState
   }
 
   Widget _headerIcon(ThemeData theme, IconData icon) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       width: 54,
       height: 54,
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.12),
+        color: tokens.info.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(18),
       ),
-      child: Icon(icon, color: theme.colorScheme.primary, size: 28),
+      child: Icon(icon, color: tokens.info, size: 28),
     );
   }
 
@@ -219,6 +238,7 @@ class _DesempenhoColaboradorWebPageState
     }
 
     if (_error != null) {
+      final WebThemeTokens tokens = WebThemeTokens.of(context);
       return Center(
         key: const ValueKey<String>('desempenho-error'),
         child: _InfoCard(
@@ -226,11 +246,12 @@ class _DesempenhoColaboradorWebPageState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              const Icon(Icons.warning_amber_rounded, color: Color(0xFFB45309)),
+              Icon(Icons.warning_amber_rounded, color: tokens.warning),
               const SizedBox(height: 10),
               Text(
                 'Não foi possível carregar o desempenho.',
                 style: theme.textTheme.titleMedium?.copyWith(
+                  color: tokens.primaryText,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -241,7 +262,7 @@ class _DesempenhoColaboradorWebPageState
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: tokens.secondaryText,
                 ),
               ),
               const SizedBox(height: 14),
@@ -316,13 +337,30 @@ class _DesempenhoColaboradorWebPageState
               onTap: _selectParticipant,
             ),
           ),
-          _situacaoChip(theme, 'Ativos', _SituacaoParticipante.ativos, _totalAtivos),
-          _situacaoChip(theme, 'Não ativos', _SituacaoParticipante.inativos, _totalInativos),
-          _situacaoChip(theme, 'Ambos', _SituacaoParticipante.todos, _participantes.length),
+          _situacaoChip(
+            theme,
+            'Ativos',
+            _SituacaoParticipante.ativos,
+            _totalAtivos,
+          ),
+          _situacaoChip(
+            theme,
+            'Não ativos',
+            _SituacaoParticipante.inativos,
+            _totalInativos,
+          ),
+          _situacaoChip(
+            theme,
+            'Ambos',
+            _SituacaoParticipante.todos,
+            _participantes.length,
+          ),
           OutlinedButton.icon(
             onPressed: _load,
             icon: const Icon(Icons.event_repeat_rounded, size: 18),
-            label: Text('${_dateFormat.format(_inicio)} até ${_dateFormat.format(_fim)}'),
+            label: Text(
+              '${_dateFormat.format(_inicio)} até ${_dateFormat.format(_fim)}',
+            ),
           ),
         ],
       ),
@@ -335,15 +373,22 @@ class _DesempenhoColaboradorWebPageState
     bool selected,
     VoidCallback onTap,
   ) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return ChoiceChip(
       selected: selected,
       label: Text(label),
-      selectedColor: theme.colorScheme.primary.withOpacity(0.12),
+      selectedColor: tokens.selectedBackground,
+      backgroundColor: tokens.surfaceMuted,
       labelStyle: TextStyle(
-        color: selected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+        color: selected ? tokens.info : tokens.secondaryText,
         fontWeight: FontWeight.w800,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(999),
+        side: BorderSide(
+          color: selected ? tokens.selectedBorder : tokens.cardBorder,
+        ),
+      ),
       onSelected: (_) => onTap(),
     );
   }
@@ -354,21 +399,30 @@ class _DesempenhoColaboradorWebPageState
     _SituacaoParticipante value,
     int total,
   ) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool selected = _situacao == value;
     return ChoiceChip(
       selected: selected,
       label: Text('$label ($total)'),
-      selectedColor: theme.colorScheme.primary.withOpacity(0.12),
+      selectedColor: tokens.selectedBackground,
+      backgroundColor: tokens.surfaceMuted,
       labelStyle: TextStyle(
-        color: selected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+        color: selected ? tokens.info : tokens.secondaryText,
         fontWeight: FontWeight.w800,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(999),
+        side: BorderSide(
+          color: selected ? tokens.selectedBorder : tokens.cardBorder,
+        ),
+      ),
       onSelected: (_) {
         setState(() {
           _situacao = value;
           if (_idParticipante != null &&
-              !_participantesVisiveis.any((item) => item.idUnicoPessoal == _idParticipante)) {
+              !_participantesVisiveis.any(
+                (item) => item.idUnicoPessoal == _idParticipante,
+              )) {
             _idParticipante = null;
           }
         });
@@ -378,10 +432,30 @@ class _DesempenhoColaboradorWebPageState
 
   Widget _buildKpis(ThemeData theme, bool compact) {
     final List<_KpiData> items = <_KpiData>[
-      _KpiData('Score médio', '${_resumo.scoreMedio.toStringAsFixed(0)}%', 'Média ponderada das metas', Icons.speed_rounded),
-      _KpiData('Metas batidas', '${_resumo.metasBatidas}/${_resumo.totalMetas}', 'Dentro do período filtrado', Icons.emoji_events_outlined),
-      _KpiData('Vendas', _currencyFormat.format(_resumo.valorTotalVendido), '${_resumo.quantidadeVendas} operações no período', Icons.point_of_sale_rounded),
-      _KpiData('Atendimentos', _resumo.quantidadeAtendimentos.toString(), 'Assistências técnicas no período', Icons.build_circle_outlined),
+      _KpiData(
+        'Score médio',
+        '${_resumo.scoreMedio.toStringAsFixed(0)}%',
+        'Média ponderada das metas',
+        Icons.speed_rounded,
+      ),
+      _KpiData(
+        'Metas batidas',
+        '${_resumo.metasBatidas}/${_resumo.totalMetas}',
+        'Dentro do período filtrado',
+        Icons.emoji_events_outlined,
+      ),
+      _KpiData(
+        'Vendas',
+        _currencyFormat.format(_resumo.valorTotalVendido),
+        '${_resumo.quantidadeVendas} operações no período',
+        Icons.point_of_sale_rounded,
+      ),
+      _KpiData(
+        'Atendimentos',
+        _resumo.quantidadeAtendimentos.toString(),
+        'Assistências técnicas no período',
+        Icons.build_circle_outlined,
+      ),
     ];
 
     return GridView.builder(
@@ -408,30 +482,38 @@ class _DesempenhoColaboradorWebPageState
         icon: const Icon(Icons.refresh_rounded),
         tooltip: 'Atualizar',
       ),
-      child: resultados.isEmpty
-          ? const _EmptyState(
-              icon: Icons.flag_outlined,
-              title: 'Nenhuma meta ativa para exibir',
-              subtitle: 'Ajuste o filtro de participantes ou cadastre uma nova meta.',
-            )
-          : Column(
-              children: resultados.map((item) => _resultTile(theme, item)).toList(growable: false),
-            ),
+      child:
+          resultados.isEmpty
+              ? const _EmptyState(
+                icon: Icons.flag_outlined,
+                title: 'Nenhuma meta ativa para exibir',
+                subtitle:
+                    'Ajuste o filtro de participantes ou cadastre uma nova meta.',
+              )
+              : Column(
+                children: resultados
+                    .map((item) => _resultTile(theme, item))
+                    .toList(growable: false),
+              ),
     );
   }
 
   Widget _resultTile(ThemeData theme, DesempenhoColaboradorItemModel item) {
-    final DesempenhoIndicadorOption indicador = indicadorPorCodigo(item.indicador);
-    final Color color = _statusColor(item.status);
-    final double progress = (item.percentualAtingido / 100).clamp(0.0, 1.0).toDouble();
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final DesempenhoIndicadorOption indicador = indicadorPorCodigo(
+      item.indicador,
+    );
+    final Color color = _statusColor(item.status, tokens);
+    final double progress =
+        (item.percentualAtingido / 100).clamp(0.0, 1.0).toDouble();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -440,10 +522,15 @@ class _DesempenhoColaboradorWebPageState
             children: <Widget>[
               Expanded(
                 child: Text(
-                  item.nomeColaborador.isEmpty ? 'Participante' : item.nomeColaborador,
+                  item.nomeColaborador.isEmpty
+                      ? 'Participante'
+                      : item.nomeColaborador,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
               _StatusPill(label: _statusLabel(item.status), color: color),
@@ -453,7 +540,7 @@ class _DesempenhoColaboradorWebPageState
           Text(
             indicador.label,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+              color: tokens.secondaryText,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -463,7 +550,7 @@ class _DesempenhoColaboradorWebPageState
             child: LinearProgressIndicator(
               minHeight: 9,
               value: progress,
-              backgroundColor: theme.colorScheme.outlineVariant,
+              backgroundColor: tokens.cardBorder,
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),
@@ -475,7 +562,10 @@ class _DesempenhoColaboradorWebPageState
                   '${_formatValue(item.valorRealizado, indicador)} de ${_formatValue(item.valorAlvo, indicador)}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
               Text(
@@ -499,18 +589,26 @@ class _DesempenhoColaboradorWebPageState
         icon: const Icon(Icons.add_rounded),
         tooltip: 'Nova meta',
       ),
-      child: metas.isEmpty
-          ? const _EmptyState(
-              icon: Icons.playlist_add_check_rounded,
-              title: 'Sem metas cadastradas',
-              subtitle: 'Crie metas para os participantes exibidos.',
-            )
-          : Column(children: metas.map((meta) => _metaTile(theme, meta)).toList(growable: false)),
+      child:
+          metas.isEmpty
+              ? const _EmptyState(
+                icon: Icons.playlist_add_check_rounded,
+                title: 'Sem metas cadastradas',
+                subtitle: 'Crie metas para os participantes exibidos.',
+              )
+              : Column(
+                children: metas
+                    .map((meta) => _metaTile(theme, meta))
+                    .toList(growable: false),
+              ),
     );
   }
 
   Widget _metaTile(ThemeData theme, MetaColaboradorModel meta) {
-    final DesempenhoIndicadorOption indicador = indicadorPorCodigo(meta.indicador);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final DesempenhoIndicadorOption indicador = indicadorPorCodigo(
+      meta.indicador,
+    );
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -520,9 +618,9 @@ class _DesempenhoColaboradorWebPageState
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+            color: tokens.surfaceMuted,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
+            border: Border.all(color: tokens.cardBorder),
           ),
           child: Row(
             children: <Widget>[
@@ -530,10 +628,10 @@ class _DesempenhoColaboradorWebPageState
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.10),
+                  color: tokens.info.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(Icons.flag_outlined, color: theme.colorScheme.primary, size: 20),
+                child: Icon(Icons.flag_outlined, color: tokens.info, size: 20),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -541,22 +639,29 @@ class _DesempenhoColaboradorWebPageState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      meta.nomeColaborador.isEmpty ? 'Participante' : meta.nomeColaborador,
+                      meta.nomeColaborador.isEmpty
+                          ? 'Participante'
+                          : meta.nomeColaborador,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w900),
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: tokens.primaryText,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${indicador.label} • ${_formatPeriod(meta.dataInicio, meta.dataFim)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: tokens.secondaryText,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.edit_outlined, size: 18),
+              Icon(Icons.edit_outlined, size: 18, color: tokens.secondaryText),
             ],
           ),
         ),
@@ -571,29 +676,46 @@ class _DesempenhoColaboradorWebPageState
       return;
     }
 
-    final Map<String, dynamic>? payload = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (BuildContext context) => Dialog(
-        insetPadding: const EdgeInsets.all(24),
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 620),
-          child: _GoalForm(
-            participantes: participantes,
-            inicioPadrao: _inicio,
-            fimPadrao: _fim,
-            meta: meta,
+    final WebThemeTokens pageTokens = WebThemeTokens.of(context);
+    final Map<String, dynamic>? payload =
+        await showDialog<Map<String, dynamic>>(
+          context: context,
+          barrierColor: pageTokens.workspaceBackground.withValues(
+            alpha:
+                Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42,
           ),
-        ),
-      ),
-    );
+          builder: (BuildContext context) {
+            final WebThemeTokens tokens = WebThemeTokens.of(context);
+            return Dialog(
+              backgroundColor: tokens.surfaceElevated,
+              surfaceTintColor: Colors.transparent,
+              insetPadding: const EdgeInsets.all(24),
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+                side: BorderSide(color: tokens.cardBorder),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 620),
+                child: _GoalForm(
+                  participantes: participantes,
+                  inicioPadrao: _inicio,
+                  fimPadrao: _fim,
+                  meta: meta,
+                ),
+              ),
+            );
+          },
+        );
 
     if (payload == null) return;
     await _saveGoal(meta, payload);
   }
 
-  Future<void> _saveGoal(MetaColaboradorModel? meta, Map<String, dynamic> payload) async {
+  Future<void> _saveGoal(
+    MetaColaboradorModel? meta,
+    Map<String, dynamic> payload,
+  ) async {
     setState(() => _saving = true);
     try {
       if (meta == null) {
@@ -613,21 +735,33 @@ class _DesempenhoColaboradorWebPageState
   }
 
   Future<void> _selectParticipant() async {
+    final WebThemeTokens pageTokens = WebThemeTokens.of(context);
     final String? selected = await showDialog<String>(
       context: context,
-      builder: (BuildContext context) => Dialog(
-        insetPadding: const EdgeInsets.all(24),
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560, maxHeight: 620),
-          child: _ParticipantSelectorDialog(
-            participantes: _participantesVisiveis,
-            selectedId: _idParticipante,
-            allowAll: true,
-          ),
-        ),
+      barrierColor: pageTokens.workspaceBackground.withValues(
+        alpha: Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42,
       ),
+      builder: (BuildContext context) {
+        final WebThemeTokens tokens = WebThemeTokens.of(context);
+        return Dialog(
+          backgroundColor: tokens.surfaceElevated,
+          surfaceTintColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(24),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(26),
+            side: BorderSide(color: tokens.cardBorder),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560, maxHeight: 620),
+            child: _ParticipantSelectorDialog(
+              participantes: _participantesVisiveis,
+              selectedId: _idParticipante,
+              allowAll: true,
+            ),
+          ),
+        );
+      },
     );
 
     if (!mounted || selected == null) return;
@@ -674,18 +808,21 @@ class _DesempenhoColaboradorWebPageState
           return 'Todos os participantes';
       }
     }
-    return _participantes.firstWhere(
-      (item) => item.idUnicoPessoal == _idParticipante,
-      orElse: () => ColaboradorUsuarioResumo(
-        idUnicoPessoal: _idParticipante ?? '',
-        nome: 'Participante',
-        nomeDeGuerra: '',
-        celularDeAcesso: '',
-        email: '',
-        foto: '',
-        dataCadastro: null,
-      ),
-    ).displayName;
+    return _participantes
+        .firstWhere(
+          (item) => item.idUnicoPessoal == _idParticipante,
+          orElse:
+              () => ColaboradorUsuarioResumo(
+                idUnicoPessoal: _idParticipante ?? '',
+                nome: 'Participante',
+                nomeDeGuerra: '',
+                celularDeAcesso: '',
+                email: '',
+                foto: '',
+                dataCadastro: null,
+              ),
+        )
+        .displayName;
   }
 
   String _formatValue(double value, DesempenhoIndicadorOption indicador) {
@@ -713,18 +850,18 @@ class _DesempenhoColaboradorWebPageState
     }
   }
 
-  Color _statusColor(String status) {
+  Color _statusColor(String status, WebThemeTokens tokens) {
     switch (status) {
       case 'ACIMA_DA_META':
-        return const Color(0xFF16A34A);
+        return tokens.success;
       case 'EM_PROGRESSO':
-        return const Color(0xFF2563EB);
+        return tokens.info;
       case 'EM_RISCO':
-        return const Color(0xFFD97706);
+        return tokens.warning;
       case 'CRITICO':
-        return const Color(0xFFDC2626);
+        return tokens.danger;
       default:
-        return const Color(0xFF64748B);
+        return tokens.statusNeutral;
     }
   }
 
@@ -797,6 +934,7 @@ class _GoalFormState extends State<_GoalForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Padding(
       padding: const EdgeInsets.all(18),
       child: Form(
@@ -811,7 +949,10 @@ class _GoalFormState extends State<_GoalForm> {
                   Expanded(
                     child: Text(
                       widget.meta == null ? 'Nova meta' : 'Editar meta',
-                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: tokens.primaryText,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -827,18 +968,45 @@ class _GoalFormState extends State<_GoalForm> {
                 onTap: _selectParticipant,
               ),
               const SizedBox(height: 14),
-              Text('Indicador', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+              Text(
+                'Indicador',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: tokens.primaryText,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: desempenhoIndicadores.map((option) {
-                  return ChoiceChip(
-                    selected: _indicador == option.codigo,
-                    label: Text(option.label),
-                    onSelected: (_) => setState(() => _indicador = option.codigo),
-                  );
-                }).toList(growable: false),
+                children: desempenhoIndicadores
+                    .map((option) {
+                      return ChoiceChip(
+                        selected: _indicador == option.codigo,
+                        label: Text(option.label),
+                        selectedColor: tokens.selectedBackground,
+                        backgroundColor: tokens.surfaceMuted,
+                        labelStyle: TextStyle(
+                          color:
+                              _indicador == option.codigo
+                                  ? tokens.info
+                                  : tokens.secondaryText,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                          side: BorderSide(
+                            color:
+                                _indicador == option.codigo
+                                    ? tokens.selectedBorder
+                                    : tokens.cardBorder,
+                          ),
+                        ),
+                        onSelected:
+                            (_) => setState(() => _indicador = option.codigo),
+                      );
+                    })
+                    .toList(growable: false),
               ),
               const SizedBox(height: 14),
               Row(
@@ -846,11 +1014,10 @@ class _GoalFormState extends State<_GoalForm> {
                   Expanded(
                     child: TextFormField(
                       controller: _valorController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Valor alvo',
-                        border: OutlineInputBorder(),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
                       ),
+                      decoration: _inputDecoration(labelText: 'Valor alvo'),
                       validator: _validatePositiveNumber,
                     ),
                   ),
@@ -859,11 +1026,10 @@ class _GoalFormState extends State<_GoalForm> {
                     width: 120,
                     child: TextFormField(
                       controller: _pesoController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Peso',
-                        border: OutlineInputBorder(),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
                       ),
+                      decoration: _inputDecoration(labelText: 'Peso'),
                       validator: _validatePositiveNumber,
                     ),
                   ),
@@ -875,10 +1041,9 @@ class _GoalFormState extends State<_GoalForm> {
                   Expanded(
                     child: TextFormField(
                       controller: _inicioController,
-                      decoration: const InputDecoration(
+                      decoration: _inputDecoration(
                         labelText: 'Início',
                         hintText: 'dd/mm/aaaa',
-                        border: OutlineInputBorder(),
                       ),
                       validator: _validateDate,
                     ),
@@ -887,10 +1052,9 @@ class _GoalFormState extends State<_GoalForm> {
                   Expanded(
                     child: TextFormField(
                       controller: _fimController,
-                      decoration: const InputDecoration(
+                      decoration: _inputDecoration(
                         labelText: 'Fim',
                         hintText: 'dd/mm/aaaa',
-                        border: OutlineInputBorder(),
                       ),
                       validator: _validateDate,
                     ),
@@ -900,13 +1064,33 @@ class _GoalFormState extends State<_GoalForm> {
               const SizedBox(height: 14),
               Wrap(
                 spacing: 8,
-                children: <String>['ATIVA', 'PAUSADA', 'ENCERRADA'].map((status) {
-                  return ChoiceChip(
-                    selected: _status == status,
-                    label: Text(_statusText(status)),
-                    onSelected: (_) => setState(() => _status = status),
-                  );
-                }).toList(growable: false),
+                children: <String>['ATIVA', 'PAUSADA', 'ENCERRADA']
+                    .map((status) {
+                      return ChoiceChip(
+                        selected: _status == status,
+                        label: Text(_statusText(status)),
+                        selectedColor: tokens.selectedBackground,
+                        backgroundColor: tokens.surfaceMuted,
+                        labelStyle: TextStyle(
+                          color:
+                              _status == status
+                                  ? tokens.info
+                                  : tokens.secondaryText,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                          side: BorderSide(
+                            color:
+                                _status == status
+                                    ? tokens.selectedBorder
+                                    : tokens.cardBorder,
+                          ),
+                        ),
+                        onSelected: (_) => setState(() => _status = status),
+                      );
+                    })
+                    .toList(growable: false),
               ),
               const SizedBox(height: 18),
               SizedBox(
@@ -914,7 +1098,9 @@ class _GoalFormState extends State<_GoalForm> {
                 child: FilledButton.icon(
                   onPressed: _submit,
                   icon: const Icon(Icons.check_rounded),
-                  label: Text(widget.meta == null ? 'Cadastrar meta' : 'Salvar meta'),
+                  label: Text(
+                    widget.meta == null ? 'Cadastrar meta' : 'Salvar meta',
+                  ),
                 ),
               ),
             ],
@@ -925,21 +1111,33 @@ class _GoalFormState extends State<_GoalForm> {
   }
 
   Future<void> _selectParticipant() async {
+    final WebThemeTokens pageTokens = WebThemeTokens.of(context);
     final String? selected = await showDialog<String>(
       context: context,
-      builder: (BuildContext context) => Dialog(
-        insetPadding: const EdgeInsets.all(24),
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560, maxHeight: 620),
-          child: _ParticipantSelectorDialog(
-            participantes: widget.participantes,
-            selectedId: _participante.idUnicoPessoal,
-            allowAll: false,
-          ),
-        ),
+      barrierColor: pageTokens.workspaceBackground.withValues(
+        alpha: Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42,
       ),
+      builder: (BuildContext context) {
+        final WebThemeTokens tokens = WebThemeTokens.of(context);
+        return Dialog(
+          backgroundColor: tokens.surfaceElevated,
+          surfaceTintColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(24),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(26),
+            side: BorderSide(color: tokens.cardBorder),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560, maxHeight: 620),
+            child: _ParticipantSelectorDialog(
+              participantes: widget.participantes,
+              selectedId: _participante.idUnicoPessoal,
+              allowAll: false,
+            ),
+          ),
+        );
+      },
     );
     if (selected == null || !mounted) return;
     setState(() {
@@ -950,13 +1148,44 @@ class _GoalFormState extends State<_GoalForm> {
     });
   }
 
+  InputDecoration _inputDecoration({
+    required String labelText,
+    String? hintText,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      filled: true,
+      fillColor: tokens.inputBackground,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: tokens.cardBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: tokens.danger),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: tokens.danger, width: 1.4),
+      ),
+    );
+  }
+
   void _submit() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final DateTime inicio = _parseDate(_inicioController.text)!;
     final DateTime fim = _parseDate(_fimController.text)!;
     if (fim.isBefore(inicio)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('A data final não pode ser menor que a inicial.')),
+        const SnackBar(
+          content: Text('A data final não pode ser menor que a inicial.'),
+        ),
       );
       return;
     }
@@ -975,7 +1204,9 @@ class _GoalFormState extends State<_GoalForm> {
   }
 
   String? _validatePositiveNumber(String? value) {
-    if (_parseNumber(value ?? '') <= 0) return 'Informe um valor maior que zero';
+    if (_parseNumber(value ?? '') <= 0) {
+      return 'Informe um valor maior que zero';
+    }
     return null;
   }
 
@@ -992,7 +1223,9 @@ class _GoalFormState extends State<_GoalForm> {
     final int? year = int.tryParse(parts[2]);
     if (day == null || month == null || year == null) return null;
     final date = DateTime(year, month, day);
-    if (date.day != day || date.month != month || date.year != year) return null;
+    if (date.day != day || date.month != month || date.year != year) {
+      return null;
+    }
     return date;
   }
 
@@ -1006,7 +1239,8 @@ class _GoalFormState extends State<_GoalForm> {
     return double.tryParse(normalized) ?? 0;
   }
 
-  String _decimalToPt(double value) => value.toStringAsFixed(2).replaceAll('.', ',');
+  String _decimalToPt(double value) =>
+      value.toStringAsFixed(2).replaceAll('.', ',');
 
   String _formatDate(DateTime value) =>
       '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
@@ -1040,6 +1274,7 @@ class _ParticipantSelectorDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Padding(
       padding: const EdgeInsets.all(18),
       child: Column(
@@ -1050,7 +1285,10 @@ class _ParticipantSelectorDialog extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Selecionar participante',
-                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
               IconButton(
@@ -1076,9 +1314,13 @@ class _ParticipantSelectorDialog extends StatelessWidget {
                 final item = participantes[index];
                 return _SelectorTile(
                   title: item.displayName,
-                  subtitle: item.email.isEmpty ? _statusParticipante(item) : '${item.email} • ${_statusParticipante(item)}',
+                  subtitle:
+                      item.email.isEmpty
+                          ? _statusParticipante(item)
+                          : '${item.email} • ${_statusParticipante(item)}',
                   selected: item.idUnicoPessoal == selectedId,
-                  icon: item.ativo ? Icons.badge_outlined : Icons.block_outlined,
+                  icon:
+                      item.ativo ? Icons.badge_outlined : Icons.block_outlined,
                   onTap: () => Navigator.of(context).pop(item.idUnicoPessoal),
                 );
               },
@@ -1114,15 +1356,20 @@ class _InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     final Widget card = Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
         boxShadow: const <BoxShadow>[
-          BoxShadow(color: Color(0x0F0B1F3A), blurRadius: 18, offset: Offset(0, 8)),
+          BoxShadow(
+            color: Color(0x0F0B1F3A),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
         ],
       ),
       child: Column(
@@ -1135,10 +1382,21 @@ class _InfoCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(title!, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+                      Text(
+                        title!,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: tokens.primaryText,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                       if (subtitle != null) ...<Widget>[
                         const SizedBox(height: 4),
-                        Text(subtitle!, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                        Text(
+                          subtitle!,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: tokens.secondaryText,
+                          ),
+                        ),
                       ],
                     ],
                   ),
@@ -1153,7 +1411,10 @@ class _InfoCard extends StatelessWidget {
       ),
     );
     if (maxWidth == null) return card;
-    return ConstrainedBox(constraints: BoxConstraints(maxWidth: maxWidth!), child: card);
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth!),
+      child: card,
+    );
   }
 }
 
@@ -1172,14 +1433,19 @@ class _KpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
         boxShadow: const <BoxShadow>[
-          BoxShadow(color: Color(0x0F0B1F3A), blurRadius: 16, offset: Offset(0, 8)),
+          BoxShadow(
+            color: Color(0x0F0B1F3A),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
         ],
       ),
       child: Row(
@@ -1188,10 +1454,10 @@ class _KpiCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.10),
+              color: tokens.info.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(data.icon, color: theme.colorScheme.primary),
+            child: Icon(data.icon, color: tokens.info),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1204,7 +1470,7 @@ class _KpiCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -1213,14 +1479,19 @@ class _KpiCard extends StatelessWidget {
                   data.value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   data.subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: tokens.secondaryText,
+                  ),
                 ),
               ],
             ),
@@ -1232,16 +1503,19 @@ class _KpiCard extends StatelessWidget {
 }
 
 class _SelectorButton extends StatelessWidget {
-  const _SelectorButton({required this.icon, required this.label, required this.onTap});
+  const _SelectorButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
   final IconData icon;
   final String label;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Material(
-      color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+      color: WebThemeTokens.of(context).inputBackground,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -1250,16 +1524,27 @@ class _SelectorButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
+            border: Border.all(color: WebThemeTokens.of(context).cardBorder),
           ),
           child: Row(
             children: <Widget>[
-              Icon(icon, color: theme.colorScheme.primary, size: 20),
+              Icon(icon, color: WebThemeTokens.of(context).info, size: 20),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: WebThemeTokens.of(context).primaryText,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
-              const Icon(Icons.keyboard_arrow_down_rounded),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: WebThemeTokens.of(context).secondaryText,
+              ),
             ],
           ),
         ),
@@ -1286,10 +1571,11 @@ class _SelectorTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: selected ? theme.colorScheme.primary.withOpacity(0.10) : theme.colorScheme.surface,
+        color: selected ? tokens.selectedBackground : tokens.cardBackground,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -1298,23 +1584,44 @@ class _SelectorTile extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
+              border: Border.all(
+                color: selected ? tokens.selectedBorder : tokens.cardBorder,
+              ),
             ),
             child: Row(
               children: <Widget>[
-                Icon(icon, color: theme.colorScheme.primary),
+                Icon(
+                  icon,
+                  color: selected ? tokens.info : tokens.secondaryText,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)),
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: tokens.primaryText,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                       const SizedBox(height: 3),
-                      Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: tokens.secondaryText,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                if (selected) Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary),
+                if (selected)
+                  Icon(Icons.check_circle_rounded, color: tokens.info),
               ],
             ),
           ),
@@ -1334,17 +1641,28 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.11),
+        color: color.withValues(alpha: 0.11),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
-      child: Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w900)),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
     );
   }
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.icon, required this.title, required this.subtitle});
+  const _EmptyState({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
   final IconData icon;
   final String title;
   final String subtitle;
@@ -1352,21 +1670,35 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
         children: <Widget>[
-          Icon(icon, color: theme.colorScheme.onSurfaceVariant),
+          Icon(icon, color: tokens.secondaryText),
           const SizedBox(height: 8),
-          Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w900)),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: tokens.primaryText,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(subtitle, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: tokens.secondaryText,
+            ),
+          ),
         ],
       ),
     );

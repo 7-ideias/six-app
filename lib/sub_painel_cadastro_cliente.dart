@@ -1,23 +1,112 @@
 import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/core/services/auto_customer_token_service.dart';
-import 'package:sixpos/design_system/components/web/sub_painel_web_general.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
 import 'mock_cadastros_store.dart';
 
-class SubPainelCadastroCliente extends SubPainelWebGeneral {
+class SubPainelCadastroCliente extends StatelessWidget {
   const SubPainelCadastroCliente({
     super.key,
-    required super.body,
-    required super.textoDaAppBar,
+    required this.body,
+    required this.textoDaAppBar,
   });
+
+  final Widget body;
+  final String textoDaAppBar;
+
+  void _fecharSubPainel(BuildContext context) {
+    final NavigatorState navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final ColorScheme modalColorScheme = theme.colorScheme.copyWith(
+      primary: tokens.info,
+      secondary: tokens.info,
+      surface: tokens.surfaceElevated,
+      surfaceContainer: tokens.surface,
+      surfaceContainerHigh: tokens.cardBackground,
+      surfaceContainerHighest: tokens.surfaceMuted,
+      onSurface: tokens.primaryText,
+      onSurfaceVariant: tokens.secondaryText,
+      outline: tokens.cardBorder,
+      outlineVariant: tokens.cardBorder,
+      error: tokens.danger,
+    );
+    final ThemeData modalTheme = theme.copyWith(
+      colorScheme: modalColorScheme,
+      scaffoldBackgroundColor: tokens.surfaceElevated,
+      canvasColor: tokens.surfaceElevated,
+      cardColor: tokens.cardBackground,
+      dialogTheme: theme.dialogTheme.copyWith(
+        backgroundColor: tokens.surfaceElevated,
+        surfaceTintColor: Colors.transparent,
+      ),
+      inputDecorationTheme: theme.inputDecorationTheme.copyWith(
+        filled: true,
+        fillColor: tokens.inputBackground,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: tokens.cardBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: tokens.info, width: 1.4),
+        ),
+      ),
+    );
+    final Size size = MediaQuery.of(context).size;
+
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.escape):
+            () => _fecharSubPainel(context),
+      },
+      child: Focus(
+        autofocus: true,
+        child: Center(
+          child: Container(
+            width: size.width * 0.9,
+            height: size.height * 0.9,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: tokens.surfaceElevated,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: tokens.cardBorder),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.14),
+                  blurRadius: 32,
+                  offset: const Offset(0, 18),
+                ),
+              ],
+            ),
+            child: Theme(
+              data: modalTheme,
+              child: Material(color: tokens.surfaceElevated, child: body),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 void showSubPainelCadastroCliente(BuildContext context, String textoDaAppBar) {
+  final WebThemeTokens tokens = WebThemeTokens.of(context);
+  final double barrierAlpha =
+      Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42;
   showDialog(
     context: context,
     barrierDismissible: true,
+    barrierColor: tokens.workspaceBackground.withValues(alpha: barrierAlpha),
     builder: (_) {
       return SubPainelCadastroCliente(
         textoDaAppBar: textoDaAppBar,
@@ -205,7 +294,9 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.22)),
+        borderSide: BorderSide(
+          color: colorScheme.outline.withValues(alpha: 0.22),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -305,6 +396,9 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
     if (pickedDate == null) {
       return;
     }
+    if (!mounted || !context.mounted) {
+      return;
+    }
 
     DateTime finalValue = pickedDate;
 
@@ -346,10 +440,10 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -364,7 +458,7 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.10),
+                  color: colorScheme.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(icon, color: colorScheme.primary),
@@ -386,7 +480,7 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
                       subtitle,
                       style: TextStyle(
                         fontSize: 13,
-                        color: colorScheme.onSurface.withOpacity(0.65),
+                        color: colorScheme.onSurface.withValues(alpha: 0.65),
                       ),
                     ),
                   ],
@@ -411,7 +505,7 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
         gradient: LinearGradient(
           colors: <Color>[
             colorScheme.primary,
-            colorScheme.primary.withOpacity(0.88),
+            colorScheme.primary.withValues(alpha: 0.88),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -419,7 +513,7 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
         borderRadius: BorderRadius.circular(28),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: colorScheme.primary.withOpacity(0.18),
+            color: colorScheme.primary.withValues(alpha: 0.18),
             blurRadius: 24,
             offset: const Offset(0, 14),
           ),
@@ -439,9 +533,11 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.16),
+                  color: Colors.white.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white.withOpacity(0.18)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.18),
+                  ),
                 ),
                 child: const Icon(
                   Icons.person_add_alt_1_outlined,
@@ -472,9 +568,9 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
+              color: Colors.white.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.white.withOpacity(0.18)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -509,7 +605,7 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.16)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.16)),
       ),
       child: Row(
         children: <Widget>[
@@ -529,7 +625,7 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: colorScheme.onSurface.withOpacity(0.62),
+                    color: colorScheme.onSurface.withValues(alpha: 0.62),
                   ),
                 ),
               ],
@@ -556,7 +652,9 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
             isLast
                 ? null
                 : Border(
-                  bottom: BorderSide(color: Colors.black.withOpacity(0.06)),
+                  bottom: BorderSide(
+                    color: Colors.black.withValues(alpha: 0.06),
+                  ),
                 ),
       ),
       child: Row(
@@ -568,7 +666,7 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.black.withOpacity(0.54),
+                color: Colors.black.withValues(alpha: 0.54),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -668,7 +766,7 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
                       baseUrl: baseUrlController.text.trim(),
                     );
 
-                if (!mounted) {
+                if (!mounted || !context.mounted) {
                   return;
                 }
 
@@ -703,7 +801,7 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
                   expiracaoGerada = response.expiracao;
                 });
 
-                if (!mounted) {
+                if (!mounted || !context.mounted) {
                   return;
                 }
 
@@ -716,7 +814,7 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
                   ),
                 );
               } catch (e) {
-                if (!mounted) {
+                if (!mounted || !context.mounted) {
                   return;
                 }
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -801,7 +899,7 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
                               await Clipboard.setData(
                                 ClipboardData(text: linkGerado),
                               );
-                              if (!mounted) {
+                              if (!mounted || !context.mounted) {
                                 return;
                               }
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -1051,11 +1149,11 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.12),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.12),
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),

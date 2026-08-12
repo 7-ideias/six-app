@@ -19,7 +19,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiAssistantAsk => 'Perguntar à IA';
 
   @override
-  String get aiAssistantHint => 'Digite sua dúvida';
+  String get aiAssistantHint => 'Como posso te ajudar hoje?';
 
   @override
   String get aiAssistantSending => 'Enviando...';
@@ -53,6 +53,50 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get aiAssistantFeedbackThanks => 'Feedback registrado.';
+
+  @override
+  String get aiAssistantWelcomeTitle => 'Olá! Sou a Lis';
+
+  @override
+  String get aiAssistantWelcomeSubtitle =>
+      'Estou aqui para ajudar em suas solicitações e tirar dúvidas sobre o Six.';
+
+  @override
+  String get aiAssistantAvatarLabel => 'Avatar da assistente Lis';
+
+  @override
+  String get aiAssistantExpand => 'Expandir assistente';
+
+  @override
+  String get aiAssistantCollapse => 'Reduzir assistente';
+
+  @override
+  String get aiAssistantFocusLabel => 'Assistente em foco';
+
+  @override
+  String get aiAssistantMinimize => 'Minimizar';
+
+  @override
+  String get aiAssistantMinimizedLabel => 'Lis minimizada';
+
+  @override
+  String get aiAssistantMinimizedTooltip => 'Abrir assistente minimizado';
+
+  @override
+  String get aiAssistantNewQuestion => 'Nova pergunta';
+
+  @override
+  String get aiAssistantAttachUnavailable => 'Anexos ainda não disponíveis';
+
+  @override
+  String get aiAssistantSend => 'Enviar';
+
+  @override
+  String get aiAssistantThinkingTitle => 'Lis está analisando';
+
+  @override
+  String get aiAssistantThinkingSubtitle =>
+      'Buscando a melhor resposta para o contexto desta tela.';
 
   @override
   String get pdvWebTitle => 'Frente de caixa';
@@ -1229,7 +1273,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get aiAssistantAsk => 'Perguntar à IA';
 
   @override
-  String get aiAssistantHint => 'Digite sua dúvida';
+  String get aiAssistantHint => 'Como posso te ajudar hoje?';
 
   @override
   String get aiAssistantSending => 'Enviando...';
@@ -1263,6 +1307,50 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get aiAssistantFeedbackThanks => 'Feedback registrado.';
+
+  @override
+  String get aiAssistantWelcomeTitle => 'Olá! Sou a Lis';
+
+  @override
+  String get aiAssistantWelcomeSubtitle =>
+      'Estou aqui para ajudar em suas solicitações e tirar dúvidas sobre o Six.';
+
+  @override
+  String get aiAssistantAvatarLabel => 'Avatar da assistente Lis';
+
+  @override
+  String get aiAssistantExpand => 'Expandir assistente';
+
+  @override
+  String get aiAssistantCollapse => 'Reduzir assistente';
+
+  @override
+  String get aiAssistantFocusLabel => 'Assistente em foco';
+
+  @override
+  String get aiAssistantMinimize => 'Minimizar';
+
+  @override
+  String get aiAssistantMinimizedLabel => 'Lis minimizada';
+
+  @override
+  String get aiAssistantMinimizedTooltip => 'Abrir assistente minimizado';
+
+  @override
+  String get aiAssistantNewQuestion => 'Nova pergunta';
+
+  @override
+  String get aiAssistantAttachUnavailable => 'Anexos ainda não disponíveis';
+
+  @override
+  String get aiAssistantSend => 'Enviar';
+
+  @override
+  String get aiAssistantThinkingTitle => 'Lis está analisando';
+
+  @override
+  String get aiAssistantThinkingSubtitle =>
+      'Buscando a melhor resposta para o contexto desta tela.';
 
   @override
   String get procedimentosTitle => 'Procedimentos';

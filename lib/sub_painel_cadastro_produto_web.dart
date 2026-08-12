@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:html' as html;
@@ -12,6 +14,8 @@ import 'package:sixpos/data/models/categoria_catalogo_model.dart';
 import 'package:sixpos/data/services/imagem_sugestao/imagem_sugestao_api_client.dart';
 import 'package:sixpos/data/services/categoria_catalogo/categoria_catalogo_api_client.dart';
 import 'package:sixpos/presentation/components/imagem_sugestoes_section.dart';
+import 'package:sixpos/presentation/components/produto_web_image.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -40,6 +44,42 @@ class SubPainelCadastroProduto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final ColorScheme modalColorScheme = theme.colorScheme.copyWith(
+      primary: tokens.info,
+      secondary: tokens.info,
+      surface: tokens.surfaceElevated,
+      surfaceContainer: tokens.surface,
+      surfaceContainerHigh: tokens.cardBackground,
+      surfaceContainerHighest: tokens.surfaceMuted,
+      onSurface: tokens.primaryText,
+      onSurfaceVariant: tokens.secondaryText,
+      outline: tokens.cardBorder,
+      outlineVariant: tokens.cardBorder,
+      error: tokens.danger,
+    );
+    final ThemeData modalTheme = theme.copyWith(
+      colorScheme: modalColorScheme,
+      scaffoldBackgroundColor: tokens.surfaceElevated,
+      canvasColor: tokens.surfaceElevated,
+      cardColor: tokens.cardBackground,
+      dialogTheme: theme.dialogTheme.copyWith(
+        backgroundColor: tokens.surfaceElevated,
+        surfaceTintColor: Colors.transparent,
+      ),
+      inputDecorationTheme: theme.inputDecorationTheme.copyWith(
+        filled: true,
+        fillColor: tokens.inputBackground,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: tokens.cardBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: tokens.info, width: 1.4),
+        ),
+      ),
+    );
     final Size size = MediaQuery.of(context).size;
 
     return CallbackShortcuts(
@@ -55,9 +95,9 @@ class SubPainelCadastroProduto extends StatelessWidget {
             height: size.height * 0.9,
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
+              color: tokens.surfaceElevated,
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
+              border: Border.all(color: tokens.cardBorder),
               boxShadow: <BoxShadow>[
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.14),
@@ -66,7 +106,10 @@ class SubPainelCadastroProduto extends StatelessWidget {
                 ),
               ],
             ),
-            child: Material(color: theme.colorScheme.surface, child: body),
+            child: Theme(
+              data: modalTheme,
+              child: Material(color: tokens.surfaceElevated, child: body),
+            ),
           ),
         ),
       ),
@@ -80,9 +123,13 @@ void showSubPainelCadastroProduto(
   ProdutoModel? produtoParaEdicao,
   bool modoEdicao = false,
 }) {
+  final WebThemeTokens tokens = WebThemeTokens.of(context);
+  final double barrierAlpha =
+      Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42;
   showDialog(
     context: context,
     barrierDismissible: true,
+    barrierColor: tokens.workspaceBackground.withValues(alpha: barrierAlpha),
     builder: (BuildContext dialogContext) {
       return SubPainelCadastroProduto(
         textoDaAppBar: textoDaAppBar,
@@ -908,7 +955,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
   Widget _buildHeader(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final String statusText =
         _isLoading
             ? (_isModoEdicao
@@ -923,12 +970,12 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         width: 54,
         height: 54,
         decoration: BoxDecoration(
-          color: colorScheme.primary.withValues(alpha: 0.12),
+          color: tokens.info.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Icon(
           _isModoEdicao ? Icons.edit_note_rounded : Icons.add_box_outlined,
-          color: colorScheme.primary,
+          color: tokens.info,
           size: 28,
         ),
       );
@@ -945,6 +992,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.headlineSmall?.copyWith(
+              color: tokens.primaryText,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -962,7 +1010,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
+              color: tokens.secondaryText,
               height: 1.35,
             ),
           ),
@@ -974,9 +1022,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
-          color: colorScheme.surface.withValues(alpha: 0.78),
+          color: tokens.surfaceMuted,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: colorScheme.outlineVariant),
+          border: Border.all(color: tokens.cardBorder),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -988,12 +1036,12 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   _isLoading
                       ? CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: colorScheme.primary,
+                        color: tokens.info,
                       )
                       : Icon(
                         Icons.check_circle_outline_rounded,
                         size: 16,
-                        color: colorScheme.primary,
+                        color: tokens.info,
                       ),
             ),
             const SizedBox(width: 8),
@@ -1002,7 +1050,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelLarge?.copyWith(
-                color: colorScheme.onSurface,
+                color: tokens.primaryText,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -1016,6 +1064,12 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
         tooltip: _t('common.close', 'Fechar'),
         icon: const Icon(Icons.close_rounded),
+        style: IconButton.styleFrom(
+          backgroundColor: tokens.surfaceMuted,
+          foregroundColor: tokens.info,
+          disabledBackgroundColor: tokens.disabledBackground,
+          disabledForegroundColor: tokens.disabledForeground,
+        ),
       );
     }
 
@@ -1023,8 +1077,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
       decoration: BoxDecoration(
-        color: colorScheme.primary.withValues(alpha: 0.06),
-        border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
+        color: tokens.surfaceMuted,
+        border: Border(bottom: BorderSide(color: tokens.cardBorder)),
       ),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
@@ -1219,7 +1273,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   }
 
   Widget _buildFotoCard(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final _ProdutoImagemSlot slotAtivo = _slotSelecionado;
 
     return _buildSectionCard(
@@ -1297,7 +1351,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             _t('produto.web.slotsLabel', 'Slots'),
             style: TextStyle(
               fontWeight: FontWeight.w800,
-              color: colorScheme.onSurface.withValues(alpha: 0.78),
+              color: tokens.primaryText,
             ),
           ),
           const SizedBox(height: 10),
@@ -1328,7 +1382,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 ),
             style: TextStyle(
               fontSize: 12,
-              color: colorScheme.onSurfaceVariant,
+              color: tokens.secondaryText,
               height: 1.35,
             ),
           ),
@@ -1343,21 +1397,15 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     required String label,
     bool highlighted = false,
   }) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color:
-            highlighted
-                ? colorScheme.primary.withValues(alpha: 0.10)
-                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.52),
+        color: highlighted ? tokens.selectedBackground : tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color:
-              highlighted
-                  ? colorScheme.primary.withValues(alpha: 0.22)
-                  : colorScheme.outlineVariant,
+          color: highlighted ? tokens.selectedBorder : tokens.cardBorder,
         ),
       ),
       child: Row(
@@ -1366,10 +1414,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           Icon(
             icon,
             size: 15,
-            color:
-                highlighted
-                    ? colorScheme.primary
-                    : colorScheme.onSurfaceVariant,
+            color: highlighted ? tokens.info : tokens.secondaryText,
           ),
           const SizedBox(width: 6),
           Text(
@@ -1377,10 +1422,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
-              color:
-                  highlighted
-                      ? colorScheme.primary
-                      : colorScheme.onSurfaceVariant,
+              color: highlighted ? tokens.info : tokens.secondaryText,
             ),
           ),
         ],
@@ -1389,55 +1431,41 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   }
 
   Widget _buildImagemAtiva(BuildContext context, _ProdutoImagemSlot slotAtivo) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool hasImage = slotAtivo.image != null;
     final bool isSugestao = slotAtivo.image?.origem == 'SUGESTAO';
 
-    Widget imageContent;
-    if (slotAtivo.previewBytes != null) {
-      imageContent = Image.memory(slotAtivo.previewBytes!, fit: BoxFit.cover);
-    } else if (slotAtivo.image?.url != null) {
-      imageContent = Image.network(
-        slotAtivo.image!.url!,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) {
-            return child;
-          }
-          return const Center(child: CircularProgressIndicator(strokeWidth: 2));
-        },
-        errorBuilder:
-            (_, __, ___) =>
-                const Center(child: Icon(Icons.broken_image_outlined)),
-      );
-    } else {
-      imageContent = Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Icon(
-            Icons.photo_camera_back_outlined,
-            size: 38,
-            color: colorScheme.primary,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Nenhuma imagem no slot ${_slotSelecionadoIndex + 1}',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: colorScheme.onSurface.withOpacity(0.72),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Use o botão de upload ou escolha uma sugestão por IA.',
-            style: TextStyle(
-              fontSize: 12,
-              color: colorScheme.onSurface.withOpacity(0.58),
-            ),
-          ),
-        ],
-      );
-    }
+    final Widget imageContent =
+        hasImage
+            ? _buildImageContent(
+              context,
+              slotAtivo,
+              fit: BoxFit.cover,
+              brokenIconSize: 34,
+            )
+            : Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Icon(
+                  Icons.photo_camera_back_outlined,
+                  size: 38,
+                  color: tokens.info,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Nenhuma imagem no slot ${_slotSelecionadoIndex + 1}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: tokens.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Use o botão de upload ou escolha uma sugestão por IA.',
+                  style: TextStyle(fontSize: 12, color: tokens.secondaryText),
+                ),
+              ],
+            );
 
     return Container(
       width: double.infinity,
@@ -1445,13 +1473,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color:
-              isSugestao
-                  ? colorScheme.primary
-                  : colorScheme.outline.withOpacity(0.2),
+          color: isSugestao ? tokens.selectedBorder : tokens.cardBorder,
           width: isSugestao ? 2 : 1,
         ),
-        color: colorScheme.surfaceVariant,
+        color: tokens.surfaceMuted,
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -1460,7 +1485,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           if (slotAtivo.isLoading)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withOpacity(0.28),
+                color: tokens.workspaceBackground.withValues(alpha: 0.48),
                 child: const Center(
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
@@ -1476,13 +1501,16 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.55),
+                  color: tokens.workspaceBackground.withValues(alpha: 0.82),
                   borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: tokens.cardBorder.withValues(alpha: 0.72),
+                  ),
                 ),
                 child: Text(
                   isSugestao ? 'Origem: IA' : 'Origem: Upload',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: tokens.primaryText,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1495,36 +1523,22 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   }
 
   Widget _buildMiniaturaSlot(BuildContext context, int index) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final _ProdutoImagemSlot slot = _imagemSlots[index];
     final bool hasImage = slot.image != null;
     final bool isAtivo = index == _slotSelecionadoIndex;
 
-    Widget thumb;
-    if (slot.previewBytes != null) {
-      thumb = Image.memory(slot.previewBytes!, fit: BoxFit.cover);
-    } else if (slot.image?.url != null) {
-      thumb = Image.network(
-        slot.image!.url!,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return const Center(
-            child: SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          );
-        },
-        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined),
-      );
-    } else {
-      thumb = Icon(
-        Icons.add_photo_alternate_outlined,
-        color: colorScheme.onSurface.withOpacity(0.46),
-      );
-    }
+    final Widget thumb =
+        hasImage
+            ? _buildImageContent(
+              context,
+              slot,
+              fit: BoxFit.cover,
+              brokenIconSize: 20,
+              loadingSize: 18,
+              preferThumbnail: true,
+            )
+            : Icon(Icons.add_photo_alternate_outlined, color: tokens.mutedText);
 
     return InkWell(
       onTap: () => setState(() => _slotSelecionadoIndex = index),
@@ -1535,16 +1549,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color:
-                isAtivo
-                    ? colorScheme.primary
-                    : colorScheme.outline.withOpacity(0.24),
+            color: isAtivo ? tokens.selectedBorder : tokens.cardBorder,
             width: isAtivo ? 2 : 1,
           ),
-          color:
-              isAtivo
-                  ? colorScheme.primary.withOpacity(0.05)
-                  : colorScheme.surface,
+          color: isAtivo ? tokens.selectedBackground : tokens.cardBackground,
         ),
         child: Column(
           children: <Widget>[
@@ -1553,7 +1561,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               height: 66,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
-                color: colorScheme.surfaceVariant,
+                color: tokens.surfaceMuted,
               ),
               clipBehavior: Clip.antiAlias,
               child:
@@ -1570,16 +1578,43 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             const SizedBox(height: 6),
             Text(
               'Slot ${index + 1}',
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: tokens.primaryText,
+              ),
             ),
             Text(
               hasImage ? 'OK' : 'Vazio',
-              style: TextStyle(
-                fontSize: 10,
-                color: colorScheme.onSurface.withOpacity(0.6),
-              ),
+              style: TextStyle(fontSize: 10, color: tokens.secondaryText),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageContent(
+    BuildContext context,
+    _ProdutoImagemSlot slot, {
+    required BoxFit fit,
+    double brokenIconSize = 24,
+    double loadingSize = 24,
+    bool preferThumbnail = false,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    return ProdutoWebImage(
+      image: slot.image,
+      previewBytes: slot.previewBytes,
+      fit: fit,
+      loadingSize: loadingSize,
+      preferThumbnail: preferThumbnail,
+      fallback: Center(
+        child: Icon(
+          Icons.broken_image_outlined,
+          color: tokens.mutedText,
+          size: brokenIconSize,
         ),
       ),
     );
@@ -1609,16 +1644,19 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       child: Column(
         children: <Widget>[
           _buildInfoRow(
+            context,
             _t('produto.web.nameLabel', 'Nome'),
             _nomeProdutoController.text.trim().isEmpty
                 ? '-'
                 : _nomeProdutoController.text.trim(),
           ),
           _buildInfoRow(
+            context,
             _t('produto.web.typeLabel', 'Tipo'),
             _tipoLabel(_tipoSelecionado),
           ),
           _buildInfoRow(
+            context,
             _t('produto.web.categoryLabel', 'Categoria'),
             _categoriaSelecionadaNome == null ||
                     _categoriaSelecionadaNome!.trim().isEmpty
@@ -1626,19 +1664,22 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 : _categoriaSelecionadaNome!,
           ),
           _buildInfoRow(
+            context,
             _t('produto.web.modelLabel', 'Modelo'),
             _modeloProdutoController.text.trim().isEmpty
                 ? '-'
                 : _modeloProdutoController.text.trim(),
           ),
-          _buildInfoRow(_t('produto.web.priceLabel', 'Preço'), preco),
+          _buildInfoRow(context, _t('produto.web.priceLabel', 'Preço'), preco),
           _buildInfoRow(
+            context,
             _t('produto.web.groupLabel', 'Grupo'),
             _grupoProdutoController.text.trim().isEmpty
                 ? '-'
                 : _grupoProdutoController.text.trim(),
           ),
           _buildInfoRow(
+            context,
             _t('produto.web.statusLabel', 'Status'),
             _ativo
                 ? _t('common.active', 'Ativo')
@@ -1693,7 +1734,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {bool isLast = false}) {
+  Widget _buildInfoRow(
+    BuildContext context,
+    String label,
+    String value, {
+    bool isLast = false,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
     return Container(
       padding: EdgeInsets.only(bottom: isLast ? 0 : 12, top: 12),
       decoration: BoxDecoration(
@@ -1701,7 +1749,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             isLast
                 ? null
                 : Border(
-                  bottom: BorderSide(color: Colors.black.withOpacity(0.06)),
+                  bottom: BorderSide(
+                    color: tokens.cardBorder.withValues(alpha: 0.72),
+                  ),
                 ),
       ),
       child: Row(
@@ -1715,7 +1765,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.black.withOpacity(0.54),
+                color: tokens.secondaryText,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1726,7 +1776,11 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               textAlign: TextAlign.right,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: tokens.primaryText,
+              ),
             ),
           ),
         ],
@@ -1735,18 +1789,18 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   }
 
   Widget _buildActionsBar(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.12),
-        ),
+        border: Border.all(color: tokens.cardBorder),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: tokens.workspaceBackground.withValues(alpha: 0.10),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -1769,7 +1823,11 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   'produto.web.reviewAndSaveCreate',
                   'Revise os dados e conclua o cadastro.',
                 ),
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+            style: TextStyle(
+              color: tokens.primaryText,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
           ),
           Wrap(
             spacing: 12,
