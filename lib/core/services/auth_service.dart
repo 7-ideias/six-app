@@ -9,6 +9,31 @@ import 'empresa_service.dart';
 import '../config/app_config.dart';
 import '../../data/models/auth_response_model.dart';
 
+enum AuthAccessTokenStatus { absent, valid, refreshRequired }
+
+enum AuthRefreshFailureType { invalidSession, temporaryFailure }
+
+class AuthRefreshException implements Exception {
+  const AuthRefreshException({
+    required this.type,
+    this.statusCode,
+    this.message,
+  });
+
+  final AuthRefreshFailureType type;
+  final int? statusCode;
+  final String? message;
+
+  bool get isInvalidSession => type == AuthRefreshFailureType.invalidSession;
+
+  @override
+  String toString() {
+    final String status = statusCode == null ? '' : ', statusCode: $statusCode';
+    final String detail = message == null ? '' : ', message: $message';
+    return 'AuthRefreshException(type: $type$status$detail)';
+  }
+}
+
 class AuthService {
   static const String _accessTokenKey = 'accessToken';
   static const String _refreshTokenKey = 'refreshToken';
@@ -146,28 +171,54 @@ class AuthService {
     final client = _client();
     http.Response response;
 
-    if (kIsWeb) {
-      response = await client.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-      );
-    } else {
-      final String? refreshTokenStr = await getRefreshToken();
+    try {
+      if (kIsWeb) {
+        response = await client.post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+        );
+      } else {
+        final String? refreshTokenStr = await getRefreshToken();
 
-      if (refreshTokenStr == null || refreshTokenStr.isEmpty) {
-        await _clearLocalAuthData();
-        throw Exception('No refresh token found');
+        if (refreshTokenStr == null || refreshTokenStr.isEmpty) {
+          await _clearLocalAuthData();
+          throw const AuthRefreshException(
+            type: AuthRefreshFailureType.invalidSession,
+            message: 'No refresh token found',
+          );
+        }
+
+        response = await client.post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'refreshToken': refreshTokenStr}),
+        );
       }
-
-      response = await client.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'refreshToken': refreshTokenStr}),
+    } on AuthRefreshException {
+      rethrow;
+    } on http.ClientException catch (e) {
+      throw AuthRefreshException(
+        type: AuthRefreshFailureType.temporaryFailure,
+        message: e.message,
+      );
+    } on TimeoutException catch (e) {
+      throw AuthRefreshException(
+        type: AuthRefreshFailureType.temporaryFailure,
+        message: e.message,
       );
     }
 
     if (response.statusCode == 200) {
-      final decoded = jsonDecode(response.body);
+      final dynamic decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } on FormatException catch (e) {
+        throw AuthRefreshException(
+          type: AuthRefreshFailureType.temporaryFailure,
+          statusCode: response.statusCode,
+          message: e.message,
+        );
+      }
       final authData = AuthResponseModel.fromJson(decoded);
       await _saveAuthData(authData);
       _scheduleRefreshTimer(authData);
@@ -176,10 +227,16 @@ class AuthService {
 
     if (response.statusCode == 401 || response.statusCode == 403) {
       await _clearLocalAuthData();
-      throw Exception('Sessão expirada. Faça login novamente.');
+      throw AuthRefreshException(
+        type: AuthRefreshFailureType.invalidSession,
+        statusCode: response.statusCode,
+      );
     }
 
-    throw Exception('Falha ao atualizar token (${response.statusCode})');
+    throw AuthRefreshException(
+      type: AuthRefreshFailureType.temporaryFailure,
+      statusCode: response.statusCode,
+    );
   }
 
   void _scheduleRefreshTimer(AuthResponseModel authData) {
@@ -251,6 +308,40 @@ class AuthService {
     }
 
     return accessToken;
+  }
+
+  Future<AuthAccessTokenStatus> getCurrentWebAccessTokenStatus() async {
+    if (!kIsWeb) {
+      return AuthAccessTokenStatus.absent;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final String? accessToken = prefs.getString(_accessTokenKey);
+    if (accessToken == null || accessToken.trim().isEmpty) {
+      return AuthAccessTokenStatus.absent;
+    }
+
+    if (await _shouldRefreshAccessToken(prefs, accessToken)) {
+      return AuthAccessTokenStatus.refreshRequired;
+    }
+
+    return AuthAccessTokenStatus.valid;
+  }
+
+  Future<void> restoreWebSession() async {
+    if (!kIsWeb) {
+      throw UnsupportedError('restoreWebSession é exclusivo do Flutter Web.');
+    }
+
+    await refreshToken();
+  }
+
+  Future<void> clearLocalWebSession() async {
+    if (!kIsWeb) {
+      return;
+    }
+
+    await _clearLocalAuthData();
   }
 
   Future<String?> getRefreshToken() async {

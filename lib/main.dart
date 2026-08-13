@@ -18,10 +18,12 @@ import 'package:sixpos/presentation/screens/atendimento_tecnico_status_publico_p
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
 import 'package:sixpos/presentation/screens/status_atendimento_tecnico_config_web_page.dart';
+import 'package:sixpos/presentation/screens/web_auth_gate.dart';
 import 'package:sixpos/presentation/pages/web_root/web_root_page.dart';
 import 'package:sixpos/presentation/screens/web_checkout_page.dart';
 import 'package:sixpos/presentation/screens/web_trial_onboarding_page.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_theme_transition_overlay.dart';
+import 'package:sixpos/presentation/navigation/web_auth_route_utils.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
@@ -157,27 +159,27 @@ class MyApp extends StatelessWidget {
       );
     }
     if (routeUri.path == '/app') {
-      return MaterialPageRoute<void>(
+      return _authenticatedWebRoute(
         settings: settings,
-        builder: (_) => const PaginaPrincipalWeb(),
+        page: const PaginaPrincipalWeb(),
       );
     }
     if (routeUri.path == '/app/atendimentos-tecnicos') {
-      return MaterialPageRoute<void>(
+      return _authenticatedWebRoute(
         settings: settings,
-        builder: (_) => const AtendimentosTecnicosWebPage(),
+        page: const AtendimentosTecnicosWebPage(),
       );
     }
     if (routeUri.path == '/app/atendimentos-tecnicos/criados') {
-      return MaterialPageRoute<void>(
+      return _authenticatedWebRoute(
         settings: settings,
-        builder: (_) => const AtendimentosTecnicosListaWebPage(),
+        page: const AtendimentosTecnicosListaWebPage(),
       );
     }
     if (routeUri.path == '/app/configuracoes/status-atendimento-tecnico') {
-      return MaterialPageRoute<void>(
+      return _authenticatedWebRoute(
         settings: settings,
-        builder: (_) => const StatusAtendimentoTecnicoConfigWebPage(),
+        page: const StatusAtendimentoTecnicoConfigWebPage(),
       );
     }
     if (routeUri.path == '/atendimento/assinatura') {
@@ -249,9 +251,27 @@ class MyApp extends StatelessWidget {
       );
     }
 
+    if (isAuthenticatedWebAppRoute(routeUri)) {
+      return _authenticatedWebRoute(
+        settings: settings,
+        page: const PaginaPrincipalWeb(),
+      );
+    }
+
     return MaterialPageRoute<void>(
       settings: settings,
       builder: (_) => const WebRootPage(),
+    );
+  }
+
+  MaterialPageRoute<void> _authenticatedWebRoute({
+    required RouteSettings settings,
+    required Widget page,
+  }) {
+    return MaterialPageRoute<void>(
+      settings: settings,
+      builder:
+          (_) => WebAuthGate(requestedLocation: settings.name, child: page),
     );
   }
 

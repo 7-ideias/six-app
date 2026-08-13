@@ -30,6 +30,7 @@ import 'package:sixpos/presentation/screens/categorias_produtos_servicos_web_pag
 import 'package:sixpos/presentation/screens/recebimento_pagamento_web.dart';
 import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/workspace_home_web.dart';
+import 'package:sixpos/presentation/services/web_authenticated_bootstrap_service.dart';
 import 'package:sixpos/presentation/theme/web_pdv_theme.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/sub_painel_cadastro_produto.dart';
@@ -926,6 +927,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       await AuthService().logout();
     } catch (e) {
       debugPrint('Falha no logout: $e');
+    } finally {
+      WebAuthenticatedBootstrapService().clearInMemorySession(
+        mounted ? context : null,
+      );
     }
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
