@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../l10n/six_i18n.dart';
+import '../../core/utils/browser_location.dart';
 import '../auth/web_auth_gate_controller.dart';
 import '../components/six_web_splash_scene.dart';
 import '../services/web_authenticated_bootstrap_service.dart';
@@ -142,6 +143,10 @@ class _WebAuthGateState extends State<WebAuthGate> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
+        return;
+      }
+
+      if (replaceBrowserLocation(_activeController.loginRoute)) {
         return;
       }
 

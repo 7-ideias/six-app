@@ -1,4 +1,5 @@
 import 'package:sixpos/core/platform_detector.dart';
+import 'package:sixpos/core/utils/browser_location.dart';
 import 'package:sixpos/presentation/pages/web_root/desktop_layout.dart';
 import 'package:sixpos/presentation/pages/web_root/mobile_layout.dart';
 import 'package:sixpos/l10n/web_root_l10n.dart';
@@ -70,7 +71,10 @@ class WebRootPage extends StatelessWidget {
   }
 
   void _goLogin(BuildContext context) {
-    Navigator.of(context).pushNamed('/login');
+    if (assignBrowserLocation('/login')) {
+      return;
+    }
+    Navigator.of(context).pushNamed('/login/flutter');
   }
 
   /// Só o plano em destaque (featured = CTA "Assinar") vai para o checkout,

@@ -20,6 +20,7 @@ import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart'
 import 'package:sixpos/presentation/screens/status_atendimento_tecnico_config_web_page.dart';
 import 'package:sixpos/presentation/screens/web_auth_gate.dart';
 import 'package:sixpos/presentation/pages/web_root/web_root_page.dart';
+import 'package:sixpos/presentation/components/six_web_splash_scene.dart';
 import 'package:sixpos/presentation/screens/web_checkout_page.dart';
 import 'package:sixpos/presentation/screens/web_trial_onboarding_page.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_theme_transition_overlay.dart';
@@ -41,6 +42,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sixpos/core/services/firebase_push_notification_service.dart';
 
 import 'core/services/produto_service.dart';
+import 'core/utils/browser_location.dart';
 import 'core/ui/app_feedback.dart';
 
 void main() async {
@@ -106,7 +108,9 @@ class MyApp extends StatelessWidget {
     final Uri currentUri = Uri.base;
     final String path = currentUri.path.isEmpty ? '/' : currentUri.path;
     final String query = currentUri.hasQuery ? '?${currentUri.query}' : '';
-    return '$path$query';
+    final String fragment =
+        currentUri.hasFragment ? '#${currentUri.fragment}' : '';
+    return '$path$query$fragment';
   }
 
   Route<dynamic> _onGenerateWebRoute(RouteSettings settings) {
@@ -120,6 +124,13 @@ class MyApp extends StatelessWidget {
       );
     }
     if (routeUri.path == '/login') {
+      return _browserLocationRoute(
+        settings: settings,
+        location: _formatWebLocation(routeUri),
+        fallbackRoute: '/login/flutter',
+      );
+    }
+    if (routeUri.path == '/login/flutter') {
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => const LoginPageWeb(),
@@ -264,6 +275,27 @@ class MyApp extends StatelessWidget {
     );
   }
 
+  String _formatWebLocation(Uri uri) {
+    final String query = uri.hasQuery ? '?${uri.query}' : '';
+    final String fragment = uri.hasFragment ? '#${uri.fragment}' : '';
+    return '${uri.path}$query$fragment';
+  }
+
+  MaterialPageRoute<void> _browserLocationRoute({
+    required RouteSettings settings,
+    required String location,
+    required String fallbackRoute,
+  }) {
+    return MaterialPageRoute<void>(
+      settings: settings,
+      builder:
+          (_) => _BrowserLocationRedirectPage(
+            location: location,
+            fallbackRoute: fallbackRoute,
+          ),
+    );
+  }
+
   MaterialPageRoute<void> _authenticatedWebRoute({
     required RouteSettings settings,
     required Widget page,
@@ -336,6 +368,42 @@ class MyApp extends StatelessWidget {
       initialRoute: kIsWeb ? _resolveInitialWebRoute() : null,
       onGenerateRoute: kIsWeb ? _onGenerateWebRoute : null,
     );
+  }
+}
+
+class _BrowserLocationRedirectPage extends StatefulWidget {
+  const _BrowserLocationRedirectPage({
+    required this.location,
+    required this.fallbackRoute,
+  });
+
+  final String location;
+  final String fallbackRoute;
+
+  @override
+  State<_BrowserLocationRedirectPage> createState() =>
+      _BrowserLocationRedirectPageState();
+}
+
+class _BrowserLocationRedirectPageState
+    extends State<_BrowserLocationRedirectPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (replaceBrowserLocation(widget.location)) {
+        return;
+      }
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pushReplacementNamed(widget.fallbackRoute);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: SixWebSplashScene());
   }
 }
 

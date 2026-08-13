@@ -22,6 +22,7 @@ void main() {
         '/',
         '/home',
         '/login',
+        '/login/flutter',
         '/register',
         '/forgot-password',
         '/onboarding',
@@ -47,9 +48,9 @@ void main() {
     test('redirect de login preserva deep link interno autenticado', () {
       expect(
         buildLoginRouteForAuthenticatedWebRedirect(
-          '/app/atendimentos-tecnicos?tab=criados',
+          '/app/atendimentos-tecnicos?tab=criados#historico',
         ),
-        '/login?redirect=%2Fapp%2Fatendimentos-tecnicos%3Ftab%3Dcriados',
+        '/login?redirect=%2Fapp%2Fatendimentos-tecnicos%3Ftab%3Dcriados%23historico',
       );
     });
 
@@ -63,9 +64,16 @@ void main() {
         isNull,
       );
       expect(sanitizeAuthenticatedWebRedirect('/login'), isNull);
+      expect(sanitizeAuthenticatedWebRedirect('/login/flutter'), isNull);
       expect(sanitizeAuthenticatedWebRedirect('/register'), isNull);
       expect(sanitizeAuthenticatedWebRedirect('/forgot-password'), isNull);
       expect(sanitizeAuthenticatedWebRedirect('/app'), '/app');
+      expect(
+        sanitizeAuthenticatedWebRedirect('/app/financeiro?periodo=mes#saldo'),
+        '/app/financeiro?periodo=mes#saldo',
+      );
+      expect(sanitizeAuthenticatedWebRedirect('/app\\admin'), isNull);
+      expect(sanitizeAuthenticatedWebRedirect('/app%5Cadmin'), isNull);
     });
   });
 }

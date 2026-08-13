@@ -21,7 +21,19 @@ class WebAuthenticatedBootstrapService {
 
   factory WebAuthenticatedBootstrapService() => _instance;
 
-  WebAuthenticatedBootstrapService._internal();
+  WebAuthenticatedBootstrapService._internal()
+    : _testSessionKeyResolver = null,
+      _testBootstrapOperation = null;
+
+  @visibleForTesting
+  WebAuthenticatedBootstrapService.forTesting({
+    required Future<String> Function() sessionKeyResolver,
+    required Future<void> Function() bootstrapOperation,
+  }) : _testSessionKeyResolver = sessionKeyResolver,
+       _testBootstrapOperation = bootstrapOperation;
+
+  final Future<String> Function()? _testSessionKeyResolver;
+  final Future<void> Function()? _testBootstrapOperation;
 
   Future<void>? _bootstrapFuture;
   String? _bootstrappedSessionKey;
@@ -33,6 +45,29 @@ class WebAuthenticatedBootstrapService {
     final LocaleSettingsProvider localeProvider =
         context.read<LocaleSettingsProvider>();
 
+    await _bootstrapSession(
+      force: force,
+      operation:
+          () => _bootstrapInternal(
+            autorizacoesProvider: autorizacoesProvider,
+            localeProvider: localeProvider,
+          ),
+    );
+  }
+
+  @visibleForTesting
+  Future<void> bootstrapForTesting({bool force = false}) {
+    final Future<void> Function()? operation = _testBootstrapOperation;
+    if (operation == null) {
+      throw StateError('bootstrapForTesting requer bootstrapOperation.');
+    }
+    return _bootstrapSession(force: force, operation: operation);
+  }
+
+  Future<void> _bootstrapSession({
+    required bool force,
+    required Future<void> Function() operation,
+  }) async {
     final String sessionKey = await _currentSessionKey();
     if (!force &&
         _bootstrapFuture == null &&
@@ -46,10 +81,7 @@ class WebAuthenticatedBootstrapService {
     }
 
     final int generation = _generation;
-    final Future<void> bootstrapFuture = _bootstrapInternal(
-      autorizacoesProvider: autorizacoesProvider,
-      localeProvider: localeProvider,
-    );
+    final Future<void> bootstrapFuture = operation();
     _bootstrapFuture = bootstrapFuture;
 
     try {
@@ -116,6 +148,11 @@ class WebAuthenticatedBootstrapService {
   }
 
   Future<String> _currentSessionKey() async {
+    final Future<String> Function()? testResolver = _testSessionKeyResolver;
+    if (testResolver != null) {
+      return testResolver();
+    }
+
     final AuthService authService = AuthService();
     final String userId = (await authService.getUserId())?.trim() ?? '';
     final String empresaId = (await authService.getEmpresaId())?.trim() ?? '';

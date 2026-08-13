@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/core/utils/browser_location.dart';
 import 'package:sixpos/l10n/web_root_l10n.dart';
 
 import '../../core/services/nova_empresa_service.dart';
@@ -63,6 +64,10 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
   }
 
   void _goToLogin() {
+    if (assignBrowserLocation('/login')) {
+      return;
+    }
+
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
       return;

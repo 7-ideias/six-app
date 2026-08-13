@@ -55,7 +55,7 @@ import 'core/di/caixa_module.dart';
 import 'core/di/operacao_module.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/websocket_service.dart';
-import 'presentation/screens/login_page_web.dart';
+import 'core/utils/browser_location.dart';
 import 'design_system/themes/zebra_list_item.dart';
 import 'domain/services/caixa/caixa_service.dart';
 import 'domain/services/operacao/operacao_service.dart';
@@ -932,11 +932,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         mounted ? context : null,
       );
     }
+    if (replaceBrowserLocation('/login')) {
+      return;
+    }
     if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(builder: (_) => const LoginPageWeb()),
-      (route) => false,
-    );
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil('/login', (Route<dynamic> route) => false);
   }
 
   String _badgeNotificacaoTexto() {

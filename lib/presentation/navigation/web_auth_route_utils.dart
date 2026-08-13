@@ -2,9 +2,19 @@ bool isAuthenticatedWebAppRoute(Uri uri) {
   return uri.path == '/app' || uri.path.startsWith('/app/');
 }
 
+bool _hasUnsafeAuthenticatedWebPath(Uri uri) {
+  return uri.pathSegments.any(
+    (String segment) => segment == '.' || segment == '..',
+  );
+}
+
 String normalizeAuthenticatedWebLocation(String? rawLocation) {
   final String raw = (rawLocation ?? '').trim();
   if (raw.isEmpty) {
+    return '/app';
+  }
+
+  if (raw.contains('\\')) {
     return '/app';
   }
 
@@ -13,12 +23,13 @@ String normalizeAuthenticatedWebLocation(String? rawLocation) {
     return '/app';
   }
 
-  if (!isAuthenticatedWebAppRoute(uri)) {
+  if (!isAuthenticatedWebAppRoute(uri) || _hasUnsafeAuthenticatedWebPath(uri)) {
     return '/app';
   }
 
   final String query = uri.hasQuery ? '?${uri.query}' : '';
-  return '${uri.path}$query';
+  final String fragment = uri.hasFragment ? '#${uri.fragment}' : '';
+  return '${uri.path}$query$fragment';
 }
 
 String? sanitizeAuthenticatedWebRedirect(String? redirect) {
@@ -27,18 +38,28 @@ String? sanitizeAuthenticatedWebRedirect(String? redirect) {
     return null;
   }
 
-  final String decoded = Uri.decodeComponent(raw).trim();
+  final String decoded;
+  try {
+    decoded = Uri.decodeComponent(raw).trim();
+  } on FormatException {
+    return null;
+  }
+  if (decoded.contains('\\')) {
+    return null;
+  }
+
   final Uri? uri = Uri.tryParse(decoded);
   if (uri == null || uri.hasScheme || uri.hasAuthority) {
     return null;
   }
 
-  if (!isAuthenticatedWebAppRoute(uri)) {
+  if (!isAuthenticatedWebAppRoute(uri) || _hasUnsafeAuthenticatedWebPath(uri)) {
     return null;
   }
 
   final String query = uri.hasQuery ? '?${uri.query}' : '';
-  return '${uri.path}$query';
+  final String fragment = uri.hasFragment ? '#${uri.fragment}' : '';
+  return '${uri.path}$query$fragment';
 }
 
 String buildLoginRouteForAuthenticatedWebRedirect(String requestedLocation) {

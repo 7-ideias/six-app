@@ -120,7 +120,7 @@ void main() {
           ),
         );
         final WebAuthGateController controller = _controller(
-          requestedLocation: '/app/atendimentos-tecnicos?tab=criados',
+          requestedLocation: '/app/atendimentos-tecnicos?tab=criados#lista',
           session: session,
           bootstrap: _FakeBootstrap(),
         );
@@ -130,7 +130,7 @@ void main() {
         expect(controller.status, WebAuthGateStatus.unauthenticated);
         expect(
           controller.loginRoute,
-          '/login?redirect=%2Fapp%2Fatendimentos-tecnicos%3Ftab%3Dcriados',
+          '/login?redirect=%2Fapp%2Fatendimentos-tecnicos%3Ftab%3Dcriados%23lista',
         );
       },
     );
