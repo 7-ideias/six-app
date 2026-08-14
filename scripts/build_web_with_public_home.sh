@@ -8,13 +8,16 @@ cd "$ROOT_DIR"
 
 source "$ROOT_DIR/scripts/lib/resolve_node.sh"
 NODE_BIN="$(resolve_node)"
+API_URL="$("$NODE_BIN" scripts/lib/resolve_public_api_base_url.mjs)"
+export SIXAPP_PUBLIC_API_BASE_URL="$API_URL"
 
 echo "[LOG SIX] Building Flutter Web with public HTML home"
+echo "[LOG SIX] Web API base URL: $API_URL"
 
 flutter --version
 flutter pub get
 flutter gen-l10n
-flutter build web --release --pwa-strategy=none
+flutter build web --release --pwa-strategy=none --dart-define="API_BASE_URL=$API_URL"
 
 grep -Fq 'name="sixapp-entrypoint" content="flutter-app"' build/web/index.html || {
   echo "[ERRO SIX] Flutter build nao gerou index.html com marker flutter-app" >&2

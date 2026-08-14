@@ -10,6 +10,7 @@ source "$ROOT_DIR/scripts/lib/resolve_node.sh"
 NODE_BIN="$(resolve_node)"
 
 "$NODE_BIN" --test \
+  scripts/tests/build_web_api_base_url_test.mjs \
   scripts/tests/public_login_core_test.mjs \
   scripts/tests/public_register_core_test.mjs \
   scripts/tests/public_forgot_password_core_test.mjs \
