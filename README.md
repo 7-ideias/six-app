@@ -1,13 +1,25 @@
 # six-app[README.md](README.md)
 novo six app versao 2025
 
-esses comandos sao necessarios para subir a app
+esses comandos sao uteis para preparar o projeto Flutter localmente
 
 ```bash
 flutter clean
 flutter pub get
 flutter gen-l10n
-flutter build web
+```
+
+Build correto de producao Web usado pela Vercel, com Home HTML em `/` e
+Flutter Web nas rotas do app:
+
+```bash
+bash scripts/build_web_with_public_home.sh
+```
+
+Verificacao do artefato composto da Estrategia A:
+
+```bash
+bash scripts/verify_web_strategy_a.sh
 ```
 
 

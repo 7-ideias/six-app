@@ -30,6 +30,7 @@ import 'package:sixpos/presentation/screens/categorias_produtos_servicos_web_pag
 import 'package:sixpos/presentation/screens/recebimento_pagamento_web.dart';
 import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/workspace_home_web.dart';
+import 'package:sixpos/presentation/services/web_authenticated_bootstrap_service.dart';
 import 'package:sixpos/presentation/theme/web_pdv_theme.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/sub_painel_cadastro_produto.dart';
@@ -54,7 +55,7 @@ import 'core/di/caixa_module.dart';
 import 'core/di/operacao_module.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/websocket_service.dart';
-import 'presentation/screens/login_page_web.dart';
+import 'core/utils/browser_location.dart';
 import 'design_system/themes/zebra_list_item.dart';
 import 'domain/services/caixa/caixa_service.dart';
 import 'domain/services/operacao/operacao_service.dart';
@@ -926,12 +927,18 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       await AuthService().logout();
     } catch (e) {
       debugPrint('Falha no logout: $e');
+    } finally {
+      WebAuthenticatedBootstrapService().clearInMemorySession(
+        mounted ? context : null,
+      );
+    }
+    if (replaceBrowserLocation('/login')) {
+      return;
     }
     if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(builder: (_) => const LoginPageWeb()),
-      (route) => false,
-    );
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil('/login', (Route<dynamic> route) => false);
   }
 
   String _badgeNotificacaoTexto() {

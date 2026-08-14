@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:sixpos/core/utils/browser_location.dart';
 import 'package:sixpos/presentation/screens/web_marketing_localization.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:flutter/material.dart';
@@ -477,7 +478,12 @@ class _WebTrialOnboardingPageState extends State<WebTrialOnboardingPage> {
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            onPressed: () => Navigator.pushNamed(context, '/checkout'),
+            onPressed: () {
+              if (assignBrowserLocation('/checkout')) {
+                return;
+              }
+              Navigator.pushNamed(context, '/checkout/flutter');
+            },
             icon: const Icon(Icons.shopping_cart_checkout_rounded),
             label: Text(copy.t('nav.buy')),
             style: OutlinedButton.styleFrom(
@@ -608,7 +614,10 @@ class _WebTrialOnboardingPageState extends State<WebTrialOnboardingPage> {
     if (!mounted) {
       return;
     }
-    Navigator.pushReplacementNamed(context, '/login?source=trial');
+    if (replaceBrowserLocation('/login?source=trial')) {
+      return;
+    }
+    Navigator.pushReplacementNamed(context, '/login/flutter');
   }
 }
 
@@ -633,20 +642,34 @@ class _OnboardingTopBar extends StatelessWidget {
         runSpacing: 8,
         children: [
           FilledButton.tonalIcon(
-            onPressed: () => Navigator.pushReplacementNamed(context, '/'),
+            onPressed: () {
+              if (!assignBrowserLocation('/')) {
+                Navigator.pushReplacementNamed(context, '/');
+              }
+            },
             icon: const Icon(Icons.arrow_back),
-            label: const Text('Home'),
+            label: Text(copy.t('nav.home')),
           ),
           Wrap(
             spacing: 10,
             children: [
               _LanguageDropdown(copy: copy),
               FilledButton.tonal(
-                onPressed: () => Navigator.pushNamed(context, '/login'),
+                onPressed: () {
+                  if (assignBrowserLocation('/login')) {
+                    return;
+                  }
+                  Navigator.pushNamed(context, '/login/flutter');
+                },
                 child: Text(copy.t('nav.login')),
               ),
               ElevatedButton.icon(
-                onPressed: () => Navigator.pushNamed(context, '/checkout'),
+                onPressed: () {
+                  if (assignBrowserLocation('/checkout')) {
+                    return;
+                  }
+                  Navigator.pushNamed(context, '/checkout/flutter');
+                },
                 icon: const Icon(Icons.shopping_cart_checkout_rounded),
                 label: Text(copy.t('nav.buy')),
               ),

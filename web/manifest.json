@@ -1,7 +1,8 @@
 {
     "name": "Six POS — Gestão simples, resultados reais.",
     "short_name": "Six POS",
-    "start_url": ".",
+    "start_url": "/app",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#FFFFFF",
     "theme_color": "#0F2D3A",

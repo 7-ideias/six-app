@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="sixapp-entrypoint" content="public-checkout">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Escolha um plano público do SixApp e mantenha o checkout em modo simulado até a integração de pagamento.">
+  <meta name="theme-color" content="#0F2D3A">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SixApp - Checkout">
+  <meta property="og:description" content="Checkout público em HTML para selecionar um plano do SixApp.">
+  <meta property="og:image" content="/site-assets/images/sixapp-mark.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="SixApp - Checkout">
+  <meta name="twitter:description" content="Selecione um plano do SixApp sem carregar Flutter.">
+  <meta name="twitter:image" content="/site-assets/images/sixapp-mark.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/site-assets/images/sixapp-mark.png">
+  <link rel="stylesheet" href="/site-assets/css/public-base.css">
+  <link rel="stylesheet" href="/site-assets/css/checkout.css">
+  <title>SixApp - Checkout</title>
+</head>
+<body class="checkout-page">
+  <a class="skip-link" href="#checkout-form" data-i18n="access.skip">Ir para o checkout</a>
+
+  <header class="layout checkout-topbar">
+    <a class="brand" href="/" aria-label="SixApp" data-i18n-aria="brand.aria">
+      <span class="brand-mark" aria-hidden="true">
+        <img src="/site-assets/images/sixapp-mark.png" width="32" height="32" alt="">
+      </span>
+      <span>SixApp</span>
+    </a>
+
+    <div class="checkout-topbar-actions">
+      <a class="button button-quiet home-link" href="/" data-i18n="nav.home">Voltar</a>
+      <div class="language-switcher" role="group" aria-label="Selecionar idioma" data-i18n-aria="language.aria">
+        <button type="button" data-lang-option="pt" aria-pressed="true">PT</button>
+        <button type="button" data-lang-option="en" aria-pressed="false">EN</button>
+        <button type="button" data-lang-option="es" aria-pressed="false">ES</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout checkout-main" id="conteudo">
+    <section class="checkout-card" aria-labelledby="checkout-title" data-checkout-card>
+      <div class="checkout-card-header">
+        <p class="checkout-eyebrow" data-i18n="context.eyebrow">Checkout simulado</p>
+        <h1 id="checkout-title" data-i18n="context.title">Escolha como deseja continuar</h1>
+        <p data-i18n="context.body">Os planos são carregados pelo contrato público atual. Nenhum pagamento real será executado nesta página.</p>
+      </div>
+
+      <form class="checkout-form" id="checkout-form" data-checkout-form novalidate aria-busy="true">
+        <fieldset class="choice-group">
+          <legend data-i18n="plans.legend">Plano</legend>
+          <p class="field-help" data-i18n="plans.help">Selecione uma opção disponível.</p>
+          <div class="checkout-loading" data-checkout-loading role="status" aria-live="polite">
+            <span data-i18n="plans.loading">Carregando planos...</span>
+          </div>
+          <div class="plan-list" data-checkout-plans></div>
+        </fieldset>
+
+        <fieldset class="choice-group">
+          <legend data-i18n="payment.legend">Forma de pagamento</legend>
+          <p class="field-help" data-i18n="payment.help">A seleção é mantida apenas para preservar o mock atual.</p>
+          <div class="payment-list" data-checkout-payment-methods>
+            <label class="payment-option">
+              <input type="radio" name="paymentMethod" value="card" data-payment-method checked>
+              <span data-i18n="payment.card">Cartão</span>
+            </label>
+            <label class="payment-option">
+              <input type="radio" name="paymentMethod" value="pix" data-payment-method>
+              <span data-i18n="payment.pix">Pix</span>
+            </label>
+            <label class="payment-option">
+              <input type="radio" name="paymentMethod" value="boleto" data-payment-method>
+              <span data-i18n="payment.boleto">Boleto</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <section class="checkout-summary" aria-labelledby="checkout-summary-title">
+          <h2 id="checkout-summary-title" data-i18n="summary.title">Resumo</h2>
+          <dl>
+            <div>
+              <dt data-i18n="summary.plan">Plano</dt>
+              <dd data-summary-plan>-</dd>
+            </div>
+            <div>
+              <dt data-i18n="summary.price">Valor</dt>
+              <dd data-summary-price>-</dd>
+            </div>
+            <div>
+              <dt data-i18n="summary.cadence">Periodicidade</dt>
+              <dd data-summary-cadence>-</dd>
+            </div>
+          </dl>
+        </section>
+
+        <p
+          class="form-alert"
+          id="checkout-feedback"
+          data-checkout-feedback
+          role="alert"
+          aria-live="polite"
+          tabindex="-1"
+          hidden></p>
+
+        <pre class="checkout-payload" data-checkout-payload tabindex="0" hidden></pre>
+
+        <button class="button button-primary submit-button" type="submit" data-checkout-submit disabled>
+          <span data-checkout-submit-label data-i18n="form.submit">Continuar</span>
+        </button>
+      </form>
+
+      <div class="checkout-card-footer">
+        <a href="/register" data-i18n="footer.register">Criar conta</a>
+        <a class="compatibility-link" href="/checkout/flutter" data-i18n="footer.compatibility">Usar versão compatível</a>
+      </div>
+
+      <noscript>
+        <p class="checkout-noscript">
+          <span data-i18n="noscript.message">Para usar esta página, ative o JavaScript. Você também pode acessar a versão compatível.</span>
+          <a href="/checkout/flutter" data-i18n="noscript.link">Usar versão compatível</a>
+        </p>
+      </noscript>
+    </section>
+  </main>
+
+  <script src="/site-assets/js/public-config.js"></script>
+  <script type="module" src="/site-assets/js/checkout.js"></script>
+</body>
+</html>

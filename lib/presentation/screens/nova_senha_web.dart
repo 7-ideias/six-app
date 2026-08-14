@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/core/utils/browser_location.dart';
 
 import '../../core/exceptions/recuperacao_senha_exception.dart';
 import '../../core/services/recuperacao_senha_service.dart';
 import '../components/web_auth_shell.dart';
-import 'login_page_web.dart';
 
 class NovaSenhaWeb extends StatefulWidget {
   final String email;
@@ -58,10 +58,12 @@ class _NovaSenhaWebState extends State<NovaSenhaWeb> {
       );
       if (!mounted) return;
       _showSnack('Senha redefinida com sucesso!');
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginPageWeb()),
-        (route) => false,
-      );
+      if (replaceBrowserLocation('/login')) {
+        return;
+      }
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil('/login/flutter', (route) => false);
     } on RecuperacaoSenhaException catch (e) {
       _showSnack(e.message);
     } catch (_) {

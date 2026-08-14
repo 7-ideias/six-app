@@ -43,6 +43,7 @@ class WebMarketingLocalizer {
     'pt': {
       'nav.aiErp': 'Six ERP IA',
       'nav.subtitle': 'Gestao inteligente para empresas de alta performance',
+      'nav.home': 'Home',
       'nav.login': 'Entrar',
       'nav.testNow': 'Experimente agora',
       'nav.buy': 'Comprar licenca',
@@ -134,6 +135,7 @@ class WebMarketingLocalizer {
     'en': {
       'nav.aiErp': 'Six AI ERP',
       'nav.subtitle': 'Smart management for high-performance companies',
+      'nav.home': 'Home',
       'nav.login': 'Login',
       'nav.testNow': 'Try now',
       'nav.buy': 'Buy license',
@@ -223,6 +225,7 @@ class WebMarketingLocalizer {
     'es': {
       'nav.aiErp': 'Six ERP IA',
       'nav.subtitle': 'Gestion inteligente para empresas de alto rendimiento',
+      'nav.home': 'Inicio',
       'nav.login': 'Ingresar',
       'nav.testNow': 'Probar ahora',
       'nav.buy': 'Comprar licencia',

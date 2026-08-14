@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/utils/browser_location.dart';
 import '../../core/services/colaborador_convite_web_service.dart';
 import '../../data/models/colaborador_convite_model.dart';
 
@@ -110,7 +111,10 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
   }
 
   void _irParaLogin() {
-    Navigator.of(context).pushNamed('/login');
+    if (assignBrowserLocation('/login')) {
+      return;
+    }
+    Navigator.of(context).pushNamed('/login/flutter');
   }
 
   @override

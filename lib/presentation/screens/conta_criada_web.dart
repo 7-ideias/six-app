@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/core/utils/browser_location.dart';
 
 import '../components/web_auth_shell.dart';
-import 'login_page_web.dart';
 
 class ContaCriadaWeb extends StatelessWidget {
   const ContaCriadaWeb({super.key});
 
   void _goToLogin(BuildContext context) {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginPageWeb()),
-      (route) => false,
-    );
+    if (replaceBrowserLocation('/login')) {
+      return;
+    }
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil('/login/flutter', (route) => false);
   }
 
   @override

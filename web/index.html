@@ -17,7 +17,9 @@
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="sixapp-entrypoint" content="flutter-app">
   <meta name="description" content="PDV para pequenos negócios brasileiros. Frente de caixa, estoque, ordens de serviço e financeiro preditivo — tudo em um só app, com IA para cadastrar produtos e prever caixa.">
   <meta name="theme-color" content="#0F2D3A">
 
@@ -56,6 +58,63 @@
   <!-- Google Sign-In (mesmo client ID usado como serverClientId nas plataformas nativas) -->
   <meta name="google-signin-client_id" content="194419403668-manc56voom9d29bv0n7m4pilub8j864a.apps.googleusercontent.com">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script>
+    // Neutraliza apenas service workers Flutter legados do SixApp na raiz.
+    (function () {
+      var cleanupKey = 'sixapp.flutterWorkerCleanup.v2';
+
+      function isSixAppFlutterServiceWorker(registration) {
+        var worker = registration.active || registration.waiting || registration.installing;
+        if (!worker || !worker.scriptURL) return false;
+        try {
+          var scriptUrl = new URL(worker.scriptURL);
+          var scopeUrl = new URL(registration.scope);
+          return scriptUrl.origin === window.location.origin &&
+            scopeUrl.origin === window.location.origin &&
+            scriptUrl.pathname === '/flutter_service_worker.js' &&
+            scopeUrl.pathname === '/';
+        } catch (_) {
+          return false;
+        }
+      }
+
+      function isSixAppFlutterCacheName(cacheName) {
+        return cacheName === 'flutter-app-cache' ||
+          cacheName === 'flutter-temp-cache' ||
+          cacheName === 'flutter-app-manifest' ||
+          cacheName.indexOf('flutter-app-cache-') === 0 ||
+          cacheName.indexOf('flutter-temp-cache-') === 0 ||
+          cacheName.indexOf('flutter-app-manifest-') === 0;
+      }
+
+      function clearSixAppFlutterCaches() {
+        if (!('caches' in window)) return Promise.resolve();
+        return caches.keys().then(function (cacheNames) {
+          return Promise.all(cacheNames
+            .filter(isSixAppFlutterCacheName)
+            .map(function (cacheName) { return caches.delete(cacheName); }));
+        });
+      }
+
+      function cleanupLegacyFlutterWorker() {
+        if (window.localStorage.getItem(cleanupKey) === 'done') return;
+        if (!('serviceWorker' in navigator)) return;
+        navigator.serviceWorker.getRegistrations()
+          .then(function (registrations) {
+            return Promise.all(registrations
+              .filter(isSixAppFlutterServiceWorker)
+              .map(function (registration) { return registration.unregister(); }));
+          })
+          .then(clearSixAppFlutterCaches)
+          .then(function () {
+            window.localStorage.setItem(cleanupKey, 'done');
+          })
+          .catch(function () {});
+      }
+
+      window.addEventListener('load', cleanupLegacyFlutterWorker);
+    })();
+  </script>
 </head>
 <body>
   <div id="boot-splash">

@@ -539,6 +539,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.signInWithApple': 'Entrar com Apple',
     'auth.signInWithGoogle': 'Entrar com Google',
     'auth.googleLoginError': 'Não foi possível concluir o login com Google.',
+    'webAuthGate.temporaryError.title': 'Não foi possível validar sua sessão',
+    'webAuthGate.temporaryError.message':
+        'Verifique sua conexão ou aguarde o backend responder e tente novamente.',
     'auth.appleLoginMock': 'Login com Apple (mocked)',
     'auth.termsPrefix':
         'Ao clicar em "Continuar", declaro ter lido e concordo com os ',
@@ -1963,6 +1966,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.signInWithApple': 'Sign in with Apple',
     'auth.signInWithGoogle': 'Sign in with Google',
     'auth.googleLoginError': 'Could not complete Google sign-in.',
+    'webAuthGate.temporaryError.title': 'Could not validate your session',
+    'webAuthGate.temporaryError.message':
+        'Check your connection or wait for the backend to respond, then try again.',
     'auth.appleLoginMock': 'Apple sign-in (mocked)',
     'auth.termsPrefix':
         'By clicking "Continue", I confirm that I have read and agree with the ',
@@ -2726,6 +2732,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.signInWithGoogle': 'Entrar con Google',
     'auth.googleLoginError':
         'No se pudo completar el inicio de sesión con Google.',
+    'webAuthGate.temporaryError.title': 'No se pudo validar tu sesión',
+    'webAuthGate.temporaryError.message':
+        'Verifica tu conexión o espera a que el backend responda y vuelve a intentarlo.',
     'auth.appleLoginMock': 'Inicio de sesión con Apple (mocked)',
     'auth.termsPrefix':
         'Al hacer clic en "Continuar", declaro que leí y acepto los ',
