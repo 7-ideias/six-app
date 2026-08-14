@@ -161,9 +161,23 @@ class MyApp extends StatelessWidget {
       );
     }
     if (routeUri.path == '/register') {
+      return _browserLocationRoute(
+        settings: settings,
+        location: _formatWebLocation(routeUri),
+        fallbackRoute: '/register/flutter',
+      );
+    }
+    if (routeUri.path == '/register/flutter') {
       return _slidePageRoute(settings: settings, page: const RegisterPageWeb());
     }
     if (routeUri.path == '/forgot-password') {
+      return _browserLocationRoute(
+        settings: settings,
+        location: _formatWebLocation(routeUri),
+        fallbackRoute: '/forgot-password/flutter',
+      );
+    }
+    if (routeUri.path == '/forgot-password/flutter') {
       return _slidePageRoute(
         settings: settings,
         page: const EsqueceuSenhaWeb(),
@@ -209,12 +223,26 @@ class MyApp extends StatelessWidget {
       );
     }
     if (routeUri.path == '/onboarding') {
+      return _browserLocationRoute(
+        settings: settings,
+        location: _formatWebLocation(routeUri),
+        fallbackRoute: '/onboarding/flutter',
+      );
+    }
+    if (routeUri.path == '/onboarding/flutter') {
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => WebTrialOnboardingPage(initialUri: routeUri),
       );
     }
     if (routeUri.path == '/checkout') {
+      return _browserLocationRoute(
+        settings: settings,
+        location: _formatWebLocation(routeUri),
+        fallbackRoute: '/checkout/flutter',
+      );
+    }
+    if (routeUri.path == '/checkout/flutter') {
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => WebCheckoutPage(initialUri: routeUri),

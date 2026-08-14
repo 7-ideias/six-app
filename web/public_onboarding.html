@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="sixapp-entrypoint" content="public-onboarding">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Informe o perfil do seu negócio para iniciar o teste guiado do SixApp.">
+  <meta name="theme-color" content="#0F2D3A">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SixApp - Onboarding">
+  <meta property="og:description" content="Onboarding público para preparar seu perfil de teste no SixApp.">
+  <meta property="og:image" content="/site-assets/images/sixapp-mark.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="SixApp - Onboarding">
+  <meta name="twitter:description" content="Escolha o perfil do seu negócio antes de entrar no SixApp.">
+  <meta name="twitter:image" content="/site-assets/images/sixapp-mark.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/site-assets/images/sixapp-mark.png">
+  <link rel="stylesheet" href="/site-assets/css/public-base.css">
+  <link rel="stylesheet" href="/site-assets/css/onboarding.css">
+  <title>SixApp - Onboarding</title>
+</head>
+<body class="onboarding-page">
+  <a class="skip-link" href="#onboarding-form" data-i18n="access.skip">Ir para o formulário de onboarding</a>
+
+  <header class="layout onboarding-topbar">
+    <a class="brand" href="/" aria-label="SixApp" data-i18n-aria="brand.aria">
+      <span class="brand-mark" aria-hidden="true">
+        <img src="/site-assets/images/sixapp-mark.png" width="32" height="32" alt="">
+      </span>
+      <span>SixApp</span>
+    </a>
+
+    <div class="onboarding-topbar-actions">
+      <a class="button button-quiet home-link" href="/" data-i18n="nav.home">Voltar para a página inicial</a>
+      <div class="language-switcher" role="group" aria-label="Selecionar idioma" data-i18n-aria="language.aria">
+        <button type="button" data-lang-option="pt" aria-pressed="true">PT</button>
+        <button type="button" data-lang-option="en" aria-pressed="false">EN</button>
+        <button type="button" data-lang-option="es" aria-pressed="false">ES</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout onboarding-main" id="conteudo">
+    <section class="onboarding-card" aria-labelledby="onboarding-title">
+      <div class="onboarding-card-header">
+        <p class="onboarding-eyebrow" data-i18n="context.eyebrow">Teste guiado</p>
+        <h1 id="onboarding-title" data-i18n="context.title">Conte um pouco sobre seu negócio</h1>
+        <p data-i18n="context.body">Suas escolhas ficam salvas localmente para continuar pelo login.</p>
+      </div>
+
+      <form class="onboarding-form" id="onboarding-form" data-onboarding-form novalidate>
+        <fieldset class="choice-group">
+          <legend data-i18n="step.business">Como sua operação vende hoje?</legend>
+          <div class="choice-list" data-onboarding-options="businessModel"></div>
+        </fieldset>
+
+        <fieldset class="choice-group">
+          <legend data-i18n="step.segments">Quais segmentos representam seu negócio?</legend>
+          <div class="choice-list" data-onboarding-options="segments"></div>
+        </fieldset>
+
+        <fieldset class="choice-group">
+          <legend data-i18n="step.channels">Quais canais de venda você utiliza?</legend>
+          <div class="choice-list" data-onboarding-options="channels"></div>
+        </fieldset>
+
+        <fieldset class="choice-group">
+          <legend data-i18n="step.modules">Quais módulos quer ativar no piloto?</legend>
+          <div class="choice-list" data-onboarding-options="modules"></div>
+        </fieldset>
+
+        <fieldset class="choice-group">
+          <legend data-i18n="step.ai">Onde a IA deve priorizar ganhos?</legend>
+          <div class="choice-list" data-onboarding-options="aiFocus"></div>
+        </fieldset>
+
+        <div class="field">
+          <label for="team-size" data-i18n="step.team">Quantas pessoas usam o sistema?</label>
+          <div class="range-row">
+            <input
+              id="team-size"
+              data-team-size
+              name="teamSize"
+              type="range"
+              min="1"
+              max="200"
+              step="1"
+              value="3">
+            <output for="team-size" data-team-size-output>3 usuários estimados</output>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="business-name" data-i18n="field.businessName.label">Nome do negócio (opcional)</label>
+          <div class="input-shell">
+            <input
+              id="business-name"
+              data-business-name
+              name="businessName"
+              type="text"
+              autocomplete="organization"
+              placeholder="Informe o nome do negócio"
+              data-i18n-placeholder="field.businessName.placeholder">
+          </div>
+        </div>
+
+        <p
+          class="form-alert"
+          id="onboarding-feedback"
+          data-onboarding-feedback
+          role="alert"
+          aria-live="polite"
+          tabindex="-1"
+          hidden></p>
+
+        <button class="button button-primary submit-button" type="submit" data-onboarding-submit>
+          <span data-i18n="form.submit">Continuar</span>
+        </button>
+      </form>
+
+      <div class="onboarding-card-footer">
+        <span>
+          <span data-i18n="footer.login.prompt">Já tem uma conta?</span>
+          <a href="/login" data-i18n="footer.login.link">Entrar</a>
+        </span>
+        <a class="compatibility-link" href="/onboarding/flutter" data-i18n="footer.compatibility">Usar versão compatível</a>
+      </div>
+
+      <noscript>
+        <p class="onboarding-noscript">
+          <span data-i18n="noscript.message">Para usar esta página, ative o JavaScript. Você também pode acessar a versão compatível.</span>
+          <a href="/onboarding/flutter" data-i18n="noscript.link">Usar versão compatível</a>
+        </p>
+      </noscript>
+    </section>
+  </main>
+
+  <script type="module" src="/site-assets/js/onboarding.js"></script>
+</body>
+</html>

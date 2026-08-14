@@ -478,7 +478,12 @@ class _WebTrialOnboardingPageState extends State<WebTrialOnboardingPage> {
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            onPressed: () => Navigator.pushNamed(context, '/checkout'),
+            onPressed: () {
+              if (assignBrowserLocation('/checkout')) {
+                return;
+              }
+              Navigator.pushNamed(context, '/checkout/flutter');
+            },
             icon: const Icon(Icons.shopping_cart_checkout_rounded),
             label: Text(copy.t('nav.buy')),
             style: OutlinedButton.styleFrom(
@@ -659,7 +664,12 @@ class _OnboardingTopBar extends StatelessWidget {
                 child: Text(copy.t('nav.login')),
               ),
               ElevatedButton.icon(
-                onPressed: () => Navigator.pushNamed(context, '/checkout'),
+                onPressed: () {
+                  if (assignBrowserLocation('/checkout')) {
+                    return;
+                  }
+                  Navigator.pushNamed(context, '/checkout/flutter');
+                },
                 icon: const Icon(Icons.shopping_cart_checkout_rounded),
                 label: Text(copy.t('nav.buy')),
               ),

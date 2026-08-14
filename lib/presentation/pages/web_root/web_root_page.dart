@@ -36,37 +36,39 @@ class WebRootPage extends StatelessWidget {
     // O conteúdo da landing depende das traduções do backend; o gate só o
     // constrói quando as mensagens do locale corrente estão carregadas.
     return WebI18nGate(
-      builder: (context) => ChangeNotifierProvider<WebRootProvider>(
-      create: (_) => WebRootProvider(),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // Side-effect: atualiza o provider DEPOIS deste frame para evitar
-          // chamar notifyListeners durante build.
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!context.mounted) return;
-            context
-                .read<WebRootProvider>()
-                .updateFromConstraints(constraints);
-          });
+      builder:
+          (context) => ChangeNotifierProvider<WebRootProvider>(
+            create: (_) => WebRootProvider(),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Side-effect: atualiza o provider DEPOIS deste frame para evitar
+                // chamar notifyListeners durante build.
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!context.mounted) return;
+                  context.read<WebRootProvider>().updateFromConstraints(
+                    constraints,
+                  );
+                });
 
-          // Decisão imediata baseada em width — o provider serve para que
-          // consumers internos saibam o device sem precisar refazer o cálculo.
-          final isDesktop =
-              PlatformDetector.isDesktopWidth(constraints.maxWidth);
-
-          return isDesktop
-              ? DesktopLayout(
-                  onLogin: () => _goLogin(context),
-                  onSignup: () => _goLogin(context),
-                  onChoosePlan: (plan) => _handlePlanChoice(context, plan),
-                )
-              : MobileLayout(
-                  onSignup: () => _goLogin(context),
-                  onChoosePlan: (plan) => _handlePlanChoice(context, plan),
+                // Decisão imediata baseada em width — o provider serve para que
+                // consumers internos saibam o device sem precisar refazer o cálculo.
+                final isDesktop = PlatformDetector.isDesktopWidth(
+                  constraints.maxWidth,
                 );
-        },
-      ),
-      ),
+
+                return isDesktop
+                    ? DesktopLayout(
+                      onLogin: () => _goLogin(context),
+                      onSignup: () => _goLogin(context),
+                      onChoosePlan: (plan) => _handlePlanChoice(context, plan),
+                    )
+                    : MobileLayout(
+                      onSignup: () => _goLogin(context),
+                      onChoosePlan: (plan) => _handlePlanChoice(context, plan),
+                    );
+              },
+            ),
+          ),
     );
   }
 
@@ -84,7 +86,20 @@ class WebRootPage extends StatelessWidget {
     final isFeatured =
         plans.where((p) => p.name == planName && p.featured).isNotEmpty;
     if (isFeatured) {
-      Navigator.of(context).pushNamed('/checkout?plan=$planName');
+      final String htmlLocation =
+          Uri(
+            path: '/checkout',
+            queryParameters: {'plan': planName},
+          ).toString();
+      if (assignBrowserLocation(htmlLocation)) {
+        return;
+      }
+      Navigator.of(context).pushNamed(
+        Uri(
+          path: '/checkout/flutter',
+          queryParameters: {'plan': planName},
+        ).toString(),
+      );
     } else {
       _goLogin(context);
     }

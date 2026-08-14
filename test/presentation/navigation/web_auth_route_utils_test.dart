@@ -24,9 +24,13 @@ void main() {
         '/login',
         '/login/flutter',
         '/register',
+        '/register/flutter',
         '/forgot-password',
+        '/forgot-password/flutter',
         '/onboarding',
+        '/onboarding/flutter',
         '/checkout',
+        '/checkout/flutter',
         '/ordem-servico/123',
         '/cliente/auto-cadastro/abc',
         '/colaborador/convites/abc',
@@ -67,6 +71,7 @@ void main() {
       expect(sanitizeAuthenticatedWebRedirect('/login/flutter'), isNull);
       expect(sanitizeAuthenticatedWebRedirect('/register'), isNull);
       expect(sanitizeAuthenticatedWebRedirect('/forgot-password'), isNull);
+      expect(sanitizeAuthenticatedWebRedirect('/admin'), isNull);
       expect(sanitizeAuthenticatedWebRedirect('/app'), '/app');
       expect(
         sanitizeAuthenticatedWebRedirect('/app/financeiro?periodo=mes#saldo'),
@@ -74,6 +79,7 @@ void main() {
       );
       expect(sanitizeAuthenticatedWebRedirect('/app\\admin'), isNull);
       expect(sanitizeAuthenticatedWebRedirect('/app%5Cadmin'), isNull);
+      expect(sanitizeAuthenticatedWebRedirect('/app/../admin'), isNull);
     });
   });
 }

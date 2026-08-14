@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:sixpos/core/utils/browser_location.dart';
 import 'package:sixpos/l10n/web_root_l10n.dart';
 
 import '../../core/exceptions/google_auth_exception.dart';
@@ -11,7 +12,6 @@ import '../components/web_auth_shell.dart';
 import '../components/web_google_sign_in_button.dart';
 import '../components/web_root/web_i18n_gate.dart';
 import 'post_login_splash_web_page.dart';
-import 'register_page_web.dart';
 
 class LoginPageWeb extends StatefulWidget {
   const LoginPageWeb({super.key});
@@ -138,16 +138,17 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   }
 
   void _forgotPassword() {
-    Navigator.pushNamed(context, '/forgot-password');
+    if (assignBrowserLocation('/forgot-password')) {
+      return;
+    }
+    Navigator.pushNamed(context, '/forgot-password/flutter');
   }
 
   void _createAccount() {
-    Navigator.of(context).push(
-      WebAuthShell.smoothRoute<void>(
-        name: '/register',
-        builder: (_) => const RegisterPageWeb(),
-      ),
-    );
+    if (assignBrowserLocation('/register')) {
+      return;
+    }
+    Navigator.pushNamed(context, '/register/flutter');
   }
 
   @override
