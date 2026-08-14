@@ -55,16 +55,21 @@ require_no_public_forbidden_terms() {
 validate_public_site_asset_references() {
   local html_path="$1"
   local asset_ref
+  local asset_refs
   local asset_path
+
+  asset_refs="$(grep -Eo '(src|href|srcset)="[^"]+"' "$html_path" |
+    sed -E 's/^[^"]+"//; s/"$//' |
+    grep '^/site-assets/' || true)"
+
+  [[ -n "$asset_refs" ]] || return 0
 
   while IFS= read -r asset_ref; do
     asset_path="${asset_ref%% *}"
     asset_path="${asset_path%%\?*}"
     [[ -f "build/web${asset_path}" ]] ||
       fail "Referencia publica sem arquivo correspondente: ${asset_path}"
-  done < <(grep -Eo '(src|href|srcset)="[^"]+"' "$html_path" |
-    sed -E 's/^[^"]+"//; s/"$//' |
-    grep '^/site-assets/' || true)
+  done <<< "$asset_refs"
 }
 
 NODE_BIN="$(resolve_node)"

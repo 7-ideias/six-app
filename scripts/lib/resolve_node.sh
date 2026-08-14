@@ -31,12 +31,15 @@ resolve_node() {
   shopt -u nullglob
 
   if ((${#candidates[@]} > 0)); then
+    local sorted_candidates
+    sorted_candidates="$(printf '%s\n' "${candidates[@]}" | sort -Vr)"
+
     while IFS= read -r candidate; do
       if [[ -x "$candidate" ]] && "$candidate" --version >/dev/null 2>&1; then
         printf '%s\n' "$candidate"
         return 0
       fi
-    done < <(printf '%s\n' "${candidates[@]}" | sort -Vr)
+    done <<< "$sorted_candidates"
   fi
 
   echo "[ERRO SIX] Node.js nao encontrado. Instale Node no PATH ou disponibilize um runtime valido em ${runtime_dir}/*/bin/node." >&2
