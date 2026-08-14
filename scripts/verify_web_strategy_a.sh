@@ -45,13 +45,6 @@ require_not_contains() {
   fi
 }
 
-require_jq_true() {
-  local description="$1"
-  local expression="$2"
-  jq -e "$expression" vercel.json >/dev/null ||
-    fail "vercel.json invalido para: $description"
-}
-
 require_no_public_forbidden_terms() {
   local path="$1"
   for pattern in 'Six POS' 'Six ERP' 'Seven'; do
@@ -74,16 +67,6 @@ validate_public_site_asset_references() {
     grep '^/site-assets/' || true)
 }
 
-require_rewrite() {
-  local source="$1"
-  local destination="$2"
-  jq -e --arg source "$source" --arg destination "$destination" \
-    '.rewrites[]? | select(.source == $source and .destination == $destination)' \
-    vercel.json >/dev/null ||
-    fail "Rewrite ausente: $source -> $destination"
-}
-
-command -v jq >/dev/null || fail "Dependencia obrigatoria ausente: jq"
 NODE_BIN="$(resolve_node)"
 
 section "ASSETS"
@@ -148,8 +131,6 @@ require_file build/web/site-assets/images/sixapp-mark.png
 require_file build/web/site-assets/images/commerce-workspace.webp
 require_dir build/web/assets
 require_dir build/web/canvaskit
-
-jq empty vercel.json >/dev/null || fail "vercel.json nao e JSON valido"
 
 section "HOME"
 
@@ -361,117 +342,7 @@ NODE
 
 section "VERCEL"
 
-require_jq_true 'buildCommand usa scripts/build_web_with_public_home.sh' \
-  '.buildCommand | contains("scripts/build_web_with_public_home.sh")'
-require_jq_true 'outputDirectory build/web' '.outputDirectory == "build/web"'
-require_jq_true '/home redireciona para /' \
-  '.redirects[]? | select(.source == "/home" and .destination == "/")'
-
-require_rewrite '/login' '/login.html'
-require_rewrite '/login/flutter' '/flutter.html'
-require_rewrite '/register' '/register.html'
-require_rewrite '/register/flutter' '/flutter.html'
-require_rewrite '/forgot-password' '/forgot-password.html'
-require_rewrite '/forgot-password/flutter' '/flutter.html'
-require_rewrite '/onboarding' '/onboarding.html'
-require_rewrite '/onboarding/flutter' '/flutter.html'
-require_rewrite '/checkout' '/checkout.html'
-require_rewrite '/checkout/flutter' '/flutter.html'
-require_rewrite '/app' '/flutter.html'
-require_rewrite '/app/:path*' '/flutter.html'
-require_rewrite '/admin' '/flutter.html'
-require_rewrite '/admin/:path*' '/flutter.html'
-require_rewrite '/atendimento/assinatura' '/flutter.html'
-require_rewrite '/ordem-servico' '/flutter.html'
-require_rewrite '/ordem-servico/:path*' '/flutter.html'
-require_rewrite '/cliente/auto-cadastro' '/flutter.html'
-require_rewrite '/cliente/auto-cadastro/:path*' '/flutter.html'
-require_rewrite '/colaborador/convites/:path*' '/flutter.html'
-
-if jq -e '.rewrites[]? | select(.source == "/login/:path*")' vercel.json >/dev/null; then
-  fail "Rewrite proibido encontrado: /login/:path*"
-fi
-
-if jq -e '.rewrites[]? | select(.destination == "/index.html" and ((.source | contains("((?!")) or (.source | contains(":path*")) or (.source == "/(.*)")))' vercel.json >/dev/null; then
-  fail "Catch-all proibido encontrado enviando rotas genericas para /index.html"
-fi
-
-require_jq_true 'Cache-Control no-store restrito ao /login' \
-  '.headers[]? | select(.source == "/login") | .headers[]? | select(.key == "Cache-Control" and .value == "no-store, max-age=0")'
-require_jq_true 'X-Content-Type-Options restrito ao /login' \
-  '.headers[]? | select(.source == "/login") | .headers[]? | select(.key == "X-Content-Type-Options" and .value == "nosniff")'
-require_jq_true 'Referrer-Policy restrito ao /login' \
-  '.headers[]? | select(.source == "/login") | .headers[]? | select(.key == "Referrer-Policy" and .value == "strict-origin-when-cross-origin")'
-require_jq_true 'X-Frame-Options restrito ao /login' \
-  '.headers[]? | select(.source == "/login") | .headers[]? | select(.key == "X-Frame-Options" and .value == "DENY")'
-require_jq_true 'Cache-Control no-store restrito ao /register' \
-  '.headers[]? | select(.source == "/register") | .headers[]? | select(.key == "Cache-Control" and .value == "no-store, max-age=0")'
-require_jq_true 'X-Content-Type-Options restrito ao /register' \
-  '.headers[]? | select(.source == "/register") | .headers[]? | select(.key == "X-Content-Type-Options" and .value == "nosniff")'
-require_jq_true 'Referrer-Policy restrito ao /register' \
-  '.headers[]? | select(.source == "/register") | .headers[]? | select(.key == "Referrer-Policy" and .value == "strict-origin-when-cross-origin")'
-require_jq_true 'X-Frame-Options restrito ao /register' \
-  '.headers[]? | select(.source == "/register") | .headers[]? | select(.key == "X-Frame-Options" and .value == "DENY")'
-require_jq_true 'Cache-Control no-store restrito ao /register.html' \
-  '.headers[]? | select(.source == "/register.html") | .headers[]? | select(.key == "Cache-Control" and .value == "no-store, max-age=0")'
-require_jq_true 'X-Content-Type-Options restrito ao /register.html' \
-  '.headers[]? | select(.source == "/register.html") | .headers[]? | select(.key == "X-Content-Type-Options" and .value == "nosniff")'
-require_jq_true 'Referrer-Policy restrito ao /register.html' \
-  '.headers[]? | select(.source == "/register.html") | .headers[]? | select(.key == "Referrer-Policy" and .value == "strict-origin-when-cross-origin")'
-require_jq_true 'X-Frame-Options restrito ao /register.html' \
-  '.headers[]? | select(.source == "/register.html") | .headers[]? | select(.key == "X-Frame-Options" and .value == "DENY")'
-require_jq_true 'Cache-Control no-store restrito ao /forgot-password' \
-  '.headers[]? | select(.source == "/forgot-password") | .headers[]? | select(.key == "Cache-Control" and .value == "no-store, max-age=0")'
-require_jq_true 'X-Content-Type-Options restrito ao /forgot-password' \
-  '.headers[]? | select(.source == "/forgot-password") | .headers[]? | select(.key == "X-Content-Type-Options" and .value == "nosniff")'
-require_jq_true 'Referrer-Policy restrito ao /forgot-password' \
-  '.headers[]? | select(.source == "/forgot-password") | .headers[]? | select(.key == "Referrer-Policy" and .value == "strict-origin-when-cross-origin")'
-require_jq_true 'X-Frame-Options restrito ao /forgot-password' \
-  '.headers[]? | select(.source == "/forgot-password") | .headers[]? | select(.key == "X-Frame-Options" and .value == "DENY")'
-require_jq_true 'Cache-Control no-store restrito ao /forgot-password.html' \
-  '.headers[]? | select(.source == "/forgot-password.html") | .headers[]? | select(.key == "Cache-Control" and .value == "no-store, max-age=0")'
-require_jq_true 'X-Content-Type-Options restrito ao /forgot-password.html' \
-  '.headers[]? | select(.source == "/forgot-password.html") | .headers[]? | select(.key == "X-Content-Type-Options" and .value == "nosniff")'
-require_jq_true 'Referrer-Policy restrito ao /forgot-password.html' \
-  '.headers[]? | select(.source == "/forgot-password.html") | .headers[]? | select(.key == "Referrer-Policy" and .value == "strict-origin-when-cross-origin")'
-require_jq_true 'X-Frame-Options restrito ao /forgot-password.html' \
-  '.headers[]? | select(.source == "/forgot-password.html") | .headers[]? | select(.key == "X-Frame-Options" and .value == "DENY")'
-require_jq_true 'Cache-Control no-store restrito ao /onboarding' \
-  '.headers[]? | select(.source == "/onboarding") | .headers[]? | select(.key == "Cache-Control" and .value == "no-store, max-age=0")'
-require_jq_true 'X-Content-Type-Options restrito ao /onboarding' \
-  '.headers[]? | select(.source == "/onboarding") | .headers[]? | select(.key == "X-Content-Type-Options" and .value == "nosniff")'
-require_jq_true 'Referrer-Policy restrito ao /onboarding' \
-  '.headers[]? | select(.source == "/onboarding") | .headers[]? | select(.key == "Referrer-Policy" and .value == "strict-origin-when-cross-origin")'
-require_jq_true 'X-Frame-Options restrito ao /onboarding' \
-  '.headers[]? | select(.source == "/onboarding") | .headers[]? | select(.key == "X-Frame-Options" and .value == "DENY")'
-require_jq_true 'Cache-Control no-store restrito ao /onboarding.html' \
-  '.headers[]? | select(.source == "/onboarding.html") | .headers[]? | select(.key == "Cache-Control" and .value == "no-store, max-age=0")'
-require_jq_true 'X-Content-Type-Options restrito ao /onboarding.html' \
-  '.headers[]? | select(.source == "/onboarding.html") | .headers[]? | select(.key == "X-Content-Type-Options" and .value == "nosniff")'
-require_jq_true 'Referrer-Policy restrito ao /onboarding.html' \
-  '.headers[]? | select(.source == "/onboarding.html") | .headers[]? | select(.key == "Referrer-Policy" and .value == "strict-origin-when-cross-origin")'
-require_jq_true 'X-Frame-Options restrito ao /onboarding.html' \
-  '.headers[]? | select(.source == "/onboarding.html") | .headers[]? | select(.key == "X-Frame-Options" and .value == "DENY")'
-require_jq_true 'Cache-Control no-store restrito ao /checkout' \
-  '.headers[]? | select(.source == "/checkout") | .headers[]? | select(.key == "Cache-Control" and .value == "no-store, max-age=0")'
-require_jq_true 'X-Content-Type-Options restrito ao /checkout' \
-  '.headers[]? | select(.source == "/checkout") | .headers[]? | select(.key == "X-Content-Type-Options" and .value == "nosniff")'
-require_jq_true 'Referrer-Policy restrito ao /checkout' \
-  '.headers[]? | select(.source == "/checkout") | .headers[]? | select(.key == "Referrer-Policy" and .value == "strict-origin-when-cross-origin")'
-require_jq_true 'X-Frame-Options restrito ao /checkout' \
-  '.headers[]? | select(.source == "/checkout") | .headers[]? | select(.key == "X-Frame-Options" and .value == "DENY")'
-require_jq_true 'Cache-Control no-store restrito ao /checkout.html' \
-  '.headers[]? | select(.source == "/checkout.html") | .headers[]? | select(.key == "Cache-Control" and .value == "no-store, max-age=0")'
-require_jq_true 'X-Content-Type-Options restrito ao /checkout.html' \
-  '.headers[]? | select(.source == "/checkout.html") | .headers[]? | select(.key == "X-Content-Type-Options" and .value == "nosniff")'
-require_jq_true 'Referrer-Policy restrito ao /checkout.html' \
-  '.headers[]? | select(.source == "/checkout.html") | .headers[]? | select(.key == "Referrer-Policy" and .value == "strict-origin-when-cross-origin")'
-require_jq_true 'X-Frame-Options restrito ao /checkout.html' \
-  '.headers[]? | select(.source == "/checkout.html") | .headers[]? | select(.key == "X-Frame-Options" and .value == "DENY")'
-
-if jq -e '.headers[]? | select(.source != "/login" and .source != "/login.html" and .source != "/register" and .source != "/register.html" and .source != "/forgot-password" and .source != "/forgot-password.html" and .source != "/onboarding" and .source != "/onboarding.html" and .source != "/checkout" and .source != "/checkout.html") | .headers[]? | select((.key == "Cache-Control" and .value == "no-store, max-age=0") or .key == "X-Frame-Options")' vercel.json >/dev/null; then
-  fail "Headers de seguranca/cache publicos aplicados fora de /login, /register, /forgot-password, /onboarding e /checkout"
-fi
+"$NODE_BIN" scripts/lib/verify_vercel_config.mjs vercel.json
 
 section "SECURITY"
 
