@@ -119,6 +119,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.settings': 'Configurações',
     'web.navigation.reports': 'Relatórios',
     'web.navigation.unavailable': 'Destino indisponível nesta versão.',
+    'caixa.operacoes.openConfirmTitle': 'Confirmar abertura de caixa?',
+    'caixa.operacoes.openConfirmMessage':
+        'Deseja abrir {cashDesk} com troco inicial de {amount}?',
+    'caixa.operacoes.openConfirmAction': 'Abrir caixa',
     'web.standalone.quote': 'Orçamento',
     'web.standalone.serviceOrder': 'Ordem de serviço',
     'web.shell.expandSidebar': 'Expandir navegação',
@@ -1283,6 +1287,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.settings': 'Settings',
     'web.navigation.reports': 'Reports',
     'web.navigation.unavailable': 'Destination unavailable in this version.',
+    'caixa.operacoes.openConfirmTitle': 'Confirm cash opening?',
+    'caixa.operacoes.openConfirmMessage':
+        'Do you want to open {cashDesk} with an initial cash amount of {amount}?',
+    'caixa.operacoes.openConfirmAction': 'Open cash register',
     'web.standalone.quote': 'Quote',
     'web.standalone.serviceOrder': 'Service order',
     'web.shell.expandSidebar': 'Expand navigation',
@@ -2345,6 +2353,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.settings': 'Configuración',
     'web.navigation.reports': 'Informes',
     'web.navigation.unavailable': 'Destino no disponible en esta versión.',
+    'caixa.operacoes.openConfirmTitle': '¿Confirmar apertura de caja?',
+    'caixa.operacoes.openConfirmMessage':
+        '¿Deseas abrir {cashDesk} con fondo inicial de {amount}?',
+    'caixa.operacoes.openConfirmAction': 'Abrir caja',
     'web.standalone.quote': 'Presupuesto',
     'web.standalone.serviceOrder': 'Orden de servicio',
     'web.shell.expandSidebar': 'Expandir navegación',

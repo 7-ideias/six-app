@@ -5,12 +5,12 @@
 
   var dictionary = {
     pt: {
-      title: 'SixApp - Gestão para produtos e serviços técnicos',
-      description: 'SixApp organiza vendas, orçamentos, atendimentos técnicos, clientes, equipe e financeiro em uma plataforma online para comércios de produtos e serviços.',
+      title: 'SixApp - Gestão em Web, Android e iOS',
+      description: 'SixApp organiza vendas, orçamentos, atendimentos técnicos, clientes, equipe e financeiro em uma plataforma para usar na Web, Android e iOS.',
       ogTitle: 'SixApp',
-      ogDescription: 'Gestão completa para quem vende produtos e presta serviços técnicos.',
+      ogDescription: 'Gestão completa para quem vende produtos e presta serviços técnicos na Web, Android e iOS.',
       twitterTitle: 'SixApp',
-      twitterDescription: 'Vendas, orçamentos, atendimentos, equipe e financeiro em um só lugar.',
+      twitterDescription: 'Vendas, orçamentos, atendimentos, equipe e financeiro na Web, Android e iOS.',
       'access.skip': 'Ir para o conteúdo principal',
       'nav.aria': 'Navegação principal',
       'nav.menu': 'Menu',
@@ -29,24 +29,64 @@
       'hero.secondary': 'Entrar',
       'hero.tertiary': 'Conhecer recursos',
       'hero.onboarding': 'Experimentar',
-      'preview.aria': 'Prévia simplificada do SixApp',
-      'preview.workspace': 'Operação de hoje',
+      'hero.slide.one.eyebrow': 'Gestão simples para comércio e serviços',
+      'hero.slide.one.title': 'Venda, atenda e acompanhe em um só lugar',
+      'hero.slide.one.lead': 'Produtos, serviços técnicos, clientes e financeiro com clareza e rapidez.',
+      'hero.slide.two.eyebrow': 'Web + Android + iOS',
+      'hero.slide.two.title': 'Use no computador, no Android e no iPhone',
+      'hero.slide.two.lead': 'Venda, atenda, acompanhe clientes e organize a operação também no celular, com experiência pensada para uso real.',
+      'hero.slide.three.eyebrow': 'Equipe e crescimento',
+      'hero.slide.three.title': 'Mais controle para a equipe. Mais clareza para crescer.',
+      'hero.slide.three.lead': 'Defina acessos, acompanhe atividades e tome decisões com informações organizadas.',
+      'hero.chips.aria': 'Rotinas principais',
+      'hero.chip.sales': 'Vendas',
+      'hero.chip.service': 'Serviços técnicos',
+      'hero.chip.customers': 'Clientes',
+      'hero.chip.finance': 'Financeiro',
+      'hero.chip.permissions': 'Permissões',
+      'hero.chip.activities': 'Atividades',
+      'hero.chip.decisions': 'Decisões',
+      'hero.platforms.aria': 'Plataformas do SixApp',
+      'hero.management.aria': 'Apoios de gestão',
+      'hero.carousel.aria': 'Slides da Home',
+      'hero.tabs.aria': 'Destaques do SixApp',
+      'hero.prev': 'Slide anterior',
+      'hero.next': 'Próximo slide',
+      'hero.tab.one': 'Organize a operação',
+      'hero.tab.two': 'Use no computador, Android e iOS',
+      'hero.tab.three': 'Controle para crescer',
+      'preview.aria': 'Prévia Web e mobile do SixApp',
+      'preview.workspace': 'Visão geral',
       'preview.status': 'Online',
       'preview.kpi.sales': 'Vendas',
-      'preview.kpi.sales.value': 'Em acompanhamento',
+      'preview.kpi.sales.value': 'Hoje',
       'preview.kpi.service': 'Atendimentos',
       'preview.kpi.service.value': 'Fila organizada',
       'preview.kpi.finance': 'Financeiro',
       'preview.kpi.finance.value': 'Visão clara',
       'preview.flow.one.label': 'Orçamento',
-      'preview.flow.one.title': 'Aguardando aprovação',
+      'preview.flow.one.title': 'Aprovado',
       'preview.flow.two.label': 'Serviço',
       'preview.flow.two.title': 'Em execução',
       'preview.flow.three.label': 'Entrega',
       'preview.flow.three.title': 'Comprovante pronto',
+      'preview.mobile.title': 'Visão geral',
+      'preview.mobile.sales': 'Vendas hoje',
+      'preview.mobile.sales.value': 'Em uso',
+      'preview.mobile.service': 'Atendimentos',
+      'preview.mobile.service.value': '24',
+      'preview.mobile.activity.one': 'Orçamento aprovado',
+      'preview.mobile.activity.two': 'Serviço em execução',
+      'preview.mobile.activity.three': 'Venda realizada',
       'trust.aria': 'Diferenciais do SixApp',
+      'trust.allInOne': 'Tudo em um só lugar',
+      'trust.allInOne.body': 'Vendas, serviços, clientes e financeiro integrados e organizados.',
       'trust.platforms': 'Web, Android e iOS',
-      'trust.platforms.body': 'Acesse no computador e no celular.',
+      'trust.platforms.body': 'Use o sistema no computador e também no celular, com experiência pensada para operação real.',
+      'trust.team': 'Equipe alinhada',
+      'trust.team.body': 'Acesso certo para cada pessoa, com tarefas e responsabilidades.',
+      'trust.growth': 'Crescimento com clareza',
+      'trust.growth.body': 'Mais controle hoje para construir resultados amanhã.',
       'trust.languages': 'Vários idiomas',
       'trust.languages.body': 'Português, inglês e espanhol na Home pública.',
       'trust.multiBusiness': 'Mais de um comércio',
@@ -117,9 +157,12 @@
       'management.item.two': 'Equipe e permissões alinhadas à operação.',
       'management.item.three': 'Visão para quem administra mais de um comércio.',
       'platforms.kicker': 'Multiplataforma',
-      'platforms.title': 'Acesse no computador, Android e iOS.',
-      'platforms.lead': 'O SixApp foi pensado para a rotina online do comércio: gestão no navegador e acompanhamento no celular quando a operação pedir mobilidade.',
+      'platforms.title': 'Web, Android e iOS de verdade.',
+      'platforms.lead': 'A mesma plataforma para operar no navegador e também no celular, com rotinas pensadas para uso real no Android e no iPhone.',
       'platforms.aria': 'Plataformas',
+      'platforms.web.body': 'Operação no computador',
+      'platforms.android.body': 'Gestão também no celular',
+      'platforms.ios.body': 'Continuidade no iPhone',
       'plans.kicker': 'Planos',
       'plans.title': 'Comece de forma simples e evolua conforme o seu negócio.',
       'plans.lead': 'Os planos devem acompanhar o momento da operação sem obrigar você a decidir tudo antes de organizar a rotina.',
@@ -137,7 +180,7 @@
       'faq.three.question': 'Posso controlar permissões dos colaboradores?',
       'faq.three.answer': 'Sim. O SixApp considera permissões para limitar ações sensíveis de acordo com o papel do colaborador.',
       'faq.four.question': 'O SixApp funciona no celular e computador?',
-      'faq.four.answer': 'Sim. A experiência contempla Web, Android e iOS, com rotinas adequadas para gestão e acompanhamento.',
+      'faq.four.answer': 'Sim. A experiência contempla Web, Android e iOS, com rotinas para operação real também no mobile.',
       'faq.five.question': 'É possível gerar relatórios e comprovantes?',
       'faq.five.answer': 'O app possui fluxos de relatórios e comprovantes em PDF para apoiar conferência, atendimento e entrega.',
       'faq.six.question': 'Meus colaboradores precisam ter acesso a tudo?',
@@ -162,12 +205,12 @@
       'footer.note': 'Produto digital para gestão comercial e operacional.'
     },
     en: {
-      title: 'SixApp - Management for products and technical services',
-      description: 'SixApp organizes sales, quotes, technical service, customers, teams and finance in an online platform for product and service businesses.',
+      title: 'SixApp - Management on Web, Android and iOS',
+      description: 'SixApp organizes sales, quotes, technical service, customers, teams and finance in a platform for Web, Android and iOS.',
       ogTitle: 'SixApp',
-      ogDescription: 'Complete management for businesses that sell products and provide technical services.',
+      ogDescription: 'Complete management for businesses that sell products and provide technical services on Web, Android and iOS.',
       twitterTitle: 'SixApp',
-      twitterDescription: 'Sales, quotes, service, teams and finance in one place.',
+      twitterDescription: 'Sales, quotes, service, teams and finance on Web, Android and iOS.',
       'access.skip': 'Skip to main content',
       'nav.aria': 'Main navigation',
       'nav.menu': 'Menu',
@@ -186,24 +229,64 @@
       'hero.secondary': 'Sign in',
       'hero.tertiary': 'Explore features',
       'hero.onboarding': 'Try it',
-      'preview.aria': 'Simplified SixApp preview',
-      'preview.workspace': 'Today operation',
+      'hero.slide.one.eyebrow': 'Simple management for commerce and services',
+      'hero.slide.one.title': 'Sell, serve and track in one place',
+      'hero.slide.one.lead': 'Products, technical services, customers and finance with clarity and speed.',
+      'hero.slide.two.eyebrow': 'Web + Android + iOS',
+      'hero.slide.two.title': 'Use it on desktop, Android and iPhone',
+      'hero.slide.two.lead': 'Sell, serve, track customers and organize operations on mobile too, with an experience designed for real use.',
+      'hero.slide.three.eyebrow': 'Team and growth',
+      'hero.slide.three.title': 'More control for the team. More clarity to grow.',
+      'hero.slide.three.lead': 'Define access, track activities and make decisions with organized information.',
+      'hero.chips.aria': 'Main routines',
+      'hero.chip.sales': 'Sales',
+      'hero.chip.service': 'Technical services',
+      'hero.chip.customers': 'Customers',
+      'hero.chip.finance': 'Finance',
+      'hero.chip.permissions': 'Permissions',
+      'hero.chip.activities': 'Activities',
+      'hero.chip.decisions': 'Decisions',
+      'hero.platforms.aria': 'SixApp platforms',
+      'hero.management.aria': 'Management support',
+      'hero.carousel.aria': 'Home slides',
+      'hero.tabs.aria': 'SixApp highlights',
+      'hero.prev': 'Previous slide',
+      'hero.next': 'Next slide',
+      'hero.tab.one': 'Organize the operation',
+      'hero.tab.two': 'Use it on desktop, Android and iOS',
+      'hero.tab.three': 'Control to grow',
+      'preview.aria': 'SixApp Web and mobile preview',
+      'preview.workspace': 'Overview',
       'preview.status': 'Online',
       'preview.kpi.sales': 'Sales',
-      'preview.kpi.sales.value': 'Being tracked',
+      'preview.kpi.sales.value': 'Today',
       'preview.kpi.service': 'Service',
       'preview.kpi.service.value': 'Organized queue',
       'preview.kpi.finance': 'Finance',
       'preview.kpi.finance.value': 'Clear view',
       'preview.flow.one.label': 'Quote',
-      'preview.flow.one.title': 'Waiting approval',
+      'preview.flow.one.title': 'Approved',
       'preview.flow.two.label': 'Service',
       'preview.flow.two.title': 'In progress',
       'preview.flow.three.label': 'Delivery',
       'preview.flow.three.title': 'Receipt ready',
+      'preview.mobile.title': 'Overview',
+      'preview.mobile.sales': 'Sales today',
+      'preview.mobile.sales.value': 'In use',
+      'preview.mobile.service': 'Service',
+      'preview.mobile.service.value': '24',
+      'preview.mobile.activity.one': 'Quote approved',
+      'preview.mobile.activity.two': 'Service in progress',
+      'preview.mobile.activity.three': 'Sale completed',
       'trust.aria': 'SixApp advantages',
+      'trust.allInOne': 'Everything in one place',
+      'trust.allInOne.body': 'Sales, services, customers and finance integrated and organized.',
       'trust.platforms': 'Web, Android and iOS',
-      'trust.platforms.body': 'Access it on desktop and mobile.',
+      'trust.platforms.body': 'Use SixApp on desktop and mobile, with an experience designed for real operations.',
+      'trust.team': 'Aligned team',
+      'trust.team.body': 'The right access for each person, with tasks and responsibilities.',
+      'trust.growth': 'Growth with clarity',
+      'trust.growth.body': 'More control today to build tomorrow results.',
       'trust.languages': 'Multiple languages',
       'trust.languages.body': 'Portuguese, English and Spanish on the public Home.',
       'trust.multiBusiness': 'More than one business',
@@ -274,9 +357,12 @@
       'management.item.two': 'Team and permissions aligned with the operation.',
       'management.item.three': 'A view for those who manage more than one business.',
       'platforms.kicker': 'Multiplatform',
-      'platforms.title': 'Access it on desktop, Android and iOS.',
-      'platforms.lead': 'SixApp was designed for the online routine of a business: management in the browser and mobile tracking when the operation needs mobility.',
+      'platforms.title': 'Web, Android and iOS for real.',
+      'platforms.lead': 'The same platform for operating in the browser and on mobile, with routines designed for real use on Android and iPhone.',
       'platforms.aria': 'Platforms',
+      'platforms.web.body': 'Desktop operation',
+      'platforms.android.body': 'Management on mobile too',
+      'platforms.ios.body': 'Continuity on iPhone',
       'plans.kicker': 'Plans',
       'plans.title': 'Start simply and evolve as your business grows.',
       'plans.lead': 'Plans should follow the operation moment without forcing every decision before the routine is organized.',
@@ -294,7 +380,7 @@
       'faq.three.question': 'Can I control collaborator permissions?',
       'faq.three.answer': 'Yes. SixApp considers permissions to limit sensitive actions according to each collaborator role.',
       'faq.four.question': 'Does SixApp work on mobile and desktop?',
-      'faq.four.answer': 'Yes. The experience includes Web, Android and iOS, with routines suited for management and tracking.',
+      'faq.four.answer': 'Yes. SixApp includes Web, Android and iOS, with routines for real operations on mobile too.',
       'faq.five.question': 'Can I generate reports and receipts?',
       'faq.five.answer': 'The app has report and PDF receipt flows to support review, service and delivery.',
       'faq.six.question': 'Do my collaborators need access to everything?',
@@ -319,12 +405,12 @@
       'footer.note': 'Digital product for commercial and operational management.'
     },
     es: {
-      title: 'SixApp - Gestión para productos y servicios técnicos',
-      description: 'SixApp organiza ventas, presupuestos, atención técnica, clientes, equipo y finanzas en una plataforma online para comercios de productos y servicios.',
+      title: 'SixApp - Gestión en Web, Android e iOS',
+      description: 'SixApp organiza ventas, presupuestos, atención técnica, clientes, equipo y finanzas en una plataforma para usar en Web, Android e iOS.',
       ogTitle: 'SixApp',
-      ogDescription: 'Gestión completa para quienes venden productos y prestan servicios técnicos.',
+      ogDescription: 'Gestión completa para quienes venden productos y prestan servicios técnicos en Web, Android e iOS.',
       twitterTitle: 'SixApp',
-      twitterDescription: 'Ventas, presupuestos, atención, equipo y finanzas en un solo lugar.',
+      twitterDescription: 'Ventas, presupuestos, atención, equipo y finanzas en Web, Android e iOS.',
       'access.skip': 'Ir al contenido principal',
       'nav.aria': 'Navegación principal',
       'nav.menu': 'Menú',
@@ -343,24 +429,64 @@
       'hero.secondary': 'Entrar',
       'hero.tertiary': 'Conocer recursos',
       'hero.onboarding': 'Probar',
-      'preview.aria': 'Vista simplificada de SixApp',
-      'preview.workspace': 'Operación de hoy',
+      'hero.slide.one.eyebrow': 'Gestión simple para comercio y servicios',
+      'hero.slide.one.title': 'Vende, atiende y acompaña en un solo lugar',
+      'hero.slide.one.lead': 'Productos, servicios técnicos, clientes y finanzas con claridad y rapidez.',
+      'hero.slide.two.eyebrow': 'Web + Android + iOS',
+      'hero.slide.two.title': 'Úsalo en la computadora, Android y iPhone',
+      'hero.slide.two.lead': 'Vende, atiende, acompaña clientes y organiza la operación también en el celular, con una experiencia pensada para uso real.',
+      'hero.slide.three.eyebrow': 'Equipo y crecimiento',
+      'hero.slide.three.title': 'Más control para el equipo. Más claridad para crecer.',
+      'hero.slide.three.lead': 'Define accesos, acompaña actividades y toma decisiones con información organizada.',
+      'hero.chips.aria': 'Rutinas principales',
+      'hero.chip.sales': 'Ventas',
+      'hero.chip.service': 'Servicios técnicos',
+      'hero.chip.customers': 'Clientes',
+      'hero.chip.finance': 'Finanzas',
+      'hero.chip.permissions': 'Permisos',
+      'hero.chip.activities': 'Actividades',
+      'hero.chip.decisions': 'Decisiones',
+      'hero.platforms.aria': 'Plataformas de SixApp',
+      'hero.management.aria': 'Apoyos de gestión',
+      'hero.carousel.aria': 'Slides de la Home',
+      'hero.tabs.aria': 'Aspectos destacados de SixApp',
+      'hero.prev': 'Slide anterior',
+      'hero.next': 'Siguiente slide',
+      'hero.tab.one': 'Organiza la operación',
+      'hero.tab.two': 'Úsalo en computadora, Android e iOS',
+      'hero.tab.three': 'Control para crecer',
+      'preview.aria': 'Vista Web y mobile de SixApp',
+      'preview.workspace': 'Visión general',
       'preview.status': 'Online',
       'preview.kpi.sales': 'Ventas',
-      'preview.kpi.sales.value': 'En seguimiento',
+      'preview.kpi.sales.value': 'Hoy',
       'preview.kpi.service': 'Atenciones',
       'preview.kpi.service.value': 'Fila organizada',
       'preview.kpi.finance': 'Finanzas',
       'preview.kpi.finance.value': 'Visión clara',
       'preview.flow.one.label': 'Presupuesto',
-      'preview.flow.one.title': 'Esperando aprobación',
+      'preview.flow.one.title': 'Aprobado',
       'preview.flow.two.label': 'Servicio',
       'preview.flow.two.title': 'En ejecución',
       'preview.flow.three.label': 'Entrega',
       'preview.flow.three.title': 'Comprobante listo',
+      'preview.mobile.title': 'Visión general',
+      'preview.mobile.sales': 'Ventas hoy',
+      'preview.mobile.sales.value': 'En uso',
+      'preview.mobile.service': 'Atenciones',
+      'preview.mobile.service.value': '24',
+      'preview.mobile.activity.one': 'Presupuesto aprobado',
+      'preview.mobile.activity.two': 'Servicio en ejecución',
+      'preview.mobile.activity.three': 'Venta realizada',
       'trust.aria': 'Diferenciales de SixApp',
+      'trust.allInOne': 'Todo en un solo lugar',
+      'trust.allInOne.body': 'Ventas, servicios, clientes y finanzas integrados y organizados.',
       'trust.platforms': 'Web, Android e iOS',
-      'trust.platforms.body': 'Accede desde computadora y celular.',
+      'trust.platforms.body': 'Usa SixApp en la computadora y también en el celular, con experiencia pensada para operación real.',
+      'trust.team': 'Equipo alineado',
+      'trust.team.body': 'Acceso correcto para cada persona, con tareas y responsabilidades.',
+      'trust.growth': 'Crecimiento con claridad',
+      'trust.growth.body': 'Más control hoy para construir resultados mañana.',
       'trust.languages': 'Varios idiomas',
       'trust.languages.body': 'Portugués, inglés y español en la Home pública.',
       'trust.multiBusiness': 'Más de un comercio',
@@ -431,9 +557,12 @@
       'management.item.two': 'Equipo y permisos alineados con la operación.',
       'management.item.three': 'Visión para quien administra más de un comercio.',
       'platforms.kicker': 'Multiplataforma',
-      'platforms.title': 'Accede desde computadora, Android e iOS.',
-      'platforms.lead': 'SixApp fue pensado para la rutina online del comercio: gestión en el navegador y seguimiento en el celular cuando la operación pide movilidad.',
+      'platforms.title': 'Web, Android e iOS de verdad.',
+      'platforms.lead': 'La misma plataforma para operar en el navegador y también en el celular, con rutinas pensadas para uso real en Android y iPhone.',
       'platforms.aria': 'Plataformas',
+      'platforms.web.body': 'Operación en la computadora',
+      'platforms.android.body': 'Gestión también en el celular',
+      'platforms.ios.body': 'Continuidad en iPhone',
       'plans.kicker': 'Planes',
       'plans.title': 'Comienza de forma simple y evoluciona según tu negocio.',
       'plans.lead': 'Los planes deben acompañar el momento de la operación sin obligarte a decidir todo antes de organizar la rutina.',
@@ -451,7 +580,7 @@
       'faq.three.question': '¿Puedo controlar permisos de colaboradores?',
       'faq.three.answer': 'Sí. SixApp considera permisos para limitar acciones sensibles según el rol del colaborador.',
       'faq.four.question': '¿SixApp funciona en celular y computadora?',
-      'faq.four.answer': 'Sí. La experiencia contempla Web, Android e iOS, con rutinas adecuadas para gestión y seguimiento.',
+      'faq.four.answer': 'Sí. SixApp contempla Web, Android e iOS, con rutinas para operación real también en mobile.',
       'faq.five.question': '¿Es posible generar informes y comprobantes?',
       'faq.five.answer': 'La app posee flujos de informes y comprobantes en PDF para apoyar conferencia, atención y entrega.',
       'faq.six.question': '¿Mis colaboradores necesitan acceso a todo?',
@@ -592,6 +721,94 @@
     });
   }
 
+  function setupHeroCarousel() {
+    var root = document.querySelector('[data-hero-carousel]');
+    if (!root) return;
+
+    var slides = Array.prototype.slice.call(root.querySelectorAll('[data-hero-slide]'));
+    var tabs = Array.prototype.slice.call(root.querySelectorAll('[data-hero-tab]'));
+    var previous = root.querySelector('[data-hero-prev]');
+    var next = root.querySelector('[data-hero-next]');
+    if (!slides.length || !tabs.length) return;
+
+    var activeIndex = 0;
+    var intervalId = null;
+    var reduceMotion = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function normalizeIndex(index) {
+      if (index < 0) return slides.length - 1;
+      if (index >= slides.length) return 0;
+      return index;
+    }
+
+    function setActiveSlide(index) {
+      activeIndex = normalizeIndex(index);
+      root.setAttribute('data-hero-active', String(activeIndex + 1));
+
+      slides.forEach(function (slide, slideIndex) {
+        var isActive = slideIndex === activeIndex;
+        slide.classList.toggle('is-active', isActive);
+        slide.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+      });
+
+      tabs.forEach(function (tab, tabIndex) {
+        var isActive = tabIndex === activeIndex;
+        tab.classList.toggle('is-active', isActive);
+        tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+    }
+
+    function stopAutoRotation() {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+    }
+
+    function startAutoRotation() {
+      if (reduceMotion || intervalId) return;
+      intervalId = window.setInterval(function () {
+        setActiveSlide(activeIndex + 1);
+      }, 7200);
+    }
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var index = Number(tab.getAttribute('data-hero-tab'));
+        stopAutoRotation();
+        setActiveSlide(index);
+        startAutoRotation();
+      });
+    });
+
+    if (previous) {
+      previous.addEventListener('click', function () {
+        stopAutoRotation();
+        setActiveSlide(activeIndex - 1);
+        startAutoRotation();
+      });
+    }
+
+    if (next) {
+      next.addEventListener('click', function () {
+        stopAutoRotation();
+        setActiveSlide(activeIndex + 1);
+        startAutoRotation();
+      });
+    }
+
+    root.addEventListener('mouseenter', stopAutoRotation);
+    root.addEventListener('mouseleave', startAutoRotation);
+    root.addEventListener('focusin', stopAutoRotation);
+    root.addEventListener('focusout', function (event) {
+      if (!root.contains(event.relatedTarget)) startAutoRotation();
+    });
+
+    setActiveSlide(0);
+    startAutoRotation();
+  }
+
   function setupCurrentYear() {
     document.querySelectorAll('[data-current-year]').forEach(function (node) {
       node.textContent = String(new Date().getFullYear());
@@ -646,6 +863,7 @@
   document.documentElement.classList.add('has-js');
   setupCurrentYear();
   setupMobileMenu();
+  setupHeroCarousel();
   setupLanguageSwitcher();
   applyLanguage(selectedLanguage());
   cleanupLegacyFlutterWorker();

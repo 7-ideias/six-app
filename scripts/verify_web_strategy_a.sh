@@ -311,7 +311,7 @@ validate_public_site_asset_references build/web/checkout.html
 section "FLUTTER"
 
 require_contains build/web/flutter.html 'name="sixapp-entrypoint" content="flutter-app"'
-require_contains build/web/flutter.html '<meta name="viewport" content="width=device-width, initial-scale=1">'
+require_not_contains build/web/flutter.html '<meta name="viewport"'
 require_contains build/web/flutter.html '<base href="/">'
 require_contains build/web/flutter.html 'flutter_bootstrap.js'
 require_contains build/web/flutter_bootstrap.js 'main.dart.js'
@@ -352,7 +352,7 @@ section "VERCEL"
 section "SECURITY"
 
 require_contains web/index.html 'name="sixapp-entrypoint" content="flutter-app"'
-require_contains web/index.html '<meta name="viewport" content="width=device-width, initial-scale=1">'
+require_not_contains web/index.html '<meta name="viewport"'
 require_contains web/public_home.html 'name="sixapp-entrypoint" content="public-home"'
 require_contains web/public_login.html 'name="sixapp-entrypoint" content="public-login"'
 require_contains web/public_login.html 'name="robots" content="noindex, nofollow"'
