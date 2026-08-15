@@ -7,7 +7,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/services/empresa_service.dart';
+import '../../data/models/dominio_models.dart';
 import '../../data/models/empresa_model.dart';
+import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import '../../domain/models/regionalizacao_models.dart';
 import '../../l10n/web_i18n_store.dart';
 import '../../providers/locale_settings_provider.dart';
@@ -245,7 +247,6 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       ];
 
   SecaoConfiguracaoSix _secaoAtual = SecaoConfiguracaoSix.geral;
-  bool _mostrarResumoLateral = true;
   bool _possuiAlteracoesNaoSalvas = false;
   bool _possuiAlteracoesGerais = false;
   final ScrollController _conteudoScrollController = ScrollController();
@@ -254,19 +255,36 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   bool _carregandoDadosEmpresa = false;
   bool _selecionandoLogo = false;
   bool _dadosEmpresaCarregados = false;
+  bool _carregandoStatusAtendimento = false;
+  bool _salvandoStatusAtendimento = false;
+  bool _statusAtendimentoCarregado = false;
+  bool _statusAtendimentoAlterado = false;
   String? _erroDadosEmpresa;
+  String? _erroStatusAtendimento;
   String? _logoBase64;
   final ImagePicker _imagePicker = ImagePicker();
   late final EmpresaService _empresaService;
   late final AparenciaService _aparenciaService;
+  late final AtendimentoTecnicoService _atendimentoTecnicoService;
+  final Map<String, TextEditingController> _statusPtControllers =
+      <String, TextEditingController>{};
+  final Map<String, TextEditingController> _statusEnControllers =
+      <String, TextEditingController>{};
+  final Map<String, TextEditingController> _statusEsControllers =
+      <String, TextEditingController>{};
+  List<DominioStatusAtendimentoCustomizacaoModel>
+  _statusAtendimentoCustomizacoes =
+      const <DominioStatusAtendimentoCustomizacaoModel>[];
 
   @override
   void initState() {
     super.initState();
     _empresaService = EmpresaService();
     _aparenciaService = AparenciaService(apiClient: HttpAparenciaApiClient());
+    _atendimentoTecnicoService = AtendimentoTecnicoService();
     _carregarDadosDaEmpresa();
     _carregarAparencia();
+    _carregarStatusAtendimentoCustomizacoes();
   }
 
   Future<void> _carregarAparencia() async {
@@ -320,6 +338,52 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         );
         _carregandoDadosEmpresa = false;
       });
+    }
+  }
+
+  Future<void> _carregarStatusAtendimentoCustomizacoes() async {
+    setState(() {
+      _carregandoStatusAtendimento = true;
+      _erroStatusAtendimento = null;
+    });
+
+    try {
+      final List<DominioStatusAtendimentoCustomizacaoModel> status =
+          await _atendimentoTecnicoService
+              .listarCustomizacoesStatusAtendimento();
+      if (!mounted) return;
+      setState(() {
+        _sincronizarStatusAtendimentoControllers(status);
+        _statusAtendimentoCustomizacoes = status;
+        _statusAtendimentoCarregado = true;
+        _statusAtendimentoAlterado = false;
+        _carregandoStatusAtendimento = false;
+      });
+    } catch (e) {
+      debugPrint('Erro ao carregar customizações de status: $e');
+      if (!mounted) return;
+      setState(() {
+        _statusAtendimentoCarregado = false;
+        _erroStatusAtendimento =
+            'Não foi possível carregar os nomes dos status.';
+        _carregandoStatusAtendimento = false;
+      });
+    }
+  }
+
+  void _sincronizarStatusAtendimentoControllers(
+    List<DominioStatusAtendimentoCustomizacaoModel> status,
+  ) {
+    for (final DominioStatusAtendimentoCustomizacaoModel item in status) {
+      _statusPtControllers
+          .putIfAbsent(item.statusCodigo, () => TextEditingController())
+          .text = item.nomeAtualPtBr;
+      _statusEnControllers
+          .putIfAbsent(item.statusCodigo, () => TextEditingController())
+          .text = item.nomeAtualEnUs;
+      _statusEsControllers
+          .putIfAbsent(item.statusCodigo, () => TextEditingController())
+          .text = item.nomeAtualEsEs;
     }
   }
 
@@ -386,6 +450,73 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       _possuiAlteracoesGerais = false;
       _erroDadosEmpresa = null;
     });
+  }
+
+  Future<void> _salvarStatusAtendimentoSeNecessario() async {
+    if (!_statusAtendimentoCarregado || !_statusAtendimentoAlterado) {
+      return;
+    }
+
+    setState(() => _salvandoStatusAtendimento = true);
+
+    try {
+      final List<Map<String, dynamic>> payload = _statusAtendimentoCustomizacoes
+          .map((item) {
+            return item.toCustomizacaoJson(
+              nomePtBr:
+                  _statusPtControllers[item.statusCodigo]?.text ??
+                  item.nomeAtualPtBr,
+              nomeEnUs:
+                  _statusEnControllers[item.statusCodigo]?.text ??
+                  item.nomeAtualEnUs,
+              nomeEsEs:
+                  _statusEsControllers[item.statusCodigo]?.text ??
+                  item.nomeAtualEsEs,
+            );
+          })
+          .toList(growable: false);
+
+      final List<DominioStatusAtendimentoCustomizacaoModel> atualizados =
+          await _atendimentoTecnicoService.salvarCustomizacoesStatusAtendimento(
+            payload,
+          );
+
+      if (!mounted) return;
+      setState(() {
+        _sincronizarStatusAtendimentoControllers(atualizados);
+        _statusAtendimentoCustomizacoes = atualizados;
+        _statusAtendimentoAlterado = false;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _salvandoStatusAtendimento = false);
+      }
+    }
+  }
+
+  void _marcarAlteracaoStatusAtendimento() {
+    if (!_statusAtendimentoAlterado) {
+      setState(() => _statusAtendimentoAlterado = true);
+    }
+    _marcarAlteracao();
+  }
+
+  void _restaurarStatusAtendimentoPadrao() {
+    if (_statusAtendimentoCustomizacoes.isEmpty) return;
+
+    setState(() {
+      for (final DominioStatusAtendimentoCustomizacaoModel item
+          in _statusAtendimentoCustomizacoes) {
+        _statusPtControllers[item.statusCodigo]?.text = item.nomePadraoPtBr;
+        _statusEnControllers[item.statusCodigo]?.text = item.nomePadraoEnUs;
+        _statusEsControllers[item.statusCodigo]?.text = item.nomePadraoEsEs;
+      }
+      _statusAtendimentoAlterado = true;
+    });
+    _marcarAlteracao();
+    _mostrarSnackBarConfiguracoes(
+      'Os nomes padrão dos status foram restaurados. Salve para aplicar.',
+    );
   }
 
   Future<void> _selecionarLogoEmpresa() async {
@@ -925,6 +1056,13 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     _prefixoMesaController.dispose();
     _quantidadeMesasController.dispose();
     _diasBloqueioAtrasoController.dispose();
+    for (final TextEditingController controller in <TextEditingController>[
+      ..._statusPtControllers.values,
+      ..._statusEnControllers.values,
+      ..._statusEsControllers.values,
+    ]) {
+      controller.dispose();
+    }
     _conteudoScrollController.dispose();
     super.dispose();
   }
@@ -1027,6 +1165,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         await _salvarDadosDaEmpresa();
       }
 
+      await _salvarStatusAtendimentoSeNecessario();
+
       final locale = _mapIdiomaSelecionadoParaLocale(_idiomaSelecionado);
 
       final configuracaoRegionalizacao = localeProvider.companyConfig.copyWith(
@@ -1108,6 +1248,12 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       return;
     }
 
+    if (_secaoAtual == SecaoConfiguracaoSix.operacao &&
+        _statusAtendimentoCarregado) {
+      _restaurarStatusAtendimentoPadrao();
+      return;
+    }
+
     final tokens = WebThemeTokens.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1160,320 +1306,6 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       case SecaoConfiguracaoSix.preferenciasUsuario:
         return 'Ajustes pessoais do operador para melhorar produtividade e experiência no dia a dia.';
     }
-  }
-
-  Widget _buildResumoSidebarHeader() {
-    final theme = Theme.of(context);
-    final tokens = WebThemeTokens.of(context);
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(4, 2, 4, 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              'Configs',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: tokens.primaryText,
-              ),
-            ),
-          ),
-          Tooltip(
-            message: 'Ocultar painel',
-            child: InkWell(
-              borderRadius: BorderRadius.circular(999),
-              onTap: () {
-                setState(() {
-                  _mostrarResumoLateral = false;
-                });
-              },
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: tokens.surfaceMuted,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: tokens.cardBorder),
-                ),
-                child: Icon(Icons.chevron_left_rounded, color: tokens.info),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResumoSidebar({double width = 330}) {
-    final theme = Theme.of(context);
-    final tokens = WebThemeTokens.of(context);
-
-    final itens = [
-      {
-        'titulo': 'Idioma ativo',
-        'valor': _idiomaSelecionado,
-        'icone': Icons.language_rounded,
-      },
-      {
-        'titulo': 'Moeda principal',
-        'valor': _moedaSelecionada.split(' - ').first,
-        'icone': Icons.attach_money_rounded,
-      },
-      {
-        'titulo': 'Tema',
-        'valor': _temaSelecionado,
-        'icone': Icons.dark_mode_rounded,
-      },
-      {
-        'titulo': 'Canal preferencial',
-        'valor': _canalPreferencialCliente,
-        'icone': Icons.chat_bubble_outline_rounded,
-      },
-      {
-        'titulo': 'Modelo OS',
-        'valor': _modeloOrdemServicoSelecionado,
-        'icone': Icons.description_rounded,
-      },
-      {
-        'titulo': 'Abertura de caixa',
-        'valor': _abrirCaixaObrigatorio ? 'Obrigatória' : 'Opcional',
-        'icone': Icons.point_of_sale_rounded,
-      },
-      {
-        'titulo': 'MFA',
-        'valor': _mfaHabilitado ? 'Habilitado' : 'Desabilitado',
-        'icone': Icons.security_rounded,
-      },
-    ];
-
-    return Container(
-      width: width,
-      padding: const EdgeInsets.fromLTRB(4, 14, 4, 14),
-      decoration: BoxDecoration(
-        color: tokens.surface,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: tokens.cardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildResumoSidebarHeader(),
-          Container(
-            margin: const EdgeInsets.only(bottom: 14),
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: tokens.surfaceMuted,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: tokens.cardBorder),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Painel inteligente',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: tokens.primaryText,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Visualize rapidamente os principais parâmetros operacionais e de branding antes de salvar.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: tokens.secondaryText,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView.separated(
-              padding: EdgeInsets.zero,
-              itemCount: itens.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final item = itens[index];
-                return _buildResumoCard(
-                  icon: item['icone'] as IconData,
-                  title: item['titulo'] as String,
-                  value: item['valor'] as String,
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 14),
-          _buildPreviewBrandingCard(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResumoCard({
-    required IconData icon,
-    required String title,
-    required String value,
-  }) {
-    final theme = Theme.of(context);
-    final tokens = WebThemeTokens.of(context);
-
-    return AnimatedContainer(
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
-      decoration: BoxDecoration(
-        color: tokens.cardBackground,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: tokens.cardBorder),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: tokens.surfaceMuted,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(icon, color: tokens.info),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: tokens.secondaryText,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    value,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: tokens.primaryText,
-                      height: 1.25,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPreviewBrandingCard() {
-    final theme = Theme.of(context);
-    final tokens = WebThemeTokens.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: tokens.cardBorder),
-        color: tokens.cardBackground,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Preview visual',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: tokens.primaryText,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              color: tokens.surfaceMuted,
-              border: Border.all(color: tokens.cardBorder),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _nomeFantasiaController.text.isEmpty
-                      ? 'Sua marca aqui'
-                      : _nomeFantasiaController.text,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Tema $_temaSelecionado • Moeda ${_moedaSelecionada.split(' - ').first} • Idioma ${_idiomaSelecionado.split(' ').first}',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: tokens.secondaryText,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    _buildColorBadge(_corPrimaria, 'Primária'),
-                    _buildColorBadge(_corSecundaria, 'Secundária'),
-                    _buildColorBadge(_corDestaque, 'Destaque'),
-                    _buildColorBadge(_corAlerta, 'Alerta'),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildColorBadge(Color color, String label) {
-    final tokens = WebThemeTokens.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Color.alphaBlend(
-          color.withValues(alpha: 0.16),
-          tokens.surfaceMuted,
-        ),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: tokens.cardBorder),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: tokens.primaryText,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Color _paletteForeground(Color color) {
@@ -2073,59 +1905,6 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildResumoSidebarCollapsed() {
-    final tokens = WebThemeTokens.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 14, right: 12),
-      child: Tooltip(
-        message: 'Mostrar painel',
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () {
-            setState(() {
-              _mostrarResumoLateral = true;
-            });
-          },
-          child: Container(
-            width: 72,
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
-            decoration: BoxDecoration(
-              color: tokens.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: tokens.cardBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Icon(Icons.dashboard_customize_outlined, color: tokens.info),
-                const SizedBox(height: 10),
-                RotatedBox(
-                  quarterTurns: 3,
-                  child: Text(
-                    'Resumo',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: tokens.primaryText,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Icon(Icons.chevron_right_rounded, color: tokens.info),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -2858,7 +2637,11 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     final theme = Theme.of(context);
     final tokens = WebThemeTokens.of(context);
     final bool salvando =
-        _carregandoAparencia || _carregandoDadosEmpresa || _selecionandoLogo;
+        _carregandoAparencia ||
+        _carregandoDadosEmpresa ||
+        _selecionandoLogo ||
+        _carregandoStatusAtendimento ||
+        _salvandoStatusAtendimento;
     final bool compact = MediaQuery.of(context).size.width < 760;
 
     Widget statusBadge() {
@@ -4531,8 +4314,374 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         const SizedBox(height: 20),
         _buildUnidadesAssistenciaOperacionalCard(),
         const SizedBox(height: 20),
+        _buildStatusAtendimentoOperacionalCard(),
+        const SizedBox(height: 20),
         _buildRegrasOperacionaisFooter(),
       ],
+    );
+  }
+
+  Widget _buildStatusAtendimentoOperacionalCard() {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+    final int totalFinalizadores =
+        _statusAtendimentoCustomizacoes
+            .where((item) => item.finalizador)
+            .length;
+
+    return _buildBigCard(
+      title: 'Fluxo do atendimento técnico',
+      subtitle:
+          'Personalize como cada etapa aparece na lista, no modal de mudança de status e no acompanhamento público do serviço.',
+      trailing: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          _buildOperationalSummaryPill(
+            icon: Icons.flag_outlined,
+            title: '${_statusAtendimentoCustomizacoes.length} status',
+            subtitle: 'Disponíveis',
+          ),
+          _buildOperationalSummaryPill(
+            icon: Icons.verified_outlined,
+            title: '$totalFinalizadores finalizadores',
+            subtitle: 'Encerram o fluxo',
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: tokens.surfaceMuted,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: tokens.cardBorder),
+            ),
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 10,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                SizedBox(
+                  width: 540,
+                  child: Text(
+                    'Os códigos técnicos continuam estáveis para integrações e regras. Aqui o usuário edita apenas os nomes exibidos em português, inglês e espanhol.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: tokens.secondaryText,
+                      height: 1.4,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed:
+                      _carregandoStatusAtendimento
+                          ? null
+                          : _carregarStatusAtendimentoCustomizacoes,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('Atualizar nomes'),
+                ),
+                TextButton.icon(
+                  onPressed:
+                      _carregandoStatusAtendimento ||
+                              _statusAtendimentoCustomizacoes.isEmpty
+                          ? null
+                          : _restaurarStatusAtendimentoPadrao,
+                  icon: const Icon(Icons.restart_alt_rounded, size: 18),
+                  label: const Text('Restaurar padrões'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          if (_carregandoStatusAtendimento)
+            SixBackendLoading(
+              title: 'Carregando nomes dos status',
+              subtitle:
+                  'Estamos sincronizando o fluxo técnico configurado para este comércio.',
+              animation: SixBackendLoadingAnimation.skeletonPulse,
+              leadingIcon: Icons.sync_alt_rounded,
+              backgroundColor: tokens.surfaceMuted,
+              borderColor: tokens.cardBorder,
+            )
+          else if (_erroStatusAtendimento != null)
+            _buildStatusAtendimentoErro(theme, tokens)
+          else if (_statusAtendimentoCustomizacoes.isEmpty)
+            Text(
+              'Nenhum status encontrado para configuração.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: tokens.secondaryText,
+              ),
+            )
+          else
+            Column(
+              children: _statusAtendimentoCustomizacoes
+                  .map(_buildStatusAtendimentoLinha)
+                  .toList(growable: false),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusAtendimentoErro(ThemeData theme, WebThemeTokens tokens) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Wrap(
+        spacing: 14,
+        runSpacing: 12,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Icon(Icons.error_outline_rounded, color: tokens.danger, size: 22),
+          SizedBox(
+            width: 540,
+            child: Text(
+              _erroStatusAtendimento ?? '',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: tokens.primaryText,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          FilledButton.icon(
+            onPressed: _carregarStatusAtendimentoCustomizacoes,
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text('Tentar novamente'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusAtendimentoLinha(
+    DominioStatusAtendimentoCustomizacaoModel item,
+  ) {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+    final bool compacto = MediaQuery.of(context).size.width < 1180;
+    final String titulo =
+        (_statusPtControllers[item.statusCodigo]?.text ?? '').trim().isNotEmpty
+            ? _statusPtControllers[item.statusCodigo]!.text.trim()
+            : item.nomeAtualPtBr;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: tokens.selectedBackground,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: tokens.selectedBorder),
+                ),
+                child: Icon(
+                  item.finalizador
+                      ? Icons.verified_outlined
+                      : Icons.flag_outlined,
+                  color: tokens.info,
+                  size: 20,
+                ),
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 320),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      titulo,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: tokens.primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildStatusMetadataChip(
+                          label: item.statusCodigo,
+                          icon: Icons.code_rounded,
+                        ),
+                        if (item.finalizador)
+                          _buildStatusMetadataChip(
+                            label: 'Finalizador',
+                            icon: Icons.check_circle_outline_rounded,
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (compacto)
+            Column(
+              children: [
+                _buildStatusNomeField(
+                  item: item,
+                  controller: _statusPtControllers[item.statusCodigo]!,
+                  label: 'Nome em português',
+                  helperText: 'Padrão: ${item.nomePadraoPtBr}',
+                  defaultValue: item.nomePadraoPtBr,
+                ),
+                const SizedBox(height: 12),
+                _buildStatusNomeField(
+                  item: item,
+                  controller: _statusEnControllers[item.statusCodigo]!,
+                  label: 'Nome em inglês',
+                  helperText: 'Padrão: ${item.nomePadraoEnUs}',
+                  defaultValue: item.nomePadraoEnUs,
+                ),
+                const SizedBox(height: 12),
+                _buildStatusNomeField(
+                  item: item,
+                  controller: _statusEsControllers[item.statusCodigo]!,
+                  label: 'Nome em espanhol',
+                  helperText: 'Padrão: ${item.nomePadraoEsEs}',
+                  defaultValue: item.nomePadraoEsEs,
+                ),
+              ],
+            )
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _buildStatusNomeField(
+                    item: item,
+                    controller: _statusPtControllers[item.statusCodigo]!,
+                    label: 'Nome em português',
+                    helperText: 'Padrão: ${item.nomePadraoPtBr}',
+                    defaultValue: item.nomePadraoPtBr,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatusNomeField(
+                    item: item,
+                    controller: _statusEnControllers[item.statusCodigo]!,
+                    label: 'Nome em inglês',
+                    helperText: 'Padrão: ${item.nomePadraoEnUs}',
+                    defaultValue: item.nomePadraoEnUs,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatusNomeField(
+                    item: item,
+                    controller: _statusEsControllers[item.statusCodigo]!,
+                    label: 'Nome em espanhol',
+                    helperText: 'Padrão: ${item.nomePadraoEsEs}',
+                    defaultValue: item.nomePadraoEsEs,
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusNomeField({
+    required DominioStatusAtendimentoCustomizacaoModel item,
+    required TextEditingController controller,
+    required String label,
+    required String helperText,
+    required String defaultValue,
+  }) {
+    final tokens = WebThemeTokens.of(context);
+    return TextField(
+      controller: controller,
+      enabled: !_salvandoStatusAtendimento,
+      onChanged: (_) => _marcarAlteracaoStatusAtendimento(),
+      decoration: InputDecoration(
+        labelText: label,
+        helperText: helperText,
+        filled: true,
+        fillColor: tokens.inputBackground,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: tokens.cardBorder),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: tokens.cardBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
+        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
+        suffixIcon: IconButton(
+          tooltip: 'Restaurar nome padrão',
+          onPressed:
+              _salvandoStatusAtendimento
+                  ? null
+                  : () {
+                    controller.text = defaultValue;
+                    _marcarAlteracaoStatusAtendimento();
+                  },
+          icon: const Icon(Icons.restart_alt_rounded, size: 18),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusMetadataChip({
+    required String label,
+    required IconData icon,
+  }) {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: tokens.secondaryText),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: tokens.primaryText,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -6124,38 +6273,22 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       builder: (context, constraints) {
         final bool compactShell =
             widget.embedded && constraints.maxWidth < 1160;
-        final bool hideResumoLateral = constraints.maxWidth < 1040;
         final double outerPadding = compactShell ? 12 : 16;
-        final double sideGap = compactShell ? 14 : 20;
         final double cardPadding = compactShell ? 14 : 18;
-        final double resumoWidth = compactShell ? 300 : 330;
 
         return Padding(
           padding: EdgeInsets.all(outerPadding),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (_mostrarResumoLateral && !hideResumoLateral) ...[
-                _buildResumoSidebar(width: resumoWidth),
-                SizedBox(width: sideGap),
-              ] else if (!hideResumoLateral) ...[
-                _buildResumoSidebarCollapsed(),
-              ],
-              Expanded(
-                child: Card(
-                  elevation: 0,
-                  color: tokens.surface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    side: BorderSide(color: tokens.cardBorder),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.all(cardPadding),
-                    child: _buildConteudoPrincipal(),
-                  ),
-                ),
-              ),
-            ],
+          child: Card(
+            elevation: 0,
+            color: tokens.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+              side: BorderSide(color: tokens.cardBorder),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(cardPadding),
+              child: _buildConteudoPrincipal(),
+            ),
           ),
         );
       },

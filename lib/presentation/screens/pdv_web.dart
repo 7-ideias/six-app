@@ -89,6 +89,8 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                       ),
                     ),
                     _buildSessaoCaixaPdvChip(l10n),
+                    if (_sessaoCaixaPdv != null)
+                      _buildTempoAtivoSessaoCaixaPdvChip(_sessaoCaixaPdv!),
                     if (_vendaPossuiItens)
                       _buildStatusChip(
                         label: l10n?.pdvWebStatusInProgress ?? 'Em andamento',
@@ -326,6 +328,67 @@ extension _PdvWeb on _PaginaPrincipalWebState {
     }
 
     return '$nomeCaixa · $statusLabel';
+  }
+
+  Widget _buildTempoAtivoSessaoCaixaPdvChip(CaixaSessao sessao) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Duration? tempoAtivo = _tempoAtivoSessaoCaixaPdv(sessao);
+    if (tempoAtivo == null) {
+      return const SizedBox.shrink();
+    }
+
+    return _buildStatusChip(
+      label: _formatarTempoAtivoSessaoCaixaPdv(tempoAtivo),
+      icon: Icons.schedule_rounded,
+      foregroundColor: tokens.info,
+      backgroundColor: tokens.info.withValues(alpha: 0.11),
+    );
+  }
+
+  Duration? _tempoAtivoSessaoCaixaPdv(CaixaSessao sessao) {
+    if (!_sessaoCaixaPdvAberta(sessao)) {
+      return null;
+    }
+
+    final DateTime? abertura = _parseDataHoraSessaoCaixaPdv(
+      sessao.dataHoraAbertura,
+    );
+    if (abertura == null) {
+      return null;
+    }
+
+    final Duration diferenca = _referenciaTempoSessaoCaixaPdv.difference(
+      abertura,
+    );
+    return diferenca.isNegative ? Duration.zero : diferenca;
+  }
+
+  DateTime? _parseDataHoraSessaoCaixaPdv(String rawValue) {
+    final String normalized = rawValue.trim();
+    if (normalized.isEmpty) {
+      return null;
+    }
+
+    final DateTime? parsed =
+        DateTime.tryParse(normalized) ??
+        DateTime.tryParse(normalized.replaceFirst(' ', 'T'));
+    if (parsed == null) {
+      return null;
+    }
+
+    return parsed.isUtc ? parsed.toLocal() : parsed;
+  }
+
+  String _formatarTempoAtivoSessaoCaixaPdv(Duration duration) {
+    final int totalHours = duration.inHours;
+    final int totalMinutes = duration.inMinutes;
+    final int remainingMinutes = totalMinutes.remainder(60);
+
+    if (totalHours > 0) {
+      return '${totalHours}h ${remainingMinutes}m';
+    }
+
+    return '${totalMinutes}m';
   }
 
   Widget _buildStatusChip({

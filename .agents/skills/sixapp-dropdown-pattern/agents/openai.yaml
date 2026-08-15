@@ -1,0 +1,7 @@
+interface:
+  display_name: "SixApp Dropdown Pattern"
+  short_description: "Aplica o padrão de dropdown da Agenda"
+  default_prompt: "Use $sixapp-dropdown-pattern para ajustar este dropdown ao padrão da Agenda Financeira, mantendo a arquitetura correta entre Web e Mobile."
+
+policy:
+  allow_implicit_invocation: true
