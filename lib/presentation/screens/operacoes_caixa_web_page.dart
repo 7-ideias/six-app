@@ -7,6 +7,7 @@ import '../../data/models/caixa_completo_movimentos_models.dart';
 import '../../data/models/caixa_models.dart';
 import '../../domain/services/caixa/caixa_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
+import '../../l10n/six_i18n.dart';
 import '../../providers/empresa_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
@@ -43,6 +44,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       TextEditingController();
 
   bool _isLoading = false;
+  bool _confirmandoAberturaCaixa = false;
   bool _vincularVenda = false;
   bool _mostrarPainelFechamento = false;
   bool _mostrarApenasHoje = false;
@@ -677,7 +679,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           ),
           const SizedBox(height: 18),
           FilledButton.icon(
-            onPressed: _isLoading ? null : _abrirCaixa,
+            onPressed:
+                _isLoading || _confirmandoAberturaCaixa ? null : _abrirCaixa,
             icon: const Icon(Icons.play_arrow_rounded),
             label: const Text('Abrir caixa'),
           ),
@@ -2020,20 +2023,34 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   Future<void> _abrirCaixa() async {
-    if (_caixaSelecionado == null) {
+    final caixaSelecionado = _caixaSelecionado;
+    if (caixaSelecionado == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Selecione um caixa / guichê.')),
       );
       return;
     }
 
+    final valorAbertura = _parseCurrency(_trocoInicialController.text);
+    setState(() => _confirmandoAberturaCaixa = true);
+    bool confirmou = false;
+    try {
+      confirmou = await _confirmarAberturaCaixa(
+        caixa: caixaSelecionado,
+        valorAbertura: valorAbertura,
+      );
+    } finally {
+      if (mounted) setState(() => _confirmandoAberturaCaixa = false);
+    }
+    if (!confirmou || !mounted) return;
+
     setState(() => _isLoading = true);
     try {
       await _caixaService.abrirCaixa(
         AbrirCaixaRequest(
-          idCaixaOuGuiche: _caixaSelecionado!.id,
-          nomeCaixa: _caixaSelecionado!.nome,
-          valorAbertura: _parseCurrency(_trocoInicialController.text),
+          idCaixaOuGuiche: caixaSelecionado.id,
+          nomeCaixa: caixaSelecionado.nome,
+          valorAbertura: valorAbertura,
         ),
       );
       await _carregarDadosIniciais();
@@ -2046,6 +2063,37 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<bool> _confirmarAberturaCaixa({
+    required CaixaOuGuiche caixa,
+    required double valorAbertura,
+  }) async {
+    final tokens = WebThemeTokens.of(context);
+    final confirmou =
+        await showDialog<bool>(
+          context: context,
+          barrierColor: tokens.workspaceBackground.withValues(alpha: 0.72),
+          builder:
+              (context) => _buildConfirmDialog(
+                title: _txt(
+                  'caixa.operacoes.openConfirmTitle',
+                  'Confirmar abertura de caixa?',
+                ),
+                message: _mensagemConfirmacaoAbertura(
+                  caixa: caixa,
+                  valorAbertura: valorAbertura,
+                ),
+                cancelLabel: _txt('common.back', 'Voltar'),
+                confirmLabel: _txt(
+                  'caixa.operacoes.openConfirmAction',
+                  'Abrir caixa',
+                ),
+              ),
+        ) ??
+        false;
+
+    return confirmou;
   }
 
   Future<void> _salvarMovimento() async {
@@ -2450,6 +2498,21 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             .trim();
     return double.tryParse(cleaned) ?? 0;
   }
+
+  String _mensagemConfirmacaoAbertura({
+    required CaixaOuGuiche caixa,
+    required double valorAbertura,
+  }) {
+    return _txt(
+          'caixa.operacoes.openConfirmMessage',
+          'Deseja abrir {cashDesk} com troco inicial de {amount}?',
+        )
+        .replaceAll('{cashDesk}', caixa.nome)
+        .replaceAll('{amount}', _formatCurrency(valorAbertura));
+  }
+
+  String _txt(String key, String fallback) =>
+      context.t(key, fallback: fallback);
 
   String _formatDateTime(String? value) {
     if (value == null || value.isEmpty) return '--';

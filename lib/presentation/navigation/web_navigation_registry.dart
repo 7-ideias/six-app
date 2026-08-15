@@ -6,12 +6,12 @@ abstract final class WebNavigationIds {
   static const String home = 'home';
   static const String operations = 'operations';
   static const String operationsPos = 'operations.pos';
-  static const String operationsTechnicalServices =
-      'operations.technical_service';
+  static const String operationsTechnicalServices = 'operations.technical_service';
   static const String catalog = 'catalog';
   static const String catalogProducts = 'catalog.products';
   static const String catalogServices = 'catalog.services';
   static const String catalogStock = 'catalog.stock';
+  static const String catalogLabels = 'catalog.labels';
   static const String catalogCategories = 'catalog.categories';
   static const String people = 'people';
   static const String peopleCustomers = 'people.customers';
@@ -24,12 +24,6 @@ abstract final class WebNavigationIds {
   static const String reports = 'reports';
 }
 
-/// Source of definition for the future authenticated Web navigation.
-///
-/// This registry is intentionally declarative: it lists global destinations,
-/// not operational actions, widgets, callbacks, overlays or route resolution.
-/// The current top menu is not wired to this registry yet to avoid visual or
-/// behavioral changes in this incremental step.
 abstract final class WebNavigationRegistry {
   static const List<WebNavigationItem> activeItems = <WebNavigationItem>[
     WebNavigationItem(
@@ -83,11 +77,10 @@ abstract final class WebNavigationRegistry {
           labelKey: 'web.navigation.catalog.products',
           labelFallback: 'Produtos',
           icon: Icons.inventory_2_outlined,
-          visibility:
-              WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
-                WebNavigationPermission.podeCadastrarProduto,
-                WebNavigationPermission.podeEditarProduto,
-              ]),
+          visibility: WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
+            WebNavigationPermission.podeCadastrarProduto,
+            WebNavigationPermission.podeEditarProduto,
+          ]),
           destination: WebNavigationDestination.catalogProducts,
         ),
         WebNavigationItem(
@@ -95,11 +88,10 @@ abstract final class WebNavigationRegistry {
           labelKey: 'web.navigation.catalog.services',
           labelFallback: 'Serviços',
           icon: Icons.home_repair_service_outlined,
-          visibility:
-              WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
-                WebNavigationPermission.podeCadastrarProduto,
-                WebNavigationPermission.podeEditarProduto,
-              ]),
+          visibility: WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
+            WebNavigationPermission.podeCadastrarProduto,
+            WebNavigationPermission.podeEditarProduto,
+          ]),
           destination: WebNavigationDestination.catalogServices,
         ),
         WebNavigationItem(
@@ -108,22 +100,29 @@ abstract final class WebNavigationRegistry {
           labelFallback: 'Estoque',
           icon: Icons.warehouse_outlined,
           visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[
-              WebNavigationPermission.podeVerEstoqueDeProduto,
-            ],
+            <WebNavigationPermission>[WebNavigationPermission.podeVerEstoqueDeProduto],
           ),
           destination: WebNavigationDestination.catalogStock,
+        ),
+        WebNavigationItem(
+          id: WebNavigationIds.catalogLabels,
+          labelKey: 'web.navigation.catalog.labels',
+          labelFallback: 'Etiquetas',
+          icon: Icons.local_offer_outlined,
+          visibility: WebNavigationVisibilityRule.anyOf(
+            <WebNavigationPermission>[WebNavigationPermission.podeAcessarEtiquetas],
+          ),
+          destination: WebNavigationDestination.catalogLabels,
         ),
         WebNavigationItem(
           id: WebNavigationIds.catalogCategories,
           labelKey: 'web.navigation.catalog.categories',
           labelFallback: 'Categorias',
           icon: Icons.category_outlined,
-          visibility:
-              WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
-                WebNavigationPermission.podeCadastrarProduto,
-                WebNavigationPermission.podeEditarProduto,
-              ]),
+          visibility: WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
+            WebNavigationPermission.podeCadastrarProduto,
+            WebNavigationPermission.podeEditarProduto,
+          ]),
           destination: WebNavigationDestination.catalogCategories,
         ),
       ],
@@ -141,9 +140,7 @@ abstract final class WebNavigationRegistry {
           labelFallback: 'Clientes',
           icon: Icons.person_outline,
           visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[
-              WebNavigationPermission.podeEditarCliente,
-            ],
+            <WebNavigationPermission>[WebNavigationPermission.podeEditarCliente],
           ),
           destination: WebNavigationDestination.peopleCustomers,
         ),
@@ -163,9 +160,7 @@ abstract final class WebNavigationRegistry {
           labelFallback: 'Desempenho',
           icon: Icons.trending_up_rounded,
           visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[
-              WebNavigationPermission.podeGerarRelatorio,
-            ],
+            <WebNavigationPermission>[WebNavigationPermission.podeGerarRelatorio],
           ),
           destination: WebNavigationDestination.peoplePerformance,
         ),
@@ -195,9 +190,7 @@ abstract final class WebNavigationRegistry {
           labelFallback: 'Agenda financeira',
           icon: Icons.event_note_outlined,
           visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[
-              WebNavigationPermission.podeAcessarFinanceiro,
-            ],
+            <WebNavigationPermission>[WebNavigationPermission.podeAcessarFinanceiro],
           ),
           destination: WebNavigationDestination.financialAgenda,
         ),
@@ -221,17 +214,15 @@ abstract final class WebNavigationRegistry {
       labelKey: 'web.navigation.reports',
       labelFallback: 'Relatórios',
       icon: Icons.bar_chart_outlined,
-      visibility: WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
-        WebNavigationPermission.podeGerarRelatorio,
-      ]),
+      visibility: WebNavigationVisibilityRule.anyOf(
+        <WebNavigationPermission>[WebNavigationPermission.podeGerarRelatorio],
+      ),
       destination: WebNavigationDestination.reports,
     ),
   ];
 
   static Iterable<WebNavigationItem> flattenActiveItems() sync* {
-    for (final WebNavigationItem item in activeItems) {
-      yield* item.flatten();
-    }
+    for (final WebNavigationItem item in activeItems) yield* item.flatten();
   }
 
   static List<WebNavigationItem> activeItemsForPermissions(
@@ -253,7 +244,6 @@ abstract final class WebNavigationRegistry {
     for (final WebNavigationItem item in flattenActiveItems()) {
       if (item.id == id) return item;
     }
-
     return null;
   }
 }

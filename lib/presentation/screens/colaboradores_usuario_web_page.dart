@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
+import '../../domain/services/etiqueta/etiqueta_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/web_dashboard_widgets.dart';
@@ -16,11 +17,13 @@ class ColaboradoresUsuarioListPage extends StatefulWidget {
     this.embedded = false,
     this.onBack,
     this.apiClient,
+    this.etiquetaService,
   });
 
   final bool embedded;
   final VoidCallback? onBack;
   final ColaboradorUsuarioApiClient? apiClient;
+  final EtiquetaService? etiquetaService;
 
   @override
   State<ColaboradoresUsuarioListPage> createState() =>
@@ -30,6 +33,7 @@ class ColaboradoresUsuarioListPage extends StatefulWidget {
 class _ColaboradoresUsuarioListPageState
     extends State<ColaboradoresUsuarioListPage> {
   late final ColaboradorUsuarioApiClient _api;
+  late final EtiquetaService _etiquetaService;
   final TextEditingController _search = TextEditingController();
 
   bool _loading = false;
@@ -58,6 +62,7 @@ class _ColaboradoresUsuarioListPageState
   void initState() {
     super.initState();
     _api = widget.apiClient ?? HttpColaboradorUsuarioApiClient();
+    _etiquetaService = widget.etiquetaService ?? EtiquetaService();
     _reload();
   }
 
@@ -194,8 +199,7 @@ class _ColaboradoresUsuarioListPageState
       if (!mounted) return;
 
       final WebThemeTokens pageTokens = WebThemeTokens.of(context);
-      final Map<String, dynamic>?
-      payload = await showDialog<Map<String, dynamic>>(
+      final Map<String, dynamic>? payload = await showDialog<Map<String, dynamic>>(
         context: context,
         barrierDismissible: true,
         barrierColor: pageTokens.workspaceBackground.withValues(
@@ -239,6 +243,154 @@ class _ColaboradoresUsuarioListPageState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(error.toString().replaceAll('Exception: ', '')),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _gerenciarAcessoEtiquetas(
+    ColaboradorUsuarioResumo colaborador,
+  ) async {
+    try {
+      final bool acessoAtual = await _etiquetaService.buscarPermissaoColaborador(
+        colaborador.idUnicoPessoal,
+      );
+      if (!mounted) return;
+
+      bool draft = acessoAtual;
+      final bool? novoAcesso = await showDialog<bool>(
+        context: context,
+        barrierDismissible: true,
+        builder: (BuildContext dialogContext) {
+          final WebThemeTokens tokens = WebThemeTokens.of(dialogContext);
+          return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setDialogState) {
+              return AlertDialog(
+                backgroundColor: tokens.surfaceElevated,
+                surfaceTintColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  side: BorderSide(color: tokens.cardBorder),
+                ),
+                title: Text(
+                  _t(
+                    'colaboradores.labelsAccessTitle',
+                    'Acesso a Etiquetas',
+                  ),
+                ),
+                content: SizedBox(
+                  width: 460,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Text(
+                        colaborador.nome.isEmpty
+                            ? _t('colaboradores.collaborator', 'Colaborador')
+                            : colaborador.nome,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color:
+                              draft
+                                  ? tokens.selectedBackground
+                                  : tokens.surfaceMuted,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color:
+                                draft
+                                    ? tokens.selectedBorder
+                                    : tokens.cardBorder,
+                          ),
+                        ),
+                        child: SwitchListTile.adaptive(
+                          value: draft,
+                          onChanged:
+                              (bool value) =>
+                                  setDialogState(() => draft = value),
+                          secondary: const Icon(Icons.local_offer_outlined),
+                          title: Text(
+                            _t('colaboradores.labels', 'Etiquetas'),
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          subtitle: Text(
+                            _t(
+                              'colaboradores.labelsAccessHint',
+                              'Permite criar e editar modelos e gerar PDFs de etiquetas neste comércio.',
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        _t(
+                          'colaboradores.labelsAccessScoped',
+                          'Esta permissão vale somente para o comércio atual.',
+                        ),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: tokens.secondaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    child: Text(_t('common.cancel', 'Cancelar')),
+                  ),
+                  FilledButton.icon(
+                    onPressed: () => Navigator.of(dialogContext).pop(draft),
+                    icon: const Icon(Icons.save_outlined),
+                    label: Text(_t('common.save', 'Salvar')),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+      if (novoAcesso == null || novoAcesso == acessoAtual || !mounted) {
+        return;
+      }
+
+      await _etiquetaService.atualizarPermissaoColaborador(
+        colaborador.idUnicoPessoal,
+        permitido: novoAcesso,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            novoAcesso
+                ? _t(
+                    'colaboradores.labelsAccessEnabled',
+                    'Acesso a Etiquetas liberado para este colaborador.',
+                  )
+                : _t(
+                    'colaboradores.labelsAccessDisabled',
+                    'Acesso a Etiquetas removido deste colaborador.',
+                  ),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _t(
+              'colaboradores.labelsAccessError',
+              'Não foi possível consultar ou alterar o acesso a Etiquetas.',
+            ),
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -568,11 +720,18 @@ class _ColaboradoresUsuarioListPageState
 
               final Widget buttons =
                   compact
-                      ? Row(
+                      ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: <Widget>[
-                          Expanded(child: _detailButton(colaborador)),
-                          const SizedBox(width: 10),
-                          Expanded(child: _editButton(colaborador)),
+                          Row(
+                            children: <Widget>[
+                              Expanded(child: _detailButton(colaborador)),
+                              const SizedBox(width: 10),
+                              Expanded(child: _editButton(colaborador)),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _labelsPermissionButton(colaborador),
                         ],
                       )
                       : Column(
@@ -581,6 +740,8 @@ class _ColaboradoresUsuarioListPageState
                           _detailButton(colaborador),
                           const SizedBox(height: 10),
                           _editButton(colaborador),
+                          const SizedBox(height: 10),
+                          _labelsPermissionButton(colaborador),
                         ],
                       );
 
@@ -620,6 +781,14 @@ class _ColaboradoresUsuarioListPageState
       onPressed: () => _openEditar(colaborador),
       icon: const Icon(Icons.edit_outlined, size: 18),
       label: Text(_t('common.edit', 'Editar')),
+    );
+  }
+
+  Widget _labelsPermissionButton(ColaboradorUsuarioResumo colaborador) {
+    return OutlinedButton.icon(
+      onPressed: () => _gerenciarAcessoEtiquetas(colaborador),
+      icon: const Icon(Icons.local_offer_outlined, size: 18),
+      label: Text(_t('colaboradores.labels', 'Etiquetas')),
     );
   }
 

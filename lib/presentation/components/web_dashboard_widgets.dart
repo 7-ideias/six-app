@@ -222,12 +222,14 @@ class SixWebSectionCard extends StatelessWidget {
     required this.icon,
     required this.child,
     this.subtitle,
+    this.trailing,
   });
 
   final String title;
   final IconData icon;
   final Widget child;
   final String? subtitle;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -272,6 +274,10 @@ class SixWebSectionCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (trailing != null) ...<Widget>[
+                const SizedBox(width: 12),
+                trailing!,
+              ],
             ],
           ),
           const SizedBox(height: 14),
@@ -349,10 +355,9 @@ class SixWebLoadingBlock extends StatelessWidget {
             width: 120,
             height: 14,
             decoration: BoxDecoration(
-              color:
-                  highlight
-                      ? accent.withValues(alpha: 0.20)
-                      : tokens.surfaceMuted,
+              color: highlight
+                  ? accent.withValues(alpha: 0.20)
+                  : tokens.surfaceMuted,
               borderRadius: BorderRadius.circular(999),
             ),
           ),

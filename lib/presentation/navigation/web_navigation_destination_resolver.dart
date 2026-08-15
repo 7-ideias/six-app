@@ -25,36 +25,31 @@ class WebNavigationResolutionResult {
     this.reason,
   });
 
-  factory WebNavigationResolutionResult.handled(
-    WebNavigationDestination destination,
-  ) {
-    return WebNavigationResolutionResult._(
-      status: WebNavigationResolutionStatus.handled,
-      destination: destination,
-    );
-  }
+  factory WebNavigationResolutionResult.handled(WebNavigationDestination destination) =>
+      WebNavigationResolutionResult._(
+        status: WebNavigationResolutionStatus.handled,
+        destination: destination,
+      );
 
   factory WebNavigationResolutionResult.reserved(
     WebNavigationDestination destination, {
     String? reason,
-  }) {
-    return WebNavigationResolutionResult._(
-      status: WebNavigationResolutionStatus.reserved,
-      destination: destination,
-      reason: reason,
-    );
-  }
+  }) =>
+      WebNavigationResolutionResult._(
+        status: WebNavigationResolutionStatus.reserved,
+        destination: destination,
+        reason: reason,
+      );
 
   factory WebNavigationResolutionResult.unsupported({
     WebNavigationDestination? destination,
     String? reason,
-  }) {
-    return WebNavigationResolutionResult._(
-      status: WebNavigationResolutionStatus.unsupported,
-      destination: destination,
-      reason: reason,
-    );
-  }
+  }) =>
+      WebNavigationResolutionResult._(
+        status: WebNavigationResolutionStatus.unsupported,
+        destination: destination,
+        reason: reason,
+      );
 
   final WebNavigationResolutionStatus status;
   final WebNavigationDestination? destination;
@@ -67,7 +62,6 @@ class WebNavigationResolutionResult {
 
 class WebNavigationDestinationResolver {
   const WebNavigationDestinationResolver({required this.actions});
-
   final WebNavigationDestinationActions actions;
 
   WebNavigationResolutionResult resolve(WebNavigationDestination? destination) {
@@ -76,7 +70,6 @@ class WebNavigationDestinationResolver {
         reason: 'Destino de navegacao Web ausente.',
       );
     }
-
     switch (destination) {
       case WebNavigationDestination.home:
         return actions.openHome();
@@ -90,6 +83,11 @@ class WebNavigationDestinationResolver {
         return actions.openCatalogServices();
       case WebNavigationDestination.catalogStock:
         return actions.openCatalogStock();
+      case WebNavigationDestination.catalogLabels:
+        return WebNavigationResolutionResult.reserved(
+          destination,
+          reason: 'Destino gerenciado pelo shell Web.',
+        );
       case WebNavigationDestination.catalogCategories:
         return actions.openCatalogCategories();
       case WebNavigationDestination.peopleCustomers:

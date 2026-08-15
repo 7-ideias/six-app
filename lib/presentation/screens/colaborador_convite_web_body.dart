@@ -30,6 +30,7 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
   bool _lancaServico = true;
   bool _editaCliente = true;
   bool _acessaFinanceiro = false;
+  bool _acessaEtiquetas = false;
   bool _geraRelatorio = false;
   bool _gerenciaPermissoes = false;
   bool _isLoading = false;
@@ -49,6 +50,7 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
       if (_lancaServico) 'ASSISTENCIA_TECNICA_CRIAR',
       if (_editaCliente) 'CLIENTES_EDITAR',
       if (_acessaFinanceiro) 'FINANCEIRO_ACESSAR',
+      if (_acessaEtiquetas) 'ETIQUETAS_GERENCIAR',
       if (_geraRelatorio) 'RELATORIOS_GERAR',
       if (_gerenciaPermissoes) 'PERMISSOES_GERENCIAR',
     ];
@@ -398,6 +400,13 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
         icon: Icons.account_balance_wallet_outlined,
         value: _acessaFinanceiro,
         onChanged: (bool v) => setState(() => _acessaFinanceiro = v),
+      ),
+      _switchCard(
+        title: 'Etiquetas',
+        subtitle: 'Pode criar modelos e gerar etiquetas de produtos.',
+        icon: Icons.local_offer_outlined,
+        value: _acessaEtiquetas,
+        onChanged: (bool v) => setState(() => _acessaEtiquetas = v),
       ),
       _switchCard(
         title: 'Relatórios',

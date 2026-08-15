@@ -75,6 +75,7 @@ class _OperacoesCaixaMobileScreenState
   bool _loadingSomatorio = false;
   bool _loadingResumo = false;
   bool _busy = false;
+  bool _confirmandoAberturaCaixa = false;
   bool _vincularVenda = false;
   bool _mostrarApenasHoje = false;
   bool _registrarDiferencaComoDespesa = false;
@@ -980,7 +981,7 @@ class _OperacoesCaixaMobileScreenState
           ),
           SizedBox(height: 16),
           FilledButton.icon(
-            onPressed: _busy ? null : _abrirCaixa,
+            onPressed: _busy || _confirmandoAberturaCaixa ? null : _abrirCaixa,
             icon: Icon(Icons.play_arrow_rounded),
             label: Text(_txt('caixa.operacoes.mobile.openCash', 'Abrir caixa')),
             style: FilledButton.styleFrom(
@@ -3294,7 +3295,8 @@ class _OperacoesCaixaMobileScreenState
   }
 
   Future<void> _abrirCaixa() async {
-    if (_caixaSelecionado == null) {
+    final CaixaOuGuiche? caixaSelecionado = _caixaSelecionado;
+    if (caixaSelecionado == null) {
       _snack(
         _txt(
           'caixa.operacoes.mobile.selectCashDesk',
@@ -3304,16 +3306,37 @@ class _OperacoesCaixaMobileScreenState
       return;
     }
 
+    final double valorAbertura = _parseCurrency(_trocoInicialController.text);
+    setState(() => _confirmandoAberturaCaixa = true);
+    bool confirmou = false;
+    try {
+      confirmou = await _confirmarAcao(
+        title: _txt(
+          'caixa.operacoes.openConfirmTitle',
+          'Confirmar abertura de caixa?',
+        ),
+        message: _mensagemConfirmacaoAbertura(
+          caixa: caixaSelecionado,
+          valorAbertura: valorAbertura,
+        ),
+        confirmLabel: _txt('caixa.operacoes.openConfirmAction', 'Abrir caixa'),
+        icon: Icons.lock_open_rounded,
+      );
+    } finally {
+      if (mounted) setState(() => _confirmandoAberturaCaixa = false);
+    }
+    if (!confirmou || !mounted) return;
+
     setState(() => _busy = true);
     try {
       await _caixaService.abrirCaixa(
         AbrirCaixaRequest(
-          idCaixaOuGuiche: _caixaSelecionado!.id,
-          nomeCaixa: _caixaSelecionado!.nome,
-          valorAbertura: _parseCurrency(_trocoInicialController.text),
+          idCaixaOuGuiche: caixaSelecionado.id,
+          nomeCaixa: caixaSelecionado.nome,
+          valorAbertura: valorAbertura,
         ),
       );
-      await _carregarDadosIniciais(idCaixaPreferencial: _caixaSelecionado!.id);
+      await _carregarDadosIniciais(idCaixaPreferencial: caixaSelecionado.id);
       if (!mounted) return;
       _snack(
         _txt('caixa.operacoes.mobile.openSuccess', 'Caixa aberto com sucesso.'),
@@ -3915,6 +3938,18 @@ class _OperacoesCaixaMobileScreenState
 
   String _formatarDecimalDigitavel(num valor) {
     return context.read<LocaleSettingsProvider>().formatDecimal(valor);
+  }
+
+  String _mensagemConfirmacaoAbertura({
+    required CaixaOuGuiche caixa,
+    required double valorAbertura,
+  }) {
+    return _txt(
+          'caixa.operacoes.openConfirmMessage',
+          'Deseja abrir {cashDesk} com troco inicial de {amount}?',
+        )
+        .replaceAll('{cashDesk}', caixa.nome)
+        .replaceAll('{amount}', _formatarValor(valorAbertura));
   }
 
   double _parseCurrency(String text) {

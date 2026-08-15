@@ -4,16 +4,20 @@ import '../core/services/auth_service.dart';
 import '../data/models/colaborador_autorizacoes_model.dart';
 import '../data/models/colaborador_usuario_model.dart';
 import '../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
+import '../domain/services/etiqueta/etiqueta_service.dart';
 
 class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   ColaboradorAutorizacoesProvider({
     AuthService? authService,
     ColaboradorUsuarioApiClient? apiClient,
-  }) : _authService = authService ?? AuthService(),
-       _apiClient = apiClient ?? HttpColaboradorUsuarioApiClient();
+    EtiquetaService? etiquetaService,
+  })  : _authService = authService ?? AuthService(),
+        _apiClient = apiClient ?? HttpColaboradorUsuarioApiClient(),
+        _etiquetaService = etiquetaService ?? EtiquetaService();
 
   final AuthService _authService;
   final ColaboradorUsuarioApiClient _apiClient;
+  final EtiquetaService _etiquetaService;
 
   ColaboradorAutorizacoesModel? _autorizacoes;
   bool _loading = false;
@@ -22,6 +26,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   String _tipoPerfilUsuario = 'DESCONHECIDO';
   bool _ehAdministrador = false;
   bool _autorizacoesCarregadasComSucesso = false;
+  bool _podeAcessarEtiquetas = false;
 
   ColaboradorAutorizacoesModel get autorizacoes =>
       _autorizacoes ?? ColaboradorAutorizacoesModel.permitirTudo();
@@ -33,6 +38,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   bool get ehAdministrador => _ehAdministrador;
   bool get autorizacoesCarregadasComSucesso =>
       _autorizacoesCarregadasComSucesso;
+  bool get podeAcessarEtiquetas => _ehAdministrador || _podeAcessarEtiquetas;
 
   bool get podeFazerVenda => autorizacoes.objVendasPode.fazVenda;
   bool get podeLancarAssistenciaTecnica =>
@@ -43,7 +49,10 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   bool get podeVerEstoqueDeProduto =>
       autorizacoes.objProdutosPode.podeVerEstoqueDeProduto;
   bool get podeAcessarCatalogo =>
-      podeCadastrarProduto || podeEditarProduto || podeVerEstoqueDeProduto;
+      podeCadastrarProduto ||
+      podeEditarProduto ||
+      podeVerEstoqueDeProduto ||
+      podeAcessarEtiquetas;
   bool get podeGerarRelatorio =>
       autorizacoes.objRelatoriosPode.geraRelatorioDeVendas;
   bool get podeReceberNoCaixa =>
@@ -65,6 +74,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       _autorizacoes = ColaboradorAutorizacoesModel.permitirTudo();
       _idUnicoDoUsuarioCarregado = null;
       _erro = null;
+      _podeAcessarEtiquetas = kIsWeb && perfilAdmin;
       _autorizacoesCarregadasComSucesso = perfilAdmin;
       notifyListeners();
       return;
@@ -81,8 +91,8 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final ColaboradorUsuarioDetalhe detalhe = await _apiClient
-          .buscarColaborador(idUnicoDoUsuario);
+      final ColaboradorUsuarioDetalhe detalhe =
+          await _apiClient.buscarColaborador(idUnicoDoUsuario);
       final Map<String, dynamic> json = detalhe.toJson();
       final Map<String, dynamic> autorizacoesJson = _ensureMap(
         json['objAutorizacoes'],
@@ -94,17 +104,31 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
         detalhe: detalhe,
         autorizacoes: carregadas,
       );
-
       _ehAdministrador = perfilAdmin || administradorSemVinculo;
       _autorizacoes =
           _ehAdministrador
               ? ColaboradorAutorizacoesModel.permitirTudo()
               : carregadas;
       _idUnicoDoUsuarioCarregado = idUnicoDoUsuario;
+
+      if (!kIsWeb) {
+        // Etiquetas ainda não possui experiência Mobile. Evitamos introduzir
+        // chamada adicional ou alterar o comportamento Android/iOS nesta etapa.
+        _podeAcessarEtiquetas = false;
+      } else if (_ehAdministrador) {
+        _podeAcessarEtiquetas = true;
+      } else {
+        try {
+          _podeAcessarEtiquetas = await _etiquetaService.buscarAcesso();
+        } catch (_) {
+          _podeAcessarEtiquetas = false;
+        }
+      }
       _autorizacoesCarregadasComSucesso = true;
     } catch (e) {
       _erro = e.toString();
       _autorizacoes ??= ColaboradorAutorizacoesModel.permitirTudo();
+      _podeAcessarEtiquetas = kIsWeb && _ehAdministrador;
     } finally {
       _loading = false;
       notifyListeners();
@@ -119,6 +143,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     _tipoPerfilUsuario = 'DESCONHECIDO';
     _ehAdministrador = false;
     _autorizacoesCarregadasComSucesso = false;
+    _podeAcessarEtiquetas = false;
     notifyListeners();
   }
 
@@ -144,9 +169,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   }
 
   static Map<String, dynamic> _ensureMap(dynamic value) {
-    if (value is Map<String, dynamic>) {
-      return value;
-    }
+    if (value is Map<String, dynamic>) return value;
     if (value is Map) {
       return value.map(
         (dynamic key, dynamic value) =>
