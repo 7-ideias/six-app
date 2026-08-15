@@ -12,9 +12,66 @@ import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 import 'package:sixpos/sub_painel_cadastro_produto.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/providers/locale_settings_provider.dart';
 
 import '../../data/models/produto_model.dart';
 import '../../providers/produtos_list_provider.dart';
+
+enum _ProdutoResumoRapidoFiltro {
+  todos,
+  produtos,
+  servicos,
+  comImagem,
+  estoqueBaixo,
+}
+
+enum _ProdutoStatusFiltro { todos, ativos, inativos }
+
+enum _ProdutoEstoqueFiltro {
+  todos,
+  emEstoque,
+  estoqueBaixo,
+  semEstoque,
+  estoqueNegativo,
+}
+
+enum _ProdutoSituacaoEstoque {
+  naoAplicavel,
+  emEstoque,
+  estoqueBaixo,
+  semEstoque,
+  estoqueNegativo,
+}
+
+class _ProdutoCatalogoEdicaoSnapshot {
+  const _ProdutoCatalogoEdicaoSnapshot({
+    required this.baseItens,
+    required this.itensFiltrados,
+    required this.itensPaginados,
+    required this.contagensResumo,
+    required this.paginaAtual,
+    required this.totalPaginas,
+    required this.indiceInicial,
+    required this.indiceFinal,
+  });
+
+  final List<ProdutoModel> baseItens;
+  final List<ProdutoModel> itensFiltrados;
+  final List<ProdutoModel> itensPaginados;
+  final Map<_ProdutoResumoRapidoFiltro, int> contagensResumo;
+  final int paginaAtual;
+  final int totalPaginas;
+  final int indiceInicial;
+  final int indiceFinal;
+}
+
+class _CategoriaFiltro {
+  const _CategoriaFiltro({required this.id, required this.nome});
+
+  final String id;
+  final String nome;
+}
 
 class SubPainelWebProdutoLista extends StatelessWidget {
   const SubPainelWebProdutoLista({
@@ -60,6 +117,8 @@ class ProdutoListaBody extends StatefulWidget {
 }
 
 class _ProdutoListaBodyState extends State<ProdutoListaBody> {
+  static const List<int> _opcoesItensPorPagina = <int>[12, 24, 48];
+
   final TextEditingController _controllerBusca = TextEditingController();
   final ScrollController _verticalScrollController = ScrollController();
   final ScrollController _horizontalScrollController = ScrollController();
@@ -72,20 +131,40 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       <String, _ProdutoSelecionadoWeb>{};
 
   String termoBusca = '';
-  String ordenacao = 'nome';
+  String ordenacao = 'nomeAsc';
   String tipoSelecionado = 'PRODUTO';
   bool _isGerandoRelatorio = false;
+  bool _carregandoCatalogoEdicao = false;
   bool _salvandoPreferencia = false;
+  String? _erroCatalogoEdicao;
+  String? _categoriaSelecionadaId;
+  _ProdutoResumoRapidoFiltro _resumoRapidoSelecionado =
+      _ProdutoResumoRapidoFiltro.produtos;
+  _ProdutoStatusFiltro _statusFiltro = _ProdutoStatusFiltro.todos;
+  _ProdutoEstoqueFiltro _estoqueFiltro = _ProdutoEstoqueFiltro.todos;
+  int _paginaAtual = 0;
+  int _itensPorPagina = _opcoesItensPorPagina.first;
 
-  ModoDeExibicaoUsuario get _modoDeExibicaoProdutos =>
+  ModoDeExibicaoUsuario get _modoDeExibicaoProdutosPersistido =>
       _usuarioProvider
           .usuario
           ?.preferenciasIndividuaisDoUsuario
           .modoDeExibicaoProdutos ??
       ModoDeExibicaoUsuario.vertical;
 
-  bool get _exibicaoHorizontal =>
-      _modoDeExibicaoProdutos == ModoDeExibicaoUsuario.horizontal;
+  ModoDeExibicaoUsuario get _modoDeExibicaoProdutosWeb {
+    switch (_modoDeExibicaoProdutosPersistido) {
+      case ModoDeExibicaoUsuario.horizontal:
+      case ModoDeExibicaoUsuario.grade:
+        return ModoDeExibicaoUsuario.grade;
+      case ModoDeExibicaoUsuario.vertical:
+      case ModoDeExibicaoUsuario.lista:
+        return ModoDeExibicaoUsuario.lista;
+    }
+  }
+
+  bool get _usarGrade =>
+      _modoDeExibicaoProdutosWeb == ModoDeExibicaoUsuario.grade;
 
   bool get _isProdutoSelecionado => tipoSelecionado == 'PRODUTO';
 
@@ -105,6 +184,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   void initState() {
     super.initState();
     tipoSelecionado = _normalizarTipoProduto(widget.tipoInicial);
+    _resumoRapidoSelecionado =
+        tipoSelecionado == 'SERVICO'
+            ? _ProdutoResumoRapidoFiltro.servicos
+            : _ProdutoResumoRapidoFiltro.produtos;
     Future.microtask(_carregarPreferenciasDoUsuario);
     Future.microtask(_recarregar);
   }
@@ -128,6 +211,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Future<void> _recarregar() async {
+    if (!widget.isSelecao) {
+      await _recarregarCatalogoEdicao();
+      return;
+    }
+
     try {
       await ProdutoHelper.retornarProdutosList(
         context,
@@ -143,6 +231,65 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         ),
       );
     }
+  }
+
+  Future<void> _recarregarCatalogoEdicao() async {
+    if (!mounted) return;
+
+    setState(() {
+      _carregandoCatalogoEdicao = true;
+      _erroCatalogoEdicao = null;
+    });
+
+    final List<ProdutoModel> produtos = <ProdutoModel>[];
+    final List<ProdutoModel> servicos = <ProdutoModel>[];
+    Object? erroProdutos;
+    Object? erroServicos;
+
+    try {
+      await ProdutoHelper.retornarProdutosList(
+        context,
+        tipo: 'PRODUTO',
+        onSucesso: (List<ProdutoModel> items) => produtos.addAll(items),
+      );
+    } catch (error, stackTrace) {
+      erroProdutos = error;
+      _logError(
+        'Erro ao recarregar produtos do catalogo web',
+        error,
+        stackTrace,
+      );
+    }
+
+    if (!mounted) return;
+
+    try {
+      await ProdutoHelper.retornarProdutosList(
+        context,
+        tipo: 'SERVICO',
+        onSucesso: (List<ProdutoModel> items) => servicos.addAll(items),
+      );
+    } catch (error, stackTrace) {
+      erroServicos = error;
+      _logError(
+        'Erro ao recarregar servicos do catalogo web',
+        error,
+        stackTrace,
+      );
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      todosProdutos = <ProdutoModel>[...produtos, ...servicos];
+      produtosFiltrados = const <ProdutoModel>[];
+      _carregandoCatalogoEdicao = false;
+      _resetarPaginacao();
+      _erroCatalogoEdicao =
+          produtos.isEmpty && servicos.isEmpty
+              ? (erroProdutos ?? erroServicos)?.toString()
+              : null;
+    });
   }
 
   void atualizarListaComProvider(List<ProdutoModel> items) {
@@ -189,61 +336,36 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     _recarregar();
   }
 
+  void _atualizarCatalogo(VoidCallback update) {
+    setState(() {
+      update();
+      _resetarPaginacao();
+    });
+  }
+
+  void _resetarPaginacao() {
+    _paginaAtual = 0;
+  }
+
   Future<void> _alterarModoExibicaoProdutos(
     ModoDeExibicaoUsuario novoModo,
   ) async {
-    if (_salvandoPreferencia || novoModo == _modoDeExibicaoProdutos) return;
-
-    UsuarioModel? usuarioAtual = _usuarioProvider.usuario;
-    if (usuarioAtual == null) {
-      await _carregarPreferenciasDoUsuario();
-      usuarioAtual = _usuarioProvider.usuario;
-    }
-
-    if (usuarioAtual == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Não foi possível carregar suas preferências.'),
-        ),
-      );
-      return;
-    }
-
-    final PreferenciasIndividuaisDoUsuarioModel preferenciasAtualizadas =
-        usuarioAtual.preferenciasIndividuaisDoUsuario.copyWith(
-          modoDeExibicaoProdutos: novoModo,
-        );
-
-    final UsuarioModel usuarioAtualizado = UsuarioModel(
-      nome: usuarioAtual.nome,
-      sobrenome: usuarioAtual.sobrenome,
-      cpf: usuarioAtual.cpf,
-      registroProfissional: usuarioAtual.registroProfissional,
-      email: usuarioAtual.email,
-      foto: usuarioAtual.foto,
-      nomeDeGuerra: usuarioAtual.nomeDeGuerra,
-      celular: usuarioAtual.celular,
-      senha: usuarioAtual.senha,
-      salt: usuarioAtual.salt,
-      rg: usuarioAtual.rg,
-      dataNascimento: usuarioAtual.dataNascimento,
-      objEndereco: usuarioAtual.objEndereco,
-      preferenciasIndividuaisDoUsuario: preferenciasAtualizadas,
-      enviarPreferenciasIndividuaisDoUsuario: true,
-    );
+    if (_salvandoPreferencia || novoModo == _modoDeExibicaoProdutosWeb) return;
 
     setState(() => _salvandoPreferencia = true);
     try {
-      await UsuarioService().atualizarDadosDoUsuario(usuarioAtualizado);
+      await UsuarioService().atualizarPreferenciasIndividuais(
+        modoDeExibicaoProdutosWeb: novoModo.codigo,
+      );
       if (!mounted) return;
       setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            novoModo == ModoDeExibicaoUsuario.horizontal
-                ? 'Produtos agora em visualização horizontal.'
-                : 'Produtos agora em visualização vertical.',
+            context.t(
+              'produto.webList.preferenceSaved',
+              fallback: 'Preferência de visualização atualizada.',
+            ),
           ),
         ),
       );
@@ -410,19 +532,32 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     return ListenableBuilder(
       listenable: _usuarioProvider,
       builder: (BuildContext context, _) {
-        final provider = context.watch<ProdutosListProvider<ProdutoModel>>();
-        final baseProdutos =
-            todosProdutos.isNotEmpty ? todosProdutos : provider.listaDeProdutos;
-        final itensDaLista =
-            baseProdutos.isEmpty && termoBusca.isEmpty
-                ? provider.listaDeProdutos
-                : produtosFiltrados;
+        ProdutosListProvider<ProdutoModel>? provider;
+        List<ProdutoModel> itensDaLista = const <ProdutoModel>[];
+        _ProdutoCatalogoEdicaoSnapshot? snapshot;
+
+        if (widget.isSelecao) {
+          provider = context.watch<ProdutosListProvider<ProdutoModel>>();
+          final List<ProdutoModel> baseProdutos =
+              todosProdutos.isNotEmpty
+                  ? todosProdutos
+                  : provider.listaDeProdutos;
+          itensDaLista =
+              baseProdutos.isEmpty && termoBusca.isEmpty
+                  ? provider.listaDeProdutos
+                  : produtosFiltrados;
+        } else {
+          snapshot = _criarCatalogoEdicaoSnapshot();
+          itensDaLista = snapshot.itensFiltrados;
+        }
 
         return LayoutBuilder(
           builder: (context, constraints) {
             final isCompact = constraints.maxWidth < 920;
             final horizontalPadding = isCompact ? 16.0 : 28.0;
             final tokens = WebThemeTokens.of(context);
+            final bool paginacaoCompactaNoConteudo =
+                !widget.isSelecao && isCompact;
 
             return AnimatedContainer(
               duration: WebThemeTokens.transitionDuration,
@@ -444,15 +579,30 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                       ),
                       child: _buildTipoSelector(context, isCompact),
                     ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      widget.isSelecao ? 10 : 14,
-                      horizontalPadding,
-                      10,
+                  if (widget.isSelecao)
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        10,
+                        horizontalPadding,
+                        10,
+                      ),
+                      child: _buildSearchOrderAndPreference(context, isCompact),
+                    )
+                  else
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        14,
+                        horizontalPadding,
+                        12,
+                      ),
+                      child: _buildCatalogControls(
+                        context,
+                        isCompact,
+                        snapshot!,
+                      ),
                     ),
-                    child: _buildSearchOrderAndPreference(context, isCompact),
-                  ),
                   Expanded(
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(
@@ -461,9 +611,48 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                         horizontalPadding,
                         14,
                       ),
-                      child: _buildList(context, provider, itensDaLista),
+                      child:
+                          widget.isSelecao
+                              ? _buildList(context, provider!, itensDaLista)
+                              : paginacaoCompactaNoConteudo
+                              ? Column(
+                                children: <Widget>[
+                                  Expanded(
+                                    child: _buildCatalogContent(
+                                      context,
+                                      snapshot!,
+                                      constraints.maxWidth,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildCatalogPagination(
+                                    context,
+                                    snapshot,
+                                    true,
+                                  ),
+                                ],
+                              )
+                              : _buildCatalogContent(
+                                context,
+                                snapshot!,
+                                constraints.maxWidth,
+                              ),
                     ),
                   ),
+                  if (!widget.isSelecao && !paginacaoCompactaNoConteudo)
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        0,
+                        horizontalPadding,
+                        18,
+                      ),
+                      child: _buildCatalogPagination(
+                        context,
+                        snapshot!,
+                        isCompact,
+                      ),
+                    ),
                   if (widget.isSelecao && widget.permitirSelecaoMultipla)
                     Padding(
                       padding: EdgeInsets.fromLTRB(
@@ -489,22 +678,49 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     final Color accent = tokens.info;
     final Color titleColor = tokens.primaryText;
     final Color subtitleColor = tokens.secondaryText;
-    final title =
+    final String title =
         widget.isSelecao
             ? widget.permitirSelecaoMultipla
-                ? 'Selecionar itens'
-                : 'Selecionar item'
+                ? context.t(
+                  'produto.webList.selection.titleMany',
+                  fallback: 'Selecionar itens',
+                )
+                : context.t(
+                  'produto.webList.selection.titleOne',
+                  fallback: 'Selecionar item',
+                )
             : widget.modoEdicao
-            ? 'Editar produtos'
-            : 'Produtos';
-    final subtitle =
+            ? context.t(
+              'produto.webList.edit.title',
+              fallback: 'Editar produtos',
+            )
+            : context.t(
+              'web.navigation.catalog.products',
+              fallback: 'Produtos',
+            );
+    final String subtitle =
         widget.isSelecao
             ? widget.permitirSelecaoMultipla
-                ? 'Marque produtos e serviços e adicione tudo na venda de uma vez.'
-                : 'Busca rápida para incluir produto ou serviço na venda.'
+                ? context.t(
+                  'produto.webList.selection.subtitleMany',
+                  fallback:
+                      'Marque produtos e serviços e adicione tudo na venda de uma vez.',
+                )
+                : context.t(
+                  'produto.webList.selection.subtitleOne',
+                  fallback:
+                      'Busca rápida para incluir produto ou serviço na venda.',
+                )
             : widget.modoEdicao
-            ? 'Lista compacta para revisar cadastro, estoque, preço e imagens.'
-            : 'Consulta rápida do catálogo com ações de balcão.';
+            ? context.t(
+              'produto.webList.edit.subtitle',
+              fallback:
+                  'Gerencie seu catálogo de produtos, estoque, preços e imagens.',
+            )
+            : context.t(
+              'produto.webList.default.subtitle',
+              fallback: 'Consulta rápida do catálogo com ações de balcão.',
+            );
 
     final titleBlock = Row(
       children: <Widget>[
@@ -556,28 +772,38 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       crossAxisAlignment: WrapCrossAlignment.center,
       alignment: WrapAlignment.end,
       children: <Widget>[
-        _headerButton(context, Icons.refresh_rounded, 'Atualizar', _recarregar),
+        _headerButton(
+          context,
+          Icons.refresh_rounded,
+          context.t('common.refresh', fallback: 'Atualizar'),
+          _recarregar,
+        ),
         if (widget.isSelecao &&
             widget.permitirSelecaoMultipla &&
             _produtosSelecionados.isNotEmpty)
           _headerButton(
             context,
             Icons.cleaning_services_outlined,
-            'Limpar seleção',
+            context.t('common.clear', fallback: 'Limpar'),
             _limparSelecaoMultipla,
           ),
         if (!widget.isSelecao) ...<Widget>[
           _headerButton(
             context,
             Icons.add_rounded,
-            'Novo item',
+            context.t('produto.webList.newItem', fallback: 'Novo item'),
             _abrirNovoProduto,
             filled: true,
           ),
           _headerButton(
             context,
             Icons.picture_as_pdf_outlined,
-            _isGerandoRelatorio ? 'Gerando...' : 'Imprimir PDF',
+            _isGerandoRelatorio
+                ? context.t('common.generating', fallback: 'Gerando...')
+                : context.t(
+                  'produto.webList.printPdf',
+                  fallback: 'Imprimir PDF',
+                ),
             _isGerandoRelatorio ? null : _imprimirRelatorioProdutos,
           ),
         ],
@@ -660,18 +886,13 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   Widget _closeButton(BuildContext context) {
-    final tokens = WebThemeTokens.of(context);
-    return Material(
-      color: tokens.danger.withValues(alpha: 0.14),
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: () => Navigator.of(context).pop(),
-        child: SizedBox(
-          width: 46,
-          height: 46,
-          child: Icon(Icons.close_rounded, color: tokens.danger, size: 26),
-        ),
+    return OutlinedButton.icon(
+      onPressed: () => Navigator.of(context).pop(),
+      icon: const Icon(Icons.close_rounded, size: 18),
+      label: Text(context.t('common.close', fallback: 'Fechar')),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }
@@ -692,7 +913,13 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Modo edição ativo - $totalItens itens encontrados - clique em um produto para alterar.',
+              context
+                  .t(
+                    'produto.webList.edit.banner',
+                    fallback:
+                        'Modo edição ativo • {count} itens encontrados • clique em um produto para alterar.',
+                  )
+                  .replaceAll('{count}', totalItens.toString()),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -794,7 +1021,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       controller: _controllerBusca,
       style: TextStyle(color: tokens.primaryText),
       decoration: InputDecoration(
-        hintText: 'Buscar por nome ou código...',
+        hintText: context.t(
+          'produto.webList.searchHint',
+          fallback: 'Buscar por nome, código ou SKU...',
+        ),
         hintStyle: TextStyle(color: tokens.mutedText),
         prefixIcon: Icon(Icons.search_rounded, color: accent),
         suffixIcon:
@@ -853,18 +1083,26 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           ),
           items: const <DropdownMenuItem<String>>[
             DropdownMenuItem<String>(
-              value: 'nome',
+              value: 'nomeAsc',
               child: Text('Ordenar por nome'),
             ),
             DropdownMenuItem<String>(
-              value: 'preco',
-              child: Text('Ordenar por preço'),
+              value: 'precoAsc',
+              child: Text('Menor preço'),
+            ),
+            DropdownMenuItem<String>(
+              value: 'precoDesc',
+              child: Text('Maior preço'),
             ),
           ],
           onChanged: (value) {
             if (value == null) return;
-            ordenacao = value;
-            aplicarFiltroOrdenacao();
+            _atualizarCatalogo(() {
+              ordenacao = value;
+            });
+            if (widget.isSelecao) {
+              aplicarFiltroOrdenacao();
+            }
           },
         ),
       ),
@@ -914,26 +1152,42 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           Expanded(
             child: _modoButton(
               context,
-              label: 'Vertical',
+              label:
+                  widget.isSelecao
+                      ? context.t(
+                        'produto.webList.view.vertical',
+                        fallback: 'Vertical',
+                      )
+                      : context.t(
+                        'produto.webList.view.list',
+                        fallback: 'Lista',
+                      ),
               icon: Icons.view_agenda_outlined,
-              selected: !_exibicaoHorizontal,
+              selected: !_usarGrade,
               onTap:
-                  () => _alterarModoExibicaoProdutos(
-                    ModoDeExibicaoUsuario.vertical,
-                  ),
+                  () =>
+                      _alterarModoExibicaoProdutos(ModoDeExibicaoUsuario.lista),
             ),
           ),
           const SizedBox(width: 4),
           Expanded(
             child: _modoButton(
               context,
-              label: 'Horizontal',
+              label:
+                  widget.isSelecao
+                      ? context.t(
+                        'produto.webList.view.horizontal',
+                        fallback: 'Horizontal',
+                      )
+                      : context.t(
+                        'produto.webList.view.grid',
+                        fallback: 'Grade',
+                      ),
               icon: Icons.view_carousel_outlined,
-              selected: _exibicaoHorizontal,
+              selected: _usarGrade,
               onTap:
-                  () => _alterarModoExibicaoProdutos(
-                    ModoDeExibicaoUsuario.horizontal,
-                  ),
+                  () =>
+                      _alterarModoExibicaoProdutos(ModoDeExibicaoUsuario.grade),
             ),
           ),
         ],
@@ -992,6 +1246,1681 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     );
   }
 
+  _ProdutoCatalogoEdicaoSnapshot _criarCatalogoEdicaoSnapshot() {
+    final List<ProdutoModel> baseItens = _aplicarFiltrosEstruturais(
+      todosProdutos,
+      incluirResumoRapido: false,
+    );
+    final Map<_ProdutoResumoRapidoFiltro, int> contagensResumo =
+        <_ProdutoResumoRapidoFiltro, int>{
+          _ProdutoResumoRapidoFiltro.todos: baseItens.length,
+          _ProdutoResumoRapidoFiltro.produtos:
+              baseItens.where((ProdutoModel item) => !_isServico(item)).length,
+          _ProdutoResumoRapidoFiltro.servicos:
+              baseItens.where(_isServico).length,
+          _ProdutoResumoRapidoFiltro.comImagem:
+              baseItens
+                  .where((ProdutoModel item) => _primeiraImagem(item) != null)
+                  .length,
+          _ProdutoResumoRapidoFiltro.estoqueBaixo:
+              baseItens
+                  .where(
+                    (ProdutoModel item) =>
+                        _situacaoEstoque(item) ==
+                        _ProdutoSituacaoEstoque.estoqueBaixo,
+                  )
+                  .length,
+        };
+    final List<ProdutoModel> itensFiltrados = _ordenarProdutos(
+      _aplicarFiltrosEstruturais(todosProdutos),
+    );
+
+    final int totalPaginas =
+        itensFiltrados.isEmpty
+            ? 1
+            : ((itensFiltrados.length - 1) ~/ _itensPorPagina) + 1;
+    final int paginaAtualNormalizada =
+        totalPaginas <= 1 ? 0 : _paginaAtual.clamp(0, totalPaginas - 1);
+    final int inicio =
+        itensFiltrados.isEmpty ? 0 : paginaAtualNormalizada * _itensPorPagina;
+    final int fim =
+        itensFiltrados.isEmpty
+            ? 0
+            : (inicio + _itensPorPagina).clamp(0, itensFiltrados.length);
+
+    return _ProdutoCatalogoEdicaoSnapshot(
+      baseItens: baseItens,
+      itensFiltrados: itensFiltrados,
+      itensPaginados:
+          itensFiltrados.isEmpty
+              ? const <ProdutoModel>[]
+              : itensFiltrados.sublist(inicio, fim),
+      contagensResumo: contagensResumo,
+      paginaAtual: paginaAtualNormalizada,
+      totalPaginas: totalPaginas,
+      indiceInicial: itensFiltrados.isEmpty ? 0 : inicio + 1,
+      indiceFinal: fim,
+    );
+  }
+
+  List<ProdutoModel> _aplicarFiltrosEstruturais(
+    List<ProdutoModel> itens, {
+    bool incluirResumoRapido = true,
+  }) {
+    Iterable<ProdutoModel> resultado = itens;
+    final String termoNormalizado = termoBusca.trim().toLowerCase();
+
+    if (termoNormalizado.isNotEmpty) {
+      resultado = resultado.where(
+        (ProdutoModel produto) => _matchesBusca(produto, termoNormalizado),
+      );
+    }
+
+    if (_categoriaSelecionadaId != null &&
+        _categoriaSelecionadaId!.isNotEmpty) {
+      resultado = resultado.where(
+        (ProdutoModel produto) =>
+            produto.objCategoria?.idCategoria == _categoriaSelecionadaId,
+      );
+    }
+
+    switch (_statusFiltro) {
+      case _ProdutoStatusFiltro.todos:
+        break;
+      case _ProdutoStatusFiltro.ativos:
+        resultado = resultado.where((ProdutoModel produto) => produto.ativo);
+      case _ProdutoStatusFiltro.inativos:
+        resultado = resultado.where((ProdutoModel produto) => !produto.ativo);
+    }
+
+    switch (_estoqueFiltro) {
+      case _ProdutoEstoqueFiltro.todos:
+        break;
+      case _ProdutoEstoqueFiltro.emEstoque:
+        resultado = resultado.where(
+          (ProdutoModel produto) =>
+              _situacaoEstoque(produto) == _ProdutoSituacaoEstoque.emEstoque,
+        );
+      case _ProdutoEstoqueFiltro.estoqueBaixo:
+        resultado = resultado.where(
+          (ProdutoModel produto) =>
+              _situacaoEstoque(produto) == _ProdutoSituacaoEstoque.estoqueBaixo,
+        );
+      case _ProdutoEstoqueFiltro.semEstoque:
+        resultado = resultado.where(
+          (ProdutoModel produto) =>
+              _situacaoEstoque(produto) == _ProdutoSituacaoEstoque.semEstoque,
+        );
+      case _ProdutoEstoqueFiltro.estoqueNegativo:
+        resultado = resultado.where(
+          (ProdutoModel produto) =>
+              _situacaoEstoque(produto) ==
+              _ProdutoSituacaoEstoque.estoqueNegativo,
+        );
+    }
+
+    if (!incluirResumoRapido) {
+      return resultado.toList(growable: false);
+    }
+
+    switch (_resumoRapidoSelecionado) {
+      case _ProdutoResumoRapidoFiltro.todos:
+        return resultado.toList(growable: false);
+      case _ProdutoResumoRapidoFiltro.produtos:
+        return resultado
+            .where((ProdutoModel item) => !_isServico(item))
+            .toList(growable: false);
+      case _ProdutoResumoRapidoFiltro.servicos:
+        return resultado.where(_isServico).toList(growable: false);
+      case _ProdutoResumoRapidoFiltro.comImagem:
+        return resultado
+            .where((ProdutoModel item) => _primeiraImagem(item) != null)
+            .toList(growable: false);
+      case _ProdutoResumoRapidoFiltro.estoqueBaixo:
+        return resultado
+            .where(
+              (ProdutoModel item) =>
+                  _situacaoEstoque(item) ==
+                  _ProdutoSituacaoEstoque.estoqueBaixo,
+            )
+            .toList(growable: false);
+    }
+  }
+
+  bool _matchesBusca(ProdutoModel produto, String termoNormalizado) {
+    return produto.nomeProduto.toLowerCase().contains(termoNormalizado) ||
+        produto.codigoDeBarras.toLowerCase().contains(termoNormalizado);
+  }
+
+  List<ProdutoModel> _ordenarProdutos(List<ProdutoModel> itens) {
+    final List<ProdutoModel> ordenados = <ProdutoModel>[...itens];
+    switch (ordenacao) {
+      case 'precoAsc':
+        ordenados.sort((a, b) => a.precoVenda.compareTo(b.precoVenda));
+      case 'precoDesc':
+        ordenados.sort((a, b) => b.precoVenda.compareTo(a.precoVenda));
+      case 'nomeAsc':
+      default:
+        ordenados.sort(
+          (a, b) => a.nomeProduto.toLowerCase().compareTo(
+            b.nomeProduto.toLowerCase(),
+          ),
+        );
+    }
+    return ordenados;
+  }
+
+  Widget _buildCatalogControls(
+    BuildContext context,
+    bool isCompact,
+    _ProdutoCatalogoEdicaoSnapshot snapshot,
+  ) {
+    return Column(
+      children: <Widget>[
+        _buildCatalogSearchAndFilters(context, isCompact),
+        const SizedBox(height: 10),
+        _buildResumoRapidoBar(context, snapshot),
+      ],
+    );
+  }
+
+  Widget _buildCatalogSearchAndFilters(BuildContext context, bool isCompact) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    final Widget searchField = TextField(
+      key: const ValueKey<String>('produto-web-search-field'),
+      controller: _controllerBusca,
+      style: TextStyle(color: tokens.primaryText),
+      decoration: InputDecoration(
+        hintText: context.t(
+          'produto.webList.searchHint',
+          fallback: 'Buscar por nome, código ou SKU...',
+        ),
+        hintStyle: TextStyle(color: tokens.mutedText),
+        prefixIcon: Icon(Icons.search_rounded, color: tokens.info),
+        suffixIcon:
+            termoBusca.isEmpty
+                ? null
+                : IconButton(
+                  tooltip: context.t('common.clear', fallback: 'Limpar'),
+                  icon: const Icon(Icons.clear_rounded),
+                  onPressed: () {
+                    _controllerBusca.clear();
+                    _atualizarCatalogo(() {
+                      termoBusca = '';
+                    });
+                  },
+                ),
+        filled: true,
+        fillColor: tokens.inputBackground,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: tokens.cardBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: tokens.info, width: 1.4),
+        ),
+      ),
+      onChanged: (String value) {
+        _atualizarCatalogo(() {
+          termoBusca = value;
+        });
+      },
+    );
+
+    final Widget filters = Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: <Widget>[
+        _buildMenuFiltro<String?>(
+          context: context,
+          icon: Icons.category_outlined,
+          label: context.t(
+            'produto.webList.filter.category',
+            fallback: 'Categoria',
+          ),
+          value: _categoriaSelecionadaLabel(context),
+          minWidth: 190,
+          items: <PopupMenuEntry<String?>>[
+            PopupMenuItem<String?>(
+              value: null,
+              child: Text(
+                context.t(
+                  'produto.webList.filter.categoryAll',
+                  fallback: 'Todas categorias',
+                ),
+              ),
+            ),
+            ..._categoriasDisponiveis().map(
+              (_CategoriaFiltro categoria) => PopupMenuItem<String?>(
+                value: categoria.id,
+                child: Text(categoria.nome),
+              ),
+            ),
+          ],
+          onSelected: (String? value) {
+            _atualizarCatalogo(() {
+              _categoriaSelecionadaId = value;
+            });
+          },
+        ),
+        _buildMenuFiltro<_ProdutoStatusFiltro>(
+          context: context,
+          icon: Icons.toggle_on_outlined,
+          label: context.t('atendimentoTecnico.status', fallback: 'Status'),
+          value: _statusFiltroLabel(context),
+          minWidth: 156,
+          items: <PopupMenuEntry<_ProdutoStatusFiltro>>[
+            PopupMenuItem<_ProdutoStatusFiltro>(
+              value: _ProdutoStatusFiltro.todos,
+              child: Text(
+                context.t(
+                  'produto.webList.filter.statusAll',
+                  fallback: 'Todos',
+                ),
+              ),
+            ),
+            PopupMenuItem<_ProdutoStatusFiltro>(
+              value: _ProdutoStatusFiltro.ativos,
+              child: Text(context.t('common.active', fallback: 'Ativo')),
+            ),
+            PopupMenuItem<_ProdutoStatusFiltro>(
+              value: _ProdutoStatusFiltro.inativos,
+              child: Text(context.t('common.inactive', fallback: 'Inativo')),
+            ),
+          ],
+          onSelected: (_ProdutoStatusFiltro value) {
+            _atualizarCatalogo(() {
+              _statusFiltro = value;
+            });
+          },
+        ),
+        _buildMenuFiltro<_ProdutoEstoqueFiltro>(
+          context: context,
+          icon: Icons.inventory_2_outlined,
+          label: context.t('workspaceHome.stock.title', fallback: 'Estoque'),
+          value: _estoqueFiltroLabel(context),
+          minWidth: 170,
+          items: <PopupMenuEntry<_ProdutoEstoqueFiltro>>[
+            PopupMenuItem<_ProdutoEstoqueFiltro>(
+              value: _ProdutoEstoqueFiltro.todos,
+              child: Text(
+                context.t('produto.webList.filter.stockAll', fallback: 'Todos'),
+              ),
+            ),
+            PopupMenuItem<_ProdutoEstoqueFiltro>(
+              value: _ProdutoEstoqueFiltro.emEstoque,
+              child: Text(
+                context.t(
+                  'produto.webList.filter.stockAvailable',
+                  fallback: 'Em estoque',
+                ),
+              ),
+            ),
+            PopupMenuItem<_ProdutoEstoqueFiltro>(
+              value: _ProdutoEstoqueFiltro.estoqueBaixo,
+              child: Text(
+                context.t(
+                  'produto.webList.filter.stockLow',
+                  fallback: 'Estoque baixo',
+                ),
+              ),
+            ),
+            PopupMenuItem<_ProdutoEstoqueFiltro>(
+              value: _ProdutoEstoqueFiltro.semEstoque,
+              child: Text(
+                context.t(
+                  'produto.webList.filter.stockOut',
+                  fallback: 'Sem estoque',
+                ),
+              ),
+            ),
+            PopupMenuItem<_ProdutoEstoqueFiltro>(
+              value: _ProdutoEstoqueFiltro.estoqueNegativo,
+              child: Text(
+                context.t(
+                  'produto.webList.filter.stockNegative',
+                  fallback: 'Estoque negativo',
+                ),
+              ),
+            ),
+          ],
+          onSelected: (_ProdutoEstoqueFiltro value) {
+            _atualizarCatalogo(() {
+              _estoqueFiltro = value;
+            });
+          },
+        ),
+        _buildMenuFiltro<String>(
+          context: context,
+          icon: Icons.swap_vert_rounded,
+          label: context.t('produto.webList.sort.label', fallback: 'Ordenação'),
+          value: _ordenacaoLabel(context),
+          minWidth: 170,
+          items: <PopupMenuEntry<String>>[
+            PopupMenuItem<String>(
+              value: 'nomeAsc',
+              child: Text(
+                context.t(
+                  'produto.webList.sort.name',
+                  fallback: 'Ordenar por nome',
+                ),
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'precoAsc',
+              child: Text(
+                context.t(
+                  'produto.webList.sort.priceAsc',
+                  fallback: 'Menor preço',
+                ),
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'precoDesc',
+              child: Text(
+                context.t(
+                  'produto.webList.sort.priceDesc',
+                  fallback: 'Maior preço',
+                ),
+              ),
+            ),
+          ],
+          onSelected: (String value) {
+            _atualizarCatalogo(() {
+              ordenacao = value;
+            });
+          },
+        ),
+        SizedBox(
+          width: isCompact ? double.infinity : 220,
+          child: _buildModoExibicaoSelector(context, expand: true),
+        ),
+      ],
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child:
+          isCompact
+              ? Column(
+                children: <Widget>[
+                  searchField,
+                  const SizedBox(height: 10),
+                  Align(alignment: Alignment.centerLeft, child: filters),
+                ],
+              )
+              : LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final bool wrapBelow = constraints.maxWidth < 1180;
+                  if (wrapBelow) {
+                    return Column(
+                      children: <Widget>[
+                        searchField,
+                        const SizedBox(height: 10),
+                        Align(alignment: Alignment.centerLeft, child: filters),
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(flex: 11, child: searchField),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 13,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: filters,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+    );
+  }
+
+  Widget _buildMenuFiltro<T>({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required String value,
+    required List<PopupMenuEntry<T>> items,
+    required ValueChanged<T> onSelected,
+    double minWidth = 150,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(minWidth: minWidth, maxWidth: 240),
+      child: PopupMenuButton<T>(
+        tooltip: label,
+        onSelected: onSelected,
+        color: tokens.menuBackground,
+        itemBuilder: (BuildContext context) => items,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: tokens.inputBackground,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: tokens.cardBorder),
+          ),
+          child: Row(
+            children: <Widget>[
+              Icon(icon, size: 18, color: tokens.info),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: tokens.secondaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: tokens.primaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: tokens.secondaryText,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResumoRapidoBar(
+    BuildContext context,
+    _ProdutoCatalogoEdicaoSnapshot snapshot,
+  ) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final List<_ProdutoResumoRapidoFiltro> filtros =
+        <_ProdutoResumoRapidoFiltro>[
+          _ProdutoResumoRapidoFiltro.todos,
+          _ProdutoResumoRapidoFiltro.produtos,
+          _ProdutoResumoRapidoFiltro.servicos,
+          _ProdutoResumoRapidoFiltro.comImagem,
+          _ProdutoResumoRapidoFiltro.estoqueBaixo,
+        ];
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: filtros
+            .map((_ProdutoResumoRapidoFiltro filtro) {
+              final bool selected = _resumoRapidoSelecionado == filtro;
+              final int count = snapshot.contagensResumo[filtro] ?? 0;
+              return Material(
+                key: ValueKey<String>('produto-web-quick-${filtro.name}'),
+                color:
+                    selected ? tokens.selectedBackground : tokens.surfaceMuted,
+                borderRadius: BorderRadius.circular(999),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(999),
+                  onTap:
+                      () => _atualizarCatalogo(() {
+                        _resumoRapidoSelecionado = filtro;
+                      }),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color:
+                            selected
+                                ? tokens.selectedBorder
+                                : tokens.cardBorder,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          _resumoRapidoLabel(context, filtro),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color:
+                                selected
+                                    ? tokens.primaryText
+                                    : tokens.secondaryText,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                selected
+                                    ? tokens.info.withValues(alpha: 0.12)
+                                    : tokens.surfaceElevated,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            count.toString(),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              color:
+                                  selected ? tokens.info : tokens.primaryText,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            })
+            .toList(growable: false),
+      ),
+    );
+  }
+
+  Widget _buildCatalogContent(
+    BuildContext context,
+    _ProdutoCatalogoEdicaoSnapshot snapshot,
+    double availableWidth,
+  ) {
+    if (_carregandoCatalogoEdicao) {
+      return _buildCatalogLoading(context, availableWidth);
+    }
+
+    if (_erroCatalogoEdicao != null && todosProdutos.isEmpty) {
+      return _buildCatalogError(context);
+    }
+
+    if (snapshot.itensFiltrados.isEmpty) {
+      return _emptyState(context);
+    }
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 180),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeOutCubic,
+      child:
+          _usarGrade
+              ? _buildCatalogGrid(
+                context: context,
+                key: const ValueKey<String>('produto-web-grid'),
+                itens: snapshot.itensPaginados,
+                availableWidth: availableWidth,
+              )
+              : _buildCatalogListView(
+                context: context,
+                key: const ValueKey<String>('produto-web-list'),
+                itens: snapshot.itensPaginados,
+                availableWidth: availableWidth,
+              ),
+    );
+  }
+
+  Widget _buildCatalogLoading(BuildContext context, double availableWidth) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final int columns = _columnsForWidth(availableWidth);
+    final double spacing = 14;
+    final double itemWidth =
+        columns <= 1
+            ? availableWidth
+            : (availableWidth - (spacing * (columns - 1))) / columns;
+
+    return Scrollbar(
+      controller: _verticalScrollController,
+      thumbVisibility: true,
+      thickness: 7,
+      radius: const Radius.circular(999),
+      child: SingleChildScrollView(
+        controller: _verticalScrollController,
+        child: Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: List<Widget>.generate(8, (int index) {
+            return Container(
+              width: itemWidth,
+              height: 182,
+              decoration: BoxDecoration(
+                color: tokens.cardBackground,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: tokens.cardBorder),
+              ),
+            );
+          }, growable: false),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCatalogError(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 520),
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          color: tokens.cardBackground,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: tokens.cardBorder),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(Icons.error_outline_rounded, color: tokens.danger, size: 36),
+            const SizedBox(height: 12),
+            Text(
+              context.t(
+                'produto.webList.errorTitle',
+                fallback: 'Não foi possível carregar o catálogo.',
+              ),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: tokens.primaryText,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _erroCatalogoEdicao ?? '',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: tokens.secondaryText),
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: _recarregar,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: Text(
+                context.t('common.tryAgain', fallback: 'Tentar novamente'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCatalogGrid({
+    required BuildContext context,
+    required Key key,
+    required List<ProdutoModel> itens,
+    required double availableWidth,
+  }) {
+    final int columns = _columnsForWidth(availableWidth);
+    final double spacing = 14;
+    final double itemWidth =
+        columns <= 1
+            ? availableWidth
+            : (availableWidth - (spacing * (columns - 1))) / columns;
+
+    return Scrollbar(
+      controller: _verticalScrollController,
+      thumbVisibility: true,
+      thickness: 7,
+      radius: const Radius.circular(999),
+      child: SingleChildScrollView(
+        key: key,
+        controller: _verticalScrollController,
+        child: Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: itens
+              .asMap()
+              .entries
+              .map(
+                (MapEntry<int, ProdutoModel> entry) => SizedBox(
+                  width: itemWidth,
+                  child: _buildCatalogGridCard(context, entry.value, entry.key),
+                ),
+              )
+              .toList(growable: false),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCatalogGridCard(
+    BuildContext context,
+    ProdutoModel produto,
+    int index,
+  ) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final _ProdutoSituacaoEstoque situacaoEstoque = _situacaoEstoque(produto);
+    final String codigo = produto.codigoDeBarras.trim();
+    final String categoria = _categoriaOuTipoLabel(context, produto);
+
+    return TweenAnimationBuilder<double>(
+      key: ValueKey<String>('catalog-grid-${_chaveProduto(produto)}-$index'),
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: Duration(milliseconds: 120 + (index % 8) * 16),
+      curve: Curves.easeOutCubic,
+      builder:
+          (BuildContext context, double value, Widget? child) => Opacity(
+            opacity: value,
+            child: Transform.translate(
+              offset: Offset(0, 8 * (1 - value)),
+              child: child,
+            ),
+          ),
+      child: _ProdutoHoverableCardSurface(
+        borderRadius: 18,
+        baseColor: tokens.cardBackground,
+        baseBorderColor: tokens.cardBorder,
+        hoverColor: tokens.surfaceMuted,
+        hoverBorderColor: tokens.info.withValues(alpha: 0.22),
+        onTap: () => _abrirCadastroParaEdicao(produto),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _thumbnail(context, produto, size: 60),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          produto.nomeProduto.isEmpty
+                              ? context.t(
+                                'produto.webList.itemWithoutName',
+                                fallback: 'Item sem nome',
+                              )
+                              : produto.nomeProduto,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                            color: tokens.primaryText,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          categoria,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: tokens.secondaryText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  _statusPill(context, produto.ativo),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      _precoFormatado(produto.precoVenda),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: tokens.primaryText,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _buildQuantidadeEstoqueInfo(context, produto),
+                ],
+              ),
+              if (situacaoEstoque != _ProdutoSituacaoEstoque.emEstoque &&
+                  situacaoEstoque !=
+                      _ProdutoSituacaoEstoque.naoAplicavel) ...<Widget>[
+                const SizedBox(height: 10),
+                _buildEstoqueChip(context, situacaoEstoque),
+              ],
+              if (codigo.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: tokens.surfaceMuted,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: tokens.cardBorder),
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.qr_code_2_rounded,
+                        size: 16,
+                        color: tokens.secondaryText,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          codigo,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: tokens.secondaryText,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 14),
+              Align(
+                alignment: Alignment.centerRight,
+                child: _actionButton(context, produto, compact: true),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCatalogListView({
+    required BuildContext context,
+    required Key key,
+    required List<ProdutoModel> itens,
+    required double availableWidth,
+  }) {
+    final bool showWideColumns = availableWidth >= 1060;
+
+    return Column(
+      key: key,
+      children: <Widget>[
+        if (showWideColumns) _buildCatalogListHeader(context),
+        Expanded(
+          child: Scrollbar(
+            controller: _verticalScrollController,
+            thumbVisibility: true,
+            thickness: 7,
+            radius: const Radius.circular(999),
+            child: ListView.separated(
+              controller: _verticalScrollController,
+              padding: EdgeInsets.fromLTRB(0, showWideColumns ? 10 : 0, 12, 2),
+              itemCount: itens.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder:
+                  (BuildContext context, int index) =>
+                      showWideColumns
+                          ? _buildCatalogListRow(context, itens[index], index)
+                          : _buildCatalogGridCard(context, itens[index], index),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCatalogListHeader(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: DefaultTextStyle(
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          color: tokens.secondaryText,
+        ),
+        child: Row(
+          children: <Widget>[
+            const SizedBox(width: 72),
+            Expanded(
+              flex: 4,
+              child: Text(
+                context.t('produto.webList.table.product', fallback: 'Produto'),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                context.t(
+                  'produto.webList.table.category',
+                  fallback: 'Categoria',
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                context.t('produto.webList.table.code', fallback: 'Código'),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                context.t('produto.webList.table.price', fallback: 'Preço'),
+                textAlign: TextAlign.end,
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                context.t('workspaceHome.stock.title', fallback: 'Estoque'),
+                textAlign: TextAlign.end,
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                context.t('atendimentoTecnico.status', fallback: 'Status'),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(width: 104),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCatalogListRow(
+    BuildContext context,
+    ProdutoModel produto,
+    int index,
+  ) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final _ProdutoSituacaoEstoque situacaoEstoque = _situacaoEstoque(produto);
+
+    return _ProdutoHoverableCardSurface(
+      borderRadius: 18,
+      baseColor: tokens.cardBackground,
+      baseBorderColor: tokens.cardBorder,
+      hoverColor: tokens.surfaceMuted,
+      hoverBorderColor: tokens.info.withValues(alpha: 0.22),
+      onTap: () => _abrirCadastroParaEdicao(produto),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            _thumbnail(context, produto, size: 58),
+            const SizedBox(width: 14),
+            Expanded(
+              flex: 4,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    produto.nomeProduto.isEmpty
+                        ? context.t(
+                          'produto.webList.itemWithoutName',
+                          fallback: 'Item sem nome',
+                        )
+                        : produto.nomeProduto,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: tokens.primaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _tipoLabel(produto),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: tokens.secondaryText),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                _categoriaOuTipoLabel(context, produto),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: tokens.secondaryText),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                produto.codigoDeBarras.trim().isEmpty
+                    ? context.t('common.notInformed', fallback: 'Não informado')
+                    : produto.codigoDeBarras.trim(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: tokens.secondaryText,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                _precoFormatado(produto.precoVenda),
+                textAlign: TextAlign.end,
+                style: TextStyle(
+                  color: tokens.primaryText,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    _quantidadeEstoqueLabel(produto),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: tokens.primaryText,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (situacaoEstoque != _ProdutoSituacaoEstoque.emEstoque &&
+                      situacaoEstoque != _ProdutoSituacaoEstoque.naoAplicavel)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: _buildEstoqueChip(
+                        context,
+                        situacaoEstoque,
+                        compact: true,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Align(
+                alignment: Alignment.center,
+                child: _statusPill(context, produto.ativo),
+              ),
+            ),
+            const SizedBox(width: 12),
+            _actionButton(context, produto, compact: true),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCatalogPagination(
+    BuildContext context,
+    _ProdutoCatalogoEdicaoSnapshot snapshot,
+    bool isCompact,
+  ) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final List<Object> pages = _pageItems(
+      snapshot.paginaAtual,
+      snapshot.totalPaginas,
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child:
+          isCompact
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    _paginationSummary(context, snapshot),
+                    style: TextStyle(
+                      color: tokens.secondaryText,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: <Widget>[
+                      _paginationArrow(
+                        context,
+                        icon: Icons.chevron_left_rounded,
+                        enabled: snapshot.paginaAtual > 0,
+                        onTap:
+                            () => _atualizarCatalogo(() {
+                              _paginaAtual = snapshot.paginaAtual - 1;
+                            }),
+                      ),
+                      ...pages.map(
+                        (Object item) =>
+                            _buildPageMarker(context, item, snapshot),
+                      ),
+                      _paginationArrow(
+                        context,
+                        icon: Icons.chevron_right_rounded,
+                        enabled:
+                            snapshot.paginaAtual < snapshot.totalPaginas - 1,
+                        onTap:
+                            () => _atualizarCatalogo(() {
+                              _paginaAtual = snapshot.paginaAtual + 1;
+                            }),
+                      ),
+                      _buildItensPorPaginaMenu(context),
+                    ],
+                  ),
+                ],
+              )
+              : Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      _paginationSummary(context, snapshot),
+                      style: TextStyle(
+                        color: tokens.secondaryText,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  _paginationArrow(
+                    context,
+                    icon: Icons.chevron_left_rounded,
+                    enabled: snapshot.paginaAtual > 0,
+                    onTap:
+                        () => _atualizarCatalogo(() {
+                          _paginaAtual = snapshot.paginaAtual - 1;
+                        }),
+                  ),
+                  const SizedBox(width: 6),
+                  ...pages.map(
+                    (Object item) => _buildPageMarker(context, item, snapshot),
+                  ),
+                  const SizedBox(width: 6),
+                  _paginationArrow(
+                    context,
+                    icon: Icons.chevron_right_rounded,
+                    enabled: snapshot.paginaAtual < snapshot.totalPaginas - 1,
+                    onTap:
+                        () => _atualizarCatalogo(() {
+                          _paginaAtual = snapshot.paginaAtual + 1;
+                        }),
+                  ),
+                  const SizedBox(width: 12),
+                  _buildItensPorPaginaMenu(context),
+                ],
+              ),
+    );
+  }
+
+  Widget _buildPageMarker(
+    BuildContext context,
+    Object item,
+    _ProdutoCatalogoEdicaoSnapshot snapshot,
+  ) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    if (item is String) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: Text(
+          item,
+          style: TextStyle(
+            color: tokens.secondaryText,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+    }
+
+    final int page = item as int;
+    final bool selected = page == snapshot.paginaAtual;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      child: InkWell(
+        key: ValueKey<String>('produto-web-page-${page + 1}'),
+        borderRadius: BorderRadius.circular(12),
+        onTap:
+            selected
+                ? null
+                : () => _atualizarCatalogo(() {
+                  _paginaAtual = page;
+                }),
+        child: Container(
+          width: 34,
+          height: 34,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? tokens.selectedBackground : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected ? tokens.selectedBorder : tokens.cardBorder,
+            ),
+          ),
+          child: Text(
+            '${page + 1}',
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              color: selected ? tokens.primaryText : tokens.secondaryText,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _paginationArrow(
+    BuildContext context, {
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 34,
+        height: 34,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: enabled ? tokens.surfaceElevated : tokens.surfaceMuted,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: tokens.cardBorder),
+        ),
+        child: Icon(
+          icon,
+          size: 18,
+          color: enabled ? tokens.primaryText : tokens.mutedText,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItensPorPaginaMenu(BuildContext context) {
+    return _buildMenuFiltro<int>(
+      context: context,
+      icon: Icons.format_list_numbered_rounded,
+      label: context.t(
+        'produto.webList.itemsPerPageLabel',
+        fallback: 'Itens por página',
+      ),
+      value: _itensPorPagina.toString(),
+      minWidth: 142,
+      items: _opcoesItensPorPagina
+          .map(
+            (int value) =>
+                PopupMenuItem<int>(value: value, child: Text(value.toString())),
+          )
+          .toList(growable: false),
+      onSelected: (int value) {
+        _atualizarCatalogo(() {
+          _itensPorPagina = value;
+        });
+      },
+    );
+  }
+
+  List<Object> _pageItems(int paginaAtual, int totalPaginas) {
+    if (totalPaginas <= 1) {
+      return const <Object>[0];
+    }
+
+    if (totalPaginas <= 7) {
+      return List<Object>.generate(totalPaginas, (int index) => index);
+    }
+
+    final Set<int> paginas = <int>{0, totalPaginas - 1, paginaAtual};
+    if (paginaAtual - 1 > 0) paginas.add(paginaAtual - 1);
+    if (paginaAtual + 1 < totalPaginas - 1) paginas.add(paginaAtual + 1);
+
+    final List<int> ordenadas = paginas.toList()..sort();
+    final List<Object> resultado = <Object>[];
+    for (int index = 0; index < ordenadas.length; index++) {
+      final int pagina = ordenadas[index];
+      if (index > 0 && pagina - ordenadas[index - 1] > 1) {
+        resultado.add('...');
+      }
+      resultado.add(pagina);
+    }
+    return resultado;
+  }
+
+  String _paginationSummary(
+    BuildContext context,
+    _ProdutoCatalogoEdicaoSnapshot snapshot,
+  ) {
+    return context
+        .t(
+          'produto.webList.pagination.summary',
+          fallback: 'Exibindo {start} a {end} de {total} itens',
+        )
+        .replaceAll('{start}', snapshot.indiceInicial.toString())
+        .replaceAll('{end}', snapshot.indiceFinal.toString())
+        .replaceAll('{total}', snapshot.itensFiltrados.length.toString());
+  }
+
+  int _columnsForWidth(double width) {
+    if (width >= 1360) return 4;
+    if (width >= 1040) return 3;
+    if (width >= 680) return 2;
+    return 1;
+  }
+
+  List<_CategoriaFiltro> _categoriasDisponiveis() {
+    final Map<String, _CategoriaFiltro> categorias =
+        <String, _CategoriaFiltro>{};
+    for (final ProdutoModel produto in todosProdutos) {
+      final ObjCategoria? categoria = produto.objCategoria;
+      if (categoria == null) continue;
+      final String id = categoria.idCategoria.trim();
+      final String nome = categoria.nomeCategoria.trim();
+      if (id.isEmpty || nome.isEmpty) continue;
+      categorias[id] = _CategoriaFiltro(id: id, nome: nome);
+    }
+
+    final List<_CategoriaFiltro> resultado = categorias.values.toList();
+    resultado.sort(
+      (_CategoriaFiltro a, _CategoriaFiltro b) =>
+          a.nome.toLowerCase().compareTo(b.nome.toLowerCase()),
+    );
+    return resultado;
+  }
+
+  String _categoriaSelecionadaLabel(BuildContext context) {
+    if (_categoriaSelecionadaId == null || _categoriaSelecionadaId!.isEmpty) {
+      return context.t(
+        'produto.webList.filter.categoryAll',
+        fallback: 'Todas categorias',
+      );
+    }
+
+    for (final _CategoriaFiltro categoria in _categoriasDisponiveis()) {
+      if (categoria.id == _categoriaSelecionadaId) return categoria.nome;
+    }
+
+    return context.t(
+      'produto.webList.filter.categoryAll',
+      fallback: 'Todas categorias',
+    );
+  }
+
+  String _statusFiltroLabel(BuildContext context) {
+    switch (_statusFiltro) {
+      case _ProdutoStatusFiltro.todos:
+        return context.t('produto.webList.filter.statusAll', fallback: 'Todos');
+      case _ProdutoStatusFiltro.ativos:
+        return context.t('common.active', fallback: 'Ativo');
+      case _ProdutoStatusFiltro.inativos:
+        return context.t('common.inactive', fallback: 'Inativo');
+    }
+  }
+
+  String _estoqueFiltroLabel(BuildContext context) {
+    switch (_estoqueFiltro) {
+      case _ProdutoEstoqueFiltro.todos:
+        return context.t('produto.webList.filter.stockAll', fallback: 'Todos');
+      case _ProdutoEstoqueFiltro.emEstoque:
+        return context.t(
+          'produto.webList.filter.stockAvailable',
+          fallback: 'Em estoque',
+        );
+      case _ProdutoEstoqueFiltro.estoqueBaixo:
+        return context.t(
+          'produto.webList.filter.stockLow',
+          fallback: 'Estoque baixo',
+        );
+      case _ProdutoEstoqueFiltro.semEstoque:
+        return context.t(
+          'produto.webList.filter.stockOut',
+          fallback: 'Sem estoque',
+        );
+      case _ProdutoEstoqueFiltro.estoqueNegativo:
+        return context.t(
+          'produto.webList.filter.stockNegative',
+          fallback: 'Estoque negativo',
+        );
+    }
+  }
+
+  String _ordenacaoLabel(BuildContext context) {
+    switch (ordenacao) {
+      case 'precoAsc':
+        return context.t(
+          'produto.webList.sort.priceAsc',
+          fallback: 'Menor preço',
+        );
+      case 'precoDesc':
+        return context.t(
+          'produto.webList.sort.priceDesc',
+          fallback: 'Maior preço',
+        );
+      case 'nomeAsc':
+      default:
+        return context.t(
+          'produto.webList.sort.name',
+          fallback: 'Ordenar por nome',
+        );
+    }
+  }
+
+  String _resumoRapidoLabel(
+    BuildContext context,
+    _ProdutoResumoRapidoFiltro filtro,
+  ) {
+    switch (filtro) {
+      case _ProdutoResumoRapidoFiltro.todos:
+        return context.t('common.all', fallback: 'Todos');
+      case _ProdutoResumoRapidoFiltro.produtos:
+        return context.t(
+          'web.navigation.catalog.products',
+          fallback: 'Produtos',
+        );
+      case _ProdutoResumoRapidoFiltro.servicos:
+        return context.t(
+          'web.navigation.catalog.services',
+          fallback: 'Serviços',
+        );
+      case _ProdutoResumoRapidoFiltro.comImagem:
+        return context.t(
+          'produto.webList.quick.withImage',
+          fallback: 'Com imagem',
+        );
+      case _ProdutoResumoRapidoFiltro.estoqueBaixo:
+        return context.t(
+          'produto.webList.quick.lowStock',
+          fallback: 'Estoque baixo',
+        );
+    }
+  }
+
+  String _categoriaOuTipoLabel(BuildContext context, ProdutoModel produto) {
+    final String categoria = produto.objCategoria?.nomeCategoria.trim() ?? '';
+    if (categoria.isNotEmpty) return categoria;
+    return _tipoLabel(produto);
+  }
+
+  double _quantidadeEstoque(ProdutoModel produto) {
+    if (_isServico(produto)) return 0;
+    final List<ObjEntradaSaidaProduto>? movimentacoes =
+        produto.objEntradaSaidaProduto;
+    if (movimentacoes == null || movimentacoes.isEmpty) return 0;
+    return movimentacoes.fold<double>(
+      0,
+      (double total, ObjEntradaSaidaProduto item) => total + item.quantidade,
+    );
+  }
+
+  _ProdutoSituacaoEstoque _situacaoEstoque(ProdutoModel produto) {
+    if (_isServico(produto)) {
+      return _ProdutoSituacaoEstoque.naoAplicavel;
+    }
+
+    final double quantidade = _quantidadeEstoque(produto);
+    if (quantidade < 0) return _ProdutoSituacaoEstoque.estoqueNegativo;
+    if (quantidade == 0) return _ProdutoSituacaoEstoque.semEstoque;
+    if (produto.estoqueMinimo > 0 &&
+        quantidade <= produto.estoqueMinimo.toDouble()) {
+      return _ProdutoSituacaoEstoque.estoqueBaixo;
+    }
+    return _ProdutoSituacaoEstoque.emEstoque;
+  }
+
+  Widget _buildQuantidadeEstoqueInfo(
+    BuildContext context,
+    ProdutoModel produto,
+  ) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Text(
+      _quantidadeEstoqueLabel(produto),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: tokens.secondaryText,
+      ),
+    );
+  }
+
+  String _quantidadeEstoqueLabel(ProdutoModel produto) {
+    if (_isServico(produto)) {
+      return context.t(
+        'produto.webList.stockNotApplicable',
+        fallback: 'Sem controle',
+      );
+    }
+    return context
+        .t('produto.webList.stockQuantity', fallback: 'Qtd {value}')
+        .replaceAll(
+          '{value}',
+          _formatarQuantidade(_quantidadeEstoque(produto)),
+        );
+  }
+
+  Widget _buildEstoqueChip(
+    BuildContext context,
+    _ProdutoSituacaoEstoque situacao, {
+    bool compact = false,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color color = switch (situacao) {
+      _ProdutoSituacaoEstoque.estoqueBaixo => tokens.stockWarning,
+      _ProdutoSituacaoEstoque.semEstoque => tokens.warning,
+      _ProdutoSituacaoEstoque.estoqueNegativo => tokens.stockCritical,
+      _ => tokens.secondaryText,
+    };
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 10,
+        vertical: compact ? 5 : 7,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+      ),
+      child: Text(
+        _situacaoEstoqueLabel(context, situacao),
+        style: TextStyle(
+          fontSize: compact ? 10 : 11,
+          fontWeight: FontWeight.w900,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  String _situacaoEstoqueLabel(
+    BuildContext context,
+    _ProdutoSituacaoEstoque situacao,
+  ) {
+    switch (situacao) {
+      case _ProdutoSituacaoEstoque.estoqueBaixo:
+        return context.t('produto.webList.stockLow', fallback: 'Estoque baixo');
+      case _ProdutoSituacaoEstoque.semEstoque:
+        return context.t('produto.webList.stockOut', fallback: 'Sem estoque');
+      case _ProdutoSituacaoEstoque.estoqueNegativo:
+        return context.t(
+          'produto.webList.stockNegative',
+          fallback: 'Estoque negativo',
+        );
+      case _ProdutoSituacaoEstoque.emEstoque:
+        return context.t(
+          'produto.webList.filter.stockAvailable',
+          fallback: 'Em estoque',
+        );
+      case _ProdutoSituacaoEstoque.naoAplicavel:
+        return context.t(
+          'produto.webList.stockNotApplicable',
+          fallback: 'Sem controle',
+        );
+    }
+  }
+
+  String _formatarQuantidade(double value) {
+    if (value == value.roundToDouble()) {
+      return value.toInt().toString();
+    }
+    return context.read<LocaleSettingsProvider>().formatDecimal(value);
+  }
+
   Widget _buildList(
     BuildContext context,
     ProdutosListProvider<ProdutoModel> provider,
@@ -1000,7 +2929,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     if (provider.isLoading && itens.isEmpty) return _loadingList(context);
     if (itens.isEmpty) return _emptyState(context);
 
-    if (_exibicaoHorizontal) {
+    if (_usarGrade) {
       return LayoutBuilder(
         builder: (context, constraints) {
           final double itemWidth = _horizontalItemWidth(
@@ -1235,7 +3164,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             opacity: value,
             child: Transform.translate(
               offset: Offset(
-                _exibicaoHorizontal ? 10 * (1 - value) : 0,
+                _usarGrade ? 10 * (1 - value) : 0,
                 8 * (1 - value),
               ),
               child: child,
@@ -1626,8 +3555,12 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     );
   }
 
-  Widget _actionButton(BuildContext context, ProdutoModel produto) {
-    return FilledButton.icon(
+  Widget _actionButton(
+    BuildContext context,
+    ProdutoModel produto, {
+    bool compact = false,
+  }) {
+    return OutlinedButton.icon(
       onPressed:
           () =>
               widget.modoEdicao
@@ -1637,9 +3570,16 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         widget.modoEdicao ? Icons.edit_rounded : Icons.visibility_outlined,
         size: 17,
       ),
-      label: Text(widget.modoEdicao ? 'Editar' : 'Ver'),
-      style: FilledButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+      label: Text(
+        widget.modoEdicao
+            ? context.t('common.edit', fallback: 'Editar')
+            : context.t('produto.webList.viewAction', fallback: 'Ver'),
+      ),
+      style: OutlinedButton.styleFrom(
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 12 : 18,
+          vertical: compact ? 11 : 13,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
@@ -1745,7 +3685,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   String _tipoLabel(ProdutoModel produto) {
-    return _isServico(produto) ? 'Serviço' : 'Produto';
+    return _isServico(produto)
+        ? context.t('web.navigation.catalog.services', fallback: 'Serviço')
+        : context.t('web.navigation.catalog.products', fallback: 'Produto');
   }
 
   String _grupoLabel(ProdutoModel produto) {
@@ -1756,7 +3698,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
   String _codigoLabel(ProdutoModel produto) {
     final codigo = produto.codigoDeBarras.trim();
-    return codigo.isEmpty ? 'Sem código' : codigo;
+    return codigo.isEmpty
+        ? context.t('produto.webList.codeUnavailable', fallback: 'Sem código')
+        : codigo;
   }
 
   String _chaveProduto(ProdutoModel produto) {
@@ -1772,7 +3716,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   }
 
   String _precoFormatado(double valor) {
-    return 'R\$ ${valor.toStringAsFixed(2)}';
+    return context.read<LocaleSettingsProvider>().formatCurrency(valor);
   }
 }
 
@@ -1791,6 +3735,72 @@ class _ProdutoSelecionadoWeb {
     return _ProdutoSelecionadoWeb(
       produto: produto,
       quantidade: quantidade ?? this.quantidade,
+    );
+  }
+}
+
+class _ProdutoHoverableCardSurface extends StatefulWidget {
+  const _ProdutoHoverableCardSurface({
+    required this.child,
+    required this.onTap,
+    required this.baseColor,
+    required this.baseBorderColor,
+    required this.hoverColor,
+    required this.hoverBorderColor,
+    required this.borderRadius,
+  });
+
+  final Widget child;
+  final VoidCallback onTap;
+  final Color baseColor;
+  final Color baseBorderColor;
+  final Color hoverColor;
+  final Color hoverBorderColor;
+  final double borderRadius;
+
+  @override
+  State<_ProdutoHoverableCardSurface> createState() =>
+      _ProdutoHoverableCardSurfaceState();
+}
+
+class _ProdutoHoverableCardSurfaceState
+    extends State<_ProdutoHoverableCardSurface> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool dark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        mouseCursor: SystemMouseCursors.click,
+        borderRadius: BorderRadius.circular(widget.borderRadius),
+        onTap: widget.onTap,
+        onHover: (bool value) {
+          if (_hovered == value) return;
+          setState(() => _hovered = value);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            color: _hovered ? widget.hoverColor : widget.baseColor,
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            border: Border.all(
+              color:
+                  _hovered ? widget.hoverBorderColor : widget.baseBorderColor,
+            ),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: Colors.black.withValues(alpha: dark ? 0.14 : 0.04),
+                blurRadius: _hovered ? 16 : 12,
+                offset: Offset(0, _hovered ? 7 : 5),
+              ),
+            ],
+          ),
+          child: widget.child,
+        ),
+      ),
     );
   }
 }
