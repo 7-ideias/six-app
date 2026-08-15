@@ -1,11 +1,6 @@
 import 'package:sixpos/presentation/navigation/web_navigation_item.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 
-/// Converts the current authorization provider into the declarative permission
-/// set understood by the Web navigation registry.
-///
-/// This adapter does not own authorization rules and does not render UI. It is
-/// only the bridge between the existing provider and the Web navigation model.
 abstract final class WebNavigationPermissionAdapter {
   static Set<WebNavigationPermission> permissionsFor(
     ColaboradorAutorizacoesProvider provider,
@@ -13,11 +8,9 @@ abstract final class WebNavigationPermissionAdapter {
     if (!_canUseProviderPermissions(provider)) {
       return const <WebNavigationPermission>{};
     }
-
     if (provider.ehAdministrador) {
       return WebNavigationPermission.values.toSet();
     }
-
     return <WebNavigationPermission>{
       if (provider.podeFazerVenda) WebNavigationPermission.podeFazerVenda,
       if (provider.podeLancarAssistenciaTecnica)
@@ -28,6 +21,8 @@ abstract final class WebNavigationPermissionAdapter {
       if (provider.podeEditarProduto) WebNavigationPermission.podeEditarProduto,
       if (provider.podeVerEstoqueDeProduto)
         WebNavigationPermission.podeVerEstoqueDeProduto,
+      if (provider.podeAcessarEtiquetas)
+        WebNavigationPermission.podeAcessarEtiquetas,
       if (provider.podeGerarRelatorio)
         WebNavigationPermission.podeGerarRelatorio,
       if (provider.podeVerQuantoVendeu)
@@ -43,14 +38,11 @@ abstract final class WebNavigationPermissionAdapter {
 
   static bool canApplySidebarFiltering(
     ColaboradorAutorizacoesProvider provider,
-  ) {
-    return _canUseProviderPermissions(provider);
-  }
+  ) =>
+      _canUseProviderPermissions(provider);
 
   static bool _canUseProviderPermissions(
     ColaboradorAutorizacoesProvider provider,
-  ) {
-    return provider.ehAdministrador ||
-        provider.autorizacoesCarregadasComSucesso;
-  }
+  ) =>
+      provider.ehAdministrador || provider.autorizacoesCarregadasComSucesso;
 }

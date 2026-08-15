@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Declarative contract for the future authenticated Web navigation.
-///
-/// Keep this model free from operational actions, widget construction and
-/// navigation side effects. Visual components should resolve [destination] to
-/// the current callback, route or overlay in a separate adapter.
+/// Declarative contract for the authenticated Web navigation.
 class WebNavigationItem {
   const WebNavigationItem({
     required this.id,
@@ -18,9 +14,6 @@ class WebNavigationItem {
 
   final String id;
   final String labelKey;
-
-  /// Last-resort fallback for i18n migration. Renderers should prefer the
-  /// translation registered for [labelKey] before using this text.
   final String labelFallback;
   final IconData icon;
   final WebNavigationDestination? destination;
@@ -39,14 +32,10 @@ class WebNavigationItem {
 
   int get maxDepth {
     if (children.isEmpty) return 1;
-
     int childDepth = 0;
     for (final WebNavigationItem child in children) {
-      if (child.maxDepth > childDepth) {
-        childDepth = child.maxDepth;
-      }
+      if (child.maxDepth > childDepth) childDepth = child.maxDepth;
     }
-
     return childDepth + 1;
   }
 
@@ -60,7 +49,6 @@ class WebNavigationItem {
     )) {
       return null;
     }
-
     if (children.isEmpty) return this;
 
     final List<WebNavigationItem> visibleChildren = <WebNavigationItem>[
@@ -72,11 +60,7 @@ class WebNavigationItem {
             case final WebNavigationItem visibleChild)
           visibleChild,
     ];
-
-    if (visibleChildren.isEmpty && destination == null) {
-      return null;
-    }
-
+    if (visibleChildren.isEmpty && destination == null) return null;
     return WebNavigationItem(
       id: id,
       labelKey: labelKey,
@@ -96,6 +80,7 @@ enum WebNavigationDestination {
   catalogProducts,
   catalogServices,
   catalogStock,
+  catalogLabels,
   catalogCategories,
   peopleCustomers,
   peopleCollaborators,
@@ -114,6 +99,7 @@ enum WebNavigationPermission {
   podeEditarProduto,
   podeVerEstoqueDeProduto,
   podeAcessarCatalogo,
+  podeAcessarEtiquetas,
   podeGerarRelatorio,
   podeAcessarFinanceiro,
   podeReceberNoCaixa,
@@ -123,17 +109,17 @@ enum WebNavigationVisibilityKind { authenticated, anyOf, unresolved }
 
 class WebNavigationVisibilityRule {
   const WebNavigationVisibilityRule.authenticated()
-    : kind = WebNavigationVisibilityKind.authenticated,
-      anyOf = const <WebNavigationPermission>[],
-      note = null;
+      : kind = WebNavigationVisibilityKind.authenticated,
+        anyOf = const <WebNavigationPermission>[],
+        note = null;
 
   const WebNavigationVisibilityRule.anyOf(this.anyOf)
-    : kind = WebNavigationVisibilityKind.anyOf,
-      note = null;
+      : kind = WebNavigationVisibilityKind.anyOf,
+        note = null;
 
   const WebNavigationVisibilityRule.unresolved(this.note)
-    : kind = WebNavigationVisibilityKind.unresolved,
-      anyOf = const <WebNavigationPermission>[];
+      : kind = WebNavigationVisibilityKind.unresolved,
+        anyOf = const <WebNavigationPermission>[];
 
   final WebNavigationVisibilityKind kind;
   final List<WebNavigationPermission> anyOf;

@@ -3,6 +3,7 @@ import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_destination_resolver.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_item.dart';
 import 'package:sixpos/presentation/navigation/web_sidebar_navigation.dart';
+import 'package:sixpos/presentation/screens/etiquetas_web_page.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
 import 'web_header.dart';
@@ -36,6 +37,7 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
 
   bool _sidebarExpanded = true;
   late Set<String> _expandedGroupIds;
+  WebNavigationDestination? _shellManagedDestination;
 
   @override
   void initState() {
@@ -47,6 +49,7 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
   void didUpdateWidget(covariant AuthenticatedWebShell oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.activeDestination != widget.activeDestination) {
+      _shellManagedDestination = null;
       _expandedGroupIds = <String>{
         ..._expandedGroupIds,
         ..._groupIdsForDestination(widget.activeDestination),
@@ -59,17 +62,22 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
     final ThemeData theme = Theme.of(context);
     final ThemeData webTheme = WebThemeTokens.applyTo(theme);
     final WebThemeTokens tokens = WebThemeTokens.resolve(theme);
-    final String activeTitle = _activeTitle(context);
+    final WebNavigationDestination? effectiveDestination =
+        _shellManagedDestination ?? widget.activeDestination;
+    final String activeTitle = _activeTitle(context, effectiveDestination);
+    final Widget effectiveChild =
+        effectiveDestination == WebNavigationDestination.catalogLabels
+            ? const EtiquetasWebPage()
+            : widget.child;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool forceCollapsed =
             constraints.maxWidth <= _compactSidebarBreakpoint;
         final bool expanded = _sidebarExpanded && !forceCollapsed;
-        final double sidebarWidth =
-            expanded
-                ? WebSidebarNavigation.expandedWidth
-                : WebSidebarNavigation.collapsedWidth;
+        final double sidebarWidth = expanded
+            ? WebSidebarNavigation.expandedWidth
+            : WebSidebarNavigation.collapsedWidth;
 
         return AnimatedContainer(
           key: const Key('web-shell-workspace'),
@@ -88,7 +96,7 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
                   curve: WebThemeTokens.transitionCurve,
                   child: WebSidebarNavigation(
                     items: widget.navigationItems,
-                    activeDestination: widget.activeDestination,
+                    activeDestination: effectiveDestination,
                     expanded: expanded,
                     expandedGroupIds: _expandedGroupIds,
                     onToggleGroup: _toggleGroup,
@@ -112,7 +120,7 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
                         actions: widget.headerActions,
                       ),
                     ),
-                    Expanded(child: widget.child),
+                    Expanded(child: effectiveChild),
                   ],
                 ),
               ),
@@ -124,31 +132,31 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
   }
 
   void _toggleSidebar() {
-    setState(() {
-      _sidebarExpanded = !_sidebarExpanded;
-    });
+    setState(() => _sidebarExpanded = !_sidebarExpanded);
   }
 
   void _toggleGroup(String id) {
     setState(() {
-      if (!_expandedGroupIds.remove(id)) {
-        _expandedGroupIds.add(id);
-      }
+      if (!_expandedGroupIds.remove(id)) _expandedGroupIds.add(id);
     });
   }
 
   void _resolveDestination(WebNavigationDestination destination) {
-    final WebNavigationResolutionResult result = widget.resolver.resolve(
-      destination,
-    );
-
-    if (result.handled || !mounted) {
+    if (destination == WebNavigationDestination.catalogLabels) {
+      setState(() {
+        _shellManagedDestination = destination;
+        _expandedGroupIds.add('catalog');
+      });
       return;
     }
 
-    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(
-      context,
-    );
+    if (_shellManagedDestination != null) {
+      setState(() => _shellManagedDestination = null);
+    }
+    final WebNavigationResolutionResult result = widget.resolver.resolve(destination);
+    if (result.handled || !mounted) return;
+
+    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
     messenger?.hideCurrentSnackBar();
     messenger?.showSnackBar(
       SnackBar(
@@ -164,18 +172,23 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
     );
   }
 
-  String _activeTitle(BuildContext context) {
-    final WebNavigationItem? activeItem = _findItemByDestination(
-      widget.activeDestination,
-    );
+  String _activeTitle(
+    BuildContext context,
+    WebNavigationDestination? destination,
+  ) {
+    final WebNavigationItem? activeItem = _findItemByDestination(destination);
     if (activeItem == null) {
-      return _shellText(
-        context,
-        'web.shell.workspace',
-        'Workspace operacional',
-      );
+      return _shellText(context, 'web.shell.workspace', 'Workspace operacional');
     }
-
+    if (destination == WebNavigationDestination.catalogLabels) {
+      final String language = Localizations.localeOf(context).languageCode;
+      final String fallback = switch (language) {
+        'en' => 'Labels',
+        'es' => 'Etiquetas',
+        _ => 'Etiquetas',
+      };
+      return _shellText(context, activeItem.labelKey, fallback);
+    }
     return _shellText(context, activeItem.labelKey, activeItem.labelFallback);
   }
 
@@ -183,19 +196,14 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
     WebNavigationDestination? destination,
   ) {
     if (destination == null) return null;
-
     for (final WebNavigationItem item in _flattenNavigationItems()) {
-      if (item.destination == destination) {
-        return item;
-      }
+      if (item.destination == destination) return item;
     }
-
     return null;
   }
 
   Set<String> _groupIdsForDestination(WebNavigationDestination? destination) {
     if (destination == null) return <String>{};
-
     return <String>{
       for (final WebNavigationItem item in widget.navigationItems)
         if (item.children.isNotEmpty && _containsDestination(item, destination))
@@ -204,9 +212,7 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
   }
 
   Iterable<WebNavigationItem> _flattenNavigationItems() sync* {
-    for (final WebNavigationItem item in widget.navigationItems) {
-      yield* item.flatten();
-    }
+    for (final WebNavigationItem item in widget.navigationItems) yield* item.flatten();
   }
 
   bool _containsDestination(
