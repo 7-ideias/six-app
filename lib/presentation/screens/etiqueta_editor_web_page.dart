@@ -304,6 +304,7 @@ class _EtiquetaEditorWebPageState extends State<EtiquetaEditorWebPage> {
             ),
             const SizedBox(height: 10),
             _MenuField(
+              icon: Icons.description_outlined,
               label: _tr(
                 'labels.editor.format',
                 'Formato',
@@ -325,6 +326,7 @@ class _EtiquetaEditorWebPageState extends State<EtiquetaEditorWebPage> {
             ),
             const SizedBox(height: 10),
             _MenuField(
+              icon: Icons.crop_rotate_rounded,
               label: _tr(
                 'labels.editor.orientation',
                 'Orientação',
@@ -904,6 +906,7 @@ class _EtiquetaEditorWebPageState extends State<EtiquetaEditorWebPage> {
                 }),
           ),
           _MenuField(
+            icon: Icons.format_align_left_rounded,
             label: _tr(
               'labels.editor.alignment',
               'Alinhamento',
@@ -934,6 +937,7 @@ class _EtiquetaEditorWebPageState extends State<EtiquetaEditorWebPage> {
           ),
           const SizedBox(height: 10),
           _MenuField(
+            icon: Icons.view_week_outlined,
             label: _tr(
               'labels.editor.symbology',
               'Simbologia',
@@ -1448,16 +1452,13 @@ class _EtiquetaEditorWebPageState extends State<EtiquetaEditorWebPage> {
     bool enabled = true,
     String suffix = 'mm',
   }) {
-    return TextFormField(
-      key: ValueKey<String>('$keyName-${value.toStringAsFixed(3)}-$enabled'),
-      initialValue: _fmt(value),
+    return _LiveNumberField(
+      key: ValueKey<String>('number-$keyName'),
+      value: value,
       enabled: enabled,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: _inputDecoration(label, null, suffixText: suffix),
-      onChanged: (String text) {
-        final double? parsed = double.tryParse(text.replaceAll(',', '.'));
-        if (parsed != null) onChanged(parsed);
-      },
+      formatter: _fmt,
+      onChanged: onChanged,
     );
   }
 
@@ -1467,15 +1468,11 @@ class _EtiquetaEditorWebPageState extends State<EtiquetaEditorWebPage> {
     required int value,
     required ValueChanged<int> onChanged,
   }) {
-    return TextFormField(
-      key: ValueKey<String>('$keyName-$value'),
-      initialValue: value.toString(),
-      keyboardType: TextInputType.number,
+    return _LiveIntField(
+      key: ValueKey<String>('int-$keyName'),
+      value: value,
       decoration: _inputDecoration(label, null),
-      onChanged: (String text) {
-        final int? parsed = int.tryParse(text);
-        if (parsed != null) onChanged(parsed);
-      },
+      onChanged: onChanged,
     );
   }
 
@@ -1830,8 +1827,9 @@ class _SheetPreview extends StatelessWidget {
   }
 }
 
-class _MenuField extends StatelessWidget {
+class _MenuField extends StatefulWidget {
   const _MenuField({
+    required this.icon,
     required this.label,
     required this.value,
     required this.values,
@@ -1839,6 +1837,7 @@ class _MenuField extends StatelessWidget {
     required this.onSelected,
   });
 
+  final IconData icon;
   final String label;
   final String value;
   final List<String> values;
@@ -1846,55 +1845,397 @@ class _MenuField extends StatelessWidget {
   final ValueChanged<String> onSelected;
 
   @override
-  Widget build(BuildContext context) {
+  State<_MenuField> createState() => _MenuFieldState();
+}
+
+class _MenuFieldState extends State<_MenuField> {
+  bool _open = false;
+
+  String get _safeValue {
+    if (widget.values.contains(widget.value)) {
+      return widget.value;
+    }
+    return widget.values.isEmpty ? '' : widget.values.first;
+  }
+
+  Future<void> _showOptions() async {
+    if (widget.values.isEmpty) return;
+    setState(() => _open = true);
+
+    final RenderBox box = context.findRenderObject()! as RenderBox;
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final Offset position = box.localToGlobal(Offset.zero, ancestor: overlay);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return PopupMenuButton<String>(
-      onSelected: onSelected,
-      itemBuilder:
-          (BuildContext context) => values
-              .map(
-                (String item) => PopupMenuItem<String>(
-                  value: item,
-                  child: Row(
-                    children: <Widget>[
-                      if (valueLabel(item) == value) ...<Widget>[
-                        const Icon(Icons.check_rounded, size: 18),
-                        const SizedBox(width: 8),
-                      ],
-                      Expanded(child: Text(valueLabel(item))),
-                    ],
-                  ),
-                ),
-              )
-              .toList(growable: false),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: tokens.inputBackground,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: tokens.cardBorder),
+    final String safeValue = _safeValue;
+
+    final String? selected = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(
+          position.dx,
+          position.dy + box.size.height + 8,
+          box.size.width,
+          box.size.height,
         ),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(label, style: Theme.of(context).textTheme.labelSmall),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ],
+        Offset.zero & overlay.size,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      elevation: 12,
+      color: tokens.menuBackground,
+      constraints: BoxConstraints.tightFor(width: box.size.width),
+      items: widget.values
+          .map(
+            (String item) => PopupMenuItem<String>(
+              value: item,
+              height: 44,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              child: _MenuFieldMenuItem(
+                label: widget.valueLabel(item),
+                selected: item == safeValue,
               ),
             ),
-            const Icon(Icons.expand_more_rounded, size: 18),
-          ],
+          )
+          .toList(growable: false),
+    );
+
+    if (!mounted) return;
+    setState(() => _open = false);
+    if (selected != null && selected != widget.value) {
+      widget.onSelected(selected);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _MenuFieldTrigger(
+      label: widget.label,
+      value: widget.valueLabel(_safeValue),
+      icon: widget.icon,
+      open: _open,
+      onTap: _showOptions,
+    );
+  }
+}
+
+class _MenuFieldTrigger extends StatefulWidget {
+  const _MenuFieldTrigger({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.onTap,
+    this.open = false,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final VoidCallback? onTap;
+  final bool open;
+
+  @override
+  State<_MenuFieldTrigger> createState() => _MenuFieldTriggerState();
+}
+
+class _MenuFieldTriggerState extends State<_MenuFieldTrigger> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool enabled = widget.onTap != null;
+    final bool active = enabled && (widget.open || _hover);
+    final Color borderColor =
+        active ? tokens.selectedBorder : tokens.cardBorder;
+    final Color backgroundColor =
+        active ? tokens.selectedBackground : tokens.inputBackground;
+
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: '${widget.label}: ${widget.value}',
+      child: Tooltip(
+        message: 'Selecionar ${widget.label}',
+        waitDuration: const Duration(milliseconds: 450),
+        child: MouseRegion(
+          cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+          onEnter: (_) => setState(() => _hover = true),
+          onExit: (_) => setState(() => _hover = false),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: enabled ? widget.onTap : null,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                height: 58,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: borderColor),
+                  boxShadow:
+                      active
+                          ? <BoxShadow>[
+                            BoxShadow(
+                              color: tokens.info.withValues(alpha: 0.10),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ]
+                          : null,
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Icon(widget.icon, size: 18, color: tokens.info),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            widget.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: tokens.secondaryText,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.value,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: tokens.primaryText,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    AnimatedRotation(
+                      turns: widget.open ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: active ? tokens.info : tokens.mutedText,
+                        size: 20,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _MenuFieldMenuItem extends StatelessWidget {
+  const _MenuFieldMenuItem({required this.label, required this.selected});
+
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: selected ? tokens.selectedBackground : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            selected ? Icons.check_circle_rounded : Icons.arrow_right_rounded,
+            color: selected ? tokens.info : tokens.mutedText,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: tokens.primaryText,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LiveNumberField extends StatefulWidget {
+  const _LiveNumberField({
+    super.key,
+    required this.value,
+    required this.decoration,
+    required this.formatter,
+    required this.onChanged,
+    this.enabled = true,
+  });
+
+  final double value;
+  final InputDecoration decoration;
+  final String Function(double value) formatter;
+  final ValueChanged<double> onChanged;
+  final bool enabled;
+
+  @override
+  State<_LiveNumberField> createState() => _LiveNumberFieldState();
+}
+
+class _LiveNumberFieldState extends State<_LiveNumberField> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.formatter(widget.value));
+    _focusNode = FocusNode()..addListener(_handleFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant _LiveNumberField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_focusNode.hasFocus) {
+      final String formatted = widget.formatter(widget.value);
+      if (_controller.text != formatted) {
+        _controller.value = TextEditingValue(
+          text: formatted,
+          selection: TextSelection.collapsed(offset: formatted.length),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode
+      ..removeListener(_handleFocusChange)
+      ..dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleFocusChange() {
+    if (_focusNode.hasFocus) return;
+    final String formatted = widget.formatter(widget.value);
+    if (_controller.text == formatted) return;
+    _controller.value = TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: _controller,
+      focusNode: _focusNode,
+      enabled: widget.enabled,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: widget.decoration,
+      onChanged: (String text) {
+        final double? parsed = double.tryParse(text.replaceAll(',', '.'));
+        if (parsed != null) widget.onChanged(parsed);
+      },
+    );
+  }
+}
+
+class _LiveIntField extends StatefulWidget {
+  const _LiveIntField({
+    super.key,
+    required this.value,
+    required this.decoration,
+    required this.onChanged,
+  });
+
+  final int value;
+  final InputDecoration decoration;
+  final ValueChanged<int> onChanged;
+
+  @override
+  State<_LiveIntField> createState() => _LiveIntFieldState();
+}
+
+class _LiveIntFieldState extends State<_LiveIntField> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value.toString());
+    _focusNode = FocusNode()..addListener(_handleFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant _LiveIntField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_focusNode.hasFocus) {
+      final String formatted = widget.value.toString();
+      if (_controller.text != formatted) {
+        _controller.value = TextEditingValue(
+          text: formatted,
+          selection: TextSelection.collapsed(offset: formatted.length),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode
+      ..removeListener(_handleFocusChange)
+      ..dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleFocusChange() {
+    if (_focusNode.hasFocus) return;
+    final String formatted = widget.value.toString();
+    if (_controller.text == formatted) return;
+    _controller.value = TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: _controller,
+      focusNode: _focusNode,
+      keyboardType: TextInputType.number,
+      decoration: widget.decoration,
+      onChanged: (String text) {
+        final int? parsed = int.tryParse(text);
+        if (parsed != null) widget.onChanged(parsed);
+      },
     );
   }
 }
