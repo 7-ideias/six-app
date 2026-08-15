@@ -192,21 +192,21 @@ class _EtiquetaEditorWebSpikeState extends State<EtiquetaEditorWebSpike> {
             Expanded(
               child: LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
-                  final double availableWidth = math.max(
-                    120,
-                    constraints.maxWidth - 48,
-                  );
-                  final double availableHeight = math.max(
-                    100,
-                    constraints.maxHeight - 48,
-                  );
-                  final double scale = math.max(
-                    1,
-                    math.min(
-                      availableWidth / _labelWidthMm,
-                      availableHeight / _labelHeightMm,
-                    ),
-                  );
+                  final double availableWidth = math
+                      .max(120.0, constraints.maxWidth - 48.0)
+                      .toDouble();
+                  final double availableHeight = math
+                      .max(100.0, constraints.maxHeight - 48.0)
+                      .toDouble();
+                  final double scale = math
+                      .max(
+                        1.0,
+                        math.min(
+                          availableWidth / _labelWidthMm,
+                          availableHeight / _labelHeightMm,
+                        ),
+                      )
+                      .toDouble();
 
                   return Stack(
                     children: <Widget>[
@@ -621,7 +621,7 @@ class _BarcodePlaceholderPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final Paint paint = Paint()..color = color;
-    final double unit = math.max(1, size.width / 95);
+    final double unit = math.max(1.0, size.width / 95.0).toDouble();
     double x = 0;
     int index = 0;
 
@@ -632,7 +632,7 @@ class _BarcodePlaceholderPainter extends CustomPainter {
         Rect.fromLTWH(
           x,
           size.height * (1 - heightFactor),
-          math.min(barWidth, size.width - x),
+          math.min(barWidth, size.width - x).toDouble(),
           size.height * heightFactor,
         ),
         paint,
