@@ -11,7 +11,7 @@ import '../components/web_auth_logout_splash_scene.dart';
 import '../components/web_auth_shell.dart';
 import '../components/web_google_sign_in_button.dart';
 import '../components/web_root/web_i18n_gate.dart';
-import 'post_login_splash_web_page.dart';
+import '../services/web_authenticated_bootstrap_service.dart';
 
 class LoginPageWeb extends StatefulWidget {
   const LoginPageWeb({super.key});
@@ -70,9 +70,14 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   void _listenGoogleSignIn() {
     _authService
         .awaitWebGoogleLogin()
-        .then((_) {
-          if (!mounted) return;
-          _navigateToPostLoginSplash();
+        .then((_) async {
+          if (!mounted || _isLoading) return;
+          setState(() => _isLoading = true);
+          try {
+            await _completeAuthenticatedLogin();
+          } finally {
+            if (mounted) setState(() => _isLoading = false);
+          }
         })
         .catchError((error) {
           if (!mounted) return;
@@ -101,11 +106,15 @@ class _LoginPageWebState extends State<LoginPageWeb> {
       return;
     }
 
+    if (_isLoading) {
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       await _authService.login(login, senha);
       if (!mounted) return;
-      _navigateToPostLoginSplash();
+      await _completeAuthenticatedLogin();
     } catch (e) {
       _showSnack(e.toString().replaceAll('Exception: ', ''));
     } finally {
@@ -126,15 +135,26 @@ class _LoginPageWebState extends State<LoginPageWeb> {
     return sanitizeAuthenticatedWebRedirect(redirect);
   }
 
-  void _navigateToPostLoginSplash() {
-    final String nextRoute = _redirectAfterLogin() ?? '/app';
+  Future<void> _completeAuthenticatedLogin() async {
+    await _prepareAuthenticatedSession();
+    if (!mounted) return;
+    _navigateToAuthenticatedRoute();
+  }
 
-    Navigator.of(context).pushReplacement(
-      WebAuthShell.smoothRoute<void>(
-        name: '/login/splash',
-        builder: (_) => PostLoginSplashWebPage(nextRoute: nextRoute),
-      ),
-    );
+  Future<void> _prepareAuthenticatedSession() async {
+    try {
+      await WebAuthenticatedBootstrapService().bootstrap(context, force: true);
+    } catch (error, stackTrace) {
+      debugPrint('Erro ao preparar sessão pós-login web: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
+  void _navigateToAuthenticatedRoute() {
+    final String nextRoute = _redirectAfterLogin() ?? '/app';
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(nextRoute, (Route<dynamic> route) => false);
   }
 
   void _forgotPassword() {
