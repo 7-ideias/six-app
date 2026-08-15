@@ -130,6 +130,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   bool _carregandoSessaoCaixaPdv = false;
   bool _erroSessaoCaixaPdv = false;
   CaixaSessao? _sessaoCaixaPdv;
+  Timer? _sessaoCaixaPdvTempoAtivoTimer;
+  DateTime _referenciaTempoSessaoCaixaPdv = DateTime.now();
   ClienteUsuario? _clienteIdentificado;
 
   final TextEditingController _codigoBarrasController = TextEditingController();
@@ -308,6 +310,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     onStompDesconectado = null;
     onStompErro = null;
     _monitoramentoComunicacaoTimer?.cancel();
+    _sessaoCaixaPdvTempoAtivoTimer?.cancel();
     disconnectStomp();
     _bellAnimationController.dispose();
     _atalhosFocusNode.dispose();
@@ -1400,7 +1403,9 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       setState(() {
         _sessaoCaixaPdv = sessao;
         _erroSessaoCaixaPdv = false;
+        _referenciaTempoSessaoCaixaPdv = DateTime.now();
       });
+      _sincronizarTimerTempoAtivoSessaoCaixaPdv();
     } catch (_) {
       if (!mounted) {
         return;
@@ -1410,6 +1415,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         _sessaoCaixaPdv = null;
         _erroSessaoCaixaPdv = true;
       });
+      _sincronizarTimerTempoAtivoSessaoCaixaPdv();
     } finally {
       if (mounted) {
         setState(() {
@@ -1426,6 +1432,35 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         status == 'active' ||
         status == 'ativa' ||
         status == 'true';
+  }
+
+  void _sincronizarTimerTempoAtivoSessaoCaixaPdv() {
+    final CaixaSessao? sessao = _sessaoCaixaPdv;
+    final bool deveAtualizarTempo =
+        sessao != null && _sessaoCaixaPdvAberta(sessao);
+
+    if (!deveAtualizarTempo) {
+      _sessaoCaixaPdvTempoAtivoTimer?.cancel();
+      _sessaoCaixaPdvTempoAtivoTimer = null;
+      return;
+    }
+
+    if (_sessaoCaixaPdvTempoAtivoTimer != null) {
+      return;
+    }
+
+    _sessaoCaixaPdvTempoAtivoTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) {
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _referenciaTempoSessaoCaixaPdv = DateTime.now();
+        });
+      },
+    );
   }
 
   bool get _pdvTemSessaoCaixaAberta {
