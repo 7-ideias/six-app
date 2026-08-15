@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/core/utils/pdf_download.dart';
 import 'package:sixpos/data/models/etiqueta_models.dart';
 import 'package:sixpos/data/models/produto_model.dart';
+import 'package:sixpos/data/services/etiqueta/etiqueta_api_client.dart';
 import 'package:sixpos/domain/services/etiqueta/etiqueta_service.dart';
 import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
 import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
@@ -45,9 +46,10 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
     final bool initialExists = widget.modelos.any(
       (EtiquetaModelo model) => model.id == widget.initialTemplateId,
     );
-    _templateId = initialExists
-        ? widget.initialTemplateId
-        : widget.modelos.firstOrNull?.id;
+    _templateId =
+        initialExists
+            ? widget.initialTemplateId
+            : widget.modelos.firstOrNull?.id;
   }
 
   EtiquetaModelo? get _selectedTemplate {
@@ -60,9 +62,9 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
   }
 
   int get _totalLabels => _selected.values.fold<int>(
-        0,
-        (int total, _SelectedProduct item) => total + item.quantity,
-      );
+    0,
+    (int total, _SelectedProduct item) => total + item.quantity,
+  );
 
   int get _estimatedPages {
     final EtiquetaModelo? model = _selectedTemplate;
@@ -97,20 +99,34 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
             onBack: widget.onClose,
             actions: <Widget>[
               FilledButton.icon(
-                onPressed: _generating || _selected.isEmpty || _selectedTemplate == null
-                    ? null
-                    : _generatePdf,
-                icon: _generating
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.picture_as_pdf_outlined),
+                onPressed:
+                    _generating ||
+                            _selected.isEmpty ||
+                            _selectedTemplate == null
+                        ? null
+                        : _generatePdf,
+                icon:
+                    _generating
+                        ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.picture_as_pdf_outlined),
                 label: Text(
                   _generating
-                      ? _tr('labels.print.generating', 'Gerando...', 'Generating...', 'Generando...')
-                      : _tr('labels.print.generatePdf', 'Gerar PDF', 'Generate PDF', 'Generar PDF'),
+                      ? _tr(
+                        'labels.print.generating',
+                        'Gerando...',
+                        'Generating...',
+                        'Generando...',
+                      )
+                      : _tr(
+                        'labels.print.generatePdf',
+                        'Gerar PDF',
+                        'Generate PDF',
+                        'Generar PDF',
+                      ),
                 ),
               ),
             ],
@@ -141,7 +157,12 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     return SixWebSectionCard(
-      title: _tr('labels.print.templateSection', 'Modelo de impressão', 'Print template', 'Plantilla de impresión'),
+      title: _tr(
+        'labels.print.templateSection',
+        'Modelo de impressão',
+        'Print template',
+        'Plantilla de impresión',
+      ),
       subtitle: _tr(
         'labels.print.templateSectionHint',
         'O PDF usa exatamente as medidas físicas salvas no modelo.',
@@ -158,33 +179,42 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
             width: compact ? double.infinity : 420,
             child: PopupMenuButton<String>(
               enabled: widget.modelos.isNotEmpty,
-              onSelected: (String value) => setState(() {
-                _templateId = value;
-                _error = null;
-                _lastPdf = null;
-              }),
-              itemBuilder: (BuildContext context) => widget.modelos
-                  .where((EtiquetaModelo model) => model.id != null)
-                  .map((EtiquetaModelo model) => PopupMenuItem<String>(
-                        value: model.id!,
-                        child: Row(
-                          children: <Widget>[
-                            if (model.id == _templateId) ...<Widget>[
-                              const Icon(Icons.check_rounded, size: 18),
-                              const SizedBox(width: 8),
+              onSelected:
+                  (String value) => setState(() {
+                    _templateId = value;
+                    _error = null;
+                    _lastPdf = null;
+                  }),
+              itemBuilder:
+                  (BuildContext context) => widget.modelos
+                      .where((EtiquetaModelo model) => model.id != null)
+                      .map(
+                        (EtiquetaModelo model) => PopupMenuItem<String>(
+                          value: model.id!,
+                          child: Row(
+                            children: <Widget>[
+                              if (model.id == _templateId) ...<Widget>[
+                                const Icon(Icons.check_rounded, size: 18),
+                                const SizedBox(width: 8),
+                              ],
+                              Expanded(child: Text(model.nome)),
+                              const SizedBox(width: 10),
+                              Text(
+                                '${_fmt(model.etiqueta.larguraMm)}×${_fmt(model.etiqueta.alturaMm)} mm',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: tokens.secondaryText,
+                                ),
+                              ),
                             ],
-                            Expanded(child: Text(model.nome)),
-                            const SizedBox(width: 10),
-                            Text(
-                              '${_fmt(model.etiqueta.larguraMm)}×${_fmt(model.etiqueta.alturaMm)} mm',
-                              style: theme.textTheme.labelSmall?.copyWith(color: tokens.secondaryText),
-                            ),
-                          ],
+                          ),
                         ),
-                      ))
-                  .toList(growable: false),
+                      )
+                      .toList(growable: false),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: tokens.inputBackground,
                   borderRadius: BorderRadius.circular(16),
@@ -199,12 +229,25 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(
-                            _tr('labels.print.selectedTemplate', 'Modelo selecionado', 'Selected template', 'Plantilla seleccionada'),
-                            style: theme.textTheme.labelSmall?.copyWith(color: tokens.secondaryText),
+                            _tr(
+                              'labels.print.selectedTemplate',
+                              'Modelo selecionado',
+                              'Selected template',
+                              'Plantilla seleccionada',
+                            ),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: tokens.secondaryText,
+                            ),
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            selected?.nome ?? _tr('labels.print.noTemplate', 'Nenhum modelo', 'No template', 'Ninguna plantilla'),
+                            selected?.nome ??
+                                _tr(
+                                  'labels.print.noTemplate',
+                                  'Nenhum modelo',
+                                  'No template',
+                                  'Ninguna plantilla',
+                                ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontWeight: FontWeight.w800),
@@ -219,8 +262,14 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
             ),
           ),
           if (selected != null) ...<Widget>[
-            _metadataChip(Icons.straighten_rounded, '${_fmt(selected.etiqueta.larguraMm)} × ${_fmt(selected.etiqueta.alturaMm)} mm'),
-            _metadataChip(Icons.grid_view_outlined, '${selected.grade.colunas} × ${selected.grade.linhas}'),
+            _metadataChip(
+              Icons.straighten_rounded,
+              '${_fmt(selected.etiqueta.larguraMm)} × ${_fmt(selected.etiqueta.alturaMm)} mm',
+            ),
+            _metadataChip(
+              Icons.grid_view_outlined,
+              '${selected.grade.colunas} × ${selected.grade.linhas}',
+            ),
             _metadataChip(Icons.description_outlined, selected.papel.preset),
           ],
         ],
@@ -245,91 +294,118 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
         icon: const Icon(Icons.add_shopping_cart_outlined),
         label: Text(
           _selected.isEmpty
-              ? _tr('labels.print.selectProducts', 'Selecionar produtos', 'Select products', 'Seleccionar productos')
-              : _tr('labels.print.changeProducts', 'Alterar seleção', 'Change selection', 'Cambiar selección'),
+              ? _tr(
+                'labels.print.selectProducts',
+                'Selecionar produtos',
+                'Select products',
+                'Seleccionar productos',
+              )
+              : _tr(
+                'labels.print.changeProducts',
+                'Alterar seleção',
+                'Change selection',
+                'Cambiar selección',
+              ),
         ),
       ),
-      child: _selected.isEmpty
-          ? Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 28),
-              decoration: BoxDecoration(
-                color: tokens.surfaceMuted,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: tokens.cardBorder),
-              ),
-              child: Column(
+      child:
+          _selected.isEmpty
+              ? Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 28,
+                ),
+                decoration: BoxDecoration(
+                  color: tokens.surfaceMuted,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: tokens.cardBorder),
+                ),
+                child: Column(
+                  children: <Widget>[
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 34,
+                      color: tokens.secondaryText,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _tr(
+                        'labels.print.emptyProducts',
+                        'Nenhum produto selecionado.',
+                        'No products selected.',
+                        'No hay productos seleccionados.',
+                      ),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _tr(
+                        'labels.print.emptyProductsHint',
+                        'Abra o catálogo, marque um ou mais produtos e ajuste as quantidades.',
+                        'Open the catalog, select one or more products and adjust quantities.',
+                        'Abra el catálogo, seleccione uno o más productos y ajuste las cantidades.',
+                      ),
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: tokens.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              : Column(
                 children: <Widget>[
-                  Icon(Icons.inventory_2_outlined, size: 34, color: tokens.secondaryText),
-                  const SizedBox(height: 10),
-                  Text(
-                    _tr(
-                      'labels.print.emptyProducts',
-                      'Nenhum produto selecionado.',
-                      'No products selected.',
-                      'No hay productos seleccionados.',
-                    ),
-                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _tr(
-                      'labels.print.emptyProductsHint',
-                      'Abra o catálogo, marque um ou mais produtos e ajuste as quantidades.',
-                      'Open the catalog, select one or more products and adjust quantities.',
-                      'Abra el catálogo, seleccione uno o más productos y ajuste las cantidades.',
-                    ),
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(color: tokens.secondaryText),
-                  ),
+                  for (final _SelectedProduct item
+                      in _selected.values) ...<Widget>[
+                    _productRow(item, compact),
+                    if (item != _selected.values.last)
+                      Divider(height: 1, color: tokens.divider),
+                  ],
                 ],
               ),
-            )
-          : Column(
-              children: <Widget>[
-                for (final _SelectedProduct item in _selected.values) ...<Widget>[
-                  _productRow(item, compact),
-                  if (item != _selected.values.last)
-                    Divider(height: 1, color: tokens.divider),
-                ],
-              ],
-            ),
     );
   }
 
   Widget _productRow(_SelectedProduct item, bool compact) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final LocaleSettingsProvider locale = context.watch<LocaleSettingsProvider>();
+    final LocaleSettingsProvider locale =
+        context.watch<LocaleSettingsProvider>();
     final ProdutoModel product = item.product;
     final Widget quantity = _quantityControl(item);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 11),
-      child: compact
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                _productIdentity(product, theme, tokens, locale),
-                const SizedBox(height: 10),
-                Row(
-                  children: <Widget>[
-                    quantity,
-                    const Spacer(),
-                    _removeButton(item),
-                  ],
-                ),
-              ],
-            )
-          : Row(
-              children: <Widget>[
-                Expanded(child: _productIdentity(product, theme, tokens, locale)),
-                const SizedBox(width: 16),
-                quantity,
-                const SizedBox(width: 10),
-                _removeButton(item),
-              ],
-            ),
+      child:
+          compact
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  _productIdentity(product, theme, tokens, locale),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: <Widget>[
+                      quantity,
+                      const Spacer(),
+                      _removeButton(item),
+                    ],
+                  ),
+                ],
+              )
+              : Row(
+                children: <Widget>[
+                  Expanded(
+                    child: _productIdentity(product, theme, tokens, locale),
+                  ),
+                  const SizedBox(width: 16),
+                  quantity,
+                  const SizedBox(width: 10),
+                  _removeButton(item),
+                ],
+              ),
     );
   }
 
@@ -360,7 +436,9 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
                 product.nomeProduto,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w800),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               const SizedBox(height: 3),
               Wrap(
@@ -369,12 +447,16 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
                 children: <Widget>[
                   Text(
                     locale.formatCurrency(product.precoVenda),
-                    style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   if (product.codigoDeBarras.trim().isNotEmpty)
                     Text(
                       product.codigoDeBarras,
-                      style: theme.textTheme.bodySmall?.copyWith(color: tokens.secondaryText),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: tokens.secondaryText,
+                      ),
                     ),
                 ],
               ),
@@ -397,8 +479,16 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           IconButton(
-            tooltip: _tr('labels.print.decrease', 'Diminuir', 'Decrease', 'Disminuir'),
-            onPressed: item.quantity <= 1 ? null : () => _setQuantity(item, item.quantity - 1),
+            tooltip: _tr(
+              'labels.print.decrease',
+              'Diminuir',
+              'Decrease',
+              'Disminuir',
+            ),
+            onPressed:
+                item.quantity <= 1
+                    ? null
+                    : () => _setQuantity(item, item.quantity - 1),
             icon: const Icon(Icons.remove_rounded, size: 18),
           ),
           SizedBox(
@@ -410,8 +500,16 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
             ),
           ),
           IconButton(
-            tooltip: _tr('labels.print.increase', 'Aumentar', 'Increase', 'Aumentar'),
-            onPressed: item.quantity >= 1000 ? null : () => _setQuantity(item, item.quantity + 1),
+            tooltip: _tr(
+              'labels.print.increase',
+              'Aumentar',
+              'Increase',
+              'Aumentar',
+            ),
+            onPressed:
+                item.quantity >= 1000
+                    ? null
+                    : () => _setQuantity(item, item.quantity + 1),
             icon: const Icon(Icons.add_rounded, size: 18),
           ),
         ],
@@ -423,10 +521,11 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     return IconButton(
       tooltip: _tr('labels.print.remove', 'Remover', 'Remove', 'Eliminar'),
-      onPressed: () => setState(() {
-        _selected.remove(item.product.id);
-        _lastPdf = null;
-      }),
+      onPressed:
+          () => setState(() {
+            _selected.remove(item.product.id);
+            _lastPdf = null;
+          }),
       icon: Icon(Icons.close_rounded, color: tokens.danger),
     );
   }
@@ -436,7 +535,12 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final List<Widget> metrics = <Widget>[
       _summaryMetric(
-        _tr('labels.print.selectedProducts', 'Produtos', 'Products', 'Productos'),
+        _tr(
+          'labels.print.selectedProducts',
+          'Produtos',
+          'Products',
+          'Productos',
+        ),
         _selected.length.toString(),
       ),
       _summaryMetric(
@@ -444,7 +548,12 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
         _totalLabels.toString(),
       ),
       _summaryMetric(
-        _tr('labels.print.estimatedPages', 'Páginas estimadas', 'Estimated pages', 'Páginas estimadas'),
+        _tr(
+          'labels.print.estimatedPages',
+          'Páginas estimadas',
+          'Estimated pages',
+          'Páginas estimadas',
+        ),
         _estimatedPages.toString(),
       ),
     ];
@@ -455,43 +564,70 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: tokens.cardBorder),
       ),
-      child: compact
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Wrap(spacing: 20, runSpacing: 12, children: metrics),
-                const SizedBox(height: 14),
-                _generateButton(stretched: true),
-              ],
-            )
-          : Row(
-              children: <Widget>[
-                Expanded(child: Wrap(spacing: 32, runSpacing: 10, children: metrics)),
-                if (_lastPdf != null) ...<Widget>[
-                  Text(
-                    _tr('labels.print.pdfReady', 'PDF gerado', 'PDF generated', 'PDF generado'),
-                    style: theme.textTheme.labelMedium?.copyWith(color: tokens.success, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(width: 12),
+      child:
+          compact
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Wrap(spacing: 20, runSpacing: 12, children: metrics),
+                  const SizedBox(height: 14),
+                  _generateButton(stretched: true),
                 ],
-                _generateButton(),
-              ],
-            ),
+              )
+              : Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Wrap(spacing: 32, runSpacing: 10, children: metrics),
+                  ),
+                  if (_lastPdf != null) ...<Widget>[
+                    Text(
+                      _tr(
+                        'labels.print.pdfReady',
+                        'PDF gerado',
+                        'PDF generated',
+                        'PDF generado',
+                      ),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: tokens.success,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  _generateButton(),
+                ],
+              ),
     );
   }
 
   Widget _generateButton({bool stretched = false}) {
     final Widget button = FilledButton.icon(
-      onPressed: _generating || _selected.isEmpty || _selectedTemplate == null
-          ? null
-          : _generatePdf,
-      icon: _generating
-          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-          : const Icon(Icons.picture_as_pdf_outlined),
+      onPressed:
+          _generating || _selected.isEmpty || _selectedTemplate == null
+              ? null
+              : _generatePdf,
+      icon:
+          _generating
+              ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+              : const Icon(Icons.picture_as_pdf_outlined),
       label: Text(
         _generating
-            ? _tr('labels.print.generating', 'Gerando...', 'Generating...', 'Generando...')
-            : _tr('labels.print.generatePdf', 'Gerar PDF', 'Generate PDF', 'Generar PDF'),
+            ? _tr(
+              'labels.print.generating',
+              'Gerando...',
+              'Generating...',
+              'Generando...',
+            )
+            : _tr(
+              'labels.print.generatePdf',
+              'Gerar PDF',
+              'Generate PDF',
+              'Generar PDF',
+            ),
       ),
     );
     return stretched ? SizedBox(width: double.infinity, child: button) : button;
@@ -502,9 +638,19 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.secondaryText)),
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.labelSmall?.copyWith(color: tokens.secondaryText),
+        ),
         const SizedBox(height: 2),
-        Text(value, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+        Text(
+          value,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+        ),
       ],
     );
   }
@@ -526,7 +672,11 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
                 Container(
                   padding: const EdgeInsets.fromLTRB(18, 12, 10, 12),
                   decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(color: WebThemeTokens.of(dialogContext).divider)),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: WebThemeTokens.of(dialogContext).divider,
+                      ),
+                    ),
                   ),
                   child: Row(
                     children: <Widget>[
@@ -541,11 +691,15 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
                             en: 'Select products and quantities',
                             es: 'Seleccione productos y cantidades',
                           ),
-                          style: Theme.of(dialogContext).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                          style: Theme.of(dialogContext).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w900),
                         ),
                       ),
                       IconButton(
-                        tooltip: MaterialLocalizations.of(dialogContext).closeButtonTooltip,
+                        tooltip:
+                            MaterialLocalizations.of(
+                              dialogContext,
+                            ).closeButtonTooltip,
                         onPressed: () => Navigator.of(dialogContext).pop(),
                         icon: const Icon(Icons.close_rounded),
                       ),
@@ -586,21 +740,25 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
         ..clear()
         ..addAll(next);
       _lastPdf = null;
-      _error = missingId
-          ? _tr(
-              'labels.print.productWithoutId',
-              'Um item sem identificador foi ignorado na seleção.',
-              'An item without an identifier was ignored.',
-              'Se ignoró un artículo sin identificador.',
-            )
-          : null;
+      _error =
+          missingId
+              ? _tr(
+                'labels.print.productWithoutId',
+                'Um item sem identificador foi ignorado na seleção.',
+                'An item without an identifier was ignored.',
+                'Se ignoró un artículo sin identificador.',
+              )
+              : null;
     });
   }
 
   void _setQuantity(_SelectedProduct item, int quantity) {
     final String id = item.product.id!;
     setState(() {
-      _selected[id] = _SelectedProduct(product: item.product, quantity: quantity.clamp(1, 1000));
+      _selected[id] = _SelectedProduct(
+        product: item.product,
+        quantity: quantity.clamp(1, 1000),
+      );
       _lastPdf = null;
     });
   }
@@ -609,24 +767,39 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
     final EtiquetaModelo? model = _selectedTemplate;
     final String templateId = model?.id ?? '';
     if (templateId.isEmpty || _selected.isEmpty) return;
+    final List<EtiquetaImpressaoItem> items = _selected.values
+        .map(
+          (_SelectedProduct item) => EtiquetaImpressaoItem(
+            sourceId: item.product.id!,
+            quantidade: item.quantity,
+          ),
+        )
+        .toList(growable: false);
     setState(() {
       _generating = true;
       _error = null;
     });
+    debugPrint(
+      '[EtiquetaImpressaoWebPage] Iniciando geração do PDF '
+      'templateId=$templateId templateNome="${model?.nome ?? '-'}" '
+      'produtos=${items.length} totalEtiquetas=$_totalLabels '
+      'amostraIds=${items.take(5).map((EtiquetaImpressaoItem item) => item.sourceId).join(',')}',
+    );
     try {
       final EtiquetaPdfResponse pdf = await widget.service.gerarPdf(
         templateId: templateId,
-        items: _selected.values
-            .map(( _SelectedProduct item) => EtiquetaImpressaoItem(
-                  sourceId: item.product.id!,
-                  quantidade: item.quantity,
-                ))
-            .toList(growable: false),
+        items: items,
       );
       if (pdf.arquivoBase64.trim().isEmpty) {
         throw StateError('PDF_EMPTY');
       }
       final List<int> bytes = base64Decode(pdf.arquivoBase64);
+      debugPrint(
+        '[EtiquetaImpressaoWebPage] PDF recebido '
+        'arquivo=${pdf.nomeArquivo} mimeType=${pdf.mimeType} '
+        'paginas=${pdf.totalPaginas} etiquetas=${pdf.totalEtiquetas} '
+        'bytes=${bytes.length}',
+      );
       final bool downloaded = iniciarDownloadPdf(
         bytes: Uint8List.fromList(bytes),
         nomeArquivo: pdf.nomeArquivo,
@@ -639,22 +812,29 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
           content: Text(
             downloaded
                 ? _tr(
-                    'labels.print.downloadStarted',
-                    'PDF gerado e download iniciado.',
-                    'PDF generated and download started.',
-                    'PDF generado y descarga iniciada.',
-                  )
+                  'labels.print.downloadStarted',
+                  'PDF gerado e download iniciado.',
+                  'PDF generated and download started.',
+                  'PDF generado y descarga iniciada.',
+                )
                 : _tr(
-                    'labels.print.downloadUnavailable',
-                    'O PDF foi gerado, mas o download não pôde ser iniciado.',
-                    'The PDF was generated, but the download could not be started.',
-                    'El PDF fue generado, pero no se pudo iniciar la descarga.',
-                  ),
+                  'labels.print.downloadUnavailable',
+                  'O PDF foi gerado, mas o download não pôde ser iniciado.',
+                  'The PDF was generated, but the download could not be started.',
+                  'El PDF fue generado, pero no se pudo iniciar la descarga.',
+                ),
           ),
           behavior: SnackBarBehavior.floating,
         ),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
+      _logPdfGenerationFailure(
+        error: error,
+        stackTrace: stackTrace,
+        templateId: templateId,
+        templateName: model?.nome,
+        items: items,
+      );
       if (!mounted) return;
       setState(() => _error = _pdfErrorMessage(error));
     } finally {
@@ -664,6 +844,22 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
 
   String _pdfErrorMessage(Object error) {
     final String raw = error.toString();
+    if (raw.contains('PDF_EMPTY')) {
+      return _tr(
+        'labels.print.emptyPdf',
+        'O backend respondeu à geração, mas retornou um PDF vazio.',
+        'The backend answered the generation request but returned an empty PDF.',
+        'El backend respondió a la generación, pero devolvió un PDF vacío.',
+      );
+    }
+    if (raw.contains('RESPOSTA_INVALIDA')) {
+      return _tr(
+        'labels.print.invalidPdfResponse',
+        'A geração retornou uma resposta inválida. Verifique os logs técnicos e tente novamente.',
+        'The generation returned an invalid response. Check the technical logs and try again.',
+        'La generación devolvió una respuesta inválida. Revise los registros técnicos e inténtelo de nuevo.',
+      );
+    }
     if (raw.contains('ETIQUETA_VALOR_CODIGO_VAZIO')) {
       return _tr(
         'labels.print.missingBarcode',
@@ -672,7 +868,10 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
         'Uno de los productos no tiene código de barras, pero la plantilla lo requiere.',
       );
     }
-    if (raw.contains('CHECKSUM_INVALIDO') || raw.contains('EAN13_INVALIDO') || raw.contains('EAN8_INVALIDO') || raw.contains('UPCA_INVALIDO')) {
+    if (raw.contains('CHECKSUM_INVALIDO') ||
+        raw.contains('EAN13_INVALIDO') ||
+        raw.contains('EAN8_INVALIDO') ||
+        raw.contains('UPCA_INVALIDO')) {
       return _tr(
         'labels.print.invalidBarcode',
         'Há um código de barras incompatível com a simbologia escolhida no modelo.',
@@ -686,6 +885,35 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
       'Could not generate the label PDF. Review the template and try again.',
       'No se pudo generar el PDF de etiquetas. Revise la plantilla e inténtelo de nuevo.',
     );
+  }
+
+  void _logPdfGenerationFailure({
+    required Object error,
+    required StackTrace stackTrace,
+    required String templateId,
+    required String? templateName,
+    required List<EtiquetaImpressaoItem> items,
+  }) {
+    final int totalEtiquetas = items.fold<int>(
+      0,
+      (int total, EtiquetaImpressaoItem item) => total + item.quantidade,
+    );
+    debugPrint(
+      '[EtiquetaImpressaoWebPage] Falha ao gerar PDF '
+      'templateId=$templateId templateNome="${templateName ?? '-'}" '
+      'produtos=${items.length} totalEtiquetas=$totalEtiquetas '
+      'amostraIds=${items.take(5).map((EtiquetaImpressaoItem item) => item.sourceId).join(',')} '
+      'erro=$error',
+    );
+    if (error is EtiquetaApiException) {
+      debugPrint(
+        '[EtiquetaImpressaoWebPage] Detalhes da API '
+        'status=${error.statusCode} code=${error.code} '
+        'message=${error.message ?? '-'} detail=${error.detail ?? '-'} '
+        'path=${error.path ?? '-'}',
+      );
+    }
+    debugPrint('[EtiquetaImpressaoWebPage] Stack trace: $stackTrace');
   }
 
   Widget _metadataChip(IconData icon, String label) {
@@ -702,7 +930,12 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
         children: <Widget>[
           Icon(icon, size: 15),
           const SizedBox(width: 6),
-          Text(label, style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
         ],
       ),
     );
@@ -728,9 +961,10 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
     );
   }
 
-  String _fmt(double value) => value == value.roundToDouble()
-      ? value.round().toString()
-      : value.toStringAsFixed(1);
+  String _fmt(double value) =>
+      value == value.roundToDouble()
+          ? value.round().toString()
+          : value.toStringAsFixed(1);
 
   String _tr(String key, String pt, String en, String es) =>
       etiquetaTr(context, key, pt: pt, en: en, es: es);

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../core/config/app_config.dart';
@@ -31,10 +32,10 @@ class HttpEtiquetaApiClient implements EtiquetaApiClient {
     http.Client? httpClient,
     Future<String?> Function()? accessTokenProvider,
     Future<String?> Function()? empresaIdProvider,
-  })  : _httpClient = httpClient ?? createHttpClient(),
-        _accessTokenProvider =
-            accessTokenProvider ?? AuthService().getAccessToken,
-        _empresaIdProvider = empresaIdProvider ?? AuthService().getEmpresaId;
+  }) : _httpClient = httpClient ?? createHttpClient(),
+       _accessTokenProvider =
+           accessTokenProvider ?? AuthService().getAccessToken,
+       _empresaIdProvider = empresaIdProvider ?? AuthService().getEmpresaId;
 
   final http.Client _httpClient;
   final Future<String?> Function() _accessTokenProvider;
@@ -48,8 +49,11 @@ class HttpEtiquetaApiClient implements EtiquetaApiClient {
       Uri.parse('$_base/acesso'),
       headers: await _headers(),
     );
-    _expect(response, const <int>{200});
-    final Map<String, dynamic> json = _decodeMap(response);
+    _expect(response, const <int>{200}, operation: 'GET $_base/acesso');
+    final Map<String, dynamic> json = _decodeMap(
+      response,
+      operation: 'GET $_base/acesso',
+    );
     return json['podeAcessar'] == true;
   }
 
@@ -60,17 +64,21 @@ class HttpEtiquetaApiClient implements EtiquetaApiClient {
       headers: await _headers(),
     );
     if (response.statusCode == 204) return const <EtiquetaModelo>[];
-    _expect(response, const <int>{200});
-    final dynamic decoded = _decode(response);
+    _expect(response, const <int>{200}, operation: 'GET $_base/modelos');
+    final dynamic decoded = _decode(response, operation: 'GET $_base/modelos');
     if (decoded is! List) {
       throw EtiquetaApiException.invalidResponse(response.statusCode);
     }
     return decoded
         .whereType<Map>()
-        .map((Map value) => EtiquetaModelo.fromJson(
-              value.map((dynamic key, dynamic value) =>
-                  MapEntry<String, dynamic>(key.toString(), value)),
-            ))
+        .map(
+          (Map value) => EtiquetaModelo.fromJson(
+            value.map(
+              (dynamic key, dynamic value) =>
+                  MapEntry<String, dynamic>(key.toString(), value),
+            ),
+          ),
+        )
         .toList(growable: false);
   }
 
@@ -80,8 +88,15 @@ class HttpEtiquetaApiClient implements EtiquetaApiClient {
       Uri.parse('$_base/modelos/${Uri.encodeComponent(id)}'),
       headers: await _headers(),
     );
-    _expect(response, const <int>{200});
-    return EtiquetaModelo.fromJson(_decodeMap(response));
+    _expect(response, const <int>{
+      200,
+    }, operation: 'GET $_base/modelos/${Uri.encodeComponent(id)}');
+    return EtiquetaModelo.fromJson(
+      _decodeMap(
+        response,
+        operation: 'GET $_base/modelos/${Uri.encodeComponent(id)}',
+      ),
+    );
   }
 
   @override
@@ -91,8 +106,10 @@ class HttpEtiquetaApiClient implements EtiquetaApiClient {
       headers: await _headers(),
       body: jsonEncode(modelo.toJson(includeServerFields: false)),
     );
-    _expect(response, const <int>{201});
-    return EtiquetaModelo.fromJson(_decodeMap(response));
+    _expect(response, const <int>{201}, operation: 'POST $_base/modelos');
+    return EtiquetaModelo.fromJson(
+      _decodeMap(response, operation: 'POST $_base/modelos'),
+    );
   }
 
   @override
@@ -109,8 +126,15 @@ class HttpEtiquetaApiClient implements EtiquetaApiClient {
       headers: await _headers(),
       body: jsonEncode(modelo.toJson(includeServerFields: false)),
     );
-    _expect(response, const <int>{200});
-    return EtiquetaModelo.fromJson(_decodeMap(response));
+    _expect(response, const <int>{
+      200,
+    }, operation: 'PUT $_base/modelos/${Uri.encodeComponent(id)}');
+    return EtiquetaModelo.fromJson(
+      _decodeMap(
+        response,
+        operation: 'PUT $_base/modelos/${Uri.encodeComponent(id)}',
+      ),
+    );
   }
 
   @override
@@ -119,8 +143,17 @@ class HttpEtiquetaApiClient implements EtiquetaApiClient {
       Uri.parse('$_base/modelos/${Uri.encodeComponent(id)}/duplicar'),
       headers: await _headers(),
     );
-    _expect(response, const <int>{201});
-    return EtiquetaModelo.fromJson(_decodeMap(response));
+    _expect(
+      response,
+      const <int>{201},
+      operation: 'POST $_base/modelos/${Uri.encodeComponent(id)}/duplicar',
+    );
+    return EtiquetaModelo.fromJson(
+      _decodeMap(
+        response,
+        operation: 'POST $_base/modelos/${Uri.encodeComponent(id)}/duplicar',
+      ),
+    );
   }
 
   @override
@@ -129,7 +162,10 @@ class HttpEtiquetaApiClient implements EtiquetaApiClient {
       Uri.parse('$_base/modelos/${Uri.encodeComponent(id)}'),
       headers: await _headers(),
     );
-    _expect(response, const <int>{200, 204});
+    _expect(response, const <int>{
+      200,
+      204,
+    }, operation: 'DELETE $_base/modelos/${Uri.encodeComponent(id)}');
   }
 
   @override
@@ -137,17 +173,34 @@ class HttpEtiquetaApiClient implements EtiquetaApiClient {
     required String templateId,
     required List<EtiquetaImpressaoItem> items,
   }) async {
+    final int totalEtiquetas = items.fold<int>(
+      0,
+      (int total, EtiquetaImpressaoItem item) => total + item.quantidade,
+    );
+    debugPrint(
+      '[EtiquetaApiClient] POST $_base/impressao/pdf '
+      'templateId=$templateId itens=${items.length} totalEtiquetas=$totalEtiquetas',
+    );
     final http.Response response = await _httpClient.post(
       Uri.parse('$_base/impressao/pdf'),
       headers: await _headers(),
       body: jsonEncode(<String, dynamic>{
         'templateId': templateId,
         'sourceType': 'PRODUCT',
-        'items': items.map((EtiquetaImpressaoItem item) => item.toJson()).toList(),
+        'items':
+            items.map((EtiquetaImpressaoItem item) => item.toJson()).toList(),
       }),
     );
-    _expect(response, const <int>{200});
-    return EtiquetaPdfResponse.fromJson(_decodeMap(response));
+    _expect(response, const <int>{200}, operation: 'POST $_base/impressao/pdf');
+    final EtiquetaPdfResponse pdf = EtiquetaPdfResponse.fromJson(
+      _decodeMap(response, operation: 'POST $_base/impressao/pdf'),
+    );
+    debugPrint(
+      '[EtiquetaApiClient] PDF gerado com sucesso '
+      'templateId=$templateId paginas=${pdf.totalPaginas} '
+      'etiquetas=${pdf.totalEtiquetas} arquivo=${pdf.nomeArquivo}',
+    );
+    return pdf;
   }
 
   @override
@@ -158,8 +211,18 @@ class HttpEtiquetaApiClient implements EtiquetaApiClient {
       ),
       headers: await _headers(),
     );
-    _expect(response, const <int>{200});
-    return _decodeMap(response)['permitido'] == true;
+    _expect(
+      response,
+      const <int>{200},
+      operation:
+          'GET $_base/permissoes/colaboradores/${Uri.encodeComponent(idUnicoDoUsuario)}',
+    );
+    return _decodeMap(
+          response,
+          operation:
+              'GET $_base/permissoes/colaboradores/${Uri.encodeComponent(idUnicoDoUsuario)}',
+        )['permitido'] ==
+        true;
   }
 
   @override
@@ -174,8 +237,18 @@ class HttpEtiquetaApiClient implements EtiquetaApiClient {
       headers: await _headers(),
       body: jsonEncode(<String, dynamic>{'permitido': permitido}),
     );
-    _expect(response, const <int>{200});
-    return _decodeMap(response)['permitido'] == true;
+    _expect(
+      response,
+      const <int>{200},
+      operation:
+          'PUT $_base/permissoes/colaboradores/${Uri.encodeComponent(idUnicoDoUsuario)}',
+    );
+    return _decodeMap(
+          response,
+          operation:
+              'PUT $_base/permissoes/colaboradores/${Uri.encodeComponent(idUnicoDoUsuario)}',
+        )['permitido'] ==
+        true;
   }
 
   Future<Map<String, String>> _headers() async {
@@ -189,64 +262,188 @@ class HttpEtiquetaApiClient implements EtiquetaApiClient {
     };
   }
 
-  void _expect(http.Response response, Set<int> expected) {
+  void _expect(
+    http.Response response,
+    Set<int> expected, {
+    required String operation,
+  }) {
     if (!expected.contains(response.statusCode)) {
+      final _EtiquetaErrorData errorData = _extractErrorData(response);
+      debugPrint(
+        '[EtiquetaApiClient] $operation falhou '
+        'status=${response.statusCode} code=${errorData.code} '
+        'message=${errorData.message ?? '-'} '
+        'detail=${errorData.detail ?? '-'} '
+        'path=${errorData.path ?? '-'}',
+      );
       throw EtiquetaApiException(
         statusCode: response.statusCode,
-        code: _extractCode(response),
+        code: errorData.code,
+        message: errorData.message,
+        detail: errorData.detail,
+        path: errorData.path,
       );
     }
   }
 
-  dynamic _decode(http.Response response) {
+  dynamic _decode(http.Response response, {String? operation}) {
     final String body = utf8.decode(response.bodyBytes).trim();
     if (body.isEmpty) return null;
     try {
       return jsonDecode(body);
     } on FormatException {
-      throw EtiquetaApiException.invalidResponse(response.statusCode);
+      debugPrint(
+        '[EtiquetaApiClient] Resposta invalida '
+        '${operation == null ? '' : 'em $operation '}'
+        'status=${response.statusCode} '
+        'contentType=${response.headers['content-type'] ?? '-'} '
+        'bodyLength=${body.length}',
+      );
+      throw EtiquetaApiException.invalidResponse(
+        response.statusCode,
+        detail:
+            'contentType=${response.headers['content-type'] ?? '-'} bodyLength=${body.length}',
+      );
     }
   }
 
-  Map<String, dynamic> _decodeMap(http.Response response) {
-    final dynamic decoded = _decode(response);
+  Map<String, dynamic> _decodeMap(http.Response response, {String? operation}) {
+    final dynamic decoded = _decode(response, operation: operation);
     if (decoded is Map<String, dynamic>) return decoded;
     if (decoded is Map) {
-      return decoded.map((dynamic key, dynamic value) =>
-          MapEntry<String, dynamic>(key.toString(), value));
+      return decoded.map(
+        (dynamic key, dynamic value) =>
+            MapEntry<String, dynamic>(key.toString(), value),
+      );
     }
-    throw EtiquetaApiException.invalidResponse(response.statusCode);
+    debugPrint(
+      '[EtiquetaApiClient] Resposta JSON inesperada '
+      '${operation == null ? '' : 'em $operation '}'
+      'status=${response.statusCode} tipo=${decoded.runtimeType}',
+    );
+    throw EtiquetaApiException.invalidResponse(
+      response.statusCode,
+      detail: 'tipo=${decoded.runtimeType}',
+    );
   }
 
-  String _extractCode(http.Response response) {
+  _EtiquetaErrorData _extractErrorData(http.Response response) {
     final String body = utf8.decode(response.bodyBytes).trim();
-    if (body.isEmpty) return 'HTTP_${response.statusCode}';
+    if (body.isEmpty) {
+      return _EtiquetaErrorData(code: 'HTTP_${response.statusCode}');
+    }
     try {
       final dynamic decoded = jsonDecode(body);
       if (decoded is Map) {
-        final dynamic message = decoded['message'] ?? decoded['detail'] ?? decoded['error'];
-        if (message != null && message.toString().trim().isNotEmpty) {
+        final String? explicitCode = _firstNonEmpty(
+          decoded['code'],
+          decoded['codigo'],
+        );
+        final String? message = _firstNonEmpty(
+          decoded['message'],
+          decoded['mensagem'],
+          decoded['detail'],
+          decoded['error'],
+        );
+        final String? detail = _firstNonEmpty(
+          decoded['detail'],
+          decoded['mensagemDetalhada'],
+          decoded['details'],
+        );
+        final String? path = _firstNonEmpty(decoded['path']);
+        if ((explicitCode ?? '').isNotEmpty) {
+          return _EtiquetaErrorData(
+            code: explicitCode!,
+            message: message,
+            detail: detail,
+            path: path,
+          );
+        }
+        if (message != null && message.trim().isNotEmpty) {
           final RegExp codePattern = RegExp(r'[A-Z][A-Z0-9_]{3,}');
-          final Match? match = codePattern.firstMatch(message.toString());
-          if (match != null) return match.group(0)!;
+          final Match? match = codePattern.firstMatch(message);
+          if (match != null) {
+            return _EtiquetaErrorData(
+              code: match.group(0)!,
+              message: message,
+              detail: detail,
+              path: path,
+            );
+          }
+          return _EtiquetaErrorData(
+            code: 'HTTP_${response.statusCode}',
+            message: message,
+            detail: detail,
+            path: path,
+          );
         }
       }
     } catch (_) {
       // O corpo pode ser HTML/texto em proxies. Não o propagamos para a UI.
     }
-    return 'HTTP_${response.statusCode}';
+    return _EtiquetaErrorData(code: 'HTTP_${response.statusCode}');
   }
 }
 
 class EtiquetaApiException implements Exception {
-  const EtiquetaApiException({required this.statusCode, required this.code});
+  const EtiquetaApiException({
+    required this.statusCode,
+    required this.code,
+    this.message,
+    this.detail,
+    this.path,
+  });
 
-  factory EtiquetaApiException.invalidResponse(int statusCode) =>
-      EtiquetaApiException(statusCode: statusCode, code: 'RESPOSTA_INVALIDA');
+  factory EtiquetaApiException.invalidResponse(
+    int statusCode, {
+    String? detail,
+  }) => EtiquetaApiException(
+    statusCode: statusCode,
+    code: 'RESPOSTA_INVALIDA',
+    detail: detail,
+  );
 
   final int statusCode;
   final String code;
+  final String? message;
+  final String? detail;
+  final String? path;
 
   @override
-  String toString() => 'EtiquetaApiException(statusCode: $statusCode, code: $code)';
+  String toString() {
+    return 'EtiquetaApiException('
+        'statusCode: $statusCode, '
+        'code: $code, '
+        'message: ${message ?? '-'}, '
+        'detail: ${detail ?? '-'}, '
+        'path: ${path ?? '-'}'
+        ')';
+  }
+}
+
+class _EtiquetaErrorData {
+  const _EtiquetaErrorData({
+    required this.code,
+    this.message,
+    this.detail,
+    this.path,
+  });
+
+  final String code;
+  final String? message;
+  final String? detail;
+  final String? path;
+}
+
+String? _firstNonEmpty(
+  dynamic first, [
+  dynamic second,
+  dynamic third,
+  dynamic fourth,
+]) {
+  for (final dynamic value in <dynamic>[first, second, third, fourth]) {
+    final String text = value?.toString().trim() ?? '';
+    if (text.isNotEmpty) return text;
+  }
+  return null;
 }
