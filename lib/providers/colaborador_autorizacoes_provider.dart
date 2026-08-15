@@ -36,20 +36,32 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   String? get idUnicoDoUsuarioCarregado => _idUnicoDoUsuarioCarregado;
   String get tipoPerfilUsuario => _tipoPerfilUsuario;
   bool get ehAdministrador => _ehAdministrador;
-  bool get autorizacoesCarregadasComSucesso => _autorizacoesCarregadasComSucesso;
+  bool get autorizacoesCarregadasComSucesso =>
+      _autorizacoesCarregadasComSucesso;
   bool get podeAcessarEtiquetas => _ehAdministrador || _podeAcessarEtiquetas;
 
   bool get podeFazerVenda => autorizacoes.objVendasPode.fazVenda;
-  bool get podeLancarAssistenciaTecnica => autorizacoes.objAssistenciaTecnicaPode.lancaServico;
+  bool get podeLancarAssistenciaTecnica =>
+      autorizacoes.objAssistenciaTecnicaPode.lancaServico;
   bool get podeEditarCliente => autorizacoes.objClientesPode.podeEditarCliente;
   bool get podeCadastrarProduto => autorizacoes.podeCadastrarProduto;
   bool get podeEditarProduto => autorizacoes.objProdutosPode.podeEditarProduto;
-  bool get podeVerEstoqueDeProduto => autorizacoes.objProdutosPode.podeVerEstoqueDeProduto;
-  bool get podeAcessarCatalogo => podeCadastrarProduto || podeEditarProduto || podeVerEstoqueDeProduto || podeAcessarEtiquetas;
-  bool get podeGerarRelatorio => autorizacoes.objRelatoriosPode.geraRelatorioDeVendas;
-  bool get podeReceberNoCaixa => autorizacoes.objLancamentosFinanceirosPode.podeReceberNoCaixa;
-  bool get podeVerQuantoVendeu => autorizacoes.objLancamentosFinanceirosPode.podeVerQuantoVendeu;
-  bool get podeAcessarFinanceiro => autorizacoes.objLancamentosFinanceirosPode.podeReceberNoCaixa || autorizacoes.objLancamentosFinanceirosPode.podeVerQuantoVendeu;
+  bool get podeVerEstoqueDeProduto =>
+      autorizacoes.objProdutosPode.podeVerEstoqueDeProduto;
+  bool get podeAcessarCatalogo =>
+      podeCadastrarProduto ||
+      podeEditarProduto ||
+      podeVerEstoqueDeProduto ||
+      podeAcessarEtiquetas;
+  bool get podeGerarRelatorio =>
+      autorizacoes.objRelatoriosPode.geraRelatorioDeVendas;
+  bool get podeReceberNoCaixa =>
+      autorizacoes.objLancamentosFinanceirosPode.podeReceberNoCaixa;
+  bool get podeVerQuantoVendeu =>
+      autorizacoes.objLancamentosFinanceirosPode.podeVerQuantoVendeu;
+  bool get podeAcessarFinanceiro =>
+      autorizacoes.objLancamentosFinanceirosPode.podeReceberNoCaixa ||
+      autorizacoes.objLancamentosFinanceirosPode.podeVerQuantoVendeu;
 
   Future<void> carregarAutorizacoesDoUsuarioLogado({bool force = false}) async {
     final String? idUnicoDoUsuario = await _authService.getUserId();
@@ -62,7 +74,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       _autorizacoes = ColaboradorAutorizacoesModel.permitirTudo();
       _idUnicoDoUsuarioCarregado = null;
       _erro = null;
-      _podeAcessarEtiquetas = perfilAdmin;
+      _podeAcessarEtiquetas = kIsWeb && perfilAdmin;
       _autorizacoesCarregadasComSucesso = perfilAdmin;
       notifyListeners();
       return;
@@ -82,7 +94,9 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       final ColaboradorUsuarioDetalhe detalhe =
           await _apiClient.buscarColaborador(idUnicoDoUsuario);
       final Map<String, dynamic> json = detalhe.toJson();
-      final Map<String, dynamic> autorizacoesJson = _ensureMap(json['objAutorizacoes']);
+      final Map<String, dynamic> autorizacoesJson = _ensureMap(
+        json['objAutorizacoes'],
+      );
       final ColaboradorAutorizacoesModel carregadas =
           ColaboradorAutorizacoesModel.fromJson(autorizacoesJson);
 
@@ -91,12 +105,17 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
         autorizacoes: carregadas,
       );
       _ehAdministrador = perfilAdmin || administradorSemVinculo;
-      _autorizacoes = _ehAdministrador
-          ? ColaboradorAutorizacoesModel.permitirTudo()
-          : carregadas;
+      _autorizacoes =
+          _ehAdministrador
+              ? ColaboradorAutorizacoesModel.permitirTudo()
+              : carregadas;
       _idUnicoDoUsuarioCarregado = idUnicoDoUsuario;
 
-      if (_ehAdministrador) {
+      if (!kIsWeb) {
+        // Etiquetas ainda não possui experiência Mobile. Evitamos introduzir
+        // chamada adicional ou alterar o comportamento Android/iOS nesta etapa.
+        _podeAcessarEtiquetas = false;
+      } else if (_ehAdministrador) {
         _podeAcessarEtiquetas = true;
       } else {
         try {
@@ -109,7 +128,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     } catch (e) {
       _erro = e.toString();
       _autorizacoes ??= ColaboradorAutorizacoesModel.permitirTudo();
-      _podeAcessarEtiquetas = _ehAdministrador;
+      _podeAcessarEtiquetas = kIsWeb && _ehAdministrador;
     } finally {
       _loading = false;
       notifyListeners();
@@ -152,8 +171,10 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   static Map<String, dynamic> _ensureMap(dynamic value) {
     if (value is Map<String, dynamic>) return value;
     if (value is Map) {
-      return value.map((dynamic key, dynamic value) =>
-          MapEntry<String, dynamic>(key.toString(), value));
+      return value.map(
+        (dynamic key, dynamic value) =>
+            MapEntry<String, dynamic>(key.toString(), value),
+      );
     }
     return <String, dynamic>{};
   }
