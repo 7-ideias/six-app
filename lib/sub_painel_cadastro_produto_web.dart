@@ -13,6 +13,7 @@ import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/models/categoria_catalogo_model.dart';
 import 'package:sixpos/data/services/imagem_sugestao/imagem_sugestao_api_client.dart';
 import 'package:sixpos/data/services/categoria_catalogo/categoria_catalogo_api_client.dart';
+import 'package:sixpos/domain/services/produto/produto_quick_update_service.dart';
 import 'package:sixpos/presentation/components/imagem_sugestoes_section.dart';
 import 'package:sixpos/presentation/components/produto_web_image.dart';
 import 'package:sixpos/presentation/components/six_top_notice.dart';
@@ -183,6 +184,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final ProdutoService _produtoService =
       widget.produtoService ?? ProdutoService();
+  late final ProdutoQuickUpdateService _produtoQuickUpdateService =
+      ProdutoQuickUpdateService(produtoService: _produtoService);
   late final ImagemSugestaoApiClient _imagemSugestaoApiClient =
       widget.imagemSugestaoApiClient ?? HttpImagemSugestaoApiClient();
   late final CategoriaCatalogoApiClient _categoriaApiClient =
@@ -217,6 +220,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   bool _ativo = true;
   bool _favorito = false;
   bool _disponivelParaCatalogo = false;
+  bool _favoritoAtualizando = false;
+  bool _catalogoAtualizando = false;
   bool _podeAlterarValorNaHora = false;
   bool _produtoTemComissaoEspecial = false;
   bool _isLoading = false;
@@ -967,34 +972,114 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     }
   }
 
-  void _alternarFavorito() {
-    if (_isLoading) return;
+  Future<void> _alternarFavorito() async {
+    if (_isLoading || _favoritoAtualizando) return;
+
+    final bool novoValor = !_favorito;
+    if (!_isModoEdicao || _produtoEmEdicaoId == null) {
+      setState(() {
+        _favorito = novoValor;
+      });
+      _mostrarFeedbackFavorito(novoValor);
+      return;
+    }
 
     setState(() {
-      _favorito = !_favorito;
+      _favoritoAtualizando = true;
     });
 
+    try {
+      await _produtoQuickUpdateService.atualizarFavorito(
+        produtoId: _produtoEmEdicaoId!,
+        ativo: _ativo,
+        favorito: novoValor,
+      );
+      if (!mounted) return;
+      setState(() {
+        _favorito = novoValor;
+      });
+      _mostrarFeedbackFavorito(novoValor);
+    } catch (_) {
+      if (!mounted) return;
+      SixTopNotice.show(
+        context,
+        message: _t(
+          'produto.favorite.updateError',
+          'Não foi possível atualizar o favorito do produto.',
+        ),
+        icon: Icons.error_outline_rounded,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _favoritoAtualizando = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _alternarDisponivelParaCatalogo() async {
+    if (_isLoading || _catalogoAtualizando) return;
+
+    final bool novoValor = !_disponivelParaCatalogo;
+    if (!_isModoEdicao || _produtoEmEdicaoId == null) {
+      setState(() {
+        _disponivelParaCatalogo = novoValor;
+      });
+      _mostrarFeedbackCatalogo(novoValor);
+      return;
+    }
+
+    setState(() {
+      _catalogoAtualizando = true;
+    });
+
+    try {
+      await _produtoQuickUpdateService.atualizarDisponivelParaCatalogo(
+        produtoId: _produtoEmEdicaoId!,
+        ativo: _ativo,
+        disponivelParaCatalogo: novoValor,
+      );
+      if (!mounted) return;
+      setState(() {
+        _disponivelParaCatalogo = novoValor;
+      });
+      _mostrarFeedbackCatalogo(novoValor);
+    } catch (_) {
+      if (!mounted) return;
+      SixTopNotice.show(
+        context,
+        message: _t(
+          'produto.catalog.updateError',
+          'Não foi possível atualizar a disponibilidade no catálogo.',
+        ),
+        icon: Icons.error_outline_rounded,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _catalogoAtualizando = false;
+        });
+      }
+    }
+  }
+
+  void _mostrarFeedbackFavorito(bool favorito) {
     SixTopNotice.show(
       context,
       message:
-          _favorito
+          favorito
               ? _t('produto.favorite.enabledFeedback', 'Favorito ativado')
               : _t('produto.favorite.disabledFeedback', 'Favorito desativado'),
-      icon: _favorito ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+      icon: favorito ? Icons.favorite_rounded : Icons.favorite_border_rounded,
     );
   }
 
-  void _alternarDisponivelParaCatalogo() {
-    if (_isLoading) return;
-
-    setState(() {
-      _disponivelParaCatalogo = !_disponivelParaCatalogo;
-    });
-
+  void _mostrarFeedbackCatalogo(bool disponivelParaCatalogo) {
     SixTopNotice.show(
       context,
       message:
-          _disponivelParaCatalogo
+          disponivelParaCatalogo
               ? _t(
                 'produto.catalog.enabledFeedback',
                 'Disponível para catálogo ativado',
@@ -1004,7 +1089,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 'Disponível para catálogo desativado',
               ),
       icon:
-          _disponivelParaCatalogo
+          disponivelParaCatalogo
               ? Icons.storefront_rounded
               : Icons.storefront_outlined,
     );
@@ -1013,7 +1098,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   Widget _buildHeaderToggleButton(
     BuildContext context, {
     required bool active,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
     required String tooltip,
     required IconData icon,
   }) {
@@ -1158,7 +1243,12 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     final Widget favoritoAction = _buildHeaderToggleButton(
       context,
       active: _favorito,
-      onPressed: _alternarFavorito,
+      onPressed:
+          (_isLoading || _favoritoAtualizando)
+              ? null
+              : () {
+                _alternarFavorito();
+              },
       tooltip:
           _favorito
               ? _t('produto.favorite.removeTooltip', 'Remover dos favoritos')
@@ -1169,7 +1259,12 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     final Widget catalogoAction = _buildHeaderToggleButton(
       context,
       active: _disponivelParaCatalogo,
-      onPressed: _alternarDisponivelParaCatalogo,
+      onPressed:
+          (_isLoading || _catalogoAtualizando)
+              ? null
+              : () {
+                _alternarDisponivelParaCatalogo();
+              },
       tooltip:
           _disponivelParaCatalogo
               ? _t(

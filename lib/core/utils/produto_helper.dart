@@ -7,8 +7,12 @@ import '../../providers/produtos_list_provider.dart';
 class ProdutoHelper {
   static final AuthService _authService = AuthService();
 
-  static Future<void> retornarProdutosList(BuildContext context,
-      {String tipo = 'PRODUTO', Function(List<ProdutoModel>)? onSucesso}) async {
+  static Future<void> retornarProdutosList(
+    BuildContext context, {
+    String tipo = 'PRODUTO',
+    bool? produtosAtivos,
+    Function(List<ProdutoModel>)? onSucesso,
+  }) async {
     final provider = Provider.of<ProdutosListProvider<ProdutoModel>>(
       context,
       listen: false,
@@ -22,8 +26,8 @@ class ProdutoHelper {
         'Content-Type': 'application/json',
         'idUnicoDaEmpresa': empresaId ?? '',
         'Authorization': 'Bearer $accessToken',
-        'produtosAtivos': 'true',
-        'tipo': tipo
+        'tipo': tipo,
+        if (produtosAtivos != null) 'produtosAtivos': '$produtosAtivos',
       },
     );
 
@@ -41,13 +45,14 @@ class ProdutoHelper {
     final termoNormalizado = termoBusca.trim().toLowerCase();
 
     if (termoNormalizado.isNotEmpty) {
-      resultado = resultado
-          .where(
-            (p) =>
-                p.nomeProduto.toLowerCase().contains(termoNormalizado) ||
-                p.codigoDeBarras.toLowerCase().contains(termoNormalizado),
-          )
-          .toList();
+      resultado =
+          resultado
+              .where(
+                (p) =>
+                    p.nomeProduto.toLowerCase().contains(termoNormalizado) ||
+                    p.codigoDeBarras.toLowerCase().contains(termoNormalizado),
+              )
+              .toList();
     }
 
     if (ordenacao == 'nome') {

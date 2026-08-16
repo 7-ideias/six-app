@@ -202,6 +202,30 @@ class ProdutoModel {
   }
 }
 
+class ProdutoAtualizacaoParcialRequest {
+  final String id;
+  final bool? ativo;
+  final bool? favorito;
+  final bool? disponivelParaCatalogo;
+
+  const ProdutoAtualizacaoParcialRequest({
+    required this.id,
+    this.ativo,
+    this.favorito,
+    this.disponivelParaCatalogo,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      if (ativo != null) 'ativo': ativo,
+      if (favorito != null) 'favorito': favorito,
+      if (disponivelParaCatalogo != null)
+        'disponivelParaCatalogo': disponivelParaCatalogo,
+    };
+  }
+}
+
 class ProdutoResponseModel {
   final int skusTotaisNoEstoque;
   final double qtNoEstoque;

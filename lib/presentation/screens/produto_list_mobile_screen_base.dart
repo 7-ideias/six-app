@@ -9,6 +9,7 @@ import 'package:sixpos/core/utils/produto_helper.dart';
 import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/domain/services/produto/produto_quick_update_service.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
@@ -97,6 +98,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
   late final ProdutoService _produtoService =
       widget.produtoService ?? ProdutoService();
+  late final ProdutoQuickUpdateService _produtoQuickUpdateService =
+      ProdutoQuickUpdateService(produtoService: _produtoService);
 
   Timer? _timerOcultarBusca;
   bool _exibirCampoBusca = false;
@@ -875,12 +878,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       _favoritosAtualizando.add(chave);
     });
 
-    final ProdutoModel atualizado = produto.copyWith(
-      favorito: !produto.favorito,
-    );
-
     try {
-      await _produtoService.atualizarProduto(atualizado);
+      final ProdutoModel atualizado = await _produtoQuickUpdateService
+          .alternarFavorito(produto);
       if (!mounted) return;
       _substituirProdutoNaLista(atualizado);
     } catch (_) {
@@ -917,12 +917,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       _catalogoAtualizando.add(chave);
     });
 
-    final ProdutoModel atualizado = produto.copyWith(
-      disponivelParaCatalogo: !produto.disponivelParaCatalogo,
-    );
-
     try {
-      await _produtoService.atualizarProduto(atualizado);
+      final ProdutoModel atualizado = await _produtoQuickUpdateService
+          .alternarDisponivelParaCatalogo(produto);
       if (!mounted) return;
       _substituirProdutoNaLista(atualizado);
       ScaffoldMessenger.of(context).showSnackBar(
