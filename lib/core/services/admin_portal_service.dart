@@ -285,9 +285,14 @@ class AdminPortalService {
       }
       throw Exception('Resposta inválida do resumo administrativo.');
     }
-    if (response.statusCode == 401 || response.statusCode == 403) {
+    if (response.statusCode == 401) {
       throw Exception(
-        'Você precisa fazer login para acessar o portal administrativo.',
+        'Sessão expirada. Faça login novamente.',
+      );
+    }
+    if (response.statusCode == 403) {
+      throw Exception(
+        'Seu usuário não possui autorização para acessar o portal administrativo.',
       );
     }
     throw Exception(
@@ -314,9 +319,14 @@ class AdminPortalService {
       }
       throw Exception('Resposta inválida dos usuários ativos.');
     }
-    if (response.statusCode == 401 || response.statusCode == 403) {
+    if (response.statusCode == 401) {
       throw Exception(
-        'Você precisa fazer login para acessar o portal administrativo.',
+        'Sessão expirada. Faça login novamente.',
+      );
+    }
+    if (response.statusCode == 403) {
+      throw Exception(
+        'Seu usuário não possui autorização para acessar o portal administrativo.',
       );
     }
     throw Exception(
@@ -340,9 +350,14 @@ class AdminPortalService {
       }
       throw Exception('Resposta inválida das métricas de IA.');
     }
-    if (response.statusCode == 401 || response.statusCode == 403) {
+    if (response.statusCode == 401) {
       throw Exception(
-        'Você precisa fazer login para acessar o portal administrativo.',
+        'Sessão expirada. Faça login novamente.',
+      );
+    }
+    if (response.statusCode == 403) {
+      throw Exception(
+        'Seu usuário não possui autorização para acessar o portal administrativo.',
       );
     }
     throw Exception(

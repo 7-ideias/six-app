@@ -10,6 +10,10 @@ void main() {
           File(
             'lib/presentation/screens/login_page_web.dart',
           ).readAsStringSync();
+      final String adminServiceSource =
+          File(
+            'lib/core/services/admin_portal_service.dart',
+          ).readAsStringSync();
 
       expect(mainSource, contains("routeUri.path == '/admin'"));
       expect(mainSource, contains('builder: (_) => const LoginPageWeb()'));
@@ -27,6 +31,24 @@ void main() {
       expect(loginSource, contains("if (uri.path == '/admin')"));
       expect(loginSource, contains("return '/admin/dashboard';"));
       expect(loginSource, contains('sanitizeAuthenticatedWebRedirect'));
+      expect(
+        adminServiceSource,
+        isNot(
+          contains(
+            'response.statusCode == 401 || response.statusCode == 403',
+          ),
+        ),
+      );
+      expect(
+        adminServiceSource,
+        contains('Sessão expirada. Faça login novamente.'),
+      );
+      expect(
+        adminServiceSource,
+        contains(
+          'Seu usuário não possui autorização para acessar o portal administrativo.',
+        ),
+      );
     });
   });
 }
