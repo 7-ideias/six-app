@@ -202,7 +202,113 @@
       'footer.login': 'Entrar',
       'footer.signup': 'Criar conta',
       'footer.terms': 'Termos e privacidade em preparação',
-      'footer.note': 'Produto digital para gestão comercial e operacional.'
+      'footer.note': 'Produto digital para gestão comercial e operacional.',
+      'nav.solutions': 'Dores e soluções',
+      'hero.editorial.eyebrow': 'Gestão simples para comércio e serviços',
+      'hero.editorial.lineOne': 'Todo o seu negócio',
+      'hero.editorial.lineTwo': 'em um sistema',
+      'hero.editorial.emphasis': 'simples.',
+      'hero.editorial.lead': 'Vendas, produtos, serviços técnicos, clientes e financeiro em uma experiência leve para usar no computador e no celular.',
+      'hero.editorial.primary': 'Criar conta',
+      'hero.editorial.secondary': 'Ver funcionalidades',
+      'hero.proof.aria': 'Diferenciais principais',
+      'hero.proof.online': 'Sistema online',
+      'hero.proof.multiBusiness': 'Multiempresa',
+      'hero.proof.languages': 'Vários idiomas',
+      'hero.image.alt': 'Comércio organizado com computador e celular',
+      'hero.platform.card.aria': 'Disponível na Web, Android e iOS',
+      'hero.platform.card.body': 'A operação completa também no celular',
+      'hero.status.label': 'Atendimento',
+      'hero.status.value': 'Tudo organizado',
+      'marquee.aria': 'Áreas do SixApp',
+      'marquee.sales': 'Vendas',
+      'marquee.products': 'Produtos',
+      'marquee.service': 'Serviços técnicos',
+      'marquee.customers': 'Clientes',
+      'marquee.finance': 'Financeiro',
+      'marquee.reports': 'Relatórios',
+      'marquee.mobile': 'Mobile',
+      'resources.editorial.title': 'Tudo o que a sua operação precisa.',
+      'resources.editorial.lead': 'Recursos conectados, sem excesso de telas e com uma navegação feita para ser entendida rapidamente.',
+      'showcase.aria': 'SixApp na rotina',
+      'showcase.service.kicker': 'Serviços técnicos',
+      'showcase.service.title': 'Cada atendimento com contexto e continuidade.',
+      'showcase.service.body': 'Registre informações, evidências e mudanças de status em um fluxo que acompanha o serviço do recebimento à entrega.',
+      'showcase.service.pointOne': 'Histórico reunido por cliente e atendimento',
+      'showcase.service.pointTwo': 'Status claros para a equipe',
+      'showcase.service.pointThree': 'Documentos prontos para compartilhar',
+      'showcase.service.stepOne': 'Recebido',
+      'showcase.service.stepTwo': 'Em atendimento',
+      'showcase.service.stepThree': 'Pronto para entrega',
+      'showcase.operation.kicker': 'Operação integrada',
+      'showcase.operation.title': 'Produtos, pessoas e financeiro na mesma rotina.',
+      'showcase.operation.body': 'O dado cadastrado deixa de ficar isolado e passa a apoiar vendas, serviços, estoque, recebimentos e decisões.',
+      'showcase.operation.pointOne': 'Produtos e serviços prontos para uso',
+      'showcase.operation.pointTwo': 'Clientes, colaboradores e fornecedores organizados',
+      'showcase.operation.pointThree': 'Movimentações com visão financeira',
+      'showcase.operation.cardOne': 'Operação do dia',
+      'showcase.operation.cardOneValue': 'Visão geral',
+      'showcase.operation.cardTwo': 'Estoque',
+      'showcase.operation.cardTwoValue': 'Atualizado',
+      'showcase.operation.cardThree': 'Equipe',
+      'showcase.operation.cardThreeValue': 'Acessos definidos',
+      'showcase.platform.kicker': 'Web + Android + iOS',
+      'showcase.platform.title': 'O SixApp inteiro acompanha você.',
+      'showcase.platform.body': 'Não é apenas um aplicativo de apoio: as rotinas do negócio também podem ser utilizadas no celular, com experiência própria para cada tela.',
+      'showcase.platform.pointOne': 'Gestão completa no navegador',
+      'showcase.platform.pointTwo': 'Operação prática no Android e no iPhone',
+      'showcase.platform.pointThree': 'Informações sincronizadas pela internet',
+      'solutions.kicker': 'Dores e soluções',
+      'solutions.title': 'Problemas reais da operação, tratados de forma direta.',
+      'solutions.lead': 'O SixApp reduz a fragmentação do dia a dia conectando informações que normalmente ficam espalhadas.',
+      'solutions.pain.label': 'A dor',
+      'solutions.answer.label': 'A solução SixApp',
+      'solutions.one.painTitle': 'Informações do atendimento espalhadas',
+      'solutions.one.painBody': 'Status, observações e evidências ficam em lugares diferentes, tornando a consulta lenta e aumentando o risco de desencontro.',
+      'solutions.one.answerTitle': 'Histórico e status centralizados',
+      'solutions.one.answerBody': 'O atendimento mantém contexto, etapas e registros reunidos para facilitar a continuidade do trabalho.',
+      'solutions.two.painTitle': 'Equipe sem clareza sobre acessos',
+      'solutions.two.painBody': 'Quando todos enxergam ou executam as mesmas ações, responsabilidades e informações sensíveis ficam difíceis de controlar.',
+      'solutions.two.answerTitle': 'Permissões por colaborador',
+      'solutions.two.answerBody': 'O administrador organiza os acessos de acordo com o papel de cada pessoa e de cada comércio.',
+      'solutions.three.painTitle': 'Cadastros que não conversam com a operação',
+      'solutions.three.painBody': 'Produtos, serviços e pessoas registrados de forma isolada geram repetição de trabalho durante vendas e atendimentos.',
+      'solutions.three.answerTitle': 'Uma base conectada ao uso diário',
+      'solutions.three.answerBody': 'Os cadastros apoiam as movimentações e preservam o contexto necessário em cada jornada.',
+      'solutions.four.painTitle': 'Decisões financeiras sem visão suficiente',
+      'solutions.four.painBody': 'Caixa, recebimentos, compromissos e pendências separados dificultam a leitura do momento do negócio.',
+      'solutions.four.answerTitle': 'Financeiro organizado para acompanhar',
+      'solutions.four.answerBody': 'Informações importantes ficam reunidas para apoiar conferência, planejamento e tomada de decisão.',
+      'solutions.cta.title': 'Organize primeiro. Cresça com clareza.',
+      'solutions.cta.body': 'Conheça a experiência do SixApp e veja como ela se encaixa na sua operação.',
+      'solutions.cta.button': 'Criar conta',
+      'steps.kicker': 'Como funciona',
+      'steps.title': 'Começar é simples.',
+      'steps.lead': 'A conta evolui junto com a estrutura do seu negócio, da primeira configuração à operação da equipe.',
+      'steps.one.title': 'Crie a conta',
+      'steps.one.body': 'O administrador inicia o acesso e registra as informações principais.',
+      'steps.two.title': 'Organize o comércio',
+      'steps.two.body': 'Cadastre produtos, serviços, pessoas e configure os acessos da equipe.',
+      'steps.three.title': 'Use onde estiver',
+      'steps.three.body': 'Opere pela Web, Android ou iOS com as informações sincronizadas.',
+      'plans.editorial.title': 'Um caminho para cada momento do negócio.',
+      'plans.editorial.lead': 'Comece pela conta, conheça as opções disponíveis e evolua conforme a sua operação ganhar novas necessidades.',
+      'plans.start.kicker': 'Começar',
+      'plans.start.title': 'Crie sua conta',
+      'plans.start.body': 'Inicie o cadastro e prepare a primeira estrutura do seu comércio.',
+      'plans.start.button': 'Criar conta',
+      'plans.options.kicker': 'Conhecer opções',
+      'plans.options.title': 'Veja os planos disponíveis',
+      'plans.options.body': 'Compare as opções do SixApp em uma etapa própria e segura.',
+      'plans.options.button': 'Conhecer planos',
+      'plans.grow.kicker': 'Evoluir',
+      'plans.grow.title': 'Amplie quando precisar',
+      'plans.grow.body': 'Adicione organização, pessoas e recursos conforme a operação crescer.',
+      'plans.grow.button': 'Rever recursos',
+      'final.editorial.title': 'Comece a organizar o seu negócio com o SixApp.',
+      'final.editorial.body': 'Crie uma conta ou entre para continuar de onde parou.',
+      'footer.solutions': 'Soluções',
+      'footer.rights': 'Todos os direitos reservados.'
     },
     en: {
       title: 'SixApp - Management on Web, Android and iOS',
@@ -402,7 +508,113 @@
       'footer.login': 'Sign in',
       'footer.signup': 'Create account',
       'footer.terms': 'Terms and privacy in preparation',
-      'footer.note': 'Digital product for commercial and operational management.'
+      'footer.note': 'Digital product for commercial and operational management.',
+      'nav.solutions': 'Problems and solutions',
+      'hero.editorial.eyebrow': 'Simple management for commerce and services',
+      'hero.editorial.lineOne': 'Your entire business',
+      'hero.editorial.lineTwo': 'in one',
+      'hero.editorial.emphasis': 'simple system.',
+      'hero.editorial.lead': 'Sales, products, technical services, customers and finance in a lightweight experience for desktop and mobile.',
+      'hero.editorial.primary': 'Create account',
+      'hero.editorial.secondary': 'Explore features',
+      'hero.proof.aria': 'Main advantages',
+      'hero.proof.online': 'Online system',
+      'hero.proof.multiBusiness': 'Multiple businesses',
+      'hero.proof.languages': 'Multiple languages',
+      'hero.image.alt': 'Organized business with a desktop computer and mobile phone',
+      'hero.platform.card.aria': 'Available on Web, Android and iOS',
+      'hero.platform.card.body': 'Complete operations on mobile too',
+      'hero.status.label': 'Service',
+      'hero.status.value': 'Everything organized',
+      'marquee.aria': 'SixApp areas',
+      'marquee.sales': 'Sales',
+      'marquee.products': 'Products',
+      'marquee.service': 'Technical services',
+      'marquee.customers': 'Customers',
+      'marquee.finance': 'Finance',
+      'marquee.reports': 'Reports',
+      'marquee.mobile': 'Mobile',
+      'resources.editorial.title': 'Everything your operation needs.',
+      'resources.editorial.lead': 'Connected features, without excessive screens and with navigation designed to be understood quickly.',
+      'showcase.aria': 'SixApp in daily operations',
+      'showcase.service.kicker': 'Technical services',
+      'showcase.service.title': 'Every service with context and continuity.',
+      'showcase.service.body': 'Record information, evidence and status changes in a flow that follows service from intake to delivery.',
+      'showcase.service.pointOne': 'History grouped by customer and service',
+      'showcase.service.pointTwo': 'Clear statuses for the team',
+      'showcase.service.pointThree': 'Documents ready to share',
+      'showcase.service.stepOne': 'Received',
+      'showcase.service.stepTwo': 'In service',
+      'showcase.service.stepThree': 'Ready for delivery',
+      'showcase.operation.kicker': 'Integrated operation',
+      'showcase.operation.title': 'Products, people and finance in the same routine.',
+      'showcase.operation.body': 'Registered data no longer stays isolated and starts supporting sales, services, inventory, receivables and decisions.',
+      'showcase.operation.pointOne': 'Products and services ready for use',
+      'showcase.operation.pointTwo': 'Customers, collaborators and suppliers organized',
+      'showcase.operation.pointThree': 'Transactions with a financial view',
+      'showcase.operation.cardOne': 'Daily operation',
+      'showcase.operation.cardOneValue': 'Overview',
+      'showcase.operation.cardTwo': 'Inventory',
+      'showcase.operation.cardTwoValue': 'Updated',
+      'showcase.operation.cardThree': 'Team',
+      'showcase.operation.cardThreeValue': 'Access defined',
+      'showcase.platform.kicker': 'Web + Android + iOS',
+      'showcase.platform.title': 'The entire SixApp goes with you.',
+      'showcase.platform.body': 'It is more than a support app: business routines can also be used on mobile, with an experience designed for each screen.',
+      'showcase.platform.pointOne': 'Complete management in the browser',
+      'showcase.platform.pointTwo': 'Practical operations on Android and iPhone',
+      'showcase.platform.pointThree': 'Information synchronized over the internet',
+      'solutions.kicker': 'Problems and solutions',
+      'solutions.title': 'Real operational problems, addressed directly.',
+      'solutions.lead': 'SixApp reduces daily fragmentation by connecting information that normally remains scattered.',
+      'solutions.pain.label': 'The problem',
+      'solutions.answer.label': 'The SixApp solution',
+      'solutions.one.painTitle': 'Service information scattered across places',
+      'solutions.one.painBody': 'Statuses, notes and evidence stay in different places, slowing searches and increasing the risk of mismatched information.',
+      'solutions.one.answerTitle': 'Centralized history and statuses',
+      'solutions.one.answerBody': 'Service keeps context, stages and records together to make work continuity easier.',
+      'solutions.two.painTitle': 'A team without clarity about access',
+      'solutions.two.painBody': 'When everyone sees or performs the same actions, responsibilities and sensitive information become difficult to control.',
+      'solutions.two.answerTitle': 'Permissions by collaborator',
+      'solutions.two.answerBody': 'The administrator organizes access according to each person role and each business.',
+      'solutions.three.painTitle': 'Records disconnected from operations',
+      'solutions.three.painBody': 'Products, services and people registered separately create repeated work during sales and service.',
+      'solutions.three.answerTitle': 'A base connected to daily use',
+      'solutions.three.answerBody': 'Records support transactions and preserve the context required in each journey.',
+      'solutions.four.painTitle': 'Financial decisions without enough visibility',
+      'solutions.four.painBody': 'Cash, receivables, commitments and pending items kept apart make the business moment harder to understand.',
+      'solutions.four.answerTitle': 'Organized finance for follow-up',
+      'solutions.four.answerBody': 'Important information is brought together to support review, planning and decision-making.',
+      'solutions.cta.title': 'Organize first. Grow with clarity.',
+      'solutions.cta.body': 'Explore the SixApp experience and see how it fits your operation.',
+      'solutions.cta.button': 'Create account',
+      'steps.kicker': 'How it works',
+      'steps.title': 'Getting started is simple.',
+      'steps.lead': 'The account evolves with your business structure, from the first setup to team operations.',
+      'steps.one.title': 'Create the account',
+      'steps.one.body': 'The administrator starts access and registers the main information.',
+      'steps.two.title': 'Organize the business',
+      'steps.two.body': 'Register products, services and people, then configure team access.',
+      'steps.three.title': 'Use it wherever you are',
+      'steps.three.body': 'Operate on Web, Android or iOS with synchronized information.',
+      'plans.editorial.title': 'A path for every stage of the business.',
+      'plans.editorial.lead': 'Start with an account, explore the available options and evolve as your operation gains new needs.',
+      'plans.start.kicker': 'Start',
+      'plans.start.title': 'Create your account',
+      'plans.start.body': 'Begin registration and prepare the first structure of your business.',
+      'plans.start.button': 'Create account',
+      'plans.options.kicker': 'Explore options',
+      'plans.options.title': 'See available plans',
+      'plans.options.body': 'Compare SixApp options in a dedicated, secure step.',
+      'plans.options.button': 'Explore plans',
+      'plans.grow.kicker': 'Evolve',
+      'plans.grow.title': 'Expand when you need to',
+      'plans.grow.body': 'Add organization, people and features as your operation grows.',
+      'plans.grow.button': 'Review features',
+      'final.editorial.title': 'Start organizing your business with SixApp.',
+      'final.editorial.body': 'Create an account or sign in to continue where you left off.',
+      'footer.solutions': 'Solutions',
+      'footer.rights': 'All rights reserved.'
     },
     es: {
       title: 'SixApp - Gestión en Web, Android e iOS',
@@ -602,7 +814,113 @@
       'footer.login': 'Entrar',
       'footer.signup': 'Crear cuenta',
       'footer.terms': 'Términos y privacidad en preparación',
-      'footer.note': 'Producto digital para gestión comercial y operativa.'
+      'footer.note': 'Producto digital para gestión comercial y operativa.',
+      'nav.solutions': 'Problemas y soluciones',
+      'hero.editorial.eyebrow': 'Gestión simple para comercios y servicios',
+      'hero.editorial.lineOne': 'Todo tu negocio',
+      'hero.editorial.lineTwo': 'en un sistema',
+      'hero.editorial.emphasis': 'simple.',
+      'hero.editorial.lead': 'Ventas, productos, servicios técnicos, clientes y finanzas en una experiencia ligera para usar en la computadora y en el celular.',
+      'hero.editorial.primary': 'Crear cuenta',
+      'hero.editorial.secondary': 'Ver funcionalidades',
+      'hero.proof.aria': 'Diferenciales principales',
+      'hero.proof.online': 'Sistema online',
+      'hero.proof.multiBusiness': 'Multiempresa',
+      'hero.proof.languages': 'Varios idiomas',
+      'hero.image.alt': 'Comercio organizado con computadora y celular',
+      'hero.platform.card.aria': 'Disponible en Web, Android e iOS',
+      'hero.platform.card.body': 'La operación completa también en el celular',
+      'hero.status.label': 'Atención',
+      'hero.status.value': 'Todo organizado',
+      'marquee.aria': 'Áreas de SixApp',
+      'marquee.sales': 'Ventas',
+      'marquee.products': 'Productos',
+      'marquee.service': 'Servicios técnicos',
+      'marquee.customers': 'Clientes',
+      'marquee.finance': 'Finanzas',
+      'marquee.reports': 'Informes',
+      'marquee.mobile': 'Mobile',
+      'resources.editorial.title': 'Todo lo que tu operación necesita.',
+      'resources.editorial.lead': 'Recursos conectados, sin exceso de pantallas y con una navegación pensada para entenderse rápidamente.',
+      'showcase.aria': 'SixApp en la rutina',
+      'showcase.service.kicker': 'Servicios técnicos',
+      'showcase.service.title': 'Cada atención con contexto y continuidad.',
+      'showcase.service.body': 'Registra información, evidencias y cambios de estado en un flujo que acompaña el servicio desde la recepción hasta la entrega.',
+      'showcase.service.pointOne': 'Historial reunido por cliente y atención',
+      'showcase.service.pointTwo': 'Estados claros para el equipo',
+      'showcase.service.pointThree': 'Documentos listos para compartir',
+      'showcase.service.stepOne': 'Recibido',
+      'showcase.service.stepTwo': 'En atención',
+      'showcase.service.stepThree': 'Listo para entregar',
+      'showcase.operation.kicker': 'Gestión integrada',
+      'showcase.operation.title': 'Productos, personas y finanzas en la misma rutina.',
+      'showcase.operation.body': 'El dato registrado deja de estar aislado y pasa a apoyar ventas, servicios, inventario, cobros y decisiones.',
+      'showcase.operation.pointOne': 'Productos y servicios listos para usar',
+      'showcase.operation.pointTwo': 'Clientes, colaboradores y proveedores organizados',
+      'showcase.operation.pointThree': 'Movimientos con visión financiera',
+      'showcase.operation.cardOne': 'Operación del día',
+      'showcase.operation.cardOneValue': 'Visión general',
+      'showcase.operation.cardTwo': 'Inventario',
+      'showcase.operation.cardTwoValue': 'Actualizado',
+      'showcase.operation.cardThree': 'Equipo',
+      'showcase.operation.cardThreeValue': 'Accesos definidos',
+      'showcase.platform.kicker': 'Web, Android e iOS',
+      'showcase.platform.title': 'El SixApp completo te acompaña.',
+      'showcase.platform.body': 'No es solo una aplicación de apoyo: las rutinas del negocio también pueden utilizarse en el celular, con una experiencia propia para cada pantalla.',
+      'showcase.platform.pointOne': 'Gestión completa en el navegador',
+      'showcase.platform.pointTwo': 'Operación práctica en Android y iPhone',
+      'showcase.platform.pointThree': 'Sincronización online de la información',
+      'solutions.kicker': 'Problemas y soluciones',
+      'solutions.title': 'Problemas reales de la operación, tratados de forma directa.',
+      'solutions.lead': 'SixApp reduce la fragmentación diaria conectando información que normalmente queda dispersa.',
+      'solutions.pain.label': 'El problema',
+      'solutions.answer.label': 'La solución SixApp',
+      'solutions.one.painTitle': 'Información de la atención dispersa',
+      'solutions.one.painBody': 'Estados, observaciones y evidencias quedan en lugares diferentes, haciendo más lenta la consulta y aumentando el riesgo de descoordinación.',
+      'solutions.one.answerTitle': 'Historial y estados centralizados',
+      'solutions.one.answerBody': 'La atención mantiene contexto, etapas y registros reunidos para facilitar la continuidad del trabajo.',
+      'solutions.two.painTitle': 'Equipo sin claridad sobre los accesos',
+      'solutions.two.painBody': 'Cuando todos ven o ejecutan las mismas acciones, las responsabilidades y la información sensible se vuelven difíciles de controlar.',
+      'solutions.two.answerTitle': 'Permisos por colaborador',
+      'solutions.two.answerBody': 'El administrador organiza los accesos de acuerdo con el rol de cada persona y de cada comercio.',
+      'solutions.three.painTitle': 'Registros que no conversan con la operación',
+      'solutions.three.painBody': 'Productos, servicios y personas registrados de forma aislada generan repetición de trabajo durante ventas y atenciones.',
+      'solutions.three.answerTitle': 'Una base conectada al uso diario',
+      'solutions.three.answerBody': 'Los registros apoyan los movimientos y preservan el contexto necesario en cada recorrido.',
+      'solutions.four.painTitle': 'Decisiones financieras sin visión suficiente',
+      'solutions.four.painBody': 'Caja, cobros, compromisos y pendientes separados dificultan la lectura del momento del negocio.',
+      'solutions.four.answerTitle': 'Finanzas organizadas para acompañar',
+      'solutions.four.answerBody': 'La información importante queda reunida para apoyar la revisión, la planificación y la toma de decisiones.',
+      'solutions.cta.title': 'Organiza primero. Crece con claridad.',
+      'solutions.cta.body': 'Conoce la experiencia de SixApp y descubre cómo se adapta a tu operación.',
+      'solutions.cta.button': 'Crear cuenta',
+      'steps.kicker': 'Cómo funciona',
+      'steps.title': 'Comenzar es simple.',
+      'steps.lead': 'La cuenta evoluciona junto con la estructura de tu negocio, desde la primera configuración hasta la operación del equipo.',
+      'steps.one.title': 'Crea la cuenta',
+      'steps.one.body': 'El administrador inicia el acceso y registra la información principal.',
+      'steps.two.title': 'Organiza el comercio',
+      'steps.two.body': 'Registra productos, servicios y personas, y configura los accesos del equipo.',
+      'steps.three.title': 'Úsalo donde estés',
+      'steps.three.body': 'Opera desde la Web, Android o iOS con la información sincronizada.',
+      'plans.editorial.title': 'Un camino para cada momento del negocio.',
+      'plans.editorial.lead': 'Comienza por la cuenta, conoce las opciones disponibles y evoluciona cuando tu operación tenga nuevas necesidades.',
+      'plans.start.kicker': 'Comenzar',
+      'plans.start.title': 'Crea tu cuenta',
+      'plans.start.body': 'Inicia el registro y prepara la primera estructura de tu comercio.',
+      'plans.start.button': 'Crear cuenta',
+      'plans.options.kicker': 'Conocer opciones',
+      'plans.options.title': 'Mira los planes disponibles',
+      'plans.options.body': 'Compara las opciones de SixApp en una etapa propia y segura.',
+      'plans.options.button': 'Conocer planes',
+      'plans.grow.kicker': 'Evolucionar',
+      'plans.grow.title': 'Amplía cuando lo necesites',
+      'plans.grow.body': 'Agrega organización, personas y recursos a medida que crezca la operación.',
+      'plans.grow.button': 'Revisar recursos',
+      'final.editorial.title': 'Comienza a organizar tu negocio con SixApp.',
+      'final.editorial.body': 'Crea una cuenta o entra para continuar desde donde lo dejaste.',
+      'footer.solutions': 'Problemas y soluciones',
+      'footer.rights': 'Todos los derechos reservados.'
     }
   };
 
@@ -721,92 +1039,55 @@
     });
   }
 
-  function setupHeroCarousel() {
-    var root = document.querySelector('[data-hero-carousel]');
-    if (!root) return;
+  function setupReveal() {
+    var nodes = Array.prototype.slice.call(document.querySelectorAll('[data-reveal]'));
+    if (!nodes.length) return;
 
-    var slides = Array.prototype.slice.call(root.querySelectorAll('[data-hero-slide]'));
-    var tabs = Array.prototype.slice.call(root.querySelectorAll('[data-hero-tab]'));
-    var previous = root.querySelector('[data-hero-prev]');
-    var next = root.querySelector('[data-hero-next]');
-    if (!slides.length || !tabs.length) return;
-
-    var activeIndex = 0;
-    var intervalId = null;
     var reduceMotion = window.matchMedia &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    function normalizeIndex(index) {
-      if (index < 0) return slides.length - 1;
-      if (index >= slides.length) return 0;
-      return index;
+    function show(node) {
+      node.classList.add('is-visible');
     }
 
-    function setActiveSlide(index) {
-      activeIndex = normalizeIndex(index);
-      root.setAttribute('data-hero-active', String(activeIndex + 1));
+    var immediateNodes = nodes.filter(function (node) {
+      var value = node.getAttribute('data-reveal');
+      return value === 'hero' || value === 'hero-visual';
+    });
 
-      slides.forEach(function (slide, slideIndex) {
-        var isActive = slideIndex === activeIndex;
-        slide.classList.toggle('is-active', isActive);
-        slide.setAttribute('aria-hidden', isActive ? 'false' : 'true');
-      });
-
-      tabs.forEach(function (tab, tabIndex) {
-        var isActive = tabIndex === activeIndex;
-        tab.classList.toggle('is-active', isActive);
-        tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
-      });
-    }
-
-    function stopAutoRotation() {
-      if (intervalId) {
-        window.clearInterval(intervalId);
-        intervalId = null;
+    immediateNodes.forEach(function (node, index) {
+      if (reduceMotion) {
+        show(node);
+        return;
       }
-    }
 
-    function startAutoRotation() {
-      if (reduceMotion || intervalId) return;
-      intervalId = window.setInterval(function () {
-        setActiveSlide(activeIndex + 1);
-      }, 7200);
-    }
-
-    tabs.forEach(function (tab) {
-      tab.addEventListener('click', function () {
-        var index = Number(tab.getAttribute('data-hero-tab'));
-        stopAutoRotation();
-        setActiveSlide(index);
-        startAutoRotation();
-      });
+      window.setTimeout(function () { show(node); }, 40 + (index * 80));
     });
 
-    if (previous) {
-      previous.addEventListener('click', function () {
-        stopAutoRotation();
-        setActiveSlide(activeIndex - 1);
-        startAutoRotation();
-      });
-    }
-
-    if (next) {
-      next.addEventListener('click', function () {
-        stopAutoRotation();
-        setActiveSlide(activeIndex + 1);
-        startAutoRotation();
-      });
-    }
-
-    root.addEventListener('mouseenter', stopAutoRotation);
-    root.addEventListener('mouseleave', startAutoRotation);
-    root.addEventListener('focusin', stopAutoRotation);
-    root.addEventListener('focusout', function (event) {
-      if (!root.contains(event.relatedTarget)) startAutoRotation();
+    var observedNodes = nodes.filter(function (node) {
+      return immediateNodes.indexOf(node) === -1;
     });
 
-    setActiveSlide(0);
-    startAutoRotation();
+    if (reduceMotion || !('IntersectionObserver' in window)) {
+      observedNodes.forEach(show);
+      return;
+    }
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        show(entry.target);
+        observer.unobserve(entry.target);
+      });
+    }, {
+      threshold: 0.12,
+      rootMargin: '0px 0px -6% 0px'
+    });
+
+    observedNodes.forEach(function (node, index) {
+      node.style.transitionDelay = String(Math.min((index % 3) * 55, 110)) + 'ms';
+      observer.observe(node);
+    });
   }
 
   function setupCurrentYear() {
@@ -863,7 +1144,7 @@
   document.documentElement.classList.add('has-js');
   setupCurrentYear();
   setupMobileMenu();
-  setupHeroCarousel();
+  setupReveal();
   setupLanguageSwitcher();
   applyLanguage(selectedLanguage());
   cleanupLegacyFlutterWorker();
