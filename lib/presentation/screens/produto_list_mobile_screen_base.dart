@@ -9,9 +9,11 @@ import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/produto_cadastrar_mobile_screen.dart';
+import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/providers/produtos_list_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 
@@ -30,6 +32,45 @@ class ProdutolistMobileScreen extends StatefulWidget {
   @override
   State<ProdutolistMobileScreen> createState() =>
       _ProdutolistMobileScreenState();
+}
+
+enum _ProdutoStatusFiltroMobile { todos, ativos, inativos }
+
+enum _ProdutoEstoqueFiltroMobile {
+  todos,
+  emEstoque,
+  estoqueBaixo,
+  semEstoque,
+  estoqueNegativo,
+}
+
+enum _ProdutoSituacaoEstoqueMobile {
+  naoAplicavel,
+  emEstoque,
+  estoqueBaixo,
+  semEstoque,
+  estoqueNegativo,
+}
+
+class _CategoriaFiltroMobile {
+  const _CategoriaFiltroMobile({required this.id, required this.nome});
+
+  final String id;
+  final String nome;
+}
+
+class _ProdutoMobileFilterSelection {
+  const _ProdutoMobileFilterSelection({
+    required this.categoriaId,
+    required this.statusFiltro,
+    required this.estoqueFiltro,
+    required this.ordenacao,
+  });
+
+  final String? categoriaId;
+  final _ProdutoStatusFiltroMobile statusFiltro;
+  final _ProdutoEstoqueFiltroMobile estoqueFiltro;
+  final String ordenacao;
 }
 
 class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
@@ -71,8 +112,38 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   String termoBusca = '';
   String tipoSelecionado = 'PRODUTO';
   String ordenacao = 'nome';
+  String? _categoriaSelecionadaId;
+  _ProdutoStatusFiltroMobile _statusFiltro = _ProdutoStatusFiltroMobile.todos;
+  _ProdutoEstoqueFiltroMobile _estoqueFiltro =
+      _ProdutoEstoqueFiltroMobile.todos;
   bool _salvandoPreferencia = false;
   bool _fixarHeaderLista = false;
+
+  String _t(String key, String fallback) => context.t(key, fallback: fallback);
+
+  Future<T?> _openSubSheetOnNextFrame<T>(
+    Future<T?> Function() openSheet,
+  ) async {
+    final Completer<T?> completer = Completer<T?>();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        if (!completer.isCompleted) completer.complete(null);
+        return;
+      }
+
+      try {
+        final T? result = await openSheet();
+        if (!completer.isCompleted) completer.complete(result);
+      } catch (error, stackTrace) {
+        if (!completer.isCompleted) {
+          completer.completeError(error, stackTrace);
+        }
+      }
+    });
+
+    return completer.future;
+  }
 
   bool get _isProdutoSelecionado => tipoSelecionado == 'PRODUTO';
 
@@ -138,14 +209,13 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   void atualizarListaComProvider(List<ProdutoModel> listaDeProdutos) {
     todosProdutos = listaDeProdutos;
+    _sincronizarCategoriaSelecionada();
     aplicarFiltroOrdenacao();
   }
 
   void aplicarFiltroOrdenacao() {
-    final List<ProdutoModel> listaBase = ProdutoHelper.filtrarEOrdenarProdutos(
-      produtos: todosProdutos,
-      termoBusca: termoBusca,
-      ordenacao: ordenacao,
+    final List<ProdutoModel> listaBase = _ordenarProdutos(
+      _aplicarFiltrosEstruturais(todosProdutos),
     );
 
     if (!mounted) return;
@@ -166,11 +236,161 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         _normalizarTipoProduto(tipo);
   }
 
+  bool get _temFiltrosEstruturaisAtivos =>
+      (_categoriaSelecionadaId != null &&
+          _categoriaSelecionadaId!.isNotEmpty) ||
+      _statusFiltro != _ProdutoStatusFiltroMobile.todos ||
+      _estoqueFiltro != _ProdutoEstoqueFiltroMobile.todos ||
+      ordenacao != 'nome';
+
   String _normalizarTipoProduto(String tipo) {
     final String normalizado = tipo.trim().toUpperCase();
     if (normalizado.isEmpty) return 'PRODUTO';
     if (normalizado == 'SERVIÇO') return 'SERVICO';
     return normalizado;
+  }
+
+  List<ProdutoModel> _aplicarFiltrosEstruturais(List<ProdutoModel> itens) {
+    Iterable<ProdutoModel> resultado = itens;
+    final String termoNormalizado = termoBusca.trim().toLowerCase();
+
+    if (termoNormalizado.isNotEmpty) {
+      resultado = resultado.where(
+        (ProdutoModel produto) =>
+            produto.nomeProduto.toLowerCase().contains(termoNormalizado) ||
+            produto.codigoDeBarras.toLowerCase().contains(termoNormalizado),
+      );
+    }
+
+    if (_categoriaSelecionadaId != null &&
+        _categoriaSelecionadaId!.isNotEmpty) {
+      resultado = resultado.where(
+        (ProdutoModel produto) =>
+            produto.objCategoria?.idCategoria == _categoriaSelecionadaId,
+      );
+    }
+
+    switch (_statusFiltro) {
+      case _ProdutoStatusFiltroMobile.todos:
+        break;
+      case _ProdutoStatusFiltroMobile.ativos:
+        resultado = resultado.where((ProdutoModel produto) => produto.ativo);
+      case _ProdutoStatusFiltroMobile.inativos:
+        resultado = resultado.where((ProdutoModel produto) => !produto.ativo);
+    }
+
+    switch (_estoqueFiltro) {
+      case _ProdutoEstoqueFiltroMobile.todos:
+        break;
+      case _ProdutoEstoqueFiltroMobile.emEstoque:
+        resultado = resultado.where(
+          (ProdutoModel produto) =>
+              _situacaoEstoque(produto) ==
+              _ProdutoSituacaoEstoqueMobile.emEstoque,
+        );
+      case _ProdutoEstoqueFiltroMobile.estoqueBaixo:
+        resultado = resultado.where(
+          (ProdutoModel produto) =>
+              _situacaoEstoque(produto) ==
+              _ProdutoSituacaoEstoqueMobile.estoqueBaixo,
+        );
+      case _ProdutoEstoqueFiltroMobile.semEstoque:
+        resultado = resultado.where(
+          (ProdutoModel produto) =>
+              _situacaoEstoque(produto) ==
+              _ProdutoSituacaoEstoqueMobile.semEstoque,
+        );
+      case _ProdutoEstoqueFiltroMobile.estoqueNegativo:
+        resultado = resultado.where(
+          (ProdutoModel produto) =>
+              _situacaoEstoque(produto) ==
+              _ProdutoSituacaoEstoqueMobile.estoqueNegativo,
+        );
+    }
+
+    return resultado.toList(growable: false);
+  }
+
+  List<ProdutoModel> _ordenarProdutos(List<ProdutoModel> itens) {
+    final List<ProdutoModel> ordenados = <ProdutoModel>[...itens];
+    switch (ordenacao) {
+      case 'precoAsc':
+        ordenados.sort((a, b) => a.precoVenda.compareTo(b.precoVenda));
+      case 'precoDesc':
+        ordenados.sort((a, b) => b.precoVenda.compareTo(a.precoVenda));
+      case 'nome':
+      default:
+        ordenados.sort(
+          (a, b) => a.nomeProduto.toLowerCase().compareTo(
+            b.nomeProduto.toLowerCase(),
+          ),
+        );
+    }
+    return ordenados;
+  }
+
+  List<_CategoriaFiltroMobile> _categoriasDisponiveis() {
+    final Map<String, _CategoriaFiltroMobile> categorias =
+        <String, _CategoriaFiltroMobile>{};
+
+    for (final ProdutoModel produto in todosProdutos) {
+      final ObjCategoria? categoria = produto.objCategoria;
+      if (categoria == null) continue;
+
+      final String id = categoria.idCategoria.trim();
+      final String nome = categoria.nomeCategoria.trim();
+      if (id.isEmpty || nome.isEmpty) continue;
+
+      categorias[id] = _CategoriaFiltroMobile(id: id, nome: nome);
+    }
+
+    final List<_CategoriaFiltroMobile> resultado = categorias.values.toList();
+    resultado.sort(
+      (_CategoriaFiltroMobile a, _CategoriaFiltroMobile b) =>
+          a.nome.toLowerCase().compareTo(b.nome.toLowerCase()),
+    );
+    return resultado;
+  }
+
+  void _sincronizarCategoriaSelecionada() {
+    final String? categoriaId = _categoriaSelecionadaId;
+    if (categoriaId == null || categoriaId.isEmpty) return;
+
+    final bool categoriaAindaDisponivel = _categoriasDisponiveis().any(
+      (_CategoriaFiltroMobile categoria) => categoria.id == categoriaId,
+    );
+
+    if (!categoriaAindaDisponivel) {
+      _categoriaSelecionadaId = null;
+    }
+  }
+
+  double _quantidadeEstoque(ProdutoModel produto) {
+    if (!_matchesTipoSelecionado(produto, 'PRODUTO')) return 0;
+
+    final List<ObjEntradaSaidaProduto>? movimentacoes =
+        produto.objEntradaSaidaProduto;
+    if (movimentacoes == null || movimentacoes.isEmpty) return 0;
+
+    return movimentacoes.fold<double>(
+      0,
+      (double total, ObjEntradaSaidaProduto item) => total + item.quantidade,
+    );
+  }
+
+  _ProdutoSituacaoEstoqueMobile _situacaoEstoque(ProdutoModel produto) {
+    if (!_matchesTipoSelecionado(produto, 'PRODUTO')) {
+      return _ProdutoSituacaoEstoqueMobile.naoAplicavel;
+    }
+
+    final double quantidade = _quantidadeEstoque(produto);
+    if (quantidade < 0) return _ProdutoSituacaoEstoqueMobile.estoqueNegativo;
+    if (quantidade == 0) return _ProdutoSituacaoEstoqueMobile.semEstoque;
+    if (produto.estoqueMinimo > 0 &&
+        quantidade <= produto.estoqueMinimo.toDouble()) {
+      return _ProdutoSituacaoEstoqueMobile.estoqueBaixo;
+    }
+    return _ProdutoSituacaoEstoqueMobile.emEstoque;
   }
 
   Future<void> _alternarModoExibicaoProdutos() async {
@@ -259,7 +479,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         final double bottomPadding = _selecaoMultiplaAtiva ? 170 : 96;
 
         return SixMobilePageShell(
-          title: isSelecao ? 'Selecionar item' : '',
+          title:
+              isSelecao
+                  ? _t('produto.mobile.selectItem', 'Selecionar item')
+                  : '',
           backgroundColor: _backgroundColor,
           primaryColor: SixMobilePalette.primary,
           secondaryColor: SixMobilePalette.secondary,
@@ -270,7 +493,22 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           initialContentSpacing: 4,
           scrollEffectOffset: 24,
           scrolledSurfaceOpacity: 0.66,
-          actions: <Widget>[],
+          actions:
+              !isSelecao
+                  ? <Widget>[
+                    Padding(
+                      padding: EdgeInsets.only(right: 6),
+                      child: IconButton(
+                        tooltip: _t(
+                          'produto.mobile.newProduct',
+                          'Novo produto',
+                        ),
+                        onPressed: _criarProduto,
+                        icon: Icon(Icons.add_rounded, size: 22),
+                      ),
+                    ),
+                  ]
+                  : <Widget>[],
           bodyBuilder: (
             BuildContext context,
             ScrollController scrollController,
@@ -292,10 +530,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         bottomPadding,
                       ),
                       children: <Widget>[
-                        SixStaggeredEntry(
-                          delay: Duration(milliseconds: 70),
-                          child: _buildTabs(compact: isSelecao),
-                        ),
+                        if (isSelecao)
+                          SixStaggeredEntry(
+                            delay: Duration(milliseconds: 70),
+                            child: _buildTabs(compact: isSelecao),
+                          ),
                         if (_exibirCampoBusca &&
                             !_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
                           SizedBox(height: 12),
@@ -306,10 +545,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         ],
                         SizedBox(
                           height:
-                              _exibirCampoBusca &&
+                              isSelecao &&
+                                      _exibirCampoBusca &&
                                       !_deveExibirHeaderListaFixo(isSelecao)
                                   ? (isSelecao ? 14 : 18)
-                                  : 14,
+                                  : (isSelecao ? 14 : 8),
                         ),
                         if (!_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
                           _buildListHeader(
@@ -330,26 +570,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       child: _buildHeaderListaFixo(
                         itensDaLista.length,
                         provider.isLoading,
-                      ),
-                    ),
-                  if (!isSelecao)
-                    Positioned(
-                      right: 16,
-                      bottom: 16,
-                      child: SafeArea(
-                        minimum: EdgeInsets.only(bottom: 8),
-                        child: FloatingActionButton.extended(
-                          backgroundColor: _accentColor,
-                          foregroundColor: _onAccentColor,
-                          elevation: 5,
-                          onPressed: _criarProduto,
-                          icon: Icon(Icons.add_rounded),
-                          label: Text(
-                            _isProdutoSelecionado
-                                ? 'Novo produto'
-                                : 'Novo serviço',
-                          ),
-                        ),
                       ),
                     ),
                 ],
@@ -429,7 +649,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             itemBuilder: (BuildContext context, int index) {
               final int itemDelay = 190 + ((index * 28).clamp(0, 180)).toInt();
               return Padding(
-                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                padding: EdgeInsets.fromLTRB(6, 14, 6, 6),
                 child: SixStaggeredEntry(
                   delay: Duration(milliseconds: itemDelay),
                   child: _buildProdutoCard(itensDaLista[index]),
@@ -467,7 +687,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         children: <Widget>[
           Expanded(
             child: _SegmentButton(
-              label: 'Produtos',
+              label: _t('produto.mobile.typeProduct', 'Produtos'),
               icon: Icons.inventory_2_outlined,
               selected: _isProdutoSelecionado,
               compact: compact,
@@ -476,7 +696,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           ),
           Expanded(
             child: _SegmentButton(
-              label: 'Serviços',
+              label: _t('produto.mobile.typeService', 'Serviços'),
               icon: Icons.design_services_outlined,
               selected: tipoSelecionado == 'SERVICO',
               compact: compact,
@@ -515,15 +735,22 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         decoration: InputDecoration(
           hintText:
               _isProdutoSelecionado
-                  ? 'Buscar produto ou código'
-                  : 'Buscar serviço',
+                  ? _t(
+                    'produto.mobile.searchProductHint',
+                    'Buscar produto ou código',
+                  )
+                  : _t('produto.mobile.searchServiceHint', 'Buscar serviço'),
           hintStyle: TextStyle(color: _mutedTextColor),
           prefixIcon: Icon(Icons.search_rounded, color: _accentColor),
           suffixIcon:
               _controllerBusca.text.isEmpty
                   ? IconButton(
                     icon: Icon(Icons.tune_rounded, color: _titleTextColor),
-                    onPressed: _showSortOptions,
+                    tooltip: _t(
+                      'produto.mobile.filtersTooltip',
+                      'Filtros e ordenação',
+                    ),
+                    onPressed: _showFilterOptions,
                   )
                   : IconButton(
                     onPressed: () {
@@ -579,7 +806,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   Widget _buildBuscaListHeaderButton() {
     return Tooltip(
-      message: _isProdutoSelecionado ? 'Buscar produtos' : 'Buscar serviços',
+      message:
+          _isProdutoSelecionado
+              ? _t('produto.mobile.searchProducts', 'Buscar produtos')
+              : _t('produto.mobile.searchServices', 'Buscar serviços'),
       child: InkWell(
         onTap: _abrirCampoBusca,
         borderRadius: BorderRadius.circular(999),
@@ -597,24 +827,24 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   Widget _buildFiltroListHeaderButton() {
-    final bool ordenacaoAlterada = ordenacao != 'nome';
+    final bool filtrosAtivos = _temFiltrosEstruturaisAtivos;
 
     return Tooltip(
-      message: 'Ordenar catálogo',
+      message: _t('produto.mobile.filtersTooltip', 'Filtros e ordenação'),
       child: InkWell(
-        onTap: _showSortOptions,
+        onTap: _showFilterOptions,
         borderRadius: BorderRadius.circular(999),
         child: AnimatedContainer(
           duration: Duration(milliseconds: 180),
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color: ordenacaoAlterada ? _activeAccentSurface : _softAccentColor,
+            color: filtrosAtivos ? _activeAccentSurface : _softAccentColor,
             borderRadius: BorderRadius.circular(999),
           ),
           child: Icon(
             Icons.tune_rounded,
-            color: ordenacaoAlterada ? _secondaryColor : _accentColor,
+            color: filtrosAtivos ? _secondaryColor : _accentColor,
             size: 18,
           ),
         ),
@@ -693,8 +923,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     return Tooltip(
       message:
           _exibicaoHorizontal
-              ? 'Usar visualização vertical'
-              : 'Usar visualização horizontal',
+              ? _t('produto.mobile.verticalView', 'Usar visualização vertical')
+              : _t(
+                'produto.mobile.horizontalView',
+                'Usar visualização horizontal',
+              ),
       child: InkWell(
         onTap: _salvandoPreferencia ? null : _alternarModoExibicaoProdutos,
         borderRadius: BorderRadius.circular(999),
@@ -730,11 +963,22 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     final String titulo =
         widget.isSelecao
             ? (_selecaoMultiplaAtiva
-                ? 'Selecione um ou mais itens'
+                ? _t(
+                  'produto.mobile.selectManyItems',
+                  'Selecione um ou mais itens',
+                )
                 : (_isProdutoSelecionado
-                    ? 'Toque no produto para adicionar'
-                    : 'Toque no serviço para adicionar'))
-            : (_isProdutoSelecionado ? 'Produtos' : 'Serviços');
+                    ? _t(
+                      'produto.mobile.tapProductToAdd',
+                      'Toque no produto para adicionar',
+                    )
+                    : _t(
+                      'produto.mobile.tapServiceToAdd',
+                      'Toque no serviço para adicionar',
+                    )))
+            : (_isProdutoSelecionado
+                ? _t('produto.mobile.typeProduct', 'Produtos')
+                : _t('produto.mobile.typeService', 'Serviços'));
 
     return Row(
       children: <Widget>[
@@ -769,7 +1013,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
-            '$count ${count == 1 ? 'item' : 'itens'}',
+            '$count ${count == 1 ? _t('produto.mobile.itemSingular', 'item') : _t('produto.mobile.itemPlural', 'itens')}',
             style: TextStyle(
               color: _accentColor,
               fontSize: 11,
@@ -910,7 +1154,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   ) {
     if (isSelecao) return _selecaoMultiplaAtiva ? 376 : 118;
 
-    const double alturaMinima = 390;
+    const double alturaMinima = 688;
 
     final MediaQueryData media = MediaQuery.of(context);
     const double alturaReservadaPeloFab = 96;
@@ -945,6 +1189,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     final bool isProduto = _matchesTipoSelecionado(produto, 'PRODUTO');
     final String codigo = produto.codigoDeBarras.trim();
     final int imagensCount = produto.imagens?.length ?? 0;
+    final String grupo = _grupoProdutoLabel(produto);
+    final String estoque = _estoqueProdutoLabel(produto);
+    final String resumo = _resumoProdutoHorizontal(produto);
 
     return Material(
       color: _surfaceColor,
@@ -968,7 +1215,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Expanded(
+              SizedBox(
+                height: 278,
                 child: Stack(
                   children: <Widget>[
                     Positioned.fill(
@@ -1022,34 +1270,128 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                 ),
               ),
               SizedBox(height: 10),
-              Text(
-                produto.nomeProduto.isEmpty
-                    ? 'Item sem nome'
-                    : produto.nomeProduto,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 16,
-                  height: 1.15,
-                  fontWeight: FontWeight.w900,
-                  color: _titleTextColor,
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        produto.nomeProduto.isEmpty
+                            ? _t(
+                              'produto.webList.itemWithoutName',
+                              'Item sem nome',
+                            )
+                            : produto.nomeProduto,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          height: 1.15,
+                          fontWeight: FontWeight.w900,
+                          color: _titleTextColor,
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      _buildProdutoInfoSection(
+                        title: _t(
+                          'produto.mobile.generalInfoTitle',
+                          'Informações gerais',
+                        ),
+                        children: <Widget>[
+                          _buildProdutoInfoRow(
+                            label: _t('common.status', 'Status'),
+                            valueWidget: _StatusChip(ativo: ativo),
+                          ),
+                          _buildProdutoInfoRow(
+                            label: _t('produto.mobile.groupLabel', 'Grupo'),
+                            value:
+                                grupo.isEmpty
+                                    ? _t(
+                                      'produto.webList.filter.categoryAll',
+                                      'Sem grupo',
+                                    )
+                                    : grupo,
+                          ),
+                          _buildProdutoInfoRow(
+                            label: _t('produto.webList.table.code', 'Código'),
+                            value:
+                                codigo.isEmpty
+                                    ? _t(
+                                      'produto.webList.codeUnavailable',
+                                      'Sem código',
+                                    )
+                                    : codigo,
+                          ),
+                          _buildProdutoInfoRow(
+                            label: _t(
+                              'produto.webList.stockQuantity',
+                              'Estoque',
+                            ),
+                            value:
+                                estoque.isEmpty
+                                    ? _t(
+                                      'produto.webList.stockNotApplicable',
+                                      'Sem controle',
+                                    )
+                                    : estoque,
+                            valueColor: _corEstoqueProduto(produto),
+                          ),
+                          _buildProdutoInfoRow(
+                            label: _t('produto.mobile.photosLabel', 'Fotos'),
+                            value:
+                                '$imagensCount ${_t('produto.mobile.photosLabel', imagensCount == 1 ? 'foto' : 'fotos')}',
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 10),
+                      _buildProdutoInfoSection(
+                        title: _t(
+                          'produto.mobile.aboutProductTitle',
+                          'Sobre o produto',
+                        ),
+                        children: <Widget>[
+                          Text(
+                            resumo.isEmpty
+                                ? _t(
+                                  'produto.mobile.aboutProductEmpty',
+                                  'Sem detalhes adicionais informados.',
+                                )
+                                : resumo,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: _mutedTextColor,
+                              fontSize: 12,
+                              height: 1.35,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: <Widget>[
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: _softAccentColor,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.edit_outlined,
+                              color: _accentColor,
+                              size: 19,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              SizedBox(height: 8),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: _InfoChip(
-                      icon: Icons.qr_code_2_rounded,
-                      label: codigo.isEmpty ? 'Sem código' : 'Código $codigo',
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  _InfoChip(
-                    icon: Icons.photo_library_outlined,
-                    label: '$imagensCount foto${imagensCount == 1 ? '' : 's'}',
-                  ),
-                ],
               ),
             ],
           ),
@@ -1922,18 +2264,641 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     if (atualizado == true && mounted) await _recarregar();
   }
 
-  void _showSortOptions() {
-    showModalBottomSheet<void>(
+  Future<void> _showFilterOptions() async {
+    final _ProdutoMobileFilterSelection?
+    selection = await showModalBottomSheet<_ProdutoMobileFilterSelection>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
       showDragHandle: false,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.44),
       builder: (BuildContext context) {
+        final BuildContext sheetContext = context;
+        String? categoriaSelecionadaTemp = _categoriaSelecionadaId;
+        _ProdutoStatusFiltroMobile statusFiltroTemp = _statusFiltro;
+        _ProdutoEstoqueFiltroMobile estoqueFiltroTemp = _estoqueFiltro;
+        String ordenacaoTemp = ordenacao;
+
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter modalSetState) {
+            Future<void> selecionarCategoria() async {
+              final String? categoriaId =
+                  await _openSubSheetOnNextFrame<String>(
+                    () => _showCategoryFilterSelector(
+                      sheetContext,
+                      categoriaSelecionadaTemp,
+                    ),
+                  );
+              if (categoriaId == null) return;
+              modalSetState(() {
+                categoriaSelecionadaTemp =
+                    categoriaId.isEmpty ? null : categoriaId;
+              });
+            }
+
+            Future<void> selecionarStatus() async {
+              final _ProdutoStatusFiltroMobile? status =
+                  await _openSubSheetOnNextFrame<_ProdutoStatusFiltroMobile>(
+                    () => _showStatusFilterSelector(
+                      sheetContext,
+                      statusFiltroTemp,
+                    ),
+                  );
+              if (status == null) return;
+              modalSetState(() => statusFiltroTemp = status);
+            }
+
+            Future<void> selecionarEstoque() async {
+              final _ProdutoEstoqueFiltroMobile? estoque =
+                  await _openSubSheetOnNextFrame<_ProdutoEstoqueFiltroMobile>(
+                    () => _showStockFilterSelector(
+                      sheetContext,
+                      estoqueFiltroTemp,
+                    ),
+                  );
+              if (estoque == null) return;
+              modalSetState(() => estoqueFiltroTemp = estoque);
+            }
+
+            Future<void> selecionarOrdenacao() async {
+              final String? novaOrdenacao =
+                  await _openSubSheetOnNextFrame<String>(
+                    () => _showSortSelector(sheetContext, ordenacaoTemp),
+                  );
+              if (novaOrdenacao == null) return;
+              modalSetState(() => ordenacaoTemp = novaOrdenacao);
+            }
+
+            final bool temFiltros =
+                (categoriaSelecionadaTemp != null &&
+                    categoriaSelecionadaTemp!.isNotEmpty) ||
+                statusFiltroTemp != _ProdutoStatusFiltroMobile.todos ||
+                estoqueFiltroTemp != _ProdutoEstoqueFiltroMobile.todos ||
+                ordenacaoTemp != 'nome';
+
+            return SafeArea(
+              top: false,
+              child: Container(
+                margin: EdgeInsets.fromLTRB(12, 0, 12, 12),
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.74,
+                ),
+                decoration: BoxDecoration(
+                  color: _surfaceColor,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: SixMobilePalette.navigationShadow,
+                      blurRadius: 28,
+                      offset: Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Center(
+                        child: Container(
+                          width: 42,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: _borderColor,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Row(
+                        children: <Widget>[
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: _softAccentColor,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Icon(
+                              Icons.tune_rounded,
+                              color: _accentColor,
+                              size: 20,
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  _t(
+                                    'produto.mobile.filtersTitle',
+                                    'Filtrar catálogo',
+                                  ),
+                                  style: TextStyle(
+                                    color: _titleTextColor,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  _t(
+                                    'produto.mobile.filtersSubtitle',
+                                    'Ajuste categoria, status, estoque e ordenação.',
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: _mutedTextColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 16),
+                      _FilterSelectorTile(
+                        icon: Icons.category_outlined,
+                        label: _t(
+                          'produto.webList.filter.category',
+                          'Categoria',
+                        ),
+                        value: _categoriaSelecionadaLabel(
+                          categoriaSelecionadaTemp,
+                        ),
+                        onTap: selecionarCategoria,
+                      ),
+                      SizedBox(height: 10),
+                      _FilterSelectorTile(
+                        icon: Icons.toggle_on_outlined,
+                        label: _t('atendimentoTecnico.status', 'Status'),
+                        value: _statusFiltroLabel(statusFiltroTemp),
+                        onTap: selecionarStatus,
+                      ),
+                      SizedBox(height: 10),
+                      _FilterSelectorTile(
+                        icon: Icons.inventory_2_outlined,
+                        label: _t('workspaceHome.stock.title', 'Estoque'),
+                        value: _estoqueFiltroLabel(estoqueFiltroTemp),
+                        onTap: selecionarEstoque,
+                      ),
+                      SizedBox(height: 10),
+                      _FilterSelectorTile(
+                        icon: Icons.swap_vert_rounded,
+                        label: _t('produto.webList.sort.label', 'Ordenação'),
+                        value: _ordenacaoLabel(ordenacaoTemp),
+                        onTap: selecionarOrdenacao,
+                      ),
+                      SizedBox(height: 16),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed:
+                                  temFiltros
+                                      ? () {
+                                        modalSetState(() {
+                                          categoriaSelecionadaTemp = null;
+                                          statusFiltroTemp =
+                                              _ProdutoStatusFiltroMobile.todos;
+                                          estoqueFiltroTemp =
+                                              _ProdutoEstoqueFiltroMobile.todos;
+                                          ordenacaoTemp = 'nome';
+                                        });
+                                      }
+                                      : null,
+                              child: Text(_t('common.clear', 'Limpar')),
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: FilledButton(
+                              onPressed: () {
+                                Navigator.of(context).pop(
+                                  _ProdutoMobileFilterSelection(
+                                    categoriaId: categoriaSelecionadaTemp,
+                                    statusFiltro: statusFiltroTemp,
+                                    estoqueFiltro: estoqueFiltroTemp,
+                                    ordenacao: ordenacaoTemp,
+                                  ),
+                                );
+                              },
+                              child: Text(_t('common.confirm', 'Confirmar')),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (selection == null || !mounted) return;
+
+    setState(() {
+      _categoriaSelecionadaId = selection.categoriaId;
+      _statusFiltro = selection.statusFiltro;
+      _estoqueFiltro = selection.estoqueFiltro;
+      ordenacao = selection.ordenacao;
+    });
+    aplicarFiltroOrdenacao();
+  }
+
+  Future<String?> _showCategoryFilterSelector(
+    BuildContext launcherContext,
+    String? categoriaSelecionada,
+  ) async {
+    String termo = '';
+
+    final String? result = await showModalBottomSheet<String>(
+      context: launcherContext,
+      isScrollControlled: true,
+      useSafeArea: true,
+      useRootNavigator: true,
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.44),
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter modalSetState) {
+            final List<_CategoriaFiltroMobile> categoriasFiltradas =
+                _categoriasDisponiveis()
+                    .where((_CategoriaFiltroMobile categoria) {
+                      if (termo.trim().isEmpty) return true;
+                      return categoria.nome.toLowerCase().contains(
+                        termo.trim().toLowerCase(),
+                      );
+                    })
+                    .toList(growable: false);
+            final List<Widget> categoriaOptions = <Widget>[
+              _SortOptionTile(
+                icon: Icons.layers_clear_outlined,
+                title: _t(
+                  'produto.webList.filter.categoryAll',
+                  'Todas categorias',
+                ),
+                subtitle: _t(
+                  'produto.mobile.allCategoriesSubtitle',
+                  'Mostra qualquer categoria disponível.',
+                ),
+                selected:
+                    categoriaSelecionada == null ||
+                    categoriaSelecionada.isEmpty,
+                onTap: () => Navigator.of(context).pop(''),
+              ),
+              ...categoriasFiltradas.map(
+                (_CategoriaFiltroMobile categoria) => Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: _SortOptionTile(
+                    icon: Icons.category_outlined,
+                    title: categoria.nome,
+                    subtitle: _t(
+                      'produto.mobile.categoryOptionSubtitle',
+                      'Filtra a lista por esta categoria.',
+                    ),
+                    selected: categoriaSelecionada == categoria.id,
+                    onTap: () => Navigator.of(context).pop(categoria.id),
+                  ),
+                ),
+              ),
+            ];
+            final bool exibirListaCompacta = categoriaOptions.length <= 4;
+
+            Widget buildHeader() {
+              return Padding(
+                padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Center(
+                      child: Container(
+                        width: 42,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: _borderColor,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      _t('produto.webList.filter.category', 'Categoria'),
+                      style: TextStyle(
+                        color: _titleTextColor,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: _softNeutralColor,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: _borderColor),
+                      ),
+                      child: TextField(
+                        cursorColor: _accentColor,
+                        onChanged:
+                            (String value) =>
+                                modalSetState(() => termo = value),
+                        decoration: InputDecoration(
+                          hintText: _t('common.search', 'Buscar'),
+                          hintStyle: TextStyle(color: _mutedTextColor),
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: _accentColor,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            BoxDecoration decoration = BoxDecoration(
+              color: _surfaceColor,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: SixMobilePalette.navigationShadow,
+                  blurRadius: 28,
+                  offset: Offset(0, 12),
+                ),
+              ],
+            );
+
+            if (categoriasFiltradas.isEmpty || exibirListaCompacta) {
+              return SafeArea(
+                top: false,
+                child: Container(
+                  margin: EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(context).height * 0.82,
+                  ),
+                  decoration: decoration,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        buildHeader(),
+                        if (categoriasFiltradas.isEmpty)
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(24, 20, 24, 28),
+                            child: Text(
+                              _t(
+                                'common.noResults',
+                                'Nenhum resultado encontrado',
+                              ),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: _mutedTextColor,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          )
+                        else
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
+                            child: Column(children: categoriaOptions),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            return SafeArea(
+              top: false,
+              child: DraggableScrollableSheet(
+                expand: false,
+                initialChildSize: 0.82,
+                minChildSize: 0.60,
+                maxChildSize: 0.96,
+                builder: (
+                  BuildContext context,
+                  ScrollController scrollController,
+                ) {
+                  return Container(
+                    margin: EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    decoration: decoration,
+                    child: Column(
+                      children: <Widget>[
+                        buildHeader(),
+                        Expanded(
+                          child: ListView(
+                            controller: scrollController,
+                            padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
+                            children: categoriaOptions,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    return result;
+  }
+
+  Future<_ProdutoStatusFiltroMobile?> _showStatusFilterSelector(
+    BuildContext launcherContext,
+    _ProdutoStatusFiltroMobile selected,
+  ) {
+    return _showFilterOptionSelector<_ProdutoStatusFiltroMobile>(
+      launcherContext: launcherContext,
+      title: _t('atendimentoTecnico.status', 'Status'),
+      options: <_FilterOption<_ProdutoStatusFiltroMobile>>[
+        _FilterOption<_ProdutoStatusFiltroMobile>(
+          value: _ProdutoStatusFiltroMobile.todos,
+          icon: Icons.apps_rounded,
+          title: _t('produto.webList.filter.statusAll', 'Todos'),
+          subtitle: _t(
+            'produto.mobile.statusAllSubtitle',
+            'Exibe itens ativos e inativos.',
+          ),
+        ),
+        _FilterOption<_ProdutoStatusFiltroMobile>(
+          value: _ProdutoStatusFiltroMobile.ativos,
+          icon: Icons.check_circle_outline_rounded,
+          title: _t('common.active', 'Ativo'),
+          subtitle: _t(
+            'produto.mobile.statusActiveSubtitle',
+            'Mostra apenas itens ativos.',
+          ),
+        ),
+        _FilterOption<_ProdutoStatusFiltroMobile>(
+          value: _ProdutoStatusFiltroMobile.inativos,
+          icon: Icons.pause_circle_outline_rounded,
+          title: _t('common.inactive', 'Inativo'),
+          subtitle: _t(
+            'produto.mobile.statusInactiveSubtitle',
+            'Mostra apenas itens inativos.',
+          ),
+        ),
+      ],
+      selected: selected,
+    );
+  }
+
+  Future<_ProdutoEstoqueFiltroMobile?> _showStockFilterSelector(
+    BuildContext launcherContext,
+    _ProdutoEstoqueFiltroMobile selected,
+  ) {
+    return _showFilterOptionSelector<_ProdutoEstoqueFiltroMobile>(
+      launcherContext: launcherContext,
+      title: _t('workspaceHome.stock.title', 'Estoque'),
+      options: <_FilterOption<_ProdutoEstoqueFiltroMobile>>[
+        _FilterOption<_ProdutoEstoqueFiltroMobile>(
+          value: _ProdutoEstoqueFiltroMobile.todos,
+          icon: Icons.apps_rounded,
+          title: _t('produto.webList.filter.stockAll', 'Todos'),
+          subtitle: _t(
+            'produto.mobile.stockAllSubtitle',
+            'Não restringe a situação de estoque.',
+          ),
+        ),
+        _FilterOption<_ProdutoEstoqueFiltroMobile>(
+          value: _ProdutoEstoqueFiltroMobile.emEstoque,
+          icon: Icons.inventory_2_outlined,
+          title: _t('produto.webList.filter.stockAvailable', 'Em estoque'),
+          subtitle: _t(
+            'produto.mobile.stockAvailableSubtitle',
+            'Mostra itens com saldo disponível.',
+          ),
+        ),
+        _FilterOption<_ProdutoEstoqueFiltroMobile>(
+          value: _ProdutoEstoqueFiltroMobile.estoqueBaixo,
+          icon: Icons.warning_amber_rounded,
+          title: _t('produto.webList.stockLow', 'Estoque baixo'),
+          subtitle: _t(
+            'produto.mobile.stockLowSubtitle',
+            'Mostra itens no mínimo configurado.',
+          ),
+        ),
+        _FilterOption<_ProdutoEstoqueFiltroMobile>(
+          value: _ProdutoEstoqueFiltroMobile.semEstoque,
+          icon: Icons.remove_shopping_cart_outlined,
+          title: _t('produto.webList.stockOut', 'Sem estoque'),
+          subtitle: _t(
+            'produto.mobile.stockOutSubtitle',
+            'Mostra itens sem saldo no catálogo.',
+          ),
+        ),
+        _FilterOption<_ProdutoEstoqueFiltroMobile>(
+          value: _ProdutoEstoqueFiltroMobile.estoqueNegativo,
+          icon: Icons.trending_down_rounded,
+          title: _t('produto.webList.stockNegative', 'Estoque negativo'),
+          subtitle: _t(
+            'produto.mobile.stockNegativeSubtitle',
+            'Mostra itens com saldo negativo.',
+          ),
+        ),
+      ],
+      selected: selected,
+    );
+  }
+
+  Future<String?> _showSortSelector(
+    BuildContext launcherContext,
+    String selected,
+  ) {
+    return _showFilterOptionSelector<String>(
+      launcherContext: launcherContext,
+      title: _t('produto.webList.sort.label', 'Ordenação'),
+      options: <_FilterOption<String>>[
+        _FilterOption<String>(
+          value: 'nome',
+          icon: Icons.sort_by_alpha_rounded,
+          title: _t('produto.mobile.sortName', 'Nome'),
+          subtitle: _t('produto.mobile.sortNameSubtitle', 'Ordem alfabética.'),
+        ),
+        _FilterOption<String>(
+          value: 'precoAsc',
+          icon: Icons.south_west_rounded,
+          title: _t('produto.mobile.sortLowestPrice', 'Menor preço'),
+          subtitle: _t(
+            'produto.mobile.sortLowestPriceSubtitle',
+            'Do mais barato ao mais caro.',
+          ),
+        ),
+        _FilterOption<String>(
+          value: 'precoDesc',
+          icon: Icons.north_east_rounded,
+          title: _t('produto.mobile.sortHighestPrice', 'Maior preço'),
+          subtitle: _t(
+            'produto.mobile.sortHighestPriceSubtitle',
+            'Do mais caro ao mais barato.',
+          ),
+        ),
+      ],
+      selected: selected,
+    );
+  }
+
+  Future<T?> _showFilterOptionSelector<T>({
+    required BuildContext launcherContext,
+    required String title,
+    required List<_FilterOption<T>> options,
+    required T selected,
+  }) {
+    return showModalBottomSheet<T>(
+      context: launcherContext,
+      useSafeArea: true,
+      useRootNavigator: true,
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.44),
+      builder: (BuildContext context) {
+        final List<Widget> optionTiles = options
+            .asMap()
+            .entries
+            .map((MapEntry<int, _FilterOption<T>> entry) {
+              final _FilterOption<T> option = entry.value;
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: entry.key == options.length - 1 ? 0 : 8,
+                ),
+                child: _SortOptionTile(
+                  icon: option.icon,
+                  title: option.title,
+                  subtitle: option.subtitle,
+                  selected: option.value == selected,
+                  onTap: () => Navigator.of(context).pop(option.value),
+                ),
+              );
+            })
+            .toList(growable: false);
+        final bool exibirListaCompacta = optionTiles.length <= 4;
+
         return SafeArea(
           top: false,
           child: Container(
             margin: EdgeInsets.fromLTRB(12, 0, 12, 12),
-            padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.74,
+            ),
             decoration: BoxDecoration(
               color: _surfaceColor,
               borderRadius: BorderRadius.circular(28),
@@ -1945,90 +2910,42 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                 ),
               ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Center(
-                  child: Container(
-                    width: 42,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: _borderColor,
-                      borderRadius: BorderRadius.circular(999),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: _borderColor,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(height: 16),
-                Row(
-                  children: <Widget>[
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: _softAccentColor,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Icon(
-                        Icons.tune_rounded,
-                        color: _accentColor,
-                        size: 20,
-                      ),
+                  SizedBox(height: 16),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: _titleTextColor,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
                     ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            'Organizar catálogo',
-                            style: TextStyle(
-                              color: _titleTextColor,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Escolha como os itens aparecem na lista.',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: _mutedTextColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 16),
-                _SortOptionTile(
-                  icon: Icons.sort_by_alpha_rounded,
-                  title: 'Nome',
-                  subtitle: 'Ordem alfabética',
-                  selected: ordenacao == 'nome',
-                  onTap: () => _changeSort('nome'),
-                ),
-                SizedBox(height: 8),
-                _SortOptionTile(
-                  icon: Icons.south_west_rounded,
-                  title: 'Menor preço',
-                  subtitle: 'Do mais barato ao mais caro',
-                  selected: ordenacao == 'precoAsc',
-                  onTap: () => _changeSort('precoAsc'),
-                ),
-                SizedBox(height: 8),
-                _SortOptionTile(
-                  icon: Icons.north_east_rounded,
-                  title: 'Maior preço',
-                  subtitle: 'Do mais caro ao mais barato',
-                  selected: ordenacao == 'precoDesc',
-                  onTap: () => _changeSort('precoDesc'),
-                ),
-              ],
+                  ),
+                  SizedBox(height: 16),
+                  Flexible(
+                    child:
+                        exibirListaCompacta
+                            ? SingleChildScrollView(
+                              child: Column(children: optionTiles),
+                            )
+                            : ListView(shrinkWrap: true, children: optionTiles),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -2036,14 +2953,211 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     );
   }
 
-  void _changeSort(String value) {
-    Navigator.pop(context);
-    ordenacao = value;
-    aplicarFiltroOrdenacao();
+  String _formatCurrency(double value) {
+    return context.read<LocaleSettingsProvider>().formatCurrency(value);
   }
 
-  String _formatCurrency(double value) {
-    return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+  String _formatDecimal(num value) {
+    return context.read<LocaleSettingsProvider>().formatDecimal(value);
+  }
+
+  String _categoriaProdutoLabel(ProdutoModel produto) {
+    return produto.objCategoria?.nomeCategoria.trim() ?? '';
+  }
+
+  String _grupoProdutoLabel(ProdutoModel produto) {
+    return produto.objAgrupamento?.grupoDoProduto.trim() ?? '';
+  }
+
+  String _estoqueProdutoLabel(ProdutoModel produto) {
+    if (!_matchesTipoSelecionado(produto, 'PRODUTO')) return '';
+
+    final double quantidade = _quantidadeEstoque(produto);
+    final _ProdutoSituacaoEstoqueMobile situacao = _situacaoEstoque(produto);
+
+    switch (situacao) {
+      case _ProdutoSituacaoEstoqueMobile.naoAplicavel:
+        return '';
+      case _ProdutoSituacaoEstoqueMobile.emEstoque:
+        return _t(
+          'produto.webList.stockQuantity',
+          'Qtd {value}',
+        ).replaceAll('{value}', _formatDecimal(quantidade));
+      case _ProdutoSituacaoEstoqueMobile.estoqueBaixo:
+        return _t('produto.webList.stockLow', 'Estoque baixo');
+      case _ProdutoSituacaoEstoqueMobile.semEstoque:
+        return _t('produto.webList.stockOut', 'Sem estoque');
+      case _ProdutoSituacaoEstoqueMobile.estoqueNegativo:
+        return _t('produto.webList.stockNegative', 'Estoque negativo');
+    }
+  }
+
+  String _garantiaProdutoLabel(ProdutoModel produto) {
+    final String garantia = produto.objetoServico?.tempoDaGarantia.trim() ?? '';
+    if (garantia.isEmpty) return '';
+
+    return '${_t('produto.mobile.warrantyLabel', 'Tempo da garantia')}: $garantia';
+  }
+
+  Color _corEstoqueProduto(ProdutoModel produto) {
+    final _ProdutoSituacaoEstoqueMobile situacao = _situacaoEstoque(produto);
+
+    switch (situacao) {
+      case _ProdutoSituacaoEstoqueMobile.estoqueNegativo:
+      case _ProdutoSituacaoEstoqueMobile.semEstoque:
+        return const Color(0xFFDC2626);
+      case _ProdutoSituacaoEstoqueMobile.estoqueBaixo:
+        return const Color(0xFFF97316);
+      case _ProdutoSituacaoEstoqueMobile.emEstoque:
+      case _ProdutoSituacaoEstoqueMobile.naoAplicavel:
+        return _titleTextColor;
+    }
+  }
+
+  String _resumoProdutoHorizontal(ProdutoModel produto) {
+    final List<String> partes = <String>[];
+
+    final String categoria = _categoriaProdutoLabel(produto);
+    if (categoria.isNotEmpty) {
+      partes.add(
+        '${_t('produto.mobile.categoryLabel', 'Categoria')} $categoria',
+      );
+    }
+
+    final String modelo = produto.modeloProduto.trim();
+    if (modelo.isNotEmpty && modelo.toUpperCase() != 'UNIDADE') {
+      partes.add('${_t('produto.mobile.modelLabel', 'Modelo')} $modelo');
+    }
+
+    final String garantia = _garantiaProdutoLabel(produto);
+    if (garantia.isNotEmpty) {
+      partes.add(garantia);
+    }
+
+    return partes.join('. ');
+  }
+
+  Widget _buildProdutoInfoSection({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _surfaceElevatedColor.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            title,
+            style: TextStyle(
+              color: _titleTextColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 10),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProdutoInfoRow({
+    required String label,
+    String? value,
+    Widget? valueWidget,
+    Color? valueColor,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: _mutedTextColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          SizedBox(width: 12),
+          if (valueWidget != null)
+            valueWidget
+          else
+            Flexible(
+              child: Text(
+                value ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: valueColor ?? _titleTextColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _categoriaSelecionadaLabel(String? categoriaId) {
+    if (categoriaId == null || categoriaId.isEmpty) {
+      return _t('produto.webList.filter.categoryAll', 'Todas categorias');
+    }
+
+    for (final _CategoriaFiltroMobile categoria in _categoriasDisponiveis()) {
+      if (categoria.id == categoriaId) return categoria.nome;
+    }
+
+    return _t('produto.webList.filter.categoryAll', 'Todas categorias');
+  }
+
+  String _statusFiltroLabel(_ProdutoStatusFiltroMobile statusFiltro) {
+    switch (statusFiltro) {
+      case _ProdutoStatusFiltroMobile.todos:
+        return _t('produto.webList.filter.statusAll', 'Todos');
+      case _ProdutoStatusFiltroMobile.ativos:
+        return _t('common.active', 'Ativo');
+      case _ProdutoStatusFiltroMobile.inativos:
+        return _t('common.inactive', 'Inativo');
+    }
+  }
+
+  String _estoqueFiltroLabel(_ProdutoEstoqueFiltroMobile estoqueFiltro) {
+    switch (estoqueFiltro) {
+      case _ProdutoEstoqueFiltroMobile.todos:
+        return _t('produto.webList.filter.stockAll', 'Todos');
+      case _ProdutoEstoqueFiltroMobile.emEstoque:
+        return _t('produto.webList.filter.stockAvailable', 'Em estoque');
+      case _ProdutoEstoqueFiltroMobile.estoqueBaixo:
+        return _t('produto.webList.stockLow', 'Estoque baixo');
+      case _ProdutoEstoqueFiltroMobile.semEstoque:
+        return _t('produto.webList.stockOut', 'Sem estoque');
+      case _ProdutoEstoqueFiltroMobile.estoqueNegativo:
+        return _t('produto.webList.stockNegative', 'Estoque negativo');
+    }
+  }
+
+  String _ordenacaoLabel(String ordenacaoAtual) {
+    switch (ordenacaoAtual) {
+      case 'precoAsc':
+        return _t('produto.mobile.sortLowestPrice', 'Menor preço');
+      case 'precoDesc':
+        return _t('produto.mobile.sortHighestPrice', 'Maior preço');
+      case 'nome':
+      default:
+        return _t('produto.webList.sort.name', 'Ordenar por nome');
+    }
   }
 }
 
@@ -2186,7 +3300,9 @@ class _StatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        ativo ? 'Ativo' : 'Inativo',
+        ativo
+            ? context.t('common.active', fallback: 'Ativo')
+            : context.t('common.inactive', fallback: 'Inativo'),
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w900,
@@ -2234,6 +3350,101 @@ class _InfoChip extends StatelessWidget {
       ),
     );
   }
+}
+
+class _FilterSelectorTile extends StatelessWidget {
+  const _FilterSelectorTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: SixMobilePalette.softNeutralSurface,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: SixMobilePalette.border),
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: SixMobilePalette.softAccentSurface,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: SixMobilePalette.accent, size: 20),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: SixMobilePalette.mutedText,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: SixMobilePalette.titleText,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: SixMobilePalette.mutedText,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterOption<T> {
+  const _FilterOption({
+    required this.value,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final T value;
+  final IconData icon;
+  final String title;
+  final String subtitle;
 }
 
 class _SortOptionTile extends StatelessWidget {
@@ -2403,7 +3614,10 @@ class _ErrorState extends StatelessWidget {
           Icon(Icons.wifi_off_outlined, color: Color(0xFFDC2626), size: 34),
           SizedBox(height: 10),
           Text(
-            'Não foi possível carregar o catálogo.',
+            context.t(
+              'produto.mobile.catalogLoadError',
+              fallback: 'Não foi possível carregar o catálogo.',
+            ),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: SixMobilePalette.titleText,
@@ -2414,7 +3628,9 @@ class _ErrorState extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: () => onRetry(),
             icon: Icon(Icons.refresh_rounded),
-            label: Text('Tentar novamente'),
+            label: Text(
+              context.t('common.tryAgain', fallback: 'Tentar novamente'),
+            ),
           ),
         ],
       ),
@@ -2443,7 +3659,10 @@ class _EmptyState extends StatelessWidget {
           ),
           SizedBox(height: 10),
           Text(
-            'Nenhum item encontrado.',
+            context.t(
+              'produto.mobile.emptyTitle',
+              fallback: 'Nenhum item encontrado.',
+            ),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: SixMobilePalette.titleText,
@@ -2452,7 +3671,10 @@ class _EmptyState extends StatelessWidget {
           ),
           SizedBox(height: 4),
           Text(
-            'Ajuste a busca ou atualize a listagem.',
+            context.t(
+              'produto.mobile.emptyDescription',
+              fallback: 'Ajuste a busca ou atualize a listagem.',
+            ),
             textAlign: TextAlign.center,
             style: TextStyle(color: SixMobilePalette.mutedText, fontSize: 12),
           ),

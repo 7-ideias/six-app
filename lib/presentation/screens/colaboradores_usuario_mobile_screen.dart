@@ -5,6 +5,7 @@ import 'package:sixpos/core/config/app_config.dart';
 import 'package:sixpos/core/services/colaborador_convite_web_service.dart';
 import 'package:sixpos/data/models/colaborador_convite_model.dart';
 import 'package:sixpos/data/models/colaborador_usuario_model.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
@@ -24,15 +25,23 @@ class ColaboradoresUsuarioMobileScreen extends StatefulWidget {
 
 class _ColaboradoresUsuarioMobileScreenState
     extends State<ColaboradoresUsuarioMobileScreen> {
-  static Color get _backgroundColor => SixMobilePalette.background;
-  static Color get _primaryColor => SixMobilePalette.primary;
-  static Color get _secondaryColor => SixMobilePalette.secondary;
-  static Color get _accentColor => SixMobilePalette.accent;
-  static Color get _softSurfaceColor => SixMobilePalette.softNeutralSurface;
-  static Color get _softAccentColor => SixMobilePalette.softAccentSurface;
-  static Color get _mutedTextColor => SixMobilePalette.mutedText;
-  static Color get _titleTextColor => SixMobilePalette.titleText;
-  static Color get _borderColor => SixMobilePalette.border;
+  SixMobileColorScheme get _colors => context.sixMobileColors;
+  Color get _backgroundColor => _colors.background;
+  Color get _surfaceColor => _colors.surface;
+  Color get _surfaceElevatedColor => _colors.surfaceElevated;
+  Color get _primaryColor => _colors.primary;
+  Color get _secondaryColor => _colors.secondary;
+  Color get _accentColor => _colors.accent;
+  Color get _onAccentColor => _colors.onAccent;
+  Color get _softSurfaceColor => _colors.softSurface;
+  Color get _softAccentColor => _colors.softAccentSurface;
+  Color get _mutedTextColor => _colors.mutedText;
+  Color get _titleTextColor => _colors.titleText;
+  Color get _borderColor => _colors.border;
+  Color get _strongBorderColor => _colors.strongBorder;
+  Color get _errorColor => _colors.error;
+  Color get _errorBorderColor => _colors.errorBorder;
+  bool get _isDarkMode => Theme.of(context).brightness == Brightness.dark;
 
   late final ColaboradorUsuarioApiClient _api;
   final TextEditingController _search = TextEditingController();
@@ -337,14 +346,14 @@ class _ColaboradoresUsuarioMobileScreenState
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: _surfaceElevatedColor,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: _borderColor),
+                  border: Border.all(color: _strongBorderColor),
                 ),
                 child: Text(
                   _formatCount(_items.length),
                   style: TextStyle(
-                    color: _primaryColor,
+                    color: _accentColor,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -442,7 +451,7 @@ class _ColaboradoresUsuarioMobileScreenState
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: _accentColor,
-                    foregroundColor: SixMobilePalette.onPrimary,
+                    foregroundColor: _onAccentColor,
                     visualDensity: VisualDensity.compact,
                   ),
                 ),
@@ -525,13 +534,16 @@ class _ColaboradoresUsuarioMobileScreenState
     String value, {
     bool highlight = false,
   }) {
-    final Color iconColor = highlight ? Colors.orange.shade800 : _primaryColor;
-    final Color bgColor = highlight ? Color(0xFFFFF7ED) : _softAccentColor;
+    final Color iconColor = highlight ? _errorColor : _accentColor;
+    final Color bgColor =
+        highlight
+            ? _errorBorderColor.withValues(alpha: _isDarkMode ? 0.34 : 0.12)
+            : _softAccentColor;
 
     return Container(
       padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _surfaceColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _borderColor),
       ),
@@ -578,7 +590,7 @@ class _ColaboradoresUsuarioMobileScreenState
     return Container(
       padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _borderColor),
       ),
@@ -618,7 +630,7 @@ class _ColaboradoresUsuarioMobileScreenState
       margin: EdgeInsets.only(bottom: 12),
       padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _borderColor),
       ),
@@ -725,14 +737,14 @@ class _ColaboradoresUsuarioMobileScreenState
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 9, vertical: 7),
       decoration: BoxDecoration(
-        color: Color(0xFFF8FAFC),
+        color: _softSurfaceColor,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: _borderColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 14, color: _primaryColor),
+          Icon(icon, size: 14, color: _accentColor),
           SizedBox(width: 5),
           ConstrainedBox(
             constraints: BoxConstraints(maxWidth: 190),
@@ -741,7 +753,7 @@ class _ColaboradoresUsuarioMobileScreenState
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: _primaryColor,
+                color: _titleTextColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -773,15 +785,20 @@ class _ColaboradoresUsuarioMobileScreenState
 
   Widget _accessHint(ColaboradorUsuarioResumo colaborador) {
     final bool semEmail = colaborador.email.trim().isEmpty;
+    final Color backgroundColor =
+        semEmail
+            ? _errorBorderColor.withValues(alpha: _isDarkMode ? 0.34 : 0.12)
+            : _softAccentColor;
+    final Color borderColor = semEmail ? _errorBorderColor : _strongBorderColor;
+    final Color iconColor = semEmail ? _errorColor : _accentColor;
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: semEmail ? Color(0xFFFFF7ED) : Color(0xFFEFF6FF),
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: semEmail ? Color(0xFFFED7AA) : Color(0xFFBFDBFE),
-        ),
+        border: Border.all(color: borderColor),
       ),
       child: Row(
         children: <Widget>[
@@ -789,7 +806,7 @@ class _ColaboradoresUsuarioMobileScreenState
             semEmail
                 ? Icons.warning_amber_rounded
                 : Icons.admin_panel_settings_outlined,
-            color: semEmail ? Colors.orange.shade800 : _primaryColor,
+            color: iconColor,
             size: 19,
           ),
           SizedBox(width: 8),
@@ -806,7 +823,11 @@ class _ColaboradoresUsuarioMobileScreenState
                   ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+              style: TextStyle(
+                color: _titleTextColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],
@@ -819,7 +840,7 @@ class _ColaboradoresUsuarioMobileScreenState
       width: double.infinity,
       padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _borderColor),
       ),
@@ -829,7 +850,7 @@ class _ColaboradoresUsuarioMobileScreenState
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: Color(0xFFEFF6FF),
+              color: _softAccentColor,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Icon(Icons.group_add_outlined, color: _primaryColor),
@@ -1023,13 +1044,16 @@ class _ColaboradorConviteMobileSheet extends StatefulWidget {
 
 class _ColaboradorConviteMobileSheetState
     extends State<_ColaboradorConviteMobileSheet> {
-  static Color get _accentColor => SixMobilePalette.accent;
-  static Color get _backgroundColor => SixMobilePalette.background;
-  static Color get _surfaceColor => SixMobilePalette.surface;
-  static Color get _softAccentColor => SixMobilePalette.softAccentSurface;
-  static Color get _mutedTextColor => SixMobilePalette.mutedText;
-  static Color get _titleTextColor => SixMobilePalette.titleText;
-  static Color get _borderColor => SixMobilePalette.border;
+  SixMobileColorScheme get _colors => context.sixMobileColors;
+  Color get _accentColor => _colors.accent;
+  Color get _surfaceColor => _colors.surface;
+  Color get _surfaceElevatedColor => _colors.surfaceElevated;
+  Color get _softSurfaceColor => _colors.softSurface;
+  Color get _softAccentColor => _colors.softAccentSurface;
+  Color get _mutedTextColor => _colors.mutedText;
+  Color get _titleTextColor => _colors.titleText;
+  Color get _borderColor => _colors.border;
+  Color get _strongBorderColor => _colors.strongBorder;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ColaboradorConviteWebService _service = ColaboradorConviteWebService();
@@ -1159,7 +1183,7 @@ class _ColaboradorConviteMobileSheetState
         maxHeight: MediaQuery.sizeOf(context).height * 0.92,
       ),
       decoration: BoxDecoration(
-        color: _backgroundColor,
+        color: _surfaceColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SingleChildScrollView(
@@ -1175,7 +1199,7 @@ class _ColaboradorConviteMobileSheetState
                   width: 42,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: Color(0xFFCBD5E1),
+                    color: _strongBorderColor.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -1400,7 +1424,7 @@ class _ColaboradorConviteMobileSheetState
       prefixIcon: Icon(icon),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       filled: true,
-      fillColor: _surfaceColor,
+      fillColor: _softSurfaceColor,
     );
   }
 
@@ -1414,7 +1438,7 @@ class _ColaboradorConviteMobileSheetState
       margin: EdgeInsets.only(bottom: 10),
       padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _surfaceElevatedColor,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _borderColor),
       ),
@@ -1456,13 +1480,16 @@ class _EditarColaboradorMobileSheet extends StatefulWidget {
 
 class _EditarColaboradorMobileSheetState
     extends State<_EditarColaboradorMobileSheet> {
-  static Color get _accentColor => SixMobilePalette.accent;
-  static Color get _backgroundColor => SixMobilePalette.background;
-  static Color get _surfaceColor => SixMobilePalette.surface;
-  static Color get _softAccentColor => SixMobilePalette.softAccentSurface;
-  static Color get _mutedTextColor => SixMobilePalette.mutedText;
-  static Color get _titleTextColor => SixMobilePalette.titleText;
-  static Color get _borderColor => SixMobilePalette.border;
+  SixMobileColorScheme get _colors => context.sixMobileColors;
+  Color get _accentColor => _colors.accent;
+  Color get _surfaceColor => _colors.surface;
+  Color get _surfaceElevatedColor => _colors.surfaceElevated;
+  Color get _softSurfaceColor => _colors.softSurface;
+  Color get _softAccentColor => _colors.softAccentSurface;
+  Color get _mutedTextColor => _colors.mutedText;
+  Color get _titleTextColor => _colors.titleText;
+  Color get _borderColor => _colors.border;
+  Color get _strongBorderColor => _colors.strongBorder;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _nome;
@@ -1596,7 +1623,7 @@ class _EditarColaboradorMobileSheetState
         maxHeight: MediaQuery.sizeOf(context).height * 0.92,
       ),
       decoration: BoxDecoration(
-        color: _backgroundColor,
+        color: _surfaceColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SingleChildScrollView(
@@ -1612,7 +1639,7 @@ class _EditarColaboradorMobileSheetState
                   width: 42,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: Color(0xFFCBD5E1),
+                    color: _strongBorderColor.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -1801,7 +1828,7 @@ class _EditarColaboradorMobileSheetState
       prefixIcon: Icon(icon),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       filled: true,
-      fillColor: _surfaceColor,
+      fillColor: _softSurfaceColor,
     );
   }
 
@@ -1815,7 +1842,7 @@ class _EditarColaboradorMobileSheetState
       margin: EdgeInsets.only(bottom: 10),
       padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _surfaceElevatedColor,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _borderColor),
       ),
