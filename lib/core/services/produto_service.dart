@@ -28,7 +28,9 @@ class ProdutoService {
 
   final client = InterceptedClient.build(interceptors: [LoggingInterceptor()]);
 
-  Future<ProdutoResponseModel> produtosList(Map<String, String>? headers) async {
+  Future<ProdutoResponseModel> produtosList(
+    Map<String, String>? headers,
+  ) async {
     final queryParams = <String, String>{};
     if (headers != null && headers.containsKey('tipo')) {
       queryParams['tipo'] = headers['tipo']!;
@@ -70,9 +72,9 @@ class ProdutoService {
       'Authorization': 'Bearer $token',
     };
 
-    final url = Uri.parse(endpointDashboard).replace(
-      queryParameters: <String, String>{'tipo': tipo},
-    );
+    final url = Uri.parse(
+      endpointDashboard,
+    ).replace(queryParameters: <String, String>{'tipo': tipo});
 
     try {
       print('🌐 GET $url');
@@ -84,7 +86,9 @@ class ProdutoService {
       print('📥 Response body: ${response.body}');
 
       if (response.statusCode != 200) {
-        throw Exception('Erro ao carregar dashboard de produtos: ${response.statusCode}');
+        throw Exception(
+          'Erro ao carregar dashboard de produtos: ${response.statusCode}',
+        );
       }
 
       final dynamic decoded = jsonDecode(response.body);
@@ -122,7 +126,9 @@ class ProdutoService {
       print('📥 Response body: ${response.body}');
 
       if (response.statusCode != 200) {
-        throw Exception('Erro ao carregar dashboard de estoque: ${response.statusCode}');
+        throw Exception(
+          'Erro ao carregar dashboard de estoque: ${response.statusCode}',
+        );
       }
 
       final dynamic decoded = jsonDecode(response.body);
@@ -160,7 +166,9 @@ class ProdutoService {
       print('📥 Response body: ${response.body}');
 
       if (response.statusCode != 200) {
-        throw Exception('Erro ao carregar dashboard de serviços: ${response.statusCode}');
+        throw Exception(
+          'Erro ao carregar dashboard de serviços: ${response.statusCode}',
+        );
       }
 
       final dynamic decoded = jsonDecode(response.body);
@@ -194,11 +202,7 @@ class ProdutoService {
       print('🟦 Headers: $headers');
       print('📦 Body: $body');
 
-      final response = await client.post(
-        url,
-        headers: headers,
-        body: body,
-      );
+      final response = await client.post(url, headers: headers, body: body);
 
       print('✅ STATUS: ${response.statusCode}');
       print('📥 Response body: ${response.body}');
@@ -224,6 +228,47 @@ class ProdutoService {
   }
 
   Future<void> atualizarProduto(ProdutoModel produto) async {
+    await _atualizarProduto(
+      ProdutoAtualizacaoParcialRequest(
+        id: produto.id ?? '',
+        ativo: produto.ativo,
+        favorito: produto.favorito,
+        disponivelParaCatalogo: produto.disponivelParaCatalogo,
+      ),
+    );
+  }
+
+  Future<void> atualizarFavoritoProduto({
+    required String produtoId,
+    required bool ativo,
+    required bool favorito,
+  }) async {
+    await _atualizarProduto(
+      ProdutoAtualizacaoParcialRequest(
+        id: produtoId,
+        ativo: ativo,
+        favorito: favorito,
+      ),
+    );
+  }
+
+  Future<void> atualizarDisponivelParaCatalogoProduto({
+    required String produtoId,
+    required bool ativo,
+    required bool disponivelParaCatalogo,
+  }) async {
+    await _atualizarProduto(
+      ProdutoAtualizacaoParcialRequest(
+        id: produtoId,
+        ativo: ativo,
+        disponivelParaCatalogo: disponivelParaCatalogo,
+      ),
+    );
+  }
+
+  Future<void> _atualizarProduto(
+    ProdutoAtualizacaoParcialRequest request,
+  ) async {
     final url = Uri.parse(endpointAtualizacao);
     final authService = AuthService();
     final token = await authService.getAccessToken();
@@ -235,22 +280,18 @@ class ProdutoService {
       'Authorization': 'Bearer $token',
     };
 
-    if (produto.id == null || produto.id!.isEmpty) {
+    if (request.id.isEmpty) {
       throw Exception('Produto sem ID para atualização.');
     }
 
     try {
-      final body = jsonEncode(produto.toJson());
+      final body = jsonEncode(request.toJson());
 
       print('🌐 PUT $url');
       print('🟦 Headers: $headers');
       print('📦 Body: $body');
 
-      final response = await client.put(
-        url,
-        headers: headers,
-        body: body,
-      );
+      final response = await client.put(url, headers: headers, body: body);
 
       print('✅ STATUS: ${response.statusCode}');
       print('📥 Response body: ${response.body}');
@@ -286,7 +327,9 @@ class ProdutoService {
       print('📥 Response body: ${response.body}');
 
       if (response.statusCode != 200) {
-        throw Exception('Erro ao gerar relatório de produtos: ${response.statusCode}');
+        throw Exception(
+          'Erro ao gerar relatório de produtos: ${response.statusCode}',
+        );
       }
 
       final dynamic decoded = jsonDecode(response.body);

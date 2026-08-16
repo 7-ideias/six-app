@@ -880,7 +880,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     );
 
     try {
-      await _produtoService.atualizarProduto(atualizado);
+      await _produtoService.atualizarFavoritoProduto(
+        produtoId: produto.id!,
+        ativo: atualizado.ativo,
+        favorito: atualizado.favorito,
+      );
       if (!mounted) return;
       _substituirProdutoNaLista(atualizado);
     } catch (_) {
@@ -922,7 +926,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     );
 
     try {
-      await _produtoService.atualizarProduto(atualizado);
+      await _produtoService.atualizarDisponivelParaCatalogoProduto(
+        produtoId: produto.id!,
+        ativo: atualizado.ativo,
+        disponivelParaCatalogo: atualizado.disponivelParaCatalogo,
+      );
       if (!mounted) return;
       _substituirProdutoNaLista(atualizado);
       ScaffoldMessenger.of(context).showSnackBar(

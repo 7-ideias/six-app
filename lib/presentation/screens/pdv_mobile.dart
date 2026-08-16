@@ -466,6 +466,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     await ProdutoHelper.retornarProdutosList(
       context,
       tipo: 'PRODUTO',
+      produtosAtivos: true,
       onSucesso: (lista) => produtos = lista,
     );
     return produtos;
