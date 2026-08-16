@@ -334,6 +334,13 @@ class _AdminNavigationSidebar extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               AdminNavItem(
+                icon: Icons.sell_rounded,
+                label: navigationTexts.plans,
+                selected: currentRoute == '/admin/planos',
+                onTap: () => _navigate(context, '/admin/planos'),
+              ),
+              const SizedBox(height: 6),
+              AdminNavItem(
                 icon: Icons.lightbulb_rounded,
                 label: navigationTexts.newIdeas,
                 selected: currentRoute == '/admin/novas-ideias',
@@ -440,18 +447,31 @@ class _AdminNavigationSidebar extends StatelessWidget {
 }
 
 class _AdminNavigationTexts {
-  const _AdminNavigationTexts({required this.newIdeas});
+  const _AdminNavigationTexts({
+    required this.newIdeas,
+    required this.plans,
+  });
 
   final String newIdeas;
+  final String plans;
 
   factory _AdminNavigationTexts.of(BuildContext context) {
     final String language = Localizations.localeOf(context).languageCode;
     if (language == 'en') {
-      return const _AdminNavigationTexts(newIdeas: 'New ideas');
+      return const _AdminNavigationTexts(
+        newIdeas: 'New ideas',
+        plans: 'Plans',
+      );
     }
     if (language == 'es') {
-      return const _AdminNavigationTexts(newIdeas: 'Nuevas ideas');
+      return const _AdminNavigationTexts(
+        newIdeas: 'Nuevas ideas',
+        plans: 'Planes',
+      );
     }
-    return const _AdminNavigationTexts(newIdeas: 'Novas ideias');
+    return const _AdminNavigationTexts(
+      newIdeas: 'Novas ideias',
+      plans: 'Planos',
+    );
   }
 }

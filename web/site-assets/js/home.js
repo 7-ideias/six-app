@@ -993,6 +993,9 @@
     });
 
     storeLocale(normalized);
+    window.dispatchEvent(new CustomEvent('sixapp:locale-changed', {
+      detail: { language: normalized }
+    }));
   }
 
   function setupLanguageSwitcher() {

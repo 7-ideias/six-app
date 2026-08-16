@@ -15,9 +15,14 @@ void main() {
       expect(mainSource, contains('builder: (_) => const LoginPageWeb()'));
       expect(mainSource, contains("routeUri.path == '/login/flutter'"));
       expect(mainSource, contains("routeUri.path == '/admin/dashboard'"));
+      expect(mainSource, contains("routeUri.path == '/admin/planos'"));
       expect(
         mainSource,
         contains('builder: (_) => const AdminPortalWebPage()'),
+      );
+      expect(
+        mainSource,
+        contains('builder: (_) => const AdminPlanosWebPage()'),
       );
       expect(loginSource, contains("if (uri.path == '/admin')"));
       expect(loginSource, contains("return '/admin/dashboard';"));

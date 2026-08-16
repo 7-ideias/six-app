@@ -1262,6 +1262,101 @@ body {
   margin-top: auto;
 }
 
+.plan-catalog-feedback {
+  margin: 0 0 22px;
+  color: var(--editorial-muted);
+  font-size: 14px;
+}
+
+.plan-catalog-feedback[hidden] {
+  display: none;
+}
+
+.plan-catalog-actions {
+  margin-top: 22px;
+}
+
+.public-plan-card {
+  min-height: 480px;
+}
+
+.public-plan-badge {
+  align-self: flex-start;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--editorial-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.public-plan-card > .public-plan-description {
+  min-height: 52px;
+  margin: 12px 0 0;
+}
+
+.public-plan-price {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin: 24px 0 0 !important;
+}
+
+.public-plan-price strong {
+  color: var(--editorial-ink);
+  font-size: clamp(30px, 3vw, 40px);
+  font-weight: 650;
+  letter-spacing: -0.05em;
+}
+
+.public-plan-price span {
+  color: var(--editorial-muted);
+  font-size: 13px;
+}
+
+.public-plan-card.is-highlighted .public-plan-price strong {
+  color: #ffffff;
+}
+
+.public-plan-card.is-highlighted .public-plan-price span {
+  color: #c5c5c1;
+}
+
+.public-plan-benefits {
+  display: grid;
+  gap: 10px;
+  margin: 24px 0 30px;
+  padding: 0;
+  color: var(--editorial-muted);
+  font-size: 14px;
+  line-height: 1.45;
+  list-style: none;
+}
+
+.public-plan-benefits li {
+  position: relative;
+  padding-left: 22px;
+}
+
+.public-plan-benefits li::before {
+  position: absolute;
+  left: 0;
+  content: '✓';
+  color: var(--editorial-ink);
+  font-weight: 800;
+}
+
+.public-plan-card.is-highlighted .public-plan-benefits {
+  color: #d7d6d2;
+}
+
+.public-plan-card.is-highlighted .public-plan-benefits li::before {
+  color: #ffffff;
+}
+
 .final-editorial-cta {
   padding-block: 96px;
   background: var(--editorial-paper);

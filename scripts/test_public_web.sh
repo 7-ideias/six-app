@@ -15,4 +15,5 @@ NODE_BIN="$(resolve_node)"
   scripts/tests/public_register_core_test.mjs \
   scripts/tests/public_forgot_password_core_test.mjs \
   scripts/tests/public_onboarding_core_test.mjs \
-  scripts/tests/public_checkout_core_test.mjs
+  scripts/tests/public_checkout_core_test.mjs \
+  scripts/tests/public_home_plans_test.mjs
