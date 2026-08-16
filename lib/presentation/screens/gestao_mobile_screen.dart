@@ -723,19 +723,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
           onAction: () => _navigateTo(context, EstoqueMobileScreen()),
         );
       case _ManagementSectionType.people:
-        return ManagementAttentionBlock(
-          title: context.t(
-            'gestao.people.suppliersBlockedTitle',
-            fallback: 'Fornecedores ainda não disponível',
-          ),
-          message: context.t(
-            'gestao.people.suppliersBlockedMessage',
-            fallback:
-                'O recurso segue marcado como Em breve e não possui navegação mobile ativa.',
-          ),
-          icon: Icons.lock_outline_rounded,
-          toneColor: _lockedAccent,
-        );
+        return null;
       case _ManagementSectionType.finance:
         final int attentionEvents = snapshot.finance.data?.attentionEvents ?? 0;
         if (attentionEvents > 0) {

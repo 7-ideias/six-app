@@ -32,6 +32,7 @@ void main() {
     );
     expect(find.text('Clientes'), findsWidgets);
     expect(find.text('Fornecedores'), findsWidgets);
+    expect(find.text('Fornecedores ainda não disponível'), findsNothing);
 
     await _selectSection(tester, 'Financeiro');
     expect(

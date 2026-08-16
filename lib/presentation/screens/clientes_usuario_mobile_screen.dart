@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/data/models/cliente_usuario_model.dart';
 import 'package:sixpos/data/services/cliente_usuario/cliente_usuario_api_client.dart';
-import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/cliente_auto_cadastro_link_section.dart';
@@ -21,16 +21,23 @@ class ClientesUsuarioMobileScreen extends StatefulWidget {
 
 class _ClientesUsuarioMobileScreenState
     extends State<ClientesUsuarioMobileScreen> {
-  static Color get _backgroundColor => SixMobilePalette.background;
-  static Color get _primaryColor => SixMobilePalette.primary;
-  static Color get _secondaryColor => SixMobilePalette.secondary;
-  static Color get _accentColor => SixMobilePalette.accent;
-  static Color get _surfaceColor => SixMobilePalette.surface;
-  static Color get _softSurfaceColor => SixMobilePalette.softNeutralSurface;
-  static Color get _softAccentColor => SixMobilePalette.softAccentSurface;
-  static Color get _borderColor => SixMobilePalette.activeBorder;
-  static Color get _mutedTextColor => SixMobilePalette.mutedText;
-  static Color get _titleTextColor => SixMobilePalette.titleText;
+  SixMobileColorScheme get _colors => context.sixMobileColors;
+  Color get _backgroundColor => _colors.background;
+  Color get _primaryColor => _colors.primary;
+  Color get _secondaryColor => _colors.secondary;
+  Color get _accentColor => _colors.accent;
+  Color get _onAccentColor => _colors.onAccent;
+  Color get _surfaceColor => _colors.surface;
+  Color get _surfaceElevatedColor => _colors.surfaceElevated;
+  Color get _softSurfaceColor => _colors.softSurface;
+  Color get _softAccentColor => _colors.softAccentSurface;
+  Color get _borderColor => _colors.border;
+  Color get _strongBorderColor => _colors.strongBorder;
+  Color get _mutedTextColor => _colors.mutedText;
+  Color get _titleTextColor => _colors.titleText;
+  Color get _heroShadowColor => _colors.heroShadow;
+  Color get _navigationShadowColor => _colors.navigationShadow;
+  Color get _errorColor => _colors.error;
   static const Color _successColor = Color(0xFF16A34A);
 
   late final ClienteUsuarioApiClient _api;
@@ -261,7 +268,7 @@ class _ClientesUsuarioMobileScreenState
                   minimum: EdgeInsets.only(bottom: 8),
                   child: FloatingActionButton.extended(
                     backgroundColor: _accentColor,
-                    foregroundColor: SixMobilePalette.onPrimary,
+                    foregroundColor: _onAccentColor,
                     elevation: 5,
                     onPressed: _loading ? null : () => _openForm(),
                     icon: Icon(Icons.person_add_alt_1_rounded),
@@ -348,13 +355,13 @@ class _ClientesUsuarioMobileScreenState
         Container(
           padding: EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
-            color: _surfaceColor,
+            color: _surfaceElevatedColor,
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: _borderColor),
+            border: Border.all(color: _strongBorderColor),
           ),
           child: Text(
             _formatInt(_items.length),
-            style: TextStyle(fontWeight: FontWeight.w900, color: _primaryColor),
+            style: TextStyle(fontWeight: FontWeight.w900, color: _accentColor),
           ),
         ),
       ],
@@ -374,7 +381,7 @@ class _ClientesUsuarioMobileScreenState
         borderRadius: BorderRadius.circular(24),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Color(0x220B1F3A),
+            color: _heroShadowColor,
             blurRadius: 18,
             offset: Offset(0, 10),
           ),
@@ -628,7 +635,11 @@ class _ClientesUsuarioMobileScreenState
                         : 'Fiado não liberado',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      color: _titleTextColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ],
@@ -670,7 +681,7 @@ class _ClientesUsuarioMobileScreenState
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 14, color: _primaryColor),
+          Icon(icon, size: 14, color: _accentColor),
           SizedBox(width: 5),
           ConstrainedBox(
             constraints: BoxConstraints(maxWidth: 190),
@@ -679,7 +690,7 @@ class _ClientesUsuarioMobileScreenState
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: _primaryColor,
+                color: _titleTextColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -691,7 +702,7 @@ class _ClientesUsuarioMobileScreenState
   }
 
   Widget _status(bool ativo) {
-    final Color color = ativo ? _successColor : SixMobilePalette.error;
+    final Color color = ativo ? _successColor : _errorColor;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
@@ -812,7 +823,7 @@ class _ClientesUsuarioMobileScreenState
             borderRadius: BorderRadius.circular(28),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Color(0x26000000),
+                color: _navigationShadowColor,
                 blurRadius: 28,
                 offset: Offset(0, 12),
               ),
@@ -827,7 +838,7 @@ class _ClientesUsuarioMobileScreenState
                   width: 42,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: _borderColor,
+                    color: _strongBorderColor,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -969,9 +980,9 @@ class _MobileClientesLoading extends StatelessWidget {
           height: index == 0 ? 118 : 132,
           margin: EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: SixMobilePalette.surface,
+            color: context.sixMobileColors.surface,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: SixMobilePalette.activeBorder),
+            border: Border.all(color: context.sixMobileColors.border),
           ),
         ),
       ),
