@@ -37,12 +37,94 @@ class _CatalogHealthMobileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColaboradorAutorizacoesProvider permissions =
+        context.watch<ColaboradorAutorizacoesProvider>();
+
     return SixMobilePageShell(
       title: 'Saúde do catálogo',
       backgroundColor: _backgroundColor,
       primaryColor: _primaryColor,
       secondaryColor: _secondaryColor,
       accentColor: _accentColor,
+      actions:
+          permissions.podeCadastrarProduto
+              ? <Widget>[
+                PopupMenuButton<_CatalogCreateAction>(
+                  tooltip: context.t(
+                    'catalogHealth.mobile.createMenu',
+                    fallback: 'Cadastrar',
+                  ),
+                  onSelected: (_CatalogCreateAction action) {
+                    switch (action) {
+                      case _CatalogCreateAction.product:
+                        _openCreate(context, 'PRODUTO');
+                      case _CatalogCreateAction.service:
+                        _openCreate(context, 'SERVICO');
+                    }
+                  },
+                  itemBuilder:
+                      (
+                        BuildContext context,
+                      ) => <PopupMenuEntry<_CatalogCreateAction>>[
+                        PopupMenuItem<_CatalogCreateAction>(
+                          value: _CatalogCreateAction.product,
+                          child: Row(
+                            children: <Widget>[
+                              Icon(Icons.add_rounded, size: 18),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  context.t(
+                                    'catalogHealth.mobile.newProduct',
+                                    fallback: 'Novo produto',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<_CatalogCreateAction>(
+                          value: _CatalogCreateAction.service,
+                          child: Row(
+                            children: <Widget>[
+                              Icon(Icons.design_services_outlined, size: 18),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  context.t(
+                                    'catalogHealth.mobile.newService',
+                                    fallback: 'Novo serviço',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                  child: Padding(
+                    padding: EdgeInsets.only(right: 6),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: SixMobilePalette.accent.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: SixMobilePalette.accent.withValues(
+                            alpha: 0.28,
+                          ),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.add_rounded,
+                        color: Theme.of(context).appBarTheme.foregroundColor,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ]
+              : const <Widget>[],
       bodyBuilder: (
         BuildContext context,
         ScrollController scrollController,
@@ -120,25 +202,17 @@ class _CatalogHealthMobileView extends StatelessWidget {
 
     final CatalogHealthSummary? summary = provider.summary;
     if (summary == null || summary.isEmpty) {
-      return _CatalogEmptyState(
-        key: ValueKey<String>('catalog-health-empty'),
-        canCreate: permissions.podeCadastrarProduto,
-        onNewProduct: () => _openCreate(context, 'PRODUTO'),
-        onNewService: () => _openCreate(context, 'SERVICO'),
-      );
+      return _CatalogEmptyState(key: ValueKey<String>('catalog-health-empty'));
     }
 
     return _CatalogSuccessState(
       key: ValueKey<String>('catalog-health-success'),
       summary: summary,
       animationRevision: provider.loadRevision,
-      canCreate: permissions.podeCadastrarProduto,
       canViewStock: permissions.podeVerEstoqueDeProduto,
       reduceMotion: reduceMotion,
       onOpenProducts: () => _openProducts(context),
       onOpenServices: () => _openServices(context),
-      onNewProduct: () => _openCreate(context, 'PRODUTO'),
-      onNewService: () => _openCreate(context, 'SERVICO'),
       onPendingMetric:
           (CatalogHealthMetric metric) =>
               _showPendingFilterMessage(context, metric),
@@ -184,30 +258,26 @@ class _CatalogHealthMobileView extends StatelessWidget {
   }
 }
 
+enum _CatalogCreateAction { product, service }
+
 class _CatalogSuccessState extends StatelessWidget {
   const _CatalogSuccessState({
     super.key,
     required this.summary,
     required this.animationRevision,
-    required this.canCreate,
     required this.canViewStock,
     required this.reduceMotion,
     required this.onOpenProducts,
     required this.onOpenServices,
-    required this.onNewProduct,
-    required this.onNewService,
     required this.onPendingMetric,
   });
 
   final CatalogHealthSummary summary;
   final int animationRevision;
-  final bool canCreate;
   final bool canViewStock;
   final bool reduceMotion;
   final VoidCallback onOpenProducts;
   final VoidCallback onOpenServices;
-  final VoidCallback onNewProduct;
-  final VoidCallback onNewService;
   final ValueChanged<CatalogHealthMetric> onPendingMetric;
 
   @override
@@ -232,12 +302,6 @@ class _CatalogSuccessState extends StatelessWidget {
               canViewStock || !metric.requiresStockPermission,
         )
         .toList(growable: false);
-    final CatalogHealthAction? newProductAction = summary.action(
-      'NOVO_PRODUTO',
-    );
-    final CatalogHealthAction? newServiceAction = summary.action(
-      'NOVO_SERVICO',
-    );
 
     final List<Widget> children = <Widget>[
       _entry(
@@ -274,32 +338,6 @@ class _CatalogSuccessState extends StatelessWidget {
           ],
         ),
       ),
-      if (canCreate) ...<Widget>[
-        SizedBox(height: 12),
-        _entry(
-          reduceMotion: reduceMotion,
-          delay: Duration(milliseconds: 170),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: _CatalogActionButton(
-                  label: newProductAction?.title ?? 'Novo produto',
-                  icon: _catalogIcon(newProductAction?.iconCode ?? 'ADICIONAR'),
-                  onTap: onNewProduct,
-                ),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: _CatalogActionButton(
-                  label: newServiceAction?.title ?? 'Novo serviço',
-                  icon: _catalogIcon(newServiceAction?.iconCode ?? 'SERVICO'),
-                  onTap: onNewService,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
       SizedBox(height: 22),
       _entry(
         reduceMotion: reduceMotion,
@@ -584,39 +622,6 @@ class _CatalogEntryCard extends StatelessWidget {
   }
 }
 
-class _CatalogActionButton extends StatelessWidget {
-  const _CatalogActionButton({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: label,
-      child: FilledButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, size: 18),
-        label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-        style: FilledButton.styleFrom(
-          backgroundColor: SixMobilePalette.accent,
-          foregroundColor: SixMobilePalette.onPrimary,
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 13),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle({required this.title, required this.subtitle});
 
@@ -843,16 +848,7 @@ class _CatalogLoadingState extends StatelessWidget {
 }
 
 class _CatalogEmptyState extends StatelessWidget {
-  const _CatalogEmptyState({
-    super.key,
-    required this.canCreate,
-    required this.onNewProduct,
-    required this.onNewService,
-  });
-
-  final bool canCreate;
-  final VoidCallback onNewProduct;
-  final VoidCallback onNewService;
+  const _CatalogEmptyState({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -861,22 +857,7 @@ class _CatalogEmptyState extends StatelessWidget {
       title: 'Catálogo ainda não iniciado',
       subtitle:
           'Quando produtos e serviços forem cadastrados, as pendências aparecerão aqui.',
-      actions:
-          canCreate
-              ? <Widget>[
-                _CatalogActionButton(
-                  label: 'Novo produto',
-                  icon: Icons.add_rounded,
-                  onTap: onNewProduct,
-                ),
-                SizedBox(height: 10),
-                _CatalogActionButton(
-                  label: 'Novo serviço',
-                  icon: Icons.design_services_outlined,
-                  onTap: onNewService,
-                ),
-              ]
-              : <Widget>[],
+      actions: <Widget>[],
     );
   }
 }
