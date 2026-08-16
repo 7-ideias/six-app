@@ -224,11 +224,13 @@
     <section class="editorial-section plans-editorial-section" id="planos" aria-labelledby="plans-title">
       <div class="layout">
         <div class="editorial-heading" data-reveal><p class="editorial-kicker" data-i18n="plans.kicker">Planos</p><h2 id="plans-title" data-i18n="plans.editorial.title">Um caminho para cada momento do negócio.</h2><p data-i18n="plans.editorial.lead">Comece pela conta, conheça as opções disponíveis e evolua conforme a sua operação ganhar novas necessidades.</p></div>
-        <div class="plan-path-grid">
-          <article class="plan-path-card" data-reveal><span class="plan-path-number">01</span><p class="editorial-kicker" data-i18n="plans.start.kicker">Começar</p><h3 data-i18n="plans.start.title">Crie sua conta</h3><p data-i18n="plans.start.body">Inicie o cadastro e prepare a primeira estrutura do seu comércio.</p><a class="button button-quiet" href="/register" data-i18n="plans.start.button">Criar conta</a></article>
-          <article class="plan-path-card is-highlighted" data-reveal><span class="plan-path-number">02</span><p class="editorial-kicker" data-i18n="plans.options.kicker">Conhecer opções</p><h3 data-i18n="plans.options.title">Veja os planos disponíveis</h3><p data-i18n="plans.options.body">Compare as opções do SixApp em uma etapa própria e segura.</p><a class="button button-light" href="/checkout" data-i18n="plans.options.button">Conhecer planos</a></article>
-          <article class="plan-path-card" data-reveal><span class="plan-path-number">03</span><p class="editorial-kicker" data-i18n="plans.grow.kicker">Evoluir</p><h3 data-i18n="plans.grow.title">Amplie quando precisar</h3><p data-i18n="plans.grow.body">Adicione organização, pessoas e recursos conforme a operação crescer.</p><a class="button button-quiet" href="#recursos" data-i18n="plans.grow.button">Rever recursos</a></article>
-        </div>
+        <div class="plan-catalog-feedback" data-public-plans-status role="status" aria-live="polite">Carregando planos...</div>
+        <div class="plan-path-grid" data-public-plans aria-busy="true"></div>
+        <div class="plan-catalog-actions"><button class="button button-quiet" type="button" data-public-plans-retry hidden>Tentar novamente</button></div>
+        <noscript>
+          <p class="plan-catalog-feedback">Ative o JavaScript para consultar os planos publicados.</p>
+          <a class="button button-quiet" href="/checkout">Conhecer planos</a>
+        </noscript>
       </div>
     </section>
 
@@ -245,6 +247,8 @@
     </div>
   </footer>
 
+  <script src="/site-assets/js/public-config.js"></script>
   <script src="/site-assets/js/home.js" defer></script>
+  <script type="module" src="/site-assets/js/home-plans.js"></script>
 </body>
 </html>

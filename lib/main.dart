@@ -6,6 +6,7 @@ import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dar
 import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/screens/admin_portal_web_page.dart';
 import 'package:sixpos/presentation/screens/admin_novas_ideias_web_page.dart';
+import 'package:sixpos/presentation/screens/admin_planos_web_page.dart';
 import 'package:sixpos/presentation/screens/admin_usuarios_ativos_web_page.dart';
 import 'package:sixpos/presentation/screens/login_page_web.dart';
 import 'package:sixpos/presentation/screens/register_page_web.dart';
@@ -158,6 +159,12 @@ class MyApp extends StatelessWidget {
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => const AdminNovasIdeiasWebPage(),
+      );
+    }
+    if (routeUri.path == '/admin/planos') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const AdminPlanosWebPage(),
       );
     }
     if (routeUri.path == '/register') {

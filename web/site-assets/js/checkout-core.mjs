@@ -206,9 +206,22 @@ export function languageTagForCheckout(language) {
   return CHECKOUT_LANGUAGE_TAGS[normalized] || CHECKOUT_LANGUAGE_TAGS.pt;
 }
 
-export function createCheckoutI18nEndpoint(apiBaseUrl, language) {
+export function currencyForCheckout(language) {
+  return normalizePublicLanguage(language) === 'pt' ? 'BRL' : 'USD';
+}
+
+export function createCheckoutPlansEndpoint(apiBaseUrl, language) {
   const normalizedBaseUrl = normalizeApiBaseUrl(apiBaseUrl);
-  return `${normalizedBaseUrl}/public/api/i18n/${languageTagForCheckout(language)}`;
+  const query = new URLSearchParams({
+    locale: languageTagForCheckout(language),
+    currency: currencyForCheckout(language),
+  });
+  return `${normalizedBaseUrl}/public/api/planos?${query.toString()}`;
+}
+
+// Alias mantido para não quebrar consumidores antigos durante a publicação.
+export function createCheckoutI18nEndpoint(apiBaseUrl, language) {
+  return createCheckoutPlansEndpoint(apiBaseUrl, language);
 }
 
 export function checkoutErrorKeyForStatus(status) {
@@ -236,34 +249,83 @@ export function checkoutErrorKeyFromError(error) {
 
 export function parseCheckoutMessages(responseBody) {
   if (!responseBody || typeof responseBody !== 'object') {
-    throw new PublicCheckoutValidationError('messages');
+    throw new PublicCheckoutValidationError('catalog');
   }
-  const messages = responseBody.messages;
-  if (!messages || typeof messages !== 'object' || Array.isArray(messages)) {
-    throw new PublicCheckoutValidationError('messages');
+  if (!Array.isArray(responseBody.planos)) {
+    throw new PublicCheckoutValidationError('catalog');
   }
-  return messages;
+  return responseBody;
 }
 
-function normalizePlanItem(item) {
+function cadenceForPeriodicity(periodicity, language) {
+  const normalizedLanguage = normalizePublicLanguage(language);
+  const labels = {
+    pt: {
+      GRATUITO: 'para sempre',
+      MENSAL: 'por mês',
+      ANUAL: 'por ano',
+      UNICO: 'pagamento único',
+    },
+    en: {
+      GRATUITO: 'forever',
+      MENSAL: 'per month',
+      ANUAL: 'per year',
+      UNICO: 'one-time payment',
+    },
+    es: {
+      GRATUITO: 'para siempre',
+      MENSAL: 'por mes',
+      ANUAL: 'por año',
+      UNICO: 'pago único',
+    },
+  };
+  return labels[normalizedLanguage]?.[periodicity] || periodicity;
+}
+
+function formatPlanPrice(value, currencyCode, language) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount < 0) return '';
+  try {
+    return new Intl.NumberFormat(languageTagForCheckout(language), {
+      style: 'currency',
+      currency: currencyCode,
+      minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch (_) {
+    return `${currencyCode} ${amount.toFixed(2)}`;
+  }
+}
+
+function normalizePlanItem(item, language) {
   if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
 
-  const name = typeof item.name === 'string' ? item.name.trim() : '';
-  const price = typeof item.price === 'string' ? item.price.trim() : '';
-  const cadence = typeof item.cadence === 'string' ? item.cadence.trim() : '';
-  const pitch = typeof item.pitch === 'string' ? item.pitch.trim() : '';
-  const cta = typeof item.cta === 'string' ? item.cta.trim() : '';
-  const features = Array.isArray(item.features)
-    ? item.features.map((value) => String(value).trim()).filter(Boolean)
+  const id = typeof item.codigo === 'string' ? item.codigo.trim() : '';
+  const name = typeof item.nome === 'string' ? item.nome.trim() : '';
+  const pitch = typeof item.descricao === 'string' ? item.descricao.trim() : '';
+  const cta = typeof item.chamadaAcao === 'string'
+    ? item.chamadaAcao.trim()
+    : '';
+  const features = Array.isArray(item.beneficios)
+    ? item.beneficios.map((value) => String(value).trim()).filter(Boolean)
     : [];
-  const featured = item.featured === true;
+  const featured = item.destaque === true;
+  const priceData = item.preco;
+  const currencyCode = typeof priceData?.currencyCode === 'string'
+    ? priceData.currencyCode.trim().toUpperCase()
+    : '';
+  const periodicity = typeof priceData?.periodicidade === 'string'
+    ? priceData.periodicidade.trim().toUpperCase()
+    : '';
+  const price = formatPlanPrice(priceData?.valor, currencyCode, language);
+  const cadence = cadenceForPeriodicity(periodicity, language);
 
-  if (!name || !price || !cadence || !Array.isArray(item.features) || !cta) {
+  if (!id || !name || !price || !cadence || !Array.isArray(item.beneficios) || !cta) {
     return null;
   }
 
   return Object.freeze({
-    id: name,
+    id,
     name,
     price,
     cadence,
@@ -271,13 +333,22 @@ function normalizePlanItem(item) {
     features: Object.freeze(features),
     cta,
     featured,
+    rawAmount: Number(priceData.valor),
+    currencyCode,
+    billingPeriod: periodicity,
+    conditions: Object.freeze({
+      trialDays: Number(item.condicoes?.diasTeste || 0),
+      userLimit: item.condicoes?.limiteUsuarios ?? null,
+      loyaltyMonths: Number(item.condicoes?.mesesFidelidade || 0),
+      cancelAnytime: item.condicoes?.cancelamentoLivre === true,
+    }),
   });
 }
 
-export function extractCheckoutPlans(messages) {
-  const plans = messages && messages.plans;
+export function extractCheckoutPlans(catalog, language = 'pt') {
+  const plans = catalog && catalog.planos;
   if (!Array.isArray(plans)) return [];
-  return plans.map(normalizePlanItem).filter(Boolean);
+  return plans.map((item) => normalizePlanItem(item, language)).filter(Boolean);
 }
 
 export function getCheckoutPlanFromSearch(search) {
@@ -301,7 +372,9 @@ export function resolveSelectedCheckoutPlan(plans, requestedPlan) {
 
   const normalizedRequest = String(requestedPlan || '').trim();
   if (normalizedRequest) {
-    const matched = plans.find((plan) => plan.id === normalizedRequest);
+    const matched = plans.find(
+      (plan) => plan.id.toLowerCase() === normalizedRequest.toLowerCase(),
+    );
     if (matched) {
       return {
         plan: matched,
@@ -357,7 +430,7 @@ export async function fetchPublicCheckoutMessages({
     throw new PublicCheckoutConfigError('Fetch API unavailable');
   }
 
-  const endpoint = createCheckoutI18nEndpoint(apiBaseUrl, language);
+  const endpoint = createCheckoutPlansEndpoint(apiBaseUrl, language);
   const controller = new AbortController();
   let timeoutId;
   const timeoutPromise = new Promise((_, reject) => {
@@ -408,13 +481,13 @@ export async function loadPublicCheckoutPlans({
   timeoutMs = CHECKOUT_TIMEOUT_MS,
 } = {}) {
   const { apiBaseUrl } = resolvePublicCheckoutConfig(config);
-  const messages = await fetchPublicCheckoutMessages({
+  const catalog = await fetchPublicCheckoutMessages({
     apiBaseUrl,
     language,
     fetchImpl,
     timeoutMs,
   });
-  const plans = extractCheckoutPlans(messages);
+  const plans = extractCheckoutPlans(catalog, language);
   if (plans.length === 0) {
     throw new PublicCheckoutValidationError('plans');
   }

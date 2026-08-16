@@ -11,7 +11,7 @@ import {
   PublicCheckoutValidationError,
   buildCheckoutPayload,
   checkoutErrorKeyForStatus,
-  createCheckoutI18nEndpoint,
+  createCheckoutPlansEndpoint,
   extractCheckoutPlans,
   fetchPublicCheckoutMessages,
   getCheckoutPlanFromSearch,
@@ -25,57 +25,64 @@ import {
   assertPublicDictionaryParity,
 } from '../../web/site-assets/js/public-locale.mjs';
 
-const messages = {
-  plans: [
+const catalog = {
+  locale: 'pt-BR',
+  currencyCode: 'BRL',
+  planos: [
     {
-      name: 'Starter',
-      price: 'R$0',
-      cadence: 'para sempre',
-      pitch: 'Comece a vender hoje, sem necessidade de cadastro.',
-      features: ['Frente de caixa', 'Até 50 produtos'],
-      cta: 'Começar grátis',
-      featured: false,
+      codigo: 'STARTER',
+      nome: 'Starter',
+      descricao: 'Comece a vender hoje.',
+      chamadaAcao: 'Começar grátis',
+      beneficios: ['Frente de caixa', 'Até 50 produtos'],
+      destaque: false,
+      preco: { currencyCode: 'BRL', valor: 0, periodicidade: 'GRATUITO' },
+      condicoes: { diasTeste: 0, limiteUsuarios: 1, mesesFidelidade: 0, cancelamentoLivre: true },
     },
     {
-      name: 'Professional',
-      price: 'R$499',
-      cadence: 'por ano',
-      pitch: 'Para lojas que vivem do balcão e do atendimento.',
-      features: ['Tudo do Starter', 'Ordens de serviço'],
-      cta: 'Assinar',
-      featured: true,
+      codigo: 'PROFESSIONAL',
+      nome: 'Professional',
+      descricao: 'Para lojas que vivem do balcão e do atendimento.',
+      chamadaAcao: 'Assinar',
+      beneficios: ['Tudo do Starter', 'Ordens de serviço'],
+      destaque: true,
+      preco: { currencyCode: 'BRL', valor: 499, periodicidade: 'ANUAL' },
+      condicoes: { diasTeste: 7, limiteUsuarios: 3, mesesFidelidade: 0, cancelamentoLivre: true },
     },
     {
-      name: 'Cockpit',
-      price: 'R$799',
-      cadence: 'por ano',
-      pitch: 'Para empresas que precisam de um painel executivo.',
-      features: ['Tudo do Professional', 'Cockpit estratégico'],
-      cta: 'Falar com vendas',
-      featured: false,
+      codigo: 'COCKPIT',
+      nome: 'Cockpit',
+      descricao: 'Para empresas que precisam de um painel executivo.',
+      chamadaAcao: 'Falar com vendas',
+      beneficios: ['Tudo do Professional', 'Cockpit estratégico'],
+      destaque: false,
+      preco: { currencyCode: 'BRL', valor: 799, periodicidade: 'ANUAL' },
+      condicoes: { diasTeste: 0, limiteUsuarios: null, mesesFidelidade: 12, cancelamentoLivre: false },
     },
   ],
 };
 
-test('planos validos preservam ids reais do i18n publico', () => {
-  const plans = extractCheckoutPlans(messages);
+test('planos validos preservam codigos e valores do catalogo publico', () => {
+  const plans = extractCheckoutPlans(catalog, 'pt');
 
   assert.deepEqual(plans.map((plan) => plan.id), [
-    'Starter',
-    'Professional',
-    'Cockpit',
+    'STARTER',
+    'PROFESSIONAL',
+    'COCKPIT',
   ]);
   assert.equal(plans[1].featured, true);
-  assert.equal(plans[1].price, 'R$499');
+  assert.equal(plans[1].rawAmount, 499);
+  assert.match(plans[1].price, /499/);
   assert.deepEqual(plans[0].features, ['Frente de caixa', 'Até 50 produtos']);
+  assert.equal(plans[1].conditions.trialDays, 7);
 });
 
 test('plano invalido ou ausente cai no featured atual', () => {
-  const plans = extractCheckoutPlans(messages);
+  const plans = extractCheckoutPlans(catalog, 'pt');
 
   assert.equal(
-    resolveSelectedCheckoutPlan(plans, 'Professional').plan.id,
-    'Professional',
+    resolveSelectedCheckoutPlan(plans, 'professional').plan.id,
+    'PROFESSIONAL',
   );
   assert.deepEqual(
     resolveSelectedCheckoutPlan(plans, 'Plano inventado'),
@@ -86,20 +93,20 @@ test('plano invalido ou ausente cai no featured atual', () => {
       fallbackReason: 'invalid',
     },
   );
-  assert.equal(resolveSelectedCheckoutPlan(plans, '').plan.id, 'Professional');
+  assert.equal(resolveSelectedCheckoutPlan(plans, '').plan.id, 'PROFESSIONAL');
 });
 
 test('query usa somente plan e marca price como inseguro', () => {
   assert.equal(
-    getCheckoutPlanFromSearch('?plan=Professional&price=1'),
-    'Professional',
+    getCheckoutPlanFromSearch('?plan=PROFESSIONAL&price=1'),
+    'PROFESSIONAL',
   );
   assert.equal(hasUnsafeCheckoutPriceParam('?plan=Professional&price=1'), true);
   assert.equal(hasUnsafeCheckoutPriceParam('?plan=Professional'), false);
 });
 
 test('payload preserva plano carregado e metodo permitido sem dados sensiveis', () => {
-  const plan = extractCheckoutPlans(messages)[1];
+  const plan = extractCheckoutPlans(catalog, 'pt')[1];
   const payload = buildCheckoutPayload({
     plan,
     paymentMethod: 'pix',
@@ -107,8 +114,8 @@ test('payload preserva plano carregado e metodo permitido sem dados sensiveis', 
   });
 
   assert.deepEqual(payload, {
-    plan: 'Professional',
-    price: 'R$499',
+    plan: 'PROFESSIONAL',
+    price: plan.price,
     cadence: 'por ano',
     paymentMethod: 'pix',
     createdAt: '2026-08-13T12:00:00.000Z',
@@ -129,13 +136,13 @@ test('destino final continua local sem redirecionamento de sucesso', () => {
   assert.equal(CHECKOUT_SUCCESS_PATH, null);
 });
 
-test('endpoint usa contrato publico de i18n por idioma', () => {
+test('endpoint usa contrato publico de planos, locale e moeda', () => {
   assert.equal(languageTagForCheckout('pt-BR'), 'pt-BR');
   assert.equal(languageTagForCheckout('en-US'), 'en-US');
   assert.equal(languageTagForCheckout('es-ES'), 'es-ES');
   assert.equal(
-    createCheckoutI18nEndpoint('https://api.sixappback.com/', 'pt'),
-    'https://api.sixappback.com/public/api/i18n/pt-BR',
+    createCheckoutPlansEndpoint('https://api.sixappback.com/', 'pt'),
+    'https://api.sixappback.com/public/api/planos?locale=pt-BR&currency=BRL',
   );
 });
 
@@ -146,7 +153,7 @@ test('request publico usa JSON, no-store e nao envia credenciais', async () => {
     language: 'pt',
     fetchImpl: async (url, options) => {
       called = true;
-      assert.equal(url, 'https://api.sixappback.com/public/api/i18n/pt-BR');
+      assert.equal(url, 'https://api.sixappback.com/public/api/planos?locale=pt-BR&currency=BRL');
       assert.equal(options.method, 'GET');
       assert.equal(options.cache, 'no-store');
       assert.equal(options.credentials, undefined);
@@ -155,13 +162,13 @@ test('request publico usa JSON, no-store e nao envia credenciais', async () => {
       return {
         ok: true,
         status: 200,
-        json: async () => ({ messages }),
+        json: async () => catalog,
       };
     },
   });
 
   assert.equal(called, true);
-  assert.equal(result, messages);
+  assert.equal(result, catalog);
 });
 
 test('loadPublicCheckoutPlans extrai planos do endpoint publico', async () => {
@@ -171,7 +178,7 @@ test('loadPublicCheckoutPlans extrai planos do endpoint publico', async () => {
     fetchImpl: async () => ({
       ok: true,
       status: 200,
-      json: async () => ({ messages }),
+      json: async () => catalog,
     }),
   });
 
