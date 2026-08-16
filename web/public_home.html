@@ -6,15 +6,15 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="sixapp-entrypoint" content="public-home">
   <meta name="description" content="SixApp organiza vendas, orçamentos, atendimentos técnicos, clientes, equipe e financeiro em uma plataforma para usar na Web, Android e iOS.">
-  <meta name="theme-color" content="#0F2D3A">
+  <meta name="theme-color" content="#171717">
   <meta property="og:type" content="website">
   <meta property="og:title" content="SixApp">
   <meta property="og:description" content="Gestão completa para quem vende produtos e presta serviços técnicos na Web, Android e iOS.">
-  <meta property="og:image" content="/site-assets/images/sixapp-mark.png">
+  <meta property="og:image" content="/site-assets/images/commerce-workspace.webp">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="SixApp">
   <meta name="twitter:description" content="Vendas, orçamentos, atendimentos, equipe e financeiro na Web, Android e iOS.">
-  <meta name="twitter:image" content="/site-assets/images/sixapp-mark.png">
+  <meta name="twitter:image" content="/site-assets/images/commerce-workspace.webp">
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/site-assets/images/sixapp-mark.png">
   <link rel="preload" as="image" href="/site-assets/images/commerce-workspace.webp" fetchpriority="high">
@@ -27,9 +27,9 @@
 
   <header class="site-header" data-header>
     <nav class="nav-shell" aria-label="Navegação principal" data-i18n-aria="nav.aria">
-      <a class="brand" href="/" aria-label="SixApp">
+      <a class="brand" href="#topo" aria-label="SixApp">
         <span class="brand-mark" aria-hidden="true">
-          <img src="/site-assets/images/sixapp-mark.png" width="32" height="32" alt="">
+          <img src="/site-assets/images/sixapp-mark.png" width="30" height="30" alt="">
         </span>
         <span>SixApp</span>
       </a>
@@ -42,10 +42,9 @@
       <div class="nav-panel" id="nav-panel" data-nav-panel>
         <div class="nav-links">
           <a href="#recursos" data-i18n="nav.resources">Recursos</a>
-          <a href="#segmentos" data-i18n="nav.segments">Segmentos</a>
+          <a href="#solucoes" data-i18n="nav.solutions">Dores e soluções</a>
           <a href="#como-funciona" data-i18n="nav.how">Como funciona</a>
           <a href="#planos" data-i18n="nav.plans">Planos</a>
-          <a href="#faq" data-i18n="nav.faq">FAQ</a>
         </div>
 
         <div class="nav-actions">
@@ -62,448 +61,187 @@
   </header>
 
   <main id="conteudo">
-    <section class="hero" aria-labelledby="hero-title" data-hero-carousel>
-      <picture class="hero-media">
-        <source srcset="/site-assets/images/commerce-workspace.webp" type="image/webp">
-        <img src="/site-assets/images/commerce-workspace.webp" width="1536" height="1024" alt="" fetchpriority="high">
-      </picture>
-      <div class="hero-shade" aria-hidden="true"></div>
-      <div class="hero-grid layout">
-        <div class="hero-copy">
-          <div class="hero-slides" data-hero-slides>
-            <article class="hero-slide is-active" id="hero-slide-1" role="tabpanel" data-hero-slide aria-hidden="false">
-              <p class="eyebrow" data-i18n="hero.slide.one.eyebrow">Gestão simples para comércio e serviços</p>
-              <h1 id="hero-title" data-i18n="hero.slide.one.title">Venda, atenda e acompanhe em um só lugar</h1>
-              <p class="hero-lead" data-i18n="hero.slide.one.lead">Produtos, serviços técnicos, clientes e financeiro com clareza e rapidez.</p>
-              <div class="hero-chip-row" aria-label="Rotinas principais" data-i18n-aria="hero.chips.aria">
-                <span data-i18n="hero.chip.sales">Vendas</span>
-                <span data-i18n="hero.chip.service">Serviços técnicos</span>
-                <span data-i18n="hero.chip.customers">Clientes</span>
-                <span data-i18n="hero.chip.finance">Financeiro</span>
-              </div>
-            </article>
+    <section class="hero-editorial" id="topo" aria-labelledby="hero-title">
+      <div class="layout hero-editorial-grid">
+        <div class="hero-editorial-copy" data-reveal="hero">
+          <p class="editorial-pill" data-i18n="hero.editorial.eyebrow">Gestão simples para comércio e serviços</p>
+          <h1 id="hero-title">
+            <span data-i18n="hero.editorial.lineOne">Todo o seu negócio</span>
+            <span data-i18n="hero.editorial.lineTwo">em um sistema</span>
+            <span class="hero-emphasis" data-i18n="hero.editorial.emphasis">simples.</span>
+          </h1>
+          <p class="hero-editorial-lead" data-i18n="hero.editorial.lead">Vendas, produtos, serviços técnicos, clientes e financeiro em uma experiência leve para usar no computador e no celular.</p>
 
-            <article class="hero-slide" id="hero-slide-2" role="tabpanel" data-hero-slide aria-hidden="true">
-              <p class="eyebrow" data-i18n="hero.slide.two.eyebrow">Web + Android + iOS</p>
-              <h2 class="hero-slide-title" data-i18n="hero.slide.two.title">Use no computador, no Android e no iPhone</h2>
-              <p class="hero-lead" data-i18n="hero.slide.two.lead">Venda, atenda, acompanhe clientes e organize a operação também no celular, com experiência pensada para uso real.</p>
-              <div class="hero-platforms" aria-label="Plataformas do SixApp" data-i18n-aria="hero.platforms.aria">
-                <span>Web</span>
-                <span>Android</span>
-                <span>iOS</span>
-              </div>
-            </article>
-
-            <article class="hero-slide" id="hero-slide-3" role="tabpanel" data-hero-slide aria-hidden="true">
-              <p class="eyebrow" data-i18n="hero.slide.three.eyebrow">Equipe e crescimento</p>
-              <h2 class="hero-slide-title" data-i18n="hero.slide.three.title">Mais controle para a equipe. Mais clareza para crescer.</h2>
-              <p class="hero-lead" data-i18n="hero.slide.three.lead">Defina acessos, acompanhe atividades e tome decisões com informações organizadas.</p>
-              <div class="hero-chip-row compact" aria-label="Apoios de gestão" data-i18n-aria="hero.management.aria">
-                <span data-i18n="hero.chip.permissions">Permissões</span>
-                <span data-i18n="hero.chip.activities">Atividades</span>
-                <span data-i18n="hero.chip.decisions">Decisões</span>
-              </div>
-            </article>
+          <div class="hero-editorial-actions">
+            <a class="button button-primary button-large button-arrow" href="/register">
+              <span data-i18n="hero.editorial.primary">Criar conta</span>
+              <span aria-hidden="true">→</span>
+            </a>
+            <a class="button button-quiet button-large" href="#recursos" data-i18n="hero.editorial.secondary">Ver funcionalidades</a>
+            <a class="editorial-link" href="/onboarding" data-i18n="hero.onboarding">Experimentar</a>
           </div>
 
-          <div class="hero-actions">
-            <a class="button button-primary button-large" href="/register" data-i18n="hero.primary">Começar agora</a>
-            <a class="button button-ghost button-large" href="/login" data-i18n="hero.secondary">Entrar</a>
-            <a class="text-link" href="#recursos" data-i18n="hero.tertiary">Conhecer recursos</a>
-            <a class="text-link" href="/onboarding" data-i18n="hero.onboarding">Experimentar</a>
+          <div class="hero-proof" aria-label="Diferenciais principais" data-i18n-aria="hero.proof.aria">
+            <span><i aria-hidden="true"></i><span data-i18n="hero.proof.online">Sistema online</span></span>
+            <span><i aria-hidden="true"></i><span data-i18n="hero.proof.multiBusiness">Multiempresa</span></span>
+            <span><i aria-hidden="true"></i><span data-i18n="hero.proof.languages">Vários idiomas</span></span>
           </div>
         </div>
 
-        <div class="hero-visual" aria-label="Prévia Web e mobile do SixApp" data-i18n-aria="preview.aria">
-          <div class="device-suite" aria-hidden="true">
-            <div class="product-preview desktop-preview">
-              <div class="preview-topbar">
-                <span class="preview-dot"></span>
-                <span class="preview-dot"></span>
-                <span class="preview-dot"></span>
-                <strong>SixApp</strong>
-              </div>
-              <div class="preview-body">
-                <div class="preview-sidebar" aria-hidden="true">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-                <div class="preview-content">
-                  <div class="preview-heading">
-                    <span data-i18n="preview.workspace">Visão geral</span>
-                    <strong data-i18n="preview.status">Online</strong>
-                  </div>
-                  <div class="preview-kpis">
-                    <div>
-                      <span data-i18n="preview.kpi.sales">Vendas</span>
-                      <strong data-i18n="preview.kpi.sales.value">Hoje</strong>
-                    </div>
-                    <div>
-                      <span data-i18n="preview.kpi.service">Atendimentos</span>
-                      <strong data-i18n="preview.kpi.service.value">Fila organizada</strong>
-                    </div>
-                    <div>
-                      <span data-i18n="preview.kpi.finance">Financeiro</span>
-                      <strong data-i18n="preview.kpi.finance.value">Visão clara</strong>
-                    </div>
-                  </div>
-                  <div class="preview-flow">
-                    <div class="flow-card active">
-                      <span data-i18n="preview.flow.one.label">Orçamento</span>
-                      <strong data-i18n="preview.flow.one.title">Aprovado</strong>
-                    </div>
-                    <div class="flow-card">
-                      <span data-i18n="preview.flow.two.label">Serviço</span>
-                      <strong data-i18n="preview.flow.two.title">Em execução</strong>
-                    </div>
-                    <div class="flow-card">
-                      <span data-i18n="preview.flow.three.label">Entrega</span>
-                      <strong data-i18n="preview.flow.three.title">Comprovante pronto</strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <div class="hero-editorial-visual" data-reveal="hero-visual">
+          <figure class="hero-photo-card">
+            <img src="/site-assets/images/commerce-workspace.webp" width="1536" height="1024" alt="Comércio organizado com computador e celular" data-i18n-alt="hero.image.alt" fetchpriority="high">
+          </figure>
 
-            <div class="mobile-preview">
-              <div class="mobile-preview-bar">
-                <span></span>
-                <strong data-i18n="preview.mobile.title">Visão geral</strong>
-                <span></span>
-              </div>
-              <div class="mobile-preview-body">
-                <div>
-                  <span data-i18n="preview.mobile.sales">Vendas hoje</span>
-                  <strong data-i18n="preview.mobile.sales.value">Em uso</strong>
-                </div>
-                <div>
-                  <span data-i18n="preview.mobile.service">Atendimentos</span>
-                  <strong data-i18n="preview.mobile.service.value">24</strong>
-                </div>
-                <div class="mobile-preview-list">
-                  <span data-i18n="preview.mobile.activity.one">Orçamento aprovado</span>
-                  <span data-i18n="preview.mobile.activity.two">Serviço em execução</span>
-                  <span data-i18n="preview.mobile.activity.three">Venda realizada</span>
-                </div>
-              </div>
-              <div class="mobile-preview-nav">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
+          <div class="hero-platform-card" aria-label="Disponível na Web, Android e iOS" data-i18n-aria="hero.platform.card.aria">
+            <strong>Web + Android + iOS</strong>
+            <span data-i18n="hero.platform.card.body">A operação completa também no celular</span>
+          </div>
+
+          <div class="hero-status-card" aria-hidden="true">
+            <span></span>
+            <div>
+              <small data-i18n="hero.status.label">Atendimento</small>
+              <strong data-i18n="hero.status.value">Tudo organizado</strong>
             </div>
           </div>
         </div>
+      </div>
+    </section>
 
-        <div class="hero-carousel-nav" aria-label="Slides da Home" data-i18n-aria="hero.carousel.aria">
-          <button class="hero-arrow hero-arrow-prev" type="button" data-hero-prev aria-label="Slide anterior" data-i18n-aria="hero.prev">
-            <span aria-hidden="true"></span>
-          </button>
-          <div class="hero-tabs" role="tablist" aria-label="Destaques do SixApp" data-i18n-aria="hero.tabs.aria">
-            <button class="hero-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="hero-slide-1" data-hero-tab="0">
-              <span class="hero-tab-number">01</span>
-              <span data-i18n="hero.tab.one">Organize a operação</span>
-            </button>
-            <button class="hero-tab" type="button" role="tab" aria-selected="false" aria-controls="hero-slide-2" data-hero-tab="1">
-              <span class="hero-tab-number">02</span>
-              <span data-i18n="hero.tab.two">Use no computador, Android e iOS</span>
-            </button>
-            <button class="hero-tab" type="button" role="tab" aria-selected="false" aria-controls="hero-slide-3" data-hero-tab="2">
-              <span class="hero-tab-number">03</span>
-              <span data-i18n="hero.tab.three">Controle para crescer</span>
-            </button>
-          </div>
-          <button class="hero-arrow hero-arrow-next" type="button" data-hero-next aria-label="Próximo slide" data-i18n-aria="hero.next">
-            <span aria-hidden="true"></span>
-          </button>
+    <section class="capability-marquee" aria-label="Áreas do SixApp" data-i18n-aria="marquee.aria">
+      <div class="marquee-track">
+        <div class="marquee-group">
+          <span data-i18n="marquee.sales">Vendas</span><i></i>
+          <span data-i18n="marquee.products">Produtos</span><i></i>
+          <span data-i18n="marquee.service">Serviços técnicos</span><i></i>
+          <span data-i18n="marquee.customers">Clientes</span><i></i>
+          <span data-i18n="marquee.finance">Financeiro</span><i></i>
+          <span data-i18n="marquee.reports">Relatórios</span><i></i>
+          <span data-i18n="marquee.mobile">Mobile</span><i></i>
+        </div>
+        <div class="marquee-group" aria-hidden="true">
+          <span data-i18n="marquee.sales">Vendas</span><i></i>
+          <span data-i18n="marquee.products">Produtos</span><i></i>
+          <span data-i18n="marquee.service">Serviços técnicos</span><i></i>
+          <span data-i18n="marquee.customers">Clientes</span><i></i>
+          <span data-i18n="marquee.finance">Financeiro</span><i></i>
+          <span data-i18n="marquee.reports">Relatórios</span><i></i>
+          <span data-i18n="marquee.mobile">Mobile</span><i></i>
         </div>
       </div>
     </section>
 
-    <section class="trust-band" aria-label="Diferenciais do SixApp" data-i18n-aria="trust.aria">
-      <div class="layout trust-grid">
-        <div class="trust-item">
-          <span class="trust-icon trust-icon-work" aria-hidden="true"></span>
-          <strong data-i18n="trust.allInOne">Tudo em um só lugar</strong>
-          <span data-i18n="trust.allInOne.body">Vendas, serviços, clientes e financeiro integrados e organizados.</span>
-        </div>
-        <div class="trust-item">
-          <span class="trust-icon trust-icon-device" aria-hidden="true"></span>
-          <strong data-i18n="trust.platforms">Web, Android e iOS</strong>
-          <span data-i18n="trust.platforms.body">Use o sistema no computador e também no celular, com experiência pensada para operação real.</span>
-        </div>
-        <div class="trust-item">
-          <span class="trust-icon trust-icon-team" aria-hidden="true"></span>
-          <strong data-i18n="trust.team">Equipe alinhada</strong>
-          <span data-i18n="trust.team.body">Acesso certo para cada pessoa, com tarefas e responsabilidades.</span>
-        </div>
-        <div class="trust-item">
-          <span class="trust-icon trust-icon-growth" aria-hidden="true"></span>
-          <strong data-i18n="trust.growth">Crescimento com clareza</strong>
-          <span data-i18n="trust.growth.body">Mais controle hoje para construir resultados amanhã.</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="recursos" aria-labelledby="resources-title">
+    <section class="editorial-section resources-section" id="recursos" aria-labelledby="resources-title">
       <div class="layout">
-        <div class="section-head">
-          <p class="section-kicker" data-i18n="resources.kicker">Recursos principais</p>
-          <h2 id="resources-title" data-i18n="resources.title">Uma base organizada para vender, atender e acompanhar.</h2>
-          <p data-i18n="resources.lead">O SixApp reúne módulos essenciais para comércios que combinam produtos, serviços, clientes e gestão diária.</p>
+        <div class="editorial-heading" data-reveal>
+          <p class="editorial-kicker" data-i18n="resources.kicker">Recursos principais</p>
+          <h2 id="resources-title" data-i18n="resources.editorial.title">Tudo o que a sua operação precisa.</h2>
+          <p data-i18n="resources.editorial.lead">Recursos conectados, sem excesso de telas e com uma navegação feita para ser entendida rapidamente.</p>
         </div>
 
-        <div class="feature-grid">
-          <article class="feature-card">
-            <span class="feature-index">01</span>
-            <h3 data-i18n="feature.sales.title">Vendas e orçamentos</h3>
-            <p data-i18n="feature.sales.body">Registre pedidos, acompanhe propostas e avance do orçamento ao atendimento com menos retrabalho.</p>
-          </article>
-          <article class="feature-card">
-            <span class="feature-index">02</span>
-            <h3 data-i18n="feature.service.title">Atendimento técnico</h3>
-            <p data-i18n="feature.service.body">Organize solicitações, status, evidências, execução e entrega sem perder o histórico do cliente.</p>
-          </article>
-          <article class="feature-card">
-            <span class="feature-index">03</span>
-            <h3 data-i18n="feature.catalog.title">Produtos e serviços</h3>
-            <p data-i18n="feature.catalog.body">Mantenha catálogo, estoque e serviços cadastrados em uma rotina centralizada.</p>
-          </article>
-          <article class="feature-card">
-            <span class="feature-index">04</span>
-            <h3 data-i18n="feature.people.title">Clientes, colaboradores e fornecedores</h3>
-            <p data-i18n="feature.people.body">Tenha cadastros mais claros para relacionamento, operação e acompanhamento interno.</p>
-          </article>
-          <article class="feature-card">
-            <span class="feature-index">05</span>
-            <h3 data-i18n="feature.finance.title">Financeiro</h3>
-            <p data-i18n="feature.finance.body">Acompanhe caixa, recebimentos, pendências e compromissos com leitura operacional.</p>
-          </article>
-          <article class="feature-card">
-            <span class="feature-index">06</span>
-            <h3 data-i18n="feature.pdf.title">Relatórios e comprovantes em PDF</h3>
-            <p data-i18n="feature.pdf.body">Gere documentos e registros para apoiar atendimento, entrega e conferência.</p>
-          </article>
-          <article class="feature-card">
-            <span class="feature-index">07</span>
-            <h3 data-i18n="feature.communication.title">Comunicação e notificações</h3>
-            <p data-i18n="feature.communication.body">Acompanhe eventos relevantes da operação e mantenha o cliente informado quando o fluxo permitir.</p>
-          </article>
-          <article class="feature-card">
-            <span class="feature-index">08</span>
-            <h3 data-i18n="feature.permissions.title">Equipe e permissões</h3>
-            <p data-i18n="feature.permissions.body">Separe responsabilidades e reduza acesso indevido a ações sensíveis.</p>
-          </article>
+        <div class="feature-lines">
+          <article class="feature-line" data-reveal><span class="feature-line-index">01</span><span class="feature-line-icon feature-line-icon-sales" aria-hidden="true"></span><h3 data-i18n="feature.sales.title">Vendas e orçamentos</h3><p data-i18n="feature.sales.body">Registre pedidos, acompanhe propostas e avance do orçamento ao atendimento com menos retrabalho.</p></article>
+          <article class="feature-line" data-reveal><span class="feature-line-index">02</span><span class="feature-line-icon feature-line-icon-service" aria-hidden="true"></span><h3 data-i18n="feature.service.title">Atendimento técnico</h3><p data-i18n="feature.service.body">Organize solicitações, status, evidências, execução e entrega sem perder o histórico do cliente.</p></article>
+          <article class="feature-line" data-reveal><span class="feature-line-index">03</span><span class="feature-line-icon feature-line-icon-catalog" aria-hidden="true"></span><h3 data-i18n="feature.catalog.title">Produtos e serviços</h3><p data-i18n="feature.catalog.body">Mantenha catálogo, estoque e serviços cadastrados em uma rotina centralizada.</p></article>
+          <article class="feature-line" data-reveal><span class="feature-line-index">04</span><span class="feature-line-icon feature-line-icon-people" aria-hidden="true"></span><h3 data-i18n="feature.people.title">Clientes, colaboradores e fornecedores</h3><p data-i18n="feature.people.body">Tenha cadastros mais claros para relacionamento, operação e acompanhamento interno.</p></article>
+          <article class="feature-line" data-reveal><span class="feature-line-index">05</span><span class="feature-line-icon feature-line-icon-finance" aria-hidden="true"></span><h3 data-i18n="feature.finance.title">Financeiro</h3><p data-i18n="feature.finance.body">Acompanhe caixa, recebimentos, pendências e compromissos com leitura operacional.</p></article>
+          <article class="feature-line" data-reveal><span class="feature-line-index">06</span><span class="feature-line-icon feature-line-icon-report" aria-hidden="true"></span><h3 data-i18n="feature.pdf.title">Relatórios e comprovantes em PDF</h3><p data-i18n="feature.pdf.body">Gere documentos e registros para apoiar atendimento, entrega e conferência.</p></article>
         </div>
       </div>
     </section>
 
-    <section class="section section-contrast" id="como-funciona" aria-labelledby="journey-title">
-      <div class="layout two-column">
-        <div class="section-head sticky-head">
-          <p class="section-kicker" data-i18n="journey.kicker">Jornada do atendimento técnico</p>
-          <h2 id="journey-title" data-i18n="journey.title">Do primeiro contato ao comprovante final.</h2>
-          <p data-i18n="journey.lead">A jornada foi pensada para serviços técnicos especializados, sem limitar o processo a um único tipo de equipamento.</p>
-        </div>
-
-        <ol class="journey-list">
-          <li><span>01</span><div><h3 data-i18n="journey.one.title">Receba o item ou a solicitação</h3><p data-i18n="journey.one.body">Comece pelo atendimento e registre o contexto do cliente.</p></div></li>
-          <li><span>02</span><div><h3 data-i18n="journey.two.title">Registre informações e evidências</h3><p data-i18n="journey.two.body">Organize dados, observações e histórico do atendimento.</p></div></li>
-          <li><span>03</span><div><h3 data-i18n="journey.three.title">Prepare o orçamento</h3><p data-i18n="journey.three.body">Formalize produtos, serviços e condições antes da execução.</p></div></li>
-          <li><span>04</span><div><h3 data-i18n="journey.four.title">Acompanhe aprovação e execução</h3><p data-i18n="journey.four.body">Mantenha status claros para equipe e gestão.</p></div></li>
-          <li><span>05</span><div><h3 data-i18n="journey.five.title">Notifique o cliente</h3><p data-i18n="journey.five.body">Use o fluxo para apoiar comunicação sobre andamento e próximos passos.</p></div></li>
-          <li><span>06</span><div><h3 data-i18n="journey.six.title">Entregue e gere o comprovante</h3><p data-i18n="journey.six.body">Finalize com registro organizado para consulta e conferência.</p></div></li>
-        </ol>
-      </div>
-    </section>
-
-    <section class="section" id="segmentos" aria-labelledby="segments-title">
-      <div class="layout">
-        <div class="section-head centered">
-          <p class="section-kicker" data-i18n="segments.kicker">Segmentos atendidos</p>
-          <h2 id="segments-title" data-i18n="segments.title">Para negócios que precisam unir balcão, serviço e gestão.</h2>
-          <p data-i18n="segments.lead">O SixApp atende rotinas de comércio e prestação de serviço técnico com processos, pessoas e financeiro no mesmo ambiente.</p>
-        </div>
-
-        <div class="segment-grid" aria-label="Exemplos de segmentos" data-i18n-aria="segments.aria">
-          <span data-i18n="segment.one">Assistência técnica</span>
-          <span data-i18n="segment.two">Informática</span>
-          <span data-i18n="segment.three">Eletrônica</span>
-          <span data-i18n="segment.four">Manutenção</span>
-          <span data-i18n="segment.five">Climatização</span>
-          <span data-i18n="segment.six">Eletrodomésticos</span>
-          <span data-i18n="segment.workshops">Oficinas e equipamentos</span>
-          <span data-i18n="segment.eight">Serviços técnicos especializados</span>
-        </div>
-
-        <p class="segment-note" data-i18n="segments.note">E muitos outros negócios que combinam produtos e serviços.</p>
-      </div>
-    </section>
-
-    <section class="section management-section" aria-labelledby="management-title">
-      <div class="layout management-grid">
-        <div class="manager-preview" aria-label="Prévia gerencial simplificada" data-i18n-aria="management.preview.aria">
-          <div class="manager-row">
-            <span data-i18n="management.preview.cash">Caixa</span>
-            <strong data-i18n="management.preview.cash.value">Resumo do dia</strong>
+    <section class="showcase-section" aria-label="SixApp na rotina" data-i18n-aria="showcase.aria">
+      <div class="layout showcase-list">
+        <article class="showcase-row" data-reveal>
+          <div class="showcase-copy">
+            <p class="editorial-kicker" data-i18n="showcase.service.kicker">Serviços técnicos</p>
+            <h2 data-i18n="showcase.service.title">Cada atendimento com contexto e continuidade.</h2>
+            <p data-i18n="showcase.service.body">Registre informações, evidências e mudanças de status em um fluxo que acompanha o serviço do recebimento à entrega.</p>
+            <ul class="editorial-check-list"><li data-i18n="showcase.service.pointOne">Histórico reunido por cliente e atendimento</li><li data-i18n="showcase.service.pointTwo">Status claros para a equipe</li><li data-i18n="showcase.service.pointThree">Documentos prontos para compartilhar</li></ul>
           </div>
-          <div class="manager-row">
-            <span data-i18n="management.preview.team">Equipe</span>
-            <strong data-i18n="management.preview.team.value">Permissões ativas</strong>
+          <div class="showcase-art service-art" aria-hidden="true">
+            <div class="art-window">
+              <div class="art-window-bar"><span></span><span></span><span></span><strong>SixApp</strong></div>
+              <div class="service-timeline"><div class="is-complete"><i></i><span data-i18n="showcase.service.stepOne">Recebido</span></div><div class="is-active"><i></i><span data-i18n="showcase.service.stepTwo">Em atendimento</span></div><div><i></i><span data-i18n="showcase.service.stepThree">Pronto para entrega</span></div></div>
+              <div class="service-note"></div>
+            </div>
           </div>
-          <div class="manager-chart" aria-hidden="true">
-            <span class="bar-1"></span>
-            <span class="bar-2"></span>
-            <span class="bar-3"></span>
-            <span class="bar-4"></span>
-            <span class="bar-5"></span>
-          </div>
-          <div class="manager-tags">
-            <span data-i18n="management.preview.tag.one">Vendas</span>
-            <span data-i18n="management.preview.tag.two">Pendências</span>
-            <span data-i18n="management.preview.tag.three">Comércios</span>
-          </div>
-        </div>
+        </article>
 
-        <div class="section-head">
-          <p class="section-kicker" data-i18n="management.kicker">Gestão além do atendimento</p>
-          <h2 id="management-title" data-i18n="management.title">Visão gerencial sem reproduzir o dashboard inteiro na Home.</h2>
-          <p data-i18n="management.lead">Acompanhe indicadores, equipe, caixas, vendas, pendências, financeiro e múltiplos comércios com uma leitura preparada para decisão.</p>
-          <ul class="check-list">
-            <li data-i18n="management.item.one">Indicadores e pendências com leitura rápida.</li>
-            <li data-i18n="management.item.two">Equipe e permissões alinhadas à operação.</li>
-            <li data-i18n="management.item.three">Visão para quem administra mais de um comércio.</li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <section class="section section-contrast" id="plataformas" aria-labelledby="platforms-title">
-      <div class="layout platform-grid">
-        <div class="section-head">
-          <p class="section-kicker" data-i18n="platforms.kicker">Multiplataforma</p>
-          <h2 id="platforms-title" data-i18n="platforms.title">Web, Android e iOS de verdade.</h2>
-          <p data-i18n="platforms.lead">A mesma plataforma para operar no navegador e também no celular, com rotinas pensadas para uso real no Android e no iPhone.</p>
-        </div>
-        <div class="platform-list" aria-label="Plataformas" data-i18n-aria="platforms.aria">
-          <span>
-            <span class="platform-icon platform-icon-web" aria-hidden="true"></span>
-            <strong>Web</strong>
-            <small data-i18n="platforms.web.body">Operação no computador</small>
-          </span>
-          <span>
-            <span class="platform-icon platform-icon-phone" aria-hidden="true"></span>
-            <strong>Android</strong>
-            <small data-i18n="platforms.android.body">Gestão também no celular</small>
-          </span>
-          <span>
-            <span class="platform-icon platform-icon-phone" aria-hidden="true"></span>
-            <strong>iOS</strong>
-            <small data-i18n="platforms.ios.body">Continuidade no iPhone</small>
-          </span>
-        </div>
-      </div>
-    </section>
-
-    <section class="section plans-section" id="planos" aria-labelledby="plans-title">
-      <div class="layout plans-grid">
-        <div class="section-head">
-          <p class="section-kicker" data-i18n="plans.kicker">Planos</p>
-          <h2 id="plans-title" data-i18n="plans.title">Comece de forma simples e evolua conforme o seu negócio.</h2>
-          <p data-i18n="plans.lead">Os planos devem acompanhar o momento da operação sem obrigar você a decidir tudo antes de organizar a rotina.</p>
-        </div>
-        <article class="plan-panel">
-          <h3 data-i18n="plans.card.title">Conheça as opções do SixApp</h3>
-          <p data-i18n="plans.card.body">A página de checkout continua no fluxo Flutter Web. Caso prefira começar pela conta, o cadastro também está disponível.</p>
-          <div class="plan-actions">
-            <a class="button button-primary" href="/checkout" data-i18n="plans.primary">Conhecer planos</a>
-            <a class="button button-quiet" href="/register" data-i18n="plans.secondary">Criar conta</a>
+        <article class="showcase-row showcase-row-reverse" data-reveal>
+          <div class="showcase-copy">
+            <p class="editorial-kicker" data-i18n="showcase.operation.kicker">Operação integrada</p>
+            <h2 data-i18n="showcase.operation.title">Produtos, pessoas e financeiro na mesma rotina.</h2>
+            <p data-i18n="showcase.operation.body">O dado cadastrado deixa de ficar isolado e passa a apoiar vendas, serviços, estoque, recebimentos e decisões.</p>
+            <ul class="editorial-check-list"><li data-i18n="showcase.operation.pointOne">Produtos e serviços prontos para uso</li><li data-i18n="showcase.operation.pointTwo">Clientes, colaboradores e fornecedores organizados</li><li data-i18n="showcase.operation.pointThree">Movimentações com visão financeira</li></ul>
           </div>
+          <div class="showcase-art operation-art" aria-hidden="true">
+            <div class="operation-card operation-card-main"><span data-i18n="showcase.operation.cardOne">Operação do dia</span><strong data-i18n="showcase.operation.cardOneValue">Visão geral</strong><div class="operation-bars"><i></i><i></i><i></i><i></i><i></i></div></div>
+            <div class="operation-card operation-card-stock"><span data-i18n="showcase.operation.cardTwo">Estoque</span><strong data-i18n="showcase.operation.cardTwoValue">Atualizado</strong></div>
+            <div class="operation-card operation-card-team"><span data-i18n="showcase.operation.cardThree">Equipe</span><strong data-i18n="showcase.operation.cardThreeValue">Acessos definidos</strong></div>
+          </div>
+        </article>
+
+        <article class="showcase-row" data-reveal>
+          <div class="showcase-copy">
+            <p class="editorial-kicker" data-i18n="showcase.platform.kicker">Web + Android + iOS</p>
+            <h2 data-i18n="showcase.platform.title">O SixApp inteiro acompanha você.</h2>
+            <p data-i18n="showcase.platform.body">Não é apenas um aplicativo de apoio: as rotinas do negócio também podem ser utilizadas no celular, com experiência própria para cada tela.</p>
+            <ul class="editorial-check-list"><li data-i18n="showcase.platform.pointOne">Gestão completa no navegador</li><li data-i18n="showcase.platform.pointTwo">Operação prática no Android e no iPhone</li><li data-i18n="showcase.platform.pointThree">Informações sincronizadas pela internet</li></ul>
+          </div>
+          <div class="showcase-art platform-art" aria-hidden="true"><div class="platform-desktop"><div class="platform-desktop-top"><span></span><span></span><span></span></div><div class="platform-desktop-body"><i></i><i></i><i></i><i></i></div></div><div class="platform-phone"><span></span><div><i></i><i></i><i></i></div></div></div>
         </article>
       </div>
     </section>
 
-    <section class="section faq-section" id="faq" aria-labelledby="faq-title">
-      <div class="layout faq-grid">
-        <div class="section-head">
-          <p class="section-kicker" data-i18n="faq.kicker">FAQ</p>
-          <h2 id="faq-title" data-i18n="faq.title">Perguntas frequentes</h2>
-          <p data-i18n="faq.lead">Respostas diretas para entender se o SixApp se encaixa na sua rotina.</p>
+    <section class="editorial-section solutions-section" id="solucoes" aria-labelledby="solutions-title">
+      <div class="layout">
+        <div class="editorial-heading editorial-heading-wide" data-reveal><p class="editorial-kicker" data-i18n="solutions.kicker">Dores e soluções</p><h2 id="solutions-title" data-i18n="solutions.title">Problemas reais da operação, tratados de forma direta.</h2><p data-i18n="solutions.lead">O SixApp reduz a fragmentação do dia a dia conectando informações que normalmente ficam espalhadas.</p></div>
+
+        <div class="solution-pairs">
+          <article class="solution-pair" data-reveal><div class="pain-panel"><div class="pair-label"><span>01</span><i aria-hidden="true">!</i><strong data-i18n="solutions.pain.label">A dor</strong></div><h3 data-i18n="solutions.one.painTitle">Informações do atendimento espalhadas</h3><p data-i18n="solutions.one.painBody">Status, observações e evidências ficam em lugares diferentes, tornando a consulta lenta e aumentando o risco de desencontro.</p></div><div class="answer-panel"><div class="pair-label"><i aria-hidden="true">✓</i><strong data-i18n="solutions.answer.label">A solução SixApp</strong></div><h3 data-i18n="solutions.one.answerTitle">Histórico e status centralizados</h3><p data-i18n="solutions.one.answerBody">O atendimento mantém contexto, etapas e registros reunidos para facilitar a continuidade do trabalho.</p></div></article>
+          <article class="solution-pair" data-reveal><div class="pain-panel"><div class="pair-label"><span>02</span><i aria-hidden="true">!</i><strong data-i18n="solutions.pain.label">A dor</strong></div><h3 data-i18n="solutions.two.painTitle">Equipe sem clareza sobre acessos</h3><p data-i18n="solutions.two.painBody">Quando todos enxergam ou executam as mesmas ações, responsabilidades e informações sensíveis ficam difíceis de controlar.</p></div><div class="answer-panel"><div class="pair-label"><i aria-hidden="true">✓</i><strong data-i18n="solutions.answer.label">A solução SixApp</strong></div><h3 data-i18n="solutions.two.answerTitle">Permissões por colaborador</h3><p data-i18n="solutions.two.answerBody">O administrador organiza os acessos de acordo com o papel de cada pessoa e de cada comércio.</p></div></article>
+          <article class="solution-pair" data-reveal><div class="pain-panel"><div class="pair-label"><span>03</span><i aria-hidden="true">!</i><strong data-i18n="solutions.pain.label">A dor</strong></div><h3 data-i18n="solutions.three.painTitle">Cadastros que não conversam com a operação</h3><p data-i18n="solutions.three.painBody">Produtos, serviços e pessoas registrados de forma isolada geram repetição de trabalho durante vendas e atendimentos.</p></div><div class="answer-panel"><div class="pair-label"><i aria-hidden="true">✓</i><strong data-i18n="solutions.answer.label">A solução SixApp</strong></div><h3 data-i18n="solutions.three.answerTitle">Uma base conectada ao uso diário</h3><p data-i18n="solutions.three.answerBody">Os cadastros apoiam as movimentações e preservam o contexto necessário em cada jornada.</p></div></article>
+          <article class="solution-pair" data-reveal><div class="pain-panel"><div class="pair-label"><span>04</span><i aria-hidden="true">!</i><strong data-i18n="solutions.pain.label">A dor</strong></div><h3 data-i18n="solutions.four.painTitle">Decisões financeiras sem visão suficiente</h3><p data-i18n="solutions.four.painBody">Caixa, recebimentos, compromissos e pendências separados dificultam a leitura do momento do negócio.</p></div><div class="answer-panel"><div class="pair-label"><i aria-hidden="true">✓</i><strong data-i18n="solutions.answer.label">A solução SixApp</strong></div><h3 data-i18n="solutions.four.answerTitle">Financeiro organizado para acompanhar</h3><p data-i18n="solutions.four.answerBody">Informações importantes ficam reunidas para apoiar conferência, planejamento e tomada de decisão.</p></div></article>
         </div>
-        <div class="faq-list">
-          <details>
-            <summary data-i18n="faq.one.question">Para quais tipos de negócio o SixApp serve?</summary>
-            <p data-i18n="faq.one.answer">Para comércios que vendem produtos, prestam serviços técnicos, fazem orçamentos e precisam acompanhar clientes, equipe e financeiro.</p>
-          </details>
-          <details>
-            <summary data-i18n="faq.two.question">Posso cadastrar mais de um comércio?</summary>
-            <p data-i18n="faq.two.answer">A estrutura do app considera operações com mais de um comércio por conta, mantendo a gestão separada quando necessário.</p>
-          </details>
-          <details>
-            <summary data-i18n="faq.three.question">Posso controlar permissões dos colaboradores?</summary>
-            <p data-i18n="faq.three.answer">Sim. O SixApp considera permissões para limitar ações sensíveis de acordo com o papel do colaborador.</p>
-          </details>
-          <details>
-            <summary data-i18n="faq.four.question">O SixApp funciona no celular e computador?</summary>
-            <p data-i18n="faq.four.answer">Sim. A experiência contempla Web, Android e iOS, com rotinas para operação real também no mobile.</p>
-          </details>
-          <details>
-            <summary data-i18n="faq.five.question">É possível gerar relatórios e comprovantes?</summary>
-            <p data-i18n="faq.five.answer">O app possui fluxos de relatórios e comprovantes em PDF para apoiar conferência, atendimento e entrega.</p>
-          </details>
-          <details>
-            <summary data-i18n="faq.six.question">Meus colaboradores precisam ter acesso a tudo?</summary>
-            <p data-i18n="faq.six.answer">Não. A gestão de permissões ajuda a separar responsabilidades e reduzir acesso indevido a áreas sensíveis.</p>
-          </details>
-          <details>
-            <summary data-i18n="faq.offline.question">O SixApp funciona sem internet?</summary>
-            <p data-i18n="faq.offline.answer">Não. O SixApp é um sistema online e exige conexão com a internet para manter informações sincronizadas.</p>
-          </details>
+
+        <div class="solutions-cta" data-reveal><div><h3 data-i18n="solutions.cta.title">Organize primeiro. Cresça com clareza.</h3><p data-i18n="solutions.cta.body">Conheça a experiência do SixApp e veja como ela se encaixa na sua operação.</p></div><a class="button button-primary button-large button-arrow" href="/register"><span data-i18n="solutions.cta.button">Criar conta</span><span aria-hidden="true">→</span></a></div>
+      </div>
+    </section>
+
+    <section class="editorial-section steps-section" id="como-funciona" aria-labelledby="steps-title">
+      <div class="layout steps-layout">
+        <div class="editorial-heading" data-reveal><p class="editorial-kicker" data-i18n="steps.kicker">Como funciona</p><h2 id="steps-title" data-i18n="steps.title">Começar é simples.</h2><p data-i18n="steps.lead">A conta evolui junto com a estrutura do seu negócio, da primeira configuração à operação da equipe.</p></div>
+        <ol class="step-list">
+          <li data-reveal><span>01</span><h3 data-i18n="steps.one.title">Crie a conta</h3><p data-i18n="steps.one.body">O administrador inicia o acesso e registra as informações principais.</p></li>
+          <li data-reveal><span>02</span><h3 data-i18n="steps.two.title">Organize o comércio</h3><p data-i18n="steps.two.body">Cadastre produtos, serviços, pessoas e configure os acessos da equipe.</p></li>
+          <li data-reveal><span>03</span><h3 data-i18n="steps.three.title">Use onde estiver</h3><p data-i18n="steps.three.body">Opere pela Web, Android ou iOS com as informações sincronizadas.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="editorial-section plans-editorial-section" id="planos" aria-labelledby="plans-title">
+      <div class="layout">
+        <div class="editorial-heading" data-reveal><p class="editorial-kicker" data-i18n="plans.kicker">Planos</p><h2 id="plans-title" data-i18n="plans.editorial.title">Um caminho para cada momento do negócio.</h2><p data-i18n="plans.editorial.lead">Comece pela conta, conheça as opções disponíveis e evolua conforme a sua operação ganhar novas necessidades.</p></div>
+        <div class="plan-path-grid">
+          <article class="plan-path-card" data-reveal><span class="plan-path-number">01</span><p class="editorial-kicker" data-i18n="plans.start.kicker">Começar</p><h3 data-i18n="plans.start.title">Crie sua conta</h3><p data-i18n="plans.start.body">Inicie o cadastro e prepare a primeira estrutura do seu comércio.</p><a class="button button-quiet" href="/register" data-i18n="plans.start.button">Criar conta</a></article>
+          <article class="plan-path-card is-highlighted" data-reveal><span class="plan-path-number">02</span><p class="editorial-kicker" data-i18n="plans.options.kicker">Conhecer opções</p><h3 data-i18n="plans.options.title">Veja os planos disponíveis</h3><p data-i18n="plans.options.body">Compare as opções do SixApp em uma etapa própria e segura.</p><a class="button button-light" href="/checkout" data-i18n="plans.options.button">Conhecer planos</a></article>
+          <article class="plan-path-card" data-reveal><span class="plan-path-number">03</span><p class="editorial-kicker" data-i18n="plans.grow.kicker">Evoluir</p><h3 data-i18n="plans.grow.title">Amplie quando precisar</h3><p data-i18n="plans.grow.body">Adicione organização, pessoas e recursos conforme a operação crescer.</p><a class="button button-quiet" href="#recursos" data-i18n="plans.grow.button">Rever recursos</a></article>
         </div>
       </div>
     </section>
 
-    <section class="final-cta" aria-labelledby="final-title">
-      <div class="layout final-cta-grid">
-        <div>
-          <p class="section-kicker" data-i18n="final.kicker">Próximo passo</p>
-          <h2 id="final-title" data-i18n="final.title">Organize hoje a operação que você quer escalar amanhã.</h2>
-        </div>
-        <div class="final-actions">
-          <a class="button button-primary button-large" href="/register" data-i18n="final.primary">Criar minha conta</a>
-          <a class="button button-ghost-dark button-large" href="/login" data-i18n="final.secondary">Entrar</a>
-        </div>
-      </div>
+    <section class="final-editorial-cta" aria-labelledby="final-title">
+      <div class="layout final-editorial-card" data-reveal><div><p class="editorial-kicker" data-i18n="final.kicker">Próximo passo</p><h2 id="final-title" data-i18n="final.editorial.title">Comece a organizar o seu negócio com o SixApp.</h2><p data-i18n="final.editorial.body">Crie uma conta ou entre para continuar de onde parou.</p></div><div class="final-editorial-actions"><a class="button button-light button-large" href="/register" data-i18n="final.primary">Criar minha conta</a><a class="button button-dark-outline button-large" href="/login" data-i18n="final.secondary">Entrar</a></div></div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="layout footer-grid">
-      <div>
-        <a class="footer-brand" href="/" aria-label="SixApp">
-          <img src="/site-assets/images/sixapp-mark.png" width="30" height="30" alt="" loading="lazy" decoding="async">
-          <span>SixApp</span>
-        </a>
-        <p data-i18n="footer.product">Gestão online para comércios de produtos e serviços técnicos.</p>
-      </div>
-      <nav class="footer-nav" aria-label="Navegação do rodapé" data-i18n-aria="footer.aria">
-        <a href="#recursos" data-i18n="footer.resources">Recursos</a>
-        <a href="#segmentos" data-i18n="footer.segments">Segmentos</a>
-        <a href="#como-funciona" data-i18n="footer.how">Como funciona</a>
-        <a href="#planos" data-i18n="footer.plans">Planos</a>
-        <a href="#faq" data-i18n="footer.faq">FAQ</a>
-      </nav>
-      <nav class="footer-nav" aria-label="Acesso" data-i18n-aria="footer.access.aria">
-        <a href="/login" data-i18n="footer.login">Entrar</a>
-        <a href="/register" data-i18n="footer.signup">Criar conta</a>
-        <span data-i18n="footer.terms">Termos e privacidade em preparação</span>
-      </nav>
-    </div>
-    <div class="layout footer-bottom">
-      <span>© <span data-current-year>2026</span> SixApp.</span>
-      <span data-i18n="footer.note">Produto digital para gestão comercial e operacional.</span>
+    <div class="layout footer-main">
+      <a class="footer-brand" href="#topo" aria-label="SixApp"><img src="/site-assets/images/sixapp-mark.png" width="28" height="28" alt="" loading="lazy" decoding="async"><span>SixApp</span></a>
+      <nav class="footer-nav" aria-label="Navegação do rodapé" data-i18n-aria="footer.aria"><a href="#recursos" data-i18n="footer.resources">Recursos</a><a href="#solucoes" data-i18n="footer.solutions">Soluções</a><a href="#como-funciona" data-i18n="footer.how">Como funciona</a><a href="#planos" data-i18n="footer.plans">Planos</a></nav>
+      <p>© <span data-current-year>2026</span> SixApp. <span data-i18n="footer.rights">Todos os direitos reservados.</span></p>
     </div>
   </footer>
 
