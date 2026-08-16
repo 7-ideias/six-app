@@ -698,30 +698,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             toneColor: _lockedAccent,
           );
         }
-
-        final int lowStockItems = snapshot.catalog.data?.lowStockItems ?? 0;
-        if (lowStockItems <= 0) return null;
-
-        return ManagementAttentionBlock(
-          title: context.t(
-            'gestao.catalog.lowStockTitle',
-            fallback: 'Estoque precisa de atenção',
-          ),
-          message: context
-              .t(
-                'gestao.catalog.lowStockMessage',
-                fallback:
-                    '{count} item(ns) abaixo do limite configurado no catálogo.',
-              )
-              .replaceAll('{count}', lowStockItems.toString()),
-          icon: Icons.warning_amber_rounded,
-          toneColor: _attentionAccent,
-          actionLabel: context.t(
-            'gestao.catalog.lowStockAction',
-            fallback: 'Ver itens',
-          ),
-          onAction: () => _navigateTo(context, EstoqueMobileScreen()),
-        );
+        return null;
       case _ManagementSectionType.people:
         return null;
       case _ManagementSectionType.finance:
@@ -762,9 +739,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     return section.items
         .map((_ManagementItem item) {
           final String? statusLabel =
-              item.maturity == ManagementSettingsMaturity.functional
+              item.statusLabel ??
+              (item.maturity == ManagementSettingsMaturity.functional
                   ? null
-                  : _maturityLabel(context, item.maturity);
+                  : _maturityLabel(context, item.maturity));
 
           return ManagementActionItemData(
             title: item.title,
@@ -904,6 +882,24 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             accentColor: _attentionAccent,
             emphasis: ManagementActionEmphasis.operational,
             onTap: () => _navigateTo(context, EstoqueMobileScreen()),
+          ),
+          _ManagementItem(
+            title: context.t(
+              'gestao.catalog.webCatalog',
+              fallback: 'Catálogo web',
+            ),
+            subtitle: context.t(
+              'gestao.catalog.webCatalogDesc',
+              fallback: 'Experiência completa do catálogo no navegador',
+            ),
+            icon: Icons.language_outlined,
+            accentColor: _lockedAccent,
+            emphasis: ManagementActionEmphasis.secondary,
+            maturity: ManagementSettingsMaturity.comingSoon,
+            statusLabel: context.t(
+              'gestao.catalog.webCatalogBadge',
+              fallback: 'WEB',
+            ),
           ),
         ],
       ),
@@ -1264,6 +1260,7 @@ class _ManagementItem {
     this.accentColor,
     this.emphasis = ManagementActionEmphasis.secondary,
     this.maturity = ManagementSettingsMaturity.functional,
+    this.statusLabel,
     this.visualGroupId,
   });
 
@@ -1274,5 +1271,6 @@ class _ManagementItem {
   final Color? accentColor;
   final ManagementActionEmphasis emphasis;
   final ManagementSettingsMaturity maturity;
+  final String? statusLabel;
   final String? visualGroupId;
 }
