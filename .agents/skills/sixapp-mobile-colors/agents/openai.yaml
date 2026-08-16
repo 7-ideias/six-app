@@ -1,0 +1,7 @@
+interface:
+  display_name: "SixApp Mobile Colors"
+  short_description: "Corrige paleta e dark mode no mobile"
+  default_prompt: "Use $sixapp-mobile-colors para corrigir cores, superfícies e contraste de uma tela mobile do SixApp."
+
+policy:
+  allow_implicit_invocation: true
