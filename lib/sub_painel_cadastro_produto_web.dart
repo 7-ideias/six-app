@@ -13,6 +13,7 @@ import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/models/categoria_catalogo_model.dart';
 import 'package:sixpos/data/services/imagem_sugestao/imagem_sugestao_api_client.dart';
 import 'package:sixpos/data/services/categoria_catalogo/categoria_catalogo_api_client.dart';
+import 'package:sixpos/domain/services/produto/produto_quick_update_service.dart';
 import 'package:sixpos/presentation/components/imagem_sugestoes_section.dart';
 import 'package:sixpos/presentation/components/produto_web_image.dart';
 import 'package:sixpos/presentation/components/six_top_notice.dart';
@@ -183,6 +184,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final ProdutoService _produtoService =
       widget.produtoService ?? ProdutoService();
+  late final ProdutoQuickUpdateService _produtoQuickUpdateService =
+      ProdutoQuickUpdateService(produtoService: _produtoService);
   late final ImagemSugestaoApiClient _imagemSugestaoApiClient =
       widget.imagemSugestaoApiClient ?? HttpImagemSugestaoApiClient();
   late final CategoriaCatalogoApiClient _categoriaApiClient =
@@ -972,32 +975,32 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   Future<void> _alternarFavorito() async {
     if (_isLoading || _favoritoAtualizando) return;
 
-    final bool valorAnterior = _favorito;
-    final bool novoValor = !valorAnterior;
-
-    setState(() {
-      _favorito = novoValor;
-      _favoritoAtualizando = _isModoEdicao;
-    });
-
+    final bool novoValor = !_favorito;
     if (!_isModoEdicao || _produtoEmEdicaoId == null) {
+      setState(() {
+        _favorito = novoValor;
+      });
       _mostrarFeedbackFavorito(novoValor);
       return;
     }
 
+    setState(() {
+      _favoritoAtualizando = true;
+    });
+
     try {
-      await _produtoService.atualizarFavoritoProduto(
+      await _produtoQuickUpdateService.atualizarFavorito(
         produtoId: _produtoEmEdicaoId!,
         ativo: _ativo,
         favorito: novoValor,
       );
       if (!mounted) return;
+      setState(() {
+        _favorito = novoValor;
+      });
       _mostrarFeedbackFavorito(novoValor);
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _favorito = valorAnterior;
-      });
       SixTopNotice.show(
         context,
         message: _t(
@@ -1007,7 +1010,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         icon: Icons.error_outline_rounded,
       );
     } finally {
-      if (mounted && _isModoEdicao) {
+      if (mounted) {
         setState(() {
           _favoritoAtualizando = false;
         });
@@ -1018,32 +1021,32 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   Future<void> _alternarDisponivelParaCatalogo() async {
     if (_isLoading || _catalogoAtualizando) return;
 
-    final bool valorAnterior = _disponivelParaCatalogo;
-    final bool novoValor = !valorAnterior;
-
-    setState(() {
-      _disponivelParaCatalogo = novoValor;
-      _catalogoAtualizando = _isModoEdicao;
-    });
-
+    final bool novoValor = !_disponivelParaCatalogo;
     if (!_isModoEdicao || _produtoEmEdicaoId == null) {
+      setState(() {
+        _disponivelParaCatalogo = novoValor;
+      });
       _mostrarFeedbackCatalogo(novoValor);
       return;
     }
 
+    setState(() {
+      _catalogoAtualizando = true;
+    });
+
     try {
-      await _produtoService.atualizarDisponivelParaCatalogoProduto(
+      await _produtoQuickUpdateService.atualizarDisponivelParaCatalogo(
         produtoId: _produtoEmEdicaoId!,
         ativo: _ativo,
         disponivelParaCatalogo: novoValor,
       );
       if (!mounted) return;
+      setState(() {
+        _disponivelParaCatalogo = novoValor;
+      });
       _mostrarFeedbackCatalogo(novoValor);
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _disponivelParaCatalogo = valorAnterior;
-      });
       SixTopNotice.show(
         context,
         message: _t(
@@ -1053,7 +1056,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         icon: Icons.error_outline_rounded,
       );
     } finally {
-      if (mounted && _isModoEdicao) {
+      if (mounted) {
         setState(() {
           _catalogoAtualizando = false;
         });
