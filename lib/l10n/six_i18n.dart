@@ -1096,6 +1096,10 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Catálogo restrito para este usuário',
     'gestao.catalog.permissionRestrictedMessage':
         'A ação de produtos e serviços respeita as permissões atuais.',
+    'gestao.catalog.webCatalog': 'Catálogo web',
+    'gestao.catalog.webCatalogDesc':
+        'Experiência completa do catálogo no navegador',
+    'gestao.catalog.webCatalogBadge': 'WEB',
     'gestao.catalog.lowStockTitle': 'Estoque precisa de atenção',
     'gestao.catalog.lowStockMessage':
         '{count} item(ns) abaixo do limite configurado no catálogo.',
@@ -2345,6 +2349,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.settings.adminHeader.title': 'Company settings',
     'gestao.settings.adminHeader.subtitle':
         'Organize company, team, operation and communication.',
+    'gestao.catalog.webCatalog': 'Web catalog',
+    'gestao.catalog.webCatalogDesc': 'Full catalog experience in the browser',
+    'gestao.catalog.webCatalogBadge': 'WEB',
     'gestao.featureInProgress': 'Mobile flow in progress.',
     'produto.webList.selection.titleMany': 'Select items',
     'produto.webList.selection.titleOne': 'Select item',
@@ -3509,6 +3516,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.settings.adminHeader.title': 'Configuración de la empresa',
     'gestao.settings.adminHeader.subtitle':
         'Organiza empresa, equipo, operación y comunicación.',
+    'gestao.catalog.webCatalog': 'Catálogo web',
+    'gestao.catalog.webCatalogDesc':
+        'Experiencia completa del catálogo en el navegador',
+    'gestao.catalog.webCatalogBadge': 'WEB',
     'gestao.featureInProgress': 'Flujo móvil en evolución.',
     'produto.webList.selection.titleMany': 'Seleccionar ítems',
     'produto.webList.selection.titleOne': 'Seleccionar ítem',
