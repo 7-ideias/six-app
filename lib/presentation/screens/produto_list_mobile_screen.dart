@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/providers/produtos_list_provider.dart';
@@ -17,11 +18,13 @@ class ProdutolistMobileScreen extends StatelessWidget {
     this.isSelecao = false,
     this.permitirSelecaoMultipla = false,
     this.tipoInicial = 'PRODUTO',
+    this.produtoService,
   });
 
   final bool isSelecao;
   final bool permitirSelecaoMultipla;
   final String tipoInicial;
+  final ProdutoService? produtoService;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +41,7 @@ class ProdutolistMobileScreen extends StatelessWidget {
               isSelecao: isSelecao,
               permitirSelecaoMultipla: permitirSelecaoMultipla,
               tipoInicial: tipoInicial,
+              produtoService: produtoService,
             ),
             Positioned.fill(
               child: AbsorbPointer(

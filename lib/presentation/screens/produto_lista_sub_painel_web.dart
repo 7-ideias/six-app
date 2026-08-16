@@ -463,17 +463,26 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     setState(_produtosSelecionados.clear);
   }
 
-  void _abrirCadastroParaEdicao(ProdutoModel produto) {
-    showSubPainelCadastroProduto(
+  Future<void> _abrirCadastroParaEdicao(ProdutoModel produto) async {
+    final bool? atualizado = await showSubPainelCadastroProduto(
       context,
       'Editar Produto',
       produtoParaEdicao: produto,
       modoEdicao: true,
     );
+    if (atualizado == true && mounted) {
+      await _recarregar();
+    }
   }
 
-  void _abrirNovoProduto() {
-    showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
+  Future<void> _abrirNovoProduto() async {
+    final bool? atualizado = await showSubPainelCadastroProduto(
+      context,
+      'Cadastro de Produtos',
+    );
+    if (atualizado == true && mounted) {
+      await _recarregar();
+    }
   }
 
   Future<void> _imprimirRelatorioProdutos() async {

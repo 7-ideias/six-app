@@ -16,6 +16,8 @@ class ProdutoCadastroFormData {
   const ProdutoCadastroFormData({
     required this.id,
     required this.ativo,
+    required this.favorito,
+    required this.disponivelParaCatalogo,
     required this.codigoDeBarras,
     required this.nomeProduto,
     required this.tipoProduto,
@@ -41,6 +43,8 @@ class ProdutoCadastroFormData {
 
   final String? id;
   final bool ativo;
+  final bool favorito;
+  final bool disponivelParaCatalogo;
   final String codigoDeBarras;
   final String nomeProduto;
   final String tipoProduto;
@@ -138,6 +142,8 @@ class ProdutoCadastroFormUtils {
     return ProdutoModel(
       id: data.id,
       ativo: data.ativo,
+      favorito: data.favorito,
+      disponivelParaCatalogo: data.disponivelParaCatalogo,
       codigoDeBarras: data.codigoDeBarras.trim(),
       nomeProduto: data.nomeProduto.trim(),
       tipoProduto: normalizarTipo(data.tipoProduto),
