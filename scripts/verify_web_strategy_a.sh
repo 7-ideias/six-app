@@ -501,9 +501,10 @@ require_not_contains web/site-assets/js/forgot-password.js 'sessionStorage'
 require_not_contains web/site-assets/js/forgot-password.js 'document.cookie'
 require_not_contains web/site-assets/js/forgot-password.js 'innerHTML'
 require_not_contains build/web/site-assets/js/forgot-password.js 'innerHTML'
-require_contains web/site-assets/js/checkout-core.mjs '/public/api/i18n/'
+require_contains web/site-assets/js/checkout-core.mjs '/public/api/planos'
 require_contains web/site-assets/js/checkout-core.mjs "cache: 'no-store'"
 require_contains web/site-assets/js/checkout-core.mjs 'hasUnsafeCheckoutPriceParam'
+require_not_contains web/site-assets/js/checkout-core.mjs '/public/api/i18n/'
 require_not_contains web/site-assets/js/checkout-core.mjs "get('price')"
 require_not_contains web/site-assets/js/checkout-core.mjs "credentials: 'include'"
 require_not_contains web/site-assets/js/checkout-core.mjs 'localStorage.setItem'
@@ -525,6 +526,8 @@ require_not_contains web/site-assets/js/checkout.js 'client_secret'
 require_not_contains web/site-assets/js/checkout.js 'cardNumber'
 require_not_contains web/site-assets/js/checkout.js 'cvv'
 require_not_contains build/web/site-assets/js/checkout-core.mjs "credentials: 'include'"
+require_contains build/web/site-assets/js/checkout-core.mjs '/public/api/planos'
+require_not_contains build/web/site-assets/js/checkout-core.mjs '/public/api/i18n/'
 require_not_contains build/web/site-assets/js/checkout-core.mjs 'localStorage.setItem'
 require_not_contains build/web/site-assets/js/checkout-core.mjs 'sessionStorage'
 require_not_contains build/web/site-assets/js/checkout-core.mjs 'document.cookie'
