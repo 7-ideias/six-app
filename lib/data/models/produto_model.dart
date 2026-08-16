@@ -3,6 +3,8 @@ import 'produto_imagem_model.dart';
 class ProdutoModel {
   final String? id;
   final bool ativo;
+  final bool favorito;
+  final bool disponivelParaCatalogo;
   final String codigoDeBarras;
   final String nomeProduto;
   final String tipoProduto;
@@ -20,6 +22,8 @@ class ProdutoModel {
   ProdutoModel({
     this.id,
     required this.ativo,
+    this.favorito = false,
+    this.disponivelParaCatalogo = false,
     required this.codigoDeBarras,
     required this.nomeProduto,
     required this.tipoProduto,
@@ -42,6 +46,8 @@ class ProdutoModel {
     return ProdutoModel(
       id: json['id']?.toString(),
       ativo: json['ativo'] ?? true,
+      favorito: json['favorito'] == true,
+      disponivelParaCatalogo: json['disponivelParaCatalogo'] == true,
       codigoDeBarras: json['codigoDeBarras'] ?? '',
       nomeProduto: json['nomeProduto'] ?? '',
       tipoProduto:
@@ -80,10 +86,10 @@ class ProdutoModel {
       objEntradaSaidaProduto:
           json['objEntradaSaidaProduto'] != null
               ? (json['objEntradaSaidaProduto'] as List)
-                  .where((i) => i is Map)
+                  .whereType<Map>()
                   .map(
-                    (i) => ObjEntradaSaidaProduto.fromJson(
-                      Map<String, dynamic>.from(i as Map),
+                    (Map i) => ObjEntradaSaidaProduto.fromJson(
+                      Map<String, dynamic>.from(i),
                     ),
                   )
                   .toList()
@@ -96,11 +102,10 @@ class ProdutoModel {
     final dynamic imagensJson = json['imagens'];
     if (imagensJson is List && imagensJson.isNotEmpty) {
       return imagensJson
-          .where((item) => item is Map)
+          .whereType<Map>()
           .map(
-            (item) => ProdutoImagemModel.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
+            (Map item) =>
+                ProdutoImagemModel.fromJson(Map<String, dynamic>.from(item)),
           )
           .toList();
     }
@@ -135,6 +140,8 @@ class ProdutoModel {
     return {
       if (id != null) 'id': id,
       'ativo': ativo,
+      'favorito': favorito,
+      'disponivelParaCatalogo': disponivelParaCatalogo,
       'codigoDeBarras': codigoDeBarras,
       'nomeProduto': nomeProduto,
       'tipoPoduto': tipoProduto, // Note o 'tipoPoduto' do curl
@@ -150,6 +157,48 @@ class ProdutoModel {
           objEntradaSaidaProduto?.map((e) => e.toJson()).toList(),
       'imagens': imagens?.take(5).map((e) => e.toJson()).toList(),
     };
+  }
+
+  ProdutoModel copyWith({
+    String? id,
+    bool? ativo,
+    bool? favorito,
+    bool? disponivelParaCatalogo,
+    String? codigoDeBarras,
+    String? nomeProduto,
+    String? tipoProduto,
+    ObjCategoria? objCategoria,
+    ObjAgrupamento? objAgrupamento,
+    ObjetoServico? objetoServico,
+    String? modeloProduto,
+    int? estoqueMaximo,
+    int? estoqueMinimo,
+    double? precoVenda,
+    ObjComissao? objComissao,
+    List<ObjEntradaSaidaProduto>? objEntradaSaidaProduto,
+    List<ProdutoImagemModel>? imagens,
+  }) {
+    return ProdutoModel(
+      id: id ?? this.id,
+      ativo: ativo ?? this.ativo,
+      favorito: favorito ?? this.favorito,
+      disponivelParaCatalogo:
+          disponivelParaCatalogo ?? this.disponivelParaCatalogo,
+      codigoDeBarras: codigoDeBarras ?? this.codigoDeBarras,
+      nomeProduto: nomeProduto ?? this.nomeProduto,
+      tipoProduto: tipoProduto ?? this.tipoProduto,
+      objCategoria: objCategoria ?? this.objCategoria,
+      objAgrupamento: objAgrupamento ?? this.objAgrupamento,
+      objetoServico: objetoServico ?? this.objetoServico,
+      modeloProduto: modeloProduto ?? this.modeloProduto,
+      estoqueMaximo: estoqueMaximo ?? this.estoqueMaximo,
+      estoqueMinimo: estoqueMinimo ?? this.estoqueMinimo,
+      precoVenda: precoVenda ?? this.precoVenda,
+      objComissao: objComissao ?? this.objComissao,
+      objEntradaSaidaProduto:
+          objEntradaSaidaProduto ?? this.objEntradaSaidaProduto,
+      imagens: imagens ?? this.imagens,
+    );
   }
 }
 

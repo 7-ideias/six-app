@@ -1264,6 +1264,22 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.webList.stockNegative': 'Estoque negativo',
     'produto.webList.codeUnavailable': 'Sem código',
     'produto.webList.viewAction': 'Ver',
+    'produto.favorite.addTooltip': 'Marcar como favorito',
+    'produto.favorite.removeTooltip': 'Remover dos favoritos',
+    'produto.favorite.enabledFeedback': 'Favorito ativado',
+    'produto.favorite.disabledFeedback': 'Favorito desativado',
+    'produto.favorite.updateError':
+        'Não foi possível atualizar o favorito do produto.',
+    'produto.catalog.enableTooltip': 'Disponibilizar para catálogo',
+    'produto.catalog.disableTooltip':
+        'Retirar da disponibilidade para catálogo',
+    'produto.catalog.enabledFeedback': 'Disponível para catálogo ativado',
+    'produto.catalog.disabledFeedback': 'Disponível para catálogo desativado',
+    'produto.catalog.updateError':
+        'Não foi possível atualizar a disponibilidade no catálogo.',
+    'produto.catalog.statusLabel': 'Catálogo',
+    'produto.catalog.availableStatus': 'Disponível',
+    'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
     'app.title': 'Six',
@@ -2381,6 +2397,20 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.webList.stockNegative': 'Negative stock',
     'produto.webList.codeUnavailable': 'No code',
     'produto.webList.viewAction': 'View',
+    'produto.favorite.addTooltip': 'Mark as favorite',
+    'produto.favorite.removeTooltip': 'Remove from favorites',
+    'produto.favorite.enabledFeedback': 'Favorite enabled',
+    'produto.favorite.disabledFeedback': 'Favorite disabled',
+    'produto.favorite.updateError':
+        'Could not update the product favorite flag.',
+    'produto.catalog.enableTooltip': 'Make available for catalog',
+    'produto.catalog.disableTooltip': 'Remove from catalog availability',
+    'produto.catalog.enabledFeedback': 'Available for catalog enabled',
+    'produto.catalog.disabledFeedback': 'Available for catalog disabled',
+    'produto.catalog.updateError': 'Could not update catalog availability.',
+    'produto.catalog.statusLabel': 'Catalog',
+    'produto.catalog.availableStatus': 'Available',
+    'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
     'app.title': 'Six',
@@ -3532,5 +3562,21 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.webList.stockNegative': 'Stock negativo',
     'produto.webList.codeUnavailable': 'Sin código',
     'produto.webList.viewAction': 'Ver',
+    'produto.favorite.addTooltip': 'Marcar como favorito',
+    'produto.favorite.removeTooltip': 'Quitar de favoritos',
+    'produto.favorite.enabledFeedback': 'Favorito activado',
+    'produto.favorite.disabledFeedback': 'Favorito desactivado',
+    'produto.favorite.updateError':
+        'No se pudo actualizar el favorito del producto.',
+    'produto.catalog.enableTooltip': 'Disponibilizar para catálogo',
+    'produto.catalog.disableTooltip':
+        'Quitar de la disponibilidad para catálogo',
+    'produto.catalog.enabledFeedback': 'Disponible para catálogo activado',
+    'produto.catalog.disabledFeedback': 'Disponible para catálogo desactivado',
+    'produto.catalog.updateError':
+        'No se pudo actualizar la disponibilidad en el catálogo.',
+    'produto.catalog.statusLabel': 'Catálogo',
+    'produto.catalog.availableStatus': 'Disponible',
+    'produto.catalog.unavailableStatus': 'No disponible',
   },
 };

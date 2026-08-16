@@ -17,7 +17,7 @@ class SubPainelCadastroProduto extends StatelessWidget {
   }
 }
 
-void showSubPainelCadastroProduto(
+Future<bool?> showSubPainelCadastroProduto(
   BuildContext context,
   String textoDaAppBar, {
   ProdutoModel? produtoParaEdicao,
@@ -28,4 +28,5 @@ void showSubPainelCadastroProduto(
       content: Text('Cadastro de produto disponível apenas na versão web.'),
     ),
   );
+  return Future<bool?>.value(false);
 }

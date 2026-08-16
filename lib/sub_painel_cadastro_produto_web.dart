@@ -15,6 +15,7 @@ import 'package:sixpos/data/services/imagem_sugestao/imagem_sugestao_api_client.
 import 'package:sixpos/data/services/categoria_catalogo/categoria_catalogo_api_client.dart';
 import 'package:sixpos/presentation/components/imagem_sugestoes_section.dart';
 import 'package:sixpos/presentation/components/produto_web_image.dart';
+import 'package:sixpos/presentation/components/six_top_notice.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:flutter/material.dart';
@@ -117,7 +118,7 @@ class SubPainelCadastroProduto extends StatelessWidget {
   }
 }
 
-void showSubPainelCadastroProduto(
+Future<bool?> showSubPainelCadastroProduto(
   BuildContext context,
   String textoDaAppBar, {
   ProdutoModel? produtoParaEdicao,
@@ -126,7 +127,7 @@ void showSubPainelCadastroProduto(
   final WebThemeTokens tokens = WebThemeTokens.of(context);
   final double barrierAlpha =
       Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42;
-  showDialog(
+  return showDialog<bool>(
     context: context,
     barrierDismissible: true,
     barrierColor: tokens.workspaceBackground.withValues(alpha: barrierAlpha),
@@ -147,10 +148,16 @@ class CadastroProdutoWebBody extends StatefulWidget {
     super.key,
     this.produtoParaEdicao,
     this.modoEdicao = false,
+    this.produtoService,
+    this.imagemSugestaoApiClient,
+    this.categoriaApiClient,
   });
 
   final ProdutoModel? produtoParaEdicao;
   final bool modoEdicao;
+  final ProdutoService? produtoService;
+  final ImagemSugestaoApiClient? imagemSugestaoApiClient;
+  final CategoriaCatalogoApiClient? categoriaApiClient;
 
   @override
   State<CadastroProdutoWebBody> createState() => _CadastroProdutoWebBodyState();
@@ -174,11 +181,12 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   static const String _categoriaSemCategoriaMenuId = '__sem_categoria__';
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final ProdutoService _produtoService = ProdutoService();
-  final ImagemSugestaoApiClient _imagemSugestaoApiClient =
-      HttpImagemSugestaoApiClient();
-  final CategoriaCatalogoApiClient _categoriaApiClient =
-      HttpCategoriaCatalogoApiClient();
+  late final ProdutoService _produtoService =
+      widget.produtoService ?? ProdutoService();
+  late final ImagemSugestaoApiClient _imagemSugestaoApiClient =
+      widget.imagemSugestaoApiClient ?? HttpImagemSugestaoApiClient();
+  late final CategoriaCatalogoApiClient _categoriaApiClient =
+      widget.categoriaApiClient ?? HttpCategoriaCatalogoApiClient();
 
   final TextEditingController _codigoBarrasController = TextEditingController();
   final TextEditingController _nomeProdutoController = TextEditingController();
@@ -207,6 +215,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       TextEditingController(text: '0');
 
   bool _ativo = true;
+  bool _favorito = false;
+  bool _disponivelParaCatalogo = false;
   bool _podeAlterarValorNaHora = false;
   bool _produtoTemComissaoEspecial = false;
   bool _isLoading = false;
@@ -556,6 +566,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     _produtoTemComissaoEspecial =
         produto.objComissao.produtoTemComissaoEspecial;
     _ativo = produto.ativo;
+    _favorito = produto.favorito;
+    _disponivelParaCatalogo = produto.disponivelParaCatalogo;
 
     if (produto.objetoServico != null) {
       _tempoGarantiaController.text = produto.objetoServico!.tempoDaGarantia;
@@ -771,6 +783,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       ProdutoCadastroFormData(
         id: _produtoEmEdicaoId,
         ativo: _ativo,
+        favorito: _favorito,
+        disponivelParaCatalogo: _disponivelParaCatalogo,
         codigoDeBarras: _codigoBarrasController.text,
         nomeProduto: _nomeProdutoController.text,
         tipoProduto: _tipoSelecionado,
@@ -921,7 +935,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       );
 
       if (!mounted) return;
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
 
@@ -951,6 +965,74 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         });
       }
     }
+  }
+
+  void _alternarFavorito() {
+    if (_isLoading) return;
+
+    setState(() {
+      _favorito = !_favorito;
+    });
+
+    SixTopNotice.show(
+      context,
+      message:
+          _favorito
+              ? _t('produto.favorite.enabledFeedback', 'Favorito ativado')
+              : _t('produto.favorite.disabledFeedback', 'Favorito desativado'),
+      icon: _favorito ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+    );
+  }
+
+  void _alternarDisponivelParaCatalogo() {
+    if (_isLoading) return;
+
+    setState(() {
+      _disponivelParaCatalogo = !_disponivelParaCatalogo;
+    });
+
+    SixTopNotice.show(
+      context,
+      message:
+          _disponivelParaCatalogo
+              ? _t(
+                'produto.catalog.enabledFeedback',
+                'Disponível para catálogo ativado',
+              )
+              : _t(
+                'produto.catalog.disabledFeedback',
+                'Disponível para catálogo desativado',
+              ),
+      icon:
+          _disponivelParaCatalogo
+              ? Icons.storefront_rounded
+              : Icons.storefront_outlined,
+    );
+  }
+
+  Widget _buildHeaderToggleButton(
+    BuildContext context, {
+    required bool active,
+    required VoidCallback onPressed,
+    required String tooltip,
+    required IconData icon,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    return Tooltip(
+      message: tooltip,
+      child: IconButton.filledTonal(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 20),
+        style: IconButton.styleFrom(
+          backgroundColor:
+              active ? tokens.info.withValues(alpha: 0.18) : tokens.surface,
+          foregroundColor: active ? tokens.info : tokens.secondaryText,
+          disabledBackgroundColor: tokens.disabledBackground,
+          disabledForegroundColor: tokens.disabledForeground,
+        ),
+      ),
+    );
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -1073,6 +1155,37 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       );
     }
 
+    final Widget favoritoAction = _buildHeaderToggleButton(
+      context,
+      active: _favorito,
+      onPressed: _alternarFavorito,
+      tooltip:
+          _favorito
+              ? _t('produto.favorite.removeTooltip', 'Remover dos favoritos')
+              : _t('produto.favorite.addTooltip', 'Marcar como favorito'),
+      icon: _favorito ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+    );
+
+    final Widget catalogoAction = _buildHeaderToggleButton(
+      context,
+      active: _disponivelParaCatalogo,
+      onPressed: _alternarDisponivelParaCatalogo,
+      tooltip:
+          _disponivelParaCatalogo
+              ? _t(
+                'produto.catalog.disableTooltip',
+                'Retirar da disponibilidade para catálogo',
+              )
+              : _t(
+                'produto.catalog.enableTooltip',
+                'Disponibilizar para catálogo',
+              ),
+      icon:
+          _disponivelParaCatalogo
+              ? Icons.storefront_rounded
+              : Icons.storefront_outlined,
+    );
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
@@ -1098,7 +1211,16 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                statusChip(),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    statusChip(),
+                    favoritoAction,
+                    catalogoAction,
+                  ],
+                ),
               ],
             );
           }
@@ -1114,7 +1236,12 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 runSpacing: 10,
                 alignment: WrapAlignment.end,
                 crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[statusChip(), closeButton()],
+                children: <Widget>[
+                  statusChip(),
+                  favoritoAction,
+                  catalogoAction,
+                  closeButton(),
+                ],
               ),
             ],
           );

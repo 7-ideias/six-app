@@ -15,6 +15,7 @@ import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/components/six_top_notice.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_mobile_screen.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 
@@ -98,6 +99,8 @@ class _CadastroProdutoMobileScreenState
   String? _categoriaSelecionadaNome;
 
   bool _ativo = true;
+  bool _favorito = false;
+  bool _disponivelParaCatalogo = false;
   bool _podeAlterarValorNaHora = false;
   bool _produtoTemComissaoEspecial = false;
   bool _isLoading = false;
@@ -195,6 +198,8 @@ class _CadastroProdutoMobileScreenState
 
     _produtoEmEdicaoId = produto.id;
     _ativo = produto.ativo;
+    _favorito = produto.favorito;
+    _disponivelParaCatalogo = produto.disponivelParaCatalogo;
     _codigoController.text = produto.codigoDeBarras;
     _nomeController.text = produto.nomeProduto;
     _tipoSelecionado = _normalizarTipo(produto.tipoProduto);
@@ -370,6 +375,8 @@ class _CadastroProdutoMobileScreenState
       ProdutoCadastroFormData(
         id: _produtoEmEdicaoId,
         ativo: _ativo,
+        favorito: _favorito,
+        disponivelParaCatalogo: _disponivelParaCatalogo,
         codigoDeBarras: _codigoController.text,
         nomeProduto: _nomeController.text,
         tipoProduto: _tipoSelecionado,
@@ -454,6 +461,78 @@ class _CadastroProdutoMobileScreenState
         });
       }
     }
+  }
+
+  void _alternarFavorito() {
+    if (_isLoading) return;
+
+    setState(() {
+      _favorito = !_favorito;
+    });
+
+    SixTopNotice.show(
+      context,
+      message:
+          _favorito
+              ? _t('produto.favorite.enabledFeedback', 'Favorito ativado')
+              : _t('produto.favorite.disabledFeedback', 'Favorito desativado'),
+      icon: _favorito ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+    );
+  }
+
+  void _alternarDisponivelParaCatalogo() {
+    if (_isLoading) return;
+
+    setState(() {
+      _disponivelParaCatalogo = !_disponivelParaCatalogo;
+    });
+
+    SixTopNotice.show(
+      context,
+      message:
+          _disponivelParaCatalogo
+              ? _t(
+                'produto.catalog.enabledFeedback',
+                'Disponível para catálogo ativado',
+              )
+              : _t(
+                'produto.catalog.disabledFeedback',
+                'Disponível para catálogo desativado',
+              ),
+      icon:
+          _disponivelParaCatalogo
+              ? Icons.storefront_rounded
+              : Icons.storefront_outlined,
+    );
+  }
+
+  Widget _buildHeaderAction({
+    required bool active,
+    required VoidCallback onPressed,
+    required String tooltip,
+    required IconData icon,
+  }) {
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: Tooltip(
+        message: tooltip,
+        child: IconButton.filledTonal(
+          onPressed: onPressed,
+          icon: Icon(icon, size: 20),
+          style: IconButton.styleFrom(
+            backgroundColor:
+                active
+                    ? SixMobilePalette.onPrimary.withValues(alpha: 0.20)
+                    : SixMobilePalette.onPrimary.withValues(alpha: 0.08),
+            foregroundColor:
+                active
+                    ? SixMobilePalette.onPrimary
+                    : SixMobilePalette.heroSupportingText,
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _selecionarImagem(ImageSource source, int slotIndex) async {
@@ -1658,6 +1737,41 @@ class _CadastroProdutoMobileScreenState
       initialContentSpacing: 4,
       scrollEffectOffset: 24,
       scrolledSurfaceOpacity: 0.66,
+      actions: <Widget>[
+        _buildHeaderAction(
+          active: _favorito,
+          onPressed: _alternarFavorito,
+          tooltip:
+              _favorito
+                  ? _t(
+                    'produto.favorite.removeTooltip',
+                    'Remover dos favoritos',
+                  )
+                  : _t('produto.favorite.addTooltip', 'Marcar como favorito'),
+          icon:
+              _favorito
+                  ? Icons.favorite_rounded
+                  : Icons.favorite_border_rounded,
+        ),
+        _buildHeaderAction(
+          active: _disponivelParaCatalogo,
+          onPressed: _alternarDisponivelParaCatalogo,
+          tooltip:
+              _disponivelParaCatalogo
+                  ? _t(
+                    'produto.catalog.disableTooltip',
+                    'Retirar da disponibilidade para catálogo',
+                  )
+                  : _t(
+                    'produto.catalog.enableTooltip',
+                    'Disponibilizar para catálogo',
+                  ),
+          icon:
+              _disponivelParaCatalogo
+                  ? Icons.storefront_rounded
+                  : Icons.storefront_outlined,
+        ),
+      ],
       bodyBuilder: (
         BuildContext context,
         ScrollController scrollController,

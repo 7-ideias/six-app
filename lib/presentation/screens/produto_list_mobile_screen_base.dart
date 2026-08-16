@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/core/utils/produto_helper.dart';
 import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
@@ -23,11 +24,13 @@ class ProdutolistMobileScreen extends StatefulWidget {
     this.isSelecao = false,
     this.permitirSelecaoMultipla = false,
     this.tipoInicial = 'PRODUTO',
+    this.produtoService,
   });
 
   final bool isSelecao;
   final bool permitirSelecaoMultipla;
   final String tipoInicial;
+  final ProdutoService? produtoService;
 
   @override
   State<ProdutolistMobileScreen> createState() =>
@@ -92,12 +95,15 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusBusca = FocusNode();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
+  late final ProdutoService _produtoService =
+      widget.produtoService ?? ProdutoService();
 
   Timer? _timerOcultarBusca;
   bool _exibirCampoBusca = false;
   final Map<String, _ProdutoSelecionadoMobile> _selecionados =
       <String, _ProdutoSelecionadoMobile>{};
-  final Set<String> _favoritosVisuais = <String>{};
+  final Set<String> _favoritosAtualizando = <String>{};
+  final Set<String> _catalogoAtualizando = <String>{};
   final Map<String, int> _indiceImagemHorizontal = <String, int>{};
 
   static const double _horizontalViewportFraction = 0.94;
@@ -482,7 +488,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           title:
               isSelecao
                   ? _t('produto.mobile.selectItem', 'Selecionar item')
-                  : '',
+                  : (_isProdutoSelecionado
+                      ? _t('produto.mobile.typeProduct', 'Produtos')
+                      : _t('produto.mobile.typeService', 'Serviços')),
           backgroundColor: _backgroundColor,
           primaryColor: SixMobilePalette.primary,
           secondaryColor: SixMobilePalette.secondary,
@@ -853,19 +861,123 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   bool _produtoFavoritoVisual(ProdutoModel produto) {
-    return _favoritosVisuais.contains(_chaveProduto(produto));
+    return produto.favorito;
   }
 
-  void _alternarFavoritoVisual(ProdutoModel produto) {
+  Future<void> _alternarFavoritoVisual(ProdutoModel produto) async {
     final String chave = _chaveProduto(produto);
+    if (_favoritosAtualizando.contains(chave) ||
+        (produto.id?.isEmpty ?? true)) {
+      return;
+    }
 
     setState(() {
-      if (_favoritosVisuais.contains(chave)) {
-        _favoritosVisuais.remove(chave);
-        return;
-      }
+      _favoritosAtualizando.add(chave);
+    });
 
-      _favoritosVisuais.add(chave);
+    final ProdutoModel atualizado = produto.copyWith(
+      favorito: !produto.favorito,
+    );
+
+    try {
+      await _produtoService.atualizarProduto(atualizado);
+      if (!mounted) return;
+      _substituirProdutoNaLista(atualizado);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _t(
+              'produto.favorite.updateError',
+              'Não foi possível atualizar o favorito do produto.',
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _favoritosAtualizando.remove(chave);
+        });
+      }
+    }
+  }
+
+  Future<void> _alternarDisponivelParaCatalogoVisual(
+    ProdutoModel produto,
+  ) async {
+    final String chave = _chaveProduto(produto);
+    if (_catalogoAtualizando.contains(chave) || (produto.id?.isEmpty ?? true)) {
+      return;
+    }
+
+    setState(() {
+      _catalogoAtualizando.add(chave);
+    });
+
+    final ProdutoModel atualizado = produto.copyWith(
+      disponivelParaCatalogo: !produto.disponivelParaCatalogo,
+    );
+
+    try {
+      await _produtoService.atualizarProduto(atualizado);
+      if (!mounted) return;
+      _substituirProdutoNaLista(atualizado);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            atualizado.disponivelParaCatalogo
+                ? _t(
+                  'produto.catalog.enabledFeedback',
+                  'Disponível para catálogo ativado',
+                )
+                : _t(
+                  'produto.catalog.disabledFeedback',
+                  'Disponível para catálogo desativado',
+                ),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _t(
+              'produto.catalog.updateError',
+              'Não foi possível atualizar a disponibilidade no catálogo.',
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _catalogoAtualizando.remove(chave);
+        });
+      }
+    }
+  }
+
+  void _substituirProdutoNaLista(ProdutoModel atualizado) {
+    setState(() {
+      todosProdutos = todosProdutos
+          .map(
+            (ProdutoModel item) => item.id == atualizado.id ? atualizado : item,
+          )
+          .toList(growable: false);
+      produtosFiltrados = _ordenarProdutos(
+            _aplicarFiltrosEstruturais(todosProdutos),
+          )
+          .where(
+            (ProdutoModel produto) =>
+                _matchesTipoSelecionado(produto, tipoSelecionado),
+          )
+          .toList(growable: false);
     });
   }
 
@@ -874,13 +986,19 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     bool sobreImagem = false,
   }) {
     final bool favorito = _produtoFavoritoVisual(produto);
+    final bool atualizando = _favoritosAtualizando.contains(
+      _chaveProduto(produto),
+    );
 
     return Tooltip(
-      message: favorito ? 'Remover dos favoritos' : 'Marcar como favorito',
+      message:
+          favorito
+              ? _t('produto.favorite.removeTooltip', 'Remover dos favoritos')
+              : _t('produto.favorite.addTooltip', 'Marcar como favorito'),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _alternarFavoritoVisual(produto),
+          onTap: atualizando ? null : () => _alternarFavoritoVisual(produto),
           borderRadius: BorderRadius.circular(999),
           child: AnimatedContainer(
             duration: Duration(milliseconds: 180),
@@ -908,11 +1026,112 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       ]
                       : <BoxShadow>[],
             ),
-            child: Icon(
-              favorito ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-              color: favorito ? Colors.white : Color(0xFFEF4444),
-              size: 19,
+            child:
+                atualizando
+                    ? Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: favorito ? Colors.white : Color(0xFFEF4444),
+                        ),
+                      ),
+                    )
+                    : Icon(
+                      favorito
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      color: favorito ? Colors.white : Color(0xFFEF4444),
+                      size: 19,
+                    ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCatalogoVisualButton(
+    ProdutoModel produto, {
+    bool sobreImagem = false,
+  }) {
+    final bool disponivelParaCatalogo = produto.disponivelParaCatalogo;
+    final bool atualizando = _catalogoAtualizando.contains(
+      _chaveProduto(produto),
+    );
+
+    return Tooltip(
+      message:
+          disponivelParaCatalogo
+              ? _t(
+                'produto.catalog.disableTooltip',
+                'Retirar da disponibilidade para catálogo',
+              )
+              : _t(
+                'produto.catalog.enableTooltip',
+                'Disponibilizar para catálogo',
+              ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap:
+              atualizando
+                  ? null
+                  : () => _alternarDisponivelParaCatalogoVisual(produto),
+          borderRadius: BorderRadius.circular(999),
+          child: AnimatedContainer(
+            duration: Duration(milliseconds: 180),
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color:
+                  disponivelParaCatalogo
+                      ? _accentColor
+                      : sobreImagem
+                      ? Color(0xD9FFFFFF)
+                      : _surfaceColor,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: disponivelParaCatalogo ? _accentColor : _borderColor,
+              ),
+              boxShadow:
+                  sobreImagem
+                      ? <BoxShadow>[
+                        BoxShadow(
+                          color: SixMobilePalette.navigationShadow,
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ]
+                      : <BoxShadow>[],
             ),
+            child:
+                atualizando
+                    ? Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color:
+                              disponivelParaCatalogo
+                                  ? _onAccentColor
+                                  : _accentColor,
+                        ),
+                      ),
+                    )
+                    : Icon(
+                      disponivelParaCatalogo
+                          ? Icons.storefront_rounded
+                          : Icons.storefront_outlined,
+                      color:
+                          disponivelParaCatalogo
+                              ? _onAccentColor
+                              : _accentColor,
+                      size: 19,
+                    ),
           ),
         ),
       ),
@@ -1083,6 +1302,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         SizedBox(width: 8),
                         _buildFavoritoVisualButton(produto),
                         SizedBox(width: 8),
+                        _buildCatalogoVisualButton(produto),
+                        SizedBox(width: 8),
                         _StatusChip(ativo: ativo),
                       ],
                     ),
@@ -1230,9 +1451,18 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                     Positioned(
                       top: 9,
                       right: 9,
-                      child: _buildFavoritoVisualButton(
-                        produto,
-                        sobreImagem: true,
+                      child: Column(
+                        children: <Widget>[
+                          _buildFavoritoVisualButton(
+                            produto,
+                            sobreImagem: true,
+                          ),
+                          SizedBox(height: 8),
+                          _buildCatalogoVisualButton(
+                            produto,
+                            sobreImagem: true,
+                          ),
+                        ],
                       ),
                     ),
                     Positioned(
@@ -1305,6 +1535,16 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                             valueWidget: _StatusChip(ativo: ativo),
                           ),
                           _buildProdutoInfoRow(
+                            label: _t(
+                              'produto.catalog.statusLabel',
+                              'Catálogo',
+                            ),
+                            valueWidget: _CatalogStatusChip(
+                              disponivelParaCatalogo:
+                                  produto.disponivelParaCatalogo,
+                            ),
+                          ),
+                          _buildProdutoInfoRow(
                             label: _t('produto.mobile.groupLabel', 'Grupo'),
                             value:
                                 grupo.isEmpty
@@ -1343,15 +1583,26 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                             value:
                                 '$imagensCount ${_t('produto.mobile.photosLabel', imagensCount == 1 ? 'foto' : 'fotos')}',
                           ),
-                        ],
-                      ),
-                      SizedBox(height: 10),
-                      _buildProdutoInfoSection(
-                        title: _t(
-                          'produto.mobile.aboutProductTitle',
-                          'Sobre o produto',
-                        ),
-                        children: <Widget>[
+                          Padding(
+                            padding: EdgeInsets.only(top: 2, bottom: 2),
+                            child: Divider(
+                              height: 14,
+                              thickness: 1,
+                              color: _borderColor,
+                            ),
+                          ),
+                          Text(
+                            _t(
+                              'produto.mobile.aboutProductTitle',
+                              'Sobre o produto',
+                            ),
+                            style: TextStyle(
+                              color: _titleTextColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          SizedBox(height: 6),
                           Text(
                             resumo.isEmpty
                                 ? _t(
@@ -3303,6 +3554,49 @@ class _StatusChip extends StatelessWidget {
         ativo
             ? context.t('common.active', fallback: 'Ativo')
             : context.t('common.inactive', fallback: 'Inativo'),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          color: foregroundColor,
+        ),
+      ),
+    );
+  }
+}
+
+class _CatalogStatusChip extends StatelessWidget {
+  const _CatalogStatusChip({required this.disponivelParaCatalogo});
+
+  final bool disponivelParaCatalogo;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color backgroundColor =
+        disponivelParaCatalogo
+            ? (isDark ? const Color(0xFF082F49) : const Color(0xFFE0F2FE))
+            : (isDark ? const Color(0xFF3F3F46) : const Color(0xFFF4F4F5));
+    final Color foregroundColor =
+        disponivelParaCatalogo
+            ? (isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0369A1))
+            : (isDark ? const Color(0xFFD4D4D8) : const Color(0xFF52525B));
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        disponivelParaCatalogo
+            ? context.t(
+              'produto.catalog.availableStatus',
+              fallback: 'Disponível',
+            )
+            : context.t(
+              'produto.catalog.unavailableStatus',
+              fallback: 'Indisponível',
+            ),
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w900,
