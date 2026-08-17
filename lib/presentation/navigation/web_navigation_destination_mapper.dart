@@ -15,6 +15,8 @@ WebNavigationDestination? webNavigationDestinationForModuloCentralPdv(
     case ModuloCentralPDV.atendimentoTecnico:
     case ModuloCentralPDV.ordemServico:
       return WebNavigationDestination.operationsTechnicalServices;
+    case ModuloCentralPDV.compras:
+      return WebNavigationDestination.operationsPurchases;
     case ModuloCentralPDV.produtos:
       return WebNavigationDestination.catalogProducts;
     case ModuloCentralPDV.servicos:

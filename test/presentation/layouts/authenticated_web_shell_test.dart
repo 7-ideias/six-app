@@ -806,6 +806,11 @@ class _RecordingActions implements WebNavigationDestinationActions {
   }
 
   @override
+  WebNavigationResolutionResult openPurchases() {
+    return _record(WebNavigationDestination.operationsPurchases);
+  }
+
+  @override
   WebNavigationResolutionResult openCatalogProducts() {
     return _record(WebNavigationDestination.catalogProducts);
   }
@@ -879,6 +884,11 @@ class _InteractiveActions implements WebNavigationDestinationActions {
   @override
   WebNavigationResolutionResult openTechnicalServices() {
     return _handle(WebNavigationDestination.operationsTechnicalServices);
+  }
+
+  @override
+  WebNavigationResolutionResult openPurchases() {
+    return _handle(WebNavigationDestination.operationsPurchases);
   }
 
   @override

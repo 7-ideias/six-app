@@ -21,17 +21,24 @@ void main() {
       expect(_childIds(operations), <String>[
         WebNavigationIds.operationsPos,
         WebNavigationIds.operationsTechnicalServices,
+        WebNavigationIds.operationsPurchases,
       ]);
       expect(_childLabels(operations), <String>[
         'Frente de caixa',
         'Assistências técnicas',
+        'Compras',
       ]);
+      expect(
+        operations.children[2].destination,
+        WebNavigationDestination.operationsPurchases,
+      );
 
       final WebNavigationItem catalog = _requiredItem(WebNavigationIds.catalog);
       expect(_childIds(catalog), <String>[
         WebNavigationIds.catalogProducts,
         WebNavigationIds.catalogServices,
         WebNavigationIds.catalogStock,
+        WebNavigationIds.catalogLabels,
         WebNavigationIds.catalogCategories,
       ]);
 
@@ -92,6 +99,7 @@ void main() {
           'operations',
           'operations.pos',
           'operations.technical_service',
+          'operations.purchases',
           'catalog',
           'catalog.products',
           'catalog.services',
@@ -154,6 +162,32 @@ void main() {
         (item) => item.id == WebNavigationIds.operations,
       );
       expect(_childIds(operations), <String>[WebNavigationIds.operationsPos]);
+    });
+
+    test('exibe Compras para admin com destino valido e ordem estavel', () {
+      final List<WebNavigationItem> visible =
+          WebNavigationRegistry.activeItemsForPermissions(
+            WebNavigationPermission.values.toSet(),
+            includeUnresolved: true,
+          );
+
+      final WebNavigationItem operations = visible.singleWhere(
+        (item) => item.id == WebNavigationIds.operations,
+      );
+      final List<String> childIds = _childIds(operations);
+      final int technicalIndex = childIds.indexOf(
+        WebNavigationIds.operationsTechnicalServices,
+      );
+      final int purchasesIndex = childIds.indexOf(
+        WebNavigationIds.operationsPurchases,
+      );
+
+      expect(technicalIndex, greaterThanOrEqualTo(0));
+      expect(purchasesIndex, technicalIndex + 1);
+      expect(
+        operations.children[purchasesIndex].destination,
+        WebNavigationDestination.operationsPurchases,
+      );
     });
   });
 }

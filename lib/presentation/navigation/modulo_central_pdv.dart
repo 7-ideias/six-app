@@ -10,6 +10,7 @@ enum ModuloCentralPDV {
   ordemServico,
   agendaFinanceira,
   atendimentoTecnico,
+  compras,
   produtos,
   servicos,
   estoque,

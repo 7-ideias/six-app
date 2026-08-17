@@ -7,6 +7,7 @@ abstract final class WebNavigationIds {
   static const String operations = 'operations';
   static const String operationsPos = 'operations.pos';
   static const String operationsTechnicalServices = 'operations.technical_service';
+  static const String operationsPurchases = 'operations.purchases';
   static const String catalog = 'catalog';
   static const String catalogProducts = 'catalog.products';
   static const String catalogServices = 'catalog.services';
@@ -62,6 +63,16 @@ abstract final class WebNavigationRegistry {
             ],
           ),
           destination: WebNavigationDestination.operationsTechnicalServices,
+        ),
+        WebNavigationItem(
+          id: WebNavigationIds.operationsPurchases,
+          labelKey: 'web.navigation.operations.purchases',
+          labelFallback: 'Compras',
+          icon: Icons.shopping_cart_outlined,
+          visibility: WebNavigationVisibilityRule.unresolved(
+            'Permissao de Compras ainda nao disponivel no backend.',
+          ),
+          destination: WebNavigationDestination.operationsPurchases,
         ),
       ],
     ),
@@ -222,7 +233,9 @@ abstract final class WebNavigationRegistry {
   ];
 
   static Iterable<WebNavigationItem> flattenActiveItems() sync* {
-    for (final WebNavigationItem item in activeItems) yield* item.flatten();
+    for (final WebNavigationItem item in activeItems) {
+      yield* item.flatten();
+    }
   }
 
   static List<WebNavigationItem> activeItemsForPermissions(
