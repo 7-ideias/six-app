@@ -1,5 +1,7 @@
 export const DEFAULT_PUBLIC_API_BASE_URL = 'https://api.sixappback.com';
 export const LOGIN_TIMEOUT_MS = 15000;
+const MOBILE_PHONE_USER_AGENT_PATTERN =
+  /(?:iphone|ipod|windows phone|iemobile|opera mini|blackberry|bb10|webos|android.+mobile|mobile safari)/i;
 
 export const LOGIN_DICTIONARY = Object.freeze({
   pt: Object.freeze({
@@ -11,6 +13,7 @@ export const LOGIN_DICTIONARY = Object.freeze({
     twitterDescription: 'Acesse vendas, atendimentos, clientes, equipe e financeiro no SixApp.',
     'access.skip': 'Ir para o formulário de login',
     'brand.aria': 'SixApp',
+    'nav.aria': 'Navegação de acesso',
     'nav.home': 'Voltar para a página inicial',
     'language.aria': 'Selecionar idioma',
     'context.eyebrow': 'Acesso seguro',
@@ -35,8 +38,11 @@ export const LOGIN_DICTIONARY = Object.freeze({
     'form.create.prompt': 'Ainda não tem conta?',
     'form.create.link': 'Criar conta',
     'form.compatibility': 'Entrar pela versão compatível',
+    'mobileBlock.title': 'Acesso indisponível neste dispositivo',
+    'mobileBlock.body': 'Este login web não está disponível em navegador de celular. Para continuar, use um computador.',
     'noscript.message': 'Para entrar por esta página, ative o JavaScript. Você também pode acessar a versão compatível.',
     'noscript.link': 'Entrar pela versão compatível',
+    'error.mobileBlocked': 'Este login web não está disponível em navegador de celular.',
     'error.requiredLogin': 'Informe seu login ou e-mail.',
     'error.requiredPassword': 'Informe sua senha.',
     'error.config': 'Não foi possível preparar o acesso seguro. Tente novamente mais tarde.',
@@ -58,6 +64,7 @@ export const LOGIN_DICTIONARY = Object.freeze({
     twitterDescription: 'Access sales, service, customers, team and finance in SixApp.',
     'access.skip': 'Skip to the sign-in form',
     'brand.aria': 'SixApp',
+    'nav.aria': 'Access navigation',
     'nav.home': 'Back to the home page',
     'language.aria': 'Select language',
     'context.eyebrow': 'Secure access',
@@ -82,8 +89,11 @@ export const LOGIN_DICTIONARY = Object.freeze({
     'form.create.prompt': 'Do not have an account yet?',
     'form.create.link': 'Create account',
     'form.compatibility': 'Use the compatible version',
+    'mobileBlock.title': 'Access unavailable on this device',
+    'mobileBlock.body': 'This web sign-in is not available in a phone browser. To continue, use a computer.',
     'noscript.message': 'Enable JavaScript to sign in from this page. You can also use the compatible version.',
     'noscript.link': 'Use the compatible version',
+    'error.mobileBlocked': 'This web sign-in is not available in a phone browser.',
     'error.requiredLogin': 'Enter your login or email.',
     'error.requiredPassword': 'Enter your password.',
     'error.config': 'Could not prepare secure access. Try again later.',
@@ -105,6 +115,7 @@ export const LOGIN_DICTIONARY = Object.freeze({
     twitterDescription: 'Accede a ventas, atención, clientes, equipo y finanzas en SixApp.',
     'access.skip': 'Ir al formulario de acceso',
     'brand.aria': 'SixApp',
+    'nav.aria': 'Navegacion de acceso',
     'nav.home': 'Volver a la página inicial',
     'language.aria': 'Seleccionar idioma',
     'context.eyebrow': 'Acceso seguro',
@@ -129,8 +140,11 @@ export const LOGIN_DICTIONARY = Object.freeze({
     'form.create.prompt': '¿Aún no tienes cuenta?',
     'form.create.link': 'Crear cuenta',
     'form.compatibility': 'Entrar por la versión compatible',
+    'mobileBlock.title': 'Acceso no disponible en este dispositivo',
+    'mobileBlock.body': 'Este acceso web no está disponible en navegador de celular. Para continuar, usa una computadora.',
     'noscript.message': 'Para entrar por esta página, activa JavaScript. También puedes acceder a la versión compatible.',
     'noscript.link': 'Entrar por la versión compatible',
+    'error.mobileBlocked': 'Este acceso web no está disponible en navegador de celular.',
     'error.requiredLogin': 'Informa tu login o e-mail.',
     'error.requiredPassword': 'Informa tu contraseña.',
     'error.config': 'No fue posible preparar el acceso seguro. Intenta nuevamente más tarde.',
@@ -180,6 +194,21 @@ export class PublicLoginNetworkError extends Error {
     super('Login request network failure');
     this.name = 'PublicLoginNetworkError';
   }
+}
+
+export function userAgentLooksLikeMobilePhone(userAgent) {
+  return MOBILE_PHONE_USER_AGENT_PATTERN.test(String(userAgent || ''));
+}
+
+export function shouldBlockPublicLoginOnMobile(environment = {}) {
+  const navigatorLike = environment.navigator || {};
+  const userAgentData = navigatorLike.userAgentData;
+
+  if (typeof userAgentData?.mobile === 'boolean') {
+    return userAgentData.mobile;
+  }
+
+  return userAgentLooksLikeMobilePhone(navigatorLike.userAgent);
 }
 
 export function isLocalHttpHost(hostname) {
@@ -319,6 +348,7 @@ export function loginErrorKeyFromError(error) {
       ? 'error.requiredLogin'
       : 'error.requiredPassword';
   }
+  if (error && error.code === 'mobileBlocked') return 'error.mobileBlocked';
   if (error instanceof PublicLoginConfigError) return 'error.config';
   if (error instanceof PublicLoginHttpError) {
     return loginErrorKeyForStatus(error.status);

@@ -16,6 +16,8 @@ import {
   resolvePublicApiConfig,
   resolvePublicLoginRedirect,
   sanitizePublicAppRedirect,
+  shouldBlockPublicLoginOnMobile,
+  userAgentLooksLikeMobilePhone,
 } from '../../web/site-assets/js/login-core.mjs';
 import {
   assertPublicDictionaryParity,
@@ -149,6 +151,63 @@ test('mapeamento 5xx indica indisponibilidade temporaria', () => {
   assert.equal(loginErrorKeyForStatus(502), 'error.unavailable');
   assert.equal(loginErrorKeyForStatus(503), 'error.unavailable');
   assert.equal(loginErrorKeyForStatus(504), 'error.unavailable');
+});
+
+test('identifica user agent de celular', () => {
+  assert.equal(
+    userAgentLooksLikeMobilePhone(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148',
+    ),
+    true,
+  );
+  assert.equal(
+    userAgentLooksLikeMobilePhone(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0.0.0 Safari/537.36',
+    ),
+    false,
+  );
+});
+
+test('bloqueio mobile prioriza userAgentData.mobile', () => {
+  assert.equal(
+    shouldBlockPublicLoginOnMobile({
+      navigator: {
+        userAgentData: { mobile: true },
+        userAgent: 'Desktop UA irrelevante',
+      },
+    }),
+    true,
+  );
+  assert.equal(
+    shouldBlockPublicLoginOnMobile({
+      navigator: {
+        userAgentData: { mobile: false },
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+      },
+    }),
+    false,
+  );
+});
+
+test('bloqueio mobile usa user agent como fallback', () => {
+  assert.equal(
+    shouldBlockPublicLoginOnMobile({
+      navigator: {
+        userAgent:
+          'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/126.0 Mobile Safari/537.36',
+      },
+    }),
+    true,
+  );
+  assert.equal(
+    shouldBlockPublicLoginOnMobile({
+      navigator: {
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 Version/17.5 Safari/605.1.15',
+      },
+    }),
+    false,
+  );
 });
 
 test('performPublicLogin resolve em 2xx sem ler ou persistir corpo', async () => {
