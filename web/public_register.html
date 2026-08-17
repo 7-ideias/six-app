@@ -19,187 +19,194 @@
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/site-assets/images/sixapp-mark.png">
   <link rel="stylesheet" href="/site-assets/css/public-base.css">
+  <link rel="stylesheet" href="/site-assets/css/home.css">
   <link rel="stylesheet" href="/site-assets/css/register.css">
   <title>SixApp - Criar conta</title>
 </head>
-<body class="register-page">
+<body class="register-page auth-public-page">
   <a class="skip-link" href="#register-form" data-i18n="access.skip">Ir para o formulário de cadastro</a>
 
-  <header class="layout register-topbar">
-    <a class="brand" href="/" aria-label="SixApp" data-i18n-aria="brand.aria">
-      <span class="brand-mark" aria-hidden="true">
-        <img src="/site-assets/images/sixapp-mark.png" width="32" height="32" alt="">
-      </span>
-      <span>SixApp</span>
-    </a>
+  <header class="site-header auth-site-header" data-header>
+    <nav class="nav-shell auth-nav-shell" aria-label="Navegação de cadastro" data-i18n-aria="nav.aria">
+      <a class="brand" href="/" aria-label="SixApp" data-i18n-aria="brand.aria">
+        <span class="brand-mark" aria-hidden="true">
+          <img src="/site-assets/images/sixapp-mark.png" width="32" height="32" alt="">
+        </span>
+        <span>SixApp</span>
+      </a>
 
-    <div class="register-topbar-actions">
-      <a class="button button-quiet home-link" href="/" data-i18n="nav.home">Voltar para a página inicial</a>
-      <div class="language-switcher" role="group" aria-label="Selecionar idioma" data-i18n-aria="language.aria">
-        <button type="button" data-lang-option="pt" aria-pressed="true">PT</button>
-        <button type="button" data-lang-option="en" aria-pressed="false">EN</button>
-        <button type="button" data-lang-option="es" aria-pressed="false">ES</button>
+      <div class="auth-nav-actions">
+        <a class="button button-quiet home-link" href="/" data-i18n="nav.home">Voltar para a página inicial</a>
+        <div class="language-switcher" role="group" aria-label="Selecionar idioma" data-i18n-aria="language.aria">
+          <button type="button" data-lang-option="pt" aria-pressed="true">PT</button>
+          <button type="button" data-lang-option="en" aria-pressed="false">EN</button>
+          <button type="button" data-lang-option="es" aria-pressed="false">ES</button>
+        </div>
       </div>
-    </div>
+    </nav>
   </header>
 
-  <main class="layout register-main" id="conteudo">
-    <section class="register-context" aria-labelledby="register-context-title">
-      <p class="register-eyebrow" data-i18n="context.eyebrow">Cadastro público</p>
-      <h1 id="register-context-title" data-i18n="context.title">Comece com uma conta de acesso.</h1>
-      <p data-i18n="context.body">O cadastro cria seu usuário administrador e prepara a primeira empresa no SixApp sem autenticar automaticamente.</p>
+  <main id="conteudo">
+    <section class="auth-hero register-hero">
+      <div class="layout auth-hero-grid register-main">
+        <section class="auth-context register-context" aria-labelledby="register-context-title">
+          <p class="editorial-pill auth-eyebrow" data-i18n="context.eyebrow">Cadastro público</p>
+          <h1 id="register-context-title" data-i18n="context.title">Comece com uma conta de acesso.</h1>
+          <p class="auth-context-lead" data-i18n="context.body">O cadastro cria seu usuário administrador e prepara a primeira empresa no SixApp sem autenticar automaticamente.</p>
 
-      <ul class="register-assurance">
-        <li>
-          <span class="assurance-icon" aria-hidden="true">1</span>
-          <span data-i18n="context.item.one">Mesmo contrato público usado pelo fluxo Flutter atual.</span>
-        </li>
-        <li>
-          <span class="assurance-icon" aria-hidden="true">2</span>
-          <span data-i18n="context.item.two">Nenhum token é salvo durante o cadastro.</span>
-        </li>
-        <li>
-          <span class="assurance-icon" aria-hidden="true">3</span>
-          <span data-i18n="context.item.three">Depois de criar a conta, o próximo passo é entrar pelo login.</span>
-        </li>
-      </ul>
-    </section>
+          <ul class="auth-assurance register-assurance">
+            <li>
+              <span class="assurance-icon" aria-hidden="true">1</span>
+              <span data-i18n="context.item.one">Mesmo contrato público usado pelo fluxo Flutter atual.</span>
+            </li>
+            <li>
+              <span class="assurance-icon" aria-hidden="true">2</span>
+              <span data-i18n="context.item.two">Nenhum token é salvo durante o cadastro.</span>
+            </li>
+            <li>
+              <span class="assurance-icon" aria-hidden="true">3</span>
+              <span data-i18n="context.item.three">Depois de criar a conta, o próximo passo é entrar pelo login.</span>
+            </li>
+          </ul>
+        </section>
 
-    <section class="register-card" aria-labelledby="register-title" data-register-form-card>
-      <div class="register-card-header">
-        <h2 id="register-title" data-i18n="form.title">Criar conta no SixApp</h2>
-        <p data-i18n="form.subtitle">Informe um login e uma senha para começar.</p>
-      </div>
-
-      <form class="register-form" id="register-form" data-register-form novalidate>
-        <div class="field">
-          <label for="register-login" data-i18n="form.login.label">Login</label>
-          <div class="input-shell">
-            <input
-              id="register-login"
-              data-register-login
-              name="login"
-              type="text"
-              autocomplete="username"
-              spellcheck="false"
-              required
-              inputmode="text"
-              placeholder="Informe seu login de acesso"
-              data-i18n-placeholder="form.login.placeholder"
-              disabled>
+        <section class="register-card auth-card" aria-labelledby="register-title" data-register-form-card>
+          <div class="register-card-header auth-card-header">
+            <h2 id="register-title" data-i18n="form.title">Criar conta no SixApp</h2>
+            <p data-i18n="form.subtitle">Informe um login e uma senha para começar.</p>
           </div>
-        </div>
 
-        <div class="field">
-          <label for="register-password" data-i18n="form.password.label">Senha</label>
-          <div class="input-shell">
-            <input
-              id="register-password"
-              data-register-password
-              name="senha"
-              type="password"
-              autocomplete="new-password"
-              required
-              minlength="8"
-              placeholder="Mínimo 8 caracteres"
-              data-i18n-placeholder="form.password.placeholder"
-              disabled>
-            <button
-              class="password-toggle"
-              type="button"
-              data-register-password-toggle
-              aria-pressed="false"
-              aria-label="Mostrar senha"
-              disabled>
-              <span data-register-password-toggle-label data-i18n="form.password.show">Mostrar</span>
+          <form class="register-form" id="register-form" data-register-form novalidate>
+            <div class="field">
+              <label for="register-login" data-i18n="form.login.label">Login</label>
+              <div class="input-shell">
+                <input
+                  id="register-login"
+                  data-register-login
+                  name="login"
+                  type="text"
+                  autocomplete="username"
+                  spellcheck="false"
+                  required
+                  inputmode="text"
+                  placeholder="Informe seu login de acesso"
+                  data-i18n-placeholder="form.login.placeholder"
+                  disabled>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="register-password" data-i18n="form.password.label">Senha</label>
+              <div class="input-shell">
+                <input
+                  id="register-password"
+                  data-register-password
+                  name="senha"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                  minlength="8"
+                  placeholder="Mínimo 8 caracteres"
+                  data-i18n-placeholder="form.password.placeholder"
+                  disabled>
+                <button
+                  class="password-toggle"
+                  type="button"
+                  data-register-password-toggle
+                  aria-pressed="false"
+                  aria-label="Mostrar senha"
+                  disabled>
+                  <span data-register-password-toggle-label data-i18n="form.password.show">Mostrar</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="register-confirm-password" data-i18n="form.confirmPassword.label">Confirme a senha</label>
+              <div class="input-shell">
+                <input
+                  id="register-confirm-password"
+                  data-register-confirm-password
+                  name="confirmarSenha"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                  minlength="8"
+                  placeholder="Repita sua senha"
+                  data-i18n-placeholder="form.confirmPassword.placeholder"
+                  aria-describedby="register-password-match"
+                  disabled>
+                <button
+                  class="password-toggle"
+                  type="button"
+                  data-register-confirm-password-toggle
+                  aria-pressed="false"
+                  aria-label="Mostrar confirmação da senha"
+                  disabled>
+                  <span data-register-confirm-password-toggle-label data-i18n="form.password.show">Mostrar</span>
+                </button>
+              </div>
+              <p
+                class="field-error"
+                id="register-password-match"
+                data-register-password-match-feedback
+                aria-live="polite"
+                hidden>As senhas não coincidem.</p>
+            </div>
+
+            <label class="terms-row">
+              <input
+                type="checkbox"
+                data-register-terms
+                name="aceiteTermos"
+                disabled>
+              <span>
+                <span data-i18n="form.terms.prefix">Concordo com os </span>
+                <strong data-i18n="form.terms.link">Termos e Condições</strong>
+              </span>
+            </label>
+
+            <p
+              class="form-alert"
+              id="register-feedback"
+              data-register-feedback
+              role="alert"
+              aria-live="polite"
+              tabindex="-1"
+              hidden></p>
+
+            <button class="button button-primary submit-button" type="submit" data-register-submit disabled>
+              <span class="submit-spinner" aria-hidden="true"></span>
+              <span data-register-submit-label data-i18n="form.submit">Cadastrar</span>
             </button>
+          </form>
+
+          <div class="register-card-footer auth-card-footer">
+            <span>
+              <span data-i18n="form.login.prompt">Já tem uma conta?</span>
+              <a href="/login" data-i18n="form.login.link">Entrar</a>
+            </span>
+            <a class="compatibility-link" href="/register/flutter" data-i18n="form.compatibility">Usar versão compatível</a>
           </div>
-        </div>
 
-        <div class="field">
-          <label for="register-confirm-password" data-i18n="form.confirmPassword.label">Confirme a senha</label>
-          <div class="input-shell">
-            <input
-              id="register-confirm-password"
-              data-register-confirm-password
-              name="confirmarSenha"
-              type="password"
-              autocomplete="new-password"
-              required
-              minlength="8"
-              placeholder="Repita sua senha"
-              data-i18n-placeholder="form.confirmPassword.placeholder"
-              aria-describedby="register-password-match"
-              disabled>
-            <button
-              class="password-toggle"
-              type="button"
-              data-register-confirm-password-toggle
-              aria-pressed="false"
-              aria-label="Mostrar confirmação da senha"
-              disabled>
-              <span data-register-confirm-password-toggle-label data-i18n="form.password.show">Mostrar</span>
-            </button>
+          <noscript>
+            <p class="register-noscript">
+              <span data-i18n="noscript.message">Para criar conta por esta página, ative o JavaScript. Você também pode acessar a versão compatível.</span>
+              <a href="/register/flutter" data-i18n="noscript.link">Usar versão compatível</a>
+            </p>
+          </noscript>
+        </section>
+
+        <section class="register-card register-success-card auth-card" aria-labelledby="register-success-title" data-register-success-card hidden>
+          <div class="success-illustration" aria-hidden="true">
+            <span></span>
           </div>
-          <p
-            class="field-error"
-            id="register-password-match"
-            data-register-password-match-feedback
-            aria-live="polite"
-            hidden>As senhas não coincidem.</p>
-        </div>
-
-        <label class="terms-row">
-          <input
-            type="checkbox"
-            data-register-terms
-            name="aceiteTermos"
-            disabled>
-          <span>
-            <span data-i18n="form.terms.prefix">Concordo com os </span>
-            <strong data-i18n="form.terms.link">Termos e Condições</strong>
-          </span>
-        </label>
-
-        <p
-          class="form-alert"
-          id="register-feedback"
-          data-register-feedback
-          role="alert"
-          aria-live="polite"
-          tabindex="-1"
-          hidden></p>
-
-        <button class="button button-primary submit-button" type="submit" data-register-submit disabled>
-          <span class="submit-spinner" aria-hidden="true"></span>
-          <span data-register-submit-label data-i18n="form.submit">Cadastrar</span>
-        </button>
-      </form>
-
-      <div class="register-card-footer">
-        <span>
-          <span data-i18n="form.login.prompt">Já tem uma conta?</span>
-          <a href="/login" data-i18n="form.login.link">Entrar</a>
-        </span>
-        <a class="compatibility-link" href="/register/flutter" data-i18n="form.compatibility">Usar versão compatível</a>
+          <p class="editorial-pill auth-eyebrow" data-i18n="success.eyebrow">Conta criada</p>
+          <h2 id="register-success-title" data-register-success-title data-i18n="success.title" tabindex="-1">Tudo certo!</h2>
+          <p data-i18n="success.body">Sua conta foi criada com sucesso. Faça login para começar a usar o SixApp.</p>
+          <button class="button button-primary submit-button" type="button" data-register-success-login data-i18n="success.login">Ir para o login</button>
+        </section>
       </div>
-
-      <noscript>
-        <p class="register-noscript">
-          <span data-i18n="noscript.message">Para criar conta por esta página, ative o JavaScript. Você também pode acessar a versão compatível.</span>
-          <a href="/register/flutter" data-i18n="noscript.link">Usar versão compatível</a>
-        </p>
-      </noscript>
-    </section>
-
-    <section class="register-card register-success-card" aria-labelledby="register-success-title" data-register-success-card hidden>
-      <div class="success-illustration" aria-hidden="true">
-        <span></span>
-      </div>
-      <p class="register-eyebrow" data-i18n="success.eyebrow">Conta criada</p>
-      <h2 id="register-success-title" data-register-success-title data-i18n="success.title" tabindex="-1">Tudo certo!</h2>
-      <p data-i18n="success.body">Sua conta foi criada com sucesso. Faça login para começar a usar o SixApp.</p>
-      <button class="button button-primary submit-button" type="button" data-register-success-login data-i18n="success.login">Ir para o login</button>
     </section>
   </main>
 

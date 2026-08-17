@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:sixpos/core/utils/browser_device.dart';
 import 'package:sixpos/core/utils/browser_location.dart';
 import 'package:sixpos/l10n/web_root_l10n.dart';
 
@@ -27,6 +28,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
 
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _redirectingBlockedPhoneBrowser = false;
   bool _checkedLogoutEntry = false;
   bool _showLogoutSplash = false;
   Timer? _logoutSplashTimer;
@@ -36,6 +38,10 @@ class _LoginPageWebState extends State<LoginPageWeb> {
   @override
   void initState() {
     super.initState();
+    _redirectBlockedPhoneBrowserIfNeeded();
+    if (_redirectingBlockedPhoneBrowser) {
+      return;
+    }
     _listenGoogleSignIn();
   }
 
@@ -65,6 +71,19 @@ class _LoginPageWebState extends State<LoginPageWeb> {
     _passwordController.dispose();
     _authService.cancelPendingWebGoogleLogin();
     super.dispose();
+  }
+
+  void _redirectBlockedPhoneBrowserIfNeeded() {
+    if (!isPhoneBrowser()) return;
+
+    _redirectingBlockedPhoneBrowser = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (replaceBrowserLocation('/login')) {
+        return;
+      }
+      Navigator.of(context).pushReplacementNamed('/login');
+    });
   }
 
   void _listenGoogleSignIn() {
@@ -173,6 +192,10 @@ class _LoginPageWebState extends State<LoginPageWeb> {
 
   @override
   Widget build(BuildContext context) {
+    if (_redirectingBlockedPhoneBrowser) {
+      return const SizedBox.expand();
+    }
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 760),
       reverseDuration: const Duration(milliseconds: 460),

@@ -7,9 +7,13 @@ void main() {
   group('web public login handoff', () {
     test('/login/flutter preserva LoginPageWeb no Flutter', () {
       final String mainSource = File('lib/main.dart').readAsStringSync();
+      final String loginSource =
+          File('lib/presentation/screens/login_page_web.dart').readAsStringSync();
 
       expect(mainSource, contains("routeUri.path == '/login/flutter'"));
       expect(mainSource, contains('builder: (_) => const LoginPageWeb()'));
+      expect(loginSource, contains('isPhoneBrowser()'));
+      expect(loginSource, contains("replaceBrowserLocation('/login')"));
     });
 
     test('/login no Flutter redireciona para HTML via browser', () {

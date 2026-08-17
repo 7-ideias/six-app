@@ -19,137 +19,154 @@
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/site-assets/images/sixapp-mark.png">
   <link rel="stylesheet" href="/site-assets/css/public-base.css">
+  <link rel="stylesheet" href="/site-assets/css/home.css">
   <link rel="stylesheet" href="/site-assets/css/login.css">
   <title>SixApp - Entrar</title>
 </head>
-<body class="login-page">
+<body class="login-page auth-public-page">
   <a class="skip-link" href="#login-form" data-i18n="access.skip">Ir para o formulário de login</a>
 
-  <header class="layout login-topbar">
-    <a class="brand" href="/" aria-label="SixApp" data-i18n-aria="brand.aria">
-      <span class="brand-mark" aria-hidden="true">
-        <img src="/site-assets/images/sixapp-mark.png" width="32" height="32" alt="">
-      </span>
-      <span>SixApp</span>
-    </a>
+  <header class="site-header auth-site-header" data-header>
+    <nav class="nav-shell auth-nav-shell" aria-label="Navegação de acesso" data-i18n-aria="nav.aria">
+      <a class="brand" href="/" aria-label="SixApp" data-i18n-aria="brand.aria">
+        <span class="brand-mark" aria-hidden="true">
+          <img src="/site-assets/images/sixapp-mark.png" width="32" height="32" alt="">
+        </span>
+        <span>SixApp</span>
+      </a>
 
-    <div class="login-topbar-actions">
-      <a class="button button-quiet home-link" href="/" data-i18n="nav.home">Voltar para a página inicial</a>
-      <div class="language-switcher" role="group" aria-label="Selecionar idioma" data-i18n-aria="language.aria">
-        <button type="button" data-lang-option="pt" aria-pressed="true">PT</button>
-        <button type="button" data-lang-option="en" aria-pressed="false">EN</button>
-        <button type="button" data-lang-option="es" aria-pressed="false">ES</button>
+      <div class="auth-nav-actions">
+        <a class="button button-quiet home-link" href="/" data-i18n="nav.home">Voltar para a página inicial</a>
+        <div class="language-switcher" role="group" aria-label="Selecionar idioma" data-i18n-aria="language.aria">
+          <button type="button" data-lang-option="pt" aria-pressed="true">PT</button>
+          <button type="button" data-lang-option="en" aria-pressed="false">EN</button>
+          <button type="button" data-lang-option="es" aria-pressed="false">ES</button>
+        </div>
       </div>
-    </div>
+    </nav>
   </header>
 
-  <main class="layout login-main" id="conteudo">
-    <section class="login-context" aria-labelledby="login-context-title">
-      <p class="login-eyebrow" data-i18n="context.eyebrow">Acesso seguro</p>
-      <h1 id="login-context-title" data-i18n="context.title">Acesse sua operação</h1>
-      <p data-i18n="context.body">Entre para acompanhar vendas, atendimentos, clientes, equipe e financeiro em um só lugar.</p>
+  <main id="conteudo">
+    <section class="auth-hero login-hero">
+      <div class="layout auth-hero-grid login-main">
+        <section class="auth-context login-context" aria-labelledby="login-context-title">
+          <p class="editorial-pill auth-eyebrow" data-i18n="context.eyebrow">Acesso seguro</p>
+          <h1 id="login-context-title" data-i18n="context.title">Acesse sua operação</h1>
+          <p class="auth-context-lead" data-i18n="context.body">Entre para acompanhar vendas, atendimentos, clientes, equipe e financeiro em um só lugar.</p>
 
-      <ul class="login-assurance">
-        <li>
-          <span class="assurance-icon" aria-hidden="true">1</span>
-          <span data-i18n="context.item.one">Handoff completo para o app autenticado.</span>
-        </li>
-        <li>
-          <span class="assurance-icon" aria-hidden="true">2</span>
-          <span data-i18n="context.item.two">Sessão validada pelo backend e pelo Keycloak.</span>
-        </li>
-        <li>
-          <span class="assurance-icon" aria-hidden="true">3</span>
-          <span data-i18n="context.item.three">Dados sensíveis protegidos por cookie HttpOnly.</span>
-        </li>
-      </ul>
-    </section>
+          <ul class="auth-assurance login-assurance">
+            <li>
+              <span class="assurance-icon" aria-hidden="true">1</span>
+              <span data-i18n="context.item.one">Handoff completo para o app autenticado.</span>
+            </li>
+            <li>
+              <span class="assurance-icon" aria-hidden="true">2</span>
+              <span data-i18n="context.item.two">Sessão validada pelo backend e pelo Keycloak.</span>
+            </li>
+            <li>
+              <span class="assurance-icon" aria-hidden="true">3</span>
+              <span data-i18n="context.item.three">Dados sensíveis protegidos por cookie HttpOnly.</span>
+            </li>
+          </ul>
+        </section>
 
-    <section class="login-card" aria-labelledby="login-title">
-      <div class="login-card-header">
-        <h2 id="login-title" data-i18n="form.title">Entrar no SixApp</h2>
-        <p data-i18n="form.subtitle">Use seu login ou e-mail cadastrado.</p>
-      </div>
-
-      <form class="login-form" id="login-form" data-login-form novalidate>
-        <div class="field">
-          <label for="login" data-i18n="form.login.label">Login ou e-mail</label>
-          <div class="input-shell">
-            <input
-              id="login"
-              data-login-input
-              name="login"
-              type="text"
-              autocomplete="username"
-              spellcheck="false"
-              required
-              maxlength="160"
-              inputmode="email"
-              placeholder="Informe seu login de acesso"
-              data-i18n-placeholder="form.login.placeholder"
-              disabled>
+        <section class="login-card auth-card" aria-labelledby="login-title" data-login-card>
+          <div class="login-card-header auth-card-header">
+            <h2 id="login-title" data-i18n="form.title">Entrar no SixApp</h2>
+            <p data-i18n="form.subtitle">Use seu login ou e-mail cadastrado.</p>
           </div>
-        </div>
 
-        <div class="field">
-          <label for="senha" data-i18n="form.password.label">Senha</label>
-          <div class="input-shell">
-            <input
-              id="senha"
-              data-password-input
-              name="senha"
-              type="password"
-              autocomplete="current-password"
-              required
-              maxlength="256"
-              placeholder="Digite sua senha"
-              data-i18n-placeholder="form.password.placeholder"
-              disabled>
-            <button
-              class="password-toggle"
-              type="button"
-              data-password-toggle
-              aria-pressed="false"
-              aria-label="Mostrar senha"
-              disabled>
-              <span data-password-toggle-label data-i18n="form.password.show">Mostrar</span>
+          <section
+            class="platform-block-notice"
+            data-login-mobile-block
+            role="status"
+            aria-live="polite"
+            hidden>
+            <strong data-i18n="mobileBlock.title">Acesso indisponível neste dispositivo</strong>
+            <p data-i18n="mobileBlock.body">Este login web não está disponível em navegador de celular. Para continuar, use um computador.</p>
+          </section>
+
+          <form class="login-form" id="login-form" data-login-form novalidate>
+            <div class="field">
+              <label for="login" data-i18n="form.login.label">Login ou e-mail</label>
+              <div class="input-shell">
+                <input
+                  id="login"
+                  data-login-input
+                  name="login"
+                  type="text"
+                  autocomplete="username"
+                  spellcheck="false"
+                  required
+                  maxlength="160"
+                  inputmode="email"
+                  placeholder="Informe seu login de acesso"
+                  data-i18n-placeholder="form.login.placeholder"
+                  disabled>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="senha" data-i18n="form.password.label">Senha</label>
+              <div class="input-shell">
+                <input
+                  id="senha"
+                  data-password-input
+                  name="senha"
+                  type="password"
+                  autocomplete="current-password"
+                  required
+                  maxlength="256"
+                  placeholder="Digite sua senha"
+                  data-i18n-placeholder="form.password.placeholder"
+                  disabled>
+                <button
+                  class="password-toggle"
+                  type="button"
+                  data-password-toggle
+                  aria-pressed="false"
+                  aria-label="Mostrar senha"
+                  disabled>
+                  <span data-password-toggle-label data-i18n="form.password.show">Mostrar</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <a class="form-link" href="/forgot-password" data-i18n="form.forgot">Esqueci minha senha</a>
+            </div>
+
+            <p
+              class="form-alert"
+              id="login-feedback"
+              data-login-feedback
+              role="alert"
+              aria-live="polite"
+              tabindex="-1"
+              hidden></p>
+
+            <button class="button button-primary submit-button" type="submit" data-login-submit disabled>
+              <span class="submit-spinner" aria-hidden="true"></span>
+              <span data-login-submit-label data-i18n="form.submit">Entrar</span>
             </button>
+          </form>
+
+          <div class="login-card-footer auth-card-footer">
+            <span>
+              <span data-i18n="form.create.prompt">Ainda não tem conta?</span>
+              <a href="/register" data-i18n="form.create.link">Criar conta</a>
+            </span>
+            <a class="compatibility-link" href="/login/flutter" data-i18n="form.compatibility">Entrar pela versão compatível</a>
           </div>
-        </div>
 
-        <div class="form-row">
-          <a class="form-link" href="/forgot-password" data-i18n="form.forgot">Esqueci minha senha</a>
-        </div>
-
-        <p
-          class="form-alert"
-          id="login-feedback"
-          data-login-feedback
-          role="alert"
-          aria-live="polite"
-          tabindex="-1"
-          hidden></p>
-
-        <button class="button button-primary submit-button" type="submit" data-login-submit disabled>
-          <span class="submit-spinner" aria-hidden="true"></span>
-          <span data-login-submit-label data-i18n="form.submit">Entrar</span>
-        </button>
-      </form>
-
-      <div class="login-card-footer">
-        <span>
-          <span data-i18n="form.create.prompt">Ainda não tem conta?</span>
-          <a href="/register" data-i18n="form.create.link">Criar conta</a>
-        </span>
-        <a class="compatibility-link" href="/login/flutter" data-i18n="form.compatibility">Entrar pela versão compatível</a>
+          <noscript>
+            <p class="login-noscript">
+              <span data-i18n="noscript.message">Para entrar por esta página, ative o JavaScript. Você também pode acessar a versão compatível.</span>
+              <a href="/login/flutter" data-i18n="noscript.link">Entrar pela versão compatível</a>
+            </p>
+          </noscript>
+        </section>
       </div>
-
-      <noscript>
-        <p class="login-noscript">
-          <span data-i18n="noscript.message">Para entrar por esta página, ative o JavaScript. Você também pode acessar a versão compatível.</span>
-          <a href="/login/flutter" data-i18n="noscript.link">Entrar pela versão compatível</a>
-        </p>
-      </noscript>
     </section>
   </main>
 
