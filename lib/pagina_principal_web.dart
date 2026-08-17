@@ -16,6 +16,7 @@ import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_web_page.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
+import 'package:sixpos/presentation/screens/compras/compras_web_page.dart';
 import 'package:sixpos/presentation/screens/configuracoes_six_web_page.dart';
 import 'package:sixpos/presentation/screens/desempenho_colaborador_web_page.dart';
 import 'package:sixpos/presentation/screens/estoque_dashboard_web_page.dart';
@@ -732,6 +733,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       case ModuloCentralPDV.ordemServico:
       case ModuloCentralPDV.atendimentoTecnico:
         return 'assistencia_tecnica';
+      case ModuloCentralPDV.compras:
+        return 'compras';
       case ModuloCentralPDV.categorias:
       case ModuloCentralPDV.produtos:
       case ModuloCentralPDV.servicos:
@@ -768,6 +771,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return 'agenda_financeira_web';
       case ModuloCentralPDV.atendimentoTecnico:
         return 'atendimentos_tecnicos_web';
+      case ModuloCentralPDV.compras:
+        return 'compras_web';
       case ModuloCentralPDV.produtos:
         return 'produtos_dashboard_web';
       case ModuloCentralPDV.servicos:
@@ -2665,6 +2670,9 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             onBack: voltarParaInicio,
           ),
         );
+
+      case ModuloCentralPDV.compras:
+        return Expanded(child: ComprasWebPage(onBack: voltarParaInicio));
 
       case ModuloCentralPDV.produtos:
         return Expanded(

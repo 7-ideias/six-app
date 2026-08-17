@@ -14,6 +14,7 @@ void main() {
         WebNavigationDestination.operationsPointOfSale: ModuloCentralPDV.vendas,
         WebNavigationDestination.operationsTechnicalServices:
             ModuloCentralPDV.atendimentoTecnico,
+        WebNavigationDestination.operationsPurchases: ModuloCentralPDV.compras,
         WebNavigationDestination.catalogProducts: ModuloCentralPDV.produtos,
         WebNavigationDestination.catalogServices: ModuloCentralPDV.servicos,
         WebNavigationDestination.catalogStock: ModuloCentralPDV.estoque,
@@ -68,6 +69,10 @@ void main() {
           WebNavigationRegistry.flattenActiveItems()
               .map((WebNavigationItem item) => item.destination)
               .whereType<WebNavigationDestination>()
+              .where(
+                (WebNavigationDestination destination) =>
+                    destination != WebNavigationDestination.catalogLabels,
+              )
               .toList(growable: false);
 
       for (final WebNavigationDestination destination in activeDestinations) {

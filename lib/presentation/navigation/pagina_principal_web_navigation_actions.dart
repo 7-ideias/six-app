@@ -43,6 +43,14 @@ class PaginaPrincipalWebNavigationActions
   }
 
   @override
+  WebNavigationResolutionResult openPurchases() {
+    return _abrirModulo(
+      WebNavigationDestination.operationsPurchases,
+      ModuloCentralPDV.compras,
+    );
+  }
+
+  @override
   WebNavigationResolutionResult openCatalogProducts() {
     return _abrirModulo(
       WebNavigationDestination.catalogProducts,
