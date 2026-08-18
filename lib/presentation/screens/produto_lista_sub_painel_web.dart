@@ -10,6 +10,7 @@ import 'package:sixpos/core/utils/produto_helper.dart';
 import 'package:sixpos/data/models/produto_imagem_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/presentation/components/produto_web_image.dart';
+import 'package:sixpos/presentation/screens/catalogo_reservas_web.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
@@ -580,6 +581,14 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     }
   }
 
+  Future<void> _abrirReservasCatalogo() {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) => const CatalogoReservasWebDialog(),
+    );
+  }
+
   void _logError(String context, Object error, StackTrace stackTrace) {
     debugPrint('[SubPainelWebProdutoLista][ERROR] $context');
     debugPrint('[SubPainelWebProdutoLista][ERROR] $error');
@@ -854,6 +863,15 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             _limparSelecaoMultipla,
           ),
         if (!widget.isSelecao) ...<Widget>[
+          _headerButton(
+            context,
+            Icons.inventory_outlined,
+            context.t(
+              'produto.webList.catalogReservations',
+              fallback: 'Reservas',
+            ),
+            _abrirReservasCatalogo,
+          ),
           _headerButton(
             context,
             Icons.link_rounded,
