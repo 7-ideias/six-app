@@ -227,3 +227,12 @@ test('ponte do flutter run abre o catalogo publico preservando token', () => {
   assert.match(source, /target\.search = window\.location\.search/);
   assert.match(source, /window\.location\.replace\(target\.toString\(\)\)/);
 });
+
+test('estado hidden prevalece sobre layouts flex do catalogo', () => {
+  const source = readFileSync('web/site-assets/css/catalog.css', 'utf8');
+
+  assert.match(
+    source,
+    /\.catalog-page \[hidden\]\s*\{\s*display:\s*none\s*!important;/,
+  );
+});
