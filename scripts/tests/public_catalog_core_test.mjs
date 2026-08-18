@@ -206,3 +206,24 @@ test('core do catalogo nao persiste dados pessoais nem credenciais', () => {
     assert.equal(source.includes(forbidden), false);
   }
 });
+
+test('link gerado usa arquivo direto no localhost e rota amigavel em producao', () => {
+  const source = readFileSync(
+    'lib/presentation/screens/produto_lista_sub_painel_web.dart',
+    'utf8',
+  );
+
+  assert.match(source, /'localhost',[\s\S]*'127\.0\.0\.1',[\s\S]*'::1'/);
+  assert.match(
+    source,
+    /resolve\(isLoopback \? '\/catalogo\.html' : '\/catalogo'\)/,
+  );
+});
+
+test('ponte do flutter run abre o catalogo publico preservando token', () => {
+  const source = readFileSync('web/catalogo.html', 'utf8');
+
+  assert.match(source, /new URL\('\/public_catalog\.html'/);
+  assert.match(source, /target\.search = window\.location\.search/);
+  assert.match(source, /window\.location\.replace\(target\.toString\(\)\)/);
+});
