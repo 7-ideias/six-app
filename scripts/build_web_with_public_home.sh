@@ -31,12 +31,14 @@ cp web/public_register.html build/web/register.html
 cp web/public_forgot_password.html build/web/forgot-password.html
 cp web/public_onboarding.html build/web/onboarding.html
 cp web/public_checkout.html build/web/checkout.html
+cp web/public_catalog.html build/web/catalogo.html
 rm -f build/web/public_home.html
 rm -f build/web/public_login.html
 rm -f build/web/public_register.html
 rm -f build/web/public_forgot_password.html
 rm -f build/web/public_onboarding.html
 rm -f build/web/public_checkout.html
+rm -f build/web/public_catalog.html
 
 if [ -d web/site-assets ]; then
   rm -rf build/web/site-assets
@@ -57,4 +59,5 @@ echo "[LOG SIX] Public register: build/web/register.html"
 echo "[LOG SIX] Public forgot password: build/web/forgot-password.html"
 echo "[LOG SIX] Public onboarding: build/web/onboarding.html"
 echo "[LOG SIX] Public checkout: build/web/checkout.html"
+echo "[LOG SIX] Public catalog: build/web/catalogo.html"
 echo "[LOG SIX] Flutter entry: build/web/flutter.html"

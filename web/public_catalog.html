@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="sixapp-entrypoint" content="public-catalog">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Consulte produtos disponíveis e envie sua seleção para o comércio.">
+  <meta name="theme-color" content="#0F2D3A">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Catálogo virtual">
+  <meta property="og:description" content="Produtos selecionados pelo comércio, disponíveis em um catálogo leve e seguro.">
+  <meta property="og:image" content="/site-assets/images/sixapp-mark.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Catálogo virtual">
+  <meta name="twitter:description" content="Consulte produtos e envie sua seleção ao comércio.">
+  <meta name="twitter:image" content="/site-assets/images/sixapp-mark.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/site-assets/images/sixapp-mark.png">
+  <link rel="stylesheet" href="/site-assets/css/public-base.css">
+  <link rel="stylesheet" href="/site-assets/css/catalog.css">
+  <title>Catálogo virtual</title>
+</head>
+<body class="catalog-page">
+  <a class="skip-link" href="#catalog-products" data-i18n="access.skip">Ir para os produtos</a>
+
+  <header class="catalog-topbar">
+    <div class="layout catalog-topbar-inner">
+      <a class="catalog-brand" href="#catalog-products" data-company-brand aria-label="Catálogo virtual">
+        <span class="catalog-brand-mark" data-company-logo-wrap aria-hidden="true">
+          <img data-company-logo src="/site-assets/images/sixapp-mark.png" width="38" height="38" alt="">
+        </span>
+        <span class="catalog-brand-copy">
+          <strong data-company-name>Catálogo virtual</strong>
+          <small data-i18n="catalog.eyebrow">Catálogo virtual</small>
+        </span>
+      </a>
+
+      <div class="language-switcher" role="group" aria-label="Selecionar idioma" data-i18n-aria="language.aria">
+        <button type="button" data-lang-option="pt" aria-pressed="true">PT</button>
+        <button type="button" data-lang-option="en" aria-pressed="false">EN</button>
+        <button type="button" data-lang-option="es" aria-pressed="false">ES</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout catalog-main" id="catalog-content" aria-busy="true">
+    <section class="company-hero" data-company-section hidden>
+      <div class="company-identity">
+        <div class="company-logo-large" data-company-logo-large-wrap aria-hidden="true">
+          <img data-company-logo-large src="/site-assets/images/sixapp-mark.png" width="72" height="72" alt="">
+        </div>
+        <div>
+          <p class="catalog-eyebrow" data-i18n="catalog.eyebrow">Catálogo virtual</p>
+          <h1 data-company-title>Catálogo virtual</h1>
+          <p class="company-address" data-company-address hidden></p>
+        </div>
+      </div>
+      <div class="company-contact" data-company-contact hidden>
+        <span class="company-meta-label" data-i18n="company.contact">Contato</span>
+        <div class="company-contact-links" data-company-contact-links></div>
+      </div>
+    </section>
+
+    <div class="catalog-status" data-catalog-loading role="status" aria-live="polite">
+      <span class="catalog-spinner" aria-hidden="true"></span>
+      <span data-i18n="catalog.loading">Carregando catálogo...</span>
+    </div>
+
+    <div class="catalog-alert" data-catalog-error role="alert" aria-live="assertive" tabindex="-1" hidden></div>
+
+    <div class="catalog-workspace" data-catalog-workspace hidden>
+      <section class="products-panel" aria-labelledby="products-title">
+        <div class="products-toolbar">
+          <div>
+            <p class="catalog-eyebrow" data-i18n="catalog.products">Produtos disponíveis</p>
+            <h2 id="products-title" data-products-count>0 itens</h2>
+          </div>
+          <label class="catalog-search">
+            <span class="sr-only" data-i18n="catalog.search">Buscar produtos</span>
+            <span aria-hidden="true">⌕</span>
+            <input type="search" data-catalog-search data-i18n-placeholder="catalog.searchPlaceholder" placeholder="Busque por nome ou modelo..." autocomplete="off">
+          </label>
+        </div>
+
+        <div class="products-grid" id="catalog-products" data-products-grid></div>
+        <div class="catalog-empty" data-products-empty hidden></div>
+      </section>
+
+      <aside class="selection-panel" aria-labelledby="selection-title">
+        <div class="selection-heading">
+          <div>
+            <p class="catalog-eyebrow" data-i18n="selection.title">Sua seleção</p>
+            <h2 id="selection-title" data-selection-count>0</h2>
+          </div>
+          <span class="selection-badge" data-selection-badge>0</span>
+        </div>
+
+        <p class="selection-empty" data-selection-empty data-i18n="selection.empty">Marque os produtos que deseja reservar.</p>
+        <div class="selection-list" data-selection-list></div>
+
+        <div class="selection-summary" data-selection-summary hidden>
+          <span data-i18n="selection.total">Total estimado</span>
+          <strong data-selection-total>-</strong>
+        </div>
+        <p class="selection-notice" data-i18n="selection.notice">A disponibilidade será confirmada pelo comércio.</p>
+
+        <form class="reservation-form" data-reservation-form novalidate>
+          <h3 data-i18n="form.title">Seus dados</h3>
+          <label>
+            <span data-i18n="form.name">Nome</span>
+            <input type="text" name="name" maxlength="120" autocomplete="name" data-i18n-placeholder="form.namePlaceholder" placeholder="Como podemos chamar você?" required>
+          </label>
+          <label>
+            <span data-i18n="form.phone">Telefone ou WhatsApp</span>
+            <input type="tel" name="phone" maxlength="40" autocomplete="tel" data-i18n-placeholder="form.phonePlaceholder" placeholder="Informe seu telefone">
+          </label>
+          <label>
+            <span data-i18n="form.email">E-mail (opcional)</span>
+            <input type="email" name="email" maxlength="180" autocomplete="email" data-i18n-placeholder="form.emailPlaceholder" placeholder="voce@exemplo.com">
+          </label>
+          <label>
+            <span data-i18n="form.notes">Observação (opcional)</span>
+            <textarea name="notes" rows="3" maxlength="1000" data-i18n-placeholder="form.notesPlaceholder" placeholder="Cor, tamanho ou outra preferência"></textarea>
+          </label>
+
+          <div class="reservation-feedback" data-reservation-feedback role="alert" aria-live="polite" tabindex="-1" hidden></div>
+          <button class="button button-primary reservation-submit" type="submit" data-reservation-submit disabled>
+            <span data-reservation-submit-label data-i18n="form.submit">Enviar reserva</span>
+          </button>
+        </form>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="layout catalog-footer">
+    <span data-i18n="poweredBy">Catálogo protegido por SixApp</span>
+  </footer>
+
+  <noscript>
+    <p class="catalog-noscript">Ative o JavaScript para consultar este catálogo e enviar sua seleção.</p>
+  </noscript>
+
+  <script src="/site-assets/js/public-config.js"></script>
+  <script type="module" src="/site-assets/js/catalog.js"></script>
+</body>
+</html>

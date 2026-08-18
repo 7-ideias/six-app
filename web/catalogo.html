@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Catálogo virtual</title>
+  <script>
+    (function () {
+      'use strict';
+      var target = new URL('/public_catalog.html', window.location.origin);
+      target.search = window.location.search;
+      target.hash = window.location.hash;
+      window.location.replace(target.toString());
+    }());
+  </script>
+</head>
+<body>
+  <noscript>
+    <p>Ative o JavaScript para abrir o catálogo virtual.</p>
+  </noscript>
+</body>
+</html>

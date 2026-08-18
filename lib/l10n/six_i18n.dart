@@ -1230,6 +1230,12 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Consulta rápida do catálogo com ações de balcão.',
     'produto.webList.newItem': 'Novo item',
     'produto.webList.printPdf': 'Imprimir PDF',
+    'produto.webList.publicCatalogLink': 'Link do catálogo',
+    'produto.webList.publicCatalogPreparing': 'Preparando...',
+    'produto.webList.publicCatalogCopied':
+        'Link público do catálogo copiado.',
+    'produto.webList.publicCatalogError':
+        'Não foi possível preparar o link do catálogo.',
     'produto.webList.edit.banner':
         'Modo edição ativo • {count} itens encontrados • clique em um produto para alterar.',
     'produto.webList.searchHint': 'Buscar por nome, código ou SKU...',
@@ -2368,6 +2374,11 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Quick catalog lookup with counter actions.',
     'produto.webList.newItem': 'New item',
     'produto.webList.printPdf': 'Print PDF',
+    'produto.webList.publicCatalogLink': 'Catalog link',
+    'produto.webList.publicCatalogPreparing': 'Preparing...',
+    'produto.webList.publicCatalogCopied': 'Public catalog link copied.',
+    'produto.webList.publicCatalogError':
+        'Could not prepare the catalog link.',
     'produto.webList.edit.banner':
         'Edit mode active • {count} items found • click a product to change it.',
     'produto.webList.searchHint': 'Search by name, code or SKU...',
@@ -3537,6 +3548,12 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Consulta rápida del catálogo con acciones de mostrador.',
     'produto.webList.newItem': 'Nuevo ítem',
     'produto.webList.printPdf': 'Imprimir PDF',
+    'produto.webList.publicCatalogLink': 'Enlace del catálogo',
+    'produto.webList.publicCatalogPreparing': 'Preparando...',
+    'produto.webList.publicCatalogCopied':
+        'Enlace público del catálogo copiado.',
+    'produto.webList.publicCatalogError':
+        'No fue posible preparar el enlace del catálogo.',
     'produto.webList.edit.banner':
         'Modo edición activo • {count} ítems encontrados • haz clic en un producto para cambiarlo.',
     'produto.webList.searchHint': 'Buscar por nombre, código o SKU...',

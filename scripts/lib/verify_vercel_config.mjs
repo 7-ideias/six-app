@@ -81,6 +81,7 @@ requireRewrite('/onboarding', '/onboarding.html');
 requireRewrite('/onboarding/flutter', '/flutter.html');
 requireRewrite('/checkout', '/checkout.html');
 requireRewrite('/checkout/flutter', '/flutter.html');
+requireRewrite('/catalogo', '/catalogo.html');
 requireRewrite('/app', '/flutter.html');
 requireRewrite('/app/:path*', '/flutter.html');
 requireRewrite('/admin', '/flutter.html');
@@ -118,6 +119,8 @@ const sensitiveSources = [
   '/onboarding.html',
   '/checkout',
   '/checkout.html',
+  '/catalogo',
+  '/catalogo.html',
 ];
 
 for (const source of sensitiveSources) {
@@ -135,5 +138,5 @@ if (Array.isArray(config.headers) && config.headers.some((entry) => (
     header?.key === 'X-Frame-Options'
   ))
 ))) {
-  fail('Headers de seguranca/cache publicos aplicados fora de /login, /register, /forgot-password, /onboarding e /checkout');
+  fail('Headers de seguranca/cache publicos aplicados fora das paginas HTML publicas permitidas');
 }
