@@ -93,6 +93,7 @@ require_file web/public_forgot_password.html
 require_file web/public_onboarding.html
 require_file web/public_checkout.html
 require_file web/public_catalog.html
+require_file web/catalogo.html
 require_file web/site-assets/css/public-base.css
 require_file web/site-assets/css/home.css
 require_file web/site-assets/css/login.css
