@@ -18,4 +18,5 @@ NODE_BIN="$(resolve_node)"
   scripts/tests/public_onboarding_core_test.mjs \
   scripts/tests/public_checkout_core_test.mjs \
   scripts/tests/public_catalog_core_test.mjs \
+  scripts/tests/catalogo_reservas_web_test.mjs \
   scripts/tests/public_home_plans_test.mjs
