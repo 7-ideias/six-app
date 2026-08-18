@@ -534,10 +534,17 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
     try {
       final Uri currentUri = Uri.base;
+      final bool isLoopback = <String>{
+        'localhost',
+        '127.0.0.1',
+        '::1',
+      }.contains(currentUri.host.toLowerCase());
       final String? publicBaseUrl =
           <String>{'http', 'https'}.contains(currentUri.scheme) &&
                   currentUri.host.isNotEmpty
-              ? currentUri.resolve('/catalogo').toString()
+              ? currentUri
+                  .resolve(isLoopback ? '/catalogo.html' : '/catalogo')
+                  .toString()
               : null;
       final link = await _catalogoPublicoService.gerarOuObterLink(
         baseUrl: publicBaseUrl,
