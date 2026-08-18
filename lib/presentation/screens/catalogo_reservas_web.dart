@@ -27,6 +27,7 @@ class _CatalogoReservasWebDialogState
   bool _carregando = true;
   bool _carregandoDetalhe = false;
   bool _atualizandoStatus = false;
+  bool _convertendo = false;
 
   @override
   void initState() {
@@ -133,6 +134,117 @@ class _CatalogoReservasWebDialogState
     } finally {
       if (mounted) setState(() => _atualizandoStatus = false);
     }
+  }
+
+  Future<void> _converterEmVenda() async {
+    final CatalogoReservaDetalheModel? detalhe = _detalhe;
+    if (detalhe == null || _convertendo) return;
+
+    final bool confirmado =
+        await showDialog<bool>(
+          context: context,
+          builder:
+              (BuildContext dialogContext) => AlertDialog(
+                title: Text(
+                  context.t(
+                    'catalogReservations.convert.confirmTitle',
+                    fallback: 'Converter reserva em venda?',
+                  ),
+                ),
+                content: Text(
+                  context.t(
+                    'catalogReservations.convert.confirmMessage',
+                    fallback:
+                        'O estoque será validado e os itens serão enviados para uma venda a receber.',
+                  ),
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                    child: Text(
+                      context.t('common.cancel', fallback: 'Cancelar'),
+                    ),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                    child: Text(
+                      context.t(
+                        'catalogReservations.convert.action',
+                        fallback: 'Converter em venda',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+        ) ??
+        false;
+    if (!confirmado || !mounted) return;
+
+    setState(() {
+      _convertendo = true;
+      _erro = null;
+    });
+    try {
+      final CatalogoReservaConversaoModel conversao = await _service
+          .converterEmVenda(detalhe.idReserva);
+      if (!mounted) return;
+      await _carregar(
+        pagina: _pagina?.pagina ?? 0,
+        selecionarId: conversao.idReserva,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'catalogReservations.convert.success',
+              fallback: 'Reserva convertida em venda a receber.',
+            ),
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _erro = _mensagemErroConversao(error));
+    } finally {
+      if (mounted) setState(() => _convertendo = false);
+    }
+  }
+
+  String _mensagemErroConversao(Object error) {
+    if (error is CatalogoReservaServiceException) {
+      return switch (error.codigo) {
+        'ESTOQUE_INSUFICIENTE_PARA_RESERVA' => context.t(
+          'catalogReservations.convert.error.stock',
+          fallback: 'Estoque insuficiente para converter esta reserva.',
+        ),
+        'RESERVA_PRECISA_ESTAR_CONFIRMADA' => context.t(
+          'catalogReservations.convert.error.confirmedOnly',
+          fallback: 'Confirme a reserva antes de convertê-la em venda.',
+        ),
+        'CONVERSAO_RESERVA_EM_ANDAMENTO' => context.t(
+          'catalogReservations.convert.error.processing',
+          fallback: 'Esta reserva já está sendo convertida. Atualize a tela.',
+        ),
+        'VENDA_RESERVA_RECEBIMENTO_NAO_CONFIGURADO' => context.t(
+          'catalogReservations.convert.error.paymentConfig',
+          fallback:
+              'Configure um tipo de recebimento futuro antes da conversão.',
+        ),
+        'PRODUTO_RESERVA_NAO_DISPONIVEL' => context.t(
+          'catalogReservations.convert.error.product',
+          fallback: 'Um dos produtos reservados não está mais disponível.',
+        ),
+        _ => context.t(
+          'catalogReservations.convert.error.generic',
+          fallback: 'Não foi possível converter a reserva em venda.',
+        ),
+      };
+    }
+    return context.t(
+      'catalogReservations.convert.error.generic',
+      fallback: 'Não foi possível converter a reserva em venda.',
+    );
   }
 
   void _alterarFiltro(CatalogoReservaStatus? status) {
@@ -519,12 +631,18 @@ class _CatalogoReservasWebDialogState
                               (CatalogoReservaStatus status) =>
                                   DropdownMenuItem<CatalogoReservaStatus>(
                                     value: status,
+                                    enabled:
+                                        status !=
+                                        CatalogoReservaStatus.convertida,
                                     child: Text(_statusLabel(context, status)),
                                   ),
                             )
                             .toList(growable: false),
                     onChanged:
-                        _atualizandoStatus
+                        _atualizandoStatus ||
+                                _convertendo ||
+                                detalhe.status ==
+                                    CatalogoReservaStatus.convertida
                             ? null
                             : (CatalogoReservaStatus? status) {
                               if (status != null) _atualizarStatus(status);
@@ -544,6 +662,13 @@ class _CatalogoReservasWebDialogState
                 if (detalhe.cliente.email.isNotEmpty) detalhe.cliente.email,
                 _formatDateTime(regionalizacao, detalhe.criadaEm),
               ],
+            ),
+            const SizedBox(height: 18),
+            _buildConversionCard(
+              context,
+              tokens,
+              regionalizacao,
+              detalhe,
             ),
             const SizedBox(height: 18),
             Text(
@@ -608,6 +733,119 @@ class _CatalogoReservasWebDialogState
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildConversionCard(
+    BuildContext context,
+    WebThemeTokens tokens,
+    LocaleSettingsProvider regionalizacao,
+    CatalogoReservaDetalheModel detalhe,
+  ) {
+    final bool convertida =
+        detalhe.status == CatalogoReservaStatus.convertida;
+    final bool podeConverter =
+        detalhe.status == CatalogoReservaStatus.confirmada;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color:
+            convertida
+                ? tokens.success.withValues(alpha: 0.08)
+                : tokens.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color:
+              convertida
+                  ? tokens.success.withValues(alpha: 0.35)
+                  : tokens.cardBorder,
+        ),
+      ),
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 12,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.spaceBetween,
+        children: <Widget>[
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 540),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Icon(
+                  convertida
+                      ? Icons.check_circle_outline_rounded
+                      : Icons.point_of_sale_outlined,
+                  color: convertida ? tokens.success : tokens.info,
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        context.t(
+                          convertida
+                              ? 'catalogReservations.convert.convertedTitle'
+                              : 'catalogReservations.convert.title',
+                          fallback:
+                              convertida
+                                  ? 'Venda criada'
+                                  : 'Converter em venda',
+                        ),
+                        style: TextStyle(
+                          color: tokens.primaryText,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        convertida
+                            ? '${context.t('catalogReservations.convert.saleId', fallback: 'Venda')} #${_idReservaCurto(detalhe.idOperacaoVenda)}${detalhe.convertidaEm == null ? '' : ' • ${_formatDateTime(regionalizacao, detalhe.convertidaEm)}'}'
+                            : context.t(
+                              'catalogReservations.convert.description',
+                              fallback:
+                                  'Valida o estoque e cria uma venda a receber com estes produtos.',
+                            ),
+                        style: TextStyle(
+                          color: tokens.secondaryText,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!convertida)
+            FilledButton.icon(
+              onPressed: podeConverter && !_convertendo
+                  ? _converterEmVenda
+                  : null,
+              icon:
+                  _convertendo
+                      ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Icon(Icons.point_of_sale_outlined),
+              label: Text(
+                context.t(
+                  _convertendo
+                      ? 'catalogReservations.convert.processing'
+                      : 'catalogReservations.convert.action',
+                  fallback:
+                      _convertendo ? 'Convertendo...' : 'Converter em venda',
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -901,6 +1139,10 @@ class _CatalogoReservasWebDialogState
         'catalogReservations.status.cancelled',
         fallback: 'Cancelada',
       ),
+      CatalogoReservaStatus.convertida => context.t(
+        'catalogReservations.status.converted',
+        fallback: 'Convertida em venda',
+      ),
     };
   }
 
@@ -913,6 +1155,7 @@ class _CatalogoReservasWebDialogState
       CatalogoReservaStatus.emAnalise => tokens.warning,
       CatalogoReservaStatus.confirmada => tokens.success,
       CatalogoReservaStatus.cancelada => tokens.danger,
+      CatalogoReservaStatus.convertida => tokens.financialPositive,
     };
   }
 

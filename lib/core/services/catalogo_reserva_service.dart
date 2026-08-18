@@ -69,6 +69,22 @@ class CatalogoReservaService {
     return CatalogoReservaDetalheModel.fromJson(json);
   }
 
+  Future<CatalogoReservaConversaoModel> converterEmVenda(
+    String idReserva,
+  ) async {
+    final Map<String, String> headers = await _headersAutenticados();
+    final Uri uri = Uri.parse(
+      '$_endpoint/${Uri.encodeComponent(idReserva)}/converter-em-venda',
+    );
+    final response = await _client.post(uri, headers: headers);
+    final Map<String, dynamic> json = _decodeResponse(
+      response.statusCode,
+      response.body,
+      fallbackError: 'Não foi possível converter a reserva em venda.',
+    );
+    return CatalogoReservaConversaoModel.fromJson(json);
+  }
+
   Future<Map<String, String>> _headersAutenticados() async {
     final AuthService authService = AuthService();
     final String? token = await authService.getAccessToken();
@@ -87,9 +103,29 @@ class CatalogoReservaService {
     };
   }
 
-  Map<String, dynamic> _decodeResponse(int statusCode, String body) {
+  Map<String, dynamic> _decodeResponse(
+    int statusCode,
+    String body, {
+    String fallbackError = 'Não foi possível consultar as reservas.',
+  }) {
     if (statusCode < 200 || statusCode >= 300) {
-      throw Exception('Não foi possível consultar as reservas ($statusCode).');
+      String? codigo;
+      try {
+        final dynamic errorBody = jsonDecode(body);
+        if (errorBody is Map<String, dynamic>) {
+          codigo =
+              errorBody['detail']?.toString() ??
+              errorBody['message']?.toString() ??
+              errorBody['error']?.toString();
+        }
+      } catch (_) {
+        codigo = null;
+      }
+      throw CatalogoReservaServiceException(
+        statusCode: statusCode,
+        codigo: codigo,
+        fallbackMessage: fallbackError,
+      );
     }
     final dynamic decoded = jsonDecode(body);
     if (decoded is! Map<String, dynamic>) {
@@ -97,4 +133,19 @@ class CatalogoReservaService {
     }
     return decoded;
   }
+}
+
+class CatalogoReservaServiceException implements Exception {
+  const CatalogoReservaServiceException({
+    required this.statusCode,
+    required this.fallbackMessage,
+    this.codigo,
+  });
+
+  final int statusCode;
+  final String fallbackMessage;
+  final String? codigo;
+
+  @override
+  String toString() => codigo ?? '$fallbackMessage ($statusCode)';
 }

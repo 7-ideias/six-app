@@ -26,6 +26,8 @@ test('service usa endpoints privados tenant-scoped com autenticacao', () => {
   assert.match(service, /'idUnicoDaEmpresa': empresaId/);
   assert.match(service, /_client\.get/);
   assert.match(service, /_client\.patch/);
+  assert.match(service, /converter-em-venda/);
+  assert.match(service, /_client\.post/);
 });
 
 test('model cobre todos os status persistidos pelo backend', () => {
@@ -34,6 +36,7 @@ test('model cobre todos os status persistidos pelo backend', () => {
     'EM_ANALISE',
     'CONFIRMADA',
     'CANCELADA',
+    'CONVERTIDA',
   ]) {
     assert.equal(model.includes(`'${status}'`), true);
   }
@@ -46,11 +49,14 @@ test('tela separa apresentacao da camada HTTP e usa loading padrao', () => {
   assert.match(screen, /LocaleSettingsProvider/);
 });
 
-test('tela permite filtrar, paginar, detalhar e atualizar status', () => {
+test('tela permite filtrar, paginar, detalhar, atualizar e converter', () => {
   assert.match(screen, /_alterarFiltro/);
   assert.match(screen, /_buildPagination/);
   assert.match(screen, /_carregarDetalhe/);
   assert.match(screen, /_atualizarStatus/);
+  assert.match(screen, /_converterEmVenda/);
+  assert.match(screen, /CatalogoReservaStatus\.confirmada/);
+  assert.match(screen, /CatalogoReservaStatus\.convertida/);
 });
 
 test('listagem de produtos oferece acesso as reservas', () => {
@@ -66,6 +72,11 @@ test('novas traducoes possuem paridade pt en es', () => {
     'catalogReservations.status.analysis',
     'catalogReservations.status.confirmed',
     'catalogReservations.status.cancelled',
+    'catalogReservations.status.converted',
+    'catalogReservations.convert.action',
+    'catalogReservations.convert.confirmTitle',
+    'catalogReservations.convert.success',
+    'catalogReservations.convert.error.stock',
     'catalogReservations.empty',
     'catalogReservations.error',
   ]) {

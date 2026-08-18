@@ -2,7 +2,8 @@ enum CatalogoReservaStatus {
   recebida('RECEBIDA'),
   emAnalise('EM_ANALISE'),
   confirmada('CONFIRMADA'),
-  cancelada('CANCELADA');
+  cancelada('CANCELADA'),
+  convertida('CONVERTIDA');
 
   const CatalogoReservaStatus(this.apiValue);
 
@@ -147,6 +148,8 @@ class CatalogoReservaDetalheModel {
     required this.quantidadeTotal,
     required this.valorTotal,
     required this.observacao,
+    required this.idOperacaoVenda,
+    required this.convertidaEm,
   });
 
   final String idReserva;
@@ -157,6 +160,8 @@ class CatalogoReservaDetalheModel {
   final int quantidadeTotal;
   final double valorTotal;
   final String observacao;
+  final String idOperacaoVenda;
+  final DateTime? convertidaEm;
 
   factory CatalogoReservaDetalheModel.fromJson(Map<String, dynamic> json) {
     final Map<String, dynamic> cliente =
@@ -180,6 +185,31 @@ class CatalogoReservaDetalheModel {
       quantidadeTotal: (json['quantidadeTotal'] as num?)?.toInt() ?? 0,
       valorTotal: (json['valorTotal'] as num?)?.toDouble() ?? 0,
       observacao: json['observacao']?.toString() ?? '',
+      idOperacaoVenda: json['idOperacaoVenda']?.toString() ?? '',
+      convertidaEm: DateTime.tryParse(json['convertidaEm']?.toString() ?? ''),
+    );
+  }
+}
+
+class CatalogoReservaConversaoModel {
+  const CatalogoReservaConversaoModel({
+    required this.idReserva,
+    required this.status,
+    required this.idOperacaoVenda,
+    required this.convertidaEm,
+  });
+
+  final String idReserva;
+  final CatalogoReservaStatus status;
+  final String idOperacaoVenda;
+  final DateTime? convertidaEm;
+
+  factory CatalogoReservaConversaoModel.fromJson(Map<String, dynamic> json) {
+    return CatalogoReservaConversaoModel(
+      idReserva: json['idReserva']?.toString() ?? '',
+      status: CatalogoReservaStatus.fromApi(json['status']?.toString()),
+      idOperacaoVenda: json['idOperacaoVenda']?.toString() ?? '',
+      convertidaEm: DateTime.tryParse(json['convertidaEm']?.toString() ?? ''),
     );
   }
 }
