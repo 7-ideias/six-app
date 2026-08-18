@@ -82,6 +82,7 @@ require_file build/web/register.html
 require_file build/web/forgot-password.html
 require_file build/web/onboarding.html
 require_file build/web/checkout.html
+require_file build/web/catalogo.html
 require_file build/web/flutter.html
 require_file build/web/flutter_bootstrap.js
 require_file build/web/main.dart.js
@@ -91,6 +92,7 @@ require_file web/public_register.html
 require_file web/public_forgot_password.html
 require_file web/public_onboarding.html
 require_file web/public_checkout.html
+require_file web/public_catalog.html
 require_file web/site-assets/css/public-base.css
 require_file web/site-assets/css/home.css
 require_file web/site-assets/css/login.css
@@ -98,6 +100,7 @@ require_file web/site-assets/css/register.css
 require_file web/site-assets/css/forgot-password.css
 require_file web/site-assets/css/onboarding.css
 require_file web/site-assets/css/checkout.css
+require_file web/site-assets/css/catalog.css
 require_file web/site-assets/js/public-locale.mjs
 require_file web/site-assets/js/login-core.mjs
 require_file web/site-assets/js/login.js
@@ -109,6 +112,8 @@ require_file web/site-assets/js/onboarding-core.mjs
 require_file web/site-assets/js/onboarding.js
 require_file web/site-assets/js/checkout-core.mjs
 require_file web/site-assets/js/checkout.js
+require_file web/site-assets/js/catalog-core.mjs
+require_file web/site-assets/js/catalog.js
 require_file web/site-assets/js/home.js
 require_file web/site-assets/images/sixapp-mark.png
 require_file web/site-assets/images/commerce-workspace.webp
@@ -119,6 +124,7 @@ require_file build/web/site-assets/css/register.css
 require_file build/web/site-assets/css/forgot-password.css
 require_file build/web/site-assets/css/onboarding.css
 require_file build/web/site-assets/css/checkout.css
+require_file build/web/site-assets/css/catalog.css
 require_file build/web/site-assets/js/public-locale.mjs
 require_file build/web/site-assets/js/login-core.mjs
 require_file build/web/site-assets/js/login.js
@@ -130,6 +136,8 @@ require_file build/web/site-assets/js/onboarding-core.mjs
 require_file build/web/site-assets/js/onboarding.js
 require_file build/web/site-assets/js/checkout-core.mjs
 require_file build/web/site-assets/js/checkout.js
+require_file build/web/site-assets/js/catalog-core.mjs
+require_file build/web/site-assets/js/catalog.js
 require_file build/web/site-assets/js/home.js
 require_file build/web/site-assets/js/public-config.js
 require_file build/web/site-assets/images/sixapp-mark.png
@@ -308,6 +316,33 @@ require_contains build/web/checkout.html '<noscript>'
 require_no_public_forbidden_terms build/web/checkout.html
 validate_public_site_asset_references build/web/checkout.html
 
+section "CATALOG"
+
+require_contains build/web/catalogo.html 'name="sixapp-entrypoint" content="public-catalog"'
+require_contains build/web/catalogo.html 'name="robots" content="noindex, nofollow"'
+require_not_contains build/web/catalogo.html 'name="sixapp-entrypoint" content="flutter-app"'
+require_not_contains build/web/catalogo.html 'flutter_bootstrap.js'
+require_not_contains build/web/catalogo.html 'main.dart.js'
+require_not_contains build/web/catalogo.html 'flutter.js'
+require_not_contains build/web/catalogo.html 'canvaskit'
+require_not_contains build/web/catalogo.html 'fonts.googleapis'
+require_not_contains build/web/catalogo.html 'accounts.google.com'
+require_not_contains build/web/catalogo.html '<link rel="manifest"'
+require_not_contains build/web/catalogo.html 'manifest.json'
+require_not_contains build/web/catalogo.html '/assets/'
+require_not_contains build/web/catalogo.html 'href="site-assets'
+require_not_contains build/web/catalogo.html 'src="site-assets'
+require_not_contains build/web/catalogo.html 'https://'
+require_not_contains build/web/catalogo.html 'http://'
+require_contains build/web/catalogo.html '/site-assets/css/public-base.css'
+require_contains build/web/catalogo.html '/site-assets/css/catalog.css'
+require_contains build/web/catalogo.html '/site-assets/js/public-config.js'
+require_contains build/web/catalogo.html '/site-assets/js/catalog.js'
+require_contains build/web/catalogo.html '/site-assets/images/sixapp-mark.png'
+require_contains build/web/catalogo.html '<noscript>'
+require_no_public_forbidden_terms build/web/catalogo.html
+validate_public_site_asset_references build/web/catalogo.html
+
 section "FLUTTER"
 
 require_contains build/web/flutter.html 'name="sixapp-entrypoint" content="flutter-app"'
@@ -364,6 +399,8 @@ require_contains web/public_onboarding.html 'name="sixapp-entrypoint" content="p
 require_contains web/public_onboarding.html 'name="robots" content="noindex, nofollow"'
 require_contains web/public_checkout.html 'name="sixapp-entrypoint" content="public-checkout"'
 require_contains web/public_checkout.html 'name="robots" content="noindex, nofollow"'
+require_contains web/public_catalog.html 'name="sixapp-entrypoint" content="public-catalog"'
+require_contains web/public_catalog.html 'name="robots" content="noindex, nofollow"'
 require_contains web/public_home.html '/site-assets/css/public-base.css'
 require_contains web/public_home.html '/site-assets/css/home.css'
 require_contains web/public_home.html '/site-assets/js/home.js'
@@ -400,12 +437,19 @@ require_contains web/public_checkout.html '/site-assets/js/checkout.js'
 require_contains web/public_checkout.html '/site-assets/images/sixapp-mark.png'
 require_contains web/public_checkout.html '/checkout/flutter'
 require_contains web/public_checkout.html '<noscript>'
+require_contains web/public_catalog.html '/site-assets/css/public-base.css'
+require_contains web/public_catalog.html '/site-assets/css/catalog.css'
+require_contains web/public_catalog.html '/site-assets/js/public-config.js'
+require_contains web/public_catalog.html '/site-assets/js/catalog.js'
+require_contains web/public_catalog.html '/site-assets/images/sixapp-mark.png'
+require_contains web/public_catalog.html '<noscript>'
 require_no_public_forbidden_terms web/public_home.html
 require_no_public_forbidden_terms web/public_login.html
 require_no_public_forbidden_terms web/public_register.html
 require_no_public_forbidden_terms web/public_forgot_password.html
 require_no_public_forbidden_terms web/public_onboarding.html
 require_no_public_forbidden_terms web/public_checkout.html
+require_no_public_forbidden_terms web/public_catalog.html
 require_no_public_forbidden_terms web/site-assets/js/home.js
 require_no_public_forbidden_terms web/site-assets/js/login.js
 require_no_public_forbidden_terms web/site-assets/js/register.js
@@ -416,6 +460,8 @@ require_no_public_forbidden_terms web/site-assets/js/onboarding.js
 require_no_public_forbidden_terms web/site-assets/js/onboarding-core.mjs
 require_no_public_forbidden_terms web/site-assets/js/checkout.js
 require_no_public_forbidden_terms web/site-assets/js/checkout-core.mjs
+require_no_public_forbidden_terms web/site-assets/js/catalog.js
+require_no_public_forbidden_terms web/site-assets/js/catalog-core.mjs
 require_no_public_forbidden_terms web/site-assets/css/public-base.css
 require_no_public_forbidden_terms web/site-assets/css/home.css
 require_no_public_forbidden_terms web/site-assets/css/login.css
@@ -423,6 +469,7 @@ require_no_public_forbidden_terms web/site-assets/css/register.css
 require_no_public_forbidden_terms web/site-assets/css/forgot-password.css
 require_no_public_forbidden_terms web/site-assets/css/onboarding.css
 require_no_public_forbidden_terms web/site-assets/css/checkout.css
+require_no_public_forbidden_terms web/site-assets/css/catalog.css
 require_no_public_forbidden_terms build/web/site-assets/js/home.js
 require_no_public_forbidden_terms build/web/site-assets/js/login.js
 require_no_public_forbidden_terms build/web/site-assets/js/register.js
@@ -433,6 +480,8 @@ require_no_public_forbidden_terms build/web/site-assets/js/onboarding.js
 require_no_public_forbidden_terms build/web/site-assets/js/onboarding-core.mjs
 require_no_public_forbidden_terms build/web/site-assets/js/checkout.js
 require_no_public_forbidden_terms build/web/site-assets/js/checkout-core.mjs
+require_no_public_forbidden_terms build/web/site-assets/js/catalog.js
+require_no_public_forbidden_terms build/web/site-assets/js/catalog-core.mjs
 require_no_public_forbidden_terms build/web/site-assets/css/public-base.css
 require_no_public_forbidden_terms build/web/site-assets/css/home.css
 require_no_public_forbidden_terms build/web/site-assets/css/login.css
@@ -440,6 +489,7 @@ require_no_public_forbidden_terms build/web/site-assets/css/register.css
 require_no_public_forbidden_terms build/web/site-assets/css/forgot-password.css
 require_no_public_forbidden_terms build/web/site-assets/css/onboarding.css
 require_no_public_forbidden_terms build/web/site-assets/css/checkout.css
+require_no_public_forbidden_terms build/web/site-assets/css/catalog.css
 require_not_contains web/public_home.html 'fonts.googleapis'
 require_not_contains web/public_home.html 'accounts.google.com'
 require_not_contains web/public_login.html 'fonts.googleapis'
@@ -452,6 +502,8 @@ require_not_contains web/public_onboarding.html 'fonts.googleapis'
 require_not_contains web/public_onboarding.html 'accounts.google.com'
 require_not_contains web/public_checkout.html 'fonts.googleapis'
 require_not_contains web/public_checkout.html 'accounts.google.com'
+require_not_contains web/public_catalog.html 'fonts.googleapis'
+require_not_contains web/public_catalog.html 'accounts.google.com'
 require_not_contains web/public_onboarding.html 'flutter_bootstrap.js'
 require_not_contains web/public_onboarding.html 'main.dart.js'
 require_not_contains web/public_onboarding.html 'flutter.js'
@@ -468,6 +520,14 @@ require_not_contains web/public_checkout.html '<link rel="manifest"'
 require_not_contains web/public_checkout.html 'manifest.json'
 require_not_contains web/public_checkout.html 'https://'
 require_not_contains web/public_checkout.html 'http://'
+require_not_contains web/public_catalog.html 'flutter_bootstrap.js'
+require_not_contains web/public_catalog.html 'main.dart.js'
+require_not_contains web/public_catalog.html 'flutter.js'
+require_not_contains web/public_catalog.html 'canvaskit'
+require_not_contains web/public_catalog.html '<link rel="manifest"'
+require_not_contains web/public_catalog.html 'manifest.json'
+require_not_contains web/public_catalog.html 'https://'
+require_not_contains web/public_catalog.html 'http://'
 require_contains web/site-assets/js/login-core.mjs "credentials: 'include'"
 require_contains web/site-assets/js/login-core.mjs "cache: 'no-store'"
 require_contains web/site-assets/js/login-core.mjs '/auth/web/login'
@@ -536,6 +596,28 @@ require_not_contains build/web/site-assets/js/checkout.js 'localStorage.setItem'
 require_not_contains build/web/site-assets/js/checkout.js 'sessionStorage'
 require_not_contains build/web/site-assets/js/checkout.js 'document.cookie'
 require_not_contains build/web/site-assets/js/checkout.js 'innerHTML'
+require_contains web/site-assets/js/catalog-core.mjs '/public/api/catalogos/'
+require_contains web/site-assets/js/catalog-core.mjs "cache: 'no-store'"
+require_not_contains web/site-assets/js/catalog-core.mjs "credentials: 'include'"
+require_not_contains web/site-assets/js/catalog-core.mjs 'localStorage.setItem'
+require_not_contains web/site-assets/js/catalog-core.mjs 'sessionStorage'
+require_not_contains web/site-assets/js/catalog-core.mjs 'document.cookie'
+require_not_contains web/site-assets/js/catalog-core.mjs 'innerHTML'
+require_not_contains web/site-assets/js/catalog-core.mjs 'accessToken'
+require_not_contains web/site-assets/js/catalog-core.mjs 'refreshToken'
+require_not_contains web/site-assets/js/catalog.js 'localStorage.setItem'
+require_not_contains web/site-assets/js/catalog.js 'sessionStorage'
+require_not_contains web/site-assets/js/catalog.js 'document.cookie'
+require_not_contains web/site-assets/js/catalog.js 'innerHTML'
+require_contains build/web/site-assets/js/catalog-core.mjs '/public/api/catalogos/'
+require_not_contains build/web/site-assets/js/catalog-core.mjs "credentials: 'include'"
+require_not_contains build/web/site-assets/js/catalog-core.mjs 'localStorage.setItem'
+require_not_contains build/web/site-assets/js/catalog-core.mjs 'sessionStorage'
+require_not_contains build/web/site-assets/js/catalog-core.mjs 'document.cookie'
+require_not_contains build/web/site-assets/js/catalog.js 'localStorage.setItem'
+require_not_contains build/web/site-assets/js/catalog.js 'sessionStorage'
+require_not_contains build/web/site-assets/js/catalog.js 'document.cookie'
+require_not_contains build/web/site-assets/js/catalog.js 'innerHTML'
 require_contains web/site-assets/js/onboarding-core.mjs 'web_trial_onboarding_profile'
 require_contains web/site-assets/js/onboarding-core.mjs '/login?source=trial'
 require_not_contains web/site-assets/js/onboarding-core.mjs 'fetch('
@@ -574,7 +656,7 @@ require_contains web/site-assets/js/public-locale.mjs 'sixapp.public.locale'
 require_contains web/flutter_service_worker.js 'isSixAppFlutterCacheName'
 require_contains web/flutter_service_worker.js 'cacheLooksLikeSixAppFlutter'
 
-for path in web/index.html web/public_home.html web/public_login.html web/public_register.html web/public_forgot_password.html web/public_onboarding.html web/public_checkout.html web/site-assets/js/home.js build/web/index.html build/web/login.html build/web/register.html build/web/forgot-password.html build/web/onboarding.html build/web/checkout.html build/web/site-assets/js/home.js build/web/flutter.html; do
+for path in web/index.html web/public_home.html web/public_login.html web/public_register.html web/public_forgot_password.html web/public_onboarding.html web/public_checkout.html web/public_catalog.html web/site-assets/js/home.js build/web/index.html build/web/login.html build/web/register.html build/web/forgot-password.html build/web/onboarding.html build/web/checkout.html build/web/catalogo.html build/web/site-assets/js/home.js build/web/flutter.html; do
   require_not_contains "$path" 'registrations.forEach(function (registration)'
 done
 
@@ -609,6 +691,10 @@ fi
 
 if [[ -f build/web/public_checkout.html ]]; then
   fail "build/web/public_checkout.html nao deve permanecer como copia solta"
+fi
+
+if [[ -f build/web/public_catalog.html ]]; then
+  fail "build/web/public_catalog.html nao deve permanecer como copia solta"
 fi
 
 if find build/web web -maxdepth 2 \( -name '*.old' -o -name '*.bak' -o -name '*.tmp' \) | grep -q .; then

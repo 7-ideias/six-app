@@ -44,6 +44,7 @@ class DevWebProductionServerTest(unittest.TestCase):
         self.assert_route("/forgot-password", "public-forgot-password")
         self.assert_route("/onboarding", "public-onboarding")
         self.assert_route("/checkout", "public-checkout")
+        self.assert_route("/catalogo", "public-catalog")
 
     def test_flutter_routes(self) -> None:
         self.assert_route("/app", "flutter-app")
@@ -124,6 +125,7 @@ class DevWebProductionServerTest(unittest.TestCase):
             "forgot-password.html": "public-forgot-password",
             "onboarding.html": "public-onboarding",
             "checkout.html": "public-checkout",
+            "catalogo.html": "public-catalog",
             "flutter.html": "flutter-app",
         }
 

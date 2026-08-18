@@ -26,6 +26,7 @@ REQUIRED_BUILD_FILES = (
     "forgot-password.html",
     "onboarding.html",
     "checkout.html",
+    "catalogo.html",
     "flutter.html",
 )
 
@@ -36,6 +37,7 @@ PUBLIC_HTML_ROUTES = {
     "/forgot-password": "forgot-password.html",
     "/onboarding": "onboarding.html",
     "/checkout": "checkout.html",
+    "/catalogo": "catalogo.html",
 }
 
 FLUTTER_EXACT_ROUTES = {
@@ -57,6 +59,7 @@ SENSITIVE_PUBLIC_FILES = {
     "forgot-password.html",
     "onboarding.html",
     "checkout.html",
+    "catalogo.html",
 }
 
 
