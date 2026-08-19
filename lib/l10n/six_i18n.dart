@@ -235,6 +235,23 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.header.userMenu': 'Usuário',
     'web.header.myProfile': 'Meu perfil',
     'web.header.logout': 'Sair',
+    'web.logout.dialog.title': 'Encerrar sessão agora?',
+    'web.logout.dialog.subtitle':
+        'Revise o contexto antes de sair. Você voltará para a tela pública de login neste navegador.',
+    'web.logout.dialog.user': 'Usuário',
+    'web.logout.dialog.currentCommerce': 'Comércio atual',
+    'web.logout.dialog.nextStep': 'Próximo passo',
+    'web.logout.dialog.nextStepValue': 'Tela pública de login',
+    'web.logout.dialog.checklist':
+        'A sessão atual será encerrada somente neste navegador.',
+    'web.logout.dialog.back': 'Continuar conectado',
+    'web.logout.dialog.confirm': 'Sair agora',
+    'web.logout.dialog.processing': 'Encerrando sessão...',
+    'web.logout.dialog.successTitle': 'Sessão encerrada com sucesso',
+    'web.logout.dialog.successMessage':
+        'Preparando o retorno para a tela pública de login.',
+    'web.logout.dialog.error':
+        'Não foi possível encerrar a sessão agora. Tente novamente em alguns instantes.',
     'workspaceHome.title': 'Meu dia no SixApp',
     'workspaceHome.greeting': 'Olá, {name}',
     'workspaceHome.unknownUser': 'usuário',
@@ -1648,6 +1665,23 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.header.userMenu': 'User',
     'web.header.myProfile': 'My profile',
     'web.header.logout': 'Sign out',
+    'web.logout.dialog.title': 'End session now?',
+    'web.logout.dialog.subtitle':
+        'Review the current context before signing out. You will return to the public login screen in this browser.',
+    'web.logout.dialog.user': 'User',
+    'web.logout.dialog.currentCommerce': 'Current business',
+    'web.logout.dialog.nextStep': 'Next step',
+    'web.logout.dialog.nextStepValue': 'Public login screen',
+    'web.logout.dialog.checklist':
+        'The current session will end only in this browser.',
+    'web.logout.dialog.back': 'Stay signed in',
+    'web.logout.dialog.confirm': 'Sign out now',
+    'web.logout.dialog.processing': 'Ending session...',
+    'web.logout.dialog.successTitle': 'Session ended successfully',
+    'web.logout.dialog.successMessage':
+        'Preparing the return to the public login screen.',
+    'web.logout.dialog.error':
+        'Unable to end the session right now. Please try again in a moment.',
     'workspaceHome.title': 'My day in SixApp',
     'workspaceHome.greeting': 'Hello, {name}',
     'workspaceHome.unknownUser': 'user',
@@ -2954,6 +2988,23 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.header.userMenu': 'Usuario',
     'web.header.myProfile': 'Mi perfil',
     'web.header.logout': 'Salir',
+    'web.logout.dialog.title': '¿Cerrar la sesión ahora?',
+    'web.logout.dialog.subtitle':
+        'Revise el contexto antes de salir. Volverá a la pantalla pública de inicio de sesión en este navegador.',
+    'web.logout.dialog.user': 'Usuario',
+    'web.logout.dialog.currentCommerce': 'Comercio actual',
+    'web.logout.dialog.nextStep': 'Siguiente paso',
+    'web.logout.dialog.nextStepValue': 'Pantalla pública de inicio de sesión',
+    'web.logout.dialog.checklist':
+        'La sesión actual se cerrará solo en este navegador.',
+    'web.logout.dialog.back': 'Seguir conectado',
+    'web.logout.dialog.confirm': 'Salir ahora',
+    'web.logout.dialog.processing': 'Cerrando sesión...',
+    'web.logout.dialog.successTitle': 'Sesión cerrada correctamente',
+    'web.logout.dialog.successMessage':
+        'Preparando el regreso a la pantalla pública de inicio de sesión.',
+    'web.logout.dialog.error':
+        'No fue posible cerrar la sesión ahora. Inténtelo nuevamente en unos instantes.',
     'workspaceHome.title': 'Mi día en SixApp',
     'workspaceHome.greeting': 'Hola, {name}',
     'workspaceHome.unknownUser': 'usuario',

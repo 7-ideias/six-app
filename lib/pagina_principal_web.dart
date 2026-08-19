@@ -30,9 +30,9 @@ import 'package:sixpos/presentation/screens/produto_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_web_page.dart';
 import 'package:sixpos/presentation/screens/recebimento_pagamento_web.dart';
+import 'package:sixpos/presentation/components/web/six_web_logout_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
 import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
-import 'package:sixpos/presentation/screens/vendas_a_receber_web_widget.dart';
 import 'package:sixpos/presentation/screens/workspace_home_web.dart';
 import 'package:sixpos/presentation/services/web_authenticated_bootstrap_service.dart';
 import 'package:sixpos/presentation/theme/web_pdv_theme.dart';
@@ -918,42 +918,23 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   Future<void> _confirmarLogout() async {
-    final bool confirmar =
-        await showDialog<bool>(
-          context: context,
-          builder: (BuildContext dialogContext) {
-            return AlertDialog(
-              title: const Text('Sair da conta'),
-              content: const Text('Deseja encerrar a sessão atual?'),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
-                  child: const Text('Cancelar'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(true),
-                  child: const Text('Sair'),
-                ),
-              ],
-            );
-          },
-        ) ??
-        false;
+    final bool confirmar = await showSixWebLogoutDialog(
+      context: context,
+      onConfirm: _executarLogout,
+    );
 
     if (!confirmar) return;
-    await _executarLogout();
+    _redirecionarParaLoginPublico();
   }
 
   Future<void> _executarLogout() async {
-    try {
-      await AuthService().logout();
-    } catch (e) {
-      debugPrint('Falha no logout: $e');
-    } finally {
-      WebAuthenticatedBootstrapService().clearInMemorySession(
-        mounted ? context : null,
-      );
-    }
+    await AuthService().logout();
+    WebAuthenticatedBootstrapService().clearInMemorySession(
+      mounted ? context : null,
+    );
+  }
+
+  void _redirecionarParaLoginPublico() {
     if (replaceBrowserLocation('/login')) {
       return;
     }
