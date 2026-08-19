@@ -15,8 +15,7 @@ class CatalogoReservasWebDialog extends StatefulWidget {
       _CatalogoReservasWebDialogState();
 }
 
-class _CatalogoReservasWebDialogState
-    extends State<CatalogoReservasWebDialog> {
+class _CatalogoReservasWebDialogState extends State<CatalogoReservasWebDialog> {
   final CatalogoReservaService _service = CatalogoReservaService();
 
   CatalogoReservaPaginaModel? _pagina;
@@ -28,6 +27,20 @@ class _CatalogoReservasWebDialogState
   bool _carregandoDetalhe = false;
   bool _atualizandoStatus = false;
   bool _convertendo = false;
+
+  List<_CatalogoReservaDropdownOption<CatalogoReservaStatus>>
+  _statusDropdownOptions(BuildContext context) {
+    return CatalogoReservaStatus.values
+        .map(
+          (CatalogoReservaStatus status) =>
+              _CatalogoReservaDropdownOption<CatalogoReservaStatus>(
+                value: status,
+                label: _statusLabel(context, status),
+                enabled: status != CatalogoReservaStatus.convertida,
+              ),
+        )
+        .toList(growable: false);
+  }
 
   @override
   void initState() {
@@ -117,11 +130,8 @@ class _CatalogoReservasWebDialogState
       _erro = null;
     });
     try {
-      final CatalogoReservaDetalheModel atualizado =
-          await _service.atualizarStatus(
-            idReserva: detalhe.idReserva,
-            status: status,
-          );
+      final CatalogoReservaDetalheModel atualizado = await _service
+          .atualizarStatus(idReserva: detalhe.idReserva, status: status);
       if (!mounted) return;
       setState(() => _detalhe = atualizado);
       await _carregar(
@@ -327,10 +337,13 @@ class _CatalogoReservasWebDialogState
             ),
           ),
           IconButton(
-            onPressed: _carregando ? null : () => _carregar(
-              pagina: _pagina?.pagina ?? 0,
-              selecionarId: _idSelecionado,
-            ),
+            onPressed:
+                _carregando
+                    ? null
+                    : () => _carregar(
+                      pagina: _pagina?.pagina ?? 0,
+                      selecionarId: _idSelecionado,
+                    ),
             tooltip: context.t('common.refresh', fallback: 'Atualizar'),
             icon: const Icon(Icons.refresh_rounded),
           ),
@@ -612,41 +625,19 @@ class _CatalogoReservasWebDialogState
                 ),
                 SizedBox(
                   width: 190,
-                  child: DropdownButtonFormField<CatalogoReservaStatus>(
-                    value: detalhe.status,
-                    decoration: InputDecoration(
-                      labelText: context.t(
-                        'catalogReservations.status',
-                        fallback: 'Status',
-                      ),
-                      filled: true,
-                      fillColor: tokens.inputBackground,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+                  child: _CatalogoReservaDropdown<CatalogoReservaStatus>(
+                    label: context.t(
+                      'catalogReservations.status',
+                      fallback: 'Status',
                     ),
-                    items:
-                        CatalogoReservaStatus.values
-                            .map(
-                              (CatalogoReservaStatus status) =>
-                                  DropdownMenuItem<CatalogoReservaStatus>(
-                                    value: status,
-                                    enabled:
-                                        status !=
-                                        CatalogoReservaStatus.convertida,
-                                    child: Text(_statusLabel(context, status)),
-                                  ),
-                            )
-                            .toList(growable: false),
-                    onChanged:
-                        _atualizandoStatus ||
-                                _convertendo ||
-                                detalhe.status ==
-                                    CatalogoReservaStatus.convertida
-                            ? null
-                            : (CatalogoReservaStatus? status) {
-                              if (status != null) _atualizarStatus(status);
-                            },
+                    value: detalhe.status,
+                    valueLabel: _statusLabel(context, detalhe.status),
+                    options: _statusDropdownOptions(context),
+                    enabled:
+                        !_atualizandoStatus &&
+                        !_convertendo &&
+                        detalhe.status != CatalogoReservaStatus.convertida,
+                    onSelected: _atualizarStatus,
                   ),
                 ),
               ],
@@ -664,12 +655,7 @@ class _CatalogoReservasWebDialogState
               ],
             ),
             const SizedBox(height: 18),
-            _buildConversionCard(
-              context,
-              tokens,
-              regionalizacao,
-              detalhe,
-            ),
+            _buildConversionCard(context, tokens, regionalizacao, detalhe),
             const SizedBox(height: 18),
             Text(
               context.t(
@@ -712,10 +698,7 @@ class _CatalogoReservasWebDialogState
             ),
             const SizedBox(height: 18),
             Text(
-              context.t(
-                'catalogReservations.notes',
-                fallback: 'Observação',
-              ),
+              context.t('catalogReservations.notes', fallback: 'Observação'),
               style: TextStyle(
                 color: tokens.primaryText,
                 fontWeight: FontWeight.w900,
@@ -743,8 +726,7 @@ class _CatalogoReservasWebDialogState
     LocaleSettingsProvider regionalizacao,
     CatalogoReservaDetalheModel detalhe,
   ) {
-    final bool convertida =
-        detalhe.status == CatalogoReservaStatus.convertida;
+    final bool convertida = detalhe.status == CatalogoReservaStatus.convertida;
     final bool podeConverter =
         detalhe.status == CatalogoReservaStatus.confirmada;
 
@@ -824,9 +806,8 @@ class _CatalogoReservasWebDialogState
           ),
           if (!convertida)
             FilledButton.icon(
-              onPressed: podeConverter && !_convertendo
-                  ? _converterEmVenda
-                  : null,
+              onPressed:
+                  podeConverter && !_convertendo ? _converterEmVenda : null,
               icon:
                   _convertendo
                       ? const SizedBox(
@@ -1042,11 +1023,7 @@ class _CatalogoReservasWebDialogState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(
-              Icons.inventory_2_outlined,
-              color: tokens.mutedText,
-              size: 44,
-            ),
+            Icon(Icons.inventory_2_outlined, color: tokens.mutedText, size: 44),
             const SizedBox(height: 12),
             Text(
               context.t(
@@ -1116,7 +1093,11 @@ class _CatalogoReservasWebDialogState
       ),
       child: Text(
         label,
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w900),
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+        ),
       ),
     );
   }
@@ -1146,10 +1127,7 @@ class _CatalogoReservasWebDialogState
     };
   }
 
-  Color _statusColor(
-    WebThemeTokens tokens,
-    CatalogoReservaStatus status,
-  ) {
+  Color _statusColor(WebThemeTokens tokens, CatalogoReservaStatus status) {
     return switch (status) {
       CatalogoReservaStatus.recebida => tokens.info,
       CatalogoReservaStatus.emAnalise => tokens.warning,
@@ -1170,5 +1148,228 @@ class _CatalogoReservasWebDialogState
 
   String _idReservaCurto(String idReserva) {
     return idReserva.length <= 12 ? idReserva : idReserva.substring(0, 12);
+  }
+}
+
+class _CatalogoReservaDropdownOption<T> {
+  const _CatalogoReservaDropdownOption({
+    required this.value,
+    required this.label,
+    this.enabled = true,
+  });
+
+  final T value;
+  final String label;
+  final bool enabled;
+}
+
+class _CatalogoReservaDropdown<T> extends StatefulWidget {
+  const _CatalogoReservaDropdown({
+    required this.label,
+    required this.value,
+    required this.valueLabel,
+    required this.options,
+    required this.onSelected,
+    this.enabled = true,
+  });
+
+  final String label;
+  final T value;
+  final String valueLabel;
+  final List<_CatalogoReservaDropdownOption<T>> options;
+  final ValueChanged<T> onSelected;
+  final bool enabled;
+
+  @override
+  State<_CatalogoReservaDropdown<T>> createState() =>
+      _CatalogoReservaDropdownState<T>();
+}
+
+class _CatalogoReservaDropdownState<T>
+    extends State<_CatalogoReservaDropdown<T>> {
+  bool _hovered = false;
+  bool _open = false;
+
+  Future<void> _openMenu() async {
+    if (!widget.enabled || widget.options.isEmpty) return;
+
+    final RenderBox? fieldBox = context.findRenderObject() as RenderBox?;
+    final RenderBox? overlayBox =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+    if (fieldBox == null || overlayBox == null) return;
+
+    final Offset fieldOffset = fieldBox.localToGlobal(
+      Offset.zero,
+      ancestor: overlayBox,
+    );
+    final Size fieldSize = fieldBox.size;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    setState(() => _open = true);
+    final T? selected = await showMenu<T>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        fieldOffset.dx,
+        fieldOffset.dy + fieldSize.height + 6,
+        overlayBox.size.width - fieldOffset.dx - fieldSize.width,
+        0,
+      ),
+      color: tokens.menuBackground,
+      elevation: 10,
+      constraints: BoxConstraints(
+        minWidth: fieldSize.width,
+        maxWidth: fieldSize.width,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: tokens.cardBorder),
+      ),
+      items: widget.options
+          .map((_CatalogoReservaDropdownOption<T> option) {
+            final bool selected = option.value == widget.value;
+            final ThemeData theme = Theme.of(context);
+
+            return PopupMenuItem<T>(
+              value: option.enabled ? option.value : null,
+              enabled: option.enabled,
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+              child: Opacity(
+                opacity: option.enabled ? 1 : 0.55,
+                child: Row(
+                  children: <Widget>[
+                    Icon(
+                      selected
+                          ? Icons.check_circle_rounded
+                          : Icons.circle_outlined,
+                      size: 18,
+                      color: selected ? tokens.info : tokens.mutedText,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        option.label,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: tokens.primaryText,
+                          fontWeight:
+                              selected ? FontWeight.w800 : FontWeight.w600,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          })
+          .toList(growable: false),
+    );
+
+    if (!mounted) return;
+    setState(() => _open = false);
+    if (selected != null && selected != widget.value) {
+      widget.onSelected(selected);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool active = widget.enabled && (_hovered || _open);
+
+    return Semantics(
+      button: true,
+      enabled: widget.enabled,
+      label: widget.label,
+      value: widget.valueLabel,
+      child: AnimatedOpacity(
+        duration: WebThemeTokens.transitionDuration,
+        curve: WebThemeTokens.transitionCurve,
+        opacity: widget.enabled ? 1 : 0.6,
+        child: MouseRegion(
+          onEnter: (_) => setState(() => _hovered = true),
+          onExit: (_) => setState(() => _hovered = false),
+          child: Tooltip(
+            message: widget.label,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: widget.enabled ? _openMenu : null,
+                child: AnimatedContainer(
+                  duration: WebThemeTokens.transitionDuration,
+                  curve: WebThemeTokens.transitionCurve,
+                  constraints: const BoxConstraints(minHeight: 64),
+                  padding: const EdgeInsets.fromLTRB(14, 11, 12, 11),
+                  decoration: BoxDecoration(
+                    color:
+                        active ? tokens.surfaceMuted : tokens.inputBackground,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: active ? tokens.selectedBorder : tokens.cardBorder,
+                      width: active ? 1.4 : 1,
+                    ),
+                    boxShadow:
+                        active
+                            ? <BoxShadow>[
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ]
+                            : null,
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Text(
+                              widget.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: tokens.secondaryText,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              widget.valueLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: tokens.primaryText,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      AnimatedRotation(
+                        turns: _open ? 0.5 : 0,
+                        duration: WebThemeTokens.transitionDuration,
+                        curve: WebThemeTokens.transitionCurve,
+                        child: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: active ? tokens.info : tokens.secondaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
