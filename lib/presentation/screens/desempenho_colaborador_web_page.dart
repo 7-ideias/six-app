@@ -194,11 +194,13 @@ class _DesempenhoColaboradorWebPageState
                 onPressed: _load,
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Atualizar'),
+                style: _outlinedCtaStyle(),
               ),
               FilledButton.icon(
                 onPressed: _saving ? null : () => _openGoalForm(),
                 icon: const Icon(Icons.add_rounded),
                 label: const Text('Nova meta'),
+                style: _filledCtaStyle(),
               ),
               if (widget.onBack != null)
                 IconButton.filledTonal(
@@ -270,6 +272,7 @@ class _DesempenhoColaboradorWebPageState
                 onPressed: _load,
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Tentar novamente'),
+                style: _filledCtaStyle(),
               ),
             ],
           ),
@@ -361,6 +364,7 @@ class _DesempenhoColaboradorWebPageState
             label: Text(
               '${_dateFormat.format(_inicio)} até ${_dateFormat.format(_fim)}',
             ),
+            style: _outlinedCtaStyle(),
           ),
         ],
       ),
@@ -378,9 +382,9 @@ class _DesempenhoColaboradorWebPageState
       selected: selected,
       label: Text(label),
       selectedColor: tokens.selectedBackground,
-      backgroundColor: tokens.surfaceMuted,
+      backgroundColor: tokens.cardBackground,
       labelStyle: TextStyle(
-        color: selected ? tokens.info : tokens.secondaryText,
+        color: selected ? tokens.primaryText : tokens.secondaryText,
         fontWeight: FontWeight.w800,
       ),
       shape: RoundedRectangleBorder(
@@ -405,9 +409,9 @@ class _DesempenhoColaboradorWebPageState
       selected: selected,
       label: Text('$label ($total)'),
       selectedColor: tokens.selectedBackground,
-      backgroundColor: tokens.surfaceMuted,
+      backgroundColor: tokens.cardBackground,
       labelStyle: TextStyle(
-        color: selected ? tokens.info : tokens.secondaryText,
+        color: selected ? tokens.primaryText : tokens.secondaryText,
         fontWeight: FontWeight.w800,
       ),
       shape: RoundedRectangleBorder(
@@ -481,6 +485,7 @@ class _DesempenhoColaboradorWebPageState
         onPressed: _load,
         icon: const Icon(Icons.refresh_rounded),
         tooltip: 'Atualizar',
+        style: _iconActionStyle(),
       ),
       child:
           resultados.isEmpty
@@ -588,6 +593,7 @@ class _DesempenhoColaboradorWebPageState
         onPressed: _saving ? null : () => _openGoalForm(),
         icon: const Icon(Icons.add_rounded),
         tooltip: 'Nova meta',
+        style: _iconActionStyle(),
       ),
       child:
           metas.isEmpty
@@ -870,6 +876,53 @@ class _DesempenhoColaboradorWebPageState
       SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
+
+  ButtonStyle _outlinedCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return OutlinedButton.styleFrom(
+      foregroundColor: tokens.info,
+      disabledForegroundColor: tokens.disabledForeground,
+      side: BorderSide(color: tokens.cardBorder),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    ).copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return tokens.disabledBackground.withValues(alpha: 0.22);
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return tokens.info.withValues(alpha: 0.08);
+        }
+        return Colors.transparent;
+      }),
+    );
+  }
+
+  ButtonStyle _filledCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return FilledButton.styleFrom(
+      foregroundColor: Colors.white,
+      backgroundColor: tokens.info,
+      disabledForegroundColor: tokens.disabledForeground,
+      disabledBackgroundColor: tokens.disabledBackground,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    );
+  }
+
+  ButtonStyle _iconActionStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return IconButton.styleFrom(
+      foregroundColor: tokens.primaryText,
+      disabledForegroundColor: tokens.disabledForeground,
+      backgroundColor: Colors.transparent,
+      hoverColor: tokens.info.withValues(alpha: 0.08),
+      focusColor: tokens.info.withValues(alpha: 0.10),
+    );
+  }
 }
 
 class _GoalForm extends StatefulWidget {
@@ -985,11 +1038,11 @@ class _GoalFormState extends State<_GoalForm> {
                         selected: _indicador == option.codigo,
                         label: Text(option.label),
                         selectedColor: tokens.selectedBackground,
-                        backgroundColor: tokens.surfaceMuted,
+                        backgroundColor: tokens.cardBackground,
                         labelStyle: TextStyle(
                           color:
                               _indicador == option.codigo
-                                  ? tokens.info
+                                  ? tokens.primaryText
                                   : tokens.secondaryText,
                           fontWeight: FontWeight.w800,
                         ),
@@ -1070,11 +1123,11 @@ class _GoalFormState extends State<_GoalForm> {
                         selected: _status == status,
                         label: Text(_statusText(status)),
                         selectedColor: tokens.selectedBackground,
-                        backgroundColor: tokens.surfaceMuted,
+                        backgroundColor: tokens.cardBackground,
                         labelStyle: TextStyle(
                           color:
                               _status == status
-                                  ? tokens.info
+                                  ? tokens.primaryText
                                   : tokens.secondaryText,
                           fontWeight: FontWeight.w800,
                         ),
@@ -1100,6 +1153,18 @@ class _GoalFormState extends State<_GoalForm> {
                   icon: const Icon(Icons.check_rounded),
                   label: Text(
                     widget.meta == null ? 'Cadastrar meta' : 'Salvar meta',
+                  ),
+                  style: FilledButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: tokens.info,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
               ),

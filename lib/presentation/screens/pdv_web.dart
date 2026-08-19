@@ -1122,6 +1122,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                 label: Text(
                   l10n?.pdvWebIdentifyCustomerAction ?? 'Identificar cliente',
                 ),
+                style: _pdvOutlinedCtaStyle(),
               ),
             const SizedBox(height: 10),
             if (temPagamentoConfirmado)
@@ -1136,6 +1137,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                 label: Text(
                   l10n?.pdvWebDefinePaymentAction ?? 'Definir pagamento',
                 ),
+                style: _pdvOutlinedCtaStyle(),
               ),
             const SizedBox(height: 12),
             Divider(color: _pdvTheme.cardBorder, height: 1),
@@ -1260,6 +1262,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                 label: Text(
                   l10n?.pdvWebEditPaymentAction ?? 'Editar pagamento',
                 ),
+                style: _pdvTextCtaStyle(),
               ),
             ],
           ),
@@ -1519,6 +1522,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                       ? (l10n?.pdvWebRegisteringAction ?? 'Registrando...')
                       : (l10n?.pdvWebReceiveLaterAction ?? 'Receber depois'),
                 ),
+                style: _pdvOutlinedCtaStyle(),
               ),
               FilledButton.icon(
                 onPressed:
@@ -1527,6 +1531,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                         : null,
                 icon: const Icon(Icons.payments_rounded),
                 label: Text(labelAcaoPrincipal),
+                style: _pdvFilledCtaStyle(),
               ),
               OutlinedButton.icon(
                 onPressed:
@@ -1539,6 +1544,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                     fallback: 'Operações de caixa',
                   ),
                 ),
+                style: _pdvOutlinedCtaStyle(),
               ),
               OutlinedButton.icon(
                 onPressed: _abrirVendasAReceberWeb,
@@ -1546,20 +1552,14 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                 label: Text(
                   l10n?.pdvWebSalesToReceiveAction ?? 'Vendas a receber',
                 ),
+                style: _pdvOutlinedCtaStyle(),
               ),
               if (podeLimpar)
                 OutlinedButton.icon(
                   onPressed: _confirmarLimparVendaAtual,
                   icon: const Icon(Icons.delete_sweep_outlined),
                   label: Text(l10n?.pdvWebClearSaleAction ?? 'Limpar venda'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: WebThemeTokens.of(context).danger,
-                    side: BorderSide(
-                      color: WebThemeTokens.of(
-                        context,
-                      ).danger.withValues(alpha: 0.58),
-                    ),
-                  ),
+                  style: _pdvDangerOutlinedCtaStyle(),
                 ),
             ],
           ),
@@ -1668,6 +1668,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                     _carregandoSessaoCaixaPdv ? null : _carregarSessaoCaixaPdv,
                 icon: const Icon(Icons.refresh_rounded),
                 label: Text(context.t('common.refresh', fallback: 'Atualizar')),
+                style: _pdvOutlinedCtaStyle(),
               ),
               FilledButton.icon(
                 onPressed:
@@ -1680,6 +1681,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                     fallback: 'Operações de caixa',
                   ),
                 ),
+                style: _pdvFilledCtaStyle(),
               ),
             ],
           );
@@ -1776,6 +1778,96 @@ extension _PdvWeb on _PaginaPrincipalWebState {
           },
         ),
       ),
+    );
+  }
+
+  ButtonStyle _pdvOutlinedCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return OutlinedButton.styleFrom(
+      foregroundColor: _pdvTheme.iconColor,
+      disabledForegroundColor: tokens.disabledForeground,
+      side: BorderSide(color: _pdvTheme.cardBorder),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    ).copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return tokens.disabledBackground.withValues(alpha: 0.22);
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return _pdvTheme.iconColor.withValues(alpha: 0.08);
+        }
+        return Colors.transparent;
+      }),
+      side: WidgetStateProperty.resolveWith<BorderSide?>((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return BorderSide(
+            color: _pdvTheme.cardBorder.withValues(alpha: 0.55),
+          );
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return BorderSide(color: _pdvTheme.iconColor.withValues(alpha: 0.42));
+        }
+        return BorderSide(color: _pdvTheme.cardBorder);
+      }),
+    );
+  }
+
+  ButtonStyle _pdvDangerOutlinedCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return OutlinedButton.styleFrom(
+      foregroundColor: tokens.danger,
+      disabledForegroundColor: tokens.disabledForeground,
+      side: BorderSide(color: tokens.danger.withValues(alpha: 0.58)),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    ).copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return tokens.disabledBackground.withValues(alpha: 0.22);
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return tokens.danger.withValues(alpha: 0.08);
+        }
+        return Colors.transparent;
+      }),
+    );
+  }
+
+  ButtonStyle _pdvFilledCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return FilledButton.styleFrom(
+      foregroundColor: _pdvTheme.actionButtonForeground,
+      backgroundColor: _pdvTheme.actionButtonBackground,
+      disabledForegroundColor: tokens.disabledForeground,
+      disabledBackgroundColor: tokens.disabledBackground,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    );
+  }
+
+  ButtonStyle _pdvTextCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return TextButton.styleFrom(
+      foregroundColor: _pdvTheme.iconColor,
+      disabledForegroundColor: tokens.disabledForeground,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    ).copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return _pdvTheme.iconColor.withValues(alpha: 0.08);
+        }
+        return Colors.transparent;
+      }),
     );
   }
 }

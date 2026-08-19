@@ -5,6 +5,7 @@ abstract interface class WebNavigationDestinationActions {
   WebNavigationResolutionResult openPointOfSale();
   WebNavigationResolutionResult openTechnicalServices();
   WebNavigationResolutionResult openPurchases();
+  WebNavigationResolutionResult openReservations();
   WebNavigationResolutionResult openCatalogProducts();
   WebNavigationResolutionResult openCatalogServices();
   WebNavigationResolutionResult openCatalogStock();
@@ -80,6 +81,8 @@ class WebNavigationDestinationResolver {
         return actions.openTechnicalServices();
       case WebNavigationDestination.operationsPurchases:
         return actions.openPurchases();
+      case WebNavigationDestination.operationsReservations:
+        return actions.openReservations();
       case WebNavigationDestination.catalogProducts:
         return actions.openCatalogProducts();
       case WebNavigationDestination.catalogServices:

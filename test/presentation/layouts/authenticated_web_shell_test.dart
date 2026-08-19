@@ -478,6 +478,7 @@ const List<String> _webShellI18nKeys = <String>[
   'web.navigation.operations',
   'web.navigation.operations.pos',
   'web.navigation.operations.technicalService',
+  'web.navigation.operations.reservations',
   'web.navigation.catalog',
   'web.navigation.catalog.products',
   'web.navigation.catalog.services',
@@ -817,6 +818,11 @@ class _RecordingActions implements WebNavigationDestinationActions {
   }
 
   @override
+  WebNavigationResolutionResult openReservations() {
+    return _record(WebNavigationDestination.operationsReservations);
+  }
+
+  @override
   WebNavigationResolutionResult openCatalogProducts() {
     return _record(WebNavigationDestination.catalogProducts);
   }
@@ -895,6 +901,11 @@ class _InteractiveActions implements WebNavigationDestinationActions {
   @override
   WebNavigationResolutionResult openPurchases() {
     return _handle(WebNavigationDestination.operationsPurchases);
+  }
+
+  @override
+  WebNavigationResolutionResult openReservations() {
+    return _handle(WebNavigationDestination.operationsReservations);
   }
 
   @override

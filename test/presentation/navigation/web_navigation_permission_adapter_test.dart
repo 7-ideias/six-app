@@ -33,7 +33,7 @@ void main() {
     );
 
     test(
-      'colaborador de venda enxerga apenas Frente de caixa em Operacoes',
+      'colaborador de venda enxerga Frente de caixa e Reservas em Operacoes',
       () {
         final List<WebNavigationItem> visible = _visibleItemsFor(
           _FakeAutorizacoesProvider(podeFazerVenda: true),
@@ -45,7 +45,10 @@ void main() {
         ]);
         expect(
           _childIds(_requiredItem(visible, WebNavigationIds.operations)),
-          <String>[WebNavigationIds.operationsPos],
+          <String>[
+            WebNavigationIds.operationsPos,
+            WebNavigationIds.operationsReservations,
+          ],
         );
       },
     );

@@ -22,16 +22,22 @@ void main() {
         WebNavigationIds.cash,
         WebNavigationIds.operationsTechnicalServices,
         WebNavigationIds.operationsPurchases,
+        WebNavigationIds.operationsReservations,
       ]);
       expect(_childLabels(operations), <String>[
         'Frente de caixa',
         'Caixa',
         'Assistências técnicas',
         'Compras',
+        'Reservas',
       ]);
       expect(
         operations.children[3].destination,
         WebNavigationDestination.operationsPurchases,
+      );
+      expect(
+        operations.children[4].destination,
+        WebNavigationDestination.operationsReservations,
       );
 
       final WebNavigationItem catalog = _requiredItem(WebNavigationIds.catalog);
@@ -101,6 +107,7 @@ void main() {
           'operations.pos',
           'operations.technical_service',
           'operations.purchases',
+          'operations.reservations',
           'catalog',
           'catalog.products',
           'catalog.services',
@@ -162,7 +169,10 @@ void main() {
       final WebNavigationItem operations = visible.singleWhere(
         (item) => item.id == WebNavigationIds.operations,
       );
-      expect(_childIds(operations), <String>[WebNavigationIds.operationsPos]);
+      expect(_childIds(operations), <String>[
+        WebNavigationIds.operationsPos,
+        WebNavigationIds.operationsReservations,
+      ]);
     });
 
     test('exibe Compras para admin com destino valido e ordem estavel', () {
@@ -182,12 +192,20 @@ void main() {
       final int purchasesIndex = childIds.indexOf(
         WebNavigationIds.operationsPurchases,
       );
+      final int reservationsIndex = childIds.indexOf(
+        WebNavigationIds.operationsReservations,
+      );
 
       expect(technicalIndex, greaterThanOrEqualTo(0));
       expect(purchasesIndex, technicalIndex + 1);
+      expect(reservationsIndex, purchasesIndex + 1);
       expect(
         operations.children[purchasesIndex].destination,
         WebNavigationDestination.operationsPurchases,
+      );
+      expect(
+        operations.children[reservationsIndex].destination,
+        WebNavigationDestination.operationsReservations,
       );
     });
   });

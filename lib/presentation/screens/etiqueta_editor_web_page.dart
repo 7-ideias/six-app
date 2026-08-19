@@ -579,30 +579,10 @@ class _EtiquetaEditorWebPageState extends State<EtiquetaEditorWebPage> {
                     ],
                   ),
                 ),
-                PopupMenuButton<_ElementPreset>(
-                  tooltip: _tr(
-                    'labels.editor.addElement',
-                    'Adicionar elemento',
-                    'Add element',
-                    'Agregar elemento',
-                  ),
+                _AddElementMenu(
+                  presets: _elementPresets,
+                  labelBuilder: _elementPresetLabel,
                   onSelected: _addElement,
-                  itemBuilder:
-                      (BuildContext context) => _elementPresets
-                          .map(
-                            (_ElementPreset preset) =>
-                                PopupMenuItem<_ElementPreset>(
-                                  value: preset,
-                                  child: Row(
-                                    children: <Widget>[
-                                      Icon(preset.icon, size: 18),
-                                      const SizedBox(width: 10),
-                                      Text(_elementPresetLabel(preset.key)),
-                                    ],
-                                  ),
-                                ),
-                          )
-                          .toList(growable: false),
                   child: _addElementButton(),
                 ),
               ],
@@ -627,6 +607,8 @@ class _EtiquetaEditorWebPageState extends State<EtiquetaEditorWebPage> {
                           .toDouble();
                   final double width = _model.etiqueta.larguraMm * scale;
                   final double height = _model.etiqueta.alturaMm * scale;
+                  final Color paperSurfaceColor = _paperSurfaceColor(context);
+                  final Color paperBorderColor = _paperBorderColor(context);
 
                   return Container(
                     decoration: BoxDecoration(
@@ -649,9 +631,9 @@ class _EtiquetaEditorWebPageState extends State<EtiquetaEditorWebPage> {
                             width: width,
                             height: height,
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.surface,
+                              color: paperSurfaceColor,
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: tokens.selectedBorder),
+                              border: Border.all(color: paperBorderColor),
                               boxShadow: <BoxShadow>[
                                 BoxShadow(
                                   color: theme.colorScheme.shadow.withValues(
@@ -1403,32 +1385,44 @@ class _EtiquetaEditorWebPageState extends State<EtiquetaEditorWebPage> {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: tokens.selectedBackground.withValues(alpha: 0.65),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: tokens.selectedBorder.withValues(alpha: 0.65),
+        color: Color.alphaBlend(
+          tokens.info.withValues(alpha: 0.16),
+          tokens.surfaceElevated,
         ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: tokens.info.withValues(alpha: 0.32)),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: tokens.info.withValues(alpha: 0.12),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(Icons.add_rounded, size: 18, color: theme.colorScheme.primary),
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: tokens.info.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.add_rounded, size: 16, color: tokens.info),
+          ),
           const SizedBox(width: 8),
           Text(
             _tr('labels.editor.add', 'Adicionar', 'Add', 'Agregar'),
             style: theme.textTheme.labelLarge?.copyWith(
               fontWeight: FontWeight.w800,
-              color: theme.colorScheme.primary,
+              color: tokens.primaryText,
             ),
           ),
           const SizedBox(width: 6),
-          Icon(
-            Icons.expand_more_rounded,
-            size: 18,
-            color: theme.colorScheme.primary,
-          ),
+          Icon(Icons.expand_more_rounded, size: 18, color: tokens.info),
         ],
       ),
     );
@@ -1600,6 +1594,24 @@ class _EtiquetaEditorWebPageState extends State<EtiquetaEditorWebPage> {
         .replaceFirst(RegExp(r'\.$'), '');
   }
 
+  Color _paperSurfaceColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFFFDFEFF)
+        : Theme.of(context).colorScheme.surface;
+  }
+
+  Color _paperInkColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF111827)
+        : Theme.of(context).colorScheme.onSurface;
+  }
+
+  Color _paperBorderColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFFD7DFEB)
+        : WebThemeTokens.of(context).cardBorder;
+  }
+
   String _tr(String key, String pt, String en, String es) =>
       etiquetaTr(context, key, pt: pt, en: en, es: es);
 }
@@ -1706,12 +1718,16 @@ class _ElementPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
+    final _EtiquetaEditorWebPageState? editorState =
+        context.findAncestorStateOfType<_EtiquetaEditorWebPageState>();
+    final Color inkColor =
+        editorState?._paperInkColor(context) ??
+        Theme.of(context).colorScheme.onSurface;
     if (element.tipo == 'BARCODE') {
       return Padding(
         padding: const EdgeInsets.all(3),
         child: CustomPaint(
-          painter: _BarcodePreviewPainter(color: colors.onSurface),
+          painter: _BarcodePreviewPainter(color: inkColor),
           child: const SizedBox.expand(),
         ),
       );
@@ -1720,7 +1736,7 @@ class _ElementPreview extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.all(3),
         child: CustomPaint(
-          painter: _QrPreviewPainter(color: colors.onSurface),
+          painter: _QrPreviewPainter(color: inkColor),
           child: const SizedBox.expand(),
         ),
       );
@@ -1742,7 +1758,7 @@ class _ElementPreview extends StatelessWidget {
             previewText,
             maxLines: 2,
             style: TextStyle(
-              color: colors.onSurface,
+              color: inkColor,
               fontWeight: bold ? FontWeight.w900 : FontWeight.w600,
             ),
           ),
@@ -1759,6 +1775,13 @@ class _SheetPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final _EtiquetaEditorWebPageState? editorState =
+        context.findAncestorStateOfType<_EtiquetaEditorWebPageState>();
+    final Color paperSurfaceColor =
+        editorState?._paperSurfaceColor(context) ??
+        Theme.of(context).colorScheme.surface;
+    final Color paperBorderColor =
+        editorState?._paperBorderColor(context) ?? tokens.cardBorder;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double scale =
@@ -1776,8 +1799,8 @@ class _SheetPreview extends StatelessWidget {
             width: model.papel.larguraMm * scale,
             height: model.papel.alturaMm * scale,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              border: Border.all(color: tokens.cardBorder),
+              color: paperSurfaceColor,
+              border: Border.all(color: paperBorderColor),
               boxShadow: <BoxShadow>[
                 BoxShadow(
                   color: Theme.of(
@@ -1883,13 +1906,14 @@ class _MenuFieldState extends State<_MenuField> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       elevation: 12,
       color: tokens.menuBackground,
+      surfaceTintColor: Colors.transparent,
       constraints: BoxConstraints.tightFor(width: box.size.width),
       items: widget.values
           .map(
             (String item) => PopupMenuItem<String>(
               value: item,
-              height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               child: _MenuFieldMenuItem(
                 label: widget.valueLabel(item),
                 selected: item == safeValue,
@@ -1949,7 +1973,16 @@ class _MenuFieldTriggerState extends State<_MenuFieldTrigger> {
     final Color borderColor =
         active ? tokens.selectedBorder : tokens.cardBorder;
     final Color backgroundColor =
-        active ? tokens.selectedBackground : tokens.inputBackground;
+        active
+            ? Color.alphaBlend(
+              tokens.info.withValues(alpha: 0.10),
+              tokens.surfaceElevated,
+            )
+            : tokens.inputBackground;
+    final Color iconBackgroundColor =
+        active ? tokens.info.withValues(alpha: 0.16) : tokens.surfaceElevated;
+    final Color chevronBackgroundColor =
+        active ? tokens.info.withValues(alpha: 0.16) : tokens.surfaceMuted;
 
     return Semantics(
       button: true,
@@ -1971,14 +2004,14 @@ class _MenuFieldTriggerState extends State<_MenuFieldTrigger> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOutCubic,
-                height: 58,
+                height: 60,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
+                  horizontal: 12,
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
                   color: backgroundColor,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: borderColor),
                   boxShadow:
                       active
@@ -1993,7 +2026,17 @@ class _MenuFieldTriggerState extends State<_MenuFieldTrigger> {
                 ),
                 child: Row(
                   children: <Widget>[
-                    Icon(widget.icon, size: 18, color: tokens.info),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: iconBackgroundColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(widget.icon, size: 18, color: tokens.info),
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -2023,14 +2066,26 @@ class _MenuFieldTriggerState extends State<_MenuFieldTrigger> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    AnimatedRotation(
-                      turns: widget.open ? 0.5 : 0,
+                    AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       curve: Curves.easeOutCubic,
-                      child: Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: active ? tokens.info : tokens.mutedText,
-                        size: 20,
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: chevronBackgroundColor,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Center(
+                        child: AnimatedRotation(
+                          turns: widget.open ? 0.5 : 0,
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOutCubic,
+                          child: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: active ? tokens.info : tokens.mutedText,
+                            size: 18,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -2055,23 +2110,25 @@ class _MenuFieldMenuItem extends StatelessWidget {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
       decoration: BoxDecoration(
         color: selected ? tokens.selectedBackground : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: <Widget>[
           Icon(
-            selected ? Icons.check_circle_rounded : Icons.arrow_right_rounded,
+            selected
+                ? Icons.check_circle_rounded
+                : Icons.radio_button_unchecked_rounded,
             color: selected ? tokens.info : tokens.mutedText,
-            size: 18,
+            size: 20,
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               label,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: tokens.primaryText,
@@ -2081,6 +2138,141 @@ class _MenuFieldMenuItem extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AddElementMenu extends StatefulWidget {
+  const _AddElementMenu({
+    required this.presets,
+    required this.labelBuilder,
+    required this.onSelected,
+    required this.child,
+  });
+
+  final List<_ElementPreset> presets;
+  final String Function(String key) labelBuilder;
+  final ValueChanged<_ElementPreset> onSelected;
+  final Widget child;
+
+  @override
+  State<_AddElementMenu> createState() => _AddElementMenuState();
+}
+
+class _AddElementMenuState extends State<_AddElementMenu> {
+  bool _open = false;
+
+  Future<void> _showMenu() async {
+    if (widget.presets.isEmpty) return;
+    setState(() => _open = true);
+
+    final RenderBox box = context.findRenderObject()! as RenderBox;
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final Offset position = box.localToGlobal(Offset.zero, ancestor: overlay);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    const double menuWidth = 252;
+
+    final _ElementPreset? selected = await showMenu<_ElementPreset>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(
+          position.dx + box.size.width - menuWidth,
+          position.dy + box.size.height + 8,
+          menuWidth,
+          box.size.height,
+        ),
+        Offset.zero & overlay.size,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 14,
+      color: tokens.menuBackground,
+      surfaceTintColor: Colors.transparent,
+      constraints: const BoxConstraints.tightFor(width: menuWidth),
+      items: widget.presets
+          .map(
+            (_ElementPreset preset) => PopupMenuItem<_ElementPreset>(
+              value: preset,
+              height: 44,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              child: _AddElementMenuItem(
+                icon: preset.icon,
+                label: widget.labelBuilder(preset.key),
+              ),
+            ),
+          )
+          .toList(growable: false),
+    );
+
+    if (!mounted) return;
+    setState(() => _open = false);
+    if (selected != null) widget.onSelected(selected);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: etiquetaTr(
+        context,
+        'labels.editor.addElement',
+        pt: 'Adicionar elemento',
+        en: 'Add element',
+        es: 'Agregar elemento',
+      ),
+      child: Tooltip(
+        message: etiquetaTr(
+          context,
+          'labels.editor.addElement',
+          pt: 'Adicionar elemento',
+          en: 'Add element',
+          es: 'Agregar elemento',
+        ),
+        waitDuration: const Duration(milliseconds: 450),
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _showMenu,
+            child: AnimatedScale(
+              duration: const Duration(milliseconds: 160),
+              curve: Curves.easeOutCubic,
+              scale: _open ? 0.985 : 1,
+              child: widget.child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AddElementMenuItem extends StatelessWidget {
+  const _AddElementMenuItem({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Row(
+      children: <Widget>[
+        Icon(icon, size: 18, color: tokens.primaryText),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: tokens.primaryText,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

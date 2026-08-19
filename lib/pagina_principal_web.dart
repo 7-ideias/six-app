@@ -14,8 +14,9 @@ import 'package:sixpos/presentation/navigation/web_navigation_registry.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_web.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
-import 'package:sixpos/presentation/screens/colaboradores_usuario_web_page.dart';
+import 'package:sixpos/presentation/screens/catalogo_reservas_web.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
+import 'package:sixpos/presentation/screens/colaboradores_usuario_web_page.dart';
 import 'package:sixpos/presentation/screens/compras/compras_web_page.dart';
 import 'package:sixpos/presentation/screens/configuracoes_six_web_page.dart';
 import 'package:sixpos/presentation/screens/desempenho_colaborador_web_page.dart';
@@ -735,6 +736,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return 'assistencia_tecnica';
       case ModuloCentralPDV.compras:
         return 'compras';
+      case ModuloCentralPDV.reservas:
+        return 'reservas';
       case ModuloCentralPDV.categorias:
       case ModuloCentralPDV.produtos:
       case ModuloCentralPDV.servicos:
@@ -773,6 +776,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return 'atendimentos_tecnicos_web';
       case ModuloCentralPDV.compras:
         return 'compras_web';
+      case ModuloCentralPDV.reservas:
+        return 'reservas_catalogo_web';
       case ModuloCentralPDV.produtos:
         return 'produtos_dashboard_web';
       case ModuloCentralPDV.servicos:
@@ -2673,6 +2678,9 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
       case ModuloCentralPDV.compras:
         return Expanded(child: ComprasWebPage(onBack: voltarParaInicio));
+
+      case ModuloCentralPDV.reservas:
+        return const Expanded(child: CatalogoReservasWebPage());
 
       case ModuloCentralPDV.produtos:
         return Expanded(
