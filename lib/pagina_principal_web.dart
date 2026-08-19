@@ -2515,87 +2515,31 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     });
 
     try {
-      await showDialog<void>(
+      await showRecebimentoPagamentoWebDialog(
         context: context,
-        barrierDismissible: true,
-        barrierColor: Colors.black.withValues(alpha: 0.26),
-        builder: (BuildContext dialogContext) {
-          final Size size = MediaQuery.of(dialogContext).size;
-          final double alturaMaximaDisponivel =
-              (size.height - 24).clamp(420.0, double.infinity).toDouble();
-          final double largura =
-              (size.width >= 1280
-                      ? 1120.0
-                      : (size.width * 0.96).clamp(780.0, 1120.0))
-                  .toDouble();
-          final double altura =
-              (size.height * 0.92)
-                  .clamp(420.0, alturaMaximaDisponivel)
-                  .toDouble();
-
-          return CallbackShortcuts(
-            bindings: <ShortcutActivator, VoidCallback>{
-              const SingleActivator(LogicalKeyboardKey.escape): () {
-                Navigator.of(dialogContext).maybePop();
-              },
-            },
-            child: Focus(
-              autofocus: true,
-              child: Dialog(
-                insetPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-                clipBehavior: Clip.antiAlias,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: SizedBox(
-                  width: largura,
-                  height: altura,
-                  child: RecebimentoPagamentoWeb(
-                    embedded: true,
-                    somenteSelecao: somenteSelecao,
-                    formasPagamentoIniciais: _formasPagamentoConfirmadas,
-                    descricoesFormasIniciais:
-                        _descricoesFormaPagamentoPorCodigo,
-                    onBack: () => Navigator.of(dialogContext).maybePop(),
-                    onSelecaoConfirmada: (
-                      RecebimentoPagamentoSelecaoResultado resultado,
-                    ) {
-                      setState(() {
-                        _formasPagamentoConfirmadas = resultado.formasPagamento
-                            .where(
-                              (FormaPagamentoSelecionada forma) =>
-                                  forma.valor > 0,
-                            )
-                            .toList(growable: false);
-                        _descricoesFormaPagamentoPorCodigo =
-                            Map<String, String>.from(
-                              resultado.descricaoPorCodigo,
-                            );
-                      });
-                    },
-                    onSuccess: () {
-                      _limparVendaAposSucessoRecebimento();
-                      Navigator.of(dialogContext).maybePop();
-                    },
-                    valorTotalVenda: _calcularTotal(),
-                    itensResumo: _montarItensResumoPagamento(),
-                    clienteNome:
-                        _clienteIdentificado?.nome.trim().isNotEmpty == true
-                            ? _clienteIdentificado!.nome.trim()
-                            : _clienteIdentificadoController.text.trim(),
-                    numeroVenda: '',
-                    idColaborador: 'idUnicoDoColaborador',
-                    nomeColaborador: 'Nome do colaborador',
-                    operacaoService: _operacaoService,
-                  ),
-                ),
-              ),
-            ),
-          );
+        somenteSelecao: somenteSelecao,
+        formasPagamentoIniciais: _formasPagamentoConfirmadas,
+        descricoesFormasIniciais: _descricoesFormaPagamentoPorCodigo,
+        onSelecaoConfirmada: (RecebimentoPagamentoSelecaoResultado resultado) {
+          setState(() {
+            _formasPagamentoConfirmadas = resultado.formasPagamento
+                .where((FormaPagamentoSelecionada forma) => forma.valor > 0)
+                .toList(growable: false);
+            _descricoesFormaPagamentoPorCodigo = Map<String, String>.from(
+              resultado.descricaoPorCodigo,
+            );
+          });
         },
+        onSuccess: _limparVendaAposSucessoRecebimento,
+        valorTotalVenda: _calcularTotal(),
+        itensResumo: _montarItensResumoPagamento(),
+        clienteNome: _clienteIdentificado?.nome.trim().isNotEmpty == true
+            ? _clienteIdentificado!.nome.trim()
+            : _clienteIdentificadoController.text.trim(),
+        numeroVenda: '',
+        idColaborador: 'idUnicoDoColaborador',
+        nomeColaborador: 'Nome do colaborador',
+        operacaoService: _operacaoService,
       );
     } finally {
       if (mounted) {

@@ -1,10 +1,82 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:sixpos/core/di/operacao_module.dart';
 import 'package:sixpos/data/models/caixa_models.dart';
 import 'package:sixpos/data/models/operacao_models.dart';
 import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
 import 'package:sixpos/domain/services/operacao/operacao_service.dart';
 import 'package:sixpos/l10n/app_localizations.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
+import 'package:sixpos/providers/locale_settings_provider.dart';
+
+Future<void> showRecebimentoPagamentoWebDialog({
+  required BuildContext context,
+  required bool somenteSelecao,
+  required double valorTotalVenda,
+  required List<Map<String, dynamic>> itensResumo,
+  required String idColaborador,
+  required String nomeColaborador,
+  String? clienteNome,
+  String? numeroVenda,
+  OperacaoService? operacaoService,
+  List<FormaPagamentoSelecionada> formasPagamentoIniciais =
+      const <FormaPagamentoSelecionada>[],
+  Map<String, String> descricoesFormasIniciais = const <String, String>{},
+  ValueChanged<RecebimentoPagamentoSelecaoResultado>? onSelecaoConfirmada,
+  VoidCallback? onSuccess,
+}) async {
+  final bool reduceMotion =
+      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+  await showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: Colors.transparent,
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    transitionDuration: Duration(milliseconds: reduceMotion ? 1 : 260),
+    pageBuilder:
+        (
+          BuildContext routeContext,
+          Animation<double> animation,
+          Animation<double> secondaryAnimation,
+        ) {
+          return _RecebimentoPagamentoRouteSurface(
+            animation: animation,
+            reduceMotion: reduceMotion,
+            child: RecebimentoPagamentoWeb(
+              embedded: true,
+              somenteSelecao: somenteSelecao,
+              formasPagamentoIniciais: formasPagamentoIniciais,
+              descricoesFormasIniciais: descricoesFormasIniciais,
+              onBack: () => Navigator.of(routeContext).maybePop(),
+              onSelecaoConfirmada: onSelecaoConfirmada,
+              onSuccess: () {
+                onSuccess?.call();
+                Navigator.of(routeContext).maybePop();
+              },
+              valorTotalVenda: valorTotalVenda,
+              itensResumo: itensResumo,
+              clienteNome: clienteNome,
+              numeroVenda: numeroVenda,
+              idColaborador: idColaborador,
+              nomeColaborador: nomeColaborador,
+              operacaoService: operacaoService,
+            ),
+          );
+        },
+    transitionBuilder:
+        (
+          BuildContext context,
+          Animation<double> animation,
+          Animation<double> secondaryAnimation,
+          Widget child,
+        ) => child,
+  );
+}
 
 class RecebimentoPagamentoSelecaoResultado {
   const RecebimentoPagamentoSelecaoResultado({
@@ -98,7 +170,8 @@ class _FormaPagamentoWeb {
   }
 }
 
-class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
+class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
+    with SingleTickerProviderStateMixin {
   late final List<Map<String, dynamic>> _itensResumo;
   late final OperacaoService _operacaoService;
   final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
@@ -109,6 +182,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   bool _salvandoOperacao = false;
   bool _carregandoFormas = true;
   bool _estadoInicialAplicado = false;
+  late final AnimationController _iconController;
 
   static const List<_FormaPagamentoWeb> _formasPagamentoFallback =
       <_FormaPagamentoWeb>[
@@ -197,16 +271,29 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   @override
   void initState() {
     super.initState();
+    _iconController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 720),
+    );
     _itensResumo = List<Map<String, dynamic>>.from(widget.itensResumo);
     _operacaoService = widget.operacaoService ?? OperacaoModule.operacaoService;
     _formasPagamento = _formasPagamentoFallback
         .map((forma) => forma.copyWith())
         .toList(growable: false);
     _carregarFormasPagamentoConfiguradas();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
+        _iconController.value = 1;
+      } else {
+        _iconController.forward();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _iconController.dispose();
     for (final TextEditingController controller in _valorControllers.values) {
       controller.dispose();
     }
@@ -215,8 +302,8 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
 
   Future<void> _carregarFormasPagamentoConfiguradas() async {
     try {
-      final InformacoesBasicasCaixaResponse informacoes =
-          await _caixaApiClient.getInformacoesBasicasDoCaixa();
+      final InformacoesBasicasCaixaResponse informacoes = await _caixaApiClient
+          .getInformacoesBasicasDoCaixa();
       final List<_FormaPagamentoWeb> formas =
           _montarFormasPagamentoConfiguradas(informacoes.tiposRecebimento);
       if (!mounted) return;
@@ -253,19 +340,17 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
         continue;
       }
 
-      final String titulo =
-          tipo.descricaoExibicao.trim().isNotEmpty
-              ? tipo.descricaoExibicao.trim()
-              : _descricaoPadraoPorCodigo(codigo);
+      final String titulo = tipo.descricaoExibicao.trim().isNotEmpty
+          ? tipo.descricaoExibicao.trim()
+          : _descricaoPadraoPorCodigo(codigo);
 
       formas.add(
         _FormaPagamentoWeb(
           codigo: codigo,
           titulo: titulo,
-          descricao:
-              tipo.naturezaRecebimento.trim().isNotEmpty
-                  ? tipo.naturezaRecebimento.trim()
-                  : _descricaoPadraoPorCodigo(codigo),
+          descricao: tipo.naturezaRecebimento.trim().isNotEmpty
+              ? tipo.naturezaRecebimento.trim()
+              : _descricaoPadraoPorCodigo(codigo),
           icone: _iconePorCodigo(codigo),
           selecionado: false,
           valor: 0,
@@ -282,6 +367,22 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
 
     if (widget.formasPagamentoIniciais.isEmpty &&
         widget.descricoesFormasIniciais.isEmpty) {
+      if (_formasPagamento.isEmpty) return;
+      final String codigoInicial = _formasPagamento.first.codigo;
+      setState(() {
+        _formasPagamento = _formasPagamento
+            .map(
+              (_FormaPagamentoWeb forma) => forma.copyWith(
+                selecionado: forma.codigo == codigoInicial,
+                valor: forma.codigo == codigoInicial
+                    ? widget.valorTotalVenda
+                    : 0,
+              ),
+            )
+            .toList(growable: false);
+      });
+      _controllerFor(_formasPagamento.first).text = widget.valorTotalVenda
+          .toStringAsFixed(2);
       return;
     }
 
@@ -300,10 +401,9 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
             final String? descricaoInicial =
                 widget.descricoesFormasIniciais[forma.codigo];
             return forma.copyWith(
-              titulo:
-                  descricaoInicial?.trim().isNotEmpty == true
-                      ? descricaoInicial!.trim()
-                      : forma.titulo,
+              titulo: descricaoInicial?.trim().isNotEmpty == true
+                  ? descricaoInicial!.trim()
+                  : forma.titulo,
               selecionado: inicial != null && inicial.valor > 0,
               valor: inicial?.valor ?? 0,
             );
@@ -476,10 +576,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
     });
 
     if (!selecionado) {
-      final TextEditingController? controller = _valorControllers.remove(
-        forma.codigo,
-      );
-      controller?.dispose();
+      _valorControllers[forma.codigo]?.clear();
     }
   }
 
@@ -520,6 +617,72 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
     _controllerFor(forma).text = novoValor.toStringAsFixed(2);
   }
 
+  void _adicionarForma() {
+    _FormaPagamentoWeb? novaForma;
+    for (final _FormaPagamentoWeb forma in _formasPagamento) {
+      if (!forma.selecionado) {
+        novaForma = forma;
+        break;
+      }
+    }
+    final _FormaPagamentoWeb? formaAdicionada = novaForma;
+    if (formaAdicionada == null) return;
+
+    final double valorInicial = _valorRestante()
+        .clamp(0, double.infinity)
+        .toDouble();
+    setState(() {
+      _formasPagamento = _formasPagamento
+          .map(
+            (_FormaPagamentoWeb forma) => forma.codigo == formaAdicionada.codigo
+                ? forma.copyWith(selecionado: true, valor: valorInicial)
+                : forma,
+          )
+          .toList(growable: false);
+    });
+    _controllerFor(formaAdicionada).text = valorInicial > 0
+        ? valorInicial.toStringAsFixed(2)
+        : '';
+  }
+
+  void _removerForma(_FormaPagamentoWeb forma) {
+    if (_quantidadeFormasSelecionadas() <= 1) return;
+    _alternarForma(forma, false);
+  }
+
+  void _substituirForma(_FormaPagamentoWeb formaAtual, String novoCodigo) {
+    if (formaAtual.codigo == novoCodigo) return;
+    _FormaPagamentoWeb? novaForma;
+    for (final _FormaPagamentoWeb forma in _formasPagamento) {
+      if (forma.codigo == novoCodigo) {
+        novaForma = forma;
+        break;
+      }
+    }
+    final _FormaPagamentoWeb? formaSubstituta = novaForma;
+    if (formaSubstituta == null || formaSubstituta.selecionado) return;
+
+    final double valorAtual = formaAtual.valor;
+    setState(() {
+      _formasPagamento = _formasPagamento
+          .map((_FormaPagamentoWeb forma) {
+            if (forma.codigo == formaAtual.codigo) {
+              return forma.copyWith(selecionado: false, valor: 0);
+            }
+            if (forma.codigo == formaSubstituta.codigo) {
+              return forma.copyWith(selecionado: true, valor: valorAtual);
+            }
+            return forma;
+          })
+          .toList(growable: false);
+    });
+
+    _valorControllers[formaAtual.codigo]?.clear();
+    _controllerFor(formaSubstituta).text = valorAtual > 0
+        ? valorAtual.toStringAsFixed(2)
+        : '';
+  }
+
   Future<void> _mostrarDialogMensagem({
     required String titulo,
     required String mensagem,
@@ -531,10 +694,9 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
         return AlertDialog(
           icon: Icon(
             sucesso ? Icons.check_circle_outline : Icons.info_outline,
-            color:
-                sucesso
-                    ? const Color(0xFF2E7D32)
-                    : Theme.of(context).colorScheme.primary,
+            color: sucesso
+                ? const Color(0xFF2E7D32)
+                : Theme.of(context).colorScheme.primary,
             size: 34,
           ),
           title: Text(titulo),
@@ -635,8 +797,8 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
       return;
     }
 
-    final double diferenca =
-        (_valorSelecionadoTotal() - widget.valorTotalVenda).abs();
+    final double diferenca = (_valorSelecionadoTotal() - widget.valorTotalVenda)
+        .abs();
     if (diferenca > 0.009) {
       await _mostrarDialogMensagem(
         titulo: l10n?.pdvWebPaymentMismatchTitle ?? 'Revise a distribuição',
@@ -767,56 +929,53 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
     }
   }
 
+  String _txt(String key, String fallback) =>
+      context.t(key, fallback: fallback);
+
   Widget _buildCabecalhoCompacto() {
     final AppLocalizations? l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
-    final bool temCliente = widget.clienteNome?.trim().isNotEmpty == true;
-    final double restante = _valorRestante();
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final String cliente = widget.clienteNome?.trim() ?? '';
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 18, 18),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          _buildPaymentIcon(theme),
+          const SizedBox(width: 16),
           Expanded(
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
                   l10n?.pdvWebPaymentOverlayTitle ?? 'Recebimento',
-                  style: theme.textTheme.titleLarge?.copyWith(
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w900,
+                    letterSpacing: -0.4,
                   ),
                 ),
-                _buildInfoChip(
-                  icon: Icons.attach_money_outlined,
-                  text:
-                      '${l10n?.pdvWebSaleTotalLabel ?? 'Total da venda'} ${_formatarValor(widget.valorTotalVenda)}',
+                const SizedBox(height: 5),
+                Text(
+                  '${l10n?.pdvWebSaleTotalLabel ?? 'Total da venda'}: ${_formatarValor(widget.valorTotalVenda)}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: tokens.secondaryText,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                if (temCliente)
-                  _buildInfoChip(
-                    icon: Icons.person_outline,
-                    text: widget.clienteNome!.trim(),
+                if (cliente.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 3),
+                  Text(
+                    cliente,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: tokens.mutedText,
+                    ),
                   ),
-                if (_quantidadeFormasSelecionadas() > 0)
-                  _buildInfoChip(
-                    icon: Icons.payments_outlined,
-                    text:
-                        '${_quantidadeFormasSelecionadas()} ${l10n?.pdvWebPaymentMethodsSelectedLabel ?? 'formas'}',
-                  ),
-                if (restante.abs() <= 0.009)
-                  _buildInfoChip(
-                    icon: Icons.verified_outlined,
-                    text:
-                        l10n?.pdvWebPaymentDefinedLabel ?? 'Pagamento definido',
-                  ),
+                ],
               ],
             ),
           ),
@@ -830,237 +989,114 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
     );
   }
 
-  Widget _buildInfoChip({required IconData icon, required String text}) {
-    final ThemeData theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 14, color: theme.colorScheme.primary),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: theme.colorScheme.onSurface,
+  Widget _buildPaymentIcon(ThemeData theme) {
+    return AnimatedBuilder(
+      animation: _iconController,
+      builder: (BuildContext context, Widget? child) {
+        final double progress = Curves.easeOutBack.transform(
+          _iconController.value,
+        );
+        return Transform.scale(
+          scale: 0.82 + (progress * 0.18),
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(17),
+              border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.18),
+              ),
+            ),
+            child: Icon(
+              Icons.payments_rounded,
+              color: theme.colorScheme.primary,
+              size: 28,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPillForma(_FormaPagamentoWeb forma) {
-    final ThemeData theme = Theme.of(context);
-    return FilterChip(
-      selected: forma.selecionado,
-      onSelected:
-          _salvandoOperacao
-              ? null
-              : (bool selected) => _alternarForma(forma, selected),
-      avatar: Icon(
-        forma.icone,
-        size: 16,
-        color:
-            forma.selecionado
-                ? theme.colorScheme.onPrimary
-                : theme.colorScheme.primary,
-      ),
-      label: Text(forma.titulo),
-      labelStyle: TextStyle(
-        color:
-            forma.selecionado
-                ? theme.colorScheme.onPrimary
-                : theme.colorScheme.onSurface,
-        fontWeight: FontWeight.w700,
-      ),
-      selectedColor: theme.colorScheme.primary,
-      checkmarkColor: theme.colorScheme.onPrimary,
-      side: BorderSide(
-        color:
-            forma.selecionado
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant,
-      ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-    );
-  }
-
-  Widget _buildPainelFormaPagamento(_FormaPagamentoWeb forma) {
-    final AppLocalizations? l10n = AppLocalizations.of(context);
-    final ThemeData theme = Theme.of(context);
-    final TextEditingController controller = _controllerFor(forma);
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color:
-              forma.selecionado
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.outlineVariant,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Checkbox(
-                value: forma.selecionado,
-                onChanged:
-                    _salvandoOperacao
-                        ? null
-                        : (bool? value) =>
-                            _alternarForma(forma, value ?? false),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  forma.icone,
-                  size: 18,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  forma.titulo,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              Text(
-                _formatarValor(forma.valor),
-                style: TextStyle(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            forma.descricao,
-            style: TextStyle(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  enabled: forma.selecionado && !_salvandoOperacao,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: l10n?.pdvWebPaymentValueFieldLabel ?? 'Valor',
-                    prefixText: 'R\$ ',
-                    isDense: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  onChanged: (String value) => _alterarValorForma(forma, value),
-                ),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                onPressed:
-                    _salvandoOperacao
-                        ? null
-                        : () => _preencherValorRestante(forma),
-                icon: const Icon(Icons.auto_fix_high_outlined, size: 16),
-                label: Text(
-                  l10n?.pdvWebCompleteRemainingAction ?? 'Completar restante',
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Widget _buildResumoDistribuicao() {
     final AppLocalizations? l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final double totalDistribuido = _valorSelecionadoTotal();
     final double restante = _valorRestante();
-
     final bool completo = restante.abs() <= 0.009;
-    final Color statusBg =
-        completo ? const Color(0xFFE9F6EC) : const Color(0xFFFFF4E5);
-    final Color statusFg =
-        completo ? const Color(0xFF2E7D32) : const Color(0xFFB26A00);
+    final Color statusColor = completo ? tokens.success : tokens.warning;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            l10n?.pdvWebPaymentSummaryTitle ?? 'Resumo da distribuição',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w900,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: _buildResumoItem(
+                  l10n?.pdvWebSaleTotalLabel ?? 'Total da venda',
+                  _formatarValor(widget.valorTotalVenda),
+                  tokens.primaryText,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildResumoItem(
+                  l10n?.pdvWebDistributedTotalLabel ?? 'Total distribuído',
+                  _formatarValor(totalDistribuido),
+                  tokens.primaryText,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildResumoItem(
+                  l10n?.pdvWebRemainingAmountLabel ?? 'Valor restante',
+                  _formatarValor(restante),
+                  statusColor,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          _buildLinhaResumo(
-            l10n?.pdvWebSaleTotalLabel ?? 'Total da venda',
-            _formatarValor(widget.valorTotalVenda),
-          ),
-          _buildLinhaResumo(
-            l10n?.pdvWebDistributedTotalLabel ?? 'Total distribuído',
-            _formatarValor(totalDistribuido),
-          ),
-          _buildLinhaResumo(
-            l10n?.pdvWebRemainingAmountLabel ?? 'Valor restante',
-            _formatarValor(restante),
-          ),
-          _buildLinhaResumo(
-            l10n?.pdvWebPaymentMethodsSelectedLabel ?? 'Formas selecionadas',
-            _quantidadeFormasSelecionadas().toString(),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: statusBg,
-              borderRadius: BorderRadius.circular(10),
+              color: statusColor.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(
-              completo
-                  ? (l10n?.pdvWebPaymentDistributionReadyLabel ??
-                      'Distribuição pronta para confirmação.')
-                  : (l10n?.pdvWebPaymentDistributionReviewLabel ??
-                      'Ajuste os valores para fechar o total da venda.'),
-              style: TextStyle(color: statusFg, fontWeight: FontWeight.w700),
+            child: Row(
+              children: <Widget>[
+                Icon(
+                  completo
+                      ? Icons.check_circle_rounded
+                      : Icons.info_outline_rounded,
+                  color: statusColor,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    completo
+                        ? (l10n?.pdvWebPaymentDistributionReadyLabel ??
+                              'Distribuição pronta para confirmação.')
+                        : (l10n?.pdvWebPaymentDistributionReviewLabel ??
+                              'Ajuste os valores para fechar o total da venda.'),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: statusColor,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1068,18 +1104,152 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
     );
   }
 
-  Widget _buildLinhaResumo(String titulo, String valor) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Text(
-              titulo,
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
+  Widget _buildResumoItem(String label, String value, Color valueColor) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: tokens.secondaryText,
+            fontWeight: FontWeight.w700,
           ),
-          Text(valor, style: const TextStyle(fontWeight: FontWeight.w900)),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: valueColor,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPainelFormaPagamento(_FormaPagamentoWeb forma) {
+    final AppLocalizations? l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final TextEditingController controller = _controllerFor(forma);
+    final List<_FormaPagamentoWeb> opcoes = _formasPagamento
+        .where(
+          (_FormaPagamentoWeb opcao) =>
+              opcao.codigo == forma.codigo || !opcao.selecionado,
+        )
+        .toList(growable: false);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Column(
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  enabled: !_salvandoOperacao,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: _txt('recebimento.valorForma', 'Valor da forma'),
+                    prefixText: '${_currencyCode()} ',
+                    suffixIcon: IconButton(
+                      tooltip:
+                          l10n?.pdvWebCompleteRemainingAction ??
+                          'Completar restante',
+                      onPressed: _salvandoOperacao
+                          ? null
+                          : () => _preencherValorRestante(forma),
+                      icon: const Icon(Icons.auto_fix_high_rounded, size: 19),
+                    ),
+                    filled: true,
+                    fillColor: tokens.inputBackground,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                  ),
+                  onChanged: (String value) => _alterarValorForma(forma, value),
+                ),
+              ),
+              if (_quantidadeFormasSelecionadas() > 1) ...<Widget>[
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: _txt('recebimento.removerForma', 'Remover forma'),
+                  onPressed: _salvandoOperacao
+                      ? null
+                      : () => _removerForma(forma),
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: tokens.danger,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            key: ValueKey<String>('payment-method-${forma.codigo}'),
+            initialValue: forma.codigo,
+            isExpanded: true,
+            dropdownColor: tokens.menuBackground,
+            decoration: InputDecoration(
+              labelText: _txt(
+                'recebimento.tipoRecebimento',
+                'Tipo de recebimento',
+              ),
+              filled: true,
+              fillColor: tokens.inputBackground,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(13),
+              ),
+            ),
+            items: opcoes
+                .map(
+                  (_FormaPagamentoWeb opcao) => DropdownMenuItem<String>(
+                    value: opcao.codigo,
+                    child: Row(
+                      children: <Widget>[
+                        Icon(
+                          opcao.icone,
+                          size: 18,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            opcao.titulo,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: tokens.primaryText,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: _salvandoOperacao
+                ? null
+                : (String? codigo) {
+                    if (codigo != null) _substituirForma(forma, codigo);
+                  },
+          ),
         ],
       ),
     );
@@ -1088,201 +1258,317 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb> {
   Widget _buildPainelPrincipal() {
     final AppLocalizations? l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final List<_FormaPagamentoWeb> formasVisiveis = _formasPagamentoVisiveis();
+    final bool podeAdicionar = _formasPagamento.any(
+      (_FormaPagamentoWeb forma) => !forma.selecionado,
+    );
 
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool compact = constraints.maxWidth < 980;
-
-        final Widget listaFormas = Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _buildResumoDistribuicao(),
+          const SizedBox(height: 22),
+          Row(
             children: <Widget>[
-              Text(
-                l10n?.pdvWebPaymentMethodsTitle ?? 'Formas de recebimento',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
+              Expanded(
+                child: Text(
+                  _txt(
+                    'recebimento.formasRecebimento',
+                    l10n?.pdvWebPaymentMethodsTitle ?? 'Formas de recebimento',
+                  ),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _formasPagamento
-                    .map(_buildPillForma)
-                    .toList(growable: false),
-              ),
-              const SizedBox(height: 10),
-              Expanded(
-                child:
-                    _carregandoFormas
-                        ? Center(
-                          child: CircularProgressIndicator(
-                            color: theme.colorScheme.primary,
-                          ),
-                        )
-                        : (formasVisiveis.isEmpty
-                            ? Center(
-                              child: Text(
-                                l10n?.pdvWebSelectPaymentMethodHint ??
-                                    'Selecione uma forma para informar valores.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            )
-                            : SingleChildScrollView(
-                              child: Column(
-                                children: formasVisiveis
-                                    .map(
-                                      (_FormaPagamentoWeb forma) => Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 8,
-                                        ),
-                                        child: _buildPainelFormaPagamento(
-                                          forma,
-                                        ),
-                                      ),
-                                    )
-                                    .toList(growable: false),
-                              ),
-                            )),
+              Text(
+                '${_txt('recebimento.restante', 'Restante')}: ${_formatarValor(_valorRestante())}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: tokens.secondaryText,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ],
           ),
-        );
-
-        if (compact) {
-          return Column(
-            children: <Widget>[
-              Expanded(child: listaFormas),
-              const SizedBox(height: 10),
-              _buildResumoDistribuicao(),
-            ],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Expanded(flex: 7, child: listaFormas),
-            const SizedBox(width: 10),
-            Expanded(flex: 3, child: _buildResumoDistribuicao()),
-          ],
-        );
-      },
+          const SizedBox(height: 12),
+          if (_carregandoFormas)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 48),
+              child: Center(
+                child: Column(
+                  children: <Widget>[
+                    CircularProgressIndicator(color: theme.colorScheme.primary),
+                    const SizedBox(height: 12),
+                    Text(
+                      _txt(
+                        'recebimento.carregandoTipos',
+                        'Carregando tipos de recebimento...',
+                      ),
+                      style: TextStyle(color: tokens.secondaryText),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ...formasVisiveis.map(
+              (_FormaPagamentoWeb forma) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildPainelFormaPagamento(forma),
+              ),
+            ),
+          if (!_carregandoFormas)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: podeAdicionar && !_salvandoOperacao
+                    ? _adicionarForma
+                    : null,
+                icon: const Icon(Icons.add_rounded),
+                label: Text(
+                  _txt('recebimento.adicionarForma', 'Adicionar forma'),
+                ),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
   Widget _buildBarraAcoes() {
     final AppLocalizations? l10n = AppLocalizations.of(context);
-    final ThemeData theme = Theme.of(context);
-    final double restante = _valorRestante();
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool distribuicaoValida =
+        _montarFormasSelecionadas().isNotEmpty &&
+        _valorRestante().abs() <= 0.009;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(
-          top: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
+        color: tokens.surfaceElevated,
+        border: Border(top: BorderSide(color: tokens.divider)),
       ),
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: <Widget>[
-          OutlinedButton.icon(
+          TextButton(
             onPressed: _salvandoOperacao ? null : _fecharTela,
-            icon: const Icon(Icons.arrow_back_outlined),
-            label: Text(l10n?.pdvWebClosePaymentAction ?? 'Fechar recebimento'),
+            child: Text(_txt('common.cancel', 'Cancelar')),
           ),
-          Wrap(
-            spacing: 12,
-            runSpacing: 10,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              Text(
-                '${l10n?.pdvWebRemainingAmountLabel ?? 'Valor restante'}: ${_formatarValor(restante)}',
-                style: TextStyle(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              FilledButton.icon(
-                onPressed: _salvandoOperacao ? null : _confirmarOperacao,
-                icon:
-                    _salvandoOperacao
-                        ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : const Icon(Icons.check_circle_outline),
-                label: Text(
-                  _salvandoOperacao
-                      ? (l10n?.pdvWebProcessingReceiveAction ??
-                          'Processando...')
-                      : (widget.somenteSelecao
-                          ? (l10n?.pdvWebConfirmDistributionAction ??
+          const SizedBox(width: 10),
+          FilledButton.icon(
+            onPressed: !_salvandoOperacao && distribuicaoValida
+                ? _confirmarOperacao
+                : null,
+            icon: _salvandoOperacao
+                ? const SizedBox(
+                    width: 17,
+                    height: 17,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.check_circle_outline_rounded),
+            label: Text(
+              _salvandoOperacao
+                  ? (l10n?.pdvWebProcessingReceiveAction ?? 'Processando...')
+                  : (widget.somenteSelecao
+                        ? (l10n?.pdvWebConfirmDistributionAction ??
                               'Confirmar distribuição')
-                          : (l10n?.pdvWebConfirmReceiveAction ??
+                        : (l10n?.pdvWebConfirmReceiveAction ??
                               'Confirmar recebimento')),
-                ),
+            ),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
-            ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  String _formatarValor(double valor) => 'R\$ ${valor.toStringAsFixed(2)}';
+  String _formatarValor(double valor) =>
+      context.read<LocaleSettingsProvider>().formatCurrency(valor);
+
+  String _currencyCode() => context.read<LocaleSettingsProvider>().currencyCode;
 
   double _parseValor(String value) {
-    final String texto = value.trim().replaceAll('R\$', '').trim();
-    final String normalizado =
-        texto.contains(',') && texto.contains('.')
-            ? texto.replaceAll('.', '').replaceAll(',', '.')
-            : texto.replaceAll(',', '.');
+    final String texto = value
+        .trim()
+        .replaceAll(_currencyCode(), '')
+        .replaceAll('R\$', '')
+        .trim();
+    final String normalizado = texto.contains(',') && texto.contains('.')
+        ? texto.replaceAll('.', '').replaceAll(',', '.')
+        : texto.replaceAll(',', '.');
     return double.tryParse(normalizado) ?? 0;
   }
 
   @override
   Widget build(BuildContext context) {
-    final Widget conteudo = Column(
-      children: <Widget>[
-        _buildCabecalhoCompacto(),
-        const SizedBox(height: 10),
-        Expanded(child: _buildPainelPrincipal()),
-        _buildBarraAcoes(),
-      ],
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final String routeLabel =
+        AppLocalizations.of(context)?.pdvWebPaymentOverlayTitle ??
+        'Recebimento';
+    final Widget conteudo = PopScope(
+      canPop: !_salvandoOperacao,
+      child: Semantics(
+        namesRoute: true,
+        label: routeLabel,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: const Color(0xFF020617).withValues(alpha: 0.30),
+                blurRadius: 42,
+                offset: const Offset(0, 22),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Material(
+              color: tokens.surfaceElevated,
+              surfaceTintColor: Colors.transparent,
+              child: Stack(
+                children: <Widget>[
+                  Column(
+                    children: <Widget>[
+                      _buildCabecalhoCompacto(),
+                      Divider(height: 1, color: tokens.divider),
+                      Expanded(child: _buildPainelPrincipal()),
+                      _buildBarraAcoes(),
+                    ],
+                  ),
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      height: 3,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
 
     if (widget.embedded) {
-      return Material(
-        color: Theme.of(context).colorScheme.surface,
-        child: conteudo,
-      );
+      return conteudo;
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          AppLocalizations.of(context)?.pdvWebPaymentOverlayTitle ??
-              'Recebimento',
+      backgroundColor: tokens.workspaceBackground,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680, maxHeight: 780),
+              child: conteudo,
+            ),
+          ),
         ),
       ),
-      body: Padding(padding: const EdgeInsets.all(16), child: conteudo),
+    );
+  }
+}
+
+class _RecebimentoPagamentoRouteSurface extends StatelessWidget {
+  const _RecebimentoPagamentoRouteSurface({
+    required this.animation,
+    required this.reduceMotion,
+    required this.child,
+  });
+
+  final Animation<double> animation;
+  final bool reduceMotion;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.escape): () {
+          Navigator.of(context).maybePop();
+        },
+      },
+      child: Focus(
+        autofocus: true,
+        child: AnimatedBuilder(
+          animation: animation,
+          builder: (BuildContext context, Widget? animatedChild) {
+            final double progress = reduceMotion
+                ? 1
+                : Curves.easeOutCubic.transform(animation.value);
+            return Stack(
+              fit: StackFit.expand,
+              children: <Widget>[
+                BackdropFilter(
+                  filter: ui.ImageFilter.blur(
+                    sigmaX: 4 * progress,
+                    sigmaY: 4 * progress,
+                  ),
+                  child: ColoredBox(
+                    color: const Color(
+                      0xFF0F172A,
+                    ).withValues(alpha: 0.58 * progress),
+                  ),
+                ),
+                SafeArea(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: LayoutBuilder(
+                        builder:
+                            (BuildContext context, BoxConstraints constraints) {
+                              final double availableHeight =
+                                  constraints.maxHeight;
+                              final double dialogHeight = availableHeight > 780
+                                  ? 780
+                                  : availableHeight;
+                              return Opacity(
+                                opacity: progress,
+                                child: Transform.translate(
+                                  offset: Offset(0, 16 * (1 - progress)),
+                                  child: Transform.scale(
+                                    scale: 0.96 + (0.04 * progress),
+                                    child: SizedBox(
+                                      width: 680,
+                                      height: dialogHeight,
+                                      child: animatedChild,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+          child: child,
+        ),
+      ),
     );
   }
 }
