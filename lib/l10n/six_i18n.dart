@@ -1236,6 +1236,55 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Link público do catálogo copiado.',
     'produto.webList.publicCatalogError':
         'Não foi possível preparar o link do catálogo.',
+    'produto.webList.catalogReservations': 'Reservas',
+    'catalogReservations.title': 'Reservas do catálogo',
+    'catalogReservations.subtitle':
+        'Acompanhe solicitações recebidas pelo catálogo virtual.',
+    'catalogReservations.loadingTitle': 'Carregando reservas',
+    'catalogReservations.loadingSubtitle':
+        'Sincronizando as solicitações deste comércio.',
+    'catalogReservations.detailLoading': 'Carregando detalhes',
+    'catalogReservations.detailLoadingSubtitle':
+        'Buscando os produtos e dados do cliente.',
+    'catalogReservations.detailTitle': 'Detalhes da reserva',
+    'catalogReservations.empty': 'Nenhuma reserva encontrada.',
+    'catalogReservations.error': 'Não foi possível carregar as reservas.',
+    'catalogReservations.status': 'Status',
+    'catalogReservations.status.received': 'Recebida',
+    'catalogReservations.status.analysis': 'Em análise',
+    'catalogReservations.status.confirmed': 'Confirmada',
+    'catalogReservations.status.cancelled': 'Cancelada',
+    'catalogReservations.status.converted': 'Convertida em venda',
+    'catalogReservations.convert.title': 'Converter em venda',
+    'catalogReservations.convert.description':
+        'Valida o estoque e cria uma venda a receber com estes produtos.',
+    'catalogReservations.convert.action': 'Converter em venda',
+    'catalogReservations.convert.processing': 'Convertendo...',
+    'catalogReservations.convert.confirmTitle': 'Converter reserva em venda?',
+    'catalogReservations.convert.confirmMessage':
+        'O estoque será validado e os itens serão enviados para uma venda a receber.',
+    'catalogReservations.convert.success':
+        'Reserva convertida em venda a receber.',
+    'catalogReservations.convert.convertedTitle': 'Venda criada',
+    'catalogReservations.convert.saleId': 'Venda',
+    'catalogReservations.convert.error.stock':
+        'Estoque insuficiente para converter esta reserva.',
+    'catalogReservations.convert.error.confirmedOnly':
+        'Confirme a reserva antes de convertê-la em venda.',
+    'catalogReservations.convert.error.processing':
+        'Esta reserva já está sendo convertida. Atualize a tela.',
+    'catalogReservations.convert.error.paymentConfig':
+        'Configure um tipo de recebimento futuro antes da conversão.',
+    'catalogReservations.convert.error.product':
+        'Um dos produtos reservados não está mais disponível.',
+    'catalogReservations.convert.error.generic':
+        'Não foi possível converter a reserva em venda.',
+    'catalogReservations.items': 'itens',
+    'catalogReservations.products': 'Produtos reservados',
+    'catalogReservations.notes': 'Observação',
+    'catalogReservations.noNotes': 'Nenhuma observação informada.',
+    'catalogReservations.previous': 'Página anterior',
+    'catalogReservations.next': 'Próxima página',
     'produto.webList.edit.banner':
         'Modo edição ativo • {count} itens encontrados • clique em um produto para alterar.',
     'produto.webList.searchHint': 'Buscar por nome, código ou SKU...',
@@ -2379,6 +2428,55 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.webList.publicCatalogCopied': 'Public catalog link copied.',
     'produto.webList.publicCatalogError':
         'Could not prepare the catalog link.',
+    'produto.webList.catalogReservations': 'Reservations',
+    'catalogReservations.title': 'Catalog reservations',
+    'catalogReservations.subtitle':
+        'Track requests received through the virtual catalog.',
+    'catalogReservations.loadingTitle': 'Loading reservations',
+    'catalogReservations.loadingSubtitle':
+        'Syncing requests for this business.',
+    'catalogReservations.detailLoading': 'Loading details',
+    'catalogReservations.detailLoadingSubtitle':
+        'Fetching products and customer information.',
+    'catalogReservations.detailTitle': 'Reservation details',
+    'catalogReservations.empty': 'No reservations found.',
+    'catalogReservations.error': 'Could not load reservations.',
+    'catalogReservations.status': 'Status',
+    'catalogReservations.status.received': 'Received',
+    'catalogReservations.status.analysis': 'Under review',
+    'catalogReservations.status.confirmed': 'Confirmed',
+    'catalogReservations.status.cancelled': 'Cancelled',
+    'catalogReservations.status.converted': 'Converted to sale',
+    'catalogReservations.convert.title': 'Convert to sale',
+    'catalogReservations.convert.description':
+        'Validates stock and creates an accounts-receivable sale with these products.',
+    'catalogReservations.convert.action': 'Convert to sale',
+    'catalogReservations.convert.processing': 'Converting...',
+    'catalogReservations.convert.confirmTitle': 'Convert reservation to sale?',
+    'catalogReservations.convert.confirmMessage':
+        'Stock will be validated and the items will be sent to an accounts-receivable sale.',
+    'catalogReservations.convert.success':
+        'Reservation converted to an accounts-receivable sale.',
+    'catalogReservations.convert.convertedTitle': 'Sale created',
+    'catalogReservations.convert.saleId': 'Sale',
+    'catalogReservations.convert.error.stock':
+        'Insufficient stock to convert this reservation.',
+    'catalogReservations.convert.error.confirmedOnly':
+        'Confirm the reservation before converting it to a sale.',
+    'catalogReservations.convert.error.processing':
+        'This reservation is already being converted. Refresh the screen.',
+    'catalogReservations.convert.error.paymentConfig':
+        'Configure a future payment type before conversion.',
+    'catalogReservations.convert.error.product':
+        'One of the reserved products is no longer available.',
+    'catalogReservations.convert.error.generic':
+        'The reservation could not be converted to a sale.',
+    'catalogReservations.items': 'items',
+    'catalogReservations.products': 'Reserved products',
+    'catalogReservations.notes': 'Notes',
+    'catalogReservations.noNotes': 'No notes provided.',
+    'catalogReservations.previous': 'Previous page',
+    'catalogReservations.next': 'Next page',
     'produto.webList.edit.banner':
         'Edit mode active • {count} items found • click a product to change it.',
     'produto.webList.searchHint': 'Search by name, code or SKU...',
@@ -3554,6 +3652,55 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Enlace público del catálogo copiado.',
     'produto.webList.publicCatalogError':
         'No fue posible preparar el enlace del catálogo.',
+    'produto.webList.catalogReservations': 'Reservas',
+    'catalogReservations.title': 'Reservas del catálogo',
+    'catalogReservations.subtitle':
+        'Acompaña las solicitudes recibidas por el catálogo virtual.',
+    'catalogReservations.loadingTitle': 'Cargando reservas',
+    'catalogReservations.loadingSubtitle':
+        'Sincronizando las solicitudes de este comercio.',
+    'catalogReservations.detailLoading': 'Cargando detalles',
+    'catalogReservations.detailLoadingSubtitle':
+        'Buscando los productos y datos del cliente.',
+    'catalogReservations.detailTitle': 'Detalles de la reserva',
+    'catalogReservations.empty': 'No se encontraron reservas.',
+    'catalogReservations.error': 'No fue posible cargar las reservas.',
+    'catalogReservations.status': 'Estado',
+    'catalogReservations.status.received': 'Recibida',
+    'catalogReservations.status.analysis': 'En análisis',
+    'catalogReservations.status.confirmed': 'Confirmada',
+    'catalogReservations.status.cancelled': 'Cancelada',
+    'catalogReservations.status.converted': 'Convertida en venta',
+    'catalogReservations.convert.title': 'Convertir en venta',
+    'catalogReservations.convert.description':
+        'Valida el stock y crea una venta por cobrar con estos productos.',
+    'catalogReservations.convert.action': 'Convertir en venta',
+    'catalogReservations.convert.processing': 'Convirtiendo...',
+    'catalogReservations.convert.confirmTitle': '¿Convertir la reserva en venta?',
+    'catalogReservations.convert.confirmMessage':
+        'Se validará el stock y los ítems se enviarán a una venta por cobrar.',
+    'catalogReservations.convert.success':
+        'Reserva convertida en una venta por cobrar.',
+    'catalogReservations.convert.convertedTitle': 'Venta creada',
+    'catalogReservations.convert.saleId': 'Venta',
+    'catalogReservations.convert.error.stock':
+        'Stock insuficiente para convertir esta reserva.',
+    'catalogReservations.convert.error.confirmedOnly':
+        'Confirme la reserva antes de convertirla en venta.',
+    'catalogReservations.convert.error.processing':
+        'Esta reserva ya se está convirtiendo. Actualice la pantalla.',
+    'catalogReservations.convert.error.paymentConfig':
+        'Configure un tipo de cobro futuro antes de la conversión.',
+    'catalogReservations.convert.error.product':
+        'Uno de los productos reservados ya no está disponible.',
+    'catalogReservations.convert.error.generic':
+        'No fue posible convertir la reserva en venta.',
+    'catalogReservations.items': 'ítems',
+    'catalogReservations.products': 'Productos reservados',
+    'catalogReservations.notes': 'Observación',
+    'catalogReservations.noNotes': 'No se informó ninguna observación.',
+    'catalogReservations.previous': 'Página anterior',
+    'catalogReservations.next': 'Página siguiente',
     'produto.webList.edit.banner':
         'Modo edición activo • {count} ítems encontrados • haz clic en un producto para cambiarlo.',
     'produto.webList.searchHint': 'Buscar por nombre, código o SKU...',

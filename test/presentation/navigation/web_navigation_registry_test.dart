@@ -10,7 +10,6 @@ void main() {
         WebNavigationIds.operations,
         WebNavigationIds.catalog,
         WebNavigationIds.people,
-        WebNavigationIds.cash,
         WebNavigationIds.financial,
         WebNavigationIds.settings,
       ]);
@@ -20,16 +19,18 @@ void main() {
       );
       expect(_childIds(operations), <String>[
         WebNavigationIds.operationsPos,
+        WebNavigationIds.cash,
         WebNavigationIds.operationsTechnicalServices,
         WebNavigationIds.operationsPurchases,
       ]);
       expect(_childLabels(operations), <String>[
         'Frente de caixa',
+        'Caixa',
         'Assistências técnicas',
         'Compras',
       ]);
       expect(
-        operations.children[2].destination,
+        operations.children[3].destination,
         WebNavigationDestination.operationsPurchases,
       );
 
