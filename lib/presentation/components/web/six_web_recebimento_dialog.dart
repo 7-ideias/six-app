@@ -701,7 +701,8 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
         break;
       }
     }
-    if (novaOpcao == null) return;
+    final SixWebTipoRecebimentoOpcao? opcaoDisponivel = novaOpcao;
+    if (opcaoDisponivel == null) return;
 
     final double totalAtual = _formas.fold<double>(
       0,
@@ -712,7 +713,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
     setState(() {
       _formas.add(
         _RecebimentoFormaDraft(
-          opcao: novaOpcao,
+          opcao: opcaoDisponivel,
           controller: TextEditingController(
             text: _formatarValorDigitavel(restante > 0 ? restante : 0),
           ),
