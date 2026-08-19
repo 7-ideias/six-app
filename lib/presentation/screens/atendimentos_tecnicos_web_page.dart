@@ -298,29 +298,13 @@ class _AtendimentosTecnicosWebPageState
   }
 
   Future<void> _abrirSelecaoItens(String tipoInicial) async {
-    final result = await showDialog<dynamic>(
+    final result = await showProdutoListaSelecaoWebDialog<dynamic>(
       context: context,
-      builder: (dialogContext) {
-        return Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 24,
-          ),
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: SizedBox(
-            width: MediaQuery.of(dialogContext).size.width * 0.88,
-            height: MediaQuery.of(dialogContext).size.height * 0.86,
-            child: SubPainelWebProdutoLista(
-              isSelecao: true,
-              permitirSelecaoMultipla: true,
-              tipoInicial: tipoInicial,
-            ),
-          ),
-        );
-      },
+      permitirSelecaoMultipla: true,
+      tipoInicial: tipoInicial,
+      widthFactor: 0.88,
+      heightFactor: 0.86,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
     );
 
     if (!mounted || result == null) return;

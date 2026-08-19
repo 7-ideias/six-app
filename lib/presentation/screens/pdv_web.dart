@@ -214,6 +214,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
       }
       _formasPagamentoConfirmadas = <FormaPagamentoSelecionada>[];
       _descricoesFormaPagamentoPorCodigo = <String, String>{};
+      _pagamentoParcialConfirmado = false;
       _codigoBarrasController.clear();
       _clienteIdentificado = null;
       _clienteIdentificadoController.text = venda.nomeCliente.trim();
@@ -598,6 +599,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
     final bool expandido = _modoExpandidoFrenteCaixa;
     final bool temPagamentoConfirmado = _temPagamentoConfirmado();
     final bool pagamentoCompleto = _pagamentoConfirmadoCompleto();
+    final bool pagamentoParcial = _pagamentoConfirmadoParcial();
     final bool pagamentoPrecisaRevisao = _pagamentoConfirmadoPrecisaRevisao();
     final bool clienteNaoInformado =
         (_vendaPossuiItens || _consultandoVendaNaoLiquidada) &&
@@ -694,6 +696,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                       _buildChipStatusPagamento(
                         l10n: l10n,
                         pagamentoCompleto: pagamentoCompleto,
+                        pagamentoParcial: pagamentoParcial,
                         pagamentoPrecisaRevisao: pagamentoPrecisaRevisao,
                       ),
                   ],
@@ -1694,6 +1697,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
             .toList(growable: false);
     final bool temPagamentoConfirmado = formasPagamento.isNotEmpty;
     final bool pagamentoCompleto = _pagamentoConfirmadoCompleto();
+    final bool pagamentoParcial = _pagamentoConfirmadoParcial();
     final bool pagamentoPrecisaRevisao = _pagamentoConfirmadoPrecisaRevisao();
 
     return Container(
@@ -1773,6 +1777,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                       _buildChipStatusPagamento(
                         l10n: l10n,
                         pagamentoCompleto: pagamentoCompleto,
+                        pagamentoParcial: pagamentoParcial,
                         pagamentoPrecisaRevisao: pagamentoPrecisaRevisao,
                       ),
                   ],
@@ -1916,6 +1921,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
   Widget _buildChipStatusPagamento({
     required AppLocalizations? l10n,
     required bool pagamentoCompleto,
+    required bool pagamentoParcial,
     required bool pagamentoPrecisaRevisao,
   }) {
     final Color textoCor;
@@ -1926,6 +1932,13 @@ extension _PdvWeb on _PaginaPrincipalWebState {
       textoCor = _pdvTheme.successColor;
       fundoCor = _pdvTheme.successColor.withValues(alpha: 0.12);
       label = l10n?.pdvWebPaymentDefinedLabel ?? 'Pagamento definido';
+    } else if (pagamentoParcial) {
+      textoCor = _pdvTheme.iconColor;
+      fundoCor = _pdvTheme.iconColor.withValues(alpha: 0.12);
+      label = context.t(
+        'pdv.receipt.partialDefined',
+        fallback: 'Parcial definido',
+      );
     } else if (pagamentoPrecisaRevisao) {
       textoCor = _pdvTheme.warningColor;
       fundoCor = _pdvTheme.warningColor.withValues(alpha: 0.14);
@@ -2002,7 +2015,20 @@ extension _PdvWeb on _PaginaPrincipalWebState {
             l10n?.pdvWebRemainingAmountLabel ?? 'Valor restante',
             _restantePagamentoConfirmado(),
           ),
-          if (_pagamentoConfirmadoPrecisaRevisao()) ...<Widget>[
+          if (_pagamentoConfirmadoParcial()) ...<Widget>[
+            const SizedBox(height: 4),
+            Text(
+              context.t(
+                'pdv.receipt.partialReady',
+                fallback:
+                    'Recebimento parcial pronto. O saldo ficará em aberto.',
+              ),
+              style: TextStyle(
+                color: _pdvTheme.iconColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ] else if (_pagamentoConfirmadoPrecisaRevisao()) ...<Widget>[
             const SizedBox(height: 4),
             Text(
               l10n?.pdvWebPaymentNeedsReviewHint ??
@@ -2134,6 +2160,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
     final bool podeLimpar = _vendaTemDadosTemporariosPreenchidos();
     final bool pagamentoDefinido = _temPagamentoConfirmado();
     final bool pagamentoCompleto = _pagamentoConfirmadoCompleto();
+    final bool pagamentoParcial = _pagamentoConfirmadoParcial();
     final bool pagamentoPrecisaRevisao = _pagamentoConfirmadoPrecisaRevisao();
     final double valorRecebimento = _totalParaRecebimentoAtual;
     final bool podeReceber =
@@ -2145,6 +2172,9 @@ extension _PdvWeb on _PaginaPrincipalWebState {
           '${context.t(_vendaNaoLiquidadaPermiteEdicaoItens ? 'pdv.openSale.receiveUpdatedSale' : 'pdv.openSale.receiveBalance', fallback: _vendaNaoLiquidadaPermiteEdicaoItens ? 'Receber venda revisada' : 'Receber saldo')} — ${_formatCurrency(valorRecebimento)}';
     } else if (!temItens) {
       labelAcaoPrincipal = l10n?.pdvWebReceiveAction ?? 'Receber';
+    } else if (pagamentoParcial) {
+      labelAcaoPrincipal =
+          '${context.t('pdv.receipt.confirmPartial', fallback: 'Confirmar parcial')} — ${_formatCurrency(_totalPagamentoConfirmado())}';
     } else if (pagamentoPrecisaRevisao) {
       labelAcaoPrincipal =
           '${l10n?.pdvWebReviewPaymentAction ?? 'Revisar pagamento'} — ${_formatCurrency(total)}';
@@ -2229,11 +2259,18 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                       icon:
                           pagamentoCompleto
                               ? Icons.verified_outlined
+                              : pagamentoParcial
+                              ? Icons.account_balance_wallet_outlined
                               : Icons.warning_amber_rounded,
                       label:
                           pagamentoCompleto
                               ? (l10n?.pdvWebPaymentDefinedLabel ??
                                   'Pagamento definido')
+                              : pagamentoParcial
+                              ? context.t(
+                                'pdv.receipt.partialDefined',
+                                fallback: 'Parcial definido',
+                              )
                               : (l10n?.pdvWebReviewPaymentAction ??
                                   'Revisar pagamento'),
                     ),

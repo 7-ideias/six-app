@@ -2,7 +2,8 @@ import '../data/models/operacao_models.dart';
 
 class OperacaoRequestMapper {
   OperacaoInserirRequest toRequest(OperacaoVendaInput input) {
-    final dataOperacao = (input.dataOperacao ?? DateTime.now()).toIso8601String();
+    final dataOperacao = (input.dataOperacao ?? DateTime.now())
+        .toIso8601String();
     final receberDepois = input.receberDepois;
 
     final vendaList = input.itens
@@ -43,6 +44,9 @@ class OperacaoRequestMapper {
     final totalTIPO8 = _somarPorCodigo(input.formasPagamento, 'TIPO8');
     final totalTIPO9 = _somarPorCodigo(input.formasPagamento, 'TIPO9');
     final totalTIPO10 = _somarPorCodigo(input.formasPagamento, 'TIPO10');
+    final bool possuiRecebimento = input.formasPagamento.any(
+      (FormaPagamentoSelecionada forma) => forma.valor > 0,
+    );
 
     return OperacaoInserirRequest(
       descricao: input.descricao,
@@ -53,9 +57,11 @@ class OperacaoRequestMapper {
       clientePediuParaApagar: false,
       vendaList: vendaList,
       servicoList: servicoList,
-      objRecebimentosList: receberDepois
+      // Uma venda parcial permanece não quitada, mas o valor já recebido deve
+      // acompanhar a operação para que somente o saldo siga em aberto.
+      objRecebimentosList: !possuiRecebimento
           ? <RecebimentoRequest>[]
-          : [
+          : <RecebimentoRequest>[
               RecebimentoRequest(
                 localDateTimeDoRecebimento: dataOperacao,
                 idUnicoDoColaborador: input.idColaborador,
@@ -87,7 +93,10 @@ class OperacaoRequestMapper {
     );
   }
 
-  double _somarPorCodigo(List<FormaPagamentoSelecionada> formas, String codigo) {
+  double _somarPorCodigo(
+    List<FormaPagamentoSelecionada> formas,
+    String codigo,
+  ) {
     return formas
         .where((forma) => forma.codigo == codigo)
         .fold<double>(0.0, (soma, forma) => soma + forma.valor);

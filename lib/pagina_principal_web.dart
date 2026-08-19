@@ -132,6 +132,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   List<FormaPagamentoSelecionada> _formasPagamentoConfirmadas =
       <FormaPagamentoSelecionada>[];
   Map<String, String> _descricoesFormaPagamentoPorCodigo = <String, String>{};
+  bool _pagamentoParcialConfirmado = false;
   bool _registrandoReceberDepois = false;
   bool _recebendoVendaNaoLiquidada = false;
   bool _overlayRecebimentoAberto = false;
@@ -1211,57 +1212,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return;
     }
 
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final bool dark = Theme.of(context).brightness == Brightness.dark;
-    final dynamic result = await showDialog<dynamic>(
+    final dynamic result = await showProdutoListaSelecaoWebDialog<dynamic>(
       context: context,
-      barrierColor: tokens.workspaceBackground.withValues(
-        alpha: dark ? 0.62 : 0.34,
-      ),
-      builder: (BuildContext context) {
-        final ThemeData themedDialog = WebThemeTokens.applyTo(
-          Theme.of(context),
-        );
-        final WebThemeTokens dialogTokens = WebThemeTokens.of(context);
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 28,
-            vertical: 28,
-          ),
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: Theme(
-            data: themedDialog,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: dialogTokens.surfaceElevated,
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: dialogTokens.cardBorder),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: dark ? 0.28 : 0.12),
-                    blurRadius: 32,
-                    offset: const Offset(0, 18),
-                  ),
-                ],
-              ),
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.80,
-                height: MediaQuery.of(context).size.height * 0.80,
-                child: SubPainelWebProdutoLista(
-                  isSelecao: true,
-                  permitirSelecaoMultipla: true,
-                  tipoInicial: tipoInicial,
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+      permitirSelecaoMultipla: true,
+      tipoInicial: tipoInicial,
+      widthFactor: 0.80,
+      heightFactor: 0.80,
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),
     );
 
     if (!mounted) {
@@ -1814,6 +1771,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       _produtosSelecionados.clear();
       _formasPagamentoConfirmadas = <FormaPagamentoSelecionada>[];
       _descricoesFormaPagamentoPorCodigo = <String, String>{};
+      _pagamentoParcialConfirmado = false;
       _codigoBarrasController.clear();
       _itensTotalController.text = '0';
       _clienteIdentificado = null;
@@ -2490,8 +2448,19 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     return _restantePagamentoConfirmado().abs() <= 0.009;
   }
 
+  bool _pagamentoConfirmadoParcial() {
+    if (!_pagamentoParcialConfirmado || !_temPagamentoConfirmado()) {
+      return false;
+    }
+
+    return _totalPagamentoConfirmado() > 0.009 &&
+        _restantePagamentoConfirmado() > 0.009;
+  }
+
   bool _pagamentoConfirmadoPrecisaRevisao() {
-    return _temPagamentoConfirmado() && !_pagamentoConfirmadoCompleto();
+    return _temPagamentoConfirmado() &&
+        !_pagamentoConfirmadoCompleto() &&
+        !_pagamentoConfirmadoParcial();
   }
 
   Future<void> _abrirOverlayRecebimento({required bool somenteSelecao}) async {
@@ -2515,87 +2484,34 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     });
 
     try {
-      await showDialog<void>(
+      await showRecebimentoPagamentoWebDialog(
         context: context,
-        barrierDismissible: true,
-        barrierColor: Colors.black.withValues(alpha: 0.26),
-        builder: (BuildContext dialogContext) {
-          final Size size = MediaQuery.of(dialogContext).size;
-          final double alturaMaximaDisponivel =
-              (size.height - 24).clamp(420.0, double.infinity).toDouble();
-          final double largura =
-              (size.width >= 1280
-                      ? 1120.0
-                      : (size.width * 0.96).clamp(780.0, 1120.0))
-                  .toDouble();
-          final double altura =
-              (size.height * 0.92)
-                  .clamp(420.0, alturaMaximaDisponivel)
-                  .toDouble();
-
-          return CallbackShortcuts(
-            bindings: <ShortcutActivator, VoidCallback>{
-              const SingleActivator(LogicalKeyboardKey.escape): () {
-                Navigator.of(dialogContext).maybePop();
-              },
-            },
-            child: Focus(
-              autofocus: true,
-              child: Dialog(
-                insetPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-                clipBehavior: Clip.antiAlias,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: SizedBox(
-                  width: largura,
-                  height: altura,
-                  child: RecebimentoPagamentoWeb(
-                    embedded: true,
-                    somenteSelecao: somenteSelecao,
-                    formasPagamentoIniciais: _formasPagamentoConfirmadas,
-                    descricoesFormasIniciais:
-                        _descricoesFormaPagamentoPorCodigo,
-                    onBack: () => Navigator.of(dialogContext).maybePop(),
-                    onSelecaoConfirmada: (
-                      RecebimentoPagamentoSelecaoResultado resultado,
-                    ) {
-                      setState(() {
-                        _formasPagamentoConfirmadas = resultado.formasPagamento
-                            .where(
-                              (FormaPagamentoSelecionada forma) =>
-                                  forma.valor > 0,
-                            )
-                            .toList(growable: false);
-                        _descricoesFormaPagamentoPorCodigo =
-                            Map<String, String>.from(
-                              resultado.descricaoPorCodigo,
-                            );
-                      });
-                    },
-                    onSuccess: () {
-                      _limparVendaAposSucessoRecebimento();
-                      Navigator.of(dialogContext).maybePop();
-                    },
-                    valorTotalVenda: _calcularTotal(),
-                    itensResumo: _montarItensResumoPagamento(),
-                    clienteNome:
-                        _clienteIdentificado?.nome.trim().isNotEmpty == true
-                            ? _clienteIdentificado!.nome.trim()
-                            : _clienteIdentificadoController.text.trim(),
-                    numeroVenda: '',
-                    idColaborador: 'idUnicoDoColaborador',
-                    nomeColaborador: 'Nome do colaborador',
-                    operacaoService: _operacaoService,
-                  ),
-                ),
-              ),
-            ),
-          );
+        somenteSelecao: somenteSelecao,
+        formasPagamentoIniciais: _formasPagamentoConfirmadas,
+        descricoesFormasIniciais: _descricoesFormaPagamentoPorCodigo,
+        recebimentoParcialInicial: _pagamentoConfirmadoParcial(),
+        onSelecaoConfirmada: (RecebimentoPagamentoSelecaoResultado resultado) {
+          setState(() {
+            _formasPagamentoConfirmadas = resultado.formasPagamento
+                .where((FormaPagamentoSelecionada forma) => forma.valor > 0)
+                .toList(growable: false);
+            _descricoesFormaPagamentoPorCodigo = Map<String, String>.from(
+              resultado.descricaoPorCodigo,
+            );
+            _pagamentoParcialConfirmado = resultado.parcial;
+          });
         },
+        onSuccess: _limparVendaAposSucessoRecebimento,
+        valorTotalVenda: _calcularTotal(),
+        itensResumo: _montarItensResumoPagamento(),
+        clienteNome:
+            _clienteIdentificado?.nome.trim().isNotEmpty == true
+                ? _clienteIdentificado!.nome.trim()
+                : _clienteIdentificadoController.text.trim(),
+        numeroVenda: '',
+        idColaborador: 'idUnicoDoColaborador',
+        nomeColaborador: 'Nome do colaborador',
+        operacaoService: _operacaoService,
       );
     } finally {
       if (mounted) {
@@ -2632,7 +2548,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       _receberVendaNaoLiquidadaEmConsulta();
       return;
     }
-    if (_pagamentoConfirmadoCompleto()) {
+    if (_pagamentoConfirmadoCompleto() || _pagamentoConfirmadoParcial()) {
       _abrirOverlayRecebimento(somenteSelecao: false);
       return;
     }
