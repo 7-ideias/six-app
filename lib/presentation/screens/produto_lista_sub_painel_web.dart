@@ -76,6 +76,13 @@ class _CategoriaFiltro {
   final String nome;
 }
 
+class _ProdutoFiltroMenuOpcao<T> {
+  const _ProdutoFiltroMenuOpcao({required this.value, required this.label});
+
+  final T value;
+  final String label;
+}
+
 class SubPainelWebProdutoLista extends StatelessWidget {
   const SubPainelWebProdutoLista({
     super.key,
@@ -1668,21 +1675,20 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             fallback: 'Categoria',
           ),
           value: _categoriaSelecionadaLabel(context),
+          selectedValue: _categoriaSelecionadaId,
           minWidth: 190,
-          items: <PopupMenuEntry<String?>>[
-            PopupMenuItem<String?>(
+          items: <_ProdutoFiltroMenuOpcao<String?>>[
+            _ProdutoFiltroMenuOpcao<String?>(
               value: null,
-              child: Text(
-                context.t(
-                  'produto.webList.filter.categoryAll',
-                  fallback: 'Todas categorias',
-                ),
+              label: context.t(
+                'produto.webList.filter.categoryAll',
+                fallback: 'Todas categorias',
               ),
             ),
             ..._categoriasDisponiveis().map(
-              (_CategoriaFiltro categoria) => PopupMenuItem<String?>(
+              (_CategoriaFiltro categoria) => _ProdutoFiltroMenuOpcao<String?>(
                 value: categoria.id,
-                child: Text(categoria.nome),
+                label: categoria.nome,
               ),
             ),
           ],
@@ -1697,24 +1703,23 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           icon: Icons.toggle_on_outlined,
           label: context.t('atendimentoTecnico.status', fallback: 'Status'),
           value: _statusFiltroLabel(context),
+          selectedValue: _statusFiltro,
           minWidth: 156,
-          items: <PopupMenuEntry<_ProdutoStatusFiltro>>[
-            PopupMenuItem<_ProdutoStatusFiltro>(
+          items: <_ProdutoFiltroMenuOpcao<_ProdutoStatusFiltro>>[
+            _ProdutoFiltroMenuOpcao<_ProdutoStatusFiltro>(
               value: _ProdutoStatusFiltro.todos,
-              child: Text(
-                context.t(
-                  'produto.webList.filter.statusAll',
-                  fallback: 'Todos',
-                ),
+              label: context.t(
+                'produto.webList.filter.statusAll',
+                fallback: 'Todos',
               ),
             ),
-            PopupMenuItem<_ProdutoStatusFiltro>(
+            _ProdutoFiltroMenuOpcao<_ProdutoStatusFiltro>(
               value: _ProdutoStatusFiltro.ativos,
-              child: Text(context.t('common.active', fallback: 'Ativo')),
+              label: context.t('common.active', fallback: 'Ativo'),
             ),
-            PopupMenuItem<_ProdutoStatusFiltro>(
+            _ProdutoFiltroMenuOpcao<_ProdutoStatusFiltro>(
               value: _ProdutoStatusFiltro.inativos,
-              child: Text(context.t('common.inactive', fallback: 'Inativo')),
+              label: context.t('common.inactive', fallback: 'Inativo'),
             ),
           ],
           onSelected: (_ProdutoStatusFiltro value) {
@@ -1728,48 +1733,42 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           icon: Icons.inventory_2_outlined,
           label: context.t('workspaceHome.stock.title', fallback: 'Estoque'),
           value: _estoqueFiltroLabel(context),
+          selectedValue: _estoqueFiltro,
           minWidth: 170,
-          items: <PopupMenuEntry<_ProdutoEstoqueFiltro>>[
-            PopupMenuItem<_ProdutoEstoqueFiltro>(
+          items: <_ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>>[
+            _ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>(
               value: _ProdutoEstoqueFiltro.todos,
-              child: Text(
-                context.t('produto.webList.filter.stockAll', fallback: 'Todos'),
+              label: context.t(
+                'produto.webList.filter.stockAll',
+                fallback: 'Todos',
               ),
             ),
-            PopupMenuItem<_ProdutoEstoqueFiltro>(
+            _ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>(
               value: _ProdutoEstoqueFiltro.emEstoque,
-              child: Text(
-                context.t(
-                  'produto.webList.filter.stockAvailable',
-                  fallback: 'Em estoque',
-                ),
+              label: context.t(
+                'produto.webList.filter.stockAvailable',
+                fallback: 'Em estoque',
               ),
             ),
-            PopupMenuItem<_ProdutoEstoqueFiltro>(
+            _ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>(
               value: _ProdutoEstoqueFiltro.estoqueBaixo,
-              child: Text(
-                context.t(
-                  'produto.webList.filter.stockLow',
-                  fallback: 'Estoque baixo',
-                ),
+              label: context.t(
+                'produto.webList.filter.stockLow',
+                fallback: 'Estoque baixo',
               ),
             ),
-            PopupMenuItem<_ProdutoEstoqueFiltro>(
+            _ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>(
               value: _ProdutoEstoqueFiltro.semEstoque,
-              child: Text(
-                context.t(
-                  'produto.webList.filter.stockOut',
-                  fallback: 'Sem estoque',
-                ),
+              label: context.t(
+                'produto.webList.filter.stockOut',
+                fallback: 'Sem estoque',
               ),
             ),
-            PopupMenuItem<_ProdutoEstoqueFiltro>(
+            _ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>(
               value: _ProdutoEstoqueFiltro.estoqueNegativo,
-              child: Text(
-                context.t(
-                  'produto.webList.filter.stockNegative',
-                  fallback: 'Estoque negativo',
-                ),
+              label: context.t(
+                'produto.webList.filter.stockNegative',
+                fallback: 'Estoque negativo',
               ),
             ),
           ],
@@ -1784,33 +1783,28 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           icon: Icons.swap_vert_rounded,
           label: context.t('produto.webList.sort.label', fallback: 'Ordenação'),
           value: _ordenacaoLabel(context),
+          selectedValue: ordenacao,
           minWidth: 170,
-          items: <PopupMenuEntry<String>>[
-            PopupMenuItem<String>(
+          items: <_ProdutoFiltroMenuOpcao<String>>[
+            _ProdutoFiltroMenuOpcao<String>(
               value: 'nomeAsc',
-              child: Text(
-                context.t(
-                  'produto.webList.sort.name',
-                  fallback: 'Ordenar por nome',
-                ),
+              label: context.t(
+                'produto.webList.sort.name',
+                fallback: 'Ordenar por nome',
               ),
             ),
-            PopupMenuItem<String>(
+            _ProdutoFiltroMenuOpcao<String>(
               value: 'precoAsc',
-              child: Text(
-                context.t(
-                  'produto.webList.sort.priceAsc',
-                  fallback: 'Menor preço',
-                ),
+              label: context.t(
+                'produto.webList.sort.priceAsc',
+                fallback: 'Menor preço',
               ),
             ),
-            PopupMenuItem<String>(
+            _ProdutoFiltroMenuOpcao<String>(
               value: 'precoDesc',
-              child: Text(
-                context.t(
-                  'produto.webList.sort.priceDesc',
-                  fallback: 'Maior preço',
-                ),
+              label: context.t(
+                'produto.webList.sort.priceDesc',
+                fallback: 'Maior preço',
               ),
             ),
           ],
@@ -1881,65 +1875,21 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     required IconData icon,
     required String label,
     required String value,
-    required List<PopupMenuEntry<T>> items,
+    required T selectedValue,
+    required List<_ProdutoFiltroMenuOpcao<T>> items,
     required ValueChanged<T> onSelected,
     double minWidth = 150,
   }) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-
     return ConstrainedBox(
       constraints: BoxConstraints(minWidth: minWidth, maxWidth: 240),
-      child: PopupMenuButton<T>(
+      child: _ProdutoFiltroMenu<T>(
         tooltip: label,
+        icon: icon,
+        label: label,
+        value: value,
+        selectedValue: selectedValue,
+        items: items,
         onSelected: onSelected,
-        color: tokens.menuBackground,
-        itemBuilder: (BuildContext context) => items,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: tokens.inputBackground,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: tokens.cardBorder),
-          ),
-          child: Row(
-            children: <Widget>[
-              Icon(icon, size: 18, color: tokens.info),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: tokens.secondaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: tokens.primaryText,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: tokens.secondaryText,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -2784,11 +2734,14 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         fallback: 'Itens por página',
       ),
       value: _itensPorPagina.toString(),
+      selectedValue: _itensPorPagina,
       minWidth: 142,
       items: _opcoesItensPorPagina
           .map(
-            (int value) =>
-                PopupMenuItem<int>(value: value, child: Text(value.toString())),
+            (int value) => _ProdutoFiltroMenuOpcao<int>(
+              value: value,
+              label: value.toString(),
+            ),
           )
           .toList(growable: false),
       onSelected: (int value) {
@@ -3923,6 +3876,202 @@ class _ProdutoSelecionadoWeb {
     return _ProdutoSelecionadoWeb(
       produto: produto,
       quantidade: quantidade ?? this.quantidade,
+    );
+  }
+}
+
+class _ProdutoFiltroMenu<T> extends StatefulWidget {
+  const _ProdutoFiltroMenu({
+    required this.tooltip,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.selectedValue,
+    required this.items,
+    required this.onSelected,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final String label;
+  final String value;
+  final T selectedValue;
+  final List<_ProdutoFiltroMenuOpcao<T>> items;
+  final ValueChanged<T> onSelected;
+
+  @override
+  State<_ProdutoFiltroMenu<T>> createState() => _ProdutoFiltroMenuState<T>();
+}
+
+class _ProdutoFiltroMenuState<T> extends State<_ProdutoFiltroMenu<T>> {
+  bool _hovered = false;
+  bool _open = false;
+
+  Future<void> _openMenu() async {
+    if (widget.items.isEmpty) return;
+
+    final RenderBox? fieldBox = context.findRenderObject() as RenderBox?;
+    final RenderBox? overlayBox =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+    if (fieldBox == null || overlayBox == null) return;
+
+    final Offset fieldOffset = fieldBox.localToGlobal(
+      Offset.zero,
+      ancestor: overlayBox,
+    );
+    final Size fieldSize = fieldBox.size;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    setState(() => _open = true);
+    final T? selected = await showMenu<T>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        fieldOffset.dx,
+        fieldOffset.dy + fieldSize.height + 6,
+        overlayBox.size.width - fieldOffset.dx - fieldSize.width,
+        0,
+      ),
+      color: tokens.menuBackground,
+      elevation: 10,
+      constraints: BoxConstraints(
+        minWidth: fieldSize.width,
+        maxWidth: fieldSize.width,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: tokens.cardBorder),
+      ),
+      items: widget.items
+          .map((_ProdutoFiltroMenuOpcao<T> option) {
+            final bool selected = option.value == widget.selectedValue;
+            final ThemeData theme = Theme.of(context);
+
+            return PopupMenuItem<T>(
+              value: option.value,
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+              child: Row(
+                children: <Widget>[
+                  Icon(
+                    selected
+                        ? Icons.check_circle_rounded
+                        : Icons.circle_outlined,
+                    size: 18,
+                    color: selected ? tokens.info : tokens.mutedText,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      option.label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: tokens.primaryText,
+                        fontWeight:
+                            selected ? FontWeight.w800 : FontWeight.w600,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          })
+          .toList(growable: false),
+    );
+
+    if (!mounted) return;
+    setState(() => _open = false);
+    if (selected != null && selected != widget.selectedValue) {
+      widget.onSelected(selected);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool active = _hovered || _open;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Tooltip(
+        message: widget.tooltip,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: _openMenu,
+            child: AnimatedContainer(
+              duration: WebThemeTokens.transitionDuration,
+              curve: WebThemeTokens.transitionCurve,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: active ? tokens.surfaceMuted : tokens.inputBackground,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: active ? tokens.selectedBorder : tokens.cardBorder,
+                  width: active ? 1.4 : 1,
+                ),
+                boxShadow:
+                    active
+                        ? <BoxShadow>[
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ]
+                        : null,
+              ),
+              child: Row(
+                children: <Widget>[
+                  Icon(widget.icon, size: 18, color: tokens.info),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          widget.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: tokens.secondaryText,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.value,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: tokens.primaryText,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  AnimatedRotation(
+                    turns: _open ? 0.5 : 0,
+                    duration: WebThemeTokens.transitionDuration,
+                    curve: WebThemeTokens.transitionCurve,
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: active ? tokens.info : tokens.secondaryText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
