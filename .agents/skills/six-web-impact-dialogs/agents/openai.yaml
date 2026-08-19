@@ -1,0 +1,7 @@
+interface:
+  display_name: "Diálogos de Impacto SIX Web"
+  short_description: "Modais Web com foco, animação e estados"
+  default_prompt: "Use $six-web-impact-dialogs para implementar este fluxo do SIX Web seguindo o padrão visual de encerramento de caixa."
+
+policy:
+  allow_implicit_invocation: true

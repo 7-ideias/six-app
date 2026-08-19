@@ -253,18 +253,11 @@ class _FormasRecebimentoConfiguracaoContentState
         physics: const AlwaysScrollableScrollPhysics(),
         children: <Widget>[
           const SixBackendLoading(
+            presentation: SixBackendLoadingPresentation.updateBanner,
             title: 'Carregando formas de recebimento',
             subtitle: 'Sincronizando as configurações da empresa no backend.',
             animation: SixBackendLoadingAnimation.skeletonPulse,
             leadingIcon: Icons.payments_rounded,
-          ),
-          const SizedBox(height: 12),
-          ...List<Widget>.generate(
-            4,
-            (int index) => Padding(
-              padding: EdgeInsets.only(bottom: index == 3 ? 0 : 10),
-              child: const SixWebLoadingBlock(height: 132),
-            ),
           ),
         ],
       );

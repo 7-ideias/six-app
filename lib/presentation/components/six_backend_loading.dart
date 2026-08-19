@@ -4,11 +4,9 @@ import 'package:flutter/material.dart';
 ///
 /// Para trocar globalmente a animação padrão, altere
 /// [SixBackendLoadingDefaults.messageLoadingAnimation].
-enum SixBackendLoadingAnimation {
-  skeletonPulse,
-  waveDots,
-  progressSweep,
-}
+enum SixBackendLoadingAnimation { skeletonPulse, waveDots, progressSweep }
+
+enum SixBackendLoadingPresentation { card, updateBanner }
 
 class SixBackendLoadingDefaults {
   const SixBackendLoadingDefaults._();
@@ -23,6 +21,7 @@ class SixBackendLoading extends StatefulWidget {
     required this.title,
     required this.subtitle,
     this.animation = SixBackendLoadingDefaults.messageLoadingAnimation,
+    this.presentation = SixBackendLoadingPresentation.card,
     this.leadingIcon = Icons.cloud_sync_outlined,
     this.compact = false,
     this.onTap,
@@ -38,6 +37,7 @@ class SixBackendLoading extends StatefulWidget {
     this.subtitle =
         'Estamos sincronizando as mensagens e eventos mais recentes desta empresa.',
     this.animation = SixBackendLoadingDefaults.messageLoadingAnimation,
+    this.presentation = SixBackendLoadingPresentation.card,
     this.leadingIcon = Icons.cloud_sync_outlined,
     this.compact = false,
     this.onTap,
@@ -50,6 +50,7 @@ class SixBackendLoading extends StatefulWidget {
   final String title;
   final String subtitle;
   final SixBackendLoadingAnimation animation;
+  final SixBackendLoadingPresentation presentation;
   final IconData leadingIcon;
   final bool compact;
   final VoidCallback? onTap;
@@ -73,8 +74,8 @@ class _SixBackendLoadingState extends State<SixBackendLoading>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat(
-        reverse: widget.animation == SixBackendLoadingAnimation.skeletonPulse,
-      );
+      reverse: widget.animation == SixBackendLoadingAnimation.skeletonPulse,
+    );
   }
 
   @override
@@ -99,29 +100,53 @@ class _SixBackendLoadingState extends State<SixBackendLoading>
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final Color background = widget.backgroundColor ?? colorScheme.surface;
-    final Color border = widget.borderColor ??
-        colorScheme.outline.withValues(alpha: widget.compact ? 0.10 : 0.12);
+    final bool updateBanner =
+        widget.presentation == SixBackendLoadingPresentation.updateBanner;
+    final Color accent = theme.colorScheme.primary;
+    final Color background =
+        widget.backgroundColor ??
+        (updateBanner ? accent.withValues(alpha: 0.06) : colorScheme.surface);
+    final Color border =
+        widget.borderColor ??
+        (updateBanner
+            ? accent.withValues(alpha: 0.18)
+            : colorScheme.outline.withValues(
+              alpha: widget.compact ? 0.10 : 0.12,
+            ));
 
     final Widget content = Container(
       width: double.infinity,
-      padding: widget.padding ?? EdgeInsets.all(widget.compact ? 14 : 16),
+      padding:
+          widget.padding ??
+          EdgeInsets.all(updateBanner ? 14 : (widget.compact ? 14 : 16)),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(widget.borderRadius),
         border: Border.all(color: border),
-        boxShadow: widget.compact
-            ? null
-            : <BoxShadow>[
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.035),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+        boxShadow:
+            widget.compact || updateBanner
+                ? null
+                : <BoxShadow>[
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.035),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
       ),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
+          if (updateBanner) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _buildIcon(theme),
+                const SizedBox(width: 12),
+                Expanded(child: _buildText(theme, updateBanner: true)),
+              ],
+            );
+          }
+
           final bool vertical = widget.compact || constraints.maxWidth < 520;
           final Widget icon = _buildIcon(theme);
           final Widget text = _buildText(theme);
@@ -172,25 +197,31 @@ class _SixBackendLoadingState extends State<SixBackendLoading>
   }
 
   Widget _buildIcon(ThemeData theme) {
+    final bool updateBanner =
+        widget.presentation == SixBackendLoadingPresentation.updateBanner;
+    final Color accent = theme.colorScheme.primary;
     return AnimatedBuilder(
       animation: _controller,
       builder: (BuildContext context, Widget? child) {
-        final double pulse = 0.96 + (_controller.value * 0.08);
+        final double pulse =
+            updateBanner ? 1 : 0.96 + (_controller.value * 0.08);
         return Transform.scale(scale: pulse, child: child);
       },
       child: Container(
         width: widget.compact ? 42 : 46,
         height: widget.compact ? 42 : 46,
         decoration: BoxDecoration(
-          color: theme.colorScheme.primary.withValues(alpha: 0.10),
+          color: accent.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(widget.compact ? 14 : 16),
         ),
-        child: Icon(widget.leadingIcon, color: theme.colorScheme.primary),
+        child: Icon(widget.leadingIcon, color: accent),
       ),
     );
   }
 
-  Widget _buildText(ThemeData theme) {
+  Widget _buildText(ThemeData theme, {bool updateBanner = false}) {
+    final Color accent =
+        updateBanner ? theme.colorScheme.primary : theme.colorScheme.onSurface;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -200,13 +231,13 @@ class _SixBackendLoadingState extends State<SixBackendLoading>
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w900,
-            color: theme.colorScheme.onSurface,
+            color: accent,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           widget.subtitle,
-          maxLines: widget.compact ? 2 : 1,
+          maxLines: widget.compact || updateBanner ? 2 : 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
@@ -234,7 +265,9 @@ class _SixBackendLoadingState extends State<SixBackendLoading>
       animation: _controller,
       builder: (BuildContext context, Widget? child) {
         final double opacity = 0.32 + (_controller.value * 0.28);
-        final Color color = theme.colorScheme.primary.withValues(alpha: opacity);
+        final Color color = theme.colorScheme.primary.withValues(
+          alpha: opacity,
+        );
         final Color muted = theme.colorScheme.outlineVariant.withValues(
           alpha: 0.36 + (_controller.value * 0.20),
         );
