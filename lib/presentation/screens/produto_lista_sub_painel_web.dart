@@ -971,7 +971,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         onPressed: onPressed,
         icon: Icon(icon, size: 18),
         label: Text(label),
-        style: FilledButton.styleFrom(padding: padding, shape: shape),
+        style: _catalogFilledButtonStyle(
+          context,
+          padding: padding,
+          shape: shape,
+        ),
       );
     }
 
@@ -979,20 +983,101 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       onPressed: onPressed,
       icon: Icon(icon, size: 18),
       label: Text(label),
-      style: OutlinedButton.styleFrom(padding: padding, shape: shape),
+      style: _catalogOutlinedButtonStyle(
+        context,
+        padding: padding,
+        shape: shape,
+      ),
     );
   }
 
   Widget _closeButton(BuildContext context) {
+    final OutlinedBorder shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(14),
+    );
     return OutlinedButton.icon(
       onPressed: () => Navigator.of(context).pop(),
       icon: const Icon(Icons.close_rounded, size: 18),
       label: Text(context.t('common.close', fallback: 'Fechar')),
-      style: OutlinedButton.styleFrom(
+      style: _catalogOutlinedButtonStyle(
+        context,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: shape,
       ),
     );
+  }
+
+  ButtonStyle _catalogOutlinedButtonStyle(
+    BuildContext context, {
+    required EdgeInsetsGeometry padding,
+    required OutlinedBorder shape,
+    bool emphasis = false,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return OutlinedButton.styleFrom(
+      padding: padding,
+      shape: shape,
+      foregroundColor: tokens.info,
+      disabledForegroundColor: tokens.disabledForeground,
+      backgroundColor:
+          emphasis
+              ? tokens.info.withValues(alpha: 0.07)
+              : tokens.inputBackground,
+      disabledBackgroundColor: tokens.disabledBackground.withValues(
+        alpha: 0.48,
+      ),
+      side: BorderSide(
+        color:
+            emphasis ? tokens.info.withValues(alpha: 0.22) : tokens.cardBorder,
+      ),
+    ).copyWith(overlayColor: _catalogButtonOverlay(tokens));
+  }
+
+  ButtonStyle _catalogFilledButtonStyle(
+    BuildContext context, {
+    required EdgeInsetsGeometry padding,
+    required OutlinedBorder shape,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final bool dark = colorScheme.brightness == Brightness.dark;
+    return FilledButton.styleFrom(
+      padding: padding,
+      shape: shape,
+      backgroundColor: tokens.info,
+      foregroundColor:
+          dark ? tokens.workspaceBackground : colorScheme.onPrimary,
+      disabledBackgroundColor: tokens.disabledBackground,
+      disabledForegroundColor: tokens.disabledForeground,
+    ).copyWith(overlayColor: _catalogFilledButtonOverlay(tokens));
+  }
+
+  WidgetStateProperty<Color?> _catalogButtonOverlay(WebThemeTokens tokens) {
+    return WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
+      if (states.contains(WidgetState.pressed)) {
+        return tokens.info.withValues(alpha: 0.18);
+      }
+      if (states.contains(WidgetState.hovered) ||
+          states.contains(WidgetState.focused)) {
+        return tokens.info.withValues(alpha: 0.10);
+      }
+      return null;
+    });
+  }
+
+  WidgetStateProperty<Color?> _catalogFilledButtonOverlay(
+    WebThemeTokens tokens,
+  ) {
+    return WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
+      if (states.contains(WidgetState.pressed)) {
+        return tokens.workspaceBackground.withValues(alpha: 0.18);
+      }
+      if (states.contains(WidgetState.hovered) ||
+          states.contains(WidgetState.focused)) {
+        return tokens.workspaceBackground.withValues(alpha: 0.10);
+      }
+      return null;
+    });
   }
 
   Widget _editBanner(BuildContext context, int totalItens) {
@@ -3658,6 +3743,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     ProdutoModel produto, {
     bool compact = false,
   }) {
+    final OutlinedBorder shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(14),
+    );
     return OutlinedButton.icon(
       onPressed:
           () =>
@@ -3673,12 +3761,14 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             ? context.t('common.edit', fallback: 'Editar')
             : context.t('produto.webList.viewAction', fallback: 'Ver'),
       ),
-      style: OutlinedButton.styleFrom(
+      style: _catalogOutlinedButtonStyle(
+        context,
         padding: EdgeInsets.symmetric(
           horizontal: compact ? 12 : 18,
           vertical: compact ? 11 : 13,
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: shape,
+        emphasis: true,
       ),
     );
   }

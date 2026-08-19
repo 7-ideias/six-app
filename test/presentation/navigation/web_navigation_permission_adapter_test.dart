@@ -18,10 +18,13 @@ void main() {
           WebNavigationIds.operations,
           WebNavigationIds.catalog,
           WebNavigationIds.people,
-          WebNavigationIds.cash,
           WebNavigationIds.financial,
           WebNavigationIds.settings,
         ]);
+        expect(
+          _childIds(_requiredItem(visible, WebNavigationIds.operations)),
+          contains(WebNavigationIds.cash),
+        );
         expect(
           _childIds(_requiredItem(visible, WebNavigationIds.people)),
           contains(WebNavigationIds.peopleCollaborators),
@@ -137,33 +140,44 @@ void main() {
       },
     );
 
-    test('Caixa pode aparecer sem liberar Financeiro', () {
+    test('Caixa pode aparecer dentro de Operacoes sem liberar Financeiro', () {
       final List<WebNavigationItem> visible = _visibleItemsFor(
         _FakeAutorizacoesProvider(podeReceberNoCaixa: true),
       );
 
       expect(_topLevelIds(visible), <String>[
         WebNavigationIds.home,
-        WebNavigationIds.cash,
+        WebNavigationIds.operations,
       ]);
+      expect(
+        _childIds(_requiredItem(visible, WebNavigationIds.operations)),
+        <String>[WebNavigationIds.cash],
+      );
       expect(_findItem(visible, WebNavigationIds.financial), isNull);
     });
 
-    test('Financeiro completo libera Agenda financeira e Caixa', () {
-      final List<WebNavigationItem> visible = _visibleItemsFor(
-        _FakeAutorizacoesProvider(podeVerQuantoVendeu: true),
-      );
+    test(
+      'Financeiro completo libera Agenda financeira e Caixa em Operacoes',
+      () {
+        final List<WebNavigationItem> visible = _visibleItemsFor(
+          _FakeAutorizacoesProvider(podeVerQuantoVendeu: true),
+        );
 
-      expect(_topLevelIds(visible), <String>[
-        WebNavigationIds.home,
-        WebNavigationIds.cash,
-        WebNavigationIds.financial,
-      ]);
-      expect(
-        _childIds(_requiredItem(visible, WebNavigationIds.financial)),
-        <String>[WebNavigationIds.financialAgenda],
-      );
-    });
+        expect(_topLevelIds(visible), <String>[
+          WebNavigationIds.home,
+          WebNavigationIds.operations,
+          WebNavigationIds.financial,
+        ]);
+        expect(
+          _childIds(_requiredItem(visible, WebNavigationIds.operations)),
+          <String>[WebNavigationIds.cash],
+        );
+        expect(
+          _childIds(_requiredItem(visible, WebNavigationIds.financial)),
+          <String>[WebNavigationIds.financialAgenda],
+        );
+      },
+    );
 
     test('Configurações fica visivel apenas para ADMIN nesta etapa', () {
       final List<WebNavigationItem> collaboratorVisible = _visibleItemsFor(

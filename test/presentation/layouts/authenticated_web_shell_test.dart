@@ -23,11 +23,15 @@ void main() {
       expect(find.text('Operações'), findsWidgets);
       expect(find.text('Catálogo'), findsWidgets);
       expect(find.text('Pessoas'), findsWidgets);
-      expect(find.text('Caixa'), findsWidgets);
       expect(find.text('Financeiro'), findsWidgets);
       expect(find.text('Configurações'), findsWidgets);
       expect(find.text('Relatórios'), findsNothing);
       expect(find.byKey(const Key('web-shell-content')), findsOneWidget);
+
+      await tester.tap(find.text('Operações'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Caixa'), findsWidgets);
     });
 
     testWidgets(
@@ -197,6 +201,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(_headerTitle('Clientes'), findsOneWidget);
 
+      await tester.tap(find.text('Operações'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Caixa'));
       await tester.pumpAndSettle();
       expect(_headerTitle('Caixa'), findsWidgets);
