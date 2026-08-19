@@ -157,17 +157,17 @@ class _SidebarBrand extends StatelessWidget {
       height: 62,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Row(
-          mainAxisAlignment:
-              expanded ? MainAxisAlignment.start : MainAxisAlignment.center,
-          children: <Widget>[
-            Container(
-              width: 40,
-              height: 40,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool compact = constraints.maxWidth < 84;
+            final double badgeSize = compact ? constraints.maxWidth : 40;
+            final Widget badge = Container(
+              width: badgeSize.clamp(0, 40),
+              height: badgeSize.clamp(0, 40),
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: brandBackground,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(compact ? 10 : 12),
                 border: Border.all(color: tokens.selectedBorder),
               ),
               child: Text(
@@ -180,22 +180,34 @@ class _SidebarBrand extends StatelessWidget {
                   fontWeight: FontWeight.w900,
                 ),
               ),
-            ),
-            if (expanded) ...<Widget>[
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  _navigationText(context, 'app.title', 'SixApp'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: tokens.primaryText,
-                    fontWeight: FontWeight.w900,
+            );
+
+            if (compact) {
+              return Center(child: badge);
+            }
+
+            return Row(
+              mainAxisAlignment:
+                  expanded ? MainAxisAlignment.start : MainAxisAlignment.center,
+              children: <Widget>[
+                badge,
+                if (expanded) ...<Widget>[
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _navigationText(context, 'app.title', 'SixApp'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: tokens.primaryText,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ],
-          ],
+                ],
+              ],
+            );
+          },
         ),
       ),
     );
@@ -424,40 +436,70 @@ class _SidebarTile extends StatelessWidget {
               color: active ? tokens.selectedBorder : Colors.transparent,
             ),
           ),
-          child: Row(
-            children: <Widget>[
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                width: 3,
-                height: active ? 24 : 0,
-                decoration: BoxDecoration(
-                  color: accent,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              const SizedBox(width: 9),
-              Icon(icon, size: 19, color: foreground),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color:
-                        highlighted ? tokens.primaryText : tokens.secondaryText,
-                    fontWeight: highlighted ? FontWeight.w800 : FontWeight.w700,
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool compact = constraints.maxWidth < 120;
+
+              if (compact) {
+                return Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    Icon(icon, size: 19, color: foreground),
+                    Positioned(
+                      left: 0,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 160),
+                        width: 3,
+                        height: active ? 24 : 0,
+                        decoration: BoxDecoration(
+                          color: accent,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                children: <Widget>[
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    width: 3,
+                    height: active ? 24 : 0,
+                    decoration: BoxDecoration(
+                      color: accent,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
                   ),
-                ),
-              ),
-              if (trailing != null) ...<Widget>[
-                const SizedBox(width: 6),
-                IconTheme(
-                  data: IconThemeData(color: foreground),
-                  child: trailing!,
-                ),
-              ],
-            ],
+                  const SizedBox(width: 9),
+                  Icon(icon, size: 19, color: foreground),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color:
+                            highlighted
+                                ? tokens.primaryText
+                                : tokens.secondaryText,
+                        fontWeight:
+                            highlighted ? FontWeight.w800 : FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  if (trailing != null) ...<Widget>[
+                    const SizedBox(width: 6),
+                    IconTheme(
+                      data: IconThemeData(color: foreground),
+                      child: trailing!,
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
         ),
       ),

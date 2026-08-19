@@ -434,6 +434,7 @@ class _WorkspaceHomeLoading extends StatelessWidget {
         SixBackendLoading(
           backgroundColor: tokens.cardBackground,
           borderColor: tokens.cardBorder,
+          presentation: SixBackendLoadingPresentation.updateBanner,
           title: _text(
             context,
             'workspaceHome.loading.title',
@@ -446,15 +447,6 @@ class _WorkspaceHomeLoading extends StatelessWidget {
           ),
           animation: SixBackendLoadingAnimation.skeletonPulse,
           leadingIcon: Icons.dashboard_customize_outlined,
-        ),
-        const SizedBox(height: 16),
-        _ResponsiveCardGrid(
-          minCardWidth: compact ? 240 : 220,
-          children: const <Widget>[
-            _WorkspaceHomeLoadingBlock(index: 0, height: 112),
-            _WorkspaceHomeLoadingBlock(index: 1, height: 112),
-            _WorkspaceHomeLoadingBlock(index: 2, height: 112),
-          ],
         ),
       ],
     );
@@ -609,47 +601,6 @@ class _WorkspaceHomeSection extends StatelessWidget {
           const SizedBox(height: 14),
           child,
         ],
-      ),
-    );
-  }
-}
-
-class _WorkspaceHomeLoadingBlock extends StatelessWidget {
-  const _WorkspaceHomeLoadingBlock({required this.index, required this.height});
-
-  final int index;
-  final double height;
-
-  @override
-  Widget build(BuildContext context) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-
-    return AnimatedContainer(
-      key: Key('workspace-home-loading-block-$index'),
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
-      height: height,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: tokens.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: tokens.cardBorder),
-      ),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: AnimatedContainer(
-            duration: WebThemeTokens.transitionDuration,
-            curve: WebThemeTokens.transitionCurve,
-            width: 120,
-            height: 14,
-            decoration: BoxDecoration(
-              color: tokens.surfaceMuted,
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -1789,17 +1740,16 @@ bool _hasInteractiveState(Set<WidgetState> states) {
 }
 
 class _ResponsiveCardGrid extends StatelessWidget {
-  const _ResponsiveCardGrid({required this.children, this.minCardWidth = 220});
+  const _ResponsiveCardGrid({required this.children});
 
   final List<Widget> children;
-  final double minCardWidth;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double maxWidth = constraints.maxWidth;
-        final int columns = (maxWidth / minCardWidth).floor().clamp(1, 5);
+        final int columns = (maxWidth / 220).floor().clamp(1, 5);
         final double itemWidth = (maxWidth - ((columns - 1) * 12)) / columns;
 
         return Wrap(

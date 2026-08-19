@@ -2802,6 +2802,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     if (_carregandoDadosEmpresa) {
       return SixBackendLoading(
         key: const ValueKey('dados-empresa-loading'),
+        presentation: SixBackendLoadingPresentation.updateBanner,
         title: _i18n(
           'empresa.configuracao.waitingData',
           'Aguardando dados da empresa.',
@@ -4399,6 +4400,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           const SizedBox(height: 18),
           if (_carregandoStatusAtendimento)
             SixBackendLoading(
+              presentation: SixBackendLoadingPresentation.updateBanner,
               title: 'Carregando nomes dos status',
               subtitle:
                   'Estamos sincronizando o fluxo técnico configurado para este comércio.',
