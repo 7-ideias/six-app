@@ -209,6 +209,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
             codigoTipoRecebimento: resultado.codigoTipoRecebimento,
             valorRecebido: resultado.valor,
             itens: venda.itens,
+            recebimentos: resultado.recebimentos,
             observacao: resultado.observacao ?? observacaoTotalPadrao,
             referencia: venda.idOperacaoApp.isNotEmpty
                 ? venda.idOperacaoApp
@@ -227,6 +228,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
             dataLiquidacao: DateTime.now(),
             valorLiquidado: resultado.valor,
             formaPagamentoRealizada: resultado.formaPagamentoBackend,
+            recebimentos: resultado.recebimentos,
             observacoes: resultado.observacao ?? observacaoParcialPadrao,
             idSessaoCaixa: idSessaoCaixa,
           ),

@@ -9,6 +9,7 @@ import '../../core/utils/produto_helper.dart';
 import '../../data/models/caixa_models.dart';
 import '../../data/models/operacao_models.dart';
 import '../../data/models/produto_model.dart';
+import '../../data/models/recebimento_forma_input.dart';
 import '../../data/models/venda_nao_liquidada_models.dart';
 import '../../data/services/caixa/venda_nao_liquidada_api_client.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
@@ -523,13 +524,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       await _avisarPagamentoObrigatorio();
       return;
     }
-    if (_editandoVendaNaoLiquidada && _formasSelecionadas.length > 1) {
-      // _mostrarSnack(
-      //   'Para receber uma venda em aberto, selecione uma única forma de pagamento.',
-      // );
-      return;
-    }
-
     final formas = _montarFormasPagamento();
     final totalPago = formas.fold<double>(
       0,
@@ -689,7 +683,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     setState(() => _enviando = true);
     try {
       if (_editandoVendaNaoLiquidada && !receberDepois) {
-        await _liquidarVendaNaoLiquidada(formasPagamento.first);
+        await _liquidarVendaNaoLiquidada(formasPagamento);
         return;
       }
 
@@ -733,14 +727,29 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Future<void> _liquidarVendaNaoLiquidada(
-    FormaPagamentoSelecionada formaPagamento,
+    List<FormaPagamentoSelecionada> formasPagamento,
   ) async {
     final venda = widget.vendaNaoLiquidada!;
+    final FormaPagamentoSelecionada primeiraForma = formasPagamento.first;
+    final List<RecebimentoFormaInput> recebimentos = formasPagamento
+        .map(
+          (FormaPagamentoSelecionada forma) => RecebimentoFormaInput(
+            codigo: forma.codigo.toLowerCase(),
+            descricao: _descricaoFormaPagamentoSelecionada(forma.codigo),
+            valor: forma.valor,
+          ),
+        )
+        .toList(growable: false);
+    final double valorRecebido = recebimentos.fold<double>(
+      0,
+      (double total, RecebimentoFormaInput forma) => total + forma.valor,
+    );
     await _vendaNaoLiquidadaApiClient.liquidar(
       idRecebimento: venda.idRecebimento,
       input: LiquidarVendaNaoLiquidadaInput(
-        codigoTipoRecebimento: formaPagamento.codigo.toLowerCase(),
-        valorRecebido: _total,
+        codigoTipoRecebimento: primeiraForma.codigo.toLowerCase(),
+        valorRecebido: valorRecebido,
+        recebimentos: recebimentos,
         itens: _itens
             .map((item) => item.toVendaNaoLiquidadaItem())
             .toList(growable: false),
@@ -752,6 +761,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     if (!mounted) return;
     _mostrarSnack('Venda recebida com sucesso.');
     Navigator.of(context).pop(true);
+  }
+
+  String _descricaoFormaPagamentoSelecionada(String codigo) {
+    for (final _FormaPagamentoMobile forma in _formasPagamento) {
+      if (forma.codigo == codigo) return forma.titulo;
+    }
+    return _descricaoPadraoPorCodigoTipo(codigo);
   }
 
   String? get _idSessaoCaixaAtual {
@@ -1920,12 +1936,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         _valorPorForma[forma.codigo]?.clear();
         return;
       }
-      if (_editandoVendaNaoLiquidada) {
-        for (final codigo in List<String>.from(_formasSelecionadas)) {
-          _valorPorForma[codigo]?.clear();
-        }
-        _formasSelecionadas.clear();
-      }
       _formasSelecionadas.add(forma.codigo);
       _valorPorForma.putIfAbsent(forma.codigo, () => TextEditingController());
       _destacarPagamento = false;
@@ -1960,7 +1970,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           Expanded(
             child: Text(
               _editandoVendaNaoLiquidada
-                  ? 'Revise itens, quantidades e escolha uma forma para receber esta venda.'
+                  ? 'Revise itens, quantidades e escolha uma ou mais formas para receber esta venda.'
                   : 'Toque em uma forma para receber agora ou use Receber depois para deixar a venda em aberto.',
               style: TextStyle(
                 color: SixMobilePalette.mutedText,

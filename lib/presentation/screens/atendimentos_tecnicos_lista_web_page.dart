@@ -923,6 +923,7 @@ class _AtendimentosTecnicosListaWebPageState
           codigoFormaRecebimento: resultado.codigoTipoRecebimento,
           nomeFormaRecebimento: resultado.descricaoTipoRecebimento,
           valor: resultado.valor,
+          recebimentos: resultado.recebimentos,
           observacao:
               resultado.observacao ?? _observacaoRecebimentoPadrao(resultado),
         ),

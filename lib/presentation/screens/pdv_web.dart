@@ -358,6 +358,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
         input: LiquidarVendaNaoLiquidadaInput(
           codigoTipoRecebimento: resultado.codigoTipoRecebimento,
           valorRecebido: resultado.valor,
+          recebimentos: resultado.recebimentos,
           itens: possuiAlteracoes
               ? itensRevisados
               : <VendaNaoLiquidadaItemModel>[],
