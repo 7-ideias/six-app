@@ -815,6 +815,11 @@ class _RecordingActions implements WebNavigationDestinationActions {
   }
 
   @override
+  WebNavigationResolutionResult openReservations() {
+    return _record(WebNavigationDestination.operationsReservations);
+  }
+
+  @override
   WebNavigationResolutionResult openCatalogProducts() {
     return _record(WebNavigationDestination.catalogProducts);
   }

@@ -15,6 +15,8 @@ void main() {
         WebNavigationDestination.operationsTechnicalServices:
             ModuloCentralPDV.atendimentoTecnico,
         WebNavigationDestination.operationsPurchases: ModuloCentralPDV.compras,
+        WebNavigationDestination.operationsReservations:
+            ModuloCentralPDV.reservas,
         WebNavigationDestination.catalogProducts: ModuloCentralPDV.produtos,
         WebNavigationDestination.catalogServices: ModuloCentralPDV.servicos,
         WebNavigationDestination.catalogStock: ModuloCentralPDV.estoque,

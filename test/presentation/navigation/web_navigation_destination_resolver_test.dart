@@ -12,6 +12,7 @@ void main() {
             WebNavigationDestination.operationsTechnicalServices:
                 'technicalServices',
             WebNavigationDestination.operationsPurchases: 'purchases',
+            WebNavigationDestination.operationsReservations: 'reservations',
             WebNavigationDestination.catalogProducts: 'catalogProducts',
             WebNavigationDestination.catalogServices: 'catalogServices',
             WebNavigationDestination.catalogStock: 'catalogStock',
@@ -107,6 +108,14 @@ class _FakeWebNavigationActions implements WebNavigationDestinationActions {
   @override
   WebNavigationResolutionResult openPurchases() {
     return _handled('purchases', WebNavigationDestination.operationsPurchases);
+  }
+
+  @override
+  WebNavigationResolutionResult openReservations() {
+    return _handled(
+      'reservations',
+      WebNavigationDestination.operationsReservations,
+    );
   }
 
   @override

@@ -11,6 +11,7 @@ enum ModuloCentralPDV {
   agendaFinanceira,
   atendimentoTecnico,
   compras,
+  reservas,
   produtos,
   servicos,
   estoque,

@@ -7,15 +7,15 @@ import 'package:sixpos/presentation/components/six_backend_loading.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 
-class CatalogoReservasWebDialog extends StatefulWidget {
-  const CatalogoReservasWebDialog({super.key});
+class CatalogoReservasWebPage extends StatefulWidget {
+  const CatalogoReservasWebPage({super.key});
 
   @override
-  State<CatalogoReservasWebDialog> createState() =>
-      _CatalogoReservasWebDialogState();
+  State<CatalogoReservasWebPage> createState() =>
+      _CatalogoReservasWebPageState();
 }
 
-class _CatalogoReservasWebDialogState extends State<CatalogoReservasWebDialog> {
+class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
   final CatalogoReservaService _service = CatalogoReservaService();
 
   CatalogoReservaPaginaModel? _pagina;
@@ -266,22 +266,13 @@ class _CatalogoReservasWebDialogState extends State<CatalogoReservasWebDialog> {
   @override
   Widget build(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Dialog(
-      insetPadding: const EdgeInsets.all(24),
-      backgroundColor: Colors.transparent,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1240, maxHeight: 860),
-        child: Material(
-          clipBehavior: Clip.antiAlias,
-          color: tokens.workspaceBackground,
-          borderRadius: BorderRadius.circular(24),
-          child: Column(
-            children: <Widget>[
-              _buildHeader(context, tokens),
-              Expanded(child: _buildBody(context, tokens)),
-            ],
-          ),
-        ),
+    return Material(
+      color: tokens.workspaceBackground,
+      child: Column(
+        children: <Widget>[
+          _buildHeader(context, tokens),
+          Expanded(child: _buildBody(context, tokens)),
+        ],
       ),
     );
   }
@@ -302,7 +293,7 @@ class _CatalogoReservasWebDialogState extends State<CatalogoReservasWebDialog> {
               color: tokens.info.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: Icon(Icons.inventory_outlined, color: tokens.info),
+            child: Icon(Icons.bookmarks_outlined, color: tokens.info),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -346,11 +337,6 @@ class _CatalogoReservasWebDialogState extends State<CatalogoReservasWebDialog> {
                     ),
             tooltip: context.t('common.refresh', fallback: 'Atualizar'),
             icon: const Icon(Icons.refresh_rounded),
-          ),
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            tooltip: context.t('common.close', fallback: 'Fechar'),
-            icon: const Icon(Icons.close_rounded),
           ),
         ],
       ),

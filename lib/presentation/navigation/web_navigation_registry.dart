@@ -9,6 +9,7 @@ abstract final class WebNavigationIds {
   static const String operationsTechnicalServices =
       'operations.technical_service';
   static const String operationsPurchases = 'operations.purchases';
+  static const String operationsReservations = 'operations.reservations';
   static const String catalog = 'catalog';
   static const String catalogProducts = 'catalog.products';
   static const String catalogServices = 'catalog.services';
@@ -86,6 +87,16 @@ abstract final class WebNavigationRegistry {
             'Permissao de Compras ainda nao disponivel no backend.',
           ),
           destination: WebNavigationDestination.operationsPurchases,
+        ),
+        WebNavigationItem(
+          id: WebNavigationIds.operationsReservations,
+          labelKey: 'web.navigation.operations.reservations',
+          labelFallback: 'Reservas',
+          icon: Icons.bookmarks_outlined,
+          visibility: WebNavigationVisibilityRule.anyOf(
+            <WebNavigationPermission>[WebNavigationPermission.podeFazerVenda],
+          ),
+          destination: WebNavigationDestination.operationsReservations,
         ),
       ],
     ),

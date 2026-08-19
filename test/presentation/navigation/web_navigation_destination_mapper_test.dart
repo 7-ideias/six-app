@@ -45,6 +45,10 @@ void main() {
         WebNavigationDestination.operationsPurchases,
       );
       expect(
+        webNavigationDestinationForModuloCentralPdv(ModuloCentralPDV.reservas),
+        WebNavigationDestination.operationsReservations,
+      );
+      expect(
         webNavigationDestinationForModuloCentralPdv(ModuloCentralPDV.produtos),
         WebNavigationDestination.catalogProducts,
       );

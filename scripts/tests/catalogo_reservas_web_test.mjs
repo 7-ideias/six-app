@@ -18,6 +18,11 @@ const productScreen = readFileSync(
   'lib/presentation/screens/produto_lista_sub_painel_web.dart',
   'utf8',
 );
+const navigationRegistry = readFileSync(
+  'lib/presentation/navigation/web_navigation_registry.dart',
+  'utf8',
+);
+const mainWeb = readFileSync('lib/pagina_principal_web.dart', 'utf8');
 const i18n = readFileSync('lib/l10n/six_i18n.dart', 'utf8');
 
 test('service usa endpoints privados tenant-scoped com autenticacao', () => {
@@ -59,14 +64,24 @@ test('tela permite filtrar, paginar, detalhar, atualizar e converter', () => {
   assert.match(screen, /CatalogoReservaStatus\.convertida/);
 });
 
-test('listagem de produtos oferece acesso as reservas', () => {
-  assert.match(productScreen, /CatalogoReservasWebDialog/);
-  assert.match(productScreen, /produto\.webList\.catalogReservations/);
+test('menu Operacoes oferece acesso exclusivo as reservas', () => {
+  assert.match(navigationRegistry, /WebNavigationIds\.operationsReservations/);
+  assert.match(
+    navigationRegistry,
+    /web\.navigation\.operations\.reservations/,
+  );
+  assert.match(
+    navigationRegistry,
+    /WebNavigationDestination\.operationsReservations/,
+  );
+  assert.match(mainWeb, /CatalogoReservasWebPage/);
+  assert.doesNotMatch(productScreen, /CatalogoReservasWeb/);
+  assert.doesNotMatch(productScreen, /produto\.webList\.catalogReservations/);
 });
 
 test('novas traducoes possuem paridade pt en es', () => {
   for (const key of [
-    'produto.webList.catalogReservations',
+    'web.navigation.operations.reservations',
     'catalogReservations.title',
     'catalogReservations.status.received',
     'catalogReservations.status.analysis',

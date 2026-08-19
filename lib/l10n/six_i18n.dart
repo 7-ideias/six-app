@@ -103,6 +103,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.operations.pos': 'Frente de caixa',
     'web.navigation.operations.technicalService': 'Assistências técnicas',
     'web.navigation.operations.purchases': 'Compras',
+    'web.navigation.operations.reservations': 'Reservas',
     'web.navigation.catalog': 'Catálogo',
     'web.navigation.catalog.products': 'Produtos',
     'web.navigation.catalog.services': 'Serviços',
@@ -1236,7 +1237,6 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Link público do catálogo copiado.',
     'produto.webList.publicCatalogError':
         'Não foi possível preparar o link do catálogo.',
-    'produto.webList.catalogReservations': 'Reservas',
     'catalogReservations.title': 'Reservas do catálogo',
     'catalogReservations.subtitle':
         'Acompanhe solicitações recebidas pelo catálogo virtual.',
@@ -1399,6 +1399,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.operations.pos': 'Point of sale',
     'web.navigation.operations.technicalService': 'Technical services',
     'web.navigation.operations.purchases': 'Purchases',
+    'web.navigation.operations.reservations': 'Reservations',
     'web.navigation.catalog': 'Catalog',
     'web.navigation.catalog.products': 'Products',
     'web.navigation.catalog.services': 'Services',
@@ -2428,7 +2429,6 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.webList.publicCatalogCopied': 'Public catalog link copied.',
     'produto.webList.publicCatalogError':
         'Could not prepare the catalog link.',
-    'produto.webList.catalogReservations': 'Reservations',
     'catalogReservations.title': 'Catalog reservations',
     'catalogReservations.subtitle':
         'Track requests received through the virtual catalog.',
@@ -2588,6 +2588,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.operations.pos': 'Punto de venta',
     'web.navigation.operations.technicalService': 'Servicios técnicos',
     'web.navigation.operations.purchases': 'Compras',
+    'web.navigation.operations.reservations': 'Reservas',
     'web.navigation.catalog': 'Catálogo',
     'web.navigation.catalog.products': 'Productos',
     'web.navigation.catalog.services': 'Servicios',
@@ -3652,7 +3653,6 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Enlace público del catálogo copiado.',
     'produto.webList.publicCatalogError':
         'No fue posible preparar el enlace del catálogo.',
-    'produto.webList.catalogReservations': 'Reservas',
     'catalogReservations.title': 'Reservas del catálogo',
     'catalogReservations.subtitle':
         'Acompaña las solicitudes recibidas por el catálogo virtual.',

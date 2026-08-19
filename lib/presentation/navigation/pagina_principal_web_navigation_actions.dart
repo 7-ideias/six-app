@@ -51,6 +51,14 @@ class PaginaPrincipalWebNavigationActions
   }
 
   @override
+  WebNavigationResolutionResult openReservations() {
+    return _abrirModulo(
+      WebNavigationDestination.operationsReservations,
+      ModuloCentralPDV.reservas,
+    );
+  }
+
+  @override
   WebNavigationResolutionResult openCatalogProducts() {
     return _abrirModulo(
       WebNavigationDestination.catalogProducts,
