@@ -1218,7 +1218,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   Future<void> _abrirSelecaoProdutoWeb({String tipoInicial = 'PRODUTO'}) async {
-    if (_vendaNaoLiquidadaEmConsulta != null) {
+    if (_vendaNaoLiquidadaEmConsulta != null &&
+        !_vendaNaoLiquidadaPermiteEdicaoItens) {
       return;
     }
     if (!await _garantirSessaoCaixaAbertaParaVenda()) {
@@ -1541,7 +1542,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
   bool get _atalhosContextuaisDisponiveis {
     return _moduloAtual == ModuloCentralPDV.vendas &&
-        _vendaNaoLiquidadaEmConsulta == null &&
+        (_vendaNaoLiquidadaEmConsulta == null ||
+            _vendaNaoLiquidadaPermiteEdicaoItens) &&
         !_overlayRecebimentoAberto &&
         _barcodeInteractionActive;
   }
@@ -1888,6 +1890,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   Future<void> _confirmarSairDaConsultaVendaNaoLiquidada() async {
+    final bool possuiAlteracoes = _vendaNaoLiquidadaPossuiAlteracoesNosItens;
     final bool sair =
         await showDialog<bool>(
           context: context,
@@ -1895,15 +1898,22 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             return AlertDialog(
               title: Text(
                 context.t(
-                  'pdv.openSale.exitTitle',
-                  fallback: 'Sair da consulta?',
+                  possuiAlteracoes
+                      ? 'pdv.openSale.discardTitle'
+                      : 'pdv.openSale.exitTitle',
+                  fallback: possuiAlteracoes
+                      ? 'Descartar alterações?'
+                      : 'Sair da consulta?',
                 ),
               ),
               content: Text(
                 context.t(
-                  'pdv.openSale.exitMessage',
-                  fallback:
-                      'A venda continuará em aberto. Nenhum item, preço ou recebimento será alterado.',
+                  possuiAlteracoes
+                      ? 'pdv.openSale.discardMessage'
+                      : 'pdv.openSale.exitMessage',
+                  fallback: possuiAlteracoes
+                      ? 'As alterações feitas no PDV não serão salvas. A venda continuará em aberto com os dados anteriores.'
+                      : 'A venda continuará em aberto. Nenhum item, preço ou recebimento será alterado.',
                 ),
               ),
               actions: <Widget>[
@@ -1915,8 +1925,12 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                   onPressed: () => Navigator.of(dialogContext).pop(true),
                   child: Text(
                     context.t(
-                      'pdv.openSale.exitAction',
-                      fallback: 'Sair da consulta',
+                      possuiAlteracoes
+                          ? 'pdv.openSale.discardAction'
+                          : 'pdv.openSale.exitAction',
+                      fallback: possuiAlteracoes
+                          ? 'Descartar e sair'
+                          : 'Sair da consulta',
                     ),
                   ),
                 ),
@@ -1939,7 +1953,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   void _adicionarProdutoSelecionado(ProdutoModel produto) {
-    if (_vendaNaoLiquidadaEmConsulta != null) {
+    if (_vendaNaoLiquidadaEmConsulta != null &&
+        !_vendaNaoLiquidadaPermiteEdicaoItens) {
       return;
     }
     late final _PdvItemMutationResult mutation;
@@ -1960,7 +1975,9 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   void _adicionarProdutosSelecionados(List<ProdutoModel> produtos) {
-    if (_vendaNaoLiquidadaEmConsulta != null || produtos.isEmpty) {
+    if ((_vendaNaoLiquidadaEmConsulta != null &&
+            !_vendaNaoLiquidadaPermiteEdicaoItens) ||
+        produtos.isEmpty) {
       return;
     }
 
@@ -2028,8 +2045,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   bool _mesmoProduto(Map<String, dynamic> item, ProdutoModel produto) {
     final String chaveItem = item['chaveItem']?.toString() ?? '';
     final String chaveProduto = _chaveProdutoVenda(produto);
-    if (chaveItem.isNotEmpty) {
-      return chaveItem == chaveProduto;
+    if (chaveItem.isNotEmpty && chaveItem == chaveProduto) {
+      return true;
     }
 
     final String tipoItem = _normalizarTipoProdutoWeb(
@@ -2099,7 +2116,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   void _alterarQuantidade(Map<String, dynamic> produto, int delta) {
-    if (_vendaNaoLiquidadaEmConsulta != null) {
+    if (_vendaNaoLiquidadaEmConsulta != null &&
+        !_vendaNaoLiquidadaPermiteEdicaoItens) {
       return;
     }
     final String itemKey = _itemVisualKey(produto);
@@ -2127,7 +2145,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   void _removerProduto(Map<String, dynamic> produto) {
-    if (_vendaNaoLiquidadaEmConsulta != null) {
+    if (_vendaNaoLiquidadaEmConsulta != null &&
+        !_vendaNaoLiquidadaPermiteEdicaoItens) {
       return;
     }
     final String itemKey = _itemVisualKey(produto);
@@ -2188,7 +2207,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   void _focarCodigoBarras() {
-    if (_vendaNaoLiquidadaEmConsulta != null) {
+    if (_vendaNaoLiquidadaEmConsulta != null &&
+        !_vendaNaoLiquidadaPermiteEdicaoItens) {
       return;
     }
     _codigoBarrasFocusNode.requestFocus();
@@ -2251,6 +2271,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       }
       if (event.logicalKey == LogicalKeyboardKey.escape) {
         _confirmarSairDaConsultaVendaNaoLiquidada();
+        return KeyEventResult.handled;
+      }
+      if (!_vendaNaoLiquidadaPermiteEdicaoItens) {
+        return KeyEventResult.ignored;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.f2) {
+        _abrirSelecaoProdutoWeb();
         return KeyEventResult.handled;
       }
       return KeyEventResult.ignored;

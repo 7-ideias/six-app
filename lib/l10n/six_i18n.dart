@@ -87,23 +87,54 @@ const Map<String, Map<String, String>> _fallbacks = {
     'pdv.openSale.readOnlyTitle': 'Consulta de venda em aberto',
     'pdv.openSale.readOnlySubtitle':
         'Produtos, quantidades e preços estão bloqueados nesta etapa. Revise os dados e receba o saldo.',
+    'pdv.openSale.editStatus': 'Edição de itens',
+    'pdv.openSale.editTitle': 'Revise os itens antes de receber',
+    'pdv.openSale.editSubtitle':
+        'Inclua ou remova produtos e serviços e altere quantidades. Os preços originais são preservados; itens novos usam o preço atual do cadastro. As mudanças serão aplicadas somente ao receber.',
+    'pdv.openSale.partialReadOnlySubtitle':
+        'Esta venda já possui recebimentos. Para preservar o histórico financeiro, os itens permanecem bloqueados.',
+    'pdv.openSale.pendingChanges': 'Alterações pendentes',
     'pdv.openSale.receiveBalance': 'Receber saldo',
+    'pdv.openSale.receiveUpdatedSale': 'Receber venda revisada',
     'pdv.openSale.receiveTitle': 'Receber saldo da venda',
     'pdv.openSale.receiptNote': 'Saldo recebido pelo PDV web.',
+    'pdv.openSale.updatedReceiptNote':
+        'Venda revisada e recebida pelo PDV web.',
     'pdv.openSale.receivedMessage': 'Venda recebida com sucesso.',
     'pdv.openSale.receiptErrorTitle': 'Não foi possível receber a venda',
     'pdv.openSale.originalTotal': 'Total original',
     'pdv.openSale.openBalance': 'Saldo em aberto',
+    'pdv.openSale.currentTotal': 'Novo total',
+    'pdv.openSale.totalDifference': 'Diferença',
+    'pdv.openSale.emptyItemsTitle': 'A venda precisa ter itens',
+    'pdv.openSale.emptyItemsMessage':
+        'Inclua pelo menos um produto ou serviço antes de receber a venda.',
+    'pdv.openSale.invalidItemsTitle': 'Revise os itens da venda',
+    'pdv.openSale.invalidItemsMessage':
+        'Todos os itens precisam ter nome, quantidade positiva e valor válido.',
+    'pdv.openSale.confirmChangesTitle': 'Confirmar itens revisados?',
+    'pdv.openSale.confirmChangesMessage':
+        'Ao receber, a nova composição de itens será aplicada e o estoque e o financeiro serão conciliados.',
+    'pdv.openSale.continueToReceipt': 'Continuar para recebimento',
+    'pdv.openSale.outdatedTitle': 'A venda foi alterada',
+    'pdv.openSale.outdatedMessage':
+        'Outra operação modificou esta venda. Feche a consulta e abra novamente para trabalhar com os dados atuais.',
     'pdv.openSale.exitTitle': 'Sair da consulta?',
     'pdv.openSale.exitMessage':
         'A venda continuará em aberto. Nenhum item, preço ou recebimento será alterado.',
     'pdv.openSale.exitAction': 'Sair da consulta',
+    'pdv.openSale.discardTitle': 'Descartar alterações?',
+    'pdv.openSale.discardMessage':
+        'As alterações feitas no PDV não serão salvas. A venda continuará em aberto com os dados anteriores.',
+    'pdv.openSale.discardAction': 'Descartar e sair',
     'pdv.openSale.replaceTitle': 'Substituir a venda atual?',
     'pdv.openSale.replaceMessage':
         'Os dados que estão no PDV serão substituídos pela venda em aberto selecionada.',
     'pdv.openSale.replaceAction': 'Abrir venda',
     'pdv.openSale.loadedMessage':
-        'Venda carregada em modo de consulta. Itens e preços estão bloqueados.',
+        'Venda carregada para revisão. Você pode incluir, remover e alterar quantidades antes de receber.',
+    'pdv.openSale.loadedReadOnlyMessage':
+        'Venda carregada para consulta. Como já existem recebimentos, os itens permanecem bloqueados.',
     'pdv.openSale.loadErrorTitle': 'Não foi possível abrir a venda',
     'pdv.openSale.unavailableTitle': 'Venda não disponível',
     'pdv.openSale.unavailableMessage':
@@ -1409,23 +1440,54 @@ const Map<String, Map<String, String>> _fallbacks = {
     'pdv.openSale.readOnlyTitle': 'Open sale review',
     'pdv.openSale.readOnlySubtitle':
         'Products, quantities, and prices are locked at this stage. Review the data and receive the outstanding balance.',
+    'pdv.openSale.editStatus': 'Item editing',
+    'pdv.openSale.editTitle': 'Review the items before receiving',
+    'pdv.openSale.editSubtitle':
+        'Add or remove products and services and change quantities. Original prices are preserved; new items use the current catalog price. Changes are applied only when receiving.',
+    'pdv.openSale.partialReadOnlySubtitle':
+        'This sale already has receipts. To preserve the financial history, its items remain locked.',
+    'pdv.openSale.pendingChanges': 'Pending changes',
     'pdv.openSale.receiveBalance': 'Receive balance',
+    'pdv.openSale.receiveUpdatedSale': 'Receive revised sale',
     'pdv.openSale.receiveTitle': 'Receive sale balance',
     'pdv.openSale.receiptNote': 'Balance received through the web POS.',
+    'pdv.openSale.updatedReceiptNote':
+        'Revised sale received through the web POS.',
     'pdv.openSale.receivedMessage': 'Sale received successfully.',
     'pdv.openSale.receiptErrorTitle': 'Unable to receive the sale',
     'pdv.openSale.originalTotal': 'Original total',
     'pdv.openSale.openBalance': 'Outstanding balance',
+    'pdv.openSale.currentTotal': 'New total',
+    'pdv.openSale.totalDifference': 'Difference',
+    'pdv.openSale.emptyItemsTitle': 'The sale must have items',
+    'pdv.openSale.emptyItemsMessage':
+        'Add at least one product or service before receiving the sale.',
+    'pdv.openSale.invalidItemsTitle': 'Review the sale items',
+    'pdv.openSale.invalidItemsMessage':
+        'Every item must have a name, a positive quantity, and a valid price.',
+    'pdv.openSale.confirmChangesTitle': 'Confirm revised items?',
+    'pdv.openSale.confirmChangesMessage':
+        'When receiving, the revised item composition will be applied and inventory and finance will be reconciled.',
+    'pdv.openSale.continueToReceipt': 'Continue to receipt',
+    'pdv.openSale.outdatedTitle': 'The sale has changed',
+    'pdv.openSale.outdatedMessage':
+        'Another operation changed this sale. Close the review and open it again to use the current data.',
     'pdv.openSale.exitTitle': 'Exit review?',
     'pdv.openSale.exitMessage':
         'The sale will remain open. No item, price, or receipt will be changed.',
     'pdv.openSale.exitAction': 'Exit review',
+    'pdv.openSale.discardTitle': 'Discard changes?',
+    'pdv.openSale.discardMessage':
+        'Changes made in the POS will not be saved. The sale will remain open with its previous data.',
+    'pdv.openSale.discardAction': 'Discard and exit',
     'pdv.openSale.replaceTitle': 'Replace the current sale?',
     'pdv.openSale.replaceMessage':
         'The current POS data will be replaced by the selected open sale.',
     'pdv.openSale.replaceAction': 'Open sale',
     'pdv.openSale.loadedMessage':
-        'Sale loaded in view-only mode. Items and prices are locked.',
+        'Sale loaded for review. You can add, remove, and change quantities before receiving.',
+    'pdv.openSale.loadedReadOnlyMessage':
+        'Sale loaded for review. Because it already has receipts, its items remain locked.',
     'pdv.openSale.loadErrorTitle': 'Unable to open the sale',
     'pdv.openSale.unavailableTitle': 'Sale unavailable',
     'pdv.openSale.unavailableMessage':
@@ -2624,23 +2686,54 @@ const Map<String, Map<String, String>> _fallbacks = {
     'pdv.openSale.readOnlyTitle': 'Consulta de venta pendiente',
     'pdv.openSale.readOnlySubtitle':
         'Los productos, las cantidades y los precios están bloqueados en esta etapa. Revise los datos y cobre el saldo.',
+    'pdv.openSale.editStatus': 'Edición de artículos',
+    'pdv.openSale.editTitle': 'Revise los artículos antes de cobrar',
+    'pdv.openSale.editSubtitle':
+        'Añada o elimine productos y servicios y cambie cantidades. Se conservan los precios originales; los artículos nuevos usan el precio actual del catálogo. Los cambios se aplican solo al cobrar.',
+    'pdv.openSale.partialReadOnlySubtitle':
+        'Esta venta ya tiene cobros. Para conservar el historial financiero, sus artículos permanecen bloqueados.',
+    'pdv.openSale.pendingChanges': 'Cambios pendientes',
     'pdv.openSale.receiveBalance': 'Cobrar saldo',
+    'pdv.openSale.receiveUpdatedSale': 'Cobrar venta revisada',
     'pdv.openSale.receiveTitle': 'Cobrar saldo de la venta',
     'pdv.openSale.receiptNote': 'Saldo cobrado desde el TPV web.',
+    'pdv.openSale.updatedReceiptNote':
+        'Venta revisada y cobrada desde el TPV web.',
     'pdv.openSale.receivedMessage': 'Venta cobrada correctamente.',
     'pdv.openSale.receiptErrorTitle': 'No se pudo cobrar la venta',
     'pdv.openSale.originalTotal': 'Total original',
     'pdv.openSale.openBalance': 'Saldo pendiente',
+    'pdv.openSale.currentTotal': 'Nuevo total',
+    'pdv.openSale.totalDifference': 'Diferencia',
+    'pdv.openSale.emptyItemsTitle': 'La venta debe tener artículos',
+    'pdv.openSale.emptyItemsMessage':
+        'Añada al menos un producto o servicio antes de cobrar la venta.',
+    'pdv.openSale.invalidItemsTitle': 'Revise los artículos de la venta',
+    'pdv.openSale.invalidItemsMessage':
+        'Todos los artículos deben tener nombre, cantidad positiva y precio válido.',
+    'pdv.openSale.confirmChangesTitle': '¿Confirmar artículos revisados?',
+    'pdv.openSale.confirmChangesMessage':
+        'Al cobrar, se aplicará la nueva composición de artículos y se conciliarán el inventario y las finanzas.',
+    'pdv.openSale.continueToReceipt': 'Continuar al cobro',
+    'pdv.openSale.outdatedTitle': 'La venta ha cambiado',
+    'pdv.openSale.outdatedMessage':
+        'Otra operación modificó esta venta. Cierre la consulta y ábrala de nuevo para usar los datos actuales.',
     'pdv.openSale.exitTitle': '¿Salir de la consulta?',
     'pdv.openSale.exitMessage':
         'La venta seguirá pendiente. No se modificará ningún artículo, precio ni cobro.',
     'pdv.openSale.exitAction': 'Salir de la consulta',
+    'pdv.openSale.discardTitle': '¿Descartar cambios?',
+    'pdv.openSale.discardMessage':
+        'Los cambios realizados en el TPV no se guardarán. La venta seguirá pendiente con los datos anteriores.',
+    'pdv.openSale.discardAction': 'Descartar y salir',
     'pdv.openSale.replaceTitle': '¿Reemplazar la venta actual?',
     'pdv.openSale.replaceMessage':
         'Los datos actuales del TPV serán reemplazados por la venta pendiente seleccionada.',
     'pdv.openSale.replaceAction': 'Abrir venta',
     'pdv.openSale.loadedMessage':
-        'Venta cargada en modo de consulta. Los artículos y precios están bloqueados.',
+        'Venta cargada para revisión. Puede añadir, eliminar y cambiar cantidades antes de cobrar.',
+    'pdv.openSale.loadedReadOnlyMessage':
+        'Venta cargada para consulta. Como ya tiene cobros, sus artículos permanecen bloqueados.',
     'pdv.openSale.loadErrorTitle': 'No se pudo abrir la venta',
     'pdv.openSale.unavailableTitle': 'Venta no disponible',
     'pdv.openSale.unavailableMessage':
