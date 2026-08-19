@@ -44,10 +44,12 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
     final String query = _query.trim().toLowerCase();
     if (query.isEmpty) return _models;
     return _models
-        .where((EtiquetaModelo model) =>
-            model.nome.toLowerCase().contains(query) ||
-            model.descricao.toLowerCase().contains(query) ||
-            model.papel.preset.toLowerCase().contains(query))
+        .where(
+          (EtiquetaModelo model) =>
+              model.nome.toLowerCase().contains(query) ||
+              model.descricao.toLowerCase().contains(query) ||
+              model.papel.preset.toLowerCase().contains(query),
+        )
         .toList(growable: false);
   }
 
@@ -126,7 +128,9 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
                         'Reusable print templates',
                         'Plantillas reutilizables para impresión',
                       ),
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     const SizedBox(height: 5),
                     Text(
@@ -136,7 +140,10 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
                         'Configure once, save it for the current business and reuse it with different products and quantities.',
                         'Configure una vez, guarde en el comercio actual y reutilice con diferentes productos y cantidades.',
                       ),
-                      style: theme.textTheme.bodyMedium?.copyWith(color: tokens.secondaryText, height: 1.35),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: tokens.secondaryText,
+                        height: 1.35,
+                      ),
                     ),
                   ],
                 ),
@@ -149,34 +156,49 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
             alignment: WrapAlignment.end,
             children: <Widget>[
               OutlinedButton.icon(
+                style: _headerSecondaryButtonStyle(tokens),
                 onPressed: _models.isEmpty ? null : () => _openPrint(),
                 icon: const Icon(Icons.print_outlined),
-                label: Text(_tr('labels.home.print', 'Imprimir etiquetas', 'Print labels', 'Imprimir etiquetas')),
+                label: Text(
+                  _tr(
+                    'labels.home.print',
+                    'Imprimir etiquetas',
+                    'Print labels',
+                    'Imprimir etiquetas',
+                  ),
+                ),
               ),
               FilledButton.icon(
                 onPressed: () => _openEditor(),
                 icon: const Icon(Icons.add_rounded),
-                label: Text(_tr('labels.home.create', 'Criar modelo', 'Create template', 'Crear plantilla')),
+                label: Text(
+                  _tr(
+                    'labels.home.create',
+                    'Criar modelo',
+                    'Create template',
+                    'Crear plantilla',
+                  ),
+                ),
               ),
             ],
           );
 
           return compact
               ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    description,
-                    const SizedBox(height: 16),
-                    actions,
-                  ],
-                )
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  description,
+                  const SizedBox(height: 16),
+                  actions,
+                ],
+              )
               : Row(
-                  children: <Widget>[
-                    Expanded(child: description),
-                    const SizedBox(width: 18),
-                    actions,
-                  ],
-                );
+                children: <Widget>[
+                  Expanded(child: description),
+                  const SizedBox(width: 18),
+                  actions,
+                ],
+              );
         },
       ),
     );
@@ -195,15 +217,16 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
           'Buscar por nombre, descripción o formato...',
         ),
         prefixIcon: const Icon(Icons.search_rounded),
-        suffixIcon: _query.isEmpty
-            ? null
-            : IconButton(
-                onPressed: () {
-                  _searchController.clear();
-                  setState(() => _query = '');
-                },
-                icon: const Icon(Icons.close_rounded),
-              ),
+        suffixIcon:
+            _query.isEmpty
+                ? null
+                : IconButton(
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _query = '');
+                  },
+                  icon: const Icon(Icons.close_rounded),
+                ),
         filled: true,
         fillColor: tokens.cardBackground,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
@@ -230,9 +253,8 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool wide = constraints.maxWidth >= 1040;
-        final double itemWidth = wide
-            ? (constraints.maxWidth - 14) / 2
-            : constraints.maxWidth;
+        final double itemWidth =
+            wide ? (constraints.maxWidth - 14) / 2 : constraints.maxWidth;
         return Wrap(
           spacing: 14,
           runSpacing: 14,
@@ -280,7 +302,9 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
                       model.nome,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     if (model.descricao.trim().isNotEmpty) ...<Widget>[
                       const SizedBox(height: 3),
@@ -288,7 +312,9 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
                         model.descricao,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(color: tokens.secondaryText),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: tokens.secondaryText,
+                        ),
                       ),
                     ],
                   ],
@@ -296,21 +322,48 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
               ),
               PopupMenuButton<String>(
                 enabled: !busy,
-                tooltip: _tr('labels.home.moreActions', 'Mais ações', 'More actions', 'Más acciones'),
+                tooltip: _tr(
+                  'labels.home.moreActions',
+                  'Mais ações',
+                  'More actions',
+                  'Más acciones',
+                ),
                 onSelected: (String action) => _handleAction(action, model),
-                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                  PopupMenuItem<String>(
-                    value: 'duplicate',
-                    child: _menuEntry(Icons.copy_outlined, _tr('labels.home.duplicate', 'Duplicar', 'Duplicate', 'Duplicar')),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'delete',
-                    child: _menuEntry(Icons.delete_outline_rounded, _tr('labels.home.delete', 'Excluir', 'Delete', 'Eliminar')),
-                  ),
-                ],
-                icon: busy
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.more_vert_rounded),
+                itemBuilder:
+                    (BuildContext context) => <PopupMenuEntry<String>>[
+                      PopupMenuItem<String>(
+                        value: 'duplicate',
+                        child: _menuEntry(
+                          Icons.copy_outlined,
+                          _tr(
+                            'labels.home.duplicate',
+                            'Duplicar',
+                            'Duplicate',
+                            'Duplicar',
+                          ),
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: _menuEntry(
+                          Icons.delete_outline_rounded,
+                          _tr(
+                            'labels.home.delete',
+                            'Excluir',
+                            'Delete',
+                            'Eliminar',
+                          ),
+                        ),
+                      ),
+                    ],
+                icon:
+                    busy
+                        ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.more_vert_rounded),
               ),
             ],
           ),
@@ -319,10 +372,19 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
             spacing: 8,
             runSpacing: 8,
             children: <Widget>[
-              _chip(Icons.straighten_rounded, '${_fmt(model.etiqueta.larguraMm)} × ${_fmt(model.etiqueta.alturaMm)} mm'),
+              _chip(
+                Icons.straighten_rounded,
+                '${_fmt(model.etiqueta.larguraMm)} × ${_fmt(model.etiqueta.alturaMm)} mm',
+              ),
               _chip(Icons.description_outlined, model.papel.preset),
-              _chip(Icons.grid_view_outlined, '${model.grade.colunas} × ${model.grade.linhas}'),
-              _chip(Icons.widgets_outlined, '${model.elementos.length} ${_tr('labels.home.elements', 'elementos', 'elements', 'elementos')}'),
+              _chip(
+                Icons.grid_view_outlined,
+                '${model.grade.colunas} × ${model.grade.linhas}',
+              ),
+              _chip(
+                Icons.widgets_outlined,
+                '${model.elementos.length} ${_tr('labels.home.elements', 'elementos', 'elements', 'elementos')}',
+              ),
             ],
           ),
           const SizedBox(height: 15),
@@ -330,9 +392,12 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
             children: <Widget>[
               Expanded(
                 child: OutlinedButton.icon(
+                  style: _cardSecondaryButtonStyle(tokens),
                   onPressed: busy ? null : () => _openEditor(model),
                   icon: const Icon(Icons.edit_outlined, size: 18),
-                  label: Text(_tr('labels.home.edit', 'Editar', 'Edit', 'Editar')),
+                  label: Text(
+                    _tr('labels.home.edit', 'Editar', 'Edit', 'Editar'),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -340,7 +405,14 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
                 child: FilledButton.tonalIcon(
                   onPressed: busy ? null : () => _openPrint(model.id),
                   icon: const Icon(Icons.print_outlined, size: 18),
-                  label: Text(_tr('labels.home.printShort', 'Imprimir', 'Print', 'Imprimir')),
+                  label: Text(
+                    _tr(
+                      'labels.home.printShort',
+                      'Imprimir',
+                      'Print',
+                      'Imprimir',
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -369,12 +441,23 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
               color: tokens.info.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(22),
             ),
-            child: Icon(Icons.local_offer_outlined, color: tokens.info, size: 32),
+            child: Icon(
+              Icons.local_offer_outlined,
+              color: tokens.info,
+              size: 32,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
-            _tr('labels.home.emptyTitle', 'Crie seu primeiro modelo', 'Create your first template', 'Cree su primera plantilla'),
-            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+            _tr(
+              'labels.home.emptyTitle',
+              'Crie seu primeiro modelo',
+              'Create your first template',
+              'Cree su primera plantilla',
+            ),
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+            ),
           ),
           const SizedBox(height: 7),
           ConstrainedBox(
@@ -387,14 +470,24 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
                 'Defina el papel, el tamaño de cada etiqueta, la cuadrícula y los campos que se completarán automáticamente con los datos de productos.',
               ),
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(color: tokens.secondaryText, height: 1.4),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: tokens.secondaryText,
+                height: 1.4,
+              ),
             ),
           ),
           const SizedBox(height: 18),
           FilledButton.icon(
             onPressed: () => _openEditor(),
             icon: const Icon(Icons.add_rounded),
-            label: Text(_tr('labels.home.create', 'Criar modelo', 'Create template', 'Crear plantilla')),
+            label: Text(
+              _tr(
+                'labels.home.create',
+                'Criar modelo',
+                'Create template',
+                'Crear plantilla',
+              ),
+            ),
           ),
         ],
       ),
@@ -434,19 +527,22 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
     final EtiquetaModelo? saved = await showDialog<EtiquetaModelo>(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext dialogContext) => Dialog(
-        insetPadding: const EdgeInsets.all(18),
-        clipBehavior: Clip.antiAlias,
-        child: SizedBox(
-          width: _min(size.width * 0.97, 1540),
-          height: _min(size.height * 0.94, 980),
-          child: EtiquetaEditorWebPage(
-            initialModel: model,
-            onSave: _service.salvarModelo,
-            onClose: () => Navigator.of(dialogContext).pop(),
+      builder:
+          (BuildContext dialogContext) => Dialog(
+            insetPadding: const EdgeInsets.all(18),
+            clipBehavior: Clip.antiAlias,
+            backgroundColor: WebThemeTokens.of(dialogContext).cardBackground,
+            surfaceTintColor: Colors.transparent,
+            child: SizedBox(
+              width: _min(size.width * 0.97, 1540),
+              height: _min(size.height * 0.94, 980),
+              child: EtiquetaEditorWebPage(
+                initialModel: model,
+                onSave: _service.salvarModelo,
+                onClose: () => Navigator.of(dialogContext).pop(),
+              ),
+            ),
           ),
-        ),
-      ),
     );
     if (saved == null || !mounted) return;
     await _load();
@@ -458,20 +554,23 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext dialogContext) => Dialog(
-        insetPadding: const EdgeInsets.all(18),
-        clipBehavior: Clip.antiAlias,
-        child: SizedBox(
-          width: _min(size.width * 0.96, 1420),
-          height: _min(size.height * 0.92, 940),
-          child: EtiquetaImpressaoWebPage(
-            modelos: _models,
-            service: _service,
-            initialTemplateId: templateId,
-            onClose: () => Navigator.of(dialogContext).pop(),
+      builder:
+          (BuildContext dialogContext) => Dialog(
+            insetPadding: const EdgeInsets.all(18),
+            clipBehavior: Clip.antiAlias,
+            backgroundColor: WebThemeTokens.of(dialogContext).cardBackground,
+            surfaceTintColor: Colors.transparent,
+            child: SizedBox(
+              width: _min(size.width * 0.96, 1420),
+              height: _min(size.height * 0.92, 940),
+              child: EtiquetaImpressaoWebPage(
+                modelos: _models,
+                service: _service,
+                initialTemplateId: templateId,
+                onClose: () => Navigator.of(dialogContext).pop(),
+              ),
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -486,12 +585,15 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
         await _load();
       } catch (_) {
         if (!mounted) return;
-        setState(() => _error = _tr(
-              'labels.home.duplicateError',
-              'Não foi possível duplicar o modelo.',
-              'Could not duplicate the template.',
-              'No se pudo duplicar la plantilla.',
-            ));
+        setState(
+          () =>
+              _error = _tr(
+                'labels.home.duplicateError',
+                'Não foi possível duplicar o modelo.',
+                'Could not duplicate the template.',
+                'No se pudo duplicar la plantilla.',
+              ),
+        );
       } finally {
         if (mounted) setState(() => _busyModelId = null);
       }
@@ -505,27 +607,41 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
     if (id == null) return;
     final bool? confirmed = await showDialog<bool>(
       context: context,
-      builder: (BuildContext dialogContext) => AlertDialog(
-        title: Text(_tr('labels.home.deleteTitle', 'Excluir modelo?', 'Delete template?', '¿Eliminar plantilla?')),
-        content: Text(
-          _tr(
-            'labels.home.deleteMessage',
-            'O modelo “${model.nome}” deixará de estar disponível para novas impressões.',
-            'The template “${model.nome}” will no longer be available for new print jobs.',
-            'La plantilla “${model.nome}” dejará de estar disponible para nuevas impresiones.',
+      builder:
+          (BuildContext dialogContext) => AlertDialog(
+            backgroundColor: WebThemeTokens.of(dialogContext).cardBackground,
+            surfaceTintColor: Colors.transparent,
+            title: Text(
+              _tr(
+                'labels.home.deleteTitle',
+                'Excluir modelo?',
+                'Delete template?',
+                '¿Eliminar plantilla?',
+              ),
+            ),
+            content: Text(
+              _tr(
+                'labels.home.deleteMessage',
+                'O modelo “${model.nome}” deixará de estar disponível para novas impressões.',
+                'The template “${model.nome}” will no longer be available for new print jobs.',
+                'La plantilla “${model.nome}” dejará de estar disponible para nuevas impresiones.',
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(
+                  _tr('labels.common.cancel', 'Cancelar', 'Cancel', 'Cancelar'),
+                ),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(
+                  _tr('labels.home.delete', 'Excluir', 'Delete', 'Eliminar'),
+                ),
+              ),
+            ],
           ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(_tr('labels.common.cancel', 'Cancelar', 'Cancel', 'Cancelar')),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(_tr('labels.home.delete', 'Excluir', 'Delete', 'Eliminar')),
-          ),
-        ],
-      ),
     );
     if (confirmed != true || !mounted) return;
     setState(() => _busyModelId = id);
@@ -535,12 +651,15 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
       await _load();
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = _tr(
-            'labels.home.deleteError',
-            'Não foi possível excluir o modelo.',
-            'Could not delete the template.',
-            'No se pudo eliminar la plantilla.',
-          ));
+      setState(
+        () =>
+            _error = _tr(
+              'labels.home.deleteError',
+              'Não foi possível excluir o modelo.',
+              'Could not delete the template.',
+              'No se pudo eliminar la plantilla.',
+            ),
+      );
     } finally {
       if (mounted) setState(() => _busyModelId = null);
     }
@@ -560,19 +679,24 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
         children: <Widget>[
           Icon(icon, size: 14),
           const SizedBox(width: 5),
-          Text(text, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            text,
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
         ],
       ),
     );
   }
 
   Widget _menuEntry(IconData icon, String text) => Row(
-        children: <Widget>[
-          Icon(icon, size: 18),
-          const SizedBox(width: 9),
-          Text(text),
-        ],
-      );
+    children: <Widget>[
+      Icon(icon, size: 18),
+      const SizedBox(width: 9),
+      Text(text),
+    ],
+  );
 
   Widget _errorBanner(String message) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
@@ -586,18 +710,50 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
           Expanded(child: Text(message)),
           TextButton(
             onPressed: _load,
-            child: Text(_tr('labels.home.retry', 'Tentar novamente', 'Try again', 'Intentar de nuevo')),
+            child: Text(
+              _tr(
+                'labels.home.retry',
+                'Tentar novamente',
+                'Try again',
+                'Intentar de nuevo',
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  String _fmt(double value) => value == value.roundToDouble()
-      ? value.round().toString()
-      : value.toStringAsFixed(1);
+  String _fmt(double value) =>
+      value == value.roundToDouble()
+          ? value.round().toString()
+          : value.toStringAsFixed(1);
 
   double _min(double a, double b) => a < b ? a : b;
+
+  ButtonStyle _headerSecondaryButtonStyle(WebThemeTokens tokens) {
+    return OutlinedButton.styleFrom(
+      foregroundColor: tokens.info,
+      backgroundColor: tokens.info.withValues(alpha: 0.10),
+      disabledForegroundColor: tokens.disabledForeground,
+      disabledBackgroundColor: tokens.disabledBackground,
+      side: BorderSide(color: tokens.info.withValues(alpha: 0.22)),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    );
+  }
+
+  ButtonStyle _cardSecondaryButtonStyle(WebThemeTokens tokens) {
+    return OutlinedButton.styleFrom(
+      foregroundColor: tokens.primaryText,
+      backgroundColor: tokens.surfaceMuted,
+      disabledForegroundColor: tokens.disabledForeground,
+      disabledBackgroundColor: tokens.disabledBackground,
+      side: BorderSide(color: tokens.cardBorder),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    );
+  }
 
   String _tr(String key, String pt, String en, String es) =>
       etiquetaTr(context, key, pt: pt, en: en, es: es);

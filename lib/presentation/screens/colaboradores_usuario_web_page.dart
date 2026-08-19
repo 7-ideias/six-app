@@ -199,7 +199,8 @@ class _ColaboradoresUsuarioListPageState
       if (!mounted) return;
 
       final WebThemeTokens pageTokens = WebThemeTokens.of(context);
-      final Map<String, dynamic>? payload = await showDialog<Map<String, dynamic>>(
+      final Map<String, dynamic>?
+      payload = await showDialog<Map<String, dynamic>>(
         context: context,
         barrierDismissible: true,
         barrierColor: pageTokens.workspaceBackground.withValues(
@@ -253,9 +254,8 @@ class _ColaboradoresUsuarioListPageState
     ColaboradorUsuarioResumo colaborador,
   ) async {
     try {
-      final bool acessoAtual = await _etiquetaService.buscarPermissaoColaborador(
-        colaborador.idUnicoPessoal,
-      );
+      final bool acessoAtual = await _etiquetaService
+          .buscarPermissaoColaborador(colaborador.idUnicoPessoal);
       if (!mounted) return;
 
       bool draft = acessoAtual;
@@ -274,10 +274,7 @@ class _ColaboradoresUsuarioListPageState
                   side: BorderSide(color: tokens.cardBorder),
                 ),
                 title: Text(
-                  _t(
-                    'colaboradores.labelsAccessTitle',
-                    'Acesso a Etiquetas',
-                  ),
+                  _t('colaboradores.labelsAccessTitle', 'Acesso a Etiquetas'),
                 ),
                 content: SizedBox(
                   width: 460,
@@ -370,13 +367,13 @@ class _ColaboradoresUsuarioListPageState
           content: Text(
             novoAcesso
                 ? _t(
-                    'colaboradores.labelsAccessEnabled',
-                    'Acesso a Etiquetas liberado para este colaborador.',
-                  )
+                  'colaboradores.labelsAccessEnabled',
+                  'Acesso a Etiquetas liberado para este colaborador.',
+                )
                 : _t(
-                    'colaboradores.labelsAccessDisabled',
-                    'Acesso a Etiquetas removido deste colaborador.',
-                  ),
+                  'colaboradores.labelsAccessDisabled',
+                  'Acesso a Etiquetas removido deste colaborador.',
+                ),
           ),
           behavior: SnackBarBehavior.floating,
         ),
@@ -437,17 +434,20 @@ class _ColaboradoresUsuarioListPageState
           onPressed: _loading ? null : _reload,
           icon: const Icon(Icons.refresh_rounded),
           label: Text(_t('common.refresh', 'Atualizar')),
+          style: _outlinedCtaStyle(),
         ),
         FilledButton.icon(
           onPressed: _loading ? null : _openNovoColaborador,
           icon: const Icon(Icons.group_add_outlined),
           label: Text(_t('colaboradores.newCollaborator', 'Novo colaborador')),
+          style: _filledCtaStyle(),
         ),
       ],
     );
   }
 
   Widget _body() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     if (_loading && _colaboradores.isEmpty) {
       return const _LoadingColaboradores();
     }
@@ -487,11 +487,12 @@ class _ColaboradoresUsuarioListPageState
                         'Colaboradores encontrados',
                       ),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: tokens.primaryText,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                   ),
-                  Chip(label: Text(_formatCount(_items.length))),
+                  _countChip(_formatCount(_items.length)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -773,6 +774,7 @@ class _ColaboradoresUsuarioListPageState
       onPressed: () => _showDetails(colaborador),
       icon: const Icon(Icons.info_outline_rounded, size: 18),
       label: Text(_t('colaboradores.summary', 'Resumo')),
+      style: _outlinedCtaStyle(),
     );
   }
 
@@ -781,6 +783,7 @@ class _ColaboradoresUsuarioListPageState
       onPressed: () => _openEditar(colaborador),
       icon: const Icon(Icons.edit_outlined, size: 18),
       label: Text(_t('common.edit', 'Editar')),
+      style: _filledCtaStyle(),
     );
   }
 
@@ -789,6 +792,7 @@ class _ColaboradoresUsuarioListPageState
       onPressed: () => _gerenciarAcessoEtiquetas(colaborador),
       icon: const Icon(Icons.local_offer_outlined, size: 18),
       label: Text(_t('colaboradores.labels', 'Etiquetas')),
+      style: _outlinedCtaStyle(),
     );
   }
 
@@ -980,6 +984,7 @@ class _ColaboradoresUsuarioListPageState
             actions: <Widget>[
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
+                style: _textCtaStyle(),
                 child: Text(_t('common.close', 'Fechar')),
               ),
             ],
@@ -996,6 +1001,72 @@ class _ColaboradoresUsuarioListPageState
     return parts.length == 1
         ? parts.first[0].toUpperCase()
         : '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+  }
+
+  Widget _countChip(String label) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: tokens.primaryText,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  ButtonStyle _outlinedCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return OutlinedButton.styleFrom(
+      foregroundColor: tokens.info,
+      disabledForegroundColor: tokens.disabledForeground,
+      side: BorderSide(color: tokens.cardBorder),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    ).copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return tokens.disabledBackground.withValues(alpha: 0.22);
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return tokens.info.withValues(alpha: 0.08);
+        }
+        return Colors.transparent;
+      }),
+    );
+  }
+
+  ButtonStyle _filledCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return FilledButton.styleFrom(
+      foregroundColor: Colors.white,
+      backgroundColor: tokens.info,
+      disabledForegroundColor: tokens.disabledForeground,
+      disabledBackgroundColor: tokens.disabledBackground,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    );
+  }
+
+  ButtonStyle _textCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return TextButton.styleFrom(
+      foregroundColor: tokens.info,
+      disabledForegroundColor: tokens.disabledForeground,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    );
   }
 }
 

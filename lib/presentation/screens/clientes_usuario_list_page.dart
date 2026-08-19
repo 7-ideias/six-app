@@ -200,22 +200,26 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
           onPressed: _loading ? null : _reload,
           icon: const Icon(Icons.refresh_rounded),
           label: const Text('Atualizar'),
+          style: _outlinedCtaStyle(),
         ),
         OutlinedButton.icon(
           onPressed: _loading ? null : _openAutoCadastro,
           icon: const Icon(Icons.link_outlined),
           label: const Text('Auto cadastro'),
+          style: _outlinedCtaStyle(),
         ),
         FilledButton.icon(
           onPressed: _loading ? null : () => _openForm(),
           icon: const Icon(Icons.person_add_alt_1_rounded),
           label: const Text('Novo cliente'),
+          style: _filledCtaStyle(),
         ),
       ],
     );
   }
 
   Widget _body() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     if (_loading && _response == null) return const _LoadingClientes();
     if (_erro != null && _response == null) return _errorState();
     return RefreshIndicator(
@@ -246,11 +250,12 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
                     child: Text(
                       'Clientes encontrados',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: tokens.primaryText,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                   ),
-                  Chip(label: Text('${_items.length}')),
+                  _countChip('${_items.length}'),
                 ],
               ),
               const SizedBox(height: 12),
@@ -502,11 +507,13 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
     onPressed: () => _history(cliente),
     icon: const Icon(Icons.timeline_outlined, size: 18),
     label: const Text('Histórico'),
+    style: _outlinedCtaStyle(),
   );
   Widget _editButton(ClienteUsuario cliente) => FilledButton.icon(
     onPressed: () => _openForm(cliente: cliente),
     icon: const Icon(Icons.edit_outlined, size: 18),
     label: const Text('Editar'),
+    style: _filledCtaStyle(),
   );
 
   Widget _credit(ClienteUsuario c, bool ok) {
@@ -651,6 +658,7 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
+              style: _textCtaStyle(),
               child: const Text('Fechar'),
             ),
           ],
@@ -692,6 +700,72 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
     return parts.length == 1
         ? parts.first[0].toUpperCase()
         : '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+  }
+
+  Widget _countChip(String label) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: tokens.primaryText,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  ButtonStyle _outlinedCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return OutlinedButton.styleFrom(
+      foregroundColor: tokens.info,
+      disabledForegroundColor: tokens.disabledForeground,
+      side: BorderSide(color: tokens.cardBorder),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    ).copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return tokens.disabledBackground.withValues(alpha: 0.22);
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return tokens.info.withValues(alpha: 0.08);
+        }
+        return Colors.transparent;
+      }),
+    );
+  }
+
+  ButtonStyle _filledCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return FilledButton.styleFrom(
+      foregroundColor: Colors.white,
+      backgroundColor: tokens.info,
+      disabledForegroundColor: tokens.disabledForeground,
+      disabledBackgroundColor: tokens.disabledBackground,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    );
+  }
+
+  ButtonStyle _textCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return TextButton.styleFrom(
+      foregroundColor: tokens.info,
+      disabledForegroundColor: tokens.disabledForeground,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    );
   }
 }
 

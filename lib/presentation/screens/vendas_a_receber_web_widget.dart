@@ -10,6 +10,7 @@ import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
 import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
 import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 
 class VendasAReceberWebWidget extends StatefulWidget {
@@ -316,9 +317,9 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
   @override
   Widget build(BuildContext context) {
     context.watch<LocaleSettingsProvider>();
-    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Material(
-      color: theme.colorScheme.surface,
+      color: tokens.workspaceBackground,
       child: SafeArea(
         child: Stack(
           children: <Widget>[
@@ -367,6 +368,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
           onPressed: _loading || _processando ? null : _carregar,
           icon: const Icon(Icons.refresh_rounded),
           label: Text(context.t('common.refresh', fallback: 'Atualizar')),
+          style: _outlinedCtaStyle(),
         ),
       ],
       onBack: () => Navigator.of(context).pop(),
@@ -389,42 +391,58 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
     final List<VendaNaoLiquidadaModel> vendas = _vendasFiltradas;
     return RefreshIndicator(
       onRefresh: _carregar,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(24),
-        children: <Widget>[
-          SixWebEntry(order: 0, child: _contextCard()),
-          const SizedBox(height: 16),
-          SixWebEntry(order: 1, child: _filtrosData()),
-          const SizedBox(height: 16),
-          SixWebEntry(order: 2, child: _metrics()),
-          const SizedBox(height: 16),
-          SixWebEntry(order: 3, child: _planejados()),
-          const SizedBox(height: 18),
-          _section(
-            context.t('vendasAReceber.openSales', fallback: 'Vendas em aberto'),
-          ),
-          const SizedBox(height: 12),
-          if (vendas.isEmpty)
-            SixWebEntry(order: 4, child: _empty())
-          else
-            ...vendas.asMap().entries.map(
-              (MapEntry<int, VendaNaoLiquidadaModel> entry) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: SixWebEntry(
-                  order: 4 + entry.key,
-                  child: _vendaCard(entry.value),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          return ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+            children: <Widget>[
+              Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: constraints.maxWidth >= 1480 ? 1380 : 1260,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      SixWebEntry(order: 0, child: _contextCard()),
+                      const SizedBox(height: 16),
+                      SixWebEntry(order: 1, child: _filtrosData()),
+                      const SizedBox(height: 16),
+                      SixWebEntry(order: 2, child: _metrics()),
+                      const SizedBox(height: 16),
+                      SixWebEntry(order: 3, child: _planejados()),
+                      const SizedBox(height: 18),
+                      _section(vendas.length),
+                      const SizedBox(height: 12),
+                      if (vendas.isEmpty)
+                        SixWebEntry(order: 4, child: _empty())
+                      else
+                        ...vendas.asMap().entries.map(
+                          (MapEntry<int, VendaNaoLiquidadaModel> entry) =>
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: SixWebEntry(
+                                  order: 4 + entry.key,
+                                  child: _vendaCard(entry.value),
+                                ),
+                              ),
+                        ),
+                      const SizedBox(height: 4),
+                      _bottomBar(vendas.length),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          const SizedBox(height: 4),
-          _bottomBar(vendas.length),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
 
   Widget _filtrosData() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return SixWebSectionCard(
       icon: Icons.filter_alt_outlined,
       title: context.t(
@@ -436,72 +454,172 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
         fallback:
             'A lista considera a data de vencimento ou competência da venda.',
       ),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: <Widget>[
-          _dateButton(
-            context.t('vendasAReceber.startDate', fallback: 'Data inicial'),
-            _dataInicio,
-            () => _selecionarData(inicio: true),
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: tokens.selectedBackground,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: tokens.selectedBorder),
+        ),
+        child: Text(
+          context
+              .t(
+                'vendasAReceber.listCount',
+                fallback: '{count} venda(s) exibida(s)',
+              )
+              .replaceFirst('{count}', _vendasFiltradas.length.toString()),
+          style: TextStyle(
+            color: tokens.primaryText,
+            fontWeight: FontWeight.w800,
+            fontSize: 12,
           ),
-          _dateButton(
-            context.t('vendasAReceber.endDate', fallback: 'Data final'),
-            _dataFim,
-            () => _selecionarData(inicio: false),
-          ),
-          FilledButton.icon(
-            onPressed: _loading || _processando ? null : _carregar,
-            icon: const Icon(Icons.search_rounded),
-            label: Text(context.t('common.search', fallback: 'Buscar')),
-          ),
-          OutlinedButton.icon(
-            onPressed:
-                _loading || _processando
-                    ? null
-                    : () {
-                      final DateTime hoje = DateTime.now();
-                      setState(() {
-                        _dataInicio = _inicioDoDia(hoje);
-                        _dataFim = _inicioDoDia(hoje);
-                      });
-                    },
-            icon: const Icon(Icons.today_outlined),
-            label: Text(context.t('common.today', fallback: 'Hoje')),
-          ),
-        ],
+        ),
+      ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool compact = constraints.maxWidth < 980;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  _dateButton(
+                    context.t(
+                      'vendasAReceber.startDate',
+                      fallback: 'Data inicial',
+                    ),
+                    _dataInicio,
+                    () => _selecionarData(inicio: true),
+                  ),
+                  _dateButton(
+                    context.t('vendasAReceber.endDate', fallback: 'Data final'),
+                    _dataFim,
+                    () => _selecionarData(inicio: false),
+                  ),
+                  FilledButton.icon(
+                    onPressed: _loading || _processando ? null : _carregar,
+                    icon: const Icon(Icons.search_rounded),
+                    label: Text(context.t('common.search', fallback: 'Buscar')),
+                    style: _filledCtaStyle(),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed:
+                        _loading || _processando
+                            ? null
+                            : () {
+                              final DateTime hoje = DateTime.now();
+                              setState(() {
+                                _dataInicio = _inicioDoDia(hoje);
+                                _dataFim = _inicioDoDia(hoje);
+                              });
+                            },
+                    icon: const Icon(Icons.today_outlined),
+                    label: Text(context.t('common.today', fallback: 'Hoje')),
+                    style: _outlinedCtaStyle(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: tokens.inputBackground,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: tokens.cardBorder),
+                ),
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 10,
+                  children: <Widget>[
+                    _inlineInfo(
+                      context.t(
+                        'vendasAReceber.totalOpen',
+                        fallback: 'Total aberto',
+                      ),
+                      _formatarValor(_totalAberto),
+                    ),
+                    _inlineInfo(
+                      context.t(
+                        'vendasAReceber.sevenDayForecast',
+                        fallback: 'Previsão 7 dias',
+                      ),
+                      _formatarValor(_previsaoSeteDias),
+                    ),
+                    _inlineInfo(
+                      context.t(
+                        'vendasAReceber.delayRisk',
+                        fallback: 'Risco de atraso',
+                      ),
+                      _riscoAtraso,
+                      emphasis: _riskColor(tokens),
+                    ),
+                    if (!compact)
+                      _inlineInfo(
+                        context.t(
+                          'vendasAReceber.dueToday',
+                          fallback: 'Vence hoje',
+                        ),
+                        _formatarInteiro(_venceHoje.toDouble()),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
   Widget _dateButton(String label, DateTime data, VoidCallback onTap) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return SizedBox(
-      width: 210,
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        icon: const Icon(Icons.calendar_month_outlined),
-        label: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Text(
-              label,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-            ),
-            Text(
-              _formatarDataDia(data),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w900),
-            ),
-          ],
-        ),
-        style: OutlinedButton.styleFrom(
-          alignment: Alignment.centerLeft,
+      width: 220,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          shape: RoundedRectangleBorder(
+          decoration: BoxDecoration(
+            color: tokens.inputBackground,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: tokens.cardBorder),
+          ),
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.calendar_month_outlined, color: tokens.info, size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: tokens.secondaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatarDataDia(data),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: tokens.primaryText,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -597,6 +715,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
   }
 
   Widget _planned(String title, String value, IconData icon) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return _baseCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -608,15 +727,14 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.tertiaryContainer.withValues(alpha: 0.55),
+                  color: tokens.selectedBackground,
                   borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: tokens.selectedBorder),
                 ),
                 child: Text(
                   context.t('vendasAReceber.planned', fallback: 'Planejado'),
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.onTertiaryContainer,
+                    color: tokens.primaryText,
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
                   ),
@@ -627,10 +745,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
           const SizedBox(height: 10),
           Text(
             title,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: tokens.secondaryText, fontSize: 12),
           ),
           const SizedBox(height: 4),
           Text(
@@ -638,8 +753,8 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 16,
+              color: tokens.primaryText,
+              fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -651,10 +766,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: 11,
-            ),
+            style: TextStyle(color: tokens.secondaryText, fontSize: 11),
           ),
         ],
       ),
@@ -662,49 +774,45 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
   }
 
   Widget _vendaCard(VendaNaoLiquidadaModel venda) {
-    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final int quantidadeItens = venda.itens.fold<int>(
       0,
       (int soma, VendaNaoLiquidadaItemModel item) => soma + item.quantidade,
     );
     return Material(
-      color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(20),
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(22),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: theme.colorScheme.outlineVariant),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.035),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          color: tokens.cardBackground,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: tokens.cardBorder),
         ),
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            final bool compact = constraints.maxWidth < 760;
-            final Widget info = Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                _icon(Icons.receipt_long_outlined, size: 46),
-                const SizedBox(width: 14),
-                Expanded(child: _vendaInfo(venda, quantidadeItens)),
-              ],
-            );
+            final bool compact = constraints.maxWidth < 880;
+            final Widget info = _vendaInfo(venda, quantidadeItens);
             final Widget actions = _vendaActions(venda);
             if (compact) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[info, const SizedBox(height: 12), actions],
+                children: <Widget>[
+                  info,
+                  const SizedBox(height: 14),
+                  Container(height: 1, color: tokens.divider),
+                  const SizedBox(height: 14),
+                  actions,
+                ],
               );
             }
             return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Expanded(child: info),
-                const SizedBox(width: 16),
+                const SizedBox(width: 18),
+                Container(width: 1, height: 116, color: tokens.divider),
+                const SizedBox(width: 18),
                 actions,
               ],
             );
@@ -716,6 +824,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
 
   Widget _vendaInfo(VendaNaoLiquidadaModel venda, int quantidadeItens) {
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final String colaborador =
         venda.nomeColaboradorCriacao.isEmpty
             ? context.t(
@@ -726,15 +835,43 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(
-          venda.descricao,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w900,
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            _icon(Icons.receipt_long_outlined, size: 46),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    venda.descricao,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: tokens.primaryText,
+                      fontWeight: FontWeight.w900,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: <Widget>[
+                      _statusChip(venda),
+                      _chip(
+                        Icons.person_outline_rounded,
+                        '${context.t('vendasAReceber.createdBy', fallback: 'Criada por')} $colaborador',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 12),
         Wrap(
           spacing: 8,
           runSpacing: 6,
@@ -756,13 +893,34 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
           ],
         ),
         if (venda.nomeCliente.trim().isNotEmpty) ...<Widget>[
-          const SizedBox(height: 7),
-          Text(
-            venda.nomeCliente.trim(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: tokens.inputBackground,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: tokens.cardBorder),
+            ),
+            child: Row(
+              children: <Widget>[
+                Icon(
+                  Icons.person_pin_circle_outlined,
+                  size: 16,
+                  color: tokens.secondaryText,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    venda.nomeCliente.trim(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: tokens.secondaryText,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -772,30 +930,50 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
 
   Widget _vendaActions(VendaNaoLiquidadaModel venda) {
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 220),
+      constraints: const BoxConstraints(minWidth: 240, maxWidth: 280),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          Text(
+            context.t('vendasAReceber.totalOpen', fallback: 'Total aberto'),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: tokens.secondaryText,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
           Text(
             _formatarValor(venda.valorAberto),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.titleMedium?.copyWith(
+              color: tokens.primaryText,
               fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _vendaPrazo(venda),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: tokens.secondaryText,
+              height: 1.35,
             ),
           ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            alignment: WrapAlignment.end,
             children: <Widget>[
               OutlinedButton(
                 onPressed:
                     _processando
                         ? null
                         : () => _confirmarCancelamentoVenda(venda),
+                style: _outlinedDangerCtaStyle(),
                 child: Text(context.t('common.cancel', fallback: 'Cancelar')),
               ),
               FilledButton.icon(
@@ -804,6 +982,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
                 label: Text(
                   context.t('vendasAReceber.receive', fallback: 'Receber'),
                 ),
+                style: _filledCtaStyle(),
               ),
             ],
           ),
@@ -824,28 +1003,50 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
 
   Widget _contextCard() {
     final ThemeData theme = Theme.of(context);
-    return _baseCard(
-      padding: const EdgeInsets.all(18),
-      child: Row(
-        children: <Widget>[
-          _icon(Icons.receipt_long_outlined, size: 48),
-          const SizedBox(width: 14),
-          Expanded(
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool compact = constraints.maxWidth < 900;
+          final Widget summary = Container(
+            constraints: const BoxConstraints(minHeight: 112),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: tokens.selectedBackground,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: tokens.selectedBorder),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 Text(
                   context.t(
-                    'vendasAReceber.contextTitle',
-                    fallback: 'Dashboard de recebimentos',
+                    'vendasAReceber.totalOpen',
+                    fallback: 'Total aberto',
                   ),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: tokens.secondaryText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _formatarValor(_totalAberto),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: tokens.primaryText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Text(
                   context
                       .t(
@@ -859,26 +1060,95 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
+                    height: 1.35,
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 14),
-          Flexible(
-            child: Text(
-              _formatarValor(_totalAberto),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.end,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w900,
+          );
+          final Widget content = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _icon(Icons.receipt_long_outlined, size: 52),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          context.t(
+                            'vendasAReceber.contextTitle',
+                            fallback: 'Dashboard de recebimentos',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: tokens.primaryText,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          context.t(
+                            'vendasAReceber.subtitle',
+                            fallback:
+                                'Acompanhe vendas em aberto, vencimentos e recebimentos pendentes.',
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: tokens.secondaryText,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-        ],
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: <Widget>[
+                  _inlineInfo(
+                    context.t('vendasAReceber.sales', fallback: 'Vendas'),
+                    _formatarInteiro(_vendasFiltradas.length.toDouble()),
+                  ),
+                  _inlineInfo(
+                    context.t('vendasAReceber.items', fallback: 'Itens'),
+                    _formatarInteiro(_totalItens.toDouble()),
+                  ),
+                  _inlineInfo(
+                    context.t(
+                      'vendasAReceber.averageTicket',
+                      fallback: 'Ticket médio',
+                    ),
+                    _formatarValor(_ticketMedio),
+                  ),
+                ],
+              ),
+            ],
+          );
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[content, const SizedBox(height: 16), summary],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(flex: 5, child: content),
+              const SizedBox(width: 18),
+              Expanded(flex: 3, child: summary),
+            ],
+          );
+        },
       ),
     );
   }
@@ -914,6 +1184,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
               onPressed: _carregar,
               icon: const Icon(Icons.refresh_rounded),
               label: Text(context.t('common.refresh', fallback: 'Atualizar')),
+              style: _outlinedCtaStyle(),
             ),
           ],
         ),
@@ -923,46 +1194,58 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
 
   Widget _loadingBody() {
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
       children: <Widget>[
-        SixBackendLoading(
-          title: context.t(
-            'vendasAReceber.loadingTitle',
-            fallback: 'Carregando vendas em aberto',
-          ),
-          subtitle: context.t(
-            'vendasAReceber.loadingSubtitle',
-            fallback: 'Buscando recebimentos pendentes no backend.',
-          ),
-          animation: SixBackendLoadingAnimation.skeletonPulse,
-          leadingIcon: Icons.cloud_sync_outlined,
-        ),
-        const SizedBox(height: 16),
-        LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final int columns =
-                constraints.maxWidth >= 1180
-                    ? 3
-                    : constraints.maxWidth >= 720
-                    ? 2
-                    : 1;
-            final double width =
-                (constraints.maxWidth - ((columns - 1) * 12)) / columns;
-            return Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: List<Widget>.generate(
-                6,
-                (int index) => SizedBox(
-                  width: width,
-                  child: SixWebLoadingBlock(height: 96, highlight: index == 0),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1260),
+            child: Column(
+              children: <Widget>[
+                SixBackendLoading(
+                  title: context.t(
+                    'vendasAReceber.loadingTitle',
+                    fallback: 'Carregando vendas em aberto',
+                  ),
+                  subtitle: context.t(
+                    'vendasAReceber.loadingSubtitle',
+                    fallback: 'Buscando recebimentos pendentes no backend.',
+                  ),
+                  animation: SixBackendLoadingAnimation.skeletonPulse,
+                  leadingIcon: Icons.cloud_sync_outlined,
                 ),
-              ),
-            );
-          },
+                const SizedBox(height: 16),
+                LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints constraints) {
+                    final int columns =
+                        constraints.maxWidth >= 1180
+                            ? 3
+                            : constraints.maxWidth >= 720
+                            ? 2
+                            : 1;
+                    final double width =
+                        (constraints.maxWidth - ((columns - 1) * 12)) / columns;
+                    return Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: List<Widget>.generate(
+                        6,
+                        (int index) => SizedBox(
+                          width: width,
+                          child: SixWebLoadingBlock(
+                            height: 96,
+                            highlight: index == 0,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                const SixWebLoadingBlock(height: 220),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(height: 16),
-        const SixWebLoadingBlock(height: 220),
       ],
     );
   }
@@ -981,57 +1264,46 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
     required Widget child,
     EdgeInsetsGeometry padding = const EdgeInsets.all(14),
   }) {
-    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.035),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: child,
     );
   }
 
   Widget _icon(IconData icon, {double size = 50}) {
-    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withValues(alpha: 0.10),
+        color: tokens.info.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(size >= 48 ? 18 : 14),
       ),
-      child: Icon(
-        icon,
-        color: theme.colorScheme.primary,
-        size: size >= 48 ? 24 : 20,
-      ),
+      child: Icon(icon, color: tokens.info, size: size >= 48 ? 24 : 20),
     );
   }
 
   Widget _chip(IconData icon, String label) {
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.45,
-        ),
+        color: tokens.inputBackground,
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
+          Icon(icon, size: 14, color: tokens.secondaryText),
           const SizedBox(width: 5),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 260),
@@ -1040,7 +1312,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+                color: tokens.secondaryText,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1050,22 +1322,48 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
     );
   }
 
-  Widget _section(String title) => Text(
-    title,
-    style: Theme.of(
-      context,
-    ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
-  );
+  Widget _section(int count) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Text(
+            context.t('vendasAReceber.openSales', fallback: 'Vendas em aberto'),
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: tokens.primaryText,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: tokens.surfaceMuted,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: tokens.cardBorder),
+          ),
+          child: Text(
+            count.toString(),
+            style: TextStyle(
+              color: tokens.primaryText,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _bottomBar(int count) {
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.35,
-        ),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         children: <Widget>[
@@ -1080,7 +1378,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+                color: tokens.secondaryText,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1089,6 +1387,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
             onPressed: _loading || _processando ? null : _carregar,
             icon: const Icon(Icons.refresh_rounded, size: 18),
             label: Text(context.t('common.refresh', fallback: 'Atualizar')),
+            style: _textCtaStyle(),
           ),
         ],
       ),
@@ -1115,6 +1414,203 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
 
   String _formatarDataDia(DateTime data) =>
       context.read<LocaleSettingsProvider>().formatDate(data);
+
+  Widget _inlineInfo(String label, String value, {Color? emphasis}) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Container(
+      constraints: const BoxConstraints(minWidth: 150, maxWidth: 260),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: tokens.secondaryText,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: emphasis ?? tokens.primaryText,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusChip(VendaNaoLiquidadaModel venda) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final DateTime hoje = _inicioDoDia(DateTime.now());
+    final DateTime? vencimento = venda.dataVencimento;
+    late final Color color;
+    late final String label;
+    if (vencimento == null) {
+      color = tokens.statusNeutral;
+      label = context.t('common.noDate', fallback: 'Sem data');
+    } else if (vencimento.isBefore(hoje)) {
+      color = tokens.danger;
+      label = context.t('vendasAReceber.overdue', fallback: 'Vencidas');
+    } else if (vencimento.year == hoje.year &&
+        vencimento.month == hoje.month &&
+        vencimento.day == hoje.day) {
+      color = tokens.warning;
+      label = context.t('vendasAReceber.dueToday', fallback: 'Vence hoje');
+    } else {
+      color = tokens.success;
+      label = context.t('vendasAReceber.planned', fallback: 'Planejado');
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+
+  String _vendaPrazo(VendaNaoLiquidadaModel venda) {
+    final DateTime? vencimento = venda.dataVencimento;
+    if (vencimento == null) {
+      return context.t(
+        'vendasAReceber.calculatedFromOpenSales',
+        fallback: 'Calculado com as vendas em aberto',
+      );
+    }
+    final DateTime hoje = _inicioDoDia(DateTime.now());
+    final DateTime data = _inicioDoDia(vencimento);
+    if (data.isBefore(hoje)) {
+      return '${context.t('vendasAReceber.overdue', fallback: 'Vencidas')}: ${_formatarDataDia(vencimento)}';
+    }
+    if (data == hoje) {
+      return '${context.t('vendasAReceber.dueToday', fallback: 'Vence hoje')}: ${_formatarDataDia(vencimento)}';
+    }
+    return '${context.t('vendasAReceber.endDate', fallback: 'Data final')}: ${_formatarDataDia(vencimento)}';
+  }
+
+  Color _riskColor(WebThemeTokens tokens) {
+    if (_vencidas >= 5 ||
+        (_vendasFiltradas.isNotEmpty &&
+            _vencidas / _vendasFiltradas.length >= 0.35)) {
+      return tokens.danger;
+    }
+    if (_vencidas > 0 || _venceHoje > 3) {
+      return tokens.warning;
+    }
+    return tokens.success;
+  }
+
+  ButtonStyle _outlinedCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return OutlinedButton.styleFrom(
+      foregroundColor: tokens.info,
+      disabledForegroundColor: tokens.disabledForeground,
+      side: BorderSide(color: tokens.cardBorder),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    ).copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return tokens.disabledBackground.withValues(alpha: 0.22);
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return tokens.info.withValues(alpha: 0.08);
+        }
+        return Colors.transparent;
+      }),
+      side: WidgetStateProperty.resolveWith<BorderSide?>((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return BorderSide(color: tokens.cardBorder.withValues(alpha: 0.55));
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return BorderSide(color: tokens.selectedBorder);
+        }
+        return BorderSide(color: tokens.cardBorder);
+      }),
+    );
+  }
+
+  ButtonStyle _outlinedDangerCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return OutlinedButton.styleFrom(
+      foregroundColor: tokens.danger,
+      disabledForegroundColor: tokens.disabledForeground,
+      side: BorderSide(color: tokens.danger.withValues(alpha: 0.28)),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    ).copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return tokens.disabledBackground.withValues(alpha: 0.22);
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return tokens.danger.withValues(alpha: 0.08);
+        }
+        return Colors.transparent;
+      }),
+    );
+  }
+
+  ButtonStyle _filledCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return FilledButton.styleFrom(
+      foregroundColor: Colors.white,
+      backgroundColor: tokens.info,
+      disabledForegroundColor: tokens.disabledForeground,
+      disabledBackgroundColor: tokens.disabledBackground,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    );
+  }
+
+  ButtonStyle _textCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return TextButton.styleFrom(
+      foregroundColor: tokens.info,
+      disabledForegroundColor: tokens.disabledForeground,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    ).copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return tokens.info.withValues(alpha: 0.08);
+        }
+        return Colors.transparent;
+      }),
+    );
+  }
 }
 
 class _Metric {

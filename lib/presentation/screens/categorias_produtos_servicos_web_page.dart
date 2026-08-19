@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:sixpos/data/models/categoria_catalogo_model.dart';
 import 'package:sixpos/data/services/categoria_catalogo/categoria_catalogo_api_client.dart';
 import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
 class CategoriasProdutosServicosWebPage extends StatefulWidget {
   const CategoriasProdutosServicosWebPage({
@@ -35,25 +36,31 @@ class _CategoriasProdutosServicosWebPageState
 
   List<CategoriaCatalogoModel> get _categoriasFiltradas {
     final String termo = _normalizarBusca(_busca);
-    return _categorias.where((CategoriaCatalogoModel categoria) {
-      final bool combinaTexto = termo.isEmpty ||
-          _normalizarBusca(
-            '${categoria.nome} ${categoria.descricao} ${_tipoLabel(categoria.tipo)}',
-          ).contains(termo);
-      final bool combinaTipo = _filtroTipo == null || categoria.tipo == _filtroTipo;
-      final bool combinaStatus = !_somenteAtivas || categoria.ativo;
-      return combinaTexto && combinaTipo && combinaStatus;
-    }).toList(growable: false);
+    return _categorias
+        .where((CategoriaCatalogoModel categoria) {
+          final bool combinaTexto =
+              termo.isEmpty ||
+              _normalizarBusca(
+                '${categoria.nome} ${categoria.descricao} ${_tipoLabel(categoria.tipo)}',
+              ).contains(termo);
+          final bool combinaTipo =
+              _filtroTipo == null || categoria.tipo == _filtroTipo;
+          final bool combinaStatus = !_somenteAtivas || categoria.ativo;
+          return combinaTexto && combinaTipo && combinaStatus;
+        })
+        .toList(growable: false);
   }
 
   int get _ativas =>
       _categorias.where((CategoriaCatalogoModel item) => item.ativo).length;
 
-  int get _produtos => _categorias.where((CategoriaCatalogoModel item) {
+  int get _produtos =>
+      _categorias.where((CategoriaCatalogoModel item) {
         return item.tipo == 'PRODUTO' || item.tipo == 'AMBOS';
       }).length;
 
-  int get _servicos => _categorias.where((CategoriaCatalogoModel item) {
+  int get _servicos =>
+      _categorias.where((CategoriaCatalogoModel item) {
         return item.tipo == 'SERVICO' || item.tipo == 'AMBOS';
       }).length;
 
@@ -77,7 +84,8 @@ class _CategoriasProdutosServicosWebPageState
     });
 
     try {
-      final CategoriaCatalogoListResponse response = await _api.listarCategorias();
+      final CategoriaCatalogoListResponse response =
+          await _api.listarCategorias();
       if (!mounted) return;
       setState(() {
         _categorias = response.categorias;
@@ -127,13 +135,15 @@ class _CategoriasProdutosServicosWebPageState
   }
 
   Future<void> _abrirFormulario({CategoriaCatalogoModel? categoria}) async {
-    final CategoriaCatalogoRequest? request = await showDialog<CategoriaCatalogoRequest>(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext context) => _EscCloseScope(
-        child: _CategoriaCatalogoDialog(categoria: categoria),
-      ),
-    );
+    final CategoriaCatalogoRequest? request =
+        await showDialog<CategoriaCatalogoRequest>(
+          context: context,
+          barrierDismissible: true,
+          builder:
+              (BuildContext context) => _EscCloseScope(
+                child: _CategoriaCatalogoDialog(categoria: categoria),
+              ),
+        );
 
     if (request == null) return;
 
@@ -169,7 +179,8 @@ class _CategoriasProdutosServicosWebPageState
   }
 
   Future<void> _confirmarExclusao(CategoriaCatalogoModel categoria) async {
-    final bool confirmou = await showDialog<bool>(
+    final bool confirmou =
+        await showDialog<bool>(
           context: context,
           barrierDismissible: true,
           builder: (BuildContext dialogContext) {
@@ -275,19 +286,20 @@ class _CategoriasProdutosServicosWebPageState
     final Widget content = Column(
       children: <Widget>[_header(), Expanded(child: _body())],
     );
-    final Widget closeAwareContent = widget.onBack == null
-        ? content
-        : _EscCloseScope(onEscape: widget.onBack, child: content);
+    final Widget closeAwareContent =
+        widget.onBack == null
+            ? content
+            : _EscCloseScope(onEscape: widget.onBack, child: content);
 
     if (widget.embedded) {
       return Material(
-        color: Theme.of(context).colorScheme.surface,
+        color: WebThemeTokens.of(context).workspaceBackground,
         child: closeAwareContent,
       );
     }
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: WebThemeTokens.of(context).workspaceBackground,
       appBar: AppBar(title: const Text('Categorias')),
       body: SafeArea(child: closeAwareContent),
     );
@@ -305,17 +317,20 @@ class _CategoriasProdutosServicosWebPageState
           onPressed: _loading ? null : _recarregar,
           icon: const Icon(Icons.refresh_rounded),
           label: const Text('Atualizar'),
+          style: _outlinedCtaStyle(),
         ),
         FilledButton.icon(
           onPressed: _loading ? null : () => _abrirFormulario(),
           icon: const Icon(Icons.add_rounded),
           label: const Text('Nova categoria'),
+          style: _filledCtaStyle(),
         ),
       ],
     );
   }
 
   Widget _body() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     if (_loading && _categorias.isEmpty) {
       return ListView(
         padding: EdgeInsets.fromLTRB(
@@ -362,19 +377,23 @@ class _CategoriasProdutosServicosWebPageState
                     child: Text(
                       'Categorias encontradas',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                          ),
+                        color: tokens.primaryText,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
-                  Chip(label: Text('${_categoriasFiltradas.length}')),
+                  _countChip('${_categoriasFiltradas.length}'),
                 ],
               ),
               const SizedBox(height: 12),
               if (_categoriasFiltradas.isEmpty)
                 const SixWebNoData(text: 'Nenhuma categoria encontrada.')
               else
-                ...List<Widget>.generate(_categoriasFiltradas.length, (int index) {
-                  final CategoriaCatalogoModel categoria = _categoriasFiltradas[index];
+                ...List<Widget>.generate(_categoriasFiltradas.length, (
+                  int index,
+                ) {
+                  final CategoriaCatalogoModel categoria =
+                      _categoriasFiltradas[index];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: SixWebEntry(
@@ -391,23 +410,23 @@ class _CategoriasProdutosServicosWebPageState
   }
 
   Widget _inlineError(String mensagem) {
-    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.error.withOpacity(0.08),
+        color: tokens.danger.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.error.withOpacity(0.18)),
+        border: Border.all(color: tokens.danger.withValues(alpha: 0.18)),
       ),
       child: Row(
         children: <Widget>[
-          Icon(Icons.error_outline_rounded, color: theme.colorScheme.error),
+          Icon(Icons.error_outline_rounded, color: tokens.danger),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               mensagem,
               style: TextStyle(
-                color: theme.colorScheme.error,
+                color: tokens.danger,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -466,6 +485,7 @@ class _CategoriasProdutosServicosWebPageState
   }
 
   Widget _filtros(bool compact) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return SixWebSectionCard(
       title: 'Busca e filtros',
       subtitle:
@@ -485,26 +505,61 @@ class _CategoriasProdutosServicosWebPageState
                   controller: _buscaController,
                   onChanged: (String value) => setState(() => _busca = value),
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search_rounded),
+                    prefixIcon: Icon(Icons.search_rounded, color: tokens.info),
                     labelText: 'Buscar categoria',
                     hintText: 'Ex.: peças, assistência, acessórios...',
+                    filled: true,
+                    fillColor: tokens.inputBackground,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: tokens.cardBorder),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: tokens.selectedBorder),
+                    ),
+                    labelStyle: TextStyle(color: tokens.secondaryText),
+                    hintStyle: TextStyle(color: tokens.mutedText),
                     isDense: true,
                   ),
+                  style: TextStyle(color: tokens.primaryText),
                 ),
               ),
               FilterChip(
                 selected: _somenteAtivas,
                 label: const Text('Somente ativas'),
-                avatar: const Icon(Icons.check_circle_outline, size: 18),
-                onSelected: (bool value) => setState(() => _somenteAtivas = value),
+                avatar: Icon(
+                  Icons.check_circle_outline,
+                  size: 18,
+                  color: _somenteAtivas ? tokens.primaryText : tokens.info,
+                ),
+                labelStyle: TextStyle(
+                  color:
+                      _somenteAtivas
+                          ? tokens.primaryText
+                          : tokens.secondaryText,
+                  fontWeight: FontWeight.w700,
+                ),
+                selectedColor: tokens.selectedBackground,
+                backgroundColor: tokens.cardBackground,
+                side: BorderSide(
+                  color:
+                      _somenteAtivas
+                          ? tokens.selectedBorder
+                          : tokens.cardBorder,
+                ),
+                checkmarkColor: tokens.primaryText,
+                onSelected:
+                    (bool value) => setState(() => _somenteAtivas = value),
               ),
               OutlinedButton.icon(
                 onPressed: _limparFiltros,
                 icon: const Icon(Icons.filter_alt_off_outlined),
                 label: const Text('Limpar filtros'),
+                style: _outlinedCtaStyle(),
               ),
             ],
           ),
@@ -516,13 +571,38 @@ class _CategoriasProdutosServicosWebPageState
               ChoiceChip(
                 selected: _filtroTipo == null,
                 label: const Text('Todas'),
+                labelStyle: _choiceChipLabelStyle(_filtroTipo == null),
+                selectedColor: tokens.selectedBackground,
+                backgroundColor: tokens.cardBackground,
+                side: BorderSide(
+                  color:
+                      _filtroTipo == null
+                          ? tokens.selectedBorder
+                          : tokens.cardBorder,
+                ),
+                checkmarkColor: tokens.primaryText,
                 onSelected: (_) => setState(() => _filtroTipo = null),
               ),
               ...<String>['PRODUTO', 'SERVICO', 'AMBOS'].map(
                 (String tipo) => ChoiceChip(
                   selected: _filtroTipo == tipo,
-                  avatar: Icon(_tipoIcon(tipo), size: 18),
+                  avatar: Icon(
+                    _tipoIcon(tipo),
+                    size: 18,
+                    color:
+                        _filtroTipo == tipo ? tokens.primaryText : tokens.info,
+                  ),
                   label: Text(_tipoLabel(tipo)),
+                  labelStyle: _choiceChipLabelStyle(_filtroTipo == tipo),
+                  selectedColor: tokens.selectedBackground,
+                  backgroundColor: tokens.cardBackground,
+                  side: BorderSide(
+                    color:
+                        _filtroTipo == tipo
+                            ? tokens.selectedBorder
+                            : tokens.cardBorder,
+                  ),
+                  checkmarkColor: tokens.primaryText,
                   onSelected: (_) => setState(() => _filtroTipo = tipo),
                 ),
               ),
@@ -538,14 +618,15 @@ class _CategoriasProdutosServicosWebPageState
     required bool compact,
   }) {
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final Widget leading = Container(
       width: 52,
       height: 52,
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.10),
+        color: tokens.info.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Icon(_tipoIcon(categoria.tipo), color: theme.colorScheme.primary),
+      child: Icon(_tipoIcon(categoria.tipo), color: tokens.info),
     );
 
     final Widget details = Column(
@@ -559,6 +640,7 @@ class _CategoriasProdutosServicosWebPageState
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.titleMedium?.copyWith(
+                  color: tokens.primaryText,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -571,11 +653,13 @@ class _CategoriasProdutosServicosWebPageState
         ),
         const SizedBox(height: 6),
         Text(
-          categoria.descricao.isEmpty ? 'Sem descrição cadastrada.' : categoria.descricao,
+          categoria.descricao.isEmpty
+              ? 'Sem descrição cadastrada.'
+              : categoria.descricao,
           maxLines: compact ? 3 : 2,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+            color: tokens.secondaryText,
             height: 1.35,
           ),
         ),
@@ -608,56 +692,63 @@ class _CategoriasProdutosServicosWebPageState
         OutlinedButton.icon(
           onPressed: _loading ? null : () => _alternarStatus(categoria),
           icon: Icon(
-            categoria.ativo ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            categoria.ativo
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
           ),
           label: Text(categoria.ativo ? 'Desativar' : 'Ativar'),
+          style: _outlinedCtaStyle(),
         ),
         OutlinedButton.icon(
-          onPressed: _loading ? null : () => _abrirFormulario(categoria: categoria),
+          onPressed:
+              _loading ? null : () => _abrirFormulario(categoria: categoria),
           icon: const Icon(Icons.edit_outlined),
           label: const Text('Editar'),
+          style: _outlinedCtaStyle(),
         ),
         IconButton.outlined(
           onPressed: _loading ? null : () => _confirmarExclusao(categoria),
           tooltip: 'Excluir',
           icon: const Icon(Icons.delete_outline_rounded),
+          style: _iconDangerStyle(),
         ),
       ],
     );
 
     return _HoverableCategoriaCard(
-      child: compact
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    leading,
-                    const SizedBox(width: 14),
-                    Expanded(child: details),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Align(alignment: Alignment.centerRight, child: actions),
-              ],
-            )
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                leading,
-                const SizedBox(width: 16),
-                Expanded(child: details),
-                const SizedBox(width: 18),
-                actions,
-              ],
-            ),
+      child:
+          compact
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      leading,
+                      const SizedBox(width: 14),
+                      Expanded(child: details),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Align(alignment: Alignment.centerRight, child: actions),
+                ],
+              )
+              : Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  leading,
+                  const SizedBox(width: 16),
+                  Expanded(child: details),
+                  const SizedBox(width: 18),
+                  actions,
+                ],
+              ),
     );
   }
 
   Widget _statusChip(bool ativo) {
-    final ThemeData theme = Theme.of(context);
-    final Color color = ativo ? Colors.green.shade700 : theme.colorScheme.onSurfaceVariant;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color color = ativo ? tokens.success : tokens.statusNeutral;
     return Chip(
       avatar: Icon(
         ativo ? Icons.check_circle_outline : Icons.pause_circle_outline,
@@ -666,42 +757,41 @@ class _CategoriasProdutosServicosWebPageState
       ),
       label: Text(ativo ? 'Ativa' : 'Inativa'),
       labelStyle: TextStyle(color: color, fontWeight: FontWeight.w800),
-      side: BorderSide(color: color.withOpacity(0.22)),
-      backgroundColor: color.withOpacity(0.07),
+      side: BorderSide(color: color.withValues(alpha: 0.22)),
+      backgroundColor: color.withValues(alpha: 0.08),
     );
   }
 
   Widget _tipoChip(String tipo) {
-    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Chip(
-      avatar: Icon(_tipoIcon(tipo), size: 18, color: theme.colorScheme.primary),
+      avatar: Icon(_tipoIcon(tipo), size: 18, color: tokens.info),
       label: Text(_tipoLabel(tipo)),
-      labelStyle: TextStyle(
-        color: theme.colorScheme.primary,
-        fontWeight: FontWeight.w800,
-      ),
-      side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.18)),
-      backgroundColor: theme.colorScheme.primary.withOpacity(0.06),
+      labelStyle: TextStyle(color: tokens.info, fontWeight: FontWeight.w800),
+      side: BorderSide(color: tokens.info.withValues(alpha: 0.18)),
+      backgroundColor: tokens.info.withValues(alpha: 0.08),
     );
   }
 
   Widget _infoPill({required IconData icon, required String label}) {
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.38),
+        color: tokens.inputBackground,
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 15, color: theme.colorScheme.onSurfaceVariant),
+          Icon(icon, size: 15, color: tokens.secondaryText),
           const SizedBox(width: 6),
           Text(
             label,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+              color: tokens.secondaryText,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -740,6 +830,87 @@ class _CategoriasProdutosServicosWebPageState
     final String ano = data.year.toString();
     return '$dia/$mes/$ano';
   }
+
+  Widget _countChip(String label) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: tokens.primaryText,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  TextStyle _choiceChipLabelStyle(bool selected) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return TextStyle(
+      color: selected ? tokens.primaryText : tokens.secondaryText,
+      fontWeight: FontWeight.w700,
+    );
+  }
+
+  ButtonStyle _outlinedCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return OutlinedButton.styleFrom(
+      foregroundColor: tokens.info,
+      disabledForegroundColor: tokens.disabledForeground,
+      side: BorderSide(color: tokens.cardBorder),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    ).copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return tokens.disabledBackground.withValues(alpha: 0.22);
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return tokens.info.withValues(alpha: 0.08);
+        }
+        return Colors.transparent;
+      }),
+    );
+  }
+
+  ButtonStyle _filledCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return FilledButton.styleFrom(
+      foregroundColor: Colors.white,
+      backgroundColor: tokens.info,
+      disabledForegroundColor: tokens.disabledForeground,
+      disabledBackgroundColor: tokens.disabledBackground,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    );
+  }
+
+  ButtonStyle _iconDangerStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return IconButton.styleFrom(
+      foregroundColor: tokens.danger,
+      disabledForegroundColor: tokens.disabledForeground,
+      side: BorderSide(color: tokens.danger.withValues(alpha: 0.26)),
+      backgroundColor: Colors.transparent,
+    ).copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return tokens.danger.withValues(alpha: 0.08);
+        }
+        return Colors.transparent;
+      }),
+    );
+  }
 }
 
 class _HoverableCategoriaCard extends StatefulWidget {
@@ -748,7 +919,8 @@ class _HoverableCategoriaCard extends StatefulWidget {
   final Widget child;
 
   @override
-  State<_HoverableCategoriaCard> createState() => _HoverableCategoriaCardState();
+  State<_HoverableCategoriaCard> createState() =>
+      _HoverableCategoriaCardState();
 }
 
 class _HoverableCategoriaCardState extends State<_HoverableCategoriaCard> {
@@ -756,7 +928,7 @@ class _HoverableCategoriaCardState extends State<_HoverableCategoriaCard> {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
@@ -768,22 +940,11 @@ class _HoverableCategoriaCardState extends State<_HoverableCategoriaCard> {
         width: double.infinity,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: _hovered
-              ? theme.colorScheme.primary.withOpacity(0.025)
-              : theme.colorScheme.surface,
+          color: _hovered ? tokens.hoverBackground : tokens.cardBackground,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: _hovered
-                ? theme.colorScheme.primary.withOpacity(0.30)
-                : theme.colorScheme.outlineVariant,
+            color: _hovered ? tokens.selectedBorder : tokens.cardBorder,
           ),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: theme.shadowColor.withOpacity(_hovered ? 0.10 : 0.05),
-              blurRadius: _hovered ? 18.0 : 14.0,
-              offset: Offset(0, _hovered ? 8.0 : 6.0),
-            ),
-          ],
         ),
         child: widget.child,
       ),
@@ -833,7 +994,8 @@ class _CategoriaCatalogoDialog extends StatefulWidget {
   final CategoriaCatalogoModel? categoria;
 
   @override
-  State<_CategoriaCatalogoDialog> createState() => _CategoriaCatalogoDialogState();
+  State<_CategoriaCatalogoDialog> createState() =>
+      _CategoriaCatalogoDialogState();
 }
 
 class _CategoriaCatalogoDialogState extends State<_CategoriaCatalogoDialog> {
@@ -848,7 +1010,9 @@ class _CategoriaCatalogoDialogState extends State<_CategoriaCatalogoDialog> {
     super.initState();
     final CategoriaCatalogoModel? categoria = widget.categoria;
     _nomeController = TextEditingController(text: categoria?.nome ?? '');
-    _descricaoController = TextEditingController(text: categoria?.descricao ?? '');
+    _descricaoController = TextEditingController(
+      text: categoria?.descricao ?? '',
+    );
     _tipo = categoria?.tipo ?? 'PRODUTO';
     _ativo = categoria?.ativo ?? true;
   }
@@ -874,12 +1038,12 @@ class _CategoriaCatalogoDialogState extends State<_CategoriaCatalogoDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool editando = widget.categoria != null;
     return AlertDialog(
       icon: Icon(
         editando ? Icons.edit_outlined : Icons.add_circle_outline_rounded,
-        color: theme.colorScheme.primary,
+        color: tokens.info,
       ),
       title: Text(editando ? 'Editar categoria' : 'Nova categoria'),
       content: SizedBox(
@@ -932,7 +1096,10 @@ class _CategoriaCatalogoDialogState extends State<_CategoriaCatalogoDialog> {
                 items: const <DropdownMenuItem<String>>[
                   DropdownMenuItem(value: 'PRODUTO', child: Text('Produtos')),
                   DropdownMenuItem(value: 'SERVICO', child: Text('Serviços')),
-                  DropdownMenuItem(value: 'AMBOS', child: Text('Produtos e serviços')),
+                  DropdownMenuItem(
+                    value: 'AMBOS',
+                    child: Text('Produtos e serviços'),
+                  ),
                 ],
                 onChanged: (String? value) {
                   if (value == null) return;

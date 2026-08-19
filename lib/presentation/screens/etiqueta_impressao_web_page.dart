@@ -664,6 +664,8 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
         return Dialog(
           insetPadding: const EdgeInsets.all(24),
           clipBehavior: Clip.antiAlias,
+          backgroundColor: WebThemeTokens.of(dialogContext).cardBackground,
+          surfaceTintColor: Colors.transparent,
           child: SizedBox(
             width: mathMin(size.width * 0.94, 1380),
             height: mathMin(size.height * 0.90, 900),
