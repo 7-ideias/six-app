@@ -47,15 +47,18 @@ Consultar [references/flutter-web-dialog-pattern.md](references/flutter-web-dial
 3. Manter a lógica de negócio fora do componente. Executar serviço e recarga por callback fornecido pela tela.
 4. Modelar explicitamente os estados `review`, `processing`, `success` e `error` quando a ação for assíncrona.
 5. Bloquear cliques duplicados, fechamento pelo teclado e navegação de retorno durante processamento e sucesso.
-6. Manter o modal aberto durante a operação, transformar o conteúdo em sucesso e fechar após 600–900 ms.
-7. Capturar falhas no diálogo, apresentar mensagem recuperável e permitir tentar novamente ou voltar.
-8. Verificar `mounted` antes de atualizar estado ou fechar a rota após um `await`.
-9. Usar `context.t(...)` ou o mecanismo i18n vigente. Adicionar chaves equivalentes em português, inglês e espanhol; não inserir novos textos visíveis somente em português.
+6. Implementar atalho explícito para `Esc` nos estados interativos, normalmente com `Shortcuts`, `Actions` e `Focus(autofocus: true)`, para fechar o modal como ação de voltar sem depender só do `PopScope`.
+7. Garantir que `Esc` funcione em `review` e `error`, mas permaneça inativo em `processing` e `success`.
+8. Manter o modal aberto durante a operação, transformar o conteúdo em sucesso e fechar após 600–900 ms.
+9. Capturar falhas no diálogo, apresentar mensagem recuperável e permitir tentar novamente ou voltar.
+10. Verificar `mounted` antes de atualizar estado ou fechar a rota após um `await`.
+11. Usar `context.t(...)` ou o mecanismo i18n vigente. Adicionar chaves equivalentes em português, inglês e espanhol; não inserir novos textos visíveis somente em português.
 
 ### 5. Garantir acessibilidade e responsividade
 
 - Definir `barrierLabel`, `Semantics(namesRoute: true)` e rótulo que descreva a ação.
 - Preservar foco visível e navegação por teclado.
+- Garantir que o modal receba foco inicial suficiente para capturar `Esc` e outros atalhos previstos.
 - Não comunicar sucesso, erro ou perigo somente por cor; combinar cor, ícone e texto.
 - Evitar overflow em 1024 px e no modo compacto do navegador.
 - Não introduzir dependência exclusiva de Web em camadas compartilhadas com Mobile.
@@ -66,6 +69,8 @@ Consultar [references/flutter-web-dialog-pattern.md](references/flutter-web-dial
 2. Executar análise estática nos arquivos afetados.
 3. Criar ou atualizar testes de widget cobrindo:
    - backdrop e conteúdo contextual;
+   - fechamento com `Esc` em estado interativo;
+   - bloqueio de `Esc` durante processamento;
    - bloqueio durante processamento;
    - transição para sucesso;
    - erro recuperável e nova tentativa ou retorno;
