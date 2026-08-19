@@ -205,6 +205,23 @@ const Map<String, Map<String, String>> _fallbacks = {
     'caixa.operacoes.openConfirmMessage':
         'Deseja abrir {cashDesk} com troco inicial de {amount}?',
     'caixa.operacoes.openConfirmAction': 'Abrir caixa',
+    'caixa.operacoes.closeSessionAction': 'Encerrar caixa',
+    'caixa.operacoes.closeDialogTitle': 'Encerrar sessão de caixa?',
+    'caixa.operacoes.closeDialogSubtitle':
+        'Revise o resumo antes de concluir. Esta ação não poderá ser desfeita.',
+    'caixa.operacoes.closeDialogCashDesk': 'Caixa',
+    'caixa.operacoes.closeDialogMovements': 'Movimentos',
+    'caixa.operacoes.closeDialogExpectedBalance': 'Saldo esperado',
+    'caixa.operacoes.closeDialogChecklistComplete':
+        'Resumo operacional disponível',
+    'caixa.operacoes.closeDialogBack': 'Voltar',
+    'caixa.operacoes.closeDialogConfirm': 'Encerrar caixa',
+    'caixa.operacoes.closeDialogProcessing': 'Encerrando...',
+    'caixa.operacoes.closeDialogSuccessTitle': 'Caixa encerrado com sucesso',
+    'caixa.operacoes.closeDialogSuccessMessage':
+        'A sessão foi finalizada e permanece disponível no histórico.',
+    'caixa.operacoes.closeDialogError':
+        'Não foi possível encerrar o caixa. Verifique sua conexão e tente novamente.',
     'web.standalone.quote': 'Orçamento',
     'web.standalone.serviceOrder': 'Ordem de serviço',
     'web.shell.expandSidebar': 'Expandir navegação',
@@ -1579,6 +1596,24 @@ const Map<String, Map<String, String>> _fallbacks = {
     'caixa.operacoes.openConfirmMessage':
         'Do you want to open {cashDesk} with an initial cash amount of {amount}?',
     'caixa.operacoes.openConfirmAction': 'Open cash register',
+    'caixa.operacoes.closeSessionAction': 'Close cash register',
+    'caixa.operacoes.closeDialogTitle': 'Close cash register session?',
+    'caixa.operacoes.closeDialogSubtitle':
+        'Review the summary before continuing. This action cannot be undone.',
+    'caixa.operacoes.closeDialogCashDesk': 'Cash register',
+    'caixa.operacoes.closeDialogMovements': 'Transactions',
+    'caixa.operacoes.closeDialogExpectedBalance': 'Expected balance',
+    'caixa.operacoes.closeDialogChecklistComplete':
+        'Operational summary available',
+    'caixa.operacoes.closeDialogBack': 'Back',
+    'caixa.operacoes.closeDialogConfirm': 'Close cash register',
+    'caixa.operacoes.closeDialogProcessing': 'Closing...',
+    'caixa.operacoes.closeDialogSuccessTitle':
+        'Cash register closed successfully',
+    'caixa.operacoes.closeDialogSuccessMessage':
+        'The session has ended and remains available in the history.',
+    'caixa.operacoes.closeDialogError':
+        'Unable to close the cash register. Check your connection and try again.',
     'web.standalone.quote': 'Quote',
     'web.standalone.serviceOrder': 'Service order',
     'web.shell.expandSidebar': 'Expand navigation',
@@ -2847,6 +2882,23 @@ const Map<String, Map<String, String>> _fallbacks = {
     'caixa.operacoes.openConfirmMessage':
         '¿Deseas abrir {cashDesk} con fondo inicial de {amount}?',
     'caixa.operacoes.openConfirmAction': 'Abrir caja',
+    'caixa.operacoes.closeSessionAction': 'Cerrar caja',
+    'caixa.operacoes.closeDialogTitle': '¿Cerrar la sesión de caja?',
+    'caixa.operacoes.closeDialogSubtitle':
+        'Revise el resumen antes de continuar. Esta acción no se puede deshacer.',
+    'caixa.operacoes.closeDialogCashDesk': 'Caja',
+    'caixa.operacoes.closeDialogMovements': 'Movimientos',
+    'caixa.operacoes.closeDialogExpectedBalance': 'Saldo esperado',
+    'caixa.operacoes.closeDialogChecklistComplete':
+        'Resumen operativo disponible',
+    'caixa.operacoes.closeDialogBack': 'Volver',
+    'caixa.operacoes.closeDialogConfirm': 'Cerrar caja',
+    'caixa.operacoes.closeDialogProcessing': 'Cerrando...',
+    'caixa.operacoes.closeDialogSuccessTitle': 'Caja cerrada correctamente',
+    'caixa.operacoes.closeDialogSuccessMessage':
+        'La sesión ha finalizado y permanece disponible en el historial.',
+    'caixa.operacoes.closeDialogError':
+        'No se pudo cerrar la caja. Compruebe su conexión e inténtelo de nuevo.',
     'web.standalone.quote': 'Presupuesto',
     'web.standalone.serviceOrder': 'Orden de servicio',
     'web.shell.expandSidebar': 'Expandir navegación',

@@ -11,7 +11,7 @@ import '../../l10n/six_i18n.dart';
 import '../../providers/empresa_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
-import '../components/web/six_web_animated_dialog.dart';
+import '../components/web/six_web_cash_session_close_dialog.dart';
 import '../components/web_dashboard_widgets.dart';
 import '../theme/web_theme_tokens.dart';
 
@@ -456,7 +456,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           OutlinedButton.icon(
             onPressed: _confirmarEncerramentoSessao,
             icon: const Icon(Icons.power_settings_new_rounded),
-            label: const Text('Encerrar sessão'),
+            label: Text(
+              _txt(
+                'caixa.operacoes.closeSessionAction',
+                'Encerrar caixa',
+              ),
+            ),
           ),
         if (_temCaixaAberto)
           OutlinedButton.icon(
@@ -2076,44 +2081,28 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       return;
     }
 
-    final tokens = WebThemeTokens.of(context);
-    final confirmou =
-        await showSixWebAnimatedDialog<bool>(
-          context: context,
-          barrierLabel: 'Fechar confirmação de encerramento de sessão',
-          overlayColor: Color.alphaBlend(
-            tokens.danger.withValues(alpha: 0.22),
-            tokens.workspaceBackground.withValues(alpha: 0.72),
-          ),
-          overlayBlurSigma: 14,
-          transitionDuration: const Duration(milliseconds: 360),
-          builder:
-              (context) => _buildConfirmDialog(
-                title: 'Encerrar sessão?',
-                message:
-                    'Esta ação encerrará o caixa atual. Você ainda poderá consultar o histórico da sessão.',
-                cancelLabel: 'Voltar',
-                confirmLabel: 'Encerrar',
-              ),
-        ) ??
-        false;
+    final CaixaSessao sessao = _sessaoAtual!;
+    final ResumoCaixa? resumo = _resumo;
+    final int quantidadeMovimentos =
+        resumo?.quantidadeMovimentos ?? _movimentos.length;
+    final String nomeCaixa =
+        sessao.nomeCaixa.trim().isEmpty
+            ? _txt('caixa.operacoes.closeDialogCashDesk', 'Caixa')
+            : sessao.nomeCaixa.trim();
+    final bool confirmou = await showSixWebCashSessionCloseDialog(
+      context: context,
+      cashDeskName: nomeCaixa,
+      movementCount: quantidadeMovimentos,
+      expectedBalance: _formatCurrency(resumo?.saldoEsperado ?? 0),
+      onConfirm: () async {
+        await _caixaService.fecharCaixa(_montarRequestFechamentoCaixa());
+        await _carregarDadosIniciais();
+      },
+    );
 
-    if (!confirmou) return;
+    if (!confirmou || !mounted) return;
 
-    setState(() => _isLoading = true);
-    try {
-      await _caixaService.fecharCaixa(_montarRequestFechamentoCaixa());
-      await _carregarDadosIniciais();
-      if (!mounted) return;
-      setState(() => _mostrarPainelFechamento = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Sessão encerrada.')));
-    } catch (e) {
-      _mostrarErro('Erro ao encerrar sessão: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+    setState(() => _mostrarPainelFechamento = false);
   }
 
   Future<void> _cancelarMovimento(MovimentoCaixa movimento) async {
