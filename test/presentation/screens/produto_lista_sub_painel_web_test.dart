@@ -180,6 +180,66 @@ void main() {
       expect(tester.takeException(), isNull, reason: size.toString());
     }
   });
+
+  testWidgets('dialogo de selecao web aplica backdrop com blur', (
+    WidgetTester tester,
+  ) async {
+    UsuarioProvider().setUsuario(
+      UsuarioModel(
+        nome: 'Ana',
+        sobrenome: 'Souza',
+        cpf: '',
+        registroProfissional: '',
+        email: 'ana@six.test',
+        nomeDeGuerra: 'Ana',
+        preferenciasIndividuaisDoUsuario:
+            PreferenciasIndividuaisDoUsuarioModel.padrao(),
+      ),
+    );
+
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() async {
+      await tester.binding.setSurfaceSize(null);
+    });
+
+    await tester.pumpWidget(
+      _buildTestApp(
+        child: Builder(
+          builder: (BuildContext context) {
+            return Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    showProdutoListaSelecaoWebDialog<ProdutoModel>(
+                      context: context,
+                    );
+                  },
+                  child: const Text('abrir'),
+                ),
+              ),
+            );
+          },
+        ),
+        products: <ProdutoModel>[
+          _produto(
+            id: 'p1',
+            nome: 'Carregador Turbo',
+            codigo: '78900001',
+            categoria: 'Acessórios',
+            preco: 129.9,
+          ),
+        ],
+      ),
+    );
+
+    await tester.tap(find.text('abrir'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byType(BackdropFilter), findsOneWidget);
+    expect(find.text('Selecionar item'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 Future<void> _pumpCatalog(
@@ -211,58 +271,72 @@ Future<void> _pumpCatalog(
   });
 
   await tester.pumpWidget(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider<ProdutosListProvider<ProdutoModel>>(
-          create:
-              (_) => ProdutosListProvider<ProdutoModel>(
-                fetchFunction: (Map<String, String>? headers) async {
-                  final String tipo =
-                      headers?['tipo']?.toUpperCase() ?? 'PRODUTO';
-                  final List<ProdutoModel> lista =
-                      tipo == 'SERVICO' ? services : products;
-                  return ProdutoResponseModel(
-                    skusTotaisNoEstoque: lista.length,
-                    qtNoEstoque: lista.length.toDouble(),
-                    erroNoEstoque: false,
-                    qtSemEstoque: 0,
-                    vlEstoqueEmGrana: 0,
-                    produtosList: lista,
-                  );
-                },
-              ),
-        ),
-        ChangeNotifierProvider<LocaleSettingsProvider>(
-          create:
-              (_) => LocaleSettingsProvider(
-                regionalizacaoService: RegionalizacaoService(
-                  apiClient: _FakeRegionalizacaoApiClient(),
-                ),
-              ),
-        ),
-      ],
-      child: MaterialApp(
-        theme: ThemeData.light(useMaterial3: true),
-        darkTheme: ThemeData.dark(useMaterial3: true),
-        themeMode: themeMode,
-        locale: const Locale('pt'),
-        localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
-          GlobalMaterialLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-        ],
-        supportedLocales: const <Locale>[
-          Locale('pt'),
-          Locale('en'),
-          Locale('es'),
-        ],
-        home: const Scaffold(body: ProdutoListaBody(modoEdicao: true)),
-      ),
+    _buildTestApp(
+      themeMode: themeMode,
+      products: products,
+      services: services,
+      child: const Scaffold(body: ProdutoListaBody(modoEdicao: true)),
     ),
   );
 
   await tester.pump();
   await tester.pumpAndSettle();
+}
+
+Widget _buildTestApp({
+  required Widget child,
+  List<ProdutoModel> products = const <ProdutoModel>[],
+  List<ProdutoModel> services = const <ProdutoModel>[],
+  ThemeMode themeMode = ThemeMode.light,
+}) {
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<ProdutosListProvider<ProdutoModel>>(
+        create:
+            (_) => ProdutosListProvider<ProdutoModel>(
+              fetchFunction: (Map<String, String>? headers) async {
+                final String tipo =
+                    headers?['tipo']?.toUpperCase() ?? 'PRODUTO';
+                final List<ProdutoModel> lista =
+                    tipo == 'SERVICO' ? services : products;
+                return ProdutoResponseModel(
+                  skusTotaisNoEstoque: lista.length,
+                  qtNoEstoque: lista.length.toDouble(),
+                  erroNoEstoque: false,
+                  qtSemEstoque: 0,
+                  vlEstoqueEmGrana: 0,
+                  produtosList: lista,
+                );
+              },
+            ),
+      ),
+      ChangeNotifierProvider<LocaleSettingsProvider>(
+        create:
+            (_) => LocaleSettingsProvider(
+              regionalizacaoService: RegionalizacaoService(
+                apiClient: _FakeRegionalizacaoApiClient(),
+              ),
+            ),
+      ),
+    ],
+    child: MaterialApp(
+      theme: ThemeData.light(useMaterial3: true),
+      darkTheme: ThemeData.dark(useMaterial3: true),
+      themeMode: themeMode,
+      locale: const Locale('pt'),
+      localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: const <Locale>[
+        Locale('pt'),
+        Locale('en'),
+        Locale('es'),
+      ],
+      home: child,
+    ),
+  );
 }
 
 ProdutoModel _produto({

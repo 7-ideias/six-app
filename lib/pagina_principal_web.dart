@@ -1212,57 +1212,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return;
     }
 
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final bool dark = Theme.of(context).brightness == Brightness.dark;
-    final dynamic result = await showDialog<dynamic>(
+    final dynamic result = await showProdutoListaSelecaoWebDialog<dynamic>(
       context: context,
-      barrierColor: tokens.workspaceBackground.withValues(
-        alpha: dark ? 0.62 : 0.34,
-      ),
-      builder: (BuildContext context) {
-        final ThemeData themedDialog = WebThemeTokens.applyTo(
-          Theme.of(context),
-        );
-        final WebThemeTokens dialogTokens = WebThemeTokens.of(context);
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 28,
-            vertical: 28,
-          ),
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: Theme(
-            data: themedDialog,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: dialogTokens.surfaceElevated,
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: dialogTokens.cardBorder),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: dark ? 0.28 : 0.12),
-                    blurRadius: 32,
-                    offset: const Offset(0, 18),
-                  ),
-                ],
-              ),
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.80,
-                height: MediaQuery.of(context).size.height * 0.80,
-                child: SubPainelWebProdutoLista(
-                  isSelecao: true,
-                  permitirSelecaoMultipla: true,
-                  tipoInicial: tipoInicial,
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+      permitirSelecaoMultipla: true,
+      tipoInicial: tipoInicial,
+      widthFactor: 0.80,
+      heightFactor: 0.80,
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),
     );
 
     if (!mounted) {
@@ -2548,9 +2504,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         onSuccess: _limparVendaAposSucessoRecebimento,
         valorTotalVenda: _calcularTotal(),
         itensResumo: _montarItensResumoPagamento(),
-        clienteNome: _clienteIdentificado?.nome.trim().isNotEmpty == true
-            ? _clienteIdentificado!.nome.trim()
-            : _clienteIdentificadoController.text.trim(),
+        clienteNome:
+            _clienteIdentificado?.nome.trim().isNotEmpty == true
+                ? _clienteIdentificado!.nome.trim()
+                : _clienteIdentificadoController.text.trim(),
         numeroVenda: '',
         idColaborador: 'idUnicoDoColaborador',
         nomeColaborador: 'Nome do colaborador',

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +11,7 @@ import 'package:sixpos/core/utils/produto_helper.dart';
 import 'package:sixpos/data/models/produto_imagem_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/presentation/components/produto_web_image.dart';
+import 'package:sixpos/presentation/components/web/six_web_animated_dialog.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
@@ -80,6 +82,81 @@ class _ProdutoFiltroMenuOpcao<T> {
 
   final T value;
   final String label;
+}
+
+Future<T?> showProdutoListaSelecaoWebDialog<T>({
+  required BuildContext context,
+  bool permitirSelecaoMultipla = false,
+  String tipoInicial = 'PRODUTO',
+  double widthFactor = 0.88,
+  double heightFactor = 0.86,
+  double? maxWidth,
+  double? maxHeight,
+  EdgeInsets padding = const EdgeInsets.all(24),
+}) {
+  final bool reduceMotion =
+      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+  return showSixWebAnimatedDialog<T>(
+    context: context,
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    overlayColor: const Color(0x8A0B1324),
+    overlayBlurSigma: 12,
+    transitionDuration: Duration(milliseconds: reduceMotion ? 1 : 320),
+    padding: padding,
+    builder: (BuildContext dialogContext) {
+      final ThemeData themedDialog = WebThemeTokens.applyTo(
+        Theme.of(dialogContext),
+      );
+      final WebThemeTokens tokens = WebThemeTokens.of(dialogContext);
+      final Size size = MediaQuery.sizeOf(dialogContext);
+      double dialogWidth = size.width * widthFactor;
+      double dialogHeight = size.height * heightFactor;
+
+      if (maxWidth != null) {
+        dialogWidth = math.min(dialogWidth, maxWidth);
+      }
+      if (maxHeight != null) {
+        dialogHeight = math.min(dialogHeight, maxHeight);
+      }
+
+      return Theme(
+        data: themedDialog,
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          insetPadding: EdgeInsets.zero,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: tokens.surfaceElevated,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: tokens.cardBorder),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: const Color(0xFF020617).withValues(alpha: 0.18),
+                  blurRadius: 42,
+                  offset: const Offset(0, 24),
+                ),
+              ],
+            ),
+            child: SizedBox(
+              width: dialogWidth,
+              height: dialogHeight,
+              child: SubPainelWebProdutoLista(
+                isSelecao: true,
+                permitirSelecaoMultipla: permitirSelecaoMultipla,
+                tipoInicial: tipoInicial,
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }
 
 class SubPainelWebProdutoLista extends StatelessWidget {
