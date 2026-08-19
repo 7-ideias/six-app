@@ -81,6 +81,33 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.updatedAt': 'Atualizado em',
     'common.lastUpdatedAt': 'Última atualização às',
     'common.notInformed': 'Não informada',
+    'vendasAReceber.openInPdv': 'Abrir no PDV',
+    'pdv.openSale.status': 'Venda em aberto',
+    'pdv.openSale.readOnlyStatus': 'Somente consulta',
+    'pdv.openSale.readOnlyTitle': 'Consulta de venda em aberto',
+    'pdv.openSale.readOnlySubtitle':
+        'Produtos, quantidades e preços estão bloqueados nesta etapa. Revise os dados e receba o saldo.',
+    'pdv.openSale.receiveBalance': 'Receber saldo',
+    'pdv.openSale.receiveTitle': 'Receber saldo da venda',
+    'pdv.openSale.receiptNote': 'Saldo recebido pelo PDV web.',
+    'pdv.openSale.receivedMessage': 'Venda recebida com sucesso.',
+    'pdv.openSale.receiptErrorTitle': 'Não foi possível receber a venda',
+    'pdv.openSale.originalTotal': 'Total original',
+    'pdv.openSale.openBalance': 'Saldo em aberto',
+    'pdv.openSale.exitTitle': 'Sair da consulta?',
+    'pdv.openSale.exitMessage':
+        'A venda continuará em aberto. Nenhum item, preço ou recebimento será alterado.',
+    'pdv.openSale.exitAction': 'Sair da consulta',
+    'pdv.openSale.replaceTitle': 'Substituir a venda atual?',
+    'pdv.openSale.replaceMessage':
+        'Os dados que estão no PDV serão substituídos pela venda em aberto selecionada.',
+    'pdv.openSale.replaceAction': 'Abrir venda',
+    'pdv.openSale.loadedMessage':
+        'Venda carregada em modo de consulta. Itens e preços estão bloqueados.',
+    'pdv.openSale.loadErrorTitle': 'Não foi possível abrir a venda',
+    'pdv.openSale.unavailableTitle': 'Venda não disponível',
+    'pdv.openSale.unavailableMessage':
+        'A venda pode ter sido recebida ou cancelada por outro usuário.',
     'common.generating': 'Gerando...',
     'common.saving': 'Salvando...',
     'common.rangeTo': 'a',
@@ -1233,8 +1260,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.webList.printPdf': 'Imprimir PDF',
     'produto.webList.publicCatalogLink': 'Link do catálogo',
     'produto.webList.publicCatalogPreparing': 'Preparando...',
-    'produto.webList.publicCatalogCopied':
-        'Link público do catálogo copiado.',
+    'produto.webList.publicCatalogCopied': 'Link público do catálogo copiado.',
     'produto.webList.publicCatalogError':
         'Não foi possível preparar o link do catálogo.',
     'catalogReservations.title': 'Reservas do catálogo',
@@ -1377,6 +1403,33 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.updatedAt': 'Updated at',
     'common.lastUpdatedAt': 'Last updated at',
     'common.notInformed': 'Not informed',
+    'vendasAReceber.openInPdv': 'Open in POS',
+    'pdv.openSale.status': 'Open sale',
+    'pdv.openSale.readOnlyStatus': 'View only',
+    'pdv.openSale.readOnlyTitle': 'Open sale review',
+    'pdv.openSale.readOnlySubtitle':
+        'Products, quantities, and prices are locked at this stage. Review the data and receive the outstanding balance.',
+    'pdv.openSale.receiveBalance': 'Receive balance',
+    'pdv.openSale.receiveTitle': 'Receive sale balance',
+    'pdv.openSale.receiptNote': 'Balance received through the web POS.',
+    'pdv.openSale.receivedMessage': 'Sale received successfully.',
+    'pdv.openSale.receiptErrorTitle': 'Unable to receive the sale',
+    'pdv.openSale.originalTotal': 'Original total',
+    'pdv.openSale.openBalance': 'Outstanding balance',
+    'pdv.openSale.exitTitle': 'Exit review?',
+    'pdv.openSale.exitMessage':
+        'The sale will remain open. No item, price, or receipt will be changed.',
+    'pdv.openSale.exitAction': 'Exit review',
+    'pdv.openSale.replaceTitle': 'Replace the current sale?',
+    'pdv.openSale.replaceMessage':
+        'The current POS data will be replaced by the selected open sale.',
+    'pdv.openSale.replaceAction': 'Open sale',
+    'pdv.openSale.loadedMessage':
+        'Sale loaded in view-only mode. Items and prices are locked.',
+    'pdv.openSale.loadErrorTitle': 'Unable to open the sale',
+    'pdv.openSale.unavailableTitle': 'Sale unavailable',
+    'pdv.openSale.unavailableMessage':
+        'The sale may have been received or canceled by another user.',
     'common.generating': 'Generating...',
     'common.saving': 'Saving...',
     'common.rangeTo': 'to',
@@ -2427,8 +2480,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.webList.publicCatalogLink': 'Catalog link',
     'produto.webList.publicCatalogPreparing': 'Preparing...',
     'produto.webList.publicCatalogCopied': 'Public catalog link copied.',
-    'produto.webList.publicCatalogError':
-        'Could not prepare the catalog link.',
+    'produto.webList.publicCatalogError': 'Could not prepare the catalog link.',
     'catalogReservations.title': 'Catalog reservations',
     'catalogReservations.subtitle':
         'Track requests received through the virtual catalog.',
@@ -2566,6 +2618,33 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.updatedAt': 'Actualizado el',
     'common.lastUpdatedAt': 'Última actualización a las',
     'common.notInformed': 'No informado',
+    'vendasAReceber.openInPdv': 'Abrir en el TPV',
+    'pdv.openSale.status': 'Venta pendiente',
+    'pdv.openSale.readOnlyStatus': 'Solo consulta',
+    'pdv.openSale.readOnlyTitle': 'Consulta de venta pendiente',
+    'pdv.openSale.readOnlySubtitle':
+        'Los productos, las cantidades y los precios están bloqueados en esta etapa. Revise los datos y cobre el saldo.',
+    'pdv.openSale.receiveBalance': 'Cobrar saldo',
+    'pdv.openSale.receiveTitle': 'Cobrar saldo de la venta',
+    'pdv.openSale.receiptNote': 'Saldo cobrado desde el TPV web.',
+    'pdv.openSale.receivedMessage': 'Venta cobrada correctamente.',
+    'pdv.openSale.receiptErrorTitle': 'No se pudo cobrar la venta',
+    'pdv.openSale.originalTotal': 'Total original',
+    'pdv.openSale.openBalance': 'Saldo pendiente',
+    'pdv.openSale.exitTitle': '¿Salir de la consulta?',
+    'pdv.openSale.exitMessage':
+        'La venta seguirá pendiente. No se modificará ningún artículo, precio ni cobro.',
+    'pdv.openSale.exitAction': 'Salir de la consulta',
+    'pdv.openSale.replaceTitle': '¿Reemplazar la venta actual?',
+    'pdv.openSale.replaceMessage':
+        'Los datos actuales del TPV serán reemplazados por la venta pendiente seleccionada.',
+    'pdv.openSale.replaceAction': 'Abrir venta',
+    'pdv.openSale.loadedMessage':
+        'Venta cargada en modo de consulta. Los artículos y precios están bloqueados.',
+    'pdv.openSale.loadErrorTitle': 'No se pudo abrir la venta',
+    'pdv.openSale.unavailableTitle': 'Venta no disponible',
+    'pdv.openSale.unavailableMessage':
+        'La venta puede haber sido cobrada o cancelada por otro usuario.',
     'common.generating': 'Generando...',
     'common.saving': 'Guardando...',
     'common.rangeTo': 'a',
@@ -3676,7 +3755,8 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Valida el stock y crea una venta por cobrar con estos productos.',
     'catalogReservations.convert.action': 'Convertir en venta',
     'catalogReservations.convert.processing': 'Convirtiendo...',
-    'catalogReservations.convert.confirmTitle': '¿Convertir la reserva en venta?',
+    'catalogReservations.convert.confirmTitle':
+        '¿Convertir la reserva en venta?',
     'catalogReservations.convert.confirmMessage':
         'Se validará el stock y los ítems se enviarán a una venta por cobrar.',
     'catalogReservations.convert.success':

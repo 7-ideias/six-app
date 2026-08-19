@@ -12,39 +12,295 @@ bool acionarPdvFrenteCaixaPeloElemento(Element element) {
 extension _PdvWeb on _PaginaPrincipalWebState {
   bool get _vendaPossuiItens => _produtosSelecionados.isNotEmpty;
 
+  bool get _consultandoVendaNaoLiquidada =>
+      _vendaNaoLiquidadaEmConsulta != null;
+
+  bool get _pdvPodeEditarVenda =>
+      _pdvPodeLancarVenda && !_consultandoVendaNaoLiquidada;
+
+  double get _totalParaRecebimentoAtual =>
+      _vendaNaoLiquidadaEmConsulta?.valorAberto ?? _calcularTotal();
+
   bool get _clienteSelecionadoNaVenda {
     return _clienteIdentificado != null ||
         _clienteIdentificadoController.text.trim().isNotEmpty;
   }
 
   Future<void> _abrirVendasAReceberWeb() async {
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        final Size size = MediaQuery.of(dialogContext).size;
-        return Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 24,
-          ),
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: SizedBox(
-            width: size.width * 0.90,
-            height: size.height * 0.86,
-            child: const VendasAReceberWebWidget(),
-          ),
+    final VendaNaoLiquidadaModel? vendaSelecionada =
+        await showDialog<VendaNaoLiquidadaModel>(
+          context: context,
+          barrierDismissible: true,
+          builder: (BuildContext dialogContext) {
+            final Size size = MediaQuery.of(dialogContext).size;
+            return Dialog(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 24,
+              ),
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: SizedBox(
+                width: size.width * 0.90,
+                height: size.height * 0.86,
+                child: VendasAReceberWebWidget(
+                  onAbrirNoPdv: (VendaNaoLiquidadaModel venda) =>
+                      Navigator.of(dialogContext).pop(venda),
+                ),
+              ),
+            );
+          },
         );
-      },
-    );
 
-    if (mounted && _moduloAtual == ModuloCentralPDV.vendas) {
+    if (!mounted) {
+      return;
+    }
+
+    if (vendaSelecionada != null) {
+      await _carregarVendaNaoLiquidadaNoPdv(vendaSelecionada);
+      return;
+    }
+
+    if (_moduloAtual == ModuloCentralPDV.vendas &&
+        !_consultandoVendaNaoLiquidada) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _focarCodigoBarras();
       });
+    }
+  }
+
+  Future<void> _carregarVendaNaoLiquidadaNoPdv(
+    VendaNaoLiquidadaModel vendaSelecionada,
+  ) async {
+    VendaNaoLiquidadaModel? vendaAtualizada;
+    try {
+      final List<VendaNaoLiquidadaModel> vendas =
+          await _vendaNaoLiquidadaApiClient.listar();
+      for (final VendaNaoLiquidadaModel venda in vendas) {
+        if (venda.idRecebimento == vendaSelecionada.idRecebimento) {
+          vendaAtualizada = venda;
+          break;
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarMensagemVendaNaoLiquidada(
+        context.t(
+          'pdv.openSale.loadErrorTitle',
+          fallback: 'Não foi possível abrir a venda',
+        ),
+        e.toString().replaceAll('Exception: ', ''),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    if (vendaAtualizada == null) {
+      _mostrarMensagemVendaNaoLiquidada(
+        context.t(
+          'pdv.openSale.unavailableTitle',
+          fallback: 'Venda não disponível',
+        ),
+        context.t(
+          'pdv.openSale.unavailableMessage',
+          fallback:
+              'A venda pode ter sido recebida ou cancelada por outro usuário.',
+        ),
+      );
+      return;
+    }
+
+    final bool substituindoOutraVenda =
+        _vendaTemDadosTemporariosPreenchidos() &&
+        _vendaNaoLiquidadaEmConsulta?.idRecebimento !=
+            vendaAtualizada.idRecebimento;
+    if (substituindoOutraVenda) {
+      final bool substituir =
+          await showDialog<bool>(
+            context: context,
+            builder: (BuildContext dialogContext) {
+              return AlertDialog(
+                title: Text(
+                  context.t(
+                    'pdv.openSale.replaceTitle',
+                    fallback: 'Substituir a venda atual?',
+                  ),
+                ),
+                content: Text(
+                  context.t(
+                    'pdv.openSale.replaceMessage',
+                    fallback:
+                        'Os dados que estão no PDV serão substituídos pela venda em aberto selecionada.',
+                  ),
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                    child: Text(context.t('common.back', fallback: 'Voltar')),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                    child: Text(
+                      context.t(
+                        'pdv.openSale.replaceAction',
+                        fallback: 'Abrir venda',
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ) ??
+          false;
+      if (!substituir || !mounted) {
+        return;
+      }
+    }
+
+    final VendaNaoLiquidadaModel venda = vendaAtualizada;
+    setState(() {
+      _produtosSelecionados.clear();
+      for (int index = 0; index < venda.itens.length; index++) {
+        final VendaNaoLiquidadaItemModel item = venda.itens[index];
+        final String tipoProduto = item.ehServico ? 'SERVICO' : 'PRODUTO';
+        _produtosSelecionados.add(<String, dynamic>{
+          'id': item.idProduto,
+          'codigo': '',
+          'nome': item.nome,
+          'preco': item.valorUnitario,
+          'quantidade': item.quantidade,
+          'tipoProduto': tipoProduto,
+          'ehServico': item.ehServico,
+          'chaveItem':
+              'VENDA_ABERTA:${venda.idRecebimento}:$index:${item.idProduto}',
+          'vendaNaoLiquidadaSnapshot': true,
+        });
+      }
+      _formasPagamentoConfirmadas = <FormaPagamentoSelecionada>[];
+      _descricoesFormaPagamentoPorCodigo = <String, String>{};
+      _codigoBarrasController.clear();
+      _clienteIdentificado = null;
+      _clienteIdentificadoController.text = venda.nomeCliente.trim();
+      _vendaNaoLiquidadaEmConsulta = venda;
+      _recebendoVendaNaoLiquidada = false;
+      _clearAllItemVisualState();
+      _atualizarCamposDerivados();
+      _moduloAtual = ModuloCentralPDV.vendas;
+    });
+
+    FocusManager.instance.primaryFocus?.unfocus();
+    await _carregarSessaoCaixaPdv();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          context.t(
+            'pdv.openSale.loadedMessage',
+            fallback:
+                'Venda carregada em modo de consulta. Itens e preços estão bloqueados.',
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _mostrarMensagemVendaNaoLiquidada(String titulo, String mensagem) {
+    showDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: Text(titulo),
+        content: Text(mensagem),
+        actions: <Widget>[
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(context.t('common.close', fallback: 'Fechar')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _receberVendaNaoLiquidadaEmConsulta() async {
+    final VendaNaoLiquidadaModel? venda = _vendaNaoLiquidadaEmConsulta;
+    if (venda == null || _recebendoVendaNaoLiquidada) {
+      return;
+    }
+
+    if (!await _garantirSessaoCaixaAbertaParaVenda() || !mounted) {
+      return;
+    }
+
+    final SixWebRecebimentoResultado? resultado =
+        await SixWebRecebimentoDialog.show(
+          context,
+          titulo: context.t(
+            'pdv.openSale.receiveTitle',
+            fallback: 'Receber saldo da venda',
+          ),
+          descricao: venda.descricao,
+          contato: venda.nomeCliente.trim().isEmpty
+              ? null
+              : venda.nomeCliente.trim(),
+          valorAberto: venda.valorAberto,
+          permitirParcial: false,
+          observacaoInicial: context.t(
+            'pdv.openSale.receiptNote',
+            fallback: 'Saldo recebido pelo PDV web.',
+          ),
+        );
+
+    if (resultado == null || !mounted) {
+      return;
+    }
+
+    setState(() => _recebendoVendaNaoLiquidada = true);
+    try {
+      final String? idSessaoCaixa = _sessaoCaixaPdv?.idSessaoCaixa.trim();
+      await _vendaNaoLiquidadaApiClient.liquidar(
+        idRecebimento: venda.idRecebimento,
+        input: LiquidarVendaNaoLiquidadaInput(
+          codigoTipoRecebimento: resultado.codigoTipoRecebimento,
+          valorRecebido: venda.valorAberto,
+          itens: <VendaNaoLiquidadaItemModel>[],
+          observacao: resultado.observacao,
+          referencia: venda.idOperacaoApp.isNotEmpty
+              ? venda.idOperacaoApp
+              : venda.idOperacaoFinanceira,
+          idSessaoCaixa: idSessaoCaixa == null || idSessaoCaixa.isEmpty
+              ? null
+              : idSessaoCaixa,
+        ),
+      );
+
+      if (!mounted) return;
+      _limparVendaAposSucessoRecebimento();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'pdv.openSale.receivedMessage',
+              fallback: 'Venda recebida com sucesso.',
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarMensagemVendaNaoLiquidada(
+        context.t(
+          'pdv.openSale.receiptErrorTitle',
+          fallback: 'Não foi possível receber a venda',
+        ),
+        e.toString().replaceAll('Exception: ', ''),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _recebendoVendaNaoLiquidada = false);
+      }
     }
   }
 
@@ -55,11 +311,11 @@ extension _PdvWeb on _PaginaPrincipalWebState {
     final bool pagamentoCompleto = _pagamentoConfirmadoCompleto();
     final bool pagamentoPrecisaRevisao = _pagamentoConfirmadoPrecisaRevisao();
     final bool clienteNaoInformado =
-        _vendaPossuiItens && !_clienteSelecionadoNaVenda;
-    final Duration transicaoAcoes =
-        _prefereReducaoDeMovimento
-            ? const Duration(milliseconds: 90)
-            : const Duration(milliseconds: 160);
+        (_vendaPossuiItens || _consultandoVendaNaoLiquidada) &&
+        !_clienteSelecionadoNaVenda;
+    final Duration transicaoAcoes = _prefereReducaoDeMovimento
+        ? const Duration(milliseconds: 90)
+        : const Duration(milliseconds: 160);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -91,7 +347,19 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                     _buildSessaoCaixaPdvChip(l10n),
                     if (_sessaoCaixaPdv != null)
                       _buildTempoAtivoSessaoCaixaPdvChip(_sessaoCaixaPdv!),
-                    if (_vendaPossuiItens)
+                    if (_consultandoVendaNaoLiquidada)
+                      _buildStatusChip(
+                        label: context.t(
+                          'pdv.openSale.status',
+                          fallback: 'Venda em aberto',
+                        ),
+                        icon: Icons.lock_outline_rounded,
+                        foregroundColor: _pdvTheme.iconColor,
+                        backgroundColor: _pdvTheme.iconColor.withValues(
+                          alpha: 0.11,
+                        ),
+                      )
+                    else if (_vendaPossuiItens)
                       _buildStatusChip(
                         label: l10n?.pdvWebStatusInProgress ?? 'Em andamento',
                         icon: Icons.play_circle_outline_rounded,
@@ -111,7 +379,9 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                           alpha: 0.15,
                         ),
                       )
-                    else if (_vendaPossuiItens && _clienteSelecionadoNaVenda)
+                    else if ((_vendaPossuiItens ||
+                            _consultandoVendaNaoLiquidada) &&
+                        _clienteSelecionadoNaVenda)
                       _buildStatusChip(
                         label:
                             l10n?.pdvWebCustomerIdentifiedStatus ??
@@ -134,28 +404,25 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                   duration: transicaoAcoes,
                   switchInCurve: Curves.easeOut,
                   switchOutCurve: Curves.easeIn,
-                  transitionBuilder: (
-                    Widget child,
-                    Animation<double> animation,
-                  ) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: SizeTransition(
-                        sizeFactor: animation,
-                        axis: Axis.horizontal,
-                        axisAlignment: -1,
-                        child: child,
-                      ),
-                    );
-                  },
-                  child:
-                      _atalhosContextuaisDisponiveis
-                          ? Padding(
-                            key: const ValueKey<String>('on-wrap'),
-                            padding: const EdgeInsets.only(top: 8),
-                            child: _buildAtalhosContextuaisCabecalho(l10n),
-                          )
-                          : const SizedBox.shrink(key: ValueKey<String>('off')),
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SizeTransition(
+                            sizeFactor: animation,
+                            axis: Axis.horizontal,
+                            axisAlignment: -1,
+                            child: child,
+                          ),
+                        );
+                      },
+                  child: _atalhosContextuaisDisponiveis
+                      ? Padding(
+                          key: const ValueKey<String>('on-wrap'),
+                          padding: const EdgeInsets.only(top: 8),
+                          child: _buildAtalhosContextuaisCabecalho(l10n),
+                        )
+                      : const SizedBox.shrink(key: ValueKey<String>('off')),
                 ),
               ],
             ),
@@ -175,10 +442,8 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                     fallback: 'Operações de caixa',
                   ),
                   child: IconButton(
-                    onPressed:
-                        () => _abrirOperacoesCaixa(
-                          retorno: ModuloCentralPDV.vendas,
-                        ),
+                    onPressed: () =>
+                        _abrirOperacoesCaixa(retorno: ModuloCentralPDV.vendas),
                     constraints: const BoxConstraints(
                       minWidth: 42,
                       minHeight: 42,
@@ -191,20 +456,18 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                 ),
               ),
               Tooltip(
-                message:
-                    expandido
-                        ? (l10n?.pdvWebExitExpandedModeAction ??
-                            'Sair do modo expandido')
-                        : (l10n?.pdvWebExpandModeAction ??
-                            'Expandir frente de caixa'),
+                message: expandido
+                    ? (l10n?.pdvWebExitExpandedModeAction ??
+                          'Sair do modo expandido')
+                    : (l10n?.pdvWebExpandModeAction ??
+                          'Expandir frente de caixa'),
                 child: Semantics(
                   button: true,
-                  label:
-                      expandido
-                          ? (l10n?.pdvWebExitExpandedModeAction ??
-                              'Sair do modo expandido')
-                          : (l10n?.pdvWebExpandModeAction ??
-                              'Expandir frente de caixa'),
+                  label: expandido
+                      ? (l10n?.pdvWebExitExpandedModeAction ??
+                            'Sair do modo expandido')
+                      : (l10n?.pdvWebExpandModeAction ??
+                            'Expandir frente de caixa'),
                   child: IconButton(
                     onPressed: _alternarModoExpandidoFrenteCaixa,
                     constraints: const BoxConstraints(
@@ -311,17 +574,17 @@ extension _PdvWeb on _PaginaPrincipalWebState {
       label: _labelSessaoCaixaPdv(sessao, l10n),
       icon: aberta ? Icons.point_of_sale_outlined : Icons.lock_clock_outlined,
       foregroundColor: foreground,
-      backgroundColor:
-          aberta ? tokens.success.withValues(alpha: 0.12) : tokens.surfaceMuted,
+      backgroundColor: aberta
+          ? tokens.success.withValues(alpha: 0.12)
+          : tokens.surfaceMuted,
     );
   }
 
   String _labelSessaoCaixaPdv(CaixaSessao sessao, AppLocalizations? l10n) {
     final String nomeCaixa = sessao.nomeCaixa.trim();
-    final String statusLabel =
-        _sessaoCaixaPdvAberta(sessao)
-            ? (l10n?.pdvWebSessionActive ?? 'Sessão ativa')
-            : (l10n?.pdvCashSessionClosed ?? 'Sessão fechada');
+    final String statusLabel = _sessaoCaixaPdvAberta(sessao)
+        ? (l10n?.pdvWebSessionActive ?? 'Sessão ativa')
+        : (l10n?.pdvCashSessionClosed ?? 'Sessão fechada');
 
     if (nomeCaixa.isEmpty) {
       return statusLabel;
@@ -448,10 +711,9 @@ extension _PdvWeb on _PaginaPrincipalWebState {
 
   Widget _buildLeituraBuscaItem() {
     final AppLocalizations? l10n = AppLocalizations.of(context);
-    final Duration transicaoAcoes =
-        _prefereReducaoDeMovimento
-            ? const Duration(milliseconds: 90)
-            : const Duration(milliseconds: 160);
+    final Duration transicaoAcoes = _prefereReducaoDeMovimento
+        ? const Duration(milliseconds: 90)
+        : const Duration(milliseconds: 160);
 
     return FocusTraversalGroup(
       child: FocusScope(
@@ -476,32 +738,27 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                       duration: transicaoAcoes,
                       switchInCurve: Curves.easeOut,
                       switchOutCurve: Curves.easeIn,
-                      transitionBuilder: (
-                        Widget child,
-                        Animation<double> animation,
-                      ) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: SizeTransition(
-                            sizeFactor: animation,
-                            axisAlignment: -1,
-                            child: child,
-                          ),
-                        );
-                      },
-                      child:
-                          _atalhosContextuaisDisponiveis
-                              ? Padding(
-                                key: const ValueKey<String>('on'),
-                                padding: const EdgeInsets.only(top: 10),
-                                child: _buildAcoesOperacionaisCodigoBarras(
-                                  l10n,
-                                  compact: true,
-                                ),
-                              )
-                              : const SizedBox.shrink(
-                                key: ValueKey<String>('off'),
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SizeTransition(
+                                sizeFactor: animation,
+                                axisAlignment: -1,
+                                child: child,
                               ),
+                            );
+                          },
+                      child: _atalhosContextuaisDisponiveis
+                          ? Padding(
+                              key: const ValueKey<String>('on'),
+                              padding: const EdgeInsets.only(top: 10),
+                              child: _buildAcoesOperacionaisCodigoBarras(
+                                l10n,
+                                compact: true,
+                              ),
+                            )
+                          : const SizedBox.shrink(key: ValueKey<String>('off')),
                     ),
                   ],
                 );
@@ -514,39 +771,86 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                     duration: transicaoAcoes,
                     switchInCurve: Curves.easeOut,
                     switchOutCurve: Curves.easeIn,
-                    transitionBuilder: (
-                      Widget child,
-                      Animation<double> animation,
-                    ) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: SizeTransition(
-                          sizeFactor: animation,
-                          axis: Axis.horizontal,
-                          axisAlignment: -1,
-                          child: child,
-                        ),
-                      );
-                    },
-                    child:
-                        _atalhosContextuaisDisponiveis
-                            ? Padding(
-                              key: const ValueKey<String>('on'),
-                              padding: const EdgeInsets.only(left: 10),
-                              child: _buildAcoesOperacionaisCodigoBarras(
-                                l10n,
-                                compact: false,
-                              ),
-                            )
-                            : const SizedBox.shrink(
-                              key: ValueKey<String>('off'),
+                    transitionBuilder:
+                        (Widget child, Animation<double> animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SizeTransition(
+                              sizeFactor: animation,
+                              axis: Axis.horizontal,
+                              axisAlignment: -1,
+                              child: child,
                             ),
+                          );
+                        },
+                    child: _atalhosContextuaisDisponiveis
+                        ? Padding(
+                            key: const ValueKey<String>('on'),
+                            padding: const EdgeInsets.only(left: 10),
+                            child: _buildAcoesOperacionaisCodigoBarras(
+                              l10n,
+                              compact: false,
+                            ),
+                          )
+                        : const SizedBox.shrink(key: ValueKey<String>('off')),
                   ),
                 ],
               );
             },
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAvisoVendaNaoLiquidadaEmConsulta() {
+    final ThemeData theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.22),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(
+            Icons.lock_outline_rounded,
+            size: 20,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  context.t(
+                    'pdv.openSale.readOnlyTitle',
+                    fallback: 'Consulta de venda em aberto',
+                  ),
+                  style: TextStyle(
+                    color: _pdvTheme.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  context.t(
+                    'pdv.openSale.readOnlySubtitle',
+                    fallback:
+                        'Produtos, quantidades e preços estão bloqueados nesta etapa. Revise os dados e receba o saldo.',
+                  ),
+                  style: TextStyle(color: _pdvTheme.secondaryText),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -563,7 +867,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
               tooltip: l10n?.pdvWebSearchItemAction ?? 'Buscar item',
               icon: Icons.search_rounded,
               label: l10n?.pdvWebSearchItemAction ?? 'Buscar item',
-              onPressed: _pdvPodeLancarVenda ? _abrirSelecaoProdutoWeb : null,
+              onPressed: _pdvPodeEditarVenda ? _abrirSelecaoProdutoWeb : null,
             ),
           ),
           if (_vendaPossuiItens) ...<Widget>[
@@ -575,8 +879,9 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                 icon: Icons.person_add_alt_1_outlined,
                 label:
                     l10n?.pdvWebIdentifyCustomerAction ?? 'Identificar cliente',
-                onPressed:
-                    _pdvPodeLancarVenda ? _abrirDialogClienteRapido : null,
+                onPressed: _pdvPodeEditarVenda
+                    ? _abrirDialogClienteRapido
+                    : null,
               ),
             ),
           ],
@@ -593,7 +898,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
             tooltip: l10n?.pdvWebSearchItemAction ?? 'Buscar item',
             icon: Icons.search_rounded,
             label: l10n?.pdvWebSearchItemAction ?? 'Buscar item',
-            onPressed: _pdvPodeLancarVenda ? _abrirSelecaoProdutoWeb : null,
+            onPressed: _pdvPodeEditarVenda ? _abrirSelecaoProdutoWeb : null,
           ),
         ),
         if (_vendaPossuiItens) ...<Widget>[
@@ -606,7 +911,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
               icon: Icons.person_add_alt_1_outlined,
               label:
                   l10n?.pdvWebIdentifyCustomerAction ?? 'Identificar cliente',
-              onPressed: _pdvPodeLancarVenda ? _abrirDialogClienteRapido : null,
+              onPressed: _pdvPodeEditarVenda ? _abrirDialogClienteRapido : null,
             ),
           ),
         ],
@@ -639,7 +944,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
       controller: _codigoBarrasController,
       focusNode: _codigoBarrasFocusNode,
       autofocus: true,
-      enabled: _pdvPodeLancarVenda,
+      enabled: _pdvPodeEditarVenda,
       decoration: InputDecoration(
         isDense: true,
         hintText:
@@ -649,7 +954,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
         prefixIcon: const Icon(Icons.qr_code_scanner_rounded),
         suffixIcon: IconButton(
           tooltip: l10n?.pdvWebFocusBarcodeFieldAction ?? 'Focar leitura',
-          onPressed: _pdvPodeLancarVenda ? _focarCodigoBarras : null,
+          onPressed: _pdvPodeEditarVenda ? _focarCodigoBarras : null,
           icon: const Icon(Icons.keyboard_alt_outlined),
         ),
         filled: true,
@@ -725,21 +1030,17 @@ extension _PdvWeb on _PaginaPrincipalWebState {
     final bool ehServico = _ehServicoItem(produto);
     final String itemKey = _itemVisualKey(produto);
     final _PdvItemVisualFeedback? feedback = _itemVisualFeedbackForKey(itemKey);
-    final bool podeEditarVenda = _pdvPodeLancarVenda;
+    final bool podeEditarVenda = _pdvPodeEditarVenda;
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Color baseColor =
-        index.isEven ? _pdvTheme.backgroundSurface : _pdvTheme.backgroundPage;
-    final Color rowColor =
-        feedback == null
-            ? baseColor
-            : Color.alphaBlend(
-              _itemFeedbackHighlightColor(feedback),
-              baseColor,
-            );
-    final Duration transicaoCorLinha =
-        _prefereReducaoDeMovimento
-            ? Duration.zero
-            : const Duration(milliseconds: 180);
+    final Color baseColor = index.isEven
+        ? _pdvTheme.backgroundSurface
+        : _pdvTheme.backgroundPage;
+    final Color rowColor = feedback == null
+        ? baseColor
+        : Color.alphaBlend(_itemFeedbackHighlightColor(feedback), baseColor);
+    final Duration transicaoCorLinha = _prefereReducaoDeMovimento
+        ? Duration.zero
+        : const Duration(milliseconds: 180);
 
     return ZebraListItem(
       index: index,
@@ -820,10 +1121,9 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                           l10n?.pdvWebDecreaseQuantityAction ??
                           'Diminuir quantidade',
                       icon: Icons.remove_circle_outline,
-                      onPressed:
-                          podeEditarVenda
-                              ? () => _alterarQuantidade(produto, -1)
-                              : null,
+                      onPressed: podeEditarVenda
+                          ? () => _alterarQuantidade(produto, -1)
+                          : null,
                       foregroundColor: _pdvTheme.iconColor,
                     ),
                     SizedBox(
@@ -846,10 +1146,9 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                           l10n?.pdvWebIncreaseQuantityAction ??
                           'Aumentar quantidade',
                       icon: Icons.add_circle_outline,
-                      onPressed:
-                          podeEditarVenda
-                              ? () => _alterarQuantidade(produto, 1)
-                              : null,
+                      onPressed: podeEditarVenda
+                          ? () => _alterarQuantidade(produto, 1)
+                          : null,
                       foregroundColor: _pdvTheme.iconColor,
                     ),
                     const SizedBox(width: 2),
@@ -858,10 +1157,9 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                       semanticLabel:
                           l10n?.pdvWebRemoveItemAction ?? 'Remover item',
                       icon: Icons.delete_outline_rounded,
-                      onPressed:
-                          podeEditarVenda
-                              ? () => _removerProduto(produto)
-                              : null,
+                      onPressed: podeEditarVenda
+                          ? () => _removerProduto(produto)
+                          : null,
                       foregroundColor: tokens.danger,
                     ),
                   ],
@@ -1006,28 +1304,27 @@ extension _PdvWeb on _PaginaPrincipalWebState {
           ),
           const SizedBox(height: 10),
           Expanded(
-            child:
-                _produtosSelecionados.isEmpty
-                    ? _buildEstadoVazioItens()
-                    : Column(
-                      children: <Widget>[
-                        _buildHeaderTabelaItens(),
-                        const SizedBox(height: 2),
-                        Expanded(
-                          child: ListView.builder(
-                            controller: _gradeItensScrollController,
-                            primary: false,
-                            itemCount: _produtosSelecionados.length,
-                            itemBuilder: (BuildContext context, int index) {
-                              return _buildLinhaTabelaItem(
-                                _produtosSelecionados[index],
-                                index,
-                              );
-                            },
-                          ),
+            child: _produtosSelecionados.isEmpty
+                ? _buildEstadoVazioItens()
+                : Column(
+                    children: <Widget>[
+                      _buildHeaderTabelaItens(),
+                      const SizedBox(height: 2),
+                      Expanded(
+                        child: ListView.builder(
+                          controller: _gradeItensScrollController,
+                          primary: false,
+                          itemCount: _produtosSelecionados.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            return _buildLinhaTabelaItem(
+                              _produtosSelecionados[index],
+                              index,
+                            );
+                          },
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
           ),
         ],
       ),
@@ -1039,11 +1336,13 @@ extension _PdvWeb on _PaginaPrincipalWebState {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool dark = theme.colorScheme.brightness == Brightness.dark;
-    final double total = _calcularTotal();
-    final String cliente =
-        _clienteSelecionadoNaVenda
-            ? _clienteAtualLabel()
-            : (l10n?.pdvWebIdentifyCustomerAction ?? 'Identificar cliente');
+    final VendaNaoLiquidadaModel? vendaEmConsulta =
+        _vendaNaoLiquidadaEmConsulta;
+    final double total = vendaEmConsulta?.valorOriginal ?? _calcularTotal();
+    final double saldoAberto = vendaEmConsulta?.valorAberto ?? total;
+    final String cliente = _clienteSelecionadoNaVenda
+        ? _clienteAtualLabel()
+        : context.t('common.notInformed', fallback: 'Não informado');
     final List<FormaPagamentoSelecionada> formasPagamento =
         _formasPagamentoConfirmadas
             .where((FormaPagamentoSelecionada forma) => forma.valor > 0)
@@ -1069,7 +1368,12 @@ extension _PdvWeb on _PaginaPrincipalWebState {
               children: <Widget>[
                 Expanded(
                   child: Text(
-                    l10n?.pdvWebCurrentSaleTitle ?? 'Venda atual',
+                    _consultandoVendaNaoLiquidada
+                        ? context.t(
+                            'pdv.openSale.status',
+                            fallback: 'Venda em aberto',
+                          )
+                        : (l10n?.pdvWebCurrentSaleTitle ?? 'Venda atual'),
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w900,
@@ -1091,7 +1395,12 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
-                        l10n?.pdvWebStatusInProgress ?? 'Em andamento',
+                        _consultandoVendaNaoLiquidada
+                            ? context.t(
+                                'pdv.openSale.readOnlyStatus',
+                                fallback: 'Somente consulta',
+                              )
+                            : (l10n?.pdvWebStatusInProgress ?? 'Em andamento'),
                         style: TextStyle(
                           color: _pdvTheme.successColor,
                           fontWeight: FontWeight.w800,
@@ -1115,6 +1424,12 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                 label: l10n?.pdvWebCustomerLabel ?? 'Cliente',
                 value: cliente,
               )
+            else if (_consultandoVendaNaoLiquidada)
+              _buildResumoInfoTile(
+                icon: Icons.person_off_outlined,
+                label: l10n?.pdvWebCustomerLabel ?? 'Cliente',
+                value: cliente,
+              )
             else
               OutlinedButton.icon(
                 onPressed: _abrirDialogClienteRapido,
@@ -1132,10 +1447,18 @@ extension _PdvWeb on _PaginaPrincipalWebState {
               )
             else
               OutlinedButton.icon(
-                onPressed: _abrirTelaRecebimento,
+                onPressed: _recebendoVendaNaoLiquidada
+                    ? null
+                    : _abrirTelaRecebimento,
                 icon: const Icon(Icons.payments_outlined),
                 label: Text(
-                  l10n?.pdvWebDefinePaymentAction ?? 'Definir pagamento',
+                  _consultandoVendaNaoLiquidada
+                      ? context.t(
+                          'pdv.openSale.receiveBalance',
+                          fallback: 'Receber saldo',
+                        )
+                      : (l10n?.pdvWebDefinePaymentAction ??
+                            'Definir pagamento'),
                 ),
                 style: _pdvOutlinedCtaStyle(),
               ),
@@ -1143,7 +1466,12 @@ extension _PdvWeb on _PaginaPrincipalWebState {
             Divider(color: _pdvTheme.cardBorder, height: 1),
             const SizedBox(height: 12),
             _buildResumoLinhaValorAnimado(
-              l10n?.pdvWebSubtotalLabel ?? 'Subtotal',
+              _consultandoVendaNaoLiquidada
+                  ? context.t(
+                      'pdv.openSale.originalTotal',
+                      fallback: 'Total original',
+                    )
+                  : (l10n?.pdvWebSubtotalLabel ?? 'Subtotal'),
               total,
             ),
             const SizedBox(height: 10),
@@ -1159,23 +1487,26 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    l10n?.pdvWebTotalLabel ?? 'Total',
+                    _consultandoVendaNaoLiquidada
+                        ? context.t(
+                            'pdv.openSale.openBalance',
+                            fallback: 'Saldo em aberto',
+                          )
+                        : (l10n?.pdvWebTotalLabel ?? 'Total'),
                     style: TextStyle(
-                      color:
-                          dark
-                              ? tokens.secondaryText
-                              : Colors.white.withValues(alpha: 0.82),
+                      color: dark
+                          ? tokens.secondaryText
+                          : Colors.white.withValues(alpha: 0.82),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
                   _PdvAnimatedCurrencyText(
-                    value: total,
+                    value: saldoAberto,
                     formatter: _formatCurrency,
-                    duration:
-                        _prefereReducaoDeMovimento
-                            ? Duration.zero
-                            : const Duration(milliseconds: 350),
+                    duration: _prefereReducaoDeMovimento
+                        ? Duration.zero
+                        : const Duration(milliseconds: 350),
                     curve: Curves.easeOutCubic,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1394,10 +1725,9 @@ extension _PdvWeb on _PaginaPrincipalWebState {
         _PdvAnimatedCurrencyText(
           value: value,
           formatter: _formatCurrency,
-          duration:
-              _prefereReducaoDeMovimento
-                  ? Duration.zero
-                  : const Duration(milliseconds: 350),
+          duration: _prefereReducaoDeMovimento
+              ? Duration.zero
+              : const Duration(milliseconds: 350),
           curve: Curves.easeOutCubic,
           style: TextStyle(
             fontWeight: FontWeight.w900,
@@ -1410,15 +1740,19 @@ extension _PdvWeb on _PaginaPrincipalWebState {
 
   Widget _buildBarraFechamento(double total) {
     final AppLocalizations? l10n = AppLocalizations.of(context);
-    final bool temItens = _vendaPossuiItens;
+    final bool temItens = _vendaPossuiItens || _consultandoVendaNaoLiquidada;
     final bool podeLancarVenda = _pdvPodeLancarVenda;
     final bool podeLimpar = _vendaTemDadosTemporariosPreenchidos();
     final bool pagamentoDefinido = _temPagamentoConfirmado();
     final bool pagamentoCompleto = _pagamentoConfirmadoCompleto();
     final bool pagamentoPrecisaRevisao = _pagamentoConfirmadoPrecisaRevisao();
+    final double valorRecebimento = _totalParaRecebimentoAtual;
 
     final String labelAcaoPrincipal;
-    if (!temItens) {
+    if (_consultandoVendaNaoLiquidada) {
+      labelAcaoPrincipal =
+          '${context.t('pdv.openSale.receiveBalance', fallback: 'Receber saldo')} — ${_formatCurrency(valorRecebimento)}';
+    } else if (!temItens) {
       labelAcaoPrincipal = l10n?.pdvWebReceiveAction ?? 'Receber';
     } else if (pagamentoPrecisaRevisao) {
       labelAcaoPrincipal =
@@ -1450,93 +1784,102 @@ extension _PdvWeb on _PaginaPrincipalWebState {
         children: <Widget>[
           temItens
               ? Wrap(
-                spacing: 10,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[
-                  _PdvAnimatedCurrencyText(
-                    value: total,
-                    formatter: _formatCurrency,
-                    duration:
-                        _prefereReducaoDeMovimento
-                            ? Duration.zero
-                            : const Duration(milliseconds: 350),
-                    curve: Curves.easeOutCubic,
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                      color: _pdvTheme.iconColor,
+                  spacing: 10,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    _PdvAnimatedCurrencyText(
+                      value: _consultandoVendaNaoLiquidada
+                          ? valorRecebimento
+                          : total,
+                      formatter: _formatCurrency,
+                      duration: _prefereReducaoDeMovimento
+                          ? Duration.zero
+                          : const Duration(milliseconds: 350),
+                      curve: Curves.easeOutCubic,
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                        color: _pdvTheme.iconColor,
+                      ),
                     ),
-                  ),
-                  _buildAtalhoPdvChip(
-                    icon: Icons.shopping_bag_outlined,
-                    label:
-                        '${_calcularQuantidadeItens()} ${l10n?.pdvWebItemsCounterLabel ?? 'itens'}',
-                  ),
-                  _buildAtalhoPdvChip(
-                    icon: Icons.payments_outlined,
-                    label: l10n?.pdvWebSubtotalLabel ?? 'Subtotal',
-                  ),
-                  if (pagamentoDefinido)
                     _buildAtalhoPdvChip(
-                      icon:
-                          pagamentoCompleto
-                              ? Icons.verified_outlined
-                              : Icons.warning_amber_rounded,
+                      icon: Icons.shopping_bag_outlined,
                       label:
-                          pagamentoCompleto
-                              ? (l10n?.pdvWebPaymentDefinedLabel ??
-                                  'Pagamento definido')
-                              : (l10n?.pdvWebReviewPaymentAction ??
-                                  'Revisar pagamento'),
+                          '${_calcularQuantidadeItens()} ${l10n?.pdvWebItemsCounterLabel ?? 'itens'}',
                     ),
-                ],
-              )
+                    _buildAtalhoPdvChip(
+                      icon: Icons.payments_outlined,
+                      label: _consultandoVendaNaoLiquidada
+                          ? context.t(
+                              'pdv.openSale.openBalance',
+                              fallback: 'Saldo em aberto',
+                            )
+                          : (l10n?.pdvWebSubtotalLabel ?? 'Subtotal'),
+                    ),
+                    if (pagamentoDefinido)
+                      _buildAtalhoPdvChip(
+                        icon: pagamentoCompleto
+                            ? Icons.verified_outlined
+                            : Icons.warning_amber_rounded,
+                        label: pagamentoCompleto
+                            ? (l10n?.pdvWebPaymentDefinedLabel ??
+                                  'Pagamento definido')
+                            : (l10n?.pdvWebReviewPaymentAction ??
+                                  'Revisar pagamento'),
+                      ),
+                  ],
+                )
               : Text(
-                l10n?.pdvWebReadyToStartSaleHint ??
-                    'Leia um item para iniciar uma nova venda.',
-                style: TextStyle(
-                  color: _pdvTheme.secondaryText,
-                  fontWeight: FontWeight.w700,
+                  l10n?.pdvWebReadyToStartSaleHint ??
+                      'Leia um item para iniciar uma nova venda.',
+                  style: TextStyle(
+                    color: _pdvTheme.secondaryText,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: <Widget>[
-              OutlinedButton.icon(
-                onPressed:
-                    temItens && podeLancarVenda && !_registrandoReceberDepois
-                        ? _pausarVenda
-                        : null,
-                icon:
-                    _registrandoReceberDepois
-                        ? const SizedBox(
+              if (!_consultandoVendaNaoLiquidada)
+                OutlinedButton.icon(
+                  onPressed:
+                      temItens && podeLancarVenda && !_registrandoReceberDepois
+                      ? _pausarVenda
+                      : null,
+                  icon: _registrandoReceberDepois
+                      ? const SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                        : const Icon(Icons.schedule_send_outlined),
-                label: Text(
-                  _registrandoReceberDepois
-                      ? (l10n?.pdvWebRegisteringAction ?? 'Registrando...')
-                      : (l10n?.pdvWebReceiveLaterAction ?? 'Receber depois'),
+                      : const Icon(Icons.schedule_send_outlined),
+                  label: Text(
+                    _registrandoReceberDepois
+                        ? (l10n?.pdvWebRegisteringAction ?? 'Registrando...')
+                        : (l10n?.pdvWebReceiveLaterAction ?? 'Receber depois'),
+                  ),
+                  style: _pdvOutlinedCtaStyle(),
                 ),
-                style: _pdvOutlinedCtaStyle(),
-              ),
               FilledButton.icon(
                 onPressed:
-                    temItens && podeLancarVenda
-                        ? _acionarRecebimentoPrincipal
-                        : null,
-                icon: const Icon(Icons.payments_rounded),
+                    temItens && podeLancarVenda && !_recebendoVendaNaoLiquidada
+                    ? _acionarRecebimentoPrincipal
+                    : null,
+                icon: _recebendoVendaNaoLiquidada
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.payments_rounded),
                 label: Text(labelAcaoPrincipal),
                 style: _pdvFilledCtaStyle(),
               ),
               OutlinedButton.icon(
-                onPressed:
-                    () =>
-                        _abrirOperacoesCaixa(retorno: ModuloCentralPDV.vendas),
+                onPressed: () =>
+                    _abrirOperacoesCaixa(retorno: ModuloCentralPDV.vendas),
                 icon: const Icon(Icons.point_of_sale_rounded),
                 label: Text(
                   context.t(
@@ -1557,9 +1900,22 @@ extension _PdvWeb on _PaginaPrincipalWebState {
               if (podeLimpar)
                 OutlinedButton.icon(
                   onPressed: _confirmarLimparVendaAtual,
-                  icon: const Icon(Icons.delete_sweep_outlined),
-                  label: Text(l10n?.pdvWebClearSaleAction ?? 'Limpar venda'),
-                  style: _pdvDangerOutlinedCtaStyle(),
+                  icon: Icon(
+                    _consultandoVendaNaoLiquidada
+                        ? Icons.close_rounded
+                        : Icons.delete_sweep_outlined,
+                  ),
+                  label: Text(
+                    _consultandoVendaNaoLiquidada
+                        ? context.t(
+                            'pdv.openSale.exitAction',
+                            fallback: 'Sair da consulta',
+                          )
+                        : (l10n?.pdvWebClearSaleAction ?? 'Limpar venda'),
+                  ),
+                  style: _consultandoVendaNaoLiquidada
+                      ? _pdvOutlinedCtaStyle()
+                      : _pdvDangerOutlinedCtaStyle(),
                 ),
             ],
           ),
@@ -1575,39 +1931,35 @@ extension _PdvWeb on _PaginaPrincipalWebState {
 
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final Color color = _erroSessaoCaixaPdv ? tokens.danger : tokens.warning;
-    final String title =
-        _carregandoSessaoCaixaPdv
-            ? context.t(
-              'pdv.cashSessionCheckingTitle',
-              fallback: 'Verificando sessão do caixa',
-            )
-            : _erroSessaoCaixaPdv
-            ? context.t(
-              'pdv.cashSessionUnavailableTitle',
-              fallback: 'Não foi possível validar o caixa',
-            )
-            : context.t(
-              'pdv.cashSessionRequiredTitle',
-              fallback: 'Abra o caixa para vender',
-            );
-    final String message =
-        _carregandoSessaoCaixaPdv
-            ? context.t(
-              'pdv.cashSessionCheckingMessage',
-              fallback:
-                  'Aguarde a sincronização antes de lançar uma nova venda.',
-            )
-            : _erroSessaoCaixaPdv
-            ? context.t(
-              'pdv.cashSessionUnavailableMessage',
-              fallback:
-                  'Atualize a sessão ou acesse operações de caixa para conferir a situação.',
-            )
-            : context.t(
-              'pdv.cashSessionRequiredMessage',
-              fallback:
-                  'Abra uma sessão de caixa antes de lançar vendas no PDV.',
-            );
+    final String title = _carregandoSessaoCaixaPdv
+        ? context.t(
+            'pdv.cashSessionCheckingTitle',
+            fallback: 'Verificando sessão do caixa',
+          )
+        : _erroSessaoCaixaPdv
+        ? context.t(
+            'pdv.cashSessionUnavailableTitle',
+            fallback: 'Não foi possível validar o caixa',
+          )
+        : context.t(
+            'pdv.cashSessionRequiredTitle',
+            fallback: 'Abra o caixa para vender',
+          );
+    final String message = _carregandoSessaoCaixaPdv
+        ? context.t(
+            'pdv.cashSessionCheckingMessage',
+            fallback: 'Aguarde a sincronização antes de lançar uma nova venda.',
+          )
+        : _erroSessaoCaixaPdv
+        ? context.t(
+            'pdv.cashSessionUnavailableMessage',
+            fallback:
+                'Atualize a sessão ou acesse operações de caixa para conferir a situação.',
+          )
+        : context.t(
+            'pdv.cashSessionRequiredMessage',
+            fallback: 'Abra uma sessão de caixa antes de lançar vendas no PDV.',
+          );
 
     return Container(
       width: double.infinity,
@@ -1664,16 +2016,16 @@ extension _PdvWeb on _PaginaPrincipalWebState {
             runSpacing: 8,
             children: <Widget>[
               OutlinedButton.icon(
-                onPressed:
-                    _carregandoSessaoCaixaPdv ? null : _carregarSessaoCaixaPdv,
+                onPressed: _carregandoSessaoCaixaPdv
+                    ? null
+                    : _carregarSessaoCaixaPdv,
                 icon: const Icon(Icons.refresh_rounded),
                 label: Text(context.t('common.refresh', fallback: 'Atualizar')),
                 style: _pdvOutlinedCtaStyle(),
               ),
               FilledButton.icon(
-                onPressed:
-                    () =>
-                        _abrirOperacoesCaixa(retorno: ModuloCentralPDV.vendas),
+                onPressed: () =>
+                    _abrirOperacoesCaixa(retorno: ModuloCentralPDV.vendas),
                 icon: const Icon(Icons.point_of_sale_rounded),
                 label: Text(
                   context.t(
@@ -1718,12 +2070,17 @@ extension _PdvWeb on _PaginaPrincipalWebState {
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final bool compactWidth = constraints.maxWidth < 1220;
-            final bool exibirResumo = _vendaPossuiItens;
+            final bool exibirResumo =
+                _vendaPossuiItens || _consultandoVendaNaoLiquidada;
 
             return Column(
               children: <Widget>[
                 _buildCabecalhoVendaCompacto(),
                 const SizedBox(height: 10),
+                if (_consultandoVendaNaoLiquidada) ...<Widget>[
+                  _buildAvisoVendaNaoLiquidadaEmConsulta(),
+                  const SizedBox(height: 10),
+                ],
                 if (!_pdvPodeLancarVenda) ...<Widget>[
                   _buildAvisoSessaoCaixaObrigatoriaPdv(),
                   const SizedBox(height: 10),
@@ -1731,10 +2088,9 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                 _buildLeituraBuscaItem(),
                 const SizedBox(height: 10),
                 Expanded(
-                  child:
-                      exibirResumo
-                          ? (compactWidth
-                              ? Column(
+                  child: exibirResumo
+                      ? (compactWidth
+                            ? Column(
                                 children: <Widget>[
                                   Expanded(child: _buildSecaoItensVenda()),
                                   const SizedBox(height: 10),
@@ -1750,7 +2106,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                                   ),
                                 ],
                               )
-                              : Row(
+                            : Row(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: <Widget>[
                                   Expanded(
@@ -1769,7 +2125,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                                   ),
                                 ],
                               ))
-                          : _buildSecaoItensVenda(),
+                      : _buildSecaoItensVenda(),
                 ),
                 const SizedBox(height: 10),
                 _buildBarraFechamento(total),
