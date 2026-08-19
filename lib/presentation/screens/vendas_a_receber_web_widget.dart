@@ -14,7 +14,9 @@ import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 
 class VendasAReceberWebWidget extends StatefulWidget {
-  const VendasAReceberWebWidget({super.key});
+  const VendasAReceberWebWidget({super.key, this.onAbrirNoPdv});
+
+  final ValueChanged<VendaNaoLiquidadaModel>? onAbrirNoPdv;
 
   @override
   State<VendasAReceberWebWidget> createState() =>
@@ -165,10 +167,9 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
           context,
           titulo: 'Receber venda em aberto',
           descricao: venda.descricao,
-          contato:
-              venda.nomeCliente.trim().isEmpty
-                  ? null
-                  : venda.nomeCliente.trim(),
+          contato: venda.nomeCliente.trim().isEmpty
+              ? null
+              : venda.nomeCliente.trim(),
           valorAberto: venda.valorAberto,
           codigoTipoInicial: venda.codigoTipoRecebimento,
           permitirParcial: true,
@@ -208,11 +209,11 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
             codigoTipoRecebimento: resultado.codigoTipoRecebimento,
             valorRecebido: resultado.valor,
             itens: venda.itens,
+            recebimentos: resultado.recebimentos,
             observacao: resultado.observacao ?? observacaoTotalPadrao,
-            referencia:
-                venda.idOperacaoApp.isNotEmpty
-                    ? venda.idOperacaoApp
-                    : venda.idOperacaoFinanceira,
+            referencia: venda.idOperacaoApp.isNotEmpty
+                ? venda.idOperacaoApp
+                : venda.idOperacaoFinanceira,
             idSessaoCaixa: idSessaoCaixa,
           ),
         );
@@ -227,6 +228,7 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
             dataLiquidacao: DateTime.now(),
             valorLiquidado: resultado.valor,
             formaPagamentoRealizada: resultado.formaPagamentoBackend,
+            recebimentos: resultado.recebimentos,
             observacoes: resultado.observacao ?? observacaoParcialPadrao,
             idSessaoCaixa: idSessaoCaixa,
           ),
@@ -257,31 +259,28 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
     final bool confirmou =
         await showDialog<bool>(
           context: context,
-          builder:
-              (BuildContext dialogContext) => AlertDialog(
-                title: Text(
-                  context.t(
-                    'vendasAReceber.cancelTitle',
-                    fallback: 'Cancelar venda em aberto?',
-                  ),
-                ),
-                content: Text(
-                  '${venda.descricao}\n${_formatarValor(venda.valorAberto)}\n\n'
-                  '${context.t('vendasAReceber.cancelDescription', fallback: 'Esta ação apaga a operação e devolve os produtos ao estoque quando aplicável.')}',
-                ),
-                actions: <Widget>[
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(false),
-                    child: Text(context.t('common.back', fallback: 'Voltar')),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(true),
-                    child: Text(
-                      context.t('common.confirm', fallback: 'Confirmar'),
-                    ),
-                  ),
-                ],
+          builder: (BuildContext dialogContext) => AlertDialog(
+            title: Text(
+              context.t(
+                'vendasAReceber.cancelTitle',
+                fallback: 'Cancelar venda em aberto?',
               ),
+            ),
+            content: Text(
+              '${venda.descricao}\n${_formatarValor(venda.valorAberto)}\n\n'
+              '${context.t('vendasAReceber.cancelDescription', fallback: 'Esta ação apaga a operação e devolve os produtos ao estoque quando aplicável.')}',
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(context.t('common.back', fallback: 'Voltar')),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(context.t('common.confirm', fallback: 'Confirmar')),
+              ),
+            ],
+          ),
         ) ??
         false;
     if (confirmou) await _cancelarVendaNaoLiquidada(venda);
@@ -323,7 +322,12 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
       child: SafeArea(
         child: Stack(
           children: <Widget>[
-            Column(children: <Widget>[_header(), Expanded(child: _body())]),
+            Column(
+              children: <Widget>[
+                _header(),
+                Expanded(child: _body()),
+              ],
+            ),
             if (_processando)
               Positioned.fill(
                 child: Container(
@@ -506,16 +510,15 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
                     style: _filledCtaStyle(),
                   ),
                   OutlinedButton.icon(
-                    onPressed:
-                        _loading || _processando
-                            ? null
-                            : () {
-                              final DateTime hoje = DateTime.now();
-                              setState(() {
-                                _dataInicio = _inicioDoDia(hoje);
-                                _dataFim = _inicioDoDia(hoje);
-                              });
-                            },
+                    onPressed: _loading || _processando
+                        ? null
+                        : () {
+                            final DateTime hoje = DateTime.now();
+                            setState(() {
+                              _dataInicio = _inicioDoDia(hoje);
+                              _dataFim = _inicioDoDia(hoje);
+                            });
+                          },
                     icon: const Icon(Icons.today_outlined),
                     label: Text(context.t('common.today', fallback: 'Hoje')),
                     style: _outlinedCtaStyle(),
@@ -669,12 +672,11 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final int columns =
-            constraints.maxWidth >= 1180
-                ? 3
-                : constraints.maxWidth >= 720
-                ? 2
-                : 1;
+        final int columns = constraints.maxWidth >= 1180
+            ? 3
+            : constraints.maxWidth >= 720
+            ? 2
+            : 1;
         final double width =
             (constraints.maxWidth - ((columns - 1) * 12)) / columns;
         return Wrap(
@@ -825,13 +827,12 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
   Widget _vendaInfo(VendaNaoLiquidadaModel venda, int quantidadeItens) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final String colaborador =
-        venda.nomeColaboradorCriacao.isEmpty
-            ? context.t(
-              'vendasAReceber.collaboratorFallback',
-              fallback: 'colaborador',
-            )
-            : venda.nomeColaboradorCriacao;
+    final String colaborador = venda.nomeColaboradorCriacao.isEmpty
+        ? context.t(
+            'vendasAReceber.collaboratorFallback',
+            fallback: 'colaborador',
+          )
+        : venda.nomeColaboradorCriacao;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -968,11 +969,24 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
             spacing: 8,
             runSpacing: 8,
             children: <Widget>[
+              if (widget.onAbrirNoPdv != null)
+                OutlinedButton.icon(
+                  onPressed: _processando
+                      ? null
+                      : () => widget.onAbrirNoPdv?.call(venda),
+                  icon: const Icon(Icons.point_of_sale_outlined, size: 18),
+                  label: Text(
+                    context.t(
+                      'vendasAReceber.openInPdv',
+                      fallback: 'Abrir no PDV',
+                    ),
+                  ),
+                  style: _outlinedCtaStyle(),
+                ),
               OutlinedButton(
-                onPressed:
-                    _processando
-                        ? null
-                        : () => _confirmarCancelamentoVenda(venda),
+                onPressed: _processando
+                    ? null
+                    : () => _confirmarCancelamentoVenda(venda),
                 style: _outlinedDangerCtaStyle(),
                 child: Text(context.t('common.cancel', fallback: 'Cancelar')),
               ),
@@ -1216,12 +1230,11 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
                 const SizedBox(height: 16),
                 LayoutBuilder(
                   builder: (BuildContext context, BoxConstraints constraints) {
-                    final int columns =
-                        constraints.maxWidth >= 1180
-                            ? 3
-                            : constraints.maxWidth >= 720
-                            ? 2
-                            : 1;
+                    final int columns = constraints.maxWidth >= 1180
+                        ? 3
+                        : constraints.maxWidth >= 720
+                        ? 2
+                        : 1;
                     final double width =
                         (constraints.maxWidth - ((columns - 1) * 12)) / columns;
                     return Wrap(
@@ -1407,8 +1420,8 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
 
   String _formatarData(DateTime? data) {
     if (data == null) return context.t('common.noDate', fallback: 'Sem data');
-    final LocaleSettingsProvider locale =
-        context.read<LocaleSettingsProvider>();
+    final LocaleSettingsProvider locale = context
+        .read<LocaleSettingsProvider>();
     return '${locale.formatDate(data)} ${locale.formatTime(data)}';
   }
 

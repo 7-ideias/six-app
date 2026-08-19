@@ -11,6 +11,7 @@ import '../../l10n/six_i18n.dart';
 import '../../providers/empresa_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
+import '../components/web/six_web_animated_dialog.dart';
 import '../components/web_dashboard_widgets.dart';
 import '../theme/web_theme_tokens.dart';
 
@@ -27,6 +28,7 @@ class OperacoesCaixaWebPage extends StatefulWidget {
 class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   final CaixaService _caixaService = CaixaModule.caixaService;
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey _formularioMovimentoKey = GlobalKey();
 
   final TextEditingController _trocoInicialController = TextEditingController(
     text: '200,00',
@@ -219,6 +221,40 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     Navigator.of(context).maybePop();
   }
 
+  Future<void> _irParaFormularioOperacional() async {
+    if (!_temCaixaAberto) {
+      _mostrarAvisoCaixaNaoAberto();
+      return;
+    }
+
+    if (_mostrarPainelFechamento) {
+      setState(() => _mostrarPainelFechamento = false);
+      await WidgetsBinding.instance.endOfFrame;
+    }
+
+    final currentContext = _formularioMovimentoKey.currentContext;
+    if (currentContext == null) return;
+
+    await Scrollable.ensureVisible(
+      currentContext,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+      alignment: 0.08,
+    );
+  }
+
+  void _alternarPainelFechamento() {
+    if (!_temCaixaAberto) {
+      _mostrarAvisoCaixaNaoAberto();
+      return;
+    }
+
+    setState(() {
+      _mostrarPainelFechamento = !_mostrarPainelFechamento;
+      _tipoSelecionado = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool podeFecharTela = widget.onBack != null || !widget.embedded;
@@ -297,23 +333,18 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                                     const SizedBox(height: 12),
                                     SixWebEntry(
                                       order: 2,
-                                      child: _buildAtalhosOperacao(theme),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    SixWebEntry(
-                                      order: 3,
                                       child: _buildFormularioMovimento(theme),
                                     ),
                                     if (_mostrarPainelFechamento) ...<Widget>[
                                       const SizedBox(height: 12),
                                       SixWebEntry(
-                                        order: 4,
+                                        order: 3,
                                         child: _buildPainelFechamento(theme),
                                       ),
                                     ],
                                     const SizedBox(height: 12),
                                     SixWebEntry(
-                                      order: 5,
+                                      order: 4,
                                       child: _buildHistorico(theme),
                                     ),
                                   ],
@@ -344,23 +375,18 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                               const SizedBox(height: 12),
                               SixWebEntry(
                                 order: 3,
-                                child: _buildAtalhosOperacao(theme),
-                              ),
-                              const SizedBox(height: 12),
-                              SixWebEntry(
-                                order: 4,
                                 child: _buildFormularioMovimento(theme),
                               ),
                               if (_mostrarPainelFechamento) ...<Widget>[
                                 const SizedBox(height: 12),
                                 SixWebEntry(
-                                  order: 5,
+                                  order: 4,
                                   child: _buildPainelFechamento(theme),
                                 ),
                               ],
                               const SizedBox(height: 12),
                               SixWebEntry(
-                                order: 6,
+                                order: 5,
                                 child: _buildHistorico(theme),
                               ),
                             ],
@@ -426,6 +452,28 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
           '$empresa • $movimentos movimento(s) • ${_temCaixaAberto ? 'Caixa aberto' : 'Aguardando abertura'}',
       onBack: widget.embedded && widget.onBack == null ? null : _sairDaTela,
       actions: <Widget>[
+        if (_temCaixaAberto)
+          OutlinedButton.icon(
+            onPressed: _confirmarEncerramentoSessao,
+            icon: const Icon(Icons.power_settings_new_rounded),
+            label: const Text('Encerrar sessão'),
+          ),
+        if (_temCaixaAberto)
+          OutlinedButton.icon(
+            onPressed: _irParaFormularioOperacional,
+            icon: const Icon(Icons.edit_note_rounded),
+            label: const Text('Operacional'),
+          ),
+        if (_temCaixaAberto)
+          OutlinedButton.icon(
+            onPressed: _alternarPainelFechamento,
+            icon: const Icon(Icons.rule_folder_outlined),
+            label: Text(
+              _mostrarPainelFechamento
+                  ? 'Ocultar fechamento'
+                  : 'Preparar fechamento',
+            ),
+          ),
         OutlinedButton.icon(
           onPressed: _isLoading ? null : () => _carregarDadosIniciais(),
           icon: const Icon(Icons.refresh_rounded),
@@ -700,12 +748,6 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         children: <Widget>[
           _miniMetric(
             theme,
-            title: 'Sessão',
-            value: _sessaoAtual?.idSessaoCaixa ?? '--',
-            icon: Icons.badge_outlined,
-          ),
-          _miniMetric(
-            theme,
             title: 'Caixa',
             value: _sessaoAtual?.nomeCaixa ?? '--',
             icon: Icons.store_mall_directory_outlined,
@@ -727,12 +769,6 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               textAlign: TextAlign.start,
             ),
             icon: Icons.account_balance_wallet_outlined,
-          ),
-          _miniMetric(
-            theme,
-            title: 'Status',
-            value: _labelSessao(_sessaoAtual?.status),
-            icon: Icons.verified_outlined,
           ),
         ],
       ),
@@ -787,188 +823,9 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     );
   }
 
-  Widget _buildAtalhosOperacao(ThemeData theme) {
-    final tokens = WebThemeTokens.of(context);
-    final cards = <_AtalhoOperacaoData>[
-      _AtalhoOperacaoData(
-        tipo: OperacaoCaixaTipo.suprimento,
-        titulo: 'Suprimento',
-        descricao: 'Adicionar valores ao caixa para reforço operacional.',
-        icone: Icons.add_card_rounded,
-        cor: tokens.financialPositive,
-      ),
-      _AtalhoOperacaoData(
-        tipo: OperacaoCaixaTipo.sangria,
-        titulo: 'Sangria',
-        descricao: 'Retirar excesso de numerário para segurança.',
-        icone: Icons.outbox_rounded,
-        cor: tokens.financialNegative,
-      ),
-      _AtalhoOperacaoData(
-        tipo: OperacaoCaixaTipo.retiradaDespesa,
-        titulo: 'Despesa',
-        descricao: 'Registrar saída operacional com justificativa.',
-        icone: Icons.receipt_long_rounded,
-        cor: tokens.financialNegative,
-      ),
-      _AtalhoOperacaoData(
-        tipo: OperacaoCaixaTipo.ajuste,
-        titulo: 'Ajuste',
-        descricao: 'Corrigir diferenças operacionais com rastreabilidade.',
-        icone: Icons.tune_rounded,
-        cor: tokens.info,
-      ),
-      _AtalhoOperacaoData(
-        tipo: OperacaoCaixaTipo.recebimentoAvulso,
-        titulo: 'Recebimento avulso',
-        descricao: 'Entrada operacional sem vínculo direto com venda.',
-        icone: Icons.arrow_downward_rounded,
-        cor: tokens.financialPositive,
-      ),
-      _AtalhoOperacaoData(
-        tipo: OperacaoCaixaTipo.pagamentoAvulso,
-        titulo: 'Pagamento avulso',
-        descricao: 'Saída operacional pontual com justificativa.',
-        icone: Icons.arrow_upward_rounded,
-        cor: tokens.financialNegative,
-      ),
-    ];
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(theme),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _sectionHeader(
-            theme,
-            title: 'Ações rápidas',
-            subtitle:
-                'Selecione a operação para preencher o formulário com o contexto adequado.',
-            icon: Icons.bolt_outlined,
-          ),
-          const SizedBox(height: 16),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final width =
-                  constraints.maxWidth < 720
-                      ? constraints.maxWidth
-                      : ((constraints.maxWidth - 32) / 3).clamp(220.0, 320.0);
-              return Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children:
-                    cards
-                        .map(
-                          (item) => SizedBox(
-                            width: width,
-                            child: _operationCard(theme, item),
-                          ),
-                        )
-                        .toList(),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: <Widget>[
-              OutlinedButton.icon(
-                onPressed: () {
-                  if (!_temCaixaAberto) {
-                    _mostrarAvisoCaixaNaoAberto();
-                    return;
-                  }
-                  setState(() {
-                    _mostrarPainelFechamento = !_mostrarPainelFechamento;
-                    _tipoSelecionado = null;
-                  });
-                },
-                icon: const Icon(Icons.rule_folder_outlined),
-                label: Text(
-                  _mostrarPainelFechamento
-                      ? 'Ocultar fechamento'
-                      : 'Preparar fechamento',
-                ),
-              ),
-              OutlinedButton.icon(
-                onPressed: _confirmarEncerramentoSessao,
-                icon: const Icon(Icons.power_settings_new_rounded),
-                label: const Text('Encerrar sessão'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _operationCard(ThemeData theme, _AtalhoOperacaoData item) {
-    final selected = _tipoSelecionado == item.tipo;
-    final tokens = WebThemeTokens.of(context);
-    return Material(
-      color: selected ? tokens.selectedBackground : tokens.cardBackground,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () {
-          setState(() {
-            _tipoSelecionado = item.tipo;
-            _mostrarPainelFechamento = false;
-          });
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: selected ? tokens.selectedBorder : tokens.cardBorder,
-              width: selected ? 1.4 : 1,
-            ),
-          ),
-          child: Row(
-            children: <Widget>[
-              Icon(item.icone, color: item.cor, size: 26),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      item.titulo,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.descricao,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: tokens.secondaryText,
-                        height: 1.35,
-                        fontSize: 12.6,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildFormularioMovimento(ThemeData theme) {
     return Container(
+      key: _formularioMovimentoKey,
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: _cardDecoration(theme),
@@ -980,7 +837,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             title: 'Lançamento operacional',
             subtitle:
                 _tipoSelecionado == null
-                    ? 'Escolha uma ação rápida acima para orientar o lançamento.'
+                    ? 'Selecione o tipo da operação e preencha os dados do lançamento.'
                     : 'Preencha os dados da operação ${_labelTipo(_tipoSelecionado!)}.',
             icon: Icons.edit_note_rounded,
           ),
@@ -2221,9 +2078,15 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
     final tokens = WebThemeTokens.of(context);
     final confirmou =
-        await showDialog<bool>(
+        await showSixWebAnimatedDialog<bool>(
           context: context,
-          barrierColor: tokens.workspaceBackground.withValues(alpha: 0.72),
+          barrierLabel: 'Fechar confirmação de encerramento de sessão',
+          overlayColor: Color.alphaBlend(
+            tokens.danger.withValues(alpha: 0.22),
+            tokens.workspaceBackground.withValues(alpha: 0.72),
+          ),
+          overlayBlurSigma: 14,
+          transitionDuration: const Duration(milliseconds: 360),
           builder:
               (context) => _buildConfirmDialog(
                 title: 'Encerrar sessão?',
@@ -2713,22 +2576,6 @@ enum NaturezaRecebimento { imediato, futuro }
 enum StatusMovimento { aberta, concluida, cancelada, pendenteConferencia }
 
 enum StatusSessaoCaixa { aberta, fechada }
-
-class _AtalhoOperacaoData {
-  _AtalhoOperacaoData({
-    required this.tipo,
-    required this.titulo,
-    required this.descricao,
-    required this.icone,
-    required this.cor,
-  });
-
-  final OperacaoCaixaTipo tipo;
-  final String titulo;
-  final String descricao;
-  final IconData icone;
-  final Color cor;
-}
 
 class _ResumoTipoRecebimentoData {
   const _ResumoTipoRecebimentoData(this.label, this.valor);

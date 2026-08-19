@@ -301,8 +301,19 @@ class _SixMobileRecebimentoBottomSheetState
   }
 
   void _confirmar() {
+    final Set<String> codigos = <String>{};
     final List<RecebimentoFormaInput> recebimentos = <RecebimentoFormaInput>[];
     for (final _RecebimentoFormaDraft forma in _formas) {
+      if (!codigos.add(forma.opcao.codigoTipo)) {
+        setState(
+          () => _erroValor = context.t(
+            'recebimento.erroFormaDuplicada',
+            fallback:
+                'Cada forma de recebimento pode ser usada apenas uma vez.',
+          ),
+        );
+        return;
+      }
       final double valor = _parseValor(forma.controller.text);
       if (valor <= 0) {
         setState(
@@ -688,7 +699,7 @@ class _SixMobileRecebimentoBottomSheetState
       children: <Widget>[
         Expanded(
           child: _tipoPill(
-            label: 'Total',
+            label: context.t('recebimento.total', fallback: 'Total'),
             icon: Icons.done_all_rounded,
             tipo: SixMobileRecebimentoTipo.total,
           ),
@@ -696,7 +707,7 @@ class _SixMobileRecebimentoBottomSheetState
         const SizedBox(width: 10),
         Expanded(
           child: _tipoPill(
-            label: 'Parcial',
+            label: context.t('recebimento.parcial', fallback: 'Parcial'),
             icon: Icons.call_split_rounded,
             tipo: SixMobileRecebimentoTipo.parcial,
           ),
@@ -789,6 +800,7 @@ class _SixMobileRecebimentoBottomSheetState
           total + _parseValor(forma.controller.text),
     );
     final double restante = widget.valorAberto - totalInformado;
+    final bool podeAdicionar = _formas.length < _opcoes.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -841,7 +853,7 @@ class _SixMobileRecebimentoBottomSheetState
         ],
         const SizedBox(height: 10),
         OutlinedButton.icon(
-          onPressed: _adicionarForma,
+          onPressed: podeAdicionar ? _adicionarForma : null,
           icon: const Icon(Icons.add_rounded),
           label: Text(
             context.t(
@@ -915,11 +927,27 @@ class _SixMobileRecebimentoBottomSheetState
                   return _tipoRecebimentoPill(
                     opcao: opcao,
                     selecionado: forma.opcao.codigoTipo == opcao.codigoTipo,
-                    onTap:
-                        () => setState(() {
-                          forma.opcao = opcao;
-                          _erroValor = null;
-                        }),
+                    onTap: () {
+                      final bool usadaEmOutraForma = _formas.any(
+                        (_RecebimentoFormaDraft item) =>
+                            !identical(item, forma) &&
+                            item.opcao.codigoTipo == opcao.codigoTipo,
+                      );
+                      if (usadaEmOutraForma) {
+                        setState(
+                          () => _erroValor = context.t(
+                            'recebimento.erroFormaDuplicada',
+                            fallback:
+                                'Cada forma de recebimento pode ser usada apenas uma vez.',
+                          ),
+                        );
+                        return;
+                      }
+                      setState(() {
+                        forma.opcao = opcao;
+                        _erroValor = null;
+                      });
+                    },
                   );
                 })
                 .toList(growable: false),
@@ -973,6 +1001,18 @@ class _SixMobileRecebimentoBottomSheetState
   }
 
   void _adicionarForma() {
+    final Set<String> usados = _formas
+        .map((_RecebimentoFormaDraft forma) => forma.opcao.codigoTipo)
+        .toSet();
+    SixMobileTipoRecebimentoOpcao? novaOpcao;
+    for (final SixMobileTipoRecebimentoOpcao opcao in _opcoes) {
+      if (!usados.contains(opcao.codigoTipo)) {
+        novaOpcao = opcao;
+        break;
+      }
+    }
+    if (novaOpcao == null) return;
+
     setState(() {
       final double totalAtual = _formas.fold<double>(
         0,
@@ -982,7 +1022,7 @@ class _SixMobileRecebimentoBottomSheetState
       final double restante = widget.valorAberto - totalAtual;
       _formas.add(
         _RecebimentoFormaDraft(
-          opcao: _resolverInicial(_opcoes),
+          opcao: novaOpcao!,
           controller: TextEditingController(
             text: _formatarValorDigitavel(restante > 0 ? restante : 0),
           ),
