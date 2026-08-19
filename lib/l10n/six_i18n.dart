@@ -103,6 +103,15 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Para total, o valor precisa quitar o saldo em aberto.',
     'recebimento.erroFormaDuplicada':
         'Cada forma de recebimento pode ser usada apenas uma vez.',
+    'pdv.receipt.type': 'Tipo de recebimento',
+    'pdv.receipt.partialReady':
+        'Recebimento parcial pronto. O saldo ficará em aberto.',
+    'pdv.receipt.partialHint':
+        'Informe um valor maior que zero e menor que o total da venda.',
+    'pdv.receipt.partialDefined': 'Parcial definido',
+    'pdv.receipt.confirmPartial': 'Confirmar parcial',
+    'pdv.receipt.confirmPartialMessage': 'Deseja receber',
+    'pdv.receipt.keepOpenBalance': 'e manter o saldo restante em aberto',
     'vendasAReceber.openInPdv': 'Abrir no PDV',
     'pdv.openSale.status': 'Venda em aberto',
     'pdv.openSale.readOnlyStatus': 'Somente consulta',
@@ -1532,6 +1541,15 @@ const Map<String, Map<String, String>> _fallbacks = {
         'For a full receipt, the amount must settle the outstanding balance.',
     'recebimento.erroFormaDuplicada':
         'Each payment method can be used only once.',
+    'pdv.receipt.type': 'Receipt type',
+    'pdv.receipt.partialReady':
+        'Partial receipt ready. The remaining balance will stay open.',
+    'pdv.receipt.partialHint':
+        'Enter an amount greater than zero and lower than the sale total.',
+    'pdv.receipt.partialDefined': 'Partial defined',
+    'pdv.receipt.confirmPartial': 'Confirm partial receipt',
+    'pdv.receipt.confirmPartialMessage': 'Do you want to receive',
+    'pdv.receipt.keepOpenBalance': 'and keep the remaining balance outstanding',
     'vendasAReceber.openInPdv': 'Open in POS',
     'pdv.openSale.status': 'Open sale',
     'pdv.openSale.readOnlyStatus': 'View only',
@@ -2856,6 +2874,15 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Para un cobro total, el valor debe liquidar el saldo pendiente.',
     'recebimento.erroFormaDuplicada':
         'Cada forma de cobro puede utilizarse solo una vez.',
+    'pdv.receipt.type': 'Tipo de cobro',
+    'pdv.receipt.partialReady':
+        'Cobro parcial listo. El saldo restante quedará pendiente.',
+    'pdv.receipt.partialHint':
+        'Introduzca un valor mayor que cero y menor que el total de la venta.',
+    'pdv.receipt.partialDefined': 'Parcial definido',
+    'pdv.receipt.confirmPartial': 'Confirmar cobro parcial',
+    'pdv.receipt.confirmPartialMessage': '¿Desea cobrar',
+    'pdv.receipt.keepOpenBalance': 'y mantener pendiente el saldo restante',
     'vendasAReceber.openInPdv': 'Abrir en el TPV',
     'pdv.openSale.status': 'Venta pendiente',
     'pdv.openSale.readOnlyStatus': 'Solo consulta',

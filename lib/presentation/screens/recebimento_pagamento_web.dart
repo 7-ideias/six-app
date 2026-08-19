@@ -26,6 +26,7 @@ Future<void> showRecebimentoPagamentoWebDialog({
   List<FormaPagamentoSelecionada> formasPagamentoIniciais =
       const <FormaPagamentoSelecionada>[],
   Map<String, String> descricoesFormasIniciais = const <String, String>{},
+  bool recebimentoParcialInicial = false,
   ValueChanged<RecebimentoPagamentoSelecaoResultado>? onSelecaoConfirmada,
   VoidCallback? onSuccess,
 }) async {
@@ -52,6 +53,7 @@ Future<void> showRecebimentoPagamentoWebDialog({
               somenteSelecao: somenteSelecao,
               formasPagamentoIniciais: formasPagamentoIniciais,
               descricoesFormasIniciais: descricoesFormasIniciais,
+              recebimentoParcialInicial: recebimentoParcialInicial,
               onBack: () => Navigator.of(routeContext).maybePop(),
               onSelecaoConfirmada: onSelecaoConfirmada,
               onSuccess: () {
@@ -82,10 +84,12 @@ class RecebimentoPagamentoSelecaoResultado {
   const RecebimentoPagamentoSelecaoResultado({
     required this.formasPagamento,
     required this.descricaoPorCodigo,
+    required this.parcial,
   });
 
   final List<FormaPagamentoSelecionada> formasPagamento;
   final Map<String, String> descricaoPorCodigo;
+  final bool parcial;
 
   double get totalDistribuido => formasPagamento.fold<double>(
     0,
@@ -109,6 +113,7 @@ class RecebimentoPagamentoWeb extends StatefulWidget {
     this.somenteSelecao = false,
     this.formasPagamentoIniciais = const <FormaPagamentoSelecionada>[],
     this.descricoesFormasIniciais = const <String, String>{},
+    this.recebimentoParcialInicial = false,
     this.onSelecaoConfirmada,
   });
 
@@ -125,6 +130,7 @@ class RecebimentoPagamentoWeb extends StatefulWidget {
   final bool somenteSelecao;
   final List<FormaPagamentoSelecionada> formasPagamentoIniciais;
   final Map<String, String> descricoesFormasIniciais;
+  final bool recebimentoParcialInicial;
   final ValueChanged<RecebimentoPagamentoSelecaoResultado>? onSelecaoConfirmada;
 
   @override
@@ -182,6 +188,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
   bool _salvandoOperacao = false;
   bool _carregandoFormas = true;
   bool _estadoInicialAplicado = false;
+  late bool _recebimentoParcial;
   late final AnimationController _iconController;
 
   static const List<_FormaPagamentoWeb> _formasPagamentoFallback =
@@ -276,6 +283,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
       duration: const Duration(milliseconds: 720),
     );
     _itensResumo = List<Map<String, dynamic>>.from(widget.itensResumo);
+    _recebimentoParcial = widget.recebimentoParcialInicial;
     _operacaoService = widget.operacaoService ?? OperacaoModule.operacaoService;
     _formasPagamento = _formasPagamentoFallback
         .map((forma) => forma.copyWith())
@@ -499,6 +507,30 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
 
   double _valorRestante() {
     return widget.valorTotalVenda - _valorSelecionadoTotal();
+  }
+
+  bool _distribuicaoValida() {
+    if (_montarFormasSelecionadas().isEmpty) return false;
+
+    final double totalDistribuido = _valorSelecionadoTotal();
+    if (_recebimentoParcial) {
+      return totalDistribuido > 0.009 &&
+          totalDistribuido < widget.valorTotalVenda - 0.009;
+    }
+
+    return (totalDistribuido - widget.valorTotalVenda).abs() <= 0.009;
+  }
+
+  void _alterarTipoRecebimento(bool parcial) {
+    if (_recebimentoParcial == parcial || _salvandoOperacao) return;
+
+    setState(() => _recebimentoParcial = parcial);
+    if (!parcial) {
+      final List<_FormaPagamentoWeb> formas = _formasPagamentoVisiveis();
+      if (formas.isNotEmpty) {
+        _preencherValorRestante(formas.first);
+      }
+    }
   }
 
   List<_FormaPagamentoWeb> _formasPagamentoVisiveis() {
@@ -797,14 +829,23 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
       return;
     }
 
-    final double diferenca = (_valorSelecionadoTotal() - widget.valorTotalVenda)
-        .abs();
-    if (diferenca > 0.009) {
+    final double totalDistribuido = _valorSelecionadoTotal();
+    final bool parcialValido =
+        totalDistribuido > 0.009 &&
+        totalDistribuido < widget.valorTotalVenda - 0.009;
+    final bool totalValido =
+        (totalDistribuido - widget.valorTotalVenda).abs() <= 0.009;
+    if ((_recebimentoParcial && !parcialValido) ||
+        (!_recebimentoParcial && !totalValido)) {
       await _mostrarDialogMensagem(
         titulo: l10n?.pdvWebPaymentMismatchTitle ?? 'Revise a distribuição',
-        mensagem:
-            l10n?.pdvWebPaymentMismatchMessage ??
-            'A soma das formas deve ser igual ao total da venda.',
+        mensagem: _recebimentoParcial
+            ? _txt(
+                'recebimento.erroParcialMenorQueAberto',
+                'O valor parcial deve ser maior que zero e menor que o total da venda.',
+              )
+            : (l10n?.pdvWebPaymentMismatchMessage ??
+                  'A soma das formas deve ser igual ao total da venda.'),
       );
       return;
     }
@@ -814,6 +855,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
         RecebimentoPagamentoSelecaoResultado(
           formasPagamento: formasSelecionadas,
           descricaoPorCodigo: _mapaDescricaoSelecionada(),
+          parcial: _recebimentoParcial,
         ),
       );
       await _fecharTela();
@@ -831,10 +873,15 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
                 size: 34,
               ),
               title: Text(
-                l10n?.pdvWebConfirmReceiveAction ?? 'Confirmar recebimento',
+                _recebimentoParcial
+                    ? _txt('recebimento.receberParcial', 'Receber parcial')
+                    : (l10n?.pdvWebConfirmReceiveAction ??
+                          'Confirmar recebimento'),
               ),
               content: Text(
-                '${l10n?.pdvWebConfirmReceiveMessagePrefix ?? 'Deseja confirmar o recebimento no valor de'} ${_formatarValor(widget.valorTotalVenda)}?',
+                _recebimentoParcial
+                    ? '${_txt('pdv.receipt.confirmPartialMessage', 'Deseja receber')} ${_formatarValor(totalDistribuido)} ${_txt('pdv.receipt.keepOpenBalance', 'e manter o saldo restante em aberto')}?'
+                    : '${l10n?.pdvWebConfirmReceiveMessagePrefix ?? 'Deseja confirmar o recebimento no valor de'} ${_formatarValor(widget.valorTotalVenda)}?',
               ),
               actions: <Widget>[
                 TextButton(
@@ -844,7 +891,10 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
                 FilledButton(
                   onPressed: () => Navigator.of(context).pop(true),
                   child: Text(
-                    l10n?.pdvWebConfirmReceiveAction ?? 'Confirmar recebimento',
+                    _recebimentoParcial
+                        ? _txt('recebimento.receberParcial', 'Receber parcial')
+                        : (l10n?.pdvWebConfirmReceiveAction ??
+                              'Confirmar recebimento'),
                   ),
                 ),
               ],
@@ -867,6 +917,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
         itens: _montarItensDaVenda(),
         formasPagamento: formasSelecionadas,
         dataOperacao: dataOperacao,
+        receberDepois: _recebimentoParcial,
       );
 
       final OperacaoInserirResponse response = await _operacaoService
@@ -1026,7 +1077,34 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
     final double totalDistribuido = _valorSelecionadoTotal();
     final double restante = _valorRestante();
     final bool completo = restante.abs() <= 0.009;
-    final Color statusColor = completo ? tokens.success : tokens.warning;
+    final bool parcialValido =
+        _recebimentoParcial && totalDistribuido > 0.009 && restante > 0.009;
+    final bool distribuicaoValida = _recebimentoParcial
+        ? parcialValido
+        : completo;
+    final Color statusColor = distribuicaoValida
+        ? (_recebimentoParcial ? theme.colorScheme.primary : tokens.success)
+        : tokens.warning;
+    final String statusLabel;
+    if (parcialValido) {
+      statusLabel = _txt(
+        'pdv.receipt.partialReady',
+        'Recebimento parcial pronto. O saldo ficará em aberto.',
+      );
+    } else if (_recebimentoParcial) {
+      statusLabel = _txt(
+        'pdv.receipt.partialHint',
+        'Informe um valor maior que zero e menor que o total da venda.',
+      );
+    } else if (completo) {
+      statusLabel =
+          l10n?.pdvWebPaymentDistributionReadyLabel ??
+          'Distribuição pronta para confirmação.';
+    } else {
+      statusLabel =
+          l10n?.pdvWebPaymentDistributionReviewLabel ??
+          'Ajuste os valores para fechar o total da venda.';
+    }
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -1076,7 +1154,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
             child: Row(
               children: <Widget>[
                 Icon(
-                  completo
+                  distribuicaoValida
                       ? Icons.check_circle_rounded
                       : Icons.info_outline_rounded,
                   color: statusColor,
@@ -1085,11 +1163,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    completo
-                        ? (l10n?.pdvWebPaymentDistributionReadyLabel ??
-                              'Distribuição pronta para confirmação.')
-                        : (l10n?.pdvWebPaymentDistributionReviewLabel ??
-                              'Ajuste os valores para fechar o total da venda.'),
+                    statusLabel,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: statusColor,
                       fontWeight: FontWeight.w800,
@@ -1100,6 +1174,48 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTipoRecebimentoSelector() {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    return Semantics(
+      label: _txt('pdv.receipt.type', 'Tipo de recebimento'),
+      child: SizedBox(
+        width: double.infinity,
+        child: SegmentedButton<bool>(
+          segments: <ButtonSegment<bool>>[
+            ButtonSegment<bool>(
+              value: false,
+              icon: const Icon(Icons.done_all_rounded, size: 18),
+              label: Text(_txt('recebimento.total', 'Total')),
+            ),
+            ButtonSegment<bool>(
+              value: true,
+              icon: const Icon(Icons.call_split_rounded, size: 18),
+              label: Text(_txt('recebimento.parcial', 'Parcial')),
+            ),
+          ],
+          selected: <bool>{_recebimentoParcial},
+          showSelectedIcon: false,
+          onSelectionChanged: _salvandoOperacao
+              ? null
+              : (Set<bool> selecao) => _alterarTipoRecebimento(selecao.first),
+          style: ButtonStyle(
+            minimumSize: const WidgetStatePropertyAll<Size>(
+              Size.fromHeight(46),
+            ),
+            textStyle: WidgetStatePropertyAll<TextStyle?>(
+              theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w900),
+            ),
+            side: WidgetStatePropertyAll<BorderSide>(
+              BorderSide(color: tokens.cardBorder),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1269,6 +1385,8 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          _buildTipoRecebimentoSelector(),
+          const SizedBox(height: 16),
           _buildResumoDistribuicao(),
           const SizedBox(height: 22),
           Row(
@@ -1348,9 +1466,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
   Widget _buildBarraAcoes() {
     final AppLocalizations? l10n = AppLocalizations.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final bool distribuicaoValida =
-        _montarFormasSelecionadas().isNotEmpty &&
-        _valorRestante().abs() <= 0.009;
+    final bool distribuicaoValida = _distribuicaoValida();
 
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
@@ -1383,8 +1499,13 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
                   : (widget.somenteSelecao
                         ? (l10n?.pdvWebConfirmDistributionAction ??
                               'Confirmar distribuição')
-                        : (l10n?.pdvWebConfirmReceiveAction ??
-                              'Confirmar recebimento')),
+                        : (_recebimentoParcial
+                              ? _txt(
+                                  'recebimento.receberParcial',
+                                  'Receber parcial',
+                                )
+                              : (l10n?.pdvWebConfirmReceiveAction ??
+                                    'Confirmar recebimento'))),
             ),
             style: FilledButton.styleFrom(
               minimumSize: const Size(0, 48),

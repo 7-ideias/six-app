@@ -132,6 +132,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   List<FormaPagamentoSelecionada> _formasPagamentoConfirmadas =
       <FormaPagamentoSelecionada>[];
   Map<String, String> _descricoesFormaPagamentoPorCodigo = <String, String>{};
+  bool _pagamentoParcialConfirmado = false;
   bool _registrandoReceberDepois = false;
   bool _recebendoVendaNaoLiquidada = false;
   bool _overlayRecebimentoAberto = false;
@@ -1814,6 +1815,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       _produtosSelecionados.clear();
       _formasPagamentoConfirmadas = <FormaPagamentoSelecionada>[];
       _descricoesFormaPagamentoPorCodigo = <String, String>{};
+      _pagamentoParcialConfirmado = false;
       _codigoBarrasController.clear();
       _itensTotalController.text = '0';
       _clienteIdentificado = null;
@@ -2490,8 +2492,19 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     return _restantePagamentoConfirmado().abs() <= 0.009;
   }
 
+  bool _pagamentoConfirmadoParcial() {
+    if (!_pagamentoParcialConfirmado || !_temPagamentoConfirmado()) {
+      return false;
+    }
+
+    return _totalPagamentoConfirmado() > 0.009 &&
+        _restantePagamentoConfirmado() > 0.009;
+  }
+
   bool _pagamentoConfirmadoPrecisaRevisao() {
-    return _temPagamentoConfirmado() && !_pagamentoConfirmadoCompleto();
+    return _temPagamentoConfirmado() &&
+        !_pagamentoConfirmadoCompleto() &&
+        !_pagamentoConfirmadoParcial();
   }
 
   Future<void> _abrirOverlayRecebimento({required bool somenteSelecao}) async {
@@ -2520,6 +2533,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         somenteSelecao: somenteSelecao,
         formasPagamentoIniciais: _formasPagamentoConfirmadas,
         descricoesFormasIniciais: _descricoesFormaPagamentoPorCodigo,
+        recebimentoParcialInicial: _pagamentoConfirmadoParcial(),
         onSelecaoConfirmada: (RecebimentoPagamentoSelecaoResultado resultado) {
           setState(() {
             _formasPagamentoConfirmadas = resultado.formasPagamento
@@ -2528,6 +2542,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             _descricoesFormaPagamentoPorCodigo = Map<String, String>.from(
               resultado.descricaoPorCodigo,
             );
+            _pagamentoParcialConfirmado = resultado.parcial;
           });
         },
         onSuccess: _limparVendaAposSucessoRecebimento,
@@ -2576,7 +2591,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       _receberVendaNaoLiquidadaEmConsulta();
       return;
     }
-    if (_pagamentoConfirmadoCompleto()) {
+    if (_pagamentoConfirmadoCompleto() || _pagamentoConfirmadoParcial()) {
       _abrirOverlayRecebimento(somenteSelecao: false);
       return;
     }
