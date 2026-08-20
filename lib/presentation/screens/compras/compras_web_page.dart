@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/web/six_web_select_field.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 
@@ -279,16 +280,71 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
   Widget build(BuildContext context) {
     context.watch<LocaleSettingsProvider>();
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return ColoredBox(
-      color: tokens.workspaceBackground,
-      child: AnimatedSwitcher(
-        duration: WebThemeTokens.transitionDuration,
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        child:
-            _compraSelecionada == null
-                ? _buildListaCompras()
-                : _buildEditorCompra(_compraSelecionada!),
+    final ThemeData theme = Theme.of(context);
+    return Theme(
+      data: theme.copyWith(
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            backgroundColor: tokens.surfaceMuted,
+            foregroundColor: tokens.info,
+            disabledBackgroundColor: tokens.disabledBackground,
+            disabledForegroundColor: tokens.disabledForeground,
+            minimumSize: const Size(0, 44),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            side: BorderSide(
+              color: tokens.info.withValues(alpha: 0.24),
+              width: 1.1,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: tokens.info,
+            foregroundColor: const Color(0xFF08111F),
+            disabledBackgroundColor: tokens.disabledBackground,
+            disabledForegroundColor: tokens.disabledForeground,
+            minimumSize: const Size(0, 44),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            elevation: 0,
+            shadowColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: tokens.secondaryText,
+            disabledForegroundColor: tokens.disabledForeground,
+            textStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+      child: ColoredBox(
+        color: tokens.workspaceBackground,
+        child: AnimatedSwitcher(
+          duration: WebThemeTokens.transitionDuration,
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          child:
+              _compraSelecionada == null
+                  ? _buildListaCompras()
+                  : _buildEditorCompra(_compraSelecionada!),
+        ),
       ),
     );
   }
@@ -579,106 +635,52 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
               ),
             ),
           );
-          final Widget status = DropdownButtonFormField<_CompraFiltroStatus>(
-            initialValue: _filtroStatus,
-            decoration: InputDecoration(
-              labelText: context.comprasT('compras.filters.status'),
-              filled: true,
-              fillColor: tokens.inputBackground,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            items: <DropdownMenuItem<_CompraFiltroStatus>>[
-              DropdownMenuItem(
-                value: _CompraFiltroStatus.todos,
-                child: Text(context.comprasT('common.all')),
-              ),
-              DropdownMenuItem(
-                value: _CompraFiltroStatus.rascunho,
-                child: Text(context.comprasT('compras.status.draft')),
-              ),
-              DropdownMenuItem(
-                value: _CompraFiltroStatus.confirmada,
-                child: Text(context.comprasT('compras.status.confirmed')),
-              ),
-              DropdownMenuItem(
-                value: _CompraFiltroStatus.cancelada,
-                child: Text(context.comprasT('compras.status.cancelled')),
-              ),
-            ],
-            onChanged: (_CompraFiltroStatus? value) {
-              if (value != null) {
-                setState(() => _filtroStatus = value);
-              }
+          final List<String> statusOptions = <String>[
+            context.comprasT('common.all'),
+            context.comprasT('compras.status.draft'),
+            context.comprasT('compras.status.confirmed'),
+            context.comprasT('compras.status.cancelled'),
+          ];
+          final Widget status = SixWebSelectField(
+            label: context.comprasT('compras.filters.status'),
+            value: _labelFiltroStatus(_filtroStatus),
+            items: statusOptions,
+            icon: Icons.flag_outlined,
+            width: double.infinity,
+            onSelected: (String selected) {
+              setState(() => _filtroStatus = _statusPorLabel(selected));
             },
           );
-          final Widget periodo = DropdownButtonFormField<_CompraPeriodo>(
-            initialValue: _periodo,
-            decoration: InputDecoration(
-              labelText: context.comprasT('compras.filters.period'),
-              filled: true,
-              fillColor: tokens.inputBackground,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            items: <DropdownMenuItem<_CompraPeriodo>>[
-              DropdownMenuItem(
-                value: _CompraPeriodo.todos,
-                child: Text(context.comprasT('compras.period.all')),
-              ),
-              DropdownMenuItem(
-                value: _CompraPeriodo.seteDias,
-                child: Text(context.comprasT('compras.period.7days')),
-              ),
-              DropdownMenuItem(
-                value: _CompraPeriodo.trintaDias,
-                child: Text(context.comprasT('compras.period.30days')),
-              ),
-              DropdownMenuItem(
-                value: _CompraPeriodo.mesAtual,
-                child: Text(context.comprasT('compras.period.currentMonth')),
-              ),
-            ],
-            onChanged: (_CompraPeriodo? value) {
-              if (value != null) {
-                setState(() => _periodo = value);
-              }
+          final List<String> periodoOptions = <String>[
+            context.comprasT('compras.period.all'),
+            context.comprasT('compras.period.7days'),
+            context.comprasT('compras.period.30days'),
+            context.comprasT('compras.period.currentMonth'),
+          ];
+          final Widget periodo = SixWebSelectField(
+            label: context.comprasT('compras.filters.period'),
+            value: _labelPeriodo(_periodo),
+            items: periodoOptions,
+            icon: Icons.calendar_today_outlined,
+            width: double.infinity,
+            onSelected: (String selected) {
+              setState(() => _periodo = _periodoPorLabel(selected));
             },
           );
-          final Widget ordenacao = DropdownButtonFormField<_CompraOrdenacao>(
-            initialValue: _ordenacao,
-            decoration: InputDecoration(
-              labelText: context.comprasT('compras.filters.sort'),
-              filled: true,
-              fillColor: tokens.inputBackground,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            items: <DropdownMenuItem<_CompraOrdenacao>>[
-              DropdownMenuItem(
-                value: _CompraOrdenacao.maisRecentes,
-                child: Text(context.comprasT('compras.sort.recent')),
-              ),
-              DropdownMenuItem(
-                value: _CompraOrdenacao.maisAntigas,
-                child: Text(context.comprasT('compras.sort.oldest')),
-              ),
-              DropdownMenuItem(
-                value: _CompraOrdenacao.maiorValor,
-                child: Text(context.comprasT('compras.sort.highest')),
-              ),
-              DropdownMenuItem(
-                value: _CompraOrdenacao.menorValor,
-                child: Text(context.comprasT('compras.sort.lowest')),
-              ),
-            ],
-            onChanged: (_CompraOrdenacao? value) {
-              if (value != null) {
-                setState(() => _ordenacao = value);
-              }
+          final List<String> ordenacaoOptions = <String>[
+            context.comprasT('compras.sort.recent'),
+            context.comprasT('compras.sort.oldest'),
+            context.comprasT('compras.sort.highest'),
+            context.comprasT('compras.sort.lowest'),
+          ];
+          final Widget ordenacao = SixWebSelectField(
+            label: context.comprasT('compras.filters.sort'),
+            value: _labelOrdenacao(_ordenacao),
+            items: ordenacaoOptions,
+            icon: Icons.swap_vert_rounded,
+            width: double.infinity,
+            onSelected: (String selected) {
+              setState(() => _ordenacao = _ordenacaoPorLabel(selected));
             },
           );
           if (narrow) {
@@ -891,10 +893,15 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
             height: 40,
             padding: const EdgeInsets.symmetric(horizontal: 11),
             decoration: BoxDecoration(
+              color: tokens.surfaceMuted,
               border: Border.all(color: tokens.cardBorder),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.more_horiz_rounded, size: 20),
+            child: Icon(
+              Icons.more_horiz_rounded,
+              size: 20,
+              color: tokens.secondaryText,
+            ),
           ),
         ),
       ],
@@ -957,5 +964,83 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
         ),
       ],
     );
+  }
+
+  String _labelFiltroStatus(_CompraFiltroStatus status) {
+    switch (status) {
+      case _CompraFiltroStatus.todos:
+        return context.comprasT('common.all');
+      case _CompraFiltroStatus.rascunho:
+        return context.comprasT('compras.status.draft');
+      case _CompraFiltroStatus.confirmada:
+        return context.comprasT('compras.status.confirmed');
+      case _CompraFiltroStatus.cancelada:
+        return context.comprasT('compras.status.cancelled');
+    }
+  }
+
+  _CompraFiltroStatus _statusPorLabel(String label) {
+    if (label == context.comprasT('compras.status.draft')) {
+      return _CompraFiltroStatus.rascunho;
+    }
+    if (label == context.comprasT('compras.status.confirmed')) {
+      return _CompraFiltroStatus.confirmada;
+    }
+    if (label == context.comprasT('compras.status.cancelled')) {
+      return _CompraFiltroStatus.cancelada;
+    }
+    return _CompraFiltroStatus.todos;
+  }
+
+  String _labelPeriodo(_CompraPeriodo periodo) {
+    switch (periodo) {
+      case _CompraPeriodo.todos:
+        return context.comprasT('compras.period.all');
+      case _CompraPeriodo.seteDias:
+        return context.comprasT('compras.period.7days');
+      case _CompraPeriodo.trintaDias:
+        return context.comprasT('compras.period.30days');
+      case _CompraPeriodo.mesAtual:
+        return context.comprasT('compras.period.currentMonth');
+    }
+  }
+
+  _CompraPeriodo _periodoPorLabel(String label) {
+    if (label == context.comprasT('compras.period.7days')) {
+      return _CompraPeriodo.seteDias;
+    }
+    if (label == context.comprasT('compras.period.30days')) {
+      return _CompraPeriodo.trintaDias;
+    }
+    if (label == context.comprasT('compras.period.currentMonth')) {
+      return _CompraPeriodo.mesAtual;
+    }
+    return _CompraPeriodo.todos;
+  }
+
+  String _labelOrdenacao(_CompraOrdenacao ordenacao) {
+    switch (ordenacao) {
+      case _CompraOrdenacao.maisRecentes:
+        return context.comprasT('compras.sort.recent');
+      case _CompraOrdenacao.maisAntigas:
+        return context.comprasT('compras.sort.oldest');
+      case _CompraOrdenacao.maiorValor:
+        return context.comprasT('compras.sort.highest');
+      case _CompraOrdenacao.menorValor:
+        return context.comprasT('compras.sort.lowest');
+    }
+  }
+
+  _CompraOrdenacao _ordenacaoPorLabel(String label) {
+    if (label == context.comprasT('compras.sort.oldest')) {
+      return _CompraOrdenacao.maisAntigas;
+    }
+    if (label == context.comprasT('compras.sort.highest')) {
+      return _CompraOrdenacao.maiorValor;
+    }
+    if (label == context.comprasT('compras.sort.lowest')) {
+      return _CompraOrdenacao.menorValor;
+    }
+    return _CompraOrdenacao.maisRecentes;
   }
 }

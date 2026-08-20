@@ -71,6 +71,7 @@ class ProdutoService {
       'Content-Type': 'application/json',
       'idUnicoDaEmpresa': empresaId ?? '',
       'Authorization': 'Bearer $token',
+      'apenas-ativos': 'true',
     };
 
     final url = Uri.parse(
@@ -111,6 +112,7 @@ class ProdutoService {
       'Content-Type': 'application/json',
       'idUnicoDaEmpresa': empresaId ?? '',
       'Authorization': 'Bearer $token',
+      'apenas-ativos': 'true',
     };
 
     final url = Uri.parse(endpointEstoqueDashboard);
@@ -149,6 +151,7 @@ class ProdutoService {
       'Content-Type': 'application/json',
       'idUnicoDaEmpresa': empresaId ?? '',
       'Authorization': 'Bearer $token',
+      'apenas-ativos': 'true',
     };
 
     final url = Uri.parse(endpointServicosDashboard);

@@ -400,23 +400,34 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
     return Material(
       color: tokens.workspaceBackground,
-      child: Column(
-        children: <Widget>[
-          _buildHeader(theme),
-          Expanded(
-            child: AnimatedContainer(
-              duration: WebThemeTokens.transitionDuration,
-              curve: WebThemeTokens.transitionCurve,
-              color: tokens.workspaceBackground,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 280),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                child: body,
+      child: Theme(
+        data: theme.copyWith(
+          outlinedButtonTheme: OutlinedButtonThemeData(
+            style: _outlinedButtonStyle(theme),
+          ),
+          filledButtonTheme: FilledButtonThemeData(
+            style: _filledButtonStyle(theme),
+          ),
+          checkboxTheme: _checkboxTheme(theme),
+        ),
+        child: Column(
+          children: <Widget>[
+            _buildHeader(theme),
+            Expanded(
+              child: AnimatedContainer(
+                duration: WebThemeTokens.transitionDuration,
+                curve: WebThemeTokens.transitionCurve,
+                color: tokens.workspaceBackground,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 280),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: body,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -784,13 +795,14 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     Widget? valueWidget,
     required IconData icon,
   }) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
       constraints: const BoxConstraints(minWidth: 190, maxWidth: 270),
       padding: const EdgeInsets.all(14),
       decoration: _softBox(theme),
       child: Row(
         children: <Widget>[
-          Icon(icon, color: theme.colorScheme.primary, size: 20),
+          Icon(icon, color: tokens.info, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -801,7 +813,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
@@ -941,17 +953,20 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               ),
               SizedBox(
                 width: 300,
-                child: CheckboxListTile(
-                  value: _vincularVenda,
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Possui vínculo com venda'),
-                  subtitle: const Text(
-                    'Use em estornos ou situações relacionadas a atendimento anterior.',
+                child: Theme(
+                  data: theme.copyWith(checkboxTheme: _checkboxTheme(theme)),
+                  child: CheckboxListTile(
+                    value: _vincularVenda,
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Possui vínculo com venda'),
+                    subtitle: const Text(
+                      'Use em estornos ou situações relacionadas a atendimento anterior.',
+                    ),
+                    onChanged:
+                        (value) =>
+                            setState(() => _vincularVenda = value ?? false),
                   ),
-                  onChanged:
-                      (value) =>
-                          setState(() => _vincularVenda = value ?? false),
                 ),
               ),
             ],
@@ -979,6 +994,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   Widget _buildHistorico(ThemeData theme) {
+    final tokens = WebThemeTokens.of(context);
     final movimentosVisiveis =
         _mostrarApenasHoje
             ? _movimentos
@@ -1004,6 +1020,14 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 ),
               ),
               FilterChip(
+                backgroundColor: tokens.surfaceMuted,
+                selectedColor: tokens.selectedBackground,
+                checkmarkColor: tokens.info,
+                side: BorderSide(color: tokens.cardBorder),
+                labelStyle: TextStyle(
+                  color: tokens.secondaryText,
+                  fontWeight: FontWeight.w700,
+                ),
                 label: const Text('Somente hoje'),
                 selected: _mostrarApenasHoje,
                 onSelected:
@@ -1339,7 +1363,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                       Text(
                         'Saldo esperado',
                         style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
+                          color: WebThemeTokens.of(context).secondaryText,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -1772,7 +1796,63 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
       ),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: tokens.cardBorder),
+      ),
+    );
+  }
+
+  ButtonStyle _outlinedButtonStyle(ThemeData theme, {Color? accentColor}) {
+    final tokens = WebThemeTokens.of(context);
+    final Color resolvedAccent = accentColor ?? tokens.info;
+    return OutlinedButton.styleFrom(
+      backgroundColor: tokens.surfaceMuted,
+      foregroundColor: resolvedAccent,
+      disabledBackgroundColor: tokens.disabledBackground,
+      disabledForegroundColor: tokens.disabledForeground,
+      minimumSize: const Size(0, 46),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      side: BorderSide(
+        color: resolvedAccent.withValues(alpha: 0.28),
+        width: 1.1,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+    );
+  }
+
+  ButtonStyle _filledButtonStyle(ThemeData theme) {
+    final tokens = WebThemeTokens.of(context);
+    return FilledButton.styleFrom(
+      backgroundColor: tokens.info,
+      foregroundColor: const Color(0xFF08111F),
+      disabledBackgroundColor: tokens.disabledBackground,
+      disabledForegroundColor: tokens.disabledForeground,
+      minimumSize: const Size(0, 46),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+    );
+  }
+
+  CheckboxThemeData _checkboxTheme(ThemeData theme) {
+    final tokens = WebThemeTokens.of(context);
+    return CheckboxThemeData(
+      fillColor: WidgetStateProperty.resolveWith<Color>((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return tokens.disabledBackground;
+        }
+        if (states.contains(WidgetState.selected)) {
+          return tokens.info;
+        }
+        return Colors.transparent;
+      }),
+      checkColor: WidgetStateProperty.all(const Color(0xFF08111F)),
+      side: BorderSide(color: tokens.secondaryText, width: 1.5),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
     );
   }
 

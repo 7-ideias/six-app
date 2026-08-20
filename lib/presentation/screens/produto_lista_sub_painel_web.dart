@@ -90,6 +90,7 @@ Future<T?> showProdutoListaSelecaoWebDialog<T>({
   required BuildContext context,
   bool permitirSelecaoMultipla = false,
   String tipoInicial = 'PRODUTO',
+  bool apenasAtivosNoBackend = false,
   double widthFactor = 0.88,
   double heightFactor = 0.86,
   double? maxWidth,
@@ -152,6 +153,7 @@ Future<T?> showProdutoListaSelecaoWebDialog<T>({
                 isSelecao: true,
                 permitirSelecaoMultipla: permitirSelecaoMultipla,
                 tipoInicial: tipoInicial,
+                apenasAtivosNoBackend: apenasAtivosNoBackend,
               ),
             ),
           ),
@@ -168,12 +170,14 @@ class SubPainelWebProdutoLista extends StatelessWidget {
     this.modoEdicao = false,
     this.permitirSelecaoMultipla = false,
     this.tipoInicial = 'PRODUTO',
+    this.apenasAtivosNoBackend = false,
   });
 
   final bool isSelecao;
   final bool modoEdicao;
   final bool permitirSelecaoMultipla;
   final String tipoInicial;
+  final bool apenasAtivosNoBackend;
 
   @override
   Widget build(BuildContext context) {
@@ -182,6 +186,7 @@ class SubPainelWebProdutoLista extends StatelessWidget {
       modoEdicao: modoEdicao,
       permitirSelecaoMultipla: permitirSelecaoMultipla,
       tipoInicial: tipoInicial,
+      apenasAtivosNoBackend: apenasAtivosNoBackend,
     );
   }
 }
@@ -193,12 +198,14 @@ class ProdutoListaBody extends StatefulWidget {
     this.modoEdicao = false,
     this.permitirSelecaoMultipla = false,
     this.tipoInicial = 'PRODUTO',
+    this.apenasAtivosNoBackend = false,
   });
 
   final bool isSelecao;
   final bool modoEdicao;
   final bool permitirSelecaoMultipla;
   final String tipoInicial;
+  final bool apenasAtivosNoBackend;
 
   @override
   State<ProdutoListaBody> createState() => _ProdutoListaBodyState();
@@ -312,6 +319,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       await ProdutoHelper.retornarProdutosList(
         context,
         tipo: tipoSelecionado,
+        produtosAtivos: widget.apenasAtivosNoBackend ? true : null,
         onSucesso: atualizarListaComProvider,
       );
     } catch (error, stackTrace) {

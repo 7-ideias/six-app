@@ -9,6 +9,9 @@ class SixWebSelectField extends StatefulWidget {
     required this.value,
     required this.items,
     required this.onSelected,
+    this.icon,
+    this.width,
+    this.tooltip,
     this.enabled = true,
   });
 
@@ -16,6 +19,9 @@ class SixWebSelectField extends StatefulWidget {
   final String value;
   final List<String> items;
   final ValueChanged<String> onSelected;
+  final IconData? icon;
+  final double? width;
+  final String? tooltip;
   final bool enabled;
 
   @override
@@ -111,7 +117,7 @@ class _SixWebSelectFieldState extends State<SixWebSelectField> {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool active = widget.enabled && (_hovered || _open);
 
-    return Semantics(
+    final Widget field = Semantics(
       button: true,
       enabled: widget.enabled,
       label: widget.label,
@@ -128,69 +134,82 @@ class _SixWebSelectFieldState extends State<SixWebSelectField> {
             child: InkWell(
               borderRadius: BorderRadius.circular(18),
               onTap: widget.enabled ? _openMenu : null,
-              child: AnimatedContainer(
-                duration: WebThemeTokens.transitionDuration,
-                curve: WebThemeTokens.transitionCurve,
-                constraints: const BoxConstraints(minHeight: 64),
-                padding: const EdgeInsets.fromLTRB(14, 11, 12, 11),
-                decoration: BoxDecoration(
-                  color: active ? tokens.surfaceMuted : tokens.inputBackground,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: active ? tokens.selectedBorder : tokens.cardBorder,
-                    width: active ? 1.4 : 1,
+              child: Tooltip(
+                message: widget.tooltip ?? '${widget.label}: ${widget.value}',
+                waitDuration: const Duration(milliseconds: 450),
+                child: AnimatedContainer(
+                  duration: WebThemeTokens.transitionDuration,
+                  curve: WebThemeTokens.transitionCurve,
+                  constraints: const BoxConstraints(minHeight: 64),
+                  padding: const EdgeInsets.fromLTRB(14, 11, 12, 11),
+                  decoration: BoxDecoration(
+                    color:
+                        active ? tokens.surfaceMuted : tokens.inputBackground,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: active ? tokens.selectedBorder : tokens.cardBorder,
+                      width: active ? 1.4 : 1,
+                    ),
+                    boxShadow:
+                        active
+                            ? <BoxShadow>[
+                              BoxShadow(
+                                color: tokens.info.withValues(alpha: 0.10),
+                                blurRadius: 16,
+                                offset: const Offset(0, 8),
+                              ),
+                            ]
+                            : null,
                   ),
-                  boxShadow:
-                      active
-                          ? <BoxShadow>[
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
+                  child: Row(
+                    children: <Widget>[
+                      if (widget.icon != null) ...<Widget>[
+                        Icon(
+                          widget.icon,
+                          size: 18,
+                          color: active ? tokens.info : tokens.secondaryText,
+                        ),
+                        const SizedBox(width: 10),
+                      ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Text(
+                              widget.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: tokens.secondaryText,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                          ]
-                          : null,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            widget.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: tokens.secondaryText,
-                              fontWeight: FontWeight.w700,
+                            const SizedBox(height: 4),
+                            Text(
+                              widget.value,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: tokens.primaryText,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            widget.value,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: tokens.primaryText,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    AnimatedRotation(
-                      turns: _open ? 0.5 : 0,
-                      duration: WebThemeTokens.transitionDuration,
-                      curve: WebThemeTokens.transitionCurve,
-                      child: Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: active ? tokens.info : tokens.secondaryText,
+                      const SizedBox(width: 10),
+                      AnimatedRotation(
+                        turns: _open ? 0.5 : 0,
+                        duration: WebThemeTokens.transitionDuration,
+                        curve: WebThemeTokens.transitionCurve,
+                        child: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: active ? tokens.info : tokens.secondaryText,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -198,5 +217,10 @@ class _SixWebSelectFieldState extends State<SixWebSelectField> {
         ),
       ),
     );
+
+    if (widget.width == null) {
+      return field;
+    }
+    return SizedBox(width: widget.width, child: field);
   }
 }

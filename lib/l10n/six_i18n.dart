@@ -56,6 +56,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.search': 'Buscar',
     'common.clear': 'Limpar',
     'common.confirm': 'Confirmar',
+    'common.apply': 'Aplicar',
     'common.continue': 'Continuar',
     'common.tryAgain': 'Tentar novamente',
     'common.loading': 'Carregando...',
@@ -406,6 +407,52 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.filters.paymentStatus.all': 'Todos os pagamentos',
     'atendimentoTecnico.filters.paymentStatus.open': 'Em aberto',
     'atendimentoTecnico.filters.paymentStatus.paid': 'Liquidado',
+    'atendimentoTecnico.filters.multiSelected': '{count} selecionados',
+    'atendimentoTecnico.filters.technician.label': 'Técnico responsável',
+    'atendimentoTecnico.filters.technician.tooltip':
+        'Filtrar por técnico responsável',
+    'atendimentoTecnico.filters.technician.all': 'Todos os técnicos',
+    'atendimentoTecnico.filters.technician.none': 'Sem técnico responsável',
+    'atendimentoTecnico.filters.technician.selectedFallback':
+        'Técnico selecionado',
+    'atendimentoTecnico.filters.status.tooltip': 'Filtrar por status',
+    'atendimentoTecnico.filters.status.all': 'Todos os status',
+    'atendimentoTecnico.filters.status.allWithCount':
+        'Todos os status ({count})',
+    'atendimentoTecnico.filters.status.selectedFallback': 'Status selecionado',
+    'atendimentoTecnico.web.dateFilterDialog.barrierLabel':
+        'Fechar filtro de data',
+    'atendimentoTecnico.web.dateFilterDialog.filterLabel': 'Data',
+    'atendimentoTecnico.web.dateFilterDialog.title': 'Filtrar por data',
+    'atendimentoTecnico.web.dateFilterDialog.subtitle':
+        'Defina o intervalo de atualização dos atendimentos.',
+    'atendimentoTecnico.web.dateFilterDialog.fieldLabel': 'Campo',
+    'atendimentoTecnico.web.dateFilterDialog.fieldValueUpdatedAt':
+        'Atualização',
+    'atendimentoTecnico.web.dateFilterDialog.currentRangeLabel': 'Intervalo',
+    'atendimentoTecnico.web.dateFilterDialog.allDates': 'Todas as datas',
+    'atendimentoTecnico.web.dateFilterDialog.dateFrom': 'A partir de {date}',
+    'atendimentoTecnico.web.dateFilterDialog.dateUntil': 'Até {date}',
+    'atendimentoTecnico.web.dateFilterDialog.dateRange': '{start} até {end}',
+    'atendimentoTecnico.web.dateFilterDialog.startLabel': 'Início',
+    'atendimentoTecnico.web.dateFilterDialog.endLabel': 'Fim',
+    'atendimentoTecnico.web.dateFilterDialog.dateHint': 'dd/MM/yyyy',
+    'atendimentoTecnico.web.dateFilterDialog.quickToday': 'Hoje',
+    'atendimentoTecnico.web.dateFilterDialog.quickLast7Days': 'Últimos 7 dias',
+    'atendimentoTecnico.web.dateFilterDialog.quickNext7Days': 'Próximos 7 dias',
+    'atendimentoTecnico.web.dateFilterDialog.quickOverdue': 'Vencidos',
+    'atendimentoTecnico.web.dateFilterDialog.quickLast30Days':
+        'Últimos 30 dias',
+    'atendimentoTecnico.web.dateFilterDialog.quickThisMonth': 'Este mês',
+    'atendimentoTecnico.web.dateFilterDialog.clearAction': 'Limpar',
+    'atendimentoTecnico.web.dateFilterDialog.cancelAction': 'Cancelar',
+    'atendimentoTecnico.web.dateFilterDialog.applyAction': 'Aplicar',
+    'atendimentoTecnico.web.dateFilterDialog.startInvalid':
+        'Informe a data inicial em um formato válido.',
+    'atendimentoTecnico.web.dateFilterDialog.endInvalid':
+        'Informe a data final em um formato válido.',
+    'atendimentoTecnico.web.dateFilterDialog.endBeforeStart':
+        'A data final não pode ser anterior à inicial.',
     'atendimentoTecnico.customerNotInformed': 'Cliente não informado',
     'atendimentoTecnico.expectedDelivery': 'Entrega prevista',
     'atendimentoTecnico.equipment': 'Equipamento',
@@ -669,10 +716,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.signInWithGoogle': 'Entrar com Google',
     'auth.googleLoginError': 'Não foi possível concluir o login com Google.',
     'auth.session.validatingTitle': 'Entrando no Six',
-    'auth.session.validatingMessage':
-        'Validando sua sessão com segurança...',
-    'auth.session.temporaryErrorTitle':
-        'Não foi possível validar sua sessão',
+    'auth.session.validatingMessage': 'Validando sua sessão com segurança...',
+    'auth.session.temporaryErrorTitle': 'Não foi possível validar sua sessão',
     'auth.session.temporaryErrorMessage':
         'Sua sessão foi preservada. Verifique sua conexão e tente novamente.',
     'webAuthGate.temporaryError.title': 'Não foi possível validar sua sessão',
@@ -1507,6 +1552,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.search': 'Search',
     'common.clear': 'Clear',
     'common.confirm': 'Confirm',
+    'common.apply': 'Apply',
     'common.continue': 'Continue',
     'common.tryAgain': 'Try again',
     'common.loading': 'Loading...',
@@ -1845,6 +1891,48 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.filters.paymentStatus.all': 'All payments',
     'atendimentoTecnico.filters.paymentStatus.open': 'Open',
     'atendimentoTecnico.filters.paymentStatus.paid': 'Paid',
+    'atendimentoTecnico.filters.multiSelected': '{count} selected',
+    'atendimentoTecnico.filters.technician.label': 'Responsible technician',
+    'atendimentoTecnico.filters.technician.tooltip': 'Filter by technician',
+    'atendimentoTecnico.filters.technician.all': 'All technicians',
+    'atendimentoTecnico.filters.technician.none': 'No responsible technician',
+    'atendimentoTecnico.filters.technician.selectedFallback':
+        'Selected technician',
+    'atendimentoTecnico.filters.status.tooltip': 'Filter by status',
+    'atendimentoTecnico.filters.status.all': 'All statuses',
+    'atendimentoTecnico.filters.status.allWithCount': 'All statuses ({count})',
+    'atendimentoTecnico.filters.status.selectedFallback': 'Selected status',
+    'atendimentoTecnico.web.dateFilterDialog.barrierLabel': 'Close date filter',
+    'atendimentoTecnico.web.dateFilterDialog.filterLabel': 'Date',
+    'atendimentoTecnico.web.dateFilterDialog.title': 'Filter by date',
+    'atendimentoTecnico.web.dateFilterDialog.subtitle':
+        'Set the service update interval.',
+    'atendimentoTecnico.web.dateFilterDialog.fieldLabel': 'Field',
+    'atendimentoTecnico.web.dateFilterDialog.fieldValueUpdatedAt':
+        'Update date',
+    'atendimentoTecnico.web.dateFilterDialog.currentRangeLabel': 'Range',
+    'atendimentoTecnico.web.dateFilterDialog.allDates': 'All dates',
+    'atendimentoTecnico.web.dateFilterDialog.dateFrom': 'From {date}',
+    'atendimentoTecnico.web.dateFilterDialog.dateUntil': 'Until {date}',
+    'atendimentoTecnico.web.dateFilterDialog.dateRange': '{start} to {end}',
+    'atendimentoTecnico.web.dateFilterDialog.startLabel': 'Start',
+    'atendimentoTecnico.web.dateFilterDialog.endLabel': 'End',
+    'atendimentoTecnico.web.dateFilterDialog.dateHint': 'MM/dd/yyyy',
+    'atendimentoTecnico.web.dateFilterDialog.quickToday': 'Today',
+    'atendimentoTecnico.web.dateFilterDialog.quickLast7Days': 'Last 7 days',
+    'atendimentoTecnico.web.dateFilterDialog.quickNext7Days': 'Next 7 days',
+    'atendimentoTecnico.web.dateFilterDialog.quickOverdue': 'Overdue',
+    'atendimentoTecnico.web.dateFilterDialog.quickLast30Days': 'Last 30 days',
+    'atendimentoTecnico.web.dateFilterDialog.quickThisMonth': 'This month',
+    'atendimentoTecnico.web.dateFilterDialog.clearAction': 'Clear',
+    'atendimentoTecnico.web.dateFilterDialog.cancelAction': 'Cancel',
+    'atendimentoTecnico.web.dateFilterDialog.applyAction': 'Apply',
+    'atendimentoTecnico.web.dateFilterDialog.startInvalid':
+        'Enter a valid start date.',
+    'atendimentoTecnico.web.dateFilterDialog.endInvalid':
+        'Enter a valid end date.',
+    'atendimentoTecnico.web.dateFilterDialog.endBeforeStart':
+        'The end date cannot be before the start date.',
     'atendimentoTecnico.customerNotInformed': 'Customer not informed',
     'atendimentoTecnico.expectedDelivery': 'Expected delivery',
     'atendimentoTecnico.equipment': 'Equipment',
@@ -2849,6 +2937,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.search': 'Buscar',
     'common.clear': 'Limpiar',
     'common.confirm': 'Confirmar',
+    'common.apply': 'Aplicar',
     'common.continue': 'Continuar',
     'common.tryAgain': 'Intentar de nuevo',
     'common.loading': 'Cargando...',
@@ -3195,6 +3284,52 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.filters.paymentStatus.all': 'Todos los pagos',
     'atendimentoTecnico.filters.paymentStatus.open': 'Abierto',
     'atendimentoTecnico.filters.paymentStatus.paid': 'Liquidado',
+    'atendimentoTecnico.filters.multiSelected': '{count} seleccionados',
+    'atendimentoTecnico.filters.technician.label': 'Técnico responsable',
+    'atendimentoTecnico.filters.technician.tooltip':
+        'Filtrar por técnico responsable',
+    'atendimentoTecnico.filters.technician.all': 'Todos los técnicos',
+    'atendimentoTecnico.filters.technician.none': 'Sin técnico responsable',
+    'atendimentoTecnico.filters.technician.selectedFallback':
+        'Técnico seleccionado',
+    'atendimentoTecnico.filters.status.tooltip': 'Filtrar por estado',
+    'atendimentoTecnico.filters.status.all': 'Todos los estados',
+    'atendimentoTecnico.filters.status.allWithCount':
+        'Todos los estados ({count})',
+    'atendimentoTecnico.filters.status.selectedFallback': 'Estado seleccionado',
+    'atendimentoTecnico.web.dateFilterDialog.barrierLabel':
+        'Cerrar filtro de fecha',
+    'atendimentoTecnico.web.dateFilterDialog.filterLabel': 'Fecha',
+    'atendimentoTecnico.web.dateFilterDialog.title': 'Filtrar por fecha',
+    'atendimentoTecnico.web.dateFilterDialog.subtitle':
+        'Define el intervalo de actualización de las atenciones.',
+    'atendimentoTecnico.web.dateFilterDialog.fieldLabel': 'Campo',
+    'atendimentoTecnico.web.dateFilterDialog.fieldValueUpdatedAt':
+        'Actualización',
+    'atendimentoTecnico.web.dateFilterDialog.currentRangeLabel': 'Intervalo',
+    'atendimentoTecnico.web.dateFilterDialog.allDates': 'Todas las fechas',
+    'atendimentoTecnico.web.dateFilterDialog.dateFrom': 'Desde {date}',
+    'atendimentoTecnico.web.dateFilterDialog.dateUntil': 'Hasta {date}',
+    'atendimentoTecnico.web.dateFilterDialog.dateRange': '{start} hasta {end}',
+    'atendimentoTecnico.web.dateFilterDialog.startLabel': 'Inicio',
+    'atendimentoTecnico.web.dateFilterDialog.endLabel': 'Fin',
+    'atendimentoTecnico.web.dateFilterDialog.dateHint': 'dd/MM/yyyy',
+    'atendimentoTecnico.web.dateFilterDialog.quickToday': 'Hoy',
+    'atendimentoTecnico.web.dateFilterDialog.quickLast7Days': 'Últimos 7 días',
+    'atendimentoTecnico.web.dateFilterDialog.quickNext7Days': 'Próximos 7 días',
+    'atendimentoTecnico.web.dateFilterDialog.quickOverdue': 'Vencidos',
+    'atendimentoTecnico.web.dateFilterDialog.quickLast30Days':
+        'Últimos 30 días',
+    'atendimentoTecnico.web.dateFilterDialog.quickThisMonth': 'Este mes',
+    'atendimentoTecnico.web.dateFilterDialog.clearAction': 'Limpiar',
+    'atendimentoTecnico.web.dateFilterDialog.cancelAction': 'Cancelar',
+    'atendimentoTecnico.web.dateFilterDialog.applyAction': 'Aplicar',
+    'atendimentoTecnico.web.dateFilterDialog.startInvalid':
+        'Ingresa una fecha inicial válida.',
+    'atendimentoTecnico.web.dateFilterDialog.endInvalid':
+        'Ingresa una fecha final válida.',
+    'atendimentoTecnico.web.dateFilterDialog.endBeforeStart':
+        'La fecha final no puede ser anterior a la inicial.',
     'atendimentoTecnico.customerNotInformed': 'Cliente no informado',
     'atendimentoTecnico.expectedDelivery': 'Entrega prevista',
     'atendimentoTecnico.equipment': 'Equipo',
@@ -3429,8 +3564,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.googleLoginError':
         'No se pudo completar el inicio de sesión con Google.',
     'auth.session.validatingTitle': 'Entrando a Six',
-    'auth.session.validatingMessage':
-        'Validando tu sesión de forma segura...',
+    'auth.session.validatingMessage': 'Validando tu sesión de forma segura...',
     'auth.session.temporaryErrorTitle': 'No se pudo validar tu sesión',
     'auth.session.temporaryErrorMessage':
         'Tu sesión fue preservada. Verifica tu conexión e inténtalo de nuevo.',

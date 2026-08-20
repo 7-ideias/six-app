@@ -1562,6 +1562,78 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           borderSide: BorderSide(color: tokens.danger, width: 1.4),
         ),
       ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          backgroundColor: tokens.surfaceMuted,
+          foregroundColor: tokens.info,
+          disabledBackgroundColor: tokens.disabledBackground,
+          disabledForegroundColor: tokens.disabledForeground,
+          minimumSize: const Size(0, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          side: BorderSide(
+            color: tokens.info.withValues(alpha: 0.24),
+            width: 1.1,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: tokens.info,
+          foregroundColor: const Color(0xFF08111F),
+          disabledBackgroundColor: tokens.disabledBackground,
+          disabledForegroundColor: tokens.disabledForeground,
+          minimumSize: const Size(0, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: tokens.secondaryText,
+          disabledForegroundColor: tokens.disabledForeground,
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+        ),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+            if (states.contains(WidgetState.selected)) {
+              return tokens.selectedBackground;
+            }
+            return tokens.cardBackground;
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+            if (states.contains(WidgetState.selected)) {
+              return tokens.primaryText;
+            }
+            return tokens.secondaryText;
+          }),
+          side: WidgetStateProperty.resolveWith<BorderSide>((states) {
+            if (states.contains(WidgetState.selected)) {
+              return BorderSide(color: tokens.selectedBorder, width: 1.1);
+            }
+            return BorderSide(color: tokens.cardBorder);
+          }),
+          textStyle: WidgetStateProperty.all(
+            const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+          ),
+          padding: WidgetStateProperty.all(
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          ),
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          ),
+        ),
+      ),
       chipTheme: webTheme.chipTheme.copyWith(
         backgroundColor: tokens.surfaceMuted,
         selectedColor: tokens.selectedBackground,

@@ -19,6 +19,7 @@ import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
+import '../components/web/six_web_atendimento_date_filter_dialog.dart';
 import '../components/web/six_web_recebimento_dialog.dart';
 import '../theme/web_theme_tokens.dart';
 import 'atendimento_tecnico_editar_dialog.dart';
@@ -42,8 +43,6 @@ class AtendimentosTecnicosListaWebPage extends StatefulWidget {
 class _AtendimentosTecnicosListaWebPageState
     extends State<AtendimentosTecnicosListaWebPage> {
   static const String _semTecnicoKey = '__sem_tecnico__';
-  static const String _todosTecnicosKey = '__todos__';
-  static const String _todosStatusKey = '__todos_status__';
 
   final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
   final ColaboradorUsuarioApiClient _colaboradorApiClient =
@@ -61,8 +60,8 @@ class _AtendimentosTecnicosListaWebPageState
   bool _usuarioAlterouFiltros = false;
   DateTime? _dataInicioFiltro;
   DateTime? _dataFimFiltro;
-  String? _tecnicoFiltroKey;
-  String? _statusFiltroKey;
+  Set<String> _tecnicoFiltroKeys = <String>{};
+  Set<String> _statusFiltroKeys = <String>{};
   String? _atendimentoExpandidoKey;
   AtendimentosCriadosStatusPagamentoFiltro _statusPagamentoFiltro =
       AtendimentosCriadosStatusPagamentoFiltro.todos;
@@ -141,8 +140,8 @@ class _AtendimentosTecnicosListaWebPageState
     setState(() {
       _dataInicioFiltro = filtros.dataInicio;
       _dataFimFiltro = filtros.dataFim;
-      _tecnicoFiltroKey = filtros.tecnicoKey;
-      _statusFiltroKey = filtros.statusKey;
+      _tecnicoFiltroKeys = filtros.tecnicoKeysSelecionadas.toSet();
+      _statusFiltroKeys = filtros.statusKeysSelecionadas.toSet();
       _statusPagamentoFiltro = filtros.statusPagamento;
     });
     _aplicandoPreferencias = false;
@@ -162,8 +161,8 @@ class _AtendimentosTecnicosListaWebPageState
       busca: _buscaController.text,
       dataInicio: _dataInicioFiltro,
       dataFim: _dataFimFiltro,
-      tecnicoKey: _tecnicoFiltroKey,
-      statusKey: _statusFiltroKey,
+      tecnicoKeys: _sortedFiltroKeys(_tecnicoFiltroKeys),
+      statusKeys: _sortedFiltroKeys(_statusFiltroKeys),
       statusPagamento: _statusPagamentoFiltro,
     );
 
@@ -181,6 +180,15 @@ class _AtendimentosTecnicosListaWebPageState
     );
   }
 
+  List<String> _sortedFiltroKeys(Set<String> keys) {
+    final List<String> values = keys
+      .map((String key) => key.trim())
+      .where((String key) => key.isNotEmpty)
+      .toSet()
+      .toList(growable: false)..sort();
+    return values;
+  }
+
   void _onBuscaChanged() {
     if (mounted) setState(() {});
     if (!_aplicandoPreferencias) {
@@ -193,8 +201,8 @@ class _AtendimentosTecnicosListaWebPageState
       _buscaController.text.trim().isNotEmpty ||
       _dataInicioFiltro != null ||
       _dataFimFiltro != null ||
-      _tecnicoFiltroKey != null ||
-      _statusFiltroKey != null ||
+      _tecnicoFiltroKeys.isNotEmpty ||
+      _statusFiltroKeys.isNotEmpty ||
       _statusPagamentoFiltro != AtendimentosCriadosStatusPagamentoFiltro.todos;
 
   void _limparFiltros() {
@@ -205,8 +213,8 @@ class _AtendimentosTecnicosListaWebPageState
     setState(() {
       _dataInicioFiltro = null;
       _dataFimFiltro = null;
-      _tecnicoFiltroKey = null;
-      _statusFiltroKey = null;
+      _tecnicoFiltroKeys = <String>{};
+      _statusFiltroKeys = <String>{};
       _statusPagamentoFiltro = AtendimentosCriadosStatusPagamentoFiltro.todos;
     });
     _aplicandoPreferencias = false;
@@ -270,8 +278,8 @@ class _AtendimentosTecnicosListaWebPageState
     final inicio =
         _dataInicioFiltro == null ? null : _inicioDoDia(_dataInicioFiltro!);
     final fim = _dataFimFiltro == null ? null : _fimDoDia(_dataFimFiltro!);
-    final tecnicoKey = _tecnicoFiltroKey;
-    final statusKey = _statusFiltroKey;
+    final Set<String> tecnicoKeys = Set<String>.from(_tecnicoFiltroKeys);
+    final Set<String> statusKeys = Set<String>.from(_statusFiltroKeys);
     final statusPagamento = _statusPagamentoFiltro;
 
     return itens
@@ -287,12 +295,12 @@ class _AtendimentosTecnicosListaWebPageState
               return false;
             }
           }
-          if (tecnicoKey != null &&
-              _tecnicoKeyAtendimento(atendimento) != tecnicoKey) {
+          if (tecnicoKeys.isNotEmpty &&
+              !tecnicoKeys.contains(_tecnicoKeyAtendimento(atendimento))) {
             return false;
           }
-          if (statusKey != null &&
-              _statusFiltroKeyAtendimento(atendimento) != statusKey) {
+          if (statusKeys.isNotEmpty &&
+              !statusKeys.contains(_statusFiltroKeyAtendimento(atendimento))) {
             return false;
           }
           if (!_atendimentoPassaStatusPagamento(atendimento, statusPagamento)) {
@@ -435,7 +443,12 @@ class _AtendimentosTecnicosListaWebPageState
 
   String _tecnicoLabelAtendimento(AtendimentoTecnicoModel atendimento) {
     final nome = atendimento.nomeTecnicoResponsavelSnapshot?.trim() ?? '';
-    return nome.isEmpty ? 'Sem técnico responsável' : nome;
+    return nome.isEmpty
+        ? context.t(
+          'atendimentoTecnico.filters.technician.none',
+          fallback: 'Sem técnico responsável',
+        )
+        : nome;
   }
 
   String _statusFiltroKeyAtendimento(AtendimentoTecnicoModel atendimento) {
@@ -471,9 +484,12 @@ class _AtendimentosTecnicosListaWebPageState
       (AtendimentoTecnicoModel atendimento) =>
           _tecnicoKeyAtendimento(atendimento) == _semTecnicoKey,
     )) {
-      mapa[_semTecnicoKey] = const _TecnicoFiltroOption(
+      mapa[_semTecnicoKey] = _TecnicoFiltroOption(
         key: _semTecnicoKey,
-        label: 'Sem técnico responsável',
+        label: context.t(
+          'atendimentoTecnico.filters.technician.none',
+          fallback: 'Sem técnico responsável',
+        ),
       );
     }
     final options = mapa.values.toList(growable: false)..sort((a, b) {
@@ -485,12 +501,29 @@ class _AtendimentosTecnicosListaWebPageState
   }
 
   String _tecnicoFiltroLabel(List<_TecnicoFiltroOption> options) {
-    final key = _tecnicoFiltroKey;
-    if (key == null) return 'Todos os técnicos';
-    for (final option in options) {
-      if (option.key == key) return option.label;
+    final Set<String> keys = _tecnicoFiltroKeys;
+    if (keys.isEmpty) {
+      return context.t(
+        'atendimentoTecnico.filters.technician.all',
+        fallback: 'Todos os técnicos',
+      );
     }
-    return 'Técnico selecionado';
+    if (keys.length == 1) {
+      final String key = keys.first;
+      for (final option in options) {
+        if (option.key == key) return option.label;
+      }
+      return context.t(
+        'atendimentoTecnico.filters.technician.selectedFallback',
+        fallback: 'Técnico selecionado',
+      );
+    }
+    return context
+        .t(
+          'atendimentoTecnico.filters.multiSelected',
+          fallback: '{count} selecionados',
+        )
+        .replaceAll('{count}', keys.length.toString());
   }
 
   List<_StatusFiltroOption> _statusFiltroOptions(
@@ -518,12 +551,29 @@ class _AtendimentosTecnicosListaWebPageState
   }
 
   String _statusFiltroDisplayLabel(List<_StatusFiltroOption> options) {
-    final selected = _statusFiltroKey;
-    if (selected == null) return 'Todos os status';
-    for (final option in options) {
-      if (option.key == selected) return option.label;
+    final Set<String> selected = _statusFiltroKeys;
+    if (selected.isEmpty) {
+      return context.t(
+        'atendimentoTecnico.filters.status.all',
+        fallback: 'Todos os status',
+      );
     }
-    return 'Status selecionado';
+    if (selected.length == 1) {
+      final String key = selected.first;
+      for (final option in options) {
+        if (option.key == key) return option.label;
+      }
+      return context.t(
+        'atendimentoTecnico.filters.status.selectedFallback',
+        fallback: 'Status selecionado',
+      );
+    }
+    return context
+        .t(
+          'atendimentoTecnico.filters.multiSelected',
+          fallback: '{count} selecionados',
+        )
+        .replaceAll('{count}', selected.length.toString());
   }
 
   String _statusPagamentoFiltroLabel(
@@ -568,12 +618,35 @@ class _AtendimentosTecnicosListaWebPageState
   String _periodoFiltroLabel() {
     final inicio = _dataInicioFiltro;
     final fim = _dataFimFiltro;
-    if (inicio == null && fim == null) return 'Todas as datas';
-    if (inicio != null && fim != null) {
-      return '${_formatarDataCurta(inicio)} até ${_formatarDataCurta(fim)}';
+    if (inicio == null && fim == null) {
+      return context.t(
+        'atendimentoTecnico.web.dateFilterDialog.allDates',
+        fallback: 'Todas as datas',
+      );
     }
-    if (inicio != null) return 'A partir de ${_formatarDataCurta(inicio)}';
-    return 'Até ${_formatarDataCurta(fim!)}';
+    if (inicio != null && fim != null) {
+      return context
+          .t(
+            'atendimentoTecnico.web.dateFilterDialog.dateRange',
+            fallback: '{start} até {end}',
+          )
+          .replaceAll('{start}', _formatarDataCurta(inicio))
+          .replaceAll('{end}', _formatarDataCurta(fim));
+    }
+    if (inicio != null) {
+      return context
+          .t(
+            'atendimentoTecnico.web.dateFilterDialog.dateFrom',
+            fallback: 'A partir de {date}',
+          )
+          .replaceAll('{date}', _formatarDataCurta(inicio));
+    }
+    return context
+        .t(
+          'atendimentoTecnico.web.dateFilterDialog.dateUntil',
+          fallback: 'Até {date}',
+        )
+        .replaceAll('{date}', _formatarDataCurta(fim!));
   }
 
   DominioOpcaoModel? _statusAtual(
@@ -1863,7 +1936,10 @@ class _AtendimentosTecnicosListaWebPageState
           final filtroData = _filterTrigger(
             theme,
             width: isCompact ? constraints.maxWidth : 220,
-            label: 'Data',
+            label: context.t(
+              'atendimentoTecnico.web.dateFilterDialog.filterLabel',
+              fallback: 'Data',
+            ),
             value: _periodoFiltroLabel(),
             icon: Icons.event_outlined,
             onTap: _abrirFiltroDataWeb,
@@ -1985,15 +2061,12 @@ class _AtendimentosTecnicosListaWebPageState
   }
 
   Future<void> _abrirFiltroDataWeb() async {
-    final result = await showDialog<_PeriodoFiltro>(
+    final result = await showSixWebAtendimentoDateFilterDialog(
       context: context,
-      builder: (context) {
-        return _PeriodoFiltroWebDialog(
-          dataInicio: _dataInicioFiltro,
-          dataFim: _dataFimFiltro,
-          formatarData: _formatarDataCurta,
-        );
-      },
+      dataInicio: _dataInicioFiltro,
+      dataFim: _dataFimFiltro,
+      formatarData: _formatarDataCurta,
+      dateFormatPattern: context.read<LocaleSettingsProvider>().dateFormat,
     );
     if (result == null || !mounted) return;
     setState(() {
@@ -2082,18 +2155,33 @@ class _AtendimentosTecnicosListaWebPageState
     required double width,
     required List<_TecnicoFiltroOption> options,
   }) {
-    return _TecnicoFiltroDropdown(
+    return _FiltroMultiSelectDropdown(
       width: width,
-      label: 'Técnico responsável',
+      label: context.t(
+        'atendimentoTecnico.filters.technician.label',
+        fallback: 'Técnico responsável',
+      ),
       displayValue: _tecnicoFiltroLabel(options),
-      tooltip: 'Filtrar por técnico responsável',
+      tooltip: context.t(
+        'atendimentoTecnico.filters.technician.tooltip',
+        fallback: 'Filtrar por técnico responsável',
+      ),
       icon: Icons.engineering_outlined,
-      selectedKey: _tecnicoFiltroKey,
-      todosKey: _todosTecnicosKey,
-      options: options,
+      selectedKeys: _tecnicoFiltroKeys,
+      allLabel: context.t(
+        'atendimentoTecnico.filters.technician.all',
+        fallback: 'Todos os técnicos',
+      ),
+      itemIcon: Icons.engineering_outlined,
+      options: options
+          .map(
+            (option) =>
+                _FiltroMultiSelectOption(key: option.key, label: option.label),
+          )
+          .toList(growable: false),
       onChanged: (value) {
         setState(() {
-          _tecnicoFiltroKey = value == _todosTecnicosKey ? null : value;
+          _tecnicoFiltroKeys = Set<String>.from(value);
         });
         _usuarioAlterouFiltros = true;
         _salvarPreferenciasAtendimentosCriados();
@@ -2106,18 +2194,35 @@ class _AtendimentosTecnicosListaWebPageState
     required List<_StatusFiltroOption> options,
     required int total,
   }) {
-    return _StatusFiltroDropdown(
+    return _FiltroMultiSelectDropdown(
       width: width,
-      label: 'Status',
+      label: context.t('atendimentoTecnico.status', fallback: 'Status'),
       displayValue: _statusFiltroDisplayLabel(options),
-      tooltip: 'Filtrar por status',
-      selectedKey: _statusFiltroKey,
-      todosKey: _todosStatusKey,
-      total: total,
-      options: options,
+      tooltip: context.t(
+        'atendimentoTecnico.filters.status.tooltip',
+        fallback: 'Filtrar por status',
+      ),
+      icon: Icons.flag_outlined,
+      selectedKeys: _statusFiltroKeys,
+      allLabel: context
+          .t(
+            'atendimentoTecnico.filters.status.allWithCount',
+            fallback: 'Todos os status ({count})',
+          )
+          .replaceAll('{count}', total.toString()),
+      itemIcon: Icons.flag_outlined,
+      options: options
+          .map(
+            (option) => _FiltroMultiSelectOption(
+              key: option.key,
+              label: option.label,
+              count: option.count,
+            ),
+          )
+          .toList(growable: false),
       onChanged: (value) {
         setState(() {
-          _statusFiltroKey = value == _todosStatusKey ? null : value;
+          _statusFiltroKeys = Set<String>.from(value);
         });
         _usuarioAlterouFiltros = true;
         _salvarPreferenciasAtendimentosCriados();
@@ -4551,264 +4656,462 @@ class _StatusWebSelectorState extends State<_StatusWebSelector> {
   }
 }
 
-class _PeriodoFiltroWebDialog extends StatefulWidget {
-  const _PeriodoFiltroWebDialog({
-    required this.dataInicio,
-    required this.dataFim,
-    required this.formatarData,
+class _FiltroMultiSelectDropdown extends StatefulWidget {
+  const _FiltroMultiSelectDropdown({
+    required this.width,
+    required this.label,
+    required this.displayValue,
+    required this.tooltip,
+    required this.icon,
+    required this.selectedKeys,
+    required this.allLabel,
+    required this.itemIcon,
+    required this.options,
+    required this.onChanged,
   });
 
-  final DateTime? dataInicio;
-  final DateTime? dataFim;
-  final String Function(DateTime?) formatarData;
+  final double width;
+  final String label;
+  final String displayValue;
+  final String tooltip;
+  final IconData icon;
+  final Set<String> selectedKeys;
+  final String allLabel;
+  final IconData itemIcon;
+  final List<_FiltroMultiSelectOption> options;
+  final ValueChanged<Set<String>> onChanged;
 
   @override
-  State<_PeriodoFiltroWebDialog> createState() =>
-      _PeriodoFiltroWebDialogState();
+  State<_FiltroMultiSelectDropdown> createState() =>
+      _FiltroMultiSelectDropdownState();
 }
 
-class _PeriodoFiltroWebDialogState extends State<_PeriodoFiltroWebDialog> {
-  late DateTime? _inicio = widget.dataInicio;
-  late DateTime? _fim = widget.dataFim;
-  late final TextEditingController _inicioController = TextEditingController(
-    text: _inicio == null ? '' : widget.formatarData(_inicio),
-  );
-  late final TextEditingController _fimController = TextEditingController(
-    text: _fim == null ? '' : widget.formatarData(_fim),
-  );
-  String? _erro;
+class _FiltroMultiSelectDropdownState
+    extends State<_FiltroMultiSelectDropdown> {
+  final GlobalKey _fieldKey = GlobalKey();
+  bool _opened = false;
+  bool _hovered = false;
 
-  @override
-  void dispose() {
-    _inicioController.dispose();
-    _fimController.dispose();
-    super.dispose();
+  Future<void> _openMenu() async {
+    final BuildContext? fieldContext = _fieldKey.currentContext;
+    if (fieldContext == null) return;
+    final RenderBox? renderBox = fieldContext.findRenderObject() as RenderBox?;
+    final RenderBox? overlay =
+        Navigator.of(context).overlay?.context.findRenderObject() as RenderBox?;
+    if (renderBox == null || overlay == null) return;
+
+    final Offset offset = renderBox.localToGlobal(
+      Offset.zero,
+      ancestor: overlay,
+    );
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    setState(() => _opened = true);
+    final Set<String>? selected = await showMenu<Set<String>>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(
+          offset.dx,
+          offset.dy + renderBox.size.height + 8,
+          renderBox.size.width,
+          renderBox.size.height,
+        ),
+        Offset.zero & overlay.size,
+      ),
+      constraints: BoxConstraints(
+        minWidth: renderBox.size.width,
+        maxWidth: renderBox.size.width < 340 ? 340 : renderBox.size.width,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: tokens.cardBorder),
+      ),
+      elevation: 12,
+      color: tokens.menuBackground,
+      items: <PopupMenuEntry<Set<String>>>[
+        _FiltroMultiSelectMenuEntry(
+          title: widget.label,
+          titleIcon: widget.icon,
+          allLabel: widget.allLabel,
+          itemIcon: widget.itemIcon,
+          options: widget.options,
+          selectedKeys: widget.selectedKeys,
+        ),
+      ],
+    );
+
+    if (!mounted) return;
+    setState(() => _opened = false);
+    if (selected != null && !_sameStringSets(selected, widget.selectedKeys)) {
+      widget.onChanged(selected);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = WebThemeTokens.of(context);
-    final now = DateTime.now();
-    return AlertDialog(
-      title: const Text('Filtrar por data'),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 460),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              'Use a data de atualização do atendimento.',
-              style: TextStyle(color: tokens.secondaryText),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: _dateInput(
-                    theme,
-                    controller: _inicioController,
-                    label: 'Início',
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool active = widget.selectedKeys.isNotEmpty;
+    final bool emphasized = _opened || _hovered || active;
+    return SizedBox(
+      key: _fieldKey,
+      width: widget.width,
+      child: Semantics(
+        button: true,
+        label: widget.tooltip,
+        value: widget.displayValue,
+        child: Tooltip(
+          message: widget.tooltip,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            onEnter: (_) => setState(() => _hovered = true),
+            onExit: (_) => setState(() => _hovered = false),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: _openMenu,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  curve: Curves.easeOutCubic,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        emphasized
+                            ? tokens.hoverBackground
+                            : tokens.inputBackground,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color:
+                          _opened
+                              ? tokens.selectedBorder
+                              : active
+                              ? tokens.selectedBorder
+                              : _hovered
+                              ? tokens.selectedBorder.withValues(alpha: 0.52)
+                              : tokens.cardBorder,
+                      width: _opened ? 1.4 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Icon(widget.icon, color: tokens.info, size: 19),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              widget.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: tokens.mutedText,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              widget.displayValue,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: tokens.primaryText,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      AnimatedRotation(
+                        turns: _opened ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 160),
+                        curve: Curves.easeOutCubic,
+                        child: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: tokens.secondaryText,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FiltroMultiSelectMenuEntry extends PopupMenuEntry<Set<String>> {
+  const _FiltroMultiSelectMenuEntry({
+    required this.title,
+    required this.titleIcon,
+    required this.allLabel,
+    required this.itemIcon,
+    required this.options,
+    required this.selectedKeys,
+  });
+
+  final String title;
+  final IconData titleIcon;
+  final String allLabel;
+  final IconData itemIcon;
+  final List<_FiltroMultiSelectOption> options;
+  final Set<String> selectedKeys;
+
+  @override
+  double get height {
+    final int itemCount = options.length + 1;
+    final double computed = 118 + (itemCount * 48);
+    if (computed < 218) return 218;
+    if (computed > 440) return 440;
+    return computed;
+  }
+
+  @override
+  bool represents(Set<String>? value) => false;
+
+  @override
+  State<_FiltroMultiSelectMenuEntry> createState() =>
+      _FiltroMultiSelectMenuEntryState();
+}
+
+class _FiltroMultiSelectMenuEntryState
+    extends State<_FiltroMultiSelectMenuEntry> {
+  late final Set<String> _selection;
+
+  @override
+  void initState() {
+    super.initState();
+    _selection = Set<String>.from(widget.selectedKeys);
+  }
+
+  void _toggle(String value) {
+    setState(() {
+      if (_selection.contains(value)) {
+        _selection.remove(value);
+      } else {
+        _selection.add(value);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final String selectionText =
+        _selection.isEmpty
+            ? context.t('common.all', fallback: 'Todos')
+            : context
+                .t(
+                  'atendimentoTecnico.filters.multiSelected',
+                  fallback: '{count} selecionados',
+                )
+                .replaceAll('{count}', _selection.length.toString());
+
+    return SizedBox(
+      height: widget.height,
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Icon(widget.titleIcon, color: tokens.info, size: 18),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: _dateInput(
-                    theme,
-                    controller: _fimController,
-                    label: 'Fim',
+                  child: Text(
+                    widget.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: tokens.primaryText,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: tokens.info.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    selectionText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: tokens.info,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
             ),
-            if (_erro != null) ...<Widget>[
-              const SizedBox(height: 8),
-              Text(
-                _erro!,
-                style: TextStyle(
-                  color: tokens.danger,
-                  fontWeight: FontWeight.w700,
+            const SizedBox(height: 8),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: <Widget>[
+                    _FiltroMultiSelectMenuTile(
+                      label: widget.allLabel,
+                      icon: Icons.select_all_rounded,
+                      selected: _selection.isEmpty,
+                      onTap: () => setState(_selection.clear),
+                    ),
+                    const SizedBox(height: 4),
+                    ...widget.options.map(
+                      (option) => _FiltroMultiSelectMenuTile(
+                        label: option.label,
+                        icon: widget.itemIcon,
+                        count: option.count,
+                        selected: _selection.contains(option.key),
+                        onTap: () => _toggle(option.key),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
-                ActionChip(
-                  label: const Text('Hoje'),
-                  onPressed: () => _setPeriodo(now, now),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(null),
+                  child: Text(context.t('common.cancel', fallback: 'Cancelar')),
                 ),
-                ActionChip(
-                  label: const Text('Últimos 7 dias'),
-                  onPressed:
-                      () => _setPeriodo(
-                        now.subtract(const Duration(days: 6)),
-                        now,
-                      ),
+                const SizedBox(width: 4),
+                TextButton(
+                  onPressed: () => setState(_selection.clear),
+                  child: Text(context.t('common.clear', fallback: 'Limpar')),
                 ),
-                ActionChip(
-                  label: const Text('Próximos 7 dias'),
+                const SizedBox(width: 8),
+                FilledButton(
                   onPressed:
-                      () => _setPeriodo(now, now.add(const Duration(days: 6))),
-                ),
-                ActionChip(
-                  label: const Text('Vencidos'),
-                  onPressed:
-                      () =>
-                          _setPeriodoAte(now.subtract(const Duration(days: 1))),
-                ),
-                ActionChip(
-                  label: const Text('Últimos 30 dias'),
-                  onPressed:
-                      () => _setPeriodo(
-                        now.subtract(const Duration(days: 29)),
-                        now,
-                      ),
-                ),
-                ActionChip(
-                  label: const Text('Este mês'),
-                  onPressed:
-                      () => _setPeriodo(DateTime(now.year, now.month), now),
+                      () => Navigator.of(
+                        context,
+                      ).pop(Set<String>.from(_selection)),
+                  child: Text(context.t('common.apply', fallback: 'Aplicar')),
                 ),
               ],
             ),
           ],
         ),
       ),
-      actions: <Widget>[
-        TextButton(
-          onPressed:
-              () => Navigator.of(
-                context,
-              ).pop(const _PeriodoFiltro(dataInicio: null, dataFim: null)),
-          child: const Text('Limpar'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton.icon(
-          onPressed: _aplicar,
-          icon: const Icon(Icons.check_rounded),
-          label: const Text('Aplicar'),
-        ),
-      ],
     );
-  }
-
-  Widget _dateInput(
-    ThemeData theme, {
-    required TextEditingController controller,
-    required String label,
-  }) {
-    final tokens = WebThemeTokens.of(context);
-    return TextField(
-      controller: controller,
-      keyboardType: TextInputType.datetime,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: 'dd/mm/aaaa',
-        prefixIcon: Icon(Icons.event_outlined, color: tokens.info),
-        filled: true,
-        fillColor: tokens.inputBackground,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: tokens.cardBorder),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
-        ),
-      ),
-      onSubmitted: (_) => _aplicar(),
-    );
-  }
-
-  void _aplicar() {
-    final inicio = _parseData(_inicioController.text);
-    final fim = _parseData(_fimController.text);
-
-    if (inicio == null && _inicioController.text.trim().isNotEmpty) {
-      setState(() => _erro = 'Informe a data inicial em um formato válido.');
-      return;
-    }
-    if (fim == null && _fimController.text.trim().isNotEmpty) {
-      setState(() => _erro = 'Informe a data final em um formato válido.');
-      return;
-    }
-    if (inicio != null && fim != null && fim.isBefore(inicio)) {
-      setState(() => _erro = 'A data final não pode ser anterior à inicial.');
-      return;
-    }
-
-    Navigator.of(context).pop(_PeriodoFiltro(dataInicio: inicio, dataFim: fim));
-  }
-
-  DateTime? _parseData(String value) {
-    final text = value.trim();
-    if (text.isEmpty) return null;
-    final iso = RegExp(r'^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$').firstMatch(text);
-    if (iso != null) {
-      return _validDate(
-        int.parse(iso.group(1)!),
-        int.parse(iso.group(2)!),
-        int.parse(iso.group(3)!),
-      );
-    }
-
-    final local = RegExp(
-      r'^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$',
-    ).firstMatch(text);
-    if (local == null) return null;
-
-    final first = int.parse(local.group(1)!);
-    final second = int.parse(local.group(2)!);
-    final rawYear = int.parse(local.group(3)!);
-    final year = rawYear < 100 ? rawYear + 2000 : rawYear;
-
-    if (first > 12) return _validDate(year, second, first);
-    if (second > 12) return _validDate(year, first, second);
-    return _validDate(year, second, first);
-  }
-
-  DateTime? _validDate(int year, int month, int day) {
-    if (year < 2000 || year > DateTime.now().year + 5) return null;
-    final date = DateTime(year, month, day);
-    if (date.year != year || date.month != month || date.day != day) {
-      return null;
-    }
-    return date;
-  }
-
-  void _setPeriodo(DateTime inicio, DateTime fim) {
-    setState(() {
-      _inicio = DateTime(inicio.year, inicio.month, inicio.day);
-      _fim = DateTime(fim.year, fim.month, fim.day);
-      _inicioController.text = widget.formatarData(_inicio);
-      _fimController.text = widget.formatarData(_fim);
-      _erro = null;
-    });
-  }
-
-  void _setPeriodoAte(DateTime fim) {
-    setState(() {
-      _inicio = null;
-      _fim = DateTime(fim.year, fim.month, fim.day);
-      _inicioController.clear();
-      _fimController.text = widget.formatarData(_fim);
-      _erro = null;
-    });
   }
 }
 
-class _PeriodoFiltro {
-  const _PeriodoFiltro({required this.dataInicio, required this.dataFim});
+class _FiltroMultiSelectMenuTile extends StatelessWidget {
+  const _FiltroMultiSelectMenuTile({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+    this.count,
+  });
 
-  final DateTime? dataInicio;
-  final DateTime? dataFim;
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+  final int? count;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          decoration: BoxDecoration(
+            color: selected ? tokens.selectedBackground : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: selected ? Border.all(color: tokens.selectedBorder) : null,
+          ),
+          child: Row(
+            children: <Widget>[
+              Icon(
+                selected ? Icons.check_circle_rounded : icon,
+                size: 18,
+                color: selected ? tokens.info : tokens.secondaryText,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: selected ? tokens.info : tokens.primaryText,
+                    fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (count != null) ...<Widget>[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: tokens.surfaceMuted,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: tokens.cardBorder),
+                  ),
+                  child: Text(
+                    count.toString(),
+                    style: TextStyle(
+                      color: tokens.secondaryText,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FiltroMultiSelectOption {
+  const _FiltroMultiSelectOption({
+    required this.key,
+    required this.label,
+    this.count,
+  });
+
+  final String key;
+  final String label;
+  final int? count;
+}
+
+bool _sameStringSets(Set<String> first, Set<String> second) {
+  return first.length == second.length && first.containsAll(second);
 }
 
 class _TecnicoFiltroDropdown extends StatefulWidget {
@@ -5061,203 +5364,6 @@ class _TecnicoFiltroMenuItem extends StatelessWidget {
             child: Icon(Icons.check_rounded, size: 18, color: tokens.info),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StatusFiltroDropdown extends StatefulWidget {
-  const _StatusFiltroDropdown({
-    required this.width,
-    required this.label,
-    required this.displayValue,
-    required this.tooltip,
-    required this.selectedKey,
-    required this.todosKey,
-    required this.total,
-    required this.options,
-    required this.onChanged,
-  });
-
-  final double width;
-  final String label;
-  final String displayValue;
-  final String tooltip;
-  final String? selectedKey;
-  final String todosKey;
-  final int total;
-  final List<_StatusFiltroOption> options;
-  final ValueChanged<String> onChanged;
-
-  @override
-  State<_StatusFiltroDropdown> createState() => _StatusFiltroDropdownState();
-}
-
-class _StatusFiltroDropdownState extends State<_StatusFiltroDropdown> {
-  final GlobalKey _fieldKey = GlobalKey();
-  bool _opened = false;
-  bool _hovered = false;
-
-  Future<void> _openMenu() async {
-    final fieldContext = _fieldKey.currentContext;
-    if (fieldContext == null) return;
-    final renderBox = fieldContext.findRenderObject() as RenderBox?;
-    final overlay =
-        Navigator.of(context).overlay?.context.findRenderObject() as RenderBox?;
-    if (renderBox == null || overlay == null) return;
-
-    final offset = renderBox.localToGlobal(Offset.zero, ancestor: overlay);
-    final position = RelativeRect.fromRect(
-      Rect.fromLTWH(
-        offset.dx,
-        offset.dy + renderBox.size.height + 8,
-        renderBox.size.width,
-        renderBox.size.height,
-      ),
-      Offset.zero & overlay.size,
-    );
-    final tokens = WebThemeTokens.of(context);
-
-    setState(() => _opened = true);
-    final selected = await showMenu<String>(
-      context: context,
-      position: position,
-      constraints: BoxConstraints.tightFor(width: renderBox.size.width),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      elevation: 12,
-      color: tokens.menuBackground,
-      items: <PopupMenuEntry<String>>[
-        PopupMenuItem<String>(
-          value: widget.todosKey,
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          child: _TecnicoFiltroMenuItem(
-            label: 'Todos os status (${widget.total})',
-            icon: Icons.flag_outlined,
-            selected: widget.selectedKey == null,
-            tokens: tokens,
-          ),
-        ),
-        if (widget.options.isNotEmpty) const PopupMenuDivider(height: 8),
-        ...widget.options.map(
-          (option) => PopupMenuItem<String>(
-            value: option.key,
-            height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            child: _TecnicoFiltroMenuItem(
-              label: '${option.label} (${option.count})',
-              icon: Icons.flag_outlined,
-              selected: widget.selectedKey == option.key,
-              tokens: tokens,
-            ),
-          ),
-        ),
-      ],
-    );
-
-    if (!mounted) return;
-    setState(() => _opened = false);
-    final currentKey = widget.selectedKey ?? widget.todosKey;
-    if (selected != null && selected != currentKey) widget.onChanged(selected);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = WebThemeTokens.of(context);
-    final bool active = widget.selectedKey != null;
-    final bool emphasized = _opened || _hovered || active;
-    return SizedBox(
-      key: _fieldKey,
-      width: widget.width,
-      child: Semantics(
-        button: true,
-        label: widget.tooltip,
-        value: widget.displayValue,
-        child: Tooltip(
-          message: widget.tooltip,
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            onEnter: (_) => setState(() => _hovered = true),
-            onExit: (_) => setState(() => _hovered = false),
-            child: Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: _openMenu,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  curve: Curves.easeOutCubic,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 13,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        emphasized
-                            ? tokens.hoverBackground
-                            : tokens.inputBackground,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color:
-                          _opened
-                              ? tokens.selectedBorder
-                              : active
-                              ? tokens.selectedBorder
-                              : _hovered
-                              ? tokens.selectedBorder.withValues(alpha: 0.52)
-                              : tokens.cardBorder,
-                      width: _opened ? 1.4 : 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: <Widget>[
-                      Icon(Icons.flag_outlined, color: tokens.info, size: 19),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              widget.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: tokens.mutedText,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              widget.displayValue,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: tokens.primaryText,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      AnimatedRotation(
-                        turns: _opened ? 0.5 : 0,
-                        duration: const Duration(milliseconds: 160),
-                        curve: Curves.easeOutCubic,
-                        child: Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          color: tokens.secondaryText,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

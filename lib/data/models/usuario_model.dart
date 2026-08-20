@@ -692,6 +692,8 @@ class AtendimentosCriadosFiltrosWebPreferencia {
     this.busca = '',
     this.dataInicio,
     this.dataFim,
+    this.tecnicoKeys = const <String>[],
+    this.statusKeys = const <String>[],
     this.tecnicoKey,
     this.statusKey,
     this.statusPagamento = AtendimentosCriadosStatusPagamentoFiltro.todos,
@@ -700,9 +702,31 @@ class AtendimentosCriadosFiltrosWebPreferencia {
   final String busca;
   final DateTime? dataInicio;
   final DateTime? dataFim;
+  final List<String> tecnicoKeys;
+  final List<String> statusKeys;
   final String? tecnicoKey;
   final String? statusKey;
   final AtendimentosCriadosStatusPagamentoFiltro statusPagamento;
+
+  List<String> get tecnicoKeysSelecionadas {
+    final List<String> keys =
+        PreferenciasIndividuaisDoUsuarioModel._normalizarListaDeStrings(
+          tecnicoKeys,
+        );
+    if (keys.isNotEmpty) return keys;
+    final String? key = _nullableStringFromJson(tecnicoKey);
+    return key == null ? const <String>[] : <String>[key];
+  }
+
+  List<String> get statusKeysSelecionadas {
+    final List<String> keys =
+        PreferenciasIndividuaisDoUsuarioModel._normalizarListaDeStrings(
+          statusKeys,
+        );
+    if (keys.isNotEmpty) return keys;
+    final String? key = _nullableStringFromJson(statusKey);
+    return key == null ? const <String>[] : <String>[key];
+  }
 
   factory AtendimentosCriadosFiltrosWebPreferencia.vazia() {
     return const AtendimentosCriadosFiltrosWebPreferencia();
@@ -717,6 +741,14 @@ class AtendimentosCriadosFiltrosWebPreferencia {
       busca: json['busca']?.toString().trim() ?? '',
       dataInicio: _dateFromJson(json['dataInicio']),
       dataFim: _dateFromJson(json['dataFim']),
+      tecnicoKeys:
+          PreferenciasIndividuaisDoUsuarioModel._normalizarListaDeStrings(
+            json['tecnicoKeys'],
+          ),
+      statusKeys:
+          PreferenciasIndividuaisDoUsuarioModel._normalizarListaDeStrings(
+            json['statusKeys'],
+          ),
       tecnicoKey: _nullableStringFromJson(json['tecnicoKey']),
       statusKey: _nullableStringFromJson(json['statusKey']),
       statusPagamento: AtendimentosCriadosStatusPagamentoFiltroApi.fromCodigo(
@@ -727,13 +759,14 @@ class AtendimentosCriadosFiltrosWebPreferencia {
   }
 
   Map<String, dynamic> toJson() {
+    final List<String> tecnicos = tecnicoKeysSelecionadas;
+    final List<String> status = statusKeysSelecionadas;
     return <String, dynamic>{
       if (busca.trim().isNotEmpty) 'busca': busca.trim(),
       if (dataInicio != null) 'dataInicio': _dateToJson(dataInicio!),
       if (dataFim != null) 'dataFim': _dateToJson(dataFim!),
-      if ((tecnicoKey ?? '').trim().isNotEmpty)
-        'tecnicoKey': tecnicoKey!.trim(),
-      if ((statusKey ?? '').trim().isNotEmpty) 'statusKey': statusKey!.trim(),
+      if (tecnicos.isNotEmpty) 'tecnicoKeys': tecnicos,
+      if (status.isNotEmpty) 'statusKeys': status,
       if (statusPagamento != AtendimentosCriadosStatusPagamentoFiltro.todos)
         'statusPagamento': statusPagamento.codigo,
     };
