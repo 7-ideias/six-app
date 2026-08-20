@@ -96,6 +96,8 @@ void main() {
       expect(filtros.dataFim, DateTime(2026, 8, 9));
       expect(filtros.tecnicoKey, 'tecnico-1');
       expect(filtros.statusKey, 'id:3');
+      expect(filtros.tecnicoKeysSelecionadas, <String>['tecnico-1']);
+      expect(filtros.statusKeysSelecionadas, <String>['id:3']);
       expect(
         filtros.statusPagamento,
         AtendimentosCriadosStatusPagamentoFiltro.emAberto,
@@ -104,8 +106,8 @@ void main() {
         'busca': 'cliente teste',
         'dataInicio': '2026-08-01',
         'dataFim': '2026-08-09',
-        'tecnicoKey': 'tecnico-1',
-        'statusKey': 'id:3',
+        'tecnicoKeys': <String>['tecnico-1'],
+        'statusKeys': <String>['id:3'],
         'statusPagamento': 'EM_ABERTO',
       });
       expect(
@@ -114,6 +116,32 @@ void main() {
         ).atendimentosCriadosFiltrosWeb.toJson(),
         isEmpty,
       );
+    });
+
+    test('mantem multiplos filtros web de atendimentos criados', () {
+      final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+        const <String, dynamic>{
+          'atendimentosCriadosFiltrosWeb': <String, dynamic>{
+            'tecnicoKeys': <String>['tecnico-1', 'tecnico-2'],
+            'statusKeys': <String>['id:3', 'codigo:REPAIRING'],
+          },
+        },
+      );
+
+      final filtros = preferencias.atendimentosCriadosFiltrosWeb;
+
+      expect(filtros.tecnicoKeysSelecionadas, <String>[
+        'tecnico-1',
+        'tecnico-2',
+      ]);
+      expect(filtros.statusKeysSelecionadas, <String>[
+        'id:3',
+        'codigo:REPAIRING',
+      ]);
+      expect(filtros.toJson(), <String, dynamic>{
+        'tecnicoKeys': <String>['tecnico-1', 'tecnico-2'],
+        'statusKeys': <String>['id:3', 'codigo:REPAIRING'],
+      });
     });
 
     test('serializa e desserializa filtros mobile de atendimentos criados', () {

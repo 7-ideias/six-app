@@ -1292,6 +1292,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       context: context,
       permitirSelecaoMultipla: true,
       tipoInicial: tipoInicial,
+      apenasAtivosNoBackend: true,
       widthFactor: 0.80,
       heightFactor: 0.80,
       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),

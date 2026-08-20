@@ -379,6 +379,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     (_) => ProdutolistMobileScreen(
                       isSelecao: true,
                       permitirSelecaoMultipla: true,
+                      apenasAtivosNoBackend: true,
                     ),
               ),
             );

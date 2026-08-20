@@ -25,12 +25,14 @@ class ProdutolistMobileScreen extends StatefulWidget {
     this.isSelecao = false,
     this.permitirSelecaoMultipla = false,
     this.tipoInicial = 'PRODUTO',
+    this.apenasAtivosNoBackend = false,
     this.produtoService,
   });
 
   final bool isSelecao;
   final bool permitirSelecaoMultipla;
   final String tipoInicial;
+  final bool apenasAtivosNoBackend;
   final ProdutoService? produtoService;
 
   @override
@@ -212,6 +214,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     await ProdutoHelper.retornarProdutosList(
       context,
       tipo: tipoSelecionado,
+      produtosAtivos: widget.apenasAtivosNoBackend ? true : null,
       onSucesso: atualizarListaComProvider,
     );
   }
