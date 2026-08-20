@@ -50,7 +50,8 @@ class WebRootL10n {
 
   /// Lista de objetos para [key] (vazia se ausente).
   List<Map<String, dynamic>> _objects(String key) =>
-      WebI18nStore.instance.objectList(_code, key) ?? const <Map<String, dynamic>>[];
+      WebI18nStore.instance.objectList(_code, key) ??
+      const <Map<String, dynamic>>[];
 
   // ── Desktop header ────────────────────────────────────────────────────────
   String get navHome => _s('navHome');
@@ -128,15 +129,17 @@ class WebRootL10n {
   >
   get plans {
     final result =
-        <({
-          String name,
-          String price,
-          String cadence,
-          String pitch,
-          List<String> features,
-          String cta,
-          bool featured,
-        })>[];
+        <
+          ({
+            String name,
+            String price,
+            String cadence,
+            String pitch,
+            List<String> features,
+            String cta,
+            bool featured,
+          })
+        >[];
     for (final item in _objects('plans')) {
       final name = item['name'];
       final price = item['price'];
@@ -313,26 +316,26 @@ class WebRootL10n {
       'checkoutCardCountryValue': 'Brasil',
       'checkoutCardFinePrint':
           'Ao informar os dados do cartão, você autoriza a Six POS Ltda. a '
-              'cobrar pagamentos futuros de acordo com os termos do plano.',
+          'cobrar pagamentos futuros de acordo com os termos do plano.',
       'checkoutPixTitle': 'Pague em segundos com Pix',
       'checkoutPixBody':
           'Ao confirmar, geramos um QR Code e o código copia e cola. A '
-              'liberação do acesso é imediata após a aprovação.',
+          'liberação do acesso é imediata após a aprovação.',
       'checkoutBoletoTitle': 'Boleto bancário',
       'checkoutBoletoBody':
           'O boleto vence em 3 dias úteis. A confirmação do pagamento pode '
-              'levar até 2 dias úteis para liberar o acesso.',
+          'levar até 2 dias úteis para liberar o acesso.',
       'checkoutLegal':
           'Cancele quando quiser nas configurações da conta, ao menos um dia '
-              'antes de cada renovação. O plano é renovado automaticamente até '
-              'o cancelamento. Ao clicar em "Confirmar e assinar" você concorda '
-              'com os {terms} e autoriza esta cobrança recorrente.',
+          'antes de cada renovação. O plano é renovado automaticamente até '
+          'o cancelamento. Ao clicar em "Confirmar e assinar" você concorda '
+          'com os {terms} e autoriza esta cobrança recorrente.',
       'checkoutTermsLink': 'Termos de Uso',
       'checkoutSubmit': 'Confirmar e assinar',
       'checkoutPlanDetails': 'Detalhes do plano',
       'checkoutSubscriptionName': 'Assinatura Six POS',
       'checkoutRenewPrefix': 'Renova em',
-      'checkoutTotalToday': 'Total a pagar hoje (BRL)',
+      'checkoutTotalToday': 'Total a pagar hoje',
       'checkoutSecure': 'Pagamento seguro e criptografado',
       'checkoutRequired': 'Preencha os dados do cartão.',
       'checkoutSimulatedTitle': 'Checkout simulado',
@@ -356,26 +359,26 @@ class WebRootL10n {
       'checkoutCardCountryValue': 'Brazil',
       'checkoutCardFinePrint':
           'By entering your card details, you authorize Six POS Ltda. to '
-              'charge future payments according to the plan terms.',
+          'charge future payments according to the plan terms.',
       'checkoutPixTitle': 'Pay in seconds with Pix',
       'checkoutPixBody':
           'On confirmation, we generate a QR Code and a copy-and-paste code. '
-              'Access is released immediately after approval.',
+          'Access is released immediately after approval.',
       'checkoutBoletoTitle': 'Bank slip (Boleto)',
       'checkoutBoletoBody':
           'The boleto is due in 3 business days. Payment confirmation can take '
-              'up to 2 business days to release access.',
+          'up to 2 business days to release access.',
       'checkoutLegal':
           'Cancel anytime in your account settings, at least one day before '
-              'each renewal. The plan renews automatically until canceled. By '
-              'clicking "Confirm and subscribe" you agree to the {terms} and '
-              'authorize this recurring charge.',
+          'each renewal. The plan renews automatically until canceled. By '
+          'clicking "Confirm and subscribe" you agree to the {terms} and '
+          'authorize this recurring charge.',
       'checkoutTermsLink': 'Terms of Use',
       'checkoutSubmit': 'Confirm and subscribe',
       'checkoutPlanDetails': 'Plan details',
       'checkoutSubscriptionName': 'Six POS subscription',
       'checkoutRenewPrefix': 'Renews on',
-      'checkoutTotalToday': 'Total due today (BRL)',
+      'checkoutTotalToday': 'Total due today',
       'checkoutSecure': 'Secure, encrypted payment',
       'checkoutRequired': 'Please fill in the card details.',
       'checkoutSimulatedTitle': 'Simulated checkout',
@@ -399,26 +402,26 @@ class WebRootL10n {
       'checkoutCardCountryValue': 'Brasil',
       'checkoutCardFinePrint':
           'Al introducir los datos de la tarjeta, autorizas a Six POS Ltda. a '
-              'cobrar pagos futuros de acuerdo con los términos del plan.',
+          'cobrar pagos futuros de acuerdo con los términos del plan.',
       'checkoutPixTitle': 'Paga en segundos con Pix',
       'checkoutPixBody':
           'Al confirmar, generamos un código QR y el código de copiar y pegar. '
-              'El acceso se libera de inmediato tras la aprobación.',
+          'El acceso se libera de inmediato tras la aprobación.',
       'checkoutBoletoTitle': 'Boleto bancario',
       'checkoutBoletoBody':
           'El boleto vence en 3 días hábiles. La confirmación del pago puede '
-              'tardar hasta 2 días hábiles en liberar el acceso.',
+          'tardar hasta 2 días hábiles en liberar el acceso.',
       'checkoutLegal':
           'Cancela cuando quieras en la configuración de la cuenta, al menos un '
-              'día antes de cada renovación. El plan se renueva automáticamente '
-              'hasta su cancelación. Al hacer clic en "Confirmar y suscribir" '
-              'aceptas los {terms} y autorizas este cobro recurrente.',
+          'día antes de cada renovación. El plan se renueva automáticamente '
+          'hasta su cancelación. Al hacer clic en "Confirmar y suscribir" '
+          'aceptas los {terms} y autorizas este cobro recurrente.',
       'checkoutTermsLink': 'Términos de Uso',
       'checkoutSubmit': 'Confirmar y suscribir',
       'checkoutPlanDetails': 'Detalles del plan',
       'checkoutSubscriptionName': 'Suscripción Six POS',
       'checkoutRenewPrefix': 'Se renueva el',
-      'checkoutTotalToday': 'Total a pagar hoy (BRL)',
+      'checkoutTotalToday': 'Total a pagar hoy',
       'checkoutSecure': 'Pago seguro y cifrado',
       'checkoutRequired': 'Completa los datos de la tarjeta.',
       'checkoutSimulatedTitle': 'Checkout simulado',

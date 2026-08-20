@@ -220,7 +220,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.descendant(of: summaryCard, matching: find.text('BRL 1.260,00')),
+          find.descendant(of: summaryCard, matching: find.text('R\$ 1.260,00')),
           findsOneWidget,
         );
         expect(find.text('Total exibido'), findsNothing);
@@ -443,7 +443,7 @@ void main() {
         expect(
           find.descendant(
             of: searchSummaryCard,
-            matching: find.text('BRL 180,00'),
+            matching: find.text('R\$ 180,00'),
           ),
           findsOneWidget,
         );
@@ -677,7 +677,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.descendant(of: summaryCard, matching: find.text('BRL 1.260,00')),
+          find.descendant(of: summaryCard, matching: find.text('R\$ 1.260,00')),
           findsOneWidget,
         );
         expect(find.text('Total exibido'), findsNothing);

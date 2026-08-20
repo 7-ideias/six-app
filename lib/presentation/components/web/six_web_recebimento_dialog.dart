@@ -78,15 +78,16 @@ class SixWebRecebimentoDialog extends StatefulWidget {
     return showDialog<SixWebRecebimentoResultado>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => SixWebRecebimentoDialog(
-        titulo: titulo,
-        descricao: descricao,
-        valorAberto: valorAberto,
-        contato: contato,
-        permitirParcial: permitirParcial,
-        observacaoInicial: observacaoInicial,
-        codigoTipoInicial: codigoTipoInicial,
-      ),
+      builder:
+          (_) => SixWebRecebimentoDialog(
+            titulo: titulo,
+            descricao: descricao,
+            valorAberto: valorAberto,
+            contato: contato,
+            permitirParcial: permitirParcial,
+            observacaoInicial: observacaoInicial,
+            codigoTipoInicial: codigoTipoInicial,
+          ),
     );
   }
 
@@ -165,8 +166,8 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
 
   Future<void> _carregarTipos() async {
     try {
-      final InformacoesBasicasCaixaResponse informacoes = await _caixaApiClient
-          .getInformacoesBasicasDoCaixa();
+      final InformacoesBasicasCaixaResponse informacoes =
+          await _caixaApiClient.getInformacoesBasicasDoCaixa();
       final List<SixWebTipoRecebimentoOpcao> opcoes = _montarOpcoes(
         informacoes.tiposRecebimento,
       );
@@ -205,9 +206,10 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
       final String codigo = tipo.codigoTipo.trim().toLowerCase();
       final String? backend = _formaPagamentoBackendPorCodigo(codigo);
       if (backend == null) continue;
-      final String descricao = tipo.descricaoExibicao.trim().isNotEmpty
-          ? tipo.descricaoExibicao.trim()
-          : _descricaoPadraoPorBackend(backend);
+      final String descricao =
+          tipo.descricaoExibicao.trim().isNotEmpty
+              ? tipo.descricaoExibicao.trim()
+              : _descricaoPadraoPorBackend(backend);
       if (descricao.isEmpty) continue;
       if (opcoes.any(
         (SixWebTipoRecebimentoOpcao opcao) => opcao.codigoTipo == codigo,
@@ -265,21 +267,23 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
     for (final _RecebimentoFormaDraft forma in _formas) {
       if (!codigos.add(forma.opcao.codigoTipo)) {
         setState(
-          () => _erroValor = context.t(
-            'recebimento.erroFormaDuplicada',
-            fallback:
-                'Cada forma de recebimento pode ser usada apenas uma vez.',
-          ),
+          () =>
+              _erroValor = context.t(
+                'recebimento.erroFormaDuplicada',
+                fallback:
+                    'Cada forma de recebimento pode ser usada apenas uma vez.',
+              ),
         );
         return;
       }
       final double valorForma = _parseValor(forma.controller.text);
       if (valorForma <= 0) {
         setState(
-          () => _erroValor = context.t(
-            'recebimento.erroValoresMaioresQueZero',
-            fallback: 'Informe valores maiores que zero.',
-          ),
+          () =>
+              _erroValor = context.t(
+                'recebimento.erroValoresMaioresQueZero',
+                fallback: 'Informe valores maiores que zero.',
+              ),
         );
         return;
       }
@@ -298,29 +302,32 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
     );
     if (valor <= 0) {
       setState(
-        () => _erroValor = context.t(
-          'recebimento.erroValorMaiorQueZero',
-          fallback: 'Informe um valor maior que zero.',
-        ),
+        () =>
+            _erroValor = context.t(
+              'recebimento.erroValorMaiorQueZero',
+              fallback: 'Informe um valor maior que zero.',
+            ),
       );
       return;
     }
     if (_tipo == SixWebRecebimentoTipo.parcial && valor >= widget.valorAberto) {
       setState(
-        () => _erroValor = context.t(
-          'recebimento.erroParcialMenorQueAberto',
-          fallback: 'Para parcial, informe um valor menor que o aberto.',
-        ),
+        () =>
+            _erroValor = context.t(
+              'recebimento.erroParcialMenorQueAberto',
+              fallback: 'Para parcial, informe um valor menor que o aberto.',
+            ),
       );
       return;
     }
     if (_tipo == SixWebRecebimentoTipo.total &&
         (valor - widget.valorAberto).abs() > 0.009) {
       setState(
-        () => _erroValor = context.t(
-          'recebimento.erroTotalIgualSaldo',
-          fallback: 'Para total, o valor precisa quitar o saldo em aberto.',
-        ),
+        () =>
+            _erroValor = context.t(
+              'recebimento.erroTotalIgualSaldo',
+              fallback: 'Para total, o valor precisa quitar o saldo em aberto.',
+            ),
       );
       return;
     }
@@ -334,9 +341,10 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
         descricaoTipoRecebimento: primeiraForma.opcao.descricao,
         formaPagamentoBackend: primeiraForma.opcao.formaPagamentoBackend,
         recebimentos: recebimentos,
-        observacao: _observacaoController.text.trim().isEmpty
-            ? null
-            : _observacaoController.text.trim(),
+        observacao:
+            _observacaoController.text.trim().isEmpty
+                ? null
+                : _observacaoController.text.trim(),
       ),
     );
   }
@@ -500,13 +508,13 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
               label: Text(
                 _tipo == SixWebRecebimentoTipo.total
                     ? context.t(
-                        'recebimento.receberTotal',
-                        fallback: 'Receber total',
-                      )
+                      'recebimento.receberTotal',
+                      fallback: 'Receber total',
+                    )
                     : context.t(
-                        'recebimento.receberParcial',
-                        fallback: 'Receber parcial',
-                      ),
+                      'recebimento.receberParcial',
+                      fallback: 'Receber parcial',
+                    ),
               ),
             ),
           ],
@@ -613,10 +621,11 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
 
   Widget _formaRecebimentoCard(int index, _RecebimentoFormaDraft forma) {
     final ThemeData theme = Theme.of(context);
-    final Set<String> codigosEmUso = _formas
-        .where((_RecebimentoFormaDraft item) => !identical(item, forma))
-        .map((_RecebimentoFormaDraft item) => item.opcao.codigoTipo)
-        .toSet();
+    final Set<String> codigosEmUso =
+        _formas
+            .where((_RecebimentoFormaDraft item) => !identical(item, forma))
+            .map((_RecebimentoFormaDraft item) => item.opcao.codigoTipo)
+            .toSet();
     final List<SixWebTipoRecebimentoOpcao> opcoesDisponiveis = _opcoes
         .where(
           (SixWebTipoRecebimentoOpcao opcao) =>
@@ -650,7 +659,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
                     labelText:
                         '${context.t('recebimento.valorForma', fallback: 'Valor da forma')} ${index + 1}',
                     prefixText:
-                        '${context.read<LocaleSettingsProvider>().currencyCode} ',
+                        '${context.read<LocaleSettingsProvider>().currencySymbol} ',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -691,9 +700,10 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
   }
 
   void _adicionarForma() {
-    final Set<String> usados = _formas
-        .map((_RecebimentoFormaDraft forma) => forma.opcao.codigoTipo)
-        .toSet();
+    final Set<String> usados =
+        _formas
+            .map((_RecebimentoFormaDraft forma) => forma.opcao.codigoTipo)
+            .toSet();
     SixWebTipoRecebimentoOpcao? novaOpcao;
     for (final SixWebTipoRecebimentoOpcao opcao in _opcoes) {
       if (!usados.contains(opcao.codigoTipo)) {
@@ -737,10 +747,13 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
       valor.toStringAsFixed(2).replaceAll('.', ',');
 
   double _parseValor(String value) {
-    final String texto = value.trim().replaceAll('R\$', '').trim();
-    final String normalizado = texto.contains(',') && texto.contains('.')
-        ? texto.replaceAll('.', '').replaceAll(',', '.')
-        : texto.replaceAll(',', '.');
+    final LocaleSettingsProvider regionalizacao =
+        context.read<LocaleSettingsProvider>();
+    final String texto = regionalizacao.stripCurrencyMarkers(value);
+    final String normalizado =
+        texto.contains(',') && texto.contains('.')
+            ? texto.replaceAll('.', '').replaceAll(',', '.')
+            : texto.replaceAll(',', '.');
     return double.tryParse(normalizado) ?? 0;
   }
 
@@ -789,16 +802,12 @@ class _TipoRecebimentoDropdown extends StatefulWidget {
     required this.value,
     required this.options,
     required this.onSelected,
-    this.helperText,
-    this.enabled = true,
   });
 
   final String label;
-  final String? helperText;
   final SixWebTipoRecebimentoOpcao value;
   final List<SixWebTipoRecebimentoOpcao> options;
   final ValueChanged<SixWebTipoRecebimentoOpcao> onSelected;
-  final bool enabled;
 
   @override
   State<_TipoRecebimentoDropdown> createState() =>
@@ -810,7 +819,7 @@ class _TipoRecebimentoDropdownState extends State<_TipoRecebimentoDropdown> {
   bool _hover = false;
 
   Future<void> _showOptions() async {
-    if (!widget.enabled || widget.options.isEmpty) return;
+    if (widget.options.isEmpty) return;
     setState(() => _open = true);
 
     final RenderBox box = context.findRenderObject()! as RenderBox;
@@ -868,31 +877,29 @@ class _TipoRecebimentoDropdownState extends State<_TipoRecebimentoDropdown> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final bool active = widget.enabled && (_open || _hover);
-    final Color borderColor = active
-        ? tokens.selectedBorder
-        : tokens.cardBorder;
-    final Color backgroundColor = active
-        ? Color.alphaBlend(
-            tokens.info.withValues(alpha: 0.10),
-            tokens.surfaceElevated,
-          )
-        : tokens.inputBackground;
+    final bool active = _open || _hover;
+    final Color borderColor =
+        active ? tokens.selectedBorder : tokens.cardBorder;
+    final Color backgroundColor =
+        active
+            ? Color.alphaBlend(
+              tokens.info.withValues(alpha: 0.10),
+              tokens.surfaceElevated,
+            )
+            : tokens.inputBackground;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Semantics(
           button: true,
-          enabled: widget.enabled,
+          enabled: true,
           label: '${widget.label}: ${widget.value.descricao}',
           child: Tooltip(
             message: 'Selecionar ${widget.label}',
             waitDuration: const Duration(milliseconds: 450),
             child: MouseRegion(
-              cursor: widget.enabled
-                  ? SystemMouseCursors.click
-                  : SystemMouseCursors.basic,
+              cursor: SystemMouseCursors.click,
               onEnter: (_) => setState(() => _hover = true),
               onExit: (_) => setState(() => _hover = false),
               child: Material(
@@ -900,7 +907,7 @@ class _TipoRecebimentoDropdownState extends State<_TipoRecebimentoDropdown> {
                 borderRadius: BorderRadius.circular(18),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(18),
-                  onTap: widget.enabled ? _showOptions : null,
+                  onTap: _showOptions,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     curve: Curves.easeOutCubic,
@@ -913,15 +920,16 @@ class _TipoRecebimentoDropdownState extends State<_TipoRecebimentoDropdown> {
                       color: backgroundColor,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: borderColor),
-                      boxShadow: active
-                          ? <BoxShadow>[
-                              BoxShadow(
-                                color: tokens.info.withValues(alpha: 0.10),
-                                blurRadius: 18,
-                                offset: const Offset(0, 8),
-                              ),
-                            ]
-                          : null,
+                      boxShadow:
+                          active
+                              ? <BoxShadow>[
+                                BoxShadow(
+                                  color: tokens.info.withValues(alpha: 0.10),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ]
+                              : null,
                     ),
                     child: Row(
                       children: <Widget>[
@@ -931,9 +939,10 @@ class _TipoRecebimentoDropdownState extends State<_TipoRecebimentoDropdown> {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: active
-                                ? tokens.info.withValues(alpha: 0.16)
-                                : tokens.surfaceElevated,
+                            color:
+                                active
+                                    ? tokens.info.withValues(alpha: 0.16)
+                                    : tokens.surfaceElevated,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
@@ -977,9 +986,10 @@ class _TipoRecebimentoDropdownState extends State<_TipoRecebimentoDropdown> {
                           width: 26,
                           height: 26,
                           decoration: BoxDecoration(
-                            color: active
-                                ? tokens.info.withValues(alpha: 0.16)
-                                : tokens.surfaceMuted,
+                            color:
+                                active
+                                    ? tokens.info.withValues(alpha: 0.16)
+                                    : tokens.surfaceMuted,
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Center(
@@ -1003,18 +1013,6 @@ class _TipoRecebimentoDropdownState extends State<_TipoRecebimentoDropdown> {
             ),
           ),
         ),
-        if (widget.helperText != null) ...<Widget>[
-          const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              widget.helperText!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }

@@ -833,7 +833,7 @@ class _ClienteUsuarioCadastroMobileScreenState
     );
   }
 
-  Widget _buildCreditSection(String currencyCode) {
+  Widget _buildCreditSection(String currencySymbol) {
     return _section(
       title: _t('clientes.form.creditTitle', 'Crédito / Fiado'),
       subtitle: _t(
@@ -847,7 +847,7 @@ class _ClienteUsuarioCadastroMobileScreenState
             _limite,
             _t('clientes.form.creditLimit', 'Limite de crédito'),
             Icons.credit_score_outlined,
-            hintText: currencyCode,
+            hintText: currencySymbol,
             keyboardType: TextInputType.numberWithOptions(decimal: true),
           ),
           SizedBox(height: 14),
@@ -968,12 +968,13 @@ class _ClienteUsuarioCadastroMobileScreenState
 
   @override
   Widget build(BuildContext context) {
-    final String currencyCode = context.select<LocaleSettingsProvider, String>(
-      (LocaleSettingsProvider provider) => provider.currencyCode,
-    );
+    final String currencySymbol = context
+        .select<LocaleSettingsProvider, String>(
+          (LocaleSettingsProvider provider) => provider.currencySymbol,
+        );
     context.select<LocaleSettingsProvider, String>(
       (LocaleSettingsProvider provider) =>
-          '${provider.thousandSeparator}|${provider.decimalSeparator}|${provider.currencyCode}|${provider.decimalPlaces}',
+          '${provider.thousandSeparator}|${provider.decimalSeparator}|${provider.currencyCode}|${provider.currencySymbol}|${provider.decimalPlaces}',
     );
 
     return SixMobilePageShell(
@@ -1012,7 +1013,7 @@ class _ClienteUsuarioCadastroMobileScreenState
                 SizedBox(height: 16),
                 _staggered(3, _buildAddressSection()),
                 SizedBox(height: 16),
-                _staggered(4, _buildCreditSection(currencyCode)),
+                _staggered(4, _buildCreditSection(currencySymbol)),
                 SizedBox(height: 16),
                 _staggered(5, _buildAutoCadastroCard()),
                 SizedBox(height: 16),

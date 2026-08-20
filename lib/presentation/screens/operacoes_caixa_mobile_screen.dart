@@ -971,7 +971,7 @@ class _OperacoesCaixaMobileScreenState
             hint: _formatarDecimalDigitavel(0),
             keyboardType: TextInputType.numberWithOptions(decimal: true),
             prefixText:
-                '${context.read<LocaleSettingsProvider>().currencyCode} ',
+                '${context.read<LocaleSettingsProvider>().currencySymbol} ',
           ),
           SizedBox(height: 12),
           _readOnlyInfo(
@@ -1129,7 +1129,8 @@ class _OperacoesCaixaMobileScreenState
           controller: _valorController,
           hint: _formatarDecimalDigitavel(0),
           keyboardType: TextInputType.numberWithOptions(decimal: true),
-          prefixText: '${context.read<LocaleSettingsProvider>().currencyCode} ',
+          prefixText:
+              '${context.read<LocaleSettingsProvider>().currencySymbol} ',
         ),
         SizedBox(height: 12),
         _selectorField(
@@ -1643,7 +1644,7 @@ class _OperacoesCaixaMobileScreenState
       controller: controller,
       hint: _formatarDecimalDigitavel(expectedValue),
       keyboardType: TextInputType.numberWithOptions(decimal: true),
-      prefixText: '${context.read<LocaleSettingsProvider>().currencyCode} ',
+      prefixText: '${context.read<LocaleSettingsProvider>().currencySymbol} ',
     );
   }
 
@@ -3956,8 +3957,8 @@ class _OperacoesCaixaMobileScreenState
     final LocaleSettingsProvider localeSettings =
         context.read<LocaleSettingsProvider>();
     String cleaned =
-        text
-            .replaceAll(localeSettings.currencyCode, '')
+        localeSettings
+            .stripCurrencyMarkers(text)
             .replaceAll(RegExp(r'\s'), '')
             .replaceAll(localeSettings.thousandSeparator, '')
             .replaceAll(localeSettings.decimalSeparator, '.')

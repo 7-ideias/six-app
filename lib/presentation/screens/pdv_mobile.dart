@@ -864,13 +864,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
   double _valorDigitadoForma(String codigoForma) {
     final raw = _valorPorForma[codigoForma]?.text ?? '';
-    final currencyCode = context.read<LocaleSettingsProvider>().currencyCode;
+    final localeSettings = context.read<LocaleSettingsProvider>();
     final normalizado =
-        raw
-            .replaceAll(currencyCode, '')
-            .replaceAll('R\$', '')
-            .replaceAll(',', '.')
-            .trim();
+        localeSettings.stripCurrencyMarkers(raw).replaceAll(',', '.').trim();
     return double.tryParse(normalizado) ?? 0.0;
   }
 
@@ -2268,8 +2264,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Widget _buildValorFormaField(String codigo) {
-    final String currencyCode =
-        context.read<LocaleSettingsProvider>().currencyCode;
+    final String currencySymbol =
+        context.read<LocaleSettingsProvider>().currencySymbol;
     final forma = _formasPagamento.firstWhere(
       (item) => item.codigo == codigo,
       orElse:
@@ -2324,7 +2320,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 labelText: 'Valor recebido',
-                prefixText: '$currencyCode ',
+                prefixText: '$currencySymbol ',
                 helperText:
                     _formasSelecionadas.length == 1
                         ? 'Se ficar vazio, o total da venda será usado.'

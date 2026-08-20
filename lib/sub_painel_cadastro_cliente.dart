@@ -3,6 +3,8 @@ import 'package:sixpos/core/services/auto_customer_token_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
+import 'package:provider/provider.dart';
+import 'package:sixpos/providers/locale_settings_provider.dart';
 
 import 'mock_cadastros_store.dart';
 
@@ -695,8 +697,8 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
     return double.tryParse(raw) ?? 0.0;
   }
 
-  String _formatCurrency(double value) {
-    return value.toStringAsFixed(2).replaceAll('.', ',');
+  String _formatCurrency(BuildContext context, double value) {
+    return context.read<LocaleSettingsProvider>().formatCurrency(value);
   }
 
   String _fallbackErroGeracaoLink(AutoCustomerTokenApiResponse response) {
@@ -1076,7 +1078,7 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
             content: SingleChildScrollView(
               child: Text(
                 'Cadastro salvo com sucesso para ${cliente.nome}.\n'
-                'Limite de crédito: R\$ ${_formatCurrency(cliente.limiteCredito)}\n'
+                'Limite de crédito: ${_formatCurrency(context, cliente.limiteCredito)}\n'
                 'Cliente apto para compras a prazo: '
                 '${cliente.permiteCompraPrazo && !cliente.bloqueadoInadimplencia ? 'Sim' : 'Não'}',
               ),
@@ -1121,7 +1123,7 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
           _buildInfoRow('Documento', documento),
           _buildInfoRow(
             'Limite crédito',
-            'R\$ ${_formatCurrency(_toDouble(_limiteCreditoController))}',
+            _formatCurrency(context, _toDouble(_limiteCreditoController)),
           ),
           _buildInfoRow(
             'Condição',
