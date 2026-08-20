@@ -116,7 +116,7 @@ void main() {
       services: const <ProdutoModel>[],
     );
 
-    expect(find.text('Produto'), findsOneWidget);
+    expect(find.text('Produto'), findsWidgets);
     expect(find.text('Categoria'), findsOneWidget);
     expect(find.text('Preço'), findsOneWidget);
     expect(find.text('Carregador Turbo'), findsOneWidget);
@@ -240,6 +240,102 @@ void main() {
     expect(find.text('Selecionar item'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'selecao web usa filtro customizado e filtra favoritos e catalogo',
+    (WidgetTester tester) async {
+      UsuarioProvider().setUsuario(
+        UsuarioModel(
+          nome: 'Ana',
+          sobrenome: 'Souza',
+          cpf: '',
+          registroProfissional: '',
+          email: 'ana@six.test',
+          nomeDeGuerra: 'Ana',
+          preferenciasIndividuaisDoUsuario:
+              PreferenciasIndividuaisDoUsuarioModel.padrao(),
+        ),
+      );
+
+      await tester.binding.setSurfaceSize(const Size(1440, 900));
+      addTearDown(() async {
+        await tester.binding.setSurfaceSize(null);
+      });
+
+      await tester.pumpWidget(
+        _buildTestApp(
+          products: <ProdutoModel>[
+            _produto(
+              id: 'p1',
+              nome: 'Produto favorito',
+              codigo: '78920001',
+              categoria: 'Cabos',
+              preco: 39.9,
+              favorito: true,
+            ),
+            _produto(
+              id: 'p2',
+              nome: 'Produto catalogo',
+              codigo: '78920002',
+              categoria: 'Cabos',
+              preco: 49.9,
+              disponivelParaCatalogo: true,
+            ),
+            _produto(
+              id: 'p3',
+              nome: 'Produto completo',
+              codigo: '78920003',
+              categoria: 'Cabos',
+              preco: 59.9,
+              favorito: true,
+              disponivelParaCatalogo: true,
+            ),
+          ],
+          child: const Scaffold(
+            body: ProdutoListaBody(
+              isSelecao: true,
+              permitirSelecaoMultipla: true,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byWidgetPredicate((Widget widget) => widget is DropdownButton),
+        findsNothing,
+      );
+
+      await tester.tap(find.byTooltip('Marcadores'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Favoritos').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Produto favorito'), findsOneWidget);
+      expect(find.text('Produto completo'), findsOneWidget);
+      expect(find.text('Produto catalogo'), findsNothing);
+
+      await tester.tap(find.byTooltip('Marcadores'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('No catálogo').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Produto catalogo'), findsOneWidget);
+      expect(find.text('Produto completo'), findsOneWidget);
+      expect(find.text('Produto favorito'), findsNothing);
+
+      await tester.tap(find.byTooltip('Marcadores'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Favoritos e catálogo').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Produto completo'), findsOneWidget);
+      expect(find.text('Produto favorito'), findsNothing);
+      expect(find.text('Produto catalogo'), findsNothing);
+    },
+  );
 }
 
 Future<void> _pumpCatalog(
@@ -347,11 +443,15 @@ ProdutoModel _produto({
   required double preco,
   double quantidadeEstoque = 6,
   int estoqueMinimo = 1,
+  bool favorito = false,
+  bool disponivelParaCatalogo = false,
   List<ProdutoImagemModel>? imagens,
 }) {
   return ProdutoModel(
     id: id,
     ativo: true,
+    favorito: favorito,
+    disponivelParaCatalogo: disponivelParaCatalogo,
     codigoDeBarras: codigo,
     nomeProduto: nome,
     tipoProduto: 'PRODUTO',
