@@ -3,12 +3,14 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:sixpos/core/config/app_config.dart';
 import 'package:sixpos/core/services/auth_service.dart';
+import 'package:sixpos/core/services/http_client_factory.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 
 import 'agenda_financeira_lancamento_service.dart';
 
 class AgendaFinanceiraAcoesFinanceiras {
-  AgendaFinanceiraAcoesFinanceiras({http.Client? httpClient}) : _httpClient = httpClient ?? http.Client();
+  AgendaFinanceiraAcoesFinanceiras({http.Client? httpClient})
+    : _httpClient = httpClient ?? createHttpClient();
 
   final http.Client _httpClient;
 

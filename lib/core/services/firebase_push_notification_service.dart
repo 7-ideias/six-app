@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import '../../firebase_options.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
+import 'http_client_factory.dart';
 import 'notification_service.dart';
 import 'notificacao_service.dart';
 
@@ -23,7 +24,7 @@ class FirebasePushNotificationService {
     AuthService? authService,
     http.Client? httpClient,
   }) : _authService = authService ?? AuthService(),
-       _httpClient = httpClient ?? http.Client();
+       _httpClient = httpClient ?? createHttpClient();
 
   static bool _firebaseInicializado = false;
   static bool _listenersConfigurados = false;

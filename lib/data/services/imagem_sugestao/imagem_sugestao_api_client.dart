@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/http_client_factory.dart';
 import '../../models/imagem_sugestao_model.dart';
 
 abstract class ImagemSugestaoApiClient {
@@ -41,7 +42,7 @@ class HttpImagemSugestaoApiClient implements ImagemSugestaoApiClient {
     http.Client? httpClient,
   }) async {
     final bool shouldDisposeClient = httpClient == null;
-    final http.Client client = httpClient ?? http.Client();
+    final http.Client client = httpClient ?? createHttpClient();
 
     final Uri uri = Uri.parse(
       '${AppConfig.baseUrl}/private/api/imagem/sugestoes',

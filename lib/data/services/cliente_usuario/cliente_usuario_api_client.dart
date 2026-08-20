@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/http_client_factory.dart';
 import '../../models/cliente_usuario_model.dart';
 
 abstract class ClienteUsuarioApiClient {
@@ -17,7 +18,7 @@ class HttpClienteUsuarioApiClient implements ClienteUsuarioApiClient {
     http.Client? httpClient,
     Future<String?> Function()? accessTokenProvider,
     Future<String?> Function()? empresaIdProvider,
-  }) : _httpClient = httpClient ?? http.Client(),
+  }) : _httpClient = httpClient ?? createHttpClient(),
        _accessTokenProvider =
            accessTokenProvider ?? AuthService().getAccessToken,
        _empresaIdProvider = empresaIdProvider ?? AuthService().getEmpresaId;

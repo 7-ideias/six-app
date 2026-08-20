@@ -1,21 +1,22 @@
 import 'dart:convert';
 
-import 'package:sixpos/core/network/logging_interceptor.dart';
-import 'package:http_interceptor/http_interceptor.dart';
+import 'package:http/http.dart' as http;
 
 import '../../data/models/lib_data_models_colaborador_model.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
+import 'http_client_factory.dart';
 
 class ColaboradorService {
+  ColaboradorService({http.Client? httpClient})
+    : client = httpClient ?? createHttpClient();
+
   final String endpointCadastro =
       '${AppConfig.baseUrl}/private/api/colaborador/novo';
   final String endpointAtualizacao =
       '${AppConfig.baseUrl}/private/api/colaborador/editar';
 
-  final client = InterceptedClient.build(
-    interceptors: <HttpInterceptor>[LoggingInterceptor()],
-  );
+  final http.Client client;
 
   Future<ColaboradorCadastroResponse> cadastrarColaborador(
     ColaboradorCadastroRequest request,
@@ -56,8 +57,6 @@ class ColaboradorService {
       final bodyJson = jsonEncode(body);
 
       print('🌐 $method $url');
-      print('🟦 Headers: $headers');
-      print('📦 Body: $bodyJson');
 
       final response = switch (method) {
         'PUT' => await client.put(url, headers: headers, body: bodyJson),
@@ -65,7 +64,6 @@ class ColaboradorService {
       };
 
       print('✅ STATUS: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
 
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception(

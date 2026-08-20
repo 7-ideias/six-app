@@ -6,6 +6,7 @@ import 'dart:html' as html;
 import 'dart:typed_data';
 
 import 'package:sixpos/core/services/produto_service.dart';
+import 'package:sixpos/core/services/http_client_factory.dart';
 import 'package:sixpos/core/utils/produto_cadastro_form_utils.dart';
 import 'package:sixpos/data/models/imagem_sugestao_model.dart';
 import 'package:sixpos/data/models/produto_imagem_model.dart';
@@ -467,7 +468,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     final int requestId = ++_sugestoesRequestId;
 
     _sugestoesHttpClient?.close();
-    final http.Client currentClient = http.Client();
+    final http.Client currentClient = createHttpClient();
     _sugestoesHttpClient = currentClient;
 
     setState(() {

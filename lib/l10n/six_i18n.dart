@@ -668,6 +668,13 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.signInWithApple': 'Entrar com Apple',
     'auth.signInWithGoogle': 'Entrar com Google',
     'auth.googleLoginError': 'Não foi possível concluir o login com Google.',
+    'auth.session.validatingTitle': 'Entrando no Six',
+    'auth.session.validatingMessage':
+        'Validando sua sessão com segurança...',
+    'auth.session.temporaryErrorTitle':
+        'Não foi possível validar sua sessão',
+    'auth.session.temporaryErrorMessage':
+        'Sua sessão foi preservada. Verifique sua conexão e tente novamente.',
     'webAuthGate.temporaryError.title': 'Não foi possível validar sua sessão',
     'webAuthGate.temporaryError.message':
         'Verifique sua conexão ou aguarde o backend responder e tente novamente.',
@@ -2375,6 +2382,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.signInWithApple': 'Sign in with Apple',
     'auth.signInWithGoogle': 'Sign in with Google',
     'auth.googleLoginError': 'Could not complete Google sign-in.',
+    'auth.session.validatingTitle': 'Signing in to Six',
+    'auth.session.validatingMessage': 'Validating your session securely...',
+    'auth.session.temporaryErrorTitle': 'Could not validate your session',
+    'auth.session.temporaryErrorMessage':
+        'Your session was preserved. Check your connection and try again.',
     'webAuthGate.temporaryError.title': 'Could not validate your session',
     'webAuthGate.temporaryError.message':
         'Check your connection or wait for the backend to respond, then try again.',
@@ -3416,6 +3428,12 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.signInWithGoogle': 'Entrar con Google',
     'auth.googleLoginError':
         'No se pudo completar el inicio de sesión con Google.',
+    'auth.session.validatingTitle': 'Entrando a Six',
+    'auth.session.validatingMessage':
+        'Validando tu sesión de forma segura...',
+    'auth.session.temporaryErrorTitle': 'No se pudo validar tu sesión',
+    'auth.session.temporaryErrorMessage':
+        'Tu sesión fue preservada. Verifica tu conexión e inténtalo de nuevo.',
     'webAuthGate.temporaryError.title': 'No se pudo validar tu sesión',
     'webAuthGate.temporaryError.message':
         'Verifica tu conexión o espera a que el backend responda y vuelve a intentarlo.',

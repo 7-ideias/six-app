@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/http_client_factory.dart';
 import '../../models/caixa_completo_movimentos_models.dart';
 import '../../models/caixa_models.dart';
 
@@ -31,7 +32,7 @@ abstract class CaixaApiClient {
 
 class HttpCaixaApiClient implements CaixaApiClient {
   HttpCaixaApiClient({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+    : _httpClient = httpClient ?? createHttpClient();
 
   final http.Client _httpClient;
 

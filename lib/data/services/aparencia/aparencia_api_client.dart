@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/http_client_factory.dart';
 import '../../models/aparencia_models.dart';
 
 abstract class AparenciaApiClient {
@@ -12,7 +13,7 @@ abstract class AparenciaApiClient {
 class HttpAparenciaApiClient implements AparenciaApiClient {
   HttpAparenciaApiClient({
     http.Client? httpClient,
-  }) : _httpClient = httpClient ?? http.Client();
+  }) : _httpClient = httpClient ?? createHttpClient();
 
   final http.Client _httpClient;
 

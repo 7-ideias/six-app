@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 
 import '../../core/services/auth_service.dart';
 import '../../core/services/empresa_service.dart';
@@ -17,8 +18,12 @@ class AuthGateMobile extends StatefulWidget {
   State<AuthGateMobile> createState() => _AuthGateMobileState();
 }
 
+enum _AuthGateMobileStatus { validating, temporaryError }
+
 class _AuthGateMobileState extends State<AuthGateMobile> {
   final AuthService _authService = AuthService();
+  _AuthGateMobileStatus _status = _AuthGateMobileStatus.validating;
+  bool _restoring = false;
 
   @override
   void initState() {
@@ -29,9 +34,18 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
   }
 
   Future<void> _restoreSession() async {
+    if (_restoring) {
+      return;
+    }
+    _restoring = true;
+    if (mounted) {
+      setState(() => _status = _AuthGateMobileStatus.validating);
+    }
+
     final String? refreshToken = await _authService.getRefreshToken();
 
     if (refreshToken == null || refreshToken.trim().isEmpty) {
+      _restoring = false;
       _goToLogin();
       return;
     }
@@ -53,11 +67,26 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
 
       if (!mounted) return;
       _goToHome();
-    } catch (e) {
-      debugPrint('[AuthGateMobile] Sessão expirada ou inválida: $e');
-      await _authService.logout();
-      if (!mounted) return;
-      _goToLogin();
+    } on AuthRefreshException catch (error) {
+      if (error.isInvalidSession) {
+        debugPrint('[AuthGateMobile] Sessão inválida confirmada: $error');
+        await _authService.clearLocalSession();
+        if (!mounted) return;
+        _goToLogin();
+        return;
+      }
+
+      debugPrint('[AuthGateMobile] Falha temporária ao restaurar sessão: $error');
+      if (mounted) {
+        setState(() => _status = _AuthGateMobileStatus.temporaryError);
+      }
+    } catch (error) {
+      debugPrint('[AuthGateMobile] Falha temporária inesperada: $error');
+      if (mounted) {
+        setState(() => _status = _AuthGateMobileStatus.temporaryError);
+      }
+    } finally {
+      _restoring = false;
     }
   }
 
@@ -86,41 +115,158 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const _AuthGateLogo(),
-                const SizedBox(height: 22),
-                Text(
-                  'Entrando no Six',
-                  style: TextStyle(
-                    color: SixMobilePalette.titleText,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Validando sua sessão com segurança...',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: SixMobilePalette.mutedText,
-                    height: 1.35,
-                  ),
-                ),
-                const SizedBox(height: 28),
-                SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    color: SixMobilePalette.accent,
-                    backgroundColor: SixMobilePalette.activeBorder,
-                  ),
-                ),
-              ],
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              child:
+                  _status == _AuthGateMobileStatus.validating
+                      ? _buildValidatingState(context)
+                      : _buildTemporaryErrorState(context),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildValidatingState(BuildContext context) {
+    return Semantics(
+      key: const ValueKey<String>('auth-gate-mobile-validating'),
+      container: true,
+      liveRegion: true,
+      label: context.t(
+        'auth.session.validatingMessage',
+        fallback: 'Validando sua sessão com segurança...',
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const _AuthGateLogo(),
+          const SizedBox(height: 22),
+          Text(
+            context.t(
+              'auth.session.validatingTitle',
+              fallback: 'Entrando no Six',
+            ),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: SixMobilePalette.titleText,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            context.t(
+              'auth.session.validatingMessage',
+              fallback: 'Validando sua sessão com segurança...',
+            ),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: SixMobilePalette.mutedText,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 28),
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              color: SixMobilePalette.accent,
+              backgroundColor: SixMobilePalette.activeBorder,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTemporaryErrorState(BuildContext context) {
+    return Semantics(
+      key: const ValueKey<String>('auth-gate-mobile-temporary-error'),
+      container: true,
+      liveRegion: true,
+      child: Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(maxWidth: 420),
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          color: SixMobilePalette.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: SixMobilePalette.border),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: SixMobilePalette.navigationShadow,
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: SixMobilePalette.softAccentSurface,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Icon(
+                Icons.wifi_off_rounded,
+                color: SixMobilePalette.accent,
+                size: 27,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              context.t(
+                'auth.session.temporaryErrorTitle',
+                fallback: 'Não foi possível validar sua sessão',
+              ),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: SixMobilePalette.titleText,
+                fontSize: 19,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              context.t(
+                'auth.session.temporaryErrorMessage',
+                fallback:
+                    'Sua sessão foi preservada. Verifique sua conexão e tente novamente.',
+              ),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: SixMobilePalette.mutedText,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton.icon(
+                onPressed: _restoreSession,
+                icon: const Icon(Icons.refresh_rounded, size: 19),
+                label: Text(
+                  context.t(
+                    'common.tryAgain',
+                    fallback: 'Tentar novamente',
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: SixMobilePalette.accent,
+                  foregroundColor: SixMobilePalette.onAccent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

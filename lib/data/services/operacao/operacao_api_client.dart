@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/http_client_factory.dart';
 import '../../models/operacao_models.dart';
 
 abstract class OperacaoApiClient {
@@ -19,7 +20,7 @@ abstract class OperacaoApiClient {
 
 class HttpOperacaoApiClient implements OperacaoApiClient {
   HttpOperacaoApiClient({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+    : _httpClient = httpClient ?? createHttpClient();
 
   final http.Client _httpClient;
 

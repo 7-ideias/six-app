@@ -116,7 +116,7 @@ void main() {
           tokenStatus: WebAuthGateAccessTokenStatus.absent,
           restoreError: const AuthRefreshException(
             type: AuthRefreshFailureType.invalidSession,
-            statusCode: 403,
+            statusCode: 401,
           ),
         );
         final WebAuthGateController controller = _controller(

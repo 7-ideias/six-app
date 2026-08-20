@@ -3,6 +3,7 @@ class AuthResponseModel {
   final List<String> idUnicoDaEmpresa;
   final String refreshToken;
   final int expiresIn;
+  final int refreshExpiresIn;
   final String tokenType;
   final UsuarioModel usuario;
 
@@ -11,6 +12,7 @@ class AuthResponseModel {
     required this.idUnicoDaEmpresa,
     required this.refreshToken,
     required this.expiresIn,
+    this.refreshExpiresIn = 0,
     required this.tokenType,
     required this.usuario,
   });
@@ -21,6 +23,7 @@ class AuthResponseModel {
       idUnicoDaEmpresa: List<String>.from(json['idUnicoDaEmpresa'] ?? []),
       refreshToken: json['refreshToken'] ?? '',
       expiresIn: json['expiresIn'] ?? 0,
+      refreshExpiresIn: json['refreshExpiresIn'] ?? 0,
       tokenType: json['tokenType'] ?? '',
       usuario: UsuarioModel.fromJson(json['usuario'] ?? {}),
     );
@@ -32,6 +35,7 @@ class AuthResponseModel {
       'idUnicoDaEmpresa': idUnicoDaEmpresa,
       'refreshToken': refreshToken,
       'expiresIn': expiresIn,
+      'refreshExpiresIn': refreshExpiresIn,
       'tokenType': tokenType,
       'usuario': usuario.toJson(),
     };

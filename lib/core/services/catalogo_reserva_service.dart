@@ -1,18 +1,16 @@
 import 'dart:convert';
 
-import 'package:http_interceptor/http_interceptor.dart';
+import 'package:http/http.dart' as http;
 import 'package:sixpos/core/config/app_config.dart';
-import 'package:sixpos/core/network/logging_interceptor.dart';
 import 'package:sixpos/core/services/auth_service.dart';
+import 'package:sixpos/core/services/http_client_factory.dart';
 import 'package:sixpos/data/models/catalogo_reserva_model.dart';
 
 class CatalogoReservaService {
-  CatalogoReservaService({InterceptedClient? client})
-    : _client =
-          client ??
-          InterceptedClient.build(interceptors: [LoggingInterceptor()]);
+  CatalogoReservaService({http.Client? client})
+    : _client = client ?? createHttpClient();
 
-  final InterceptedClient _client;
+  final http.Client _client;
 
   String get _endpoint =>
       '${AppConfig.baseUrl}/private/api/catalogo-publico/reservas';

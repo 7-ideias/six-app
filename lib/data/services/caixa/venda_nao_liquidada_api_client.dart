@@ -4,12 +4,13 @@ import 'package:http/http.dart' as http;
 
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/http_client_factory.dart';
 import '../../../core/state/loading_do_mobile_comunicando_com_backend_controller.dart';
 import '../../models/venda_nao_liquidada_models.dart';
 
 class VendaNaoLiquidadaApiClient {
   VendaNaoLiquidadaApiClient({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+    : _httpClient = httpClient ?? createHttpClient();
 
   final http.Client _httpClient;
 

@@ -90,7 +90,7 @@ class WebAuthGateFailure implements Exception {
     }
 
     final int? statusCode = _statusCodeFromError(error);
-    if (statusCode == 401 || statusCode == 403) {
+    if (statusCode == 401) {
       return WebAuthGateFailure(
         type: WebAuthGateFailureType.invalidSession,
         statusCode: statusCode,
