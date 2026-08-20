@@ -40,6 +40,8 @@ enum _ProdutoEstoqueFiltro {
   estoqueNegativo,
 }
 
+enum _ProdutoMarcacaoFiltro { todos, favoritos, catalogo, favoritosECatalogo }
+
 enum _ProdutoSituacaoEstoque {
   naoAplicavel,
   emEstoque,
@@ -231,6 +233,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       _ProdutoResumoRapidoFiltro.produtos;
   _ProdutoStatusFiltro _statusFiltro = _ProdutoStatusFiltro.todos;
   _ProdutoEstoqueFiltro _estoqueFiltro = _ProdutoEstoqueFiltro.todos;
+  _ProdutoMarcacaoFiltro _marcacaoFiltro = _ProdutoMarcacaoFiltro.todos;
   int _paginaAtual = 0;
   int _itensPorPagina = _opcoesItensPorPagina.first;
 
@@ -405,7 +408,8 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         listaFiltrada
             .where(
               (ProdutoModel produto) =>
-                  _matchesTipoSelecionado(produto, tipoSelecionado),
+                  _matchesTipoSelecionado(produto, tipoSelecionado) &&
+                  _matchesMarcacaoFiltro(produto),
             )
             .toList();
   }
@@ -425,10 +429,12 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     _recarregar();
   }
 
-  void _atualizarCatalogo(VoidCallback update) {
+  void _atualizarCatalogo(VoidCallback update, {bool resetPagination = true}) {
     setState(() {
       update();
-      _resetarPaginacao();
+      if (resetPagination) {
+        _resetarPaginacao();
+      }
     });
   }
 
@@ -1263,8 +1269,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   Widget _buildSearchOrderAndPreference(BuildContext context, bool isCompact) {
     final tokens = WebThemeTokens.of(context);
     final Color accent = tokens.info;
-    final Color inputBackground = tokens.inputBackground;
-    final Color inputBorder = tokens.cardBorder;
 
     final search = TextField(
       controller: _controllerBusca,
@@ -1288,14 +1292,14 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                   },
                 ),
         filled: true,
-        fillColor: inputBackground,
+        fillColor: tokens.inputBackground,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 14,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: inputBorder),
+          borderSide: BorderSide(color: tokens.cardBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -1308,53 +1312,93 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       },
     );
 
-    final order = Container(
-      constraints: const BoxConstraints(minWidth: 220),
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: inputBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: inputBorder),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: ordenacao,
-          isExpanded: true,
-          borderRadius: BorderRadius.circular(16),
-          dropdownColor: tokens.menuBackground,
-          style: TextStyle(
-            color: tokens.primaryText,
-            fontWeight: FontWeight.w700,
+    final Widget marcacaoFilter = _buildMenuFiltro<_ProdutoMarcacaoFiltro>(
+      context: context,
+      icon: Icons.auto_awesome_outlined,
+      label: context.t('produto.webList.filter.flags', fallback: 'Marcadores'),
+      value: _marcacaoFiltroLabel(context),
+      selectedValue: _marcacaoFiltro,
+      minWidth: 184,
+      items: <_ProdutoFiltroMenuOpcao<_ProdutoMarcacaoFiltro>>[
+        _ProdutoFiltroMenuOpcao<_ProdutoMarcacaoFiltro>(
+          value: _ProdutoMarcacaoFiltro.todos,
+          label: context.t(
+            'produto.webList.filter.flagsAll',
+            fallback: 'Todos itens',
           ),
-          icon: Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: tokens.secondaryText,
-          ),
-          items: const <DropdownMenuItem<String>>[
-            DropdownMenuItem<String>(
-              value: 'nomeAsc',
-              child: Text('Ordenar por nome'),
-            ),
-            DropdownMenuItem<String>(
-              value: 'precoAsc',
-              child: Text('Menor preço'),
-            ),
-            DropdownMenuItem<String>(
-              value: 'precoDesc',
-              child: Text('Maior preço'),
-            ),
-          ],
-          onChanged: (value) {
-            if (value == null) return;
-            _atualizarCatalogo(() {
-              ordenacao = value;
-            });
-            if (widget.isSelecao) {
-              aplicarFiltroOrdenacao();
-            }
-          },
         ),
-      ),
+        _ProdutoFiltroMenuOpcao<_ProdutoMarcacaoFiltro>(
+          value: _ProdutoMarcacaoFiltro.favoritos,
+          label: context.t(
+            'produto.webList.filter.flagsFavorites',
+            fallback: 'Favoritos',
+          ),
+        ),
+        _ProdutoFiltroMenuOpcao<_ProdutoMarcacaoFiltro>(
+          value: _ProdutoMarcacaoFiltro.catalogo,
+          label: context.t(
+            'produto.webList.filter.flagsCatalog',
+            fallback: 'No catálogo',
+          ),
+        ),
+        _ProdutoFiltroMenuOpcao<_ProdutoMarcacaoFiltro>(
+          value: _ProdutoMarcacaoFiltro.favoritosECatalogo,
+          label: context.t(
+            'produto.webList.filter.flagsFavoritesCatalog',
+            fallback: 'Favoritos e catálogo',
+          ),
+        ),
+      ],
+      onSelected: (_ProdutoMarcacaoFiltro value) {
+        _atualizarCatalogo(() {
+          _marcacaoFiltro = value;
+        });
+        aplicarFiltroOrdenacao();
+      },
+    );
+
+    final Widget order = _buildMenuFiltro<String>(
+      context: context,
+      icon: Icons.swap_vert_rounded,
+      label: context.t('produto.webList.sort.label', fallback: 'Ordenação'),
+      value: _ordenacaoLabel(context),
+      selectedValue: ordenacao,
+      minWidth: 184,
+      items: <_ProdutoFiltroMenuOpcao<String>>[
+        _ProdutoFiltroMenuOpcao<String>(
+          value: 'nomeAsc',
+          label: context.t(
+            'produto.webList.sort.name',
+            fallback: 'Ordenar por nome',
+          ),
+        ),
+        _ProdutoFiltroMenuOpcao<String>(
+          value: 'precoAsc',
+          label: context.t(
+            'produto.webList.sort.priceAsc',
+            fallback: 'Menor preço',
+          ),
+        ),
+        _ProdutoFiltroMenuOpcao<String>(
+          value: 'precoDesc',
+          label: context.t(
+            'produto.webList.sort.priceDesc',
+            fallback: 'Maior preço',
+          ),
+        ),
+      ],
+      onSelected: (String value) {
+        _atualizarCatalogo(() {
+          ordenacao = value;
+        });
+        aplicarFiltroOrdenacao();
+      },
+    );
+
+    final Widget filters = Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: <Widget>[marcacaoFilter, order],
     );
 
     if (isCompact) {
@@ -1362,24 +1406,52 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         children: <Widget>[
           search,
           const SizedBox(height: 10),
-          order,
+          Align(alignment: Alignment.centerLeft, child: filters),
           const SizedBox(height: 10),
           _buildModoExibicaoSelector(context, expand: true),
         ],
       );
     }
 
-    return Row(
-      children: <Widget>[
-        Expanded(child: search),
-        const SizedBox(width: 12),
-        SizedBox(width: 240, child: order),
-        const SizedBox(width: 12),
-        SizedBox(
-          width: 268,
-          child: _buildModoExibicaoSelector(context, expand: false),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool wrapBelow = constraints.maxWidth < 1320;
+        if (wrapBelow) {
+          return Column(
+            children: <Widget>[
+              search,
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: <Widget>[
+                  SizedBox(width: 196, child: marcacaoFilter),
+                  SizedBox(width: 196, child: order),
+                  SizedBox(
+                    width: 268,
+                    child: _buildModoExibicaoSelector(context, expand: false),
+                  ),
+                ],
+              ),
+            ],
+          );
+        }
+
+        return Row(
+          children: <Widget>[
+            Expanded(child: search),
+            const SizedBox(width: 12),
+            SizedBox(width: 196, child: marcacaoFilter),
+            const SizedBox(width: 12),
+            SizedBox(width: 196, child: order),
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 268,
+              child: _buildModoExibicaoSelector(context, expand: false),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1605,6 +1677,22 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           (ProdutoModel produto) =>
               _situacaoEstoque(produto) ==
               _ProdutoSituacaoEstoque.estoqueNegativo,
+        );
+    }
+
+    switch (_marcacaoFiltro) {
+      case _ProdutoMarcacaoFiltro.todos:
+        break;
+      case _ProdutoMarcacaoFiltro.favoritos:
+        resultado = resultado.where((ProdutoModel produto) => produto.favorito);
+      case _ProdutoMarcacaoFiltro.catalogo:
+        resultado = resultado.where(
+          (ProdutoModel produto) => produto.disponivelParaCatalogo,
+        );
+      case _ProdutoMarcacaoFiltro.favoritosECatalogo:
+        resultado = resultado.where(
+          (ProdutoModel produto) =>
+              produto.favorito && produto.disponivelParaCatalogo,
         );
     }
 
@@ -1837,6 +1925,52 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             });
           },
         ),
+        _buildMenuFiltro<_ProdutoMarcacaoFiltro>(
+          context: context,
+          icon: Icons.auto_awesome_outlined,
+          label: context.t(
+            'produto.webList.filter.flags',
+            fallback: 'Marcadores',
+          ),
+          value: _marcacaoFiltroLabel(context),
+          selectedValue: _marcacaoFiltro,
+          minWidth: 184,
+          items: <_ProdutoFiltroMenuOpcao<_ProdutoMarcacaoFiltro>>[
+            _ProdutoFiltroMenuOpcao<_ProdutoMarcacaoFiltro>(
+              value: _ProdutoMarcacaoFiltro.todos,
+              label: context.t(
+                'produto.webList.filter.flagsAll',
+                fallback: 'Todos itens',
+              ),
+            ),
+            _ProdutoFiltroMenuOpcao<_ProdutoMarcacaoFiltro>(
+              value: _ProdutoMarcacaoFiltro.favoritos,
+              label: context.t(
+                'produto.webList.filter.flagsFavorites',
+                fallback: 'Favoritos',
+              ),
+            ),
+            _ProdutoFiltroMenuOpcao<_ProdutoMarcacaoFiltro>(
+              value: _ProdutoMarcacaoFiltro.catalogo,
+              label: context.t(
+                'produto.webList.filter.flagsCatalog',
+                fallback: 'No catálogo',
+              ),
+            ),
+            _ProdutoFiltroMenuOpcao<_ProdutoMarcacaoFiltro>(
+              value: _ProdutoMarcacaoFiltro.favoritosECatalogo,
+              label: context.t(
+                'produto.webList.filter.flagsFavoritesCatalog',
+                fallback: 'Favoritos e catálogo',
+              ),
+            ),
+          ],
+          onSelected: (_ProdutoMarcacaoFiltro value) {
+            _atualizarCatalogo(() {
+              _marcacaoFiltro = value;
+            });
+          },
+        ),
         _buildMenuFiltro<String>(
           context: context,
           icon: Icons.swap_vert_rounded,
@@ -1899,7 +2033,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               )
               : LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
-                  final bool wrapBelow = constraints.maxWidth < 1180;
+                  final bool wrapBelow = constraints.maxWidth < 1320;
                   if (wrapBelow) {
                     return Column(
                       children: <Widget>[
@@ -2605,6 +2739,35 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
       snapshot.paginaAtual,
       snapshot.totalPaginas,
     );
+    final Widget paginationControls = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: <Widget>[
+        _paginationArrow(
+          context,
+          icon: Icons.chevron_left_rounded,
+          enabled: snapshot.paginaAtual > 0,
+          onTap:
+              () => _atualizarCatalogo(() {
+                _paginaAtual = snapshot.paginaAtual - 1;
+              }, resetPagination: false),
+        ),
+        ...pages.map(
+          (Object item) => _buildPageMarker(context, item, snapshot),
+        ),
+        _paginationArrow(
+          context,
+          icon: Icons.chevron_right_rounded,
+          enabled: snapshot.paginaAtual < snapshot.totalPaginas - 1,
+          onTap:
+              () => _atualizarCatalogo(() {
+                _paginaAtual = snapshot.paginaAtual + 1;
+              }, resetPagination: false),
+        ),
+        _buildItensPorPaginaMenu(context),
+      ],
+    );
 
     return Container(
       width: double.infinity,
@@ -2614,90 +2777,49 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: tokens.cardBorder),
       ),
-      child:
-          isCompact
-              ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    _paginationSummary(context, snapshot),
-                    style: TextStyle(
-                      color: tokens.secondaryText,
-                      fontWeight: FontWeight.w700,
-                    ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool useCompactLayout =
+              isCompact || constraints.maxWidth < 1220;
+          if (useCompactLayout) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  _paginationSummary(context, snapshot),
+                  style: TextStyle(
+                    color: tokens.secondaryText,
+                    fontWeight: FontWeight.w700,
                   ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: <Widget>[
-                      _paginationArrow(
-                        context,
-                        icon: Icons.chevron_left_rounded,
-                        enabled: snapshot.paginaAtual > 0,
-                        onTap:
-                            () => _atualizarCatalogo(() {
-                              _paginaAtual = snapshot.paginaAtual - 1;
-                            }),
-                      ),
-                      ...pages.map(
-                        (Object item) =>
-                            _buildPageMarker(context, item, snapshot),
-                      ),
-                      _paginationArrow(
-                        context,
-                        icon: Icons.chevron_right_rounded,
-                        enabled:
-                            snapshot.paginaAtual < snapshot.totalPaginas - 1,
-                        onTap:
-                            () => _atualizarCatalogo(() {
-                              _paginaAtual = snapshot.paginaAtual + 1;
-                            }),
-                      ),
-                      _buildItensPorPaginaMenu(context),
-                    ],
+                ),
+                const SizedBox(height: 12),
+                paginationControls,
+              ],
+            );
+          }
+
+          return Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  _paginationSummary(context, snapshot),
+                  style: TextStyle(
+                    color: tokens.secondaryText,
+                    fontWeight: FontWeight.w700,
                   ),
-                ],
-              )
-              : Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      _paginationSummary(context, snapshot),
-                      style: TextStyle(
-                        color: tokens.secondaryText,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  _paginationArrow(
-                    context,
-                    icon: Icons.chevron_left_rounded,
-                    enabled: snapshot.paginaAtual > 0,
-                    onTap:
-                        () => _atualizarCatalogo(() {
-                          _paginaAtual = snapshot.paginaAtual - 1;
-                        }),
-                  ),
-                  const SizedBox(width: 6),
-                  ...pages.map(
-                    (Object item) => _buildPageMarker(context, item, snapshot),
-                  ),
-                  const SizedBox(width: 6),
-                  _paginationArrow(
-                    context,
-                    icon: Icons.chevron_right_rounded,
-                    enabled: snapshot.paginaAtual < snapshot.totalPaginas - 1,
-                    onTap:
-                        () => _atualizarCatalogo(() {
-                          _paginaAtual = snapshot.paginaAtual + 1;
-                        }),
-                  ),
-                  const SizedBox(width: 12),
-                  _buildItensPorPaginaMenu(context),
-                ],
+                ),
               ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: paginationControls,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -2732,7 +2854,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 ? null
                 : () => _atualizarCatalogo(() {
                   _paginaAtual = page;
-                }),
+                }, resetPagination: false),
         child: Container(
           width: 34,
           height: 34,
@@ -2929,6 +3051,31 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         return context.t(
           'produto.webList.filter.stockNegative',
           fallback: 'Estoque negativo',
+        );
+    }
+  }
+
+  String _marcacaoFiltroLabel(BuildContext context) {
+    switch (_marcacaoFiltro) {
+      case _ProdutoMarcacaoFiltro.todos:
+        return context.t(
+          'produto.webList.filter.flagsAll',
+          fallback: 'Todos itens',
+        );
+      case _ProdutoMarcacaoFiltro.favoritos:
+        return context.t(
+          'produto.webList.filter.flagsFavorites',
+          fallback: 'Favoritos',
+        );
+      case _ProdutoMarcacaoFiltro.catalogo:
+        return context.t(
+          'produto.webList.filter.flagsCatalog',
+          fallback: 'No catálogo',
+        );
+      case _ProdutoMarcacaoFiltro.favoritosECatalogo:
+        return context.t(
+          'produto.webList.filter.flagsFavoritesCatalog',
+          fallback: 'Favoritos e catálogo',
         );
     }
   }
@@ -3878,6 +4025,19 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         _normalizarTipoProduto(tipo);
   }
 
+  bool _matchesMarcacaoFiltro(ProdutoModel produto) {
+    switch (_marcacaoFiltro) {
+      case _ProdutoMarcacaoFiltro.todos:
+        return true;
+      case _ProdutoMarcacaoFiltro.favoritos:
+        return produto.favorito;
+      case _ProdutoMarcacaoFiltro.catalogo:
+        return produto.disponivelParaCatalogo;
+      case _ProdutoMarcacaoFiltro.favoritosECatalogo:
+        return produto.favorito && produto.disponivelParaCatalogo;
+    }
+  }
+
   IconData _iconePorTipo(ProdutoModel produto) {
     return _isServico(produto)
         ? Icons.design_services_outlined
@@ -4052,80 +4212,88 @@ class _ProdutoFiltroMenuState<T> extends State<_ProdutoFiltroMenu<T>> {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool active = _hovered || _open;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: Tooltip(
-        message: widget.tooltip,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: _openMenu,
-            child: AnimatedContainer(
-              duration: WebThemeTokens.transitionDuration,
-              curve: WebThemeTokens.transitionCurve,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: active ? tokens.surfaceMuted : tokens.inputBackground,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: active ? tokens.selectedBorder : tokens.cardBorder,
-                  width: active ? 1.4 : 1,
+    return Semantics(
+      button: true,
+      label: widget.label,
+      value: widget.value,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: Tooltip(
+          message: widget.tooltip,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: _openMenu,
+              child: AnimatedContainer(
+                duration: WebThemeTokens.transitionDuration,
+                curve: WebThemeTokens.transitionCurve,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
                 ),
-                boxShadow:
-                    active
-                        ? <BoxShadow>[
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          ),
-                        ]
-                        : null,
-              ),
-              child: Row(
-                children: <Widget>[
-                  Icon(widget.icon, size: 18, color: tokens.info),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Text(
-                          widget.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: tokens.secondaryText,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.value,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: tokens.primaryText,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
+                decoration: BoxDecoration(
+                  color: active ? tokens.surfaceMuted : tokens.inputBackground,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: active ? tokens.selectedBorder : tokens.cardBorder,
+                    width: active ? 1.4 : 1,
                   ),
-                  const SizedBox(width: 10),
-                  AnimatedRotation(
-                    turns: _open ? 0.5 : 0,
-                    duration: WebThemeTokens.transitionDuration,
-                    curve: WebThemeTokens.transitionCurve,
-                    child: Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: active ? tokens.info : tokens.secondaryText,
+                  boxShadow:
+                      active
+                          ? <BoxShadow>[
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
+                          ]
+                          : null,
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Icon(widget.icon, size: 18, color: tokens.info),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
+                            widget.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: tokens.secondaryText,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            widget.value,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: tokens.primaryText,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 10),
+                    AnimatedRotation(
+                      turns: _open ? 0.5 : 0,
+                      duration: WebThemeTokens.transitionDuration,
+                      curve: WebThemeTokens.transitionCurve,
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: active ? tokens.info : tokens.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
