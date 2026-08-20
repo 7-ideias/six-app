@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/services/admin_planos_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../providers/locale_settings_provider.dart';
 import '../admin/admin_navigation_shell.dart';
 import '../admin/admin_portal_components.dart';
 import '../admin/admin_portal_texts.dart';
@@ -86,14 +87,14 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
 
   Future<void> _editar({AdminPlanoPublico? plano}) async {
     final _PlansTexts texts = _PlansTexts.of(context);
-    final AdminPlanoSalvarInput? input = await showDialog<AdminPlanoSalvarInput>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) => _PlanoEditorDialog(
-        plano: plano,
-        texts: texts,
-      ),
-    );
+    final AdminPlanoSalvarInput? input =
+        await showDialog<AdminPlanoSalvarInput>(
+          context: context,
+          barrierDismissible: false,
+          builder:
+              (BuildContext context) =>
+                  _PlanoEditorDialog(plano: plano, texts: texts),
+        );
     if (input == null || !mounted) return;
 
     try {
@@ -114,20 +115,21 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
     final _PlansTexts texts = _PlansTexts.of(context);
     final bool? confirmed = await showDialog<bool>(
       context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: Text(texts.archiveTitle),
-        content: Text(texts.archiveBody(plano.codigo)),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(texts.cancel),
+      builder:
+          (BuildContext context) => AlertDialog(
+            title: Text(texts.archiveTitle),
+            content: Text(texts.archiveBody(plano.codigo)),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(texts.cancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(texts.archive),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(texts.archive),
-          ),
-        ],
-      ),
     );
     if (confirmed != true || !mounted) return;
     try {
@@ -163,7 +165,11 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
   String? _nomeExibicaoPorEmail(String? email) {
     final String normalized = email?.trim() ?? '';
     if (normalized.isEmpty || !normalized.contains('@')) return null;
-    return normalized.split('@').first.replaceAll('.', ' ').replaceAll('_', ' ');
+    return normalized
+        .split('@')
+        .first
+        .replaceAll('.', ' ')
+        .replaceAll('_', ' ');
   }
 
   @override
@@ -203,9 +209,10 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
       );
     }
 
-    final int published = _planos
-        .where((AdminPlanoPublico item) => item.status == 'PUBLICADO')
-        .length;
+    final int published =
+        _planos
+            .where((AdminPlanoPublico item) => item.status == 'PUBLICADO')
+            .length;
     return Column(
       key: ValueKey<String>('plans-${_planos.length}-$published'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -228,9 +235,7 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
                 texts: texts,
                 onEdit: () => _editar(plano: plano),
                 onArchive:
-                    plano.status == 'ARQUIVADO'
-                        ? null
-                        : () => _arquivar(plano),
+                    plano.status == 'ARQUIVADO' ? null : () => _arquivar(plano),
               ),
             ),
           ),
@@ -353,7 +358,12 @@ class _PlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String language = Localizations.localeOf(context).languageCode;
-    final String locale = language == 'en' ? 'en-US' : language == 'es' ? 'es-ES' : 'pt-BR';
+    final String locale =
+        language == 'en'
+            ? 'en-US'
+            : language == 'es'
+            ? 'es-ES'
+            : 'pt-BR';
     final AdminPlanoTraducao? translation =
         plano.traducoes[locale] ?? plano.traducoes['pt-BR'];
     return AdminSurfaceCard(
@@ -406,12 +416,9 @@ class _PlanCard extends StatelessWidget {
               Wrap(
                 spacing: 10,
                 runSpacing: 10,
-                children:
-                    plano.precos
-                        .map(
-                          (AdminPlanoPreco price) => _PricePill(price: price),
-                        )
-                        .toList(growable: false),
+                children: plano.precos
+                    .map((AdminPlanoPreco price) => _PricePill(price: price))
+                    .toList(growable: false),
               ),
             ],
           );
@@ -466,7 +473,7 @@ class _PricePill extends StatelessWidget {
         borderRadius: BorderRadius.circular(AdminRadius.md),
       ),
       child: Text(
-        '${price.currencyCode} ${price.valor.toStringAsFixed(2)} · ${price.periodicidade}',
+        '${LocaleSettingsProvider.currencySymbolForCode(price.currencyCode)} ${price.valor.toStringAsFixed(2)} · ${price.periodicidade}',
         style: const TextStyle(fontWeight: FontWeight.w900),
       ),
     );
@@ -538,8 +545,17 @@ class _PlanoEditorDialog extends StatefulWidget {
 
 class _PlanoEditorDialogState extends State<_PlanoEditorDialog> {
   static const List<String> _locales = <String>['pt-BR', 'en-US', 'es-ES'];
-  static const List<String> _status = <String>['RASCUNHO', 'PUBLICADO', 'ARQUIVADO'];
-  static const List<String> _periodicities = <String>['GRATUITO', 'MENSAL', 'ANUAL', 'UNICO'];
+  static const List<String> _status = <String>[
+    'RASCUNHO',
+    'PUBLICADO',
+    'ARQUIVADO',
+  ];
+  static const List<String> _periodicities = <String>[
+    'GRATUITO',
+    'MENSAL',
+    'ANUAL',
+    'UNICO',
+  ];
 
   late final TextEditingController _code;
   late final TextEditingController _order;
@@ -559,15 +575,22 @@ class _PlanoEditorDialogState extends State<_PlanoEditorDialog> {
     final AdminPlanoPublico? plan = widget.plano;
     _code = TextEditingController(text: plan?.codigo ?? '');
     _order = TextEditingController(text: '${plan?.ordemExibicao ?? 0}');
-    _trialDays = TextEditingController(text: '${plan?.condicoes.diasTeste ?? 0}');
-    _userLimit = TextEditingController(text: plan?.condicoes.limiteUsuarios?.toString() ?? '');
-    _loyaltyMonths = TextEditingController(text: '${plan?.condicoes.mesesFidelidade ?? 0}');
+    _trialDays = TextEditingController(
+      text: '${plan?.condicoes.diasTeste ?? 0}',
+    );
+    _userLimit = TextEditingController(
+      text: plan?.condicoes.limiteUsuarios?.toString() ?? '',
+    );
+    _loyaltyMonths = TextEditingController(
+      text: '${plan?.condicoes.mesesFidelidade ?? 0}',
+    );
     _selectedStatus = plan?.status ?? 'RASCUNHO';
     _featured = plan?.destaque ?? false;
     _cancelAnytime = plan?.condicoes.cancelamentoLivre ?? false;
-    _prices = (plan?.precos.isNotEmpty ?? false)
-        ? plan!.precos.map(_PriceDraft.fromModel).toList(growable: true)
-        : <_PriceDraft>[_PriceDraft.empty()];
+    _prices =
+        (plan?.precos.isNotEmpty ?? false)
+            ? plan!.precos.map(_PriceDraft.fromModel).toList(growable: true)
+            : <_PriceDraft>[_PriceDraft.empty()];
     _translations = <String, _TranslationDraft>{
       for (final String locale in _locales)
         locale: _TranslationDraft.fromModel(plan?.traducoes[locale]),
@@ -616,16 +639,22 @@ class _PlanoEditorDialogState extends State<_PlanoEditorDialog> {
     final List<AdminPlanoPreco> prices = <AdminPlanoPreco>[];
     for (final _PriceDraft draft in _prices) {
       final String currency = draft.currency.text.trim().toUpperCase();
-      final double? amount = double.tryParse(draft.amount.text.trim().replaceAll(',', '.'));
-      if (!RegExp(r'^[A-Z]{3}$').hasMatch(currency) || amount == null || amount < 0) {
+      final double? amount = double.tryParse(
+        draft.amount.text.trim().replaceAll(',', '.'),
+      );
+      if (!RegExp(r'^[A-Z]{3}$').hasMatch(currency) ||
+          amount == null ||
+          amount < 0) {
         setState(() => _error = widget.texts.invalidPrice);
         return;
       }
-      prices.add(AdminPlanoPreco(
-        currencyCode: currency,
-        valor: amount,
-        periodicidade: draft.periodicity,
-      ));
+      prices.add(
+        AdminPlanoPreco(
+          currencyCode: currency,
+          valor: amount,
+          periodicidade: draft.periodicity,
+        ),
+      );
     }
 
     final Map<String, AdminPlanoTraducao> translations =
@@ -648,30 +677,37 @@ class _PlanoEditorDialogState extends State<_PlanoEditorDialog> {
       );
     }
 
-    final int? limit = _userLimit.text.trim().isEmpty
-        ? null
-        : int.tryParse(_userLimit.text.trim());
+    final int? limit =
+        _userLimit.text.trim().isEmpty
+            ? null
+            : int.tryParse(_userLimit.text.trim());
     final int? trial = int.tryParse(_trialDays.text.trim());
     final int? loyalty = int.tryParse(_loyaltyMonths.text.trim());
-    if ((limit != null && limit < 1) || trial == null || trial < 0 || loyalty == null || loyalty < 0) {
+    if ((limit != null && limit < 1) ||
+        trial == null ||
+        trial < 0 ||
+        loyalty == null ||
+        loyalty < 0) {
       setState(() => _error = widget.texts.invalidConditions);
       return;
     }
 
-    Navigator.of(context).pop(AdminPlanoSalvarInput(
-      codigo: code,
-      status: _selectedStatus,
-      destaque: _featured,
-      ordemExibicao: order,
-      precos: prices,
-      condicoes: AdminPlanoCondicoes(
-        diasTeste: trial,
-        limiteUsuarios: limit,
-        mesesFidelidade: loyalty,
-        cancelamentoLivre: _cancelAnytime,
+    Navigator.of(context).pop(
+      AdminPlanoSalvarInput(
+        codigo: code,
+        status: _selectedStatus,
+        destaque: _featured,
+        ordemExibicao: order,
+        precos: prices,
+        condicoes: AdminPlanoCondicoes(
+          diasTeste: trial,
+          limiteUsuarios: limit,
+          mesesFidelidade: loyalty,
+          cancelamentoLivre: _cancelAnytime,
+        ),
+        traducoes: translations,
       ),
-      traducoes: translations,
-    ));
+    );
   }
 
   @override
@@ -691,10 +727,11 @@ class _PlanoEditorDialogState extends State<_PlanoEditorDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          widget.plano == null ? widget.texts.newPlan : widget.texts.editPlan,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w900,
-                          ),
+                          widget.plano == null
+                              ? widget.texts.newPlan
+                              : widget.texts.editPlan,
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.w900),
                         ),
                         const SizedBox(height: 4),
                         Text(widget.texts.editorSubtitle),
@@ -722,20 +759,32 @@ class _PlanoEditorDialogState extends State<_PlanoEditorDialog> {
                       runSpacing: 16,
                       children: <Widget>[
                         _field(_code, widget.texts.code, width: 260),
-                        _field(_order, widget.texts.order, width: 160, numeric: true),
+                        _field(
+                          _order,
+                          widget.texts.order,
+                          width: 160,
+                          numeric: true,
+                        ),
                         SizedBox(
                           width: 220,
                           child: DropdownButtonFormField<String>(
                             value: _selectedStatus,
-                            decoration: InputDecoration(labelText: widget.texts.status),
+                            decoration: InputDecoration(
+                              labelText: widget.texts.status,
+                            ),
                             items: _status
-                                .map((String value) => DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(widget.texts.statusLabel(value)),
-                                    ))
+                                .map(
+                                  (String value) => DropdownMenuItem<String>(
+                                    value: value,
+                                    child: Text(
+                                      widget.texts.statusLabel(value),
+                                    ),
+                                  ),
+                                )
                                 .toList(growable: false),
                             onChanged: (String? value) {
-                              if (value != null) setState(() => _selectedStatus = value);
+                              if (value != null)
+                                setState(() => _selectedStatus = value);
                             },
                           ),
                         ),
@@ -746,7 +795,8 @@ class _PlanoEditorDialogState extends State<_PlanoEditorDialog> {
                       value: _featured,
                       title: Text(widget.texts.featured),
                       subtitle: Text(widget.texts.featuredHelp),
-                      onChanged: (bool value) => setState(() => _featured = value),
+                      onChanged:
+                          (bool value) => setState(() => _featured = value),
                     ),
                     const SizedBox(height: 24),
                     Row(
@@ -759,7 +809,9 @@ class _PlanoEditorDialogState extends State<_PlanoEditorDialog> {
                         ),
                       ],
                     ),
-                    ..._prices.asMap().entries.map((MapEntry<int, _PriceDraft> entry) {
+                    ..._prices.asMap().entries.map((
+                      MapEntry<int, _PriceDraft> entry,
+                    ) {
                       final _PriceDraft price = entry.value;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
@@ -768,27 +820,49 @@ class _PlanoEditorDialogState extends State<_PlanoEditorDialog> {
                           runSpacing: 12,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: <Widget>[
-                            _field(price.currency, widget.texts.currency, width: 140),
-                            _field(price.amount, widget.texts.amount, width: 180, numeric: true),
+                            _field(
+                              price.currency,
+                              widget.texts.currency,
+                              width: 140,
+                            ),
+                            _field(
+                              price.amount,
+                              widget.texts.amount,
+                              width: 180,
+                              numeric: true,
+                            ),
                             SizedBox(
                               width: 190,
                               child: DropdownButtonFormField<String>(
                                 value: price.periodicity,
-                                decoration: InputDecoration(labelText: widget.texts.periodicity),
+                                decoration: InputDecoration(
+                                  labelText: widget.texts.periodicity,
+                                ),
                                 items: _periodicities
-                                    .map((String value) => DropdownMenuItem<String>(
-                                          value: value,
-                                          child: Text(widget.texts.periodicityLabel(value)),
-                                        ))
+                                    .map(
+                                      (String value) =>
+                                          DropdownMenuItem<String>(
+                                            value: value,
+                                            child: Text(
+                                              widget.texts.periodicityLabel(
+                                                value,
+                                              ),
+                                            ),
+                                          ),
+                                    )
                                     .toList(growable: false),
                                 onChanged: (String? value) {
-                                  if (value != null) setState(() => price.periodicity = value);
+                                  if (value != null)
+                                    setState(() => price.periodicity = value);
                                 },
                               ),
                             ),
                             IconButton(
                               tooltip: widget.texts.removePrice,
-                              onPressed: _prices.length == 1 ? null : () => _removePrice(entry.key),
+                              onPressed:
+                                  _prices.length == 1
+                                      ? null
+                                      : () => _removePrice(entry.key),
                               icon: const Icon(Icons.delete_outline_rounded),
                             ),
                           ],
@@ -801,16 +875,33 @@ class _PlanoEditorDialogState extends State<_PlanoEditorDialog> {
                       spacing: 16,
                       runSpacing: 16,
                       children: <Widget>[
-                        _field(_trialDays, widget.texts.trialDays, width: 180, numeric: true),
-                        _field(_userLimit, widget.texts.userLimit, width: 210, numeric: true),
-                        _field(_loyaltyMonths, widget.texts.loyaltyMonths, width: 210, numeric: true),
+                        _field(
+                          _trialDays,
+                          widget.texts.trialDays,
+                          width: 180,
+                          numeric: true,
+                        ),
+                        _field(
+                          _userLimit,
+                          widget.texts.userLimit,
+                          width: 210,
+                          numeric: true,
+                        ),
+                        _field(
+                          _loyaltyMonths,
+                          widget.texts.loyaltyMonths,
+                          width: 210,
+                          numeric: true,
+                        ),
                       ],
                     ),
                     SwitchListTile.adaptive(
                       contentPadding: EdgeInsets.zero,
                       value: _cancelAnytime,
                       title: Text(widget.texts.cancelAnytime),
-                      onChanged: (bool value) => setState(() => _cancelAnytime = value),
+                      onChanged:
+                          (bool value) =>
+                              setState(() => _cancelAnytime = value),
                     ),
                     const SizedBox(height: 24),
                     _sectionTitle(widget.texts.translations),
@@ -818,45 +909,60 @@ class _PlanoEditorDialogState extends State<_PlanoEditorDialog> {
                       length: _locales.length,
                       child: Column(
                         children: <Widget>[
-                          TabBar(tabs: _locales.map((String locale) => Tab(text: locale)).toList()),
+                          TabBar(
+                            tabs:
+                                _locales
+                                    .map((String locale) => Tab(text: locale))
+                                    .toList(),
+                          ),
                           SizedBox(
                             height: 390,
                             child: TabBarView(
-                              children: _locales.map((String locale) {
-                                final _TranslationDraft draft = _translations[locale]!;
-                                return ListView(
-                                  padding: const EdgeInsets.only(top: 18),
-                                  children: <Widget>[
-                                    TextField(
-                                      controller: draft.name,
-                                      decoration: InputDecoration(labelText: widget.texts.name),
-                                    ),
-                                    const SizedBox(height: 14),
-                                    TextField(
-                                      controller: draft.description,
-                                      minLines: 2,
-                                      maxLines: 3,
-                                      decoration: InputDecoration(labelText: widget.texts.description),
-                                    ),
-                                    const SizedBox(height: 14),
-                                    TextField(
-                                      controller: draft.cta,
-                                      decoration: InputDecoration(labelText: widget.texts.cta),
-                                    ),
-                                    const SizedBox(height: 14),
-                                    TextField(
-                                      controller: draft.features,
-                                      minLines: 5,
-                                      maxLines: 7,
-                                      decoration: InputDecoration(
-                                        labelText: widget.texts.features,
-                                        helperText: widget.texts.featuresHelp,
-                                        alignLabelWithHint: true,
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }).toList(growable: false),
+                              children: _locales
+                                  .map((String locale) {
+                                    final _TranslationDraft draft =
+                                        _translations[locale]!;
+                                    return ListView(
+                                      padding: const EdgeInsets.only(top: 18),
+                                      children: <Widget>[
+                                        TextField(
+                                          controller: draft.name,
+                                          decoration: InputDecoration(
+                                            labelText: widget.texts.name,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 14),
+                                        TextField(
+                                          controller: draft.description,
+                                          minLines: 2,
+                                          maxLines: 3,
+                                          decoration: InputDecoration(
+                                            labelText: widget.texts.description,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 14),
+                                        TextField(
+                                          controller: draft.cta,
+                                          decoration: InputDecoration(
+                                            labelText: widget.texts.cta,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 14),
+                                        TextField(
+                                          controller: draft.features,
+                                          minLines: 5,
+                                          maxLines: 7,
+                                          decoration: InputDecoration(
+                                            labelText: widget.texts.features,
+                                            helperText:
+                                                widget.texts.featuresHelp,
+                                            alignLabelWithHint: true,
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  })
+                                  .toList(growable: false),
                             ),
                           ),
                         ],
@@ -866,7 +972,10 @@ class _PlanoEditorDialogState extends State<_PlanoEditorDialog> {
                       const SizedBox(height: 14),
                       Text(
                         _error!,
-                        style: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ],
                   ],
@@ -908,7 +1017,10 @@ class _PlanoEditorDialogState extends State<_PlanoEditorDialog> {
       width: width,
       child: TextField(
         controller: controller,
-        keyboardType: numeric ? const TextInputType.numberWithOptions(decimal: true) : null,
+        keyboardType:
+            numeric
+                ? const TextInputType.numberWithOptions(decimal: true)
+                : null,
         decoration: InputDecoration(labelText: label),
       ),
     );
@@ -917,7 +1029,10 @@ class _PlanoEditorDialogState extends State<_PlanoEditorDialog> {
   Widget _sectionTitle(String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Text(value, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+      child: Text(
+        value,
+        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+      ),
     );
   }
 }
@@ -964,7 +1079,9 @@ class _TranslationDraft {
       name: TextEditingController(text: translation?.nome ?? ''),
       description: TextEditingController(text: translation?.descricao ?? ''),
       cta: TextEditingController(text: translation?.chamadaAcao ?? ''),
-      features: TextEditingController(text: translation?.beneficios.join('\n') ?? ''),
+      features: TextEditingController(
+        text: translation?.beneficios.join('\n') ?? '',
+      ),
     );
   }
 
@@ -1037,7 +1154,10 @@ class _PlansEmpty extends StatelessWidget {
         children: <Widget>[
           const Icon(Icons.sell_outlined, size: 48),
           const SizedBox(height: 12),
-          Text(texts.empty, style: const TextStyle(fontWeight: FontWeight.w900)),
+          Text(
+            texts.empty,
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: onCreate,
@@ -1059,44 +1179,120 @@ class _PlansTexts {
 
   bool get en => language == 'en';
   bool get es => language == 'es';
-  String get title => en ? 'Public plans' : es ? 'Planes públicos' : 'Planos públicos';
-  String get eyebrow => en ? 'COMMERCIAL CATALOG' : es ? 'CATÁLOGO COMERCIAL' : 'CATÁLOGO COMERCIAL';
+  String get title =>
+      en
+          ? 'Public plans'
+          : es
+          ? 'Planes públicos'
+          : 'Planos públicos';
+  String get eyebrow =>
+      en
+          ? 'COMMERCIAL CATALOG'
+          : es
+          ? 'CATÁLOGO COMERCIAL'
+          : 'CATÁLOGO COMERCIAL';
   String get heading =>
       en
           ? 'Plans shown on the website'
           : es
           ? 'Planes exhibidos en el sitio'
           : 'Planos exibidos no site';
-  String get subtitle => en
-      ? 'Manage prices, conditions and content without a new deployment.'
-      : es
-      ? 'Administra precios, condiciones y contenido sin un nuevo despliegue.'
-      : 'Gerencie preços, condições e conteúdo sem realizar um novo deploy.';
-  String get total => en ? 'Total' : es ? 'Total' : 'Total';
-  String get published => en ? 'Published' : es ? 'Publicados' : 'Publicados';
-  String get newPlan => en ? 'New plan' : es ? 'Nuevo plan' : 'Novo plano';
-  String get editPlan => en ? 'Edit plan' : es ? 'Editar plan' : 'Editar plano';
+  String get subtitle =>
+      en
+          ? 'Manage prices, conditions and content without a new deployment.'
+          : es
+          ? 'Administra precios, condiciones y contenido sin un nuevo despliegue.'
+          : 'Gerencie preços, condições e conteúdo sem realizar um novo deploy.';
+  String get total =>
+      en
+          ? 'Total'
+          : es
+          ? 'Total'
+          : 'Total';
+  String get published =>
+      en
+          ? 'Published'
+          : es
+          ? 'Publicados'
+          : 'Publicados';
+  String get newPlan =>
+      en
+          ? 'New plan'
+          : es
+          ? 'Nuevo plan'
+          : 'Novo plano';
+  String get editPlan =>
+      en
+          ? 'Edit plan'
+          : es
+          ? 'Editar plan'
+          : 'Editar plano';
   String get editorSubtitle =>
       en
           ? 'Changes are persisted in MongoDB.'
           : es
           ? 'Los cambios se guardan en MongoDB.'
           : 'As alterações são persistidas no MongoDB.';
-  String get edit => en ? 'Edit' : es ? 'Editar' : 'Editar';
-  String get archive => en ? 'Archive' : es ? 'Archivar' : 'Arquivar';
-  String get archiveTitle => en ? 'Archive plan?' : es ? '¿Archivar el plan?' : 'Arquivar plano?';
+  String get edit =>
+      en
+          ? 'Edit'
+          : es
+          ? 'Editar'
+          : 'Editar';
+  String get archive =>
+      en
+          ? 'Archive'
+          : es
+          ? 'Archivar'
+          : 'Arquivar';
+  String get archiveTitle =>
+      en
+          ? 'Archive plan?'
+          : es
+          ? '¿Archivar el plan?'
+          : 'Arquivar plano?';
   String archiveBody(String code) =>
       en
           ? '$code will no longer be displayed publicly.'
           : es
           ? '$code dejará de mostrarse públicamente.'
           : '$code deixará de ser exibido publicamente.';
-  String get archived => en ? 'Plan archived.' : es ? 'Plan archivado.' : 'Plano arquivado.';
-  String get created => en ? 'Plan created.' : es ? 'Plan creado.' : 'Plano criado.';
-  String get updated => en ? 'Plan updated.' : es ? 'Plan actualizado.' : 'Plano atualizado.';
-  String get cancel => en ? 'Cancel' : es ? 'Cancelar' : 'Cancelar';
-  String get save => en ? 'Save' : es ? 'Guardar' : 'Salvar';
-  String get retry => en ? 'Try again' : es ? 'Intentar de nuevo' : 'Tentar novamente';
+  String get archived =>
+      en
+          ? 'Plan archived.'
+          : es
+          ? 'Plan archivado.'
+          : 'Plano arquivado.';
+  String get created =>
+      en
+          ? 'Plan created.'
+          : es
+          ? 'Plan creado.'
+          : 'Plano criado.';
+  String get updated =>
+      en
+          ? 'Plan updated.'
+          : es
+          ? 'Plan actualizado.'
+          : 'Plano atualizado.';
+  String get cancel =>
+      en
+          ? 'Cancel'
+          : es
+          ? 'Cancelar'
+          : 'Cancelar';
+  String get save =>
+      en
+          ? 'Save'
+          : es
+          ? 'Guardar'
+          : 'Salvar';
+  String get retry =>
+      en
+          ? 'Try again'
+          : es
+          ? 'Intentar de nuevo'
+          : 'Tentar novamente';
   String get empty =>
       en
           ? 'No plans registered yet.'
@@ -1109,42 +1305,132 @@ class _PlansTexts {
           : es
           ? 'Identificación y publicación'
           : 'Identificação e publicação';
-  String get code => en ? 'Stable code' : es ? 'Código estable' : 'Código estável';
-  String get order => en ? 'Order' : es ? 'Orden' : 'Ordem';
-  String get status => en ? 'Status' : es ? 'Estado' : 'Status';
-  String get featured => en ? 'Featured plan' : es ? 'Plan destacado' : 'Plano em destaque';
+  String get code =>
+      en
+          ? 'Stable code'
+          : es
+          ? 'Código estable'
+          : 'Código estável';
+  String get order =>
+      en
+          ? 'Order'
+          : es
+          ? 'Orden'
+          : 'Ordem';
+  String get status =>
+      en
+          ? 'Status'
+          : es
+          ? 'Estado'
+          : 'Status';
+  String get featured =>
+      en
+          ? 'Featured plan'
+          : es
+          ? 'Plan destacado'
+          : 'Plano em destaque';
   String get featuredHelp =>
       en
           ? 'Only one published plan is highlighted at a time.'
           : es
           ? 'Solo un plan publicado se destaca a la vez.'
           : 'Somente um plano publicado fica destacado por vez.';
-  String get prices => en ? 'Prices by currency' : es ? 'Precios por moneda' : 'Preços por moeda';
-  String get addPrice => en ? 'Add price' : es ? 'Agregar precio' : 'Adicionar preço';
-  String get removePrice => en ? 'Remove price' : es ? 'Eliminar precio' : 'Remover preço';
-  String get currency => en ? 'Currency code' : es ? 'Código de moneda' : 'Código da moeda';
-  String get amount => en ? 'Amount' : es ? 'Valor' : 'Valor';
-  String get periodicity => en ? 'Billing period' : es ? 'Periodicidad' : 'Periodicidade';
-  String get conditions => en ? 'Commercial conditions' : es ? 'Condiciones comerciales' : 'Condições comerciais';
-  String get trialDays => en ? 'Trial days' : es ? 'Días de prueba' : 'Dias de teste';
+  String get prices =>
+      en
+          ? 'Prices by currency'
+          : es
+          ? 'Precios por moneda'
+          : 'Preços por moeda';
+  String get addPrice =>
+      en
+          ? 'Add price'
+          : es
+          ? 'Agregar precio'
+          : 'Adicionar preço';
+  String get removePrice =>
+      en
+          ? 'Remove price'
+          : es
+          ? 'Eliminar precio'
+          : 'Remover preço';
+  String get currency =>
+      en
+          ? 'Currency code'
+          : es
+          ? 'Código de moneda'
+          : 'Código da moeda';
+  String get amount =>
+      en
+          ? 'Amount'
+          : es
+          ? 'Valor'
+          : 'Valor';
+  String get periodicity =>
+      en
+          ? 'Billing period'
+          : es
+          ? 'Periodicidad'
+          : 'Periodicidade';
+  String get conditions =>
+      en
+          ? 'Commercial conditions'
+          : es
+          ? 'Condiciones comerciales'
+          : 'Condições comerciais';
+  String get trialDays =>
+      en
+          ? 'Trial days'
+          : es
+          ? 'Días de prueba'
+          : 'Dias de teste';
   String get userLimit =>
       en
           ? 'User limit (empty = unlimited)'
           : es
           ? 'Límite de usuarios (vacío = ilimitado)'
           : 'Limite de usuários (vazio = ilimitado)';
-  String get loyaltyMonths => en ? 'Lock-in months' : es ? 'Meses de permanencia' : 'Meses de fidelidade';
-  String get cancelAnytime => en ? 'Free cancellation' : es ? 'Cancelación libre' : 'Cancelamento livre';
+  String get loyaltyMonths =>
+      en
+          ? 'Lock-in months'
+          : es
+          ? 'Meses de permanencia'
+          : 'Meses de fidelidade';
+  String get cancelAnytime =>
+      en
+          ? 'Free cancellation'
+          : es
+          ? 'Cancelación libre'
+          : 'Cancelamento livre';
   String get translations =>
       en
           ? 'Public content by language'
           : es
           ? 'Contenido público por idioma'
           : 'Conteúdo público por idioma';
-  String get name => en ? 'Plan name' : es ? 'Nombre del plan' : 'Nome do plano';
-  String get description => en ? 'Short description' : es ? 'Descripción breve' : 'Descrição curta';
-  String get cta => en ? 'Button text' : es ? 'Texto del botón' : 'Texto do botão';
-  String get features => en ? 'Benefits' : es ? 'Beneficios' : 'Benefícios';
+  String get name =>
+      en
+          ? 'Plan name'
+          : es
+          ? 'Nombre del plan'
+          : 'Nome do plano';
+  String get description =>
+      en
+          ? 'Short description'
+          : es
+          ? 'Descripción breve'
+          : 'Descrição curta';
+  String get cta =>
+      en
+          ? 'Button text'
+          : es
+          ? 'Texto del botón'
+          : 'Texto do botão';
+  String get features =>
+      en
+          ? 'Benefits'
+          : es
+          ? 'Beneficios'
+          : 'Benefícios';
   String get featuresHelp =>
       en
           ? 'One benefit per line.'
@@ -1182,14 +1468,48 @@ class _PlansTexts {
           ? 'Completa nombre y botón para $locale.'
           : 'Preencha nome e botão para $locale.';
   String statusLabel(String value) {
-    if (value == 'PUBLICADO') return en ? 'Published' : es ? 'Publicado' : 'Publicado';
-    if (value == 'ARQUIVADO') return en ? 'Archived' : es ? 'Archivado' : 'Arquivado';
-    return en ? 'Draft' : es ? 'Borrador' : 'Rascunho';
+    if (value == 'PUBLICADO')
+      return en
+          ? 'Published'
+          : es
+          ? 'Publicado'
+          : 'Publicado';
+    if (value == 'ARQUIVADO')
+      return en
+          ? 'Archived'
+          : es
+          ? 'Archivado'
+          : 'Arquivado';
+    return en
+        ? 'Draft'
+        : es
+        ? 'Borrador'
+        : 'Rascunho';
   }
+
   String periodicityLabel(String value) {
-    if (value == 'GRATUITO') return en ? 'Free' : es ? 'Gratuito' : 'Gratuito';
-    if (value == 'ANUAL') return en ? 'Yearly' : es ? 'Anual' : 'Anual';
-    if (value == 'UNICO') return en ? 'One time' : es ? 'Pago único' : 'Pagamento único';
-    return en ? 'Monthly' : es ? 'Mensual' : 'Mensal';
+    if (value == 'GRATUITO')
+      return en
+          ? 'Free'
+          : es
+          ? 'Gratuito'
+          : 'Gratuito';
+    if (value == 'ANUAL')
+      return en
+          ? 'Yearly'
+          : es
+          ? 'Anual'
+          : 'Anual';
+    if (value == 'UNICO')
+      return en
+          ? 'One time'
+          : es
+          ? 'Pago único'
+          : 'Pagamento único';
+    return en
+        ? 'Monthly'
+        : es
+        ? 'Mensual'
+        : 'Mensal';
   }
 }

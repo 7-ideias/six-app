@@ -255,7 +255,7 @@ void main() {
     expect(find.text('Cliente aberto'), findsOneWidget);
     expect(find.text('Atendimento OS-002'), findsNothing);
     expect(find.text('Atendimento OS-003'), findsNothing);
-    expect(find.text('BRL 120,00'), findsWidgets);
+    expect(find.text('R\$ 120,00'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 }

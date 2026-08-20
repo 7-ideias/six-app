@@ -56,7 +56,8 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
     final LocaleSettingsProvider regionalizacao =
         context.read<LocaleSettingsProvider>();
     final String codigo = codigoMoeda ?? regionalizacao.currencyCode;
-    return '$codigo ${regionalizacao.formatCurrency(valor, showCurrencyCode: false)}';
+    final String simbolo = LocaleSettingsProvider.currencySymbolForCode(codigo);
+    return '$simbolo ${regionalizacao.formatCurrency(valor, showCurrencySymbol: false)}';
   }
 
   String _formatarData(DateTime data) {
@@ -70,7 +71,10 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
   }
 
   double _parseNumero(String value) {
-    final String normalized = value.trim().replaceAll(' ', '').replaceAll(',', '.');
+    final String normalized = value
+        .trim()
+        .replaceAll(' ', '')
+        .replaceAll(',', '.');
     return double.tryParse(normalized) ?? 0;
   }
 
@@ -79,60 +83,70 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
     if (decimal == decimal.roundToDouble()) {
       return decimal.toInt().toString();
     }
-    return decimal.toStringAsFixed(2).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+    return decimal
+        .toStringAsFixed(2)
+        .replaceAll(RegExp(r'0+$'), '')
+        .replaceAll(RegExp(r'\.$'), '');
   }
 
   List<_CompraDemo> get _comprasFiltradas {
     final String query = _buscaController.text.trim().toLowerCase();
     final DateTime agora = DateTime.now();
-    final List<_CompraDemo> resultado = _store.compras.where((_CompraDemo compra) {
-      final bool statusValido = switch (_filtroStatus) {
-        _CompraFiltroStatus.todos => true,
-        _CompraFiltroStatus.rascunho =>
-          compra.status == _CompraDemoStatus.rascunho,
-        _CompraFiltroStatus.confirmada =>
-          compra.status == _CompraDemoStatus.confirmada,
-        _CompraFiltroStatus.cancelada =>
-          compra.status == _CompraDemoStatus.cancelada,
-      };
-      if (!statusValido) {
-        return false;
-      }
+    final List<_CompraDemo> resultado = _store.compras
+        .where((_CompraDemo compra) {
+          final bool statusValido = switch (_filtroStatus) {
+            _CompraFiltroStatus.todos => true,
+            _CompraFiltroStatus.rascunho =>
+              compra.status == _CompraDemoStatus.rascunho,
+            _CompraFiltroStatus.confirmada =>
+              compra.status == _CompraDemoStatus.confirmada,
+            _CompraFiltroStatus.cancelada =>
+              compra.status == _CompraDemoStatus.cancelada,
+          };
+          if (!statusValido) {
+            return false;
+          }
 
-      final bool periodoValido = switch (_periodo) {
-        _CompraPeriodo.todos => true,
-        _CompraPeriodo.seteDias =>
-          compra.atualizadaEm.isAfter(agora.subtract(const Duration(days: 7))),
-        _CompraPeriodo.trintaDias =>
-          compra.atualizadaEm.isAfter(agora.subtract(const Duration(days: 30))),
-        _CompraPeriodo.mesAtual =>
-          compra.atualizadaEm.year == agora.year &&
-              compra.atualizadaEm.month == agora.month,
-      };
-      if (!periodoValido) {
-        return false;
-      }
+          final bool periodoValido = switch (_periodo) {
+            _CompraPeriodo.todos => true,
+            _CompraPeriodo.seteDias => compra.atualizadaEm.isAfter(
+              agora.subtract(const Duration(days: 7)),
+            ),
+            _CompraPeriodo.trintaDias => compra.atualizadaEm.isAfter(
+              agora.subtract(const Duration(days: 30)),
+            ),
+            _CompraPeriodo.mesAtual =>
+              compra.atualizadaEm.year == agora.year &&
+                  compra.atualizadaEm.month == agora.month,
+          };
+          if (!periodoValido) {
+            return false;
+          }
 
-      if (query.isEmpty) {
-        return true;
-      }
-      final String searchable = <String>[
-        compra.identificadorVisual,
-        compra.fornecedorNome,
-        compra.fornecedorDocumento,
-        compra.numeroDocumento,
-        compra.tipoDocumento,
-        ...compra.itens.map((_CompraDemoItem item) => item.descricao),
-      ].join(' ').toLowerCase();
-      return searchable.contains(query);
-    }).toList(growable: false);
+          if (query.isEmpty) {
+            return true;
+          }
+          final String searchable =
+              <String>[
+                compra.identificadorVisual,
+                compra.fornecedorNome,
+                compra.fornecedorDocumento,
+                compra.numeroDocumento,
+                compra.tipoDocumento,
+                ...compra.itens.map((_CompraDemoItem item) => item.descricao),
+              ].join(' ').toLowerCase();
+          return searchable.contains(query);
+        })
+        .toList(growable: false);
 
     resultado.sort((_CompraDemo a, _CompraDemo b) {
       return switch (_ordenacao) {
-        _CompraOrdenacao.maisRecentes =>
-          b.atualizadaEm.compareTo(a.atualizadaEm),
-        _CompraOrdenacao.maisAntigas =>
-          a.atualizadaEm.compareTo(b.atualizadaEm),
+        _CompraOrdenacao.maisRecentes => b.atualizadaEm.compareTo(
+          a.atualizadaEm,
+        ),
+        _CompraOrdenacao.maisAntigas => a.atualizadaEm.compareTo(
+          b.atualizadaEm,
+        ),
         _CompraOrdenacao.maiorValor => b.totalCompra.compareTo(a.totalCompra),
         _CompraOrdenacao.menorValor => a.totalCompra.compareTo(b.totalCompra),
       };
@@ -142,27 +156,44 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
 
   double get _totalConfirmado {
     return _store.compras
-        .where((_CompraDemo compra) =>
-            compra.status == _CompraDemoStatus.confirmada)
-        .fold<double>(0, (double sum, _CompraDemo compra) => sum + compra.totalCompra);
+        .where(
+          (_CompraDemo compra) => compra.status == _CompraDemoStatus.confirmada,
+        )
+        .fold<double>(
+          0,
+          (double sum, _CompraDemo compra) => sum + compra.totalCompra,
+        );
   }
 
   double get _totalContasPagar {
     return _store.compras
-        .where((_CompraDemo compra) =>
-            compra.status != _CompraDemoStatus.cancelada &&
-            compra.gerarContaPagar &&
-            !compra.jaPago)
-        .fold<double>(0, (double sum, _CompraDemo compra) => sum + compra.totalCompra);
+        .where(
+          (_CompraDemo compra) =>
+              compra.status != _CompraDemoStatus.cancelada &&
+              compra.gerarContaPagar &&
+              !compra.jaPago,
+        )
+        .fold<double>(
+          0,
+          (double sum, _CompraDemo compra) => sum + compra.totalCompra,
+        );
   }
 
-  int get _quantidadeRascunhos => _store.compras
-      .where((_CompraDemo compra) => compra.status == _CompraDemoStatus.rascunho)
-      .length;
+  int get _quantidadeRascunhos =>
+      _store.compras
+          .where(
+            (_CompraDemo compra) => compra.status == _CompraDemoStatus.rascunho,
+          )
+          .length;
 
   int get _itensComEntrada => _store.compras
-      .where((_CompraDemo compra) => compra.status == _CompraDemoStatus.confirmada)
-      .fold<int>(0, (int sum, _CompraDemo compra) => sum + compra.itensComEstoque);
+      .where(
+        (_CompraDemo compra) => compra.status == _CompraDemoStatus.confirmada,
+      )
+      .fold<int>(
+        0,
+        (int sum, _CompraDemo compra) => sum + compra.itensComEstoque,
+      );
 
   void _novaCompra() {
     final String moeda = context.read<LocaleSettingsProvider>().currencyCode;
@@ -176,9 +207,8 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
   void _abrirCompra(_CompraDemo compra) {
     setState(() {
       _compraSelecionada = compra;
-      _etapaAtual = compra.editavel
-          ? _CompraDemoStep.dados
-          : _CompraDemoStep.resumo;
+      _etapaAtual =
+          compra.editavel ? _CompraDemoStep.dados : _CompraDemoStep.resumo;
     });
   }
 
@@ -255,9 +285,10 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
         duration: WebThemeTokens.transitionDuration,
         switchInCurve: Curves.easeOutCubic,
         switchOutCurve: Curves.easeInCubic,
-        child: _compraSelecionada == null
-            ? _buildListaCompras()
-            : _buildEditorCompra(_compraSelecionada!),
+        child:
+            _compraSelecionada == null
+                ? _buildListaCompras()
+                : _buildEditorCompra(_compraSelecionada!),
       ),
     );
   }
@@ -297,9 +328,12 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
                           _CompraSurfaceCard(
                             child: _CompraEmptyState(
                               icon: Icons.search_off_outlined,
-                              title: context.comprasT('compras.empty.filtered.title'),
-                              description:
-                                  context.comprasT('compras.empty.filtered.description'),
+                              title: context.comprasT(
+                                'compras.empty.filtered.title',
+                              ),
+                              description: context.comprasT(
+                                'compras.empty.filtered.description',
+                              ),
                               action: OutlinedButton.icon(
                                 onPressed: () {
                                   setState(() {
@@ -309,7 +343,9 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
                                   });
                                 },
                                 icon: const Icon(Icons.filter_alt_off_outlined),
-                                label: Text(context.comprasT('compras.filters.clear')),
+                                label: Text(
+                                  context.comprasT('compras.filters.clear'),
+                                ),
                               ),
                             ),
                           )
@@ -346,7 +382,8 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
                 runSpacing: 8,
                 children: <Widget>[
                   Text(
-                    context.comprasT('compras.footer.count')
+                    context
+                        .comprasT('compras.footer.count')
                         .replaceAll('{count}', compras.length.toString()),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: tokens.secondaryText,
@@ -453,7 +490,12 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double largura = constraints.maxWidth;
-        final int colunas = largura >= 1100 ? 4 : largura >= 580 ? 2 : 1;
+        final int colunas =
+            largura >= 1100
+                ? 4
+                : largura >= 580
+                ? 2
+                : 1;
         final double itemWidth = (largura - ((colunas - 1) * 12)) / colunas;
         return Wrap(
           spacing: 12,
@@ -519,16 +561,17 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
               labelText: context.comprasT('compras.filters.search'),
               hintText: context.comprasT('compras.filters.searchHint'),
               prefixIcon: const Icon(Icons.search_rounded),
-              suffixIcon: _buscaController.text.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: context.comprasT('common.clear'),
-                      onPressed: () {
-                        _buscaController.clear();
-                        setState(() {});
-                      },
-                      icon: const Icon(Icons.close_rounded),
-                    ),
+              suffixIcon:
+                  _buscaController.text.isEmpty
+                      ? null
+                      : IconButton(
+                        tooltip: context.comprasT('common.clear'),
+                        onPressed: () {
+                          _buscaController.clear();
+                          setState(() {});
+                        },
+                        icon: const Icon(Icons.close_rounded),
+                      ),
               filled: true,
               fillColor: tokens.inputBackground,
               border: OutlineInputBorder(
@@ -677,12 +720,14 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
   }) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final String fornecedor = compra.fornecedorNome.trim().isEmpty
-        ? context.comprasT('compras.supplier.notSelected')
-        : compra.fornecedorNome;
-    final String documento = compra.numeroDocumento.trim().isEmpty
-        ? context.comprasT('compras.document.notInformed')
-        : '${compra.tipoDocumento} ${compra.numeroDocumento}';
+    final String fornecedor =
+        compra.fornecedorNome.trim().isEmpty
+            ? context.comprasT('compras.supplier.notSelected')
+            : compra.fornecedorNome;
+    final String documento =
+        compra.numeroDocumento.trim().isEmpty
+            ? context.comprasT('compras.document.notInformed')
+            : '${compra.tipoDocumento} ${compra.numeroDocumento}';
 
     final Widget resumo = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -717,23 +762,23 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
           spacing: 12,
           runSpacing: 6,
           children: <Widget>[
-            _metadataCard(
-              Icons.receipt_long_outlined,
-              documento,
-            ),
+            _metadataCard(Icons.receipt_long_outlined, documento),
             _metadataCard(
               Icons.inventory_2_outlined,
-              context.comprasT('compras.list.itemsCount')
+              context
+                  .comprasT('compras.list.itemsCount')
                   .replaceAll('{count}', compra.itens.length.toString()),
             ),
             _metadataCard(
               Icons.event_outlined,
               _formatarData(compra.dataEntrada),
             ),
-            if (compra.gerarContaPagar && compra.status != _CompraDemoStatus.cancelada)
+            if (compra.gerarContaPagar &&
+                compra.status != _CompraDemoStatus.cancelada)
               _metadataCard(
                 Icons.account_balance_wallet_outlined,
-                context.comprasT('compras.list.installments')
+                context
+                    .comprasT('compras.list.installments')
                     .replaceAll(
                       '{count}',
                       compra.quantidadeParcelas.toString(),
@@ -772,7 +817,8 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
             ),
             const SizedBox(height: 5),
             Text(
-              context.comprasT('compras.list.updated')
+              context
+                  .comprasT('compras.list.updated')
                   .replaceAll('{date}', _formatarDataHora(compra.atualizadaEm)),
               textAlign: TextAlign.right,
               style: theme.textTheme.bodySmall?.copyWith(
@@ -813,30 +859,34 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
                 return;
             }
           },
-          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            PopupMenuItem<String>(
-              value: 'duplicate',
-              child: ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.copy_outlined),
-                title: Text(context.comprasT('compras.action.duplicate')),
-              ),
-            ),
-            if (compra.status != _CompraDemoStatus.cancelada)
-              PopupMenuItem<String>(
-                value: 'cancel',
-                child: ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.cancel_outlined, color: tokens.danger),
-                  title: Text(
-                    context.comprasT('compras.action.cancel'),
-                    style: TextStyle(color: tokens.danger),
+          itemBuilder:
+              (BuildContext context) => <PopupMenuEntry<String>>[
+                PopupMenuItem<String>(
+                  value: 'duplicate',
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.copy_outlined),
+                    title: Text(context.comprasT('compras.action.duplicate')),
                   ),
                 ),
-              ),
-          ],
+                if (compra.status != _CompraDemoStatus.cancelada)
+                  PopupMenuItem<String>(
+                    value: 'cancel',
+                    child: ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.cancel_outlined,
+                        color: tokens.danger,
+                      ),
+                      title: Text(
+                        context.comprasT('compras.action.cancel'),
+                        style: TextStyle(color: tokens.danger),
+                      ),
+                    ),
+                  ),
+              ],
           child: Container(
             height: 40,
             padding: const EdgeInsets.symmetric(horizontal: 11),
@@ -852,42 +902,43 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
 
     return _CompraSurfaceCard(
       padding: const EdgeInsets.all(16),
-      child: compacto
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                resumo,
-                const SizedBox(height: 14),
-                valores,
-                const SizedBox(height: 12),
-                acoes,
-              ],
-            )
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: tokens.surfaceMuted,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: tokens.cardBorder),
+      child:
+          compacto
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  resumo,
+                  const SizedBox(height: 14),
+                  valores,
+                  const SizedBox(height: 12),
+                  acoes,
+                ],
+              )
+              : Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: tokens.surfaceMuted,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: tokens.cardBorder),
+                    ),
+                    child: Icon(
+                      Icons.local_shipping_outlined,
+                      color: tokens.secondaryText,
+                      size: 21,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.local_shipping_outlined,
-                    color: tokens.secondaryText,
-                    size: 21,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(child: resumo),
-                const SizedBox(width: 16),
-                valores,
-                const SizedBox(width: 14),
-                acoes,
-              ],
-            ),
+                  const SizedBox(width: 14),
+                  Expanded(child: resumo),
+                  const SizedBox(width: 16),
+                  valores,
+                  const SizedBox(width: 14),
+                  acoes,
+                ],
+              ),
     );
   }
 
@@ -900,9 +951,9 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
         const SizedBox(width: 5),
         Text(
           text,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: tokens.secondaryText,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: tokens.secondaryText),
         ),
       ],
     );

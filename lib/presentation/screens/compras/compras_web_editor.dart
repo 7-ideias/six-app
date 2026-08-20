@@ -134,11 +134,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
     if (compacto) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          title,
-          const SizedBox(height: 12),
-          actions,
-        ],
+        children: <Widget>[title, const SizedBox(height: 12), actions],
       );
     }
     return Row(
@@ -154,51 +150,55 @@ extension _ComprasWebEditor on _ComprasWebPageState {
   Widget _buildEtapas(_CompraDemo compra, bool compacto) {
     final List<(_CompraDemoStep, IconData, String)> etapas =
         <(_CompraDemoStep, IconData, String)>[
-      (
-        _CompraDemoStep.dados,
-        Icons.description_outlined,
-        context.comprasT('compras.step.data'),
-      ),
-      (
-        _CompraDemoStep.itens,
-        Icons.inventory_2_outlined,
-        context.comprasT('compras.step.items'),
-      ),
-      (
-        _CompraDemoStep.financeiro,
-        Icons.account_balance_wallet_outlined,
-        context.comprasT('compras.step.financial'),
-      ),
-      (
-        _CompraDemoStep.anexos,
-        Icons.attach_file_outlined,
-        context.comprasT('compras.step.attachments'),
-      ),
-      (
-        _CompraDemoStep.resumo,
-        Icons.fact_check_outlined,
-        context.comprasT('compras.step.summary'),
-      ),
-    ];
+          (
+            _CompraDemoStep.dados,
+            Icons.description_outlined,
+            context.comprasT('compras.step.data'),
+          ),
+          (
+            _CompraDemoStep.itens,
+            Icons.inventory_2_outlined,
+            context.comprasT('compras.step.items'),
+          ),
+          (
+            _CompraDemoStep.financeiro,
+            Icons.account_balance_wallet_outlined,
+            context.comprasT('compras.step.financial'),
+          ),
+          (
+            _CompraDemoStep.anexos,
+            Icons.attach_file_outlined,
+            context.comprasT('compras.step.attachments'),
+          ),
+          (
+            _CompraDemoStep.resumo,
+            Icons.fact_check_outlined,
+            context.comprasT('compras.step.summary'),
+          ),
+        ];
     return _CompraSurfaceCard(
       padding: const EdgeInsets.all(12),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: etapas.indexed.map((entry) {
-            final int index = entry.$1;
-            final (_CompraDemoStep, IconData, String) etapa = entry.$2;
-            return Padding(
-              padding: EdgeInsets.only(right: index == etapas.length - 1 ? 0 : 8),
-              child: _CompraStepButton(
-                icon: etapa.$2,
-                label: etapa.$3,
-                active: _etapaAtual == etapa.$1,
-                completed: _etapaConcluida(compra, etapa.$1),
-                onTap: () => _rebuild(() => _etapaAtual = etapa.$1),
-              ),
-            );
-          }).toList(growable: false),
+          children: etapas.indexed
+              .map((entry) {
+                final int index = entry.$1;
+                final (_CompraDemoStep, IconData, String) etapa = entry.$2;
+                return Padding(
+                  padding: EdgeInsets.only(
+                    right: index == etapas.length - 1 ? 0 : 8,
+                  ),
+                  child: _CompraStepButton(
+                    icon: etapa.$2,
+                    label: etapa.$3,
+                    active: _etapaAtual == etapa.$1,
+                    completed: _etapaConcluida(compra, etapa.$1),
+                    onTap: () => _rebuild(() => _etapaAtual = etapa.$1),
+                  ),
+                );
+              })
+              .toList(growable: false),
         ),
       ),
     );
@@ -213,8 +213,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
       _CompraDemoStep.financeiro =>
         !compra.gerarContaPagar || compra.quantidadeParcelas > 0,
       _CompraDemoStep.anexos => compra.anexos.isNotEmpty,
-      _CompraDemoStep.resumo =>
-        compra.status == _CompraDemoStatus.confirmada,
+      _CompraDemoStep.resumo => compra.status == _CompraDemoStatus.confirmada,
     };
   }
 
@@ -253,9 +252,13 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                   child: InputDecorator(
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.storefront_outlined),
-                      suffixIcon: editavel
-                          ? const Icon(Icons.expand_more_rounded)
-                          : const Icon(Icons.lock_outline_rounded, size: 18),
+                      suffixIcon:
+                          editavel
+                              ? const Icon(Icons.expand_more_rounded)
+                              : const Icon(
+                                Icons.lock_outline_rounded,
+                                size: 18,
+                              ),
                       filled: true,
                       fillColor: tokens.inputBackground,
                       border: OutlineInputBorder(
@@ -263,29 +266,30 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                       ),
                     ),
                     isEmpty: compra.fornecedorNome.trim().isEmpty,
-                    child: compra.fornecedorNome.trim().isEmpty
-                        ? Text(
-                            context.comprasT('compras.supplier.select'),
-                            style: TextStyle(color: tokens.mutedText),
-                          )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Text(
-                                compra.fornecedorNome,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if (compra.fornecedorDocumento.trim().isNotEmpty)
+                    child:
+                        compra.fornecedorNome.trim().isEmpty
+                            ? Text(
+                              context.comprasT('compras.supplier.select'),
+                              style: TextStyle(color: tokens.mutedText),
+                            )
+                            : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
                                 Text(
-                                  compra.fornecedorDocumento,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(color: tokens.secondaryText),
+                                  compra.fornecedorNome,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                            ],
-                          ),
+                                if (compra.fornecedorDocumento
+                                    .trim()
+                                    .isNotEmpty)
+                                  Text(
+                                    compra.fornecedorDocumento,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(color: tokens.secondaryText),
+                                  ),
+                              ],
+                            ),
                   ),
                 ),
               ),
@@ -295,30 +299,33 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                   initialValue: compra.tipoDocumento,
                   decoration: _inputDecoration(tokens),
                   items: const <String>[
-                    'NF-e',
-                    'NFC-e',
-                    'Invoice',
-                    'Factura',
-                    'Recibo',
-                    'Outro',
-                  ]
+                        'NF-e',
+                        'NFC-e',
+                        'Invoice',
+                        'Factura',
+                        'Recibo',
+                        'Outro',
+                      ]
                       .map(
                         (String value) => DropdownMenuItem<String>(
                           value: value,
-                          child: Text(value),
+                          child: Text(
+                            '${LocaleSettingsProvider.currencySymbolForCode(value)} - $value',
+                          ),
                         ),
                       )
                       .toList(growable: false),
-                  onChanged: editavel
-                      ? (String? value) {
-                          if (value != null) {
-                            _rebuild(() {
-                              compra.tipoDocumento = value;
-                              _store.salvar(compra);
-                            });
+                  onChanged:
+                      editavel
+                          ? (String? value) {
+                            if (value != null) {
+                              _rebuild(() {
+                                compra.tipoDocumento = value;
+                                _store.salvar(compra);
+                              });
+                            }
                           }
-                        }
-                      : null,
+                          : null,
                 ),
               ),
               _buildLabeledField(
@@ -327,15 +334,15 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                   initialValue: compra.moeda,
                   decoration: _inputDecoration(tokens),
                   items: <String>{
-                    context.read<LocaleSettingsProvider>().currencyCode,
-                    'BRL',
-                    'USD',
-                    'EUR',
-                    'ARS',
-                    'MXN',
-                    'COP',
-                    'CLP',
-                  }
+                        context.read<LocaleSettingsProvider>().currencyCode,
+                        'BRL',
+                        'USD',
+                        'EUR',
+                        'ARS',
+                        'MXN',
+                        'COP',
+                        'CLP',
+                      }
                       .map(
                         (String value) => DropdownMenuItem<String>(
                           value: value,
@@ -343,16 +350,17 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                         ),
                       )
                       .toList(growable: false),
-                  onChanged: editavel
-                      ? (String? value) {
-                          if (value != null) {
-                            _rebuild(() {
-                              compra.moeda = value;
-                              _store.salvar(compra);
-                            });
+                  onChanged:
+                      editavel
+                          ? (String? value) {
+                            if (value != null) {
+                              _rebuild(() {
+                                compra.moeda = value;
+                                _store.salvar(compra);
+                              });
+                            }
                           }
-                        }
-                      : null,
+                          : null,
                 ),
               ),
             ],
@@ -371,7 +379,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                   initialValue: compra.numeroDocumento,
                   enabled: editavel,
                   decoration: _inputDecoration(tokens).copyWith(
-                    hintText: context.comprasT('compras.field.documentNumberHint'),
+                    hintText: context.comprasT(
+                      'compras.field.documentNumberHint',
+                    ),
                     prefixIcon: const Icon(Icons.numbers_outlined),
                   ),
                   onChanged: (String value) {
@@ -383,7 +393,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
               _buildLabeledField(
                 label: context.comprasT('compras.field.series'),
                 child: TextFormField(
-                  key: ValueKey<String>('serie-${compra.id}-${compra.serieDocumento}'),
+                  key: ValueKey<String>(
+                    'serie-${compra.id}-${compra.serieDocumento}',
+                  ),
                   initialValue: compra.serieDocumento,
                   enabled: editavel,
                   decoration: _inputDecoration(tokens).copyWith(
@@ -433,9 +445,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
             enabled: editavel,
             minLines: 3,
             maxLines: 5,
-            decoration: _inputDecoration(tokens).copyWith(
-              hintText: context.comprasT('compras.field.notesHint'),
-            ),
+            decoration: _inputDecoration(
+              tokens,
+            ).copyWith(hintText: context.comprasT('compras.field.notesHint')),
             onChanged: (String value) {
               compra.observacoes = value;
               _store.salvar(compra);
@@ -460,23 +472,31 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                 icon: Icons.inventory_2_outlined,
                 title: context.comprasT('compras.items.title'),
                 subtitle: context.comprasT('compras.items.subtitle'),
-                trailing: editavel && !compacto
-                    ? Wrap(
-                        spacing: 8,
-                        children: <Widget>[
-                          OutlinedButton.icon(
-                            onPressed: () => _adicionarItemLivre(compra),
-                            icon: const Icon(Icons.post_add_outlined, size: 18),
-                            label: Text(context.comprasT('compras.items.nonStock')),
-                          ),
-                          FilledButton.icon(
-                            onPressed: () => _selecionarProduto(compra),
-                            icon: const Icon(Icons.add_rounded, size: 18),
-                            label: Text(context.comprasT('compras.items.addProduct')),
-                          ),
-                        ],
-                      )
-                    : null,
+                trailing:
+                    editavel && !compacto
+                        ? Wrap(
+                          spacing: 8,
+                          children: <Widget>[
+                            OutlinedButton.icon(
+                              onPressed: () => _adicionarItemLivre(compra),
+                              icon: const Icon(
+                                Icons.post_add_outlined,
+                                size: 18,
+                              ),
+                              label: Text(
+                                context.comprasT('compras.items.nonStock'),
+                              ),
+                            ),
+                            FilledButton.icon(
+                              onPressed: () => _selecionarProduto(compra),
+                              icon: const Icon(Icons.add_rounded, size: 18),
+                              label: Text(
+                                context.comprasT('compras.items.addProduct'),
+                              ),
+                            ),
+                          ],
+                        )
+                        : null,
               ),
               if (editavel && compacto) ...<Widget>[
                 const SizedBox(height: 14),
@@ -502,14 +522,19 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                 _CompraEmptyState(
                   icon: Icons.inventory_2_outlined,
                   title: context.comprasT('compras.items.empty.title'),
-                  description: context.comprasT('compras.items.empty.description'),
-                  action: editavel
-                      ? FilledButton.icon(
-                          onPressed: () => _selecionarProduto(compra),
-                          icon: const Icon(Icons.add_rounded),
-                          label: Text(context.comprasT('compras.items.addProduct')),
-                        )
-                      : null,
+                  description: context.comprasT(
+                    'compras.items.empty.description',
+                  ),
+                  action:
+                      editavel
+                          ? FilledButton.icon(
+                            onPressed: () => _selecionarProduto(compra),
+                            icon: const Icon(Icons.add_rounded),
+                            label: Text(
+                              context.comprasT('compras.items.addProduct'),
+                            ),
+                          )
+                          : null,
                 )
               else
                 ...compra.itens.indexed.map((entry) {
@@ -546,7 +571,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                   _buildLabeledField(
                     label: context.comprasT('compras.field.freight'),
                     child: _buildMoneyField(
-                      key: ValueKey<String>('frete-${compra.id}-${compra.frete}'),
+                      key: ValueKey<String>(
+                        'frete-${compra.id}-${compra.frete}',
+                      ),
                       value: compra.frete,
                       enabled: editavel,
                       onChanged: (double value) {
@@ -610,7 +637,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                     ),
                     _CompraInfoRow(
                       label: context.comprasT('compras.summary.itemsDiscounts'),
-                      value: '- ${_formatarMoeda(compra.descontoItens + compra.descontoGeral, codigoMoeda: compra.moeda)}',
+                      value:
+                          '- ${_formatarMoeda(compra.descontoItens + compra.descontoGeral, codigoMoeda: compra.moeda)}',
                     ),
                     _CompraInfoRow(
                       label: context.comprasT('compras.summary.additions'),
@@ -681,9 +709,10 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: item.movimentaEstoque
-                      ? tokens.success.withValues(alpha: 0.09)
-                      : tokens.info.withValues(alpha: 0.09),
+                  color:
+                      item.movimentaEstoque
+                          ? tokens.success.withValues(alpha: 0.09)
+                          : tokens.info.withValues(alpha: 0.09),
                   borderRadius: BorderRadius.circular(11),
                 ),
                 child: Icon(
@@ -727,7 +756,10 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                       _store.salvar(compra);
                     });
                   },
-                  icon: Icon(Icons.delete_outline_rounded, color: tokens.danger),
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: tokens.danger,
+                  ),
                 ),
             ],
           ),
@@ -743,7 +775,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                   ),
                   initialValue: _numeroEditavel(item.quantidade),
                   enabled: editavel,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   inputFormatters: <TextInputFormatter>[
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                   ],
@@ -759,12 +793,28 @@ extension _ComprasWebEditor on _ComprasWebPageState {
               _buildLabeledField(
                 label: context.comprasT('compras.field.unit'),
                 child: DropdownButtonFormField<String>(
-                  initialValue: <String>['UN', 'CX', 'PCT', 'KG', 'LT', 'MT', 'SV']
-                          .contains(item.unidade)
-                      ? item.unidade
-                      : 'UN',
+                  initialValue:
+                      <String>[
+                            'UN',
+                            'CX',
+                            'PCT',
+                            'KG',
+                            'LT',
+                            'MT',
+                            'SV',
+                          ].contains(item.unidade)
+                          ? item.unidade
+                          : 'UN',
                   decoration: _inputDecoration(tokens),
-                  items: const <String>['UN', 'CX', 'PCT', 'KG', 'LT', 'MT', 'SV']
+                  items: const <String>[
+                        'UN',
+                        'CX',
+                        'PCT',
+                        'KG',
+                        'LT',
+                        'MT',
+                        'SV',
+                      ]
                       .map(
                         (String value) => DropdownMenuItem<String>(
                           value: value,
@@ -772,22 +822,25 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                         ),
                       )
                       .toList(growable: false),
-                  onChanged: editavel
-                      ? (String? value) {
-                          if (value != null) {
-                            _rebuild(() {
-                              item.unidade = value;
-                              _store.salvar(compra);
-                            });
+                  onChanged:
+                      editavel
+                          ? (String? value) {
+                            if (value != null) {
+                              _rebuild(() {
+                                item.unidade = value;
+                                _store.salvar(compra);
+                              });
+                            }
                           }
-                        }
-                      : null,
+                          : null,
                 ),
               ),
               _buildLabeledField(
                 label: context.comprasT('compras.field.unitCost'),
                 child: _buildMoneyField(
-                  key: ValueKey<String>('custo-${item.id}-${item.valorUnitario}'),
+                  key: ValueKey<String>(
+                    'custo-${item.id}-${item.valorUnitario}',
+                  ),
                   value: item.valorUnitario,
                   enabled: editavel,
                   onChanged: (double value) {
@@ -815,7 +868,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
               _buildLabeledField(
                 label: context.comprasT('compras.field.addition'),
                 child: _buildMoneyField(
-                  key: ValueKey<String>('acrescimo-${item.id}-${item.acrescimo}'),
+                  key: ValueKey<String>(
+                    'acrescimo-${item.id}-${item.acrescimo}',
+                  ),
                   value: item.acrescimo,
                   enabled: editavel,
                   onChanged: (double value) {
@@ -850,14 +905,15 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                     ),
                   ),
                   value: item.movimentaEstoque,
-                  onChanged: editavel
-                      ? (bool value) {
-                          _rebuild(() {
-                            item.movimentaEstoque = value;
-                            _store.salvar(compra);
-                          });
-                        }
-                      : null,
+                  onChanged:
+                      editavel
+                          ? (bool value) {
+                            _rebuild(() {
+                              item.movimentaEstoque = value;
+                              _store.salvar(compra);
+                            });
+                          }
+                          : null,
                 ),
               ),
               const SizedBox(width: 16),
@@ -905,7 +961,10 @@ extension _ComprasWebEditor on _ComprasWebPageState {
               ),
               const SizedBox(height: 18),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: tokens.surfaceMuted,
                   borderRadius: BorderRadius.circular(13),
@@ -923,23 +982,26 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                         ),
                       ),
                       subtitle: Text(
-                        context.comprasT('compras.financial.generatePayable.help'),
+                        context.comprasT(
+                          'compras.financial.generatePayable.help',
+                        ),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: tokens.secondaryText,
                         ),
                       ),
                       value: compra.gerarContaPagar,
-                      onChanged: editavel
-                          ? (bool value) {
-                              _rebuild(() {
-                                compra.gerarContaPagar = value;
-                                if (!value) {
-                                  compra.jaPago = false;
-                                }
-                                _store.salvar(compra);
-                              });
-                            }
-                          : null,
+                      onChanged:
+                          editavel
+                              ? (bool value) {
+                                _rebuild(() {
+                                  compra.gerarContaPagar = value;
+                                  if (!value) {
+                                    compra.jaPago = false;
+                                  }
+                                  _store.salvar(compra);
+                                });
+                              }
+                              : null,
                     ),
                     if (compra.gerarContaPagar)
                       SwitchListTile.adaptive(
@@ -952,20 +1014,23 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                           ),
                         ),
                         subtitle: Text(
-                          context.comprasT('compras.financial.alreadyPaid.help'),
+                          context.comprasT(
+                            'compras.financial.alreadyPaid.help',
+                          ),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: tokens.secondaryText,
                           ),
                         ),
                         value: compra.jaPago,
-                        onChanged: editavel
-                            ? (bool value) {
-                                _rebuild(() {
-                                  compra.jaPago = value;
-                                  _store.salvar(compra);
-                                });
-                              }
-                            : null,
+                        onChanged:
+                            editavel
+                                ? (bool value) {
+                                  _rebuild(() {
+                                    compra.jaPago = value;
+                                    _store.salvar(compra);
+                                  });
+                                }
+                                : null,
                       ),
                   ],
                 ),
@@ -980,13 +1045,13 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                         initialValue: compra.formaPagamento,
                         decoration: _inputDecoration(tokens),
                         items: <String>[
-                          'Boleto',
-                          'Transferência',
-                          'PIX',
-                          'Cartão',
-                          'Dinheiro',
-                          'Outro',
-                        ]
+                              'Boleto',
+                              'Transferência',
+                              'PIX',
+                              'Cartão',
+                              'Dinheiro',
+                              'Outro',
+                            ]
                             .map(
                               (String value) => DropdownMenuItem<String>(
                                 value: value,
@@ -994,22 +1059,24 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                               ),
                             )
                             .toList(growable: false),
-                        onChanged: editavel
-                            ? (String? value) {
-                                if (value != null) {
-                                  _rebuild(() {
-                                    compra.formaPagamento = value;
-                                    _store.salvar(compra);
-                                  });
+                        onChanged:
+                            editavel
+                                ? (String? value) {
+                                  if (value != null) {
+                                    _rebuild(() {
+                                      compra.formaPagamento = value;
+                                      _store.salvar(compra);
+                                    });
+                                  }
                                 }
-                              }
-                            : null,
+                                : null,
                       ),
                     ),
                     _buildLabeledField(
                       label: context.comprasT('compras.field.installments'),
                       child: DropdownButtonFormField<int>(
-                        initialValue: compra.quantidadeParcelas.clamp(1, 12).toInt(),
+                        initialValue:
+                            compra.quantidadeParcelas.clamp(1, 12).toInt(),
                         decoration: _inputDecoration(tokens),
                         items: List<DropdownMenuItem<int>>.generate(
                           12,
@@ -1018,16 +1085,17 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                             child: Text((index + 1).toString()),
                           ),
                         ),
-                        onChanged: editavel && !compra.jaPago
-                            ? (int? value) {
-                                if (value != null) {
-                                  _rebuild(() {
-                                    compra.quantidadeParcelas = value;
-                                    _store.salvar(compra);
-                                  });
+                        onChanged:
+                            editavel && !compra.jaPago
+                                ? (int? value) {
+                                  if (value != null) {
+                                    _rebuild(() {
+                                      compra.quantidadeParcelas = value;
+                                      _store.salvar(compra);
+                                    });
+                                  }
                                 }
-                              }
-                            : null,
+                                : null,
                       ),
                     ),
                     _buildLabeledField(
@@ -1076,11 +1144,11 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                         initialValue: compra.contaFinanceira,
                         decoration: _inputDecoration(tokens),
                         items: <String>[
-                          'Conta principal',
-                          'Conta internacional',
-                          'Caixa da loja',
-                          'Cartão corporativo',
-                        ]
+                              'Conta principal',
+                              'Conta internacional',
+                              'Caixa da loja',
+                              'Cartão corporativo',
+                            ]
                             .map(
                               (String value) => DropdownMenuItem<String>(
                                 value: value,
@@ -1088,16 +1156,17 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                               ),
                             )
                             .toList(growable: false),
-                        onChanged: editavel
-                            ? (String? value) {
-                                if (value != null) {
-                                  _rebuild(() {
-                                    compra.contaFinanceira = value;
-                                    _store.salvar(compra);
-                                  });
+                        onChanged:
+                            editavel
+                                ? (String? value) {
+                                  if (value != null) {
+                                    _rebuild(() {
+                                      compra.contaFinanceira = value;
+                                      _store.salvar(compra);
+                                    });
+                                  }
                                 }
-                              }
-                            : null,
+                                : null,
                       ),
                     ),
                     _buildLabeledField(
@@ -1110,7 +1179,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                         initialValue: compra.observacaoFinanceira,
                         enabled: editavel,
                         decoration: _inputDecoration(tokens).copyWith(
-                          hintText: context.comprasT('compras.field.financialNotesHint'),
+                          hintText: context.comprasT(
+                            'compras.field.financialNotesHint',
+                          ),
                         ),
                         onChanged: (String value) {
                           compra.observacaoFinanceira = value;
@@ -1133,7 +1204,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                 _CompraSectionHeader(
                   icon: Icons.calendar_month_outlined,
                   title: context.comprasT('compras.installments.preview.title'),
-                  subtitle: context.comprasT('compras.installments.preview.subtitle'),
+                  subtitle: context.comprasT(
+                    'compras.installments.preview.subtitle',
+                  ),
                 ),
                 const SizedBox(height: 16),
                 if (parcelas.isEmpty)
@@ -1177,7 +1250,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                           const SizedBox(width: 11),
                           Expanded(
                             child: Text(
-                              context.comprasT('compras.installments.due')
+                              context
+                                  .comprasT('compras.installments.due')
                                   .replaceAll(
                                     '{date}',
                                     _formatarData(parcela.vencimento),
@@ -1222,13 +1296,14 @@ extension _ComprasWebEditor on _ComprasWebPageState {
             icon: Icons.attach_file_outlined,
             title: context.comprasT('compras.attachments.title'),
             subtitle: context.comprasT('compras.attachments.subtitle'),
-            trailing: editavel
-                ? FilledButton.icon(
-                    onPressed: () => _adicionarAnexoSimulado(compra),
-                    icon: const Icon(Icons.upload_file_outlined, size: 18),
-                    label: Text(context.comprasT('compras.attachments.add')),
-                  )
-                : null,
+            trailing:
+                editavel
+                    ? FilledButton.icon(
+                      onPressed: () => _adicionarAnexoSimulado(compra),
+                      icon: const Icon(Icons.upload_file_outlined, size: 18),
+                      label: Text(context.comprasT('compras.attachments.add')),
+                    )
+                    : null,
           ),
           const SizedBox(height: 18),
           Container(
@@ -1259,14 +1334,19 @@ extension _ComprasWebEditor on _ComprasWebPageState {
             _CompraEmptyState(
               icon: Icons.folder_open_outlined,
               title: context.comprasT('compras.attachments.empty.title'),
-              description: context.comprasT('compras.attachments.empty.description'),
-              action: editavel
-                  ? OutlinedButton.icon(
-                      onPressed: () => _adicionarAnexoSimulado(compra),
-                      icon: const Icon(Icons.add_rounded),
-                      label: Text(context.comprasT('compras.attachments.add')),
-                    )
-                  : null,
+              description: context.comprasT(
+                'compras.attachments.empty.description',
+              ),
+              action:
+                  editavel
+                      ? OutlinedButton.icon(
+                        onPressed: () => _adicionarAnexoSimulado(compra),
+                        icon: const Icon(Icons.add_rounded),
+                        label: Text(
+                          context.comprasT('compras.attachments.add'),
+                        ),
+                      )
+                      : null,
             )
           else
             ...compra.anexos.map(
@@ -1373,15 +1453,17 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                     children: <Widget>[
                       _CompraInfoRow(
                         label: context.comprasT('compras.field.supplier'),
-                        value: compra.fornecedorNome.trim().isEmpty
-                            ? context.comprasT('common.notInformed')
-                            : compra.fornecedorNome,
+                        value:
+                            compra.fornecedorNome.trim().isEmpty
+                                ? context.comprasT('common.notInformed')
+                                : compra.fornecedorNome,
                       ),
                       _CompraInfoRow(
                         label: context.comprasT('compras.field.document'),
-                        value: compra.numeroDocumento.trim().isEmpty
-                            ? context.comprasT('common.notInformed')
-                            : '${compra.tipoDocumento} ${compra.numeroDocumento}',
+                        value:
+                            compra.numeroDocumento.trim().isEmpty
+                                ? context.comprasT('common.notInformed')
+                                : '${compra.tipoDocumento} ${compra.numeroDocumento}',
                       ),
                       _CompraInfoRow(
                         label: context.comprasT('compras.field.issueDate'),
@@ -1411,7 +1493,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                     child: Column(
                       children: <Widget>[
                         _CompraInfoRow(
-                          label: context.comprasT('compras.summary.itemsSubtotal'),
+                          label: context.comprasT(
+                            'compras.summary.itemsSubtotal',
+                          ),
                           value: _formatarMoeda(
                             compra.subtotalItens,
                             codigoMoeda: compra.moeda,
@@ -1423,7 +1507,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                               '- ${_formatarMoeda(compra.descontoItens + compra.descontoGeral, codigoMoeda: compra.moeda)}',
                         ),
                         _CompraInfoRow(
-                          label: context.comprasT('compras.summary.freightAndAdditions'),
+                          label: context.comprasT(
+                            'compras.summary.freightAndAdditions',
+                          ),
                           value: _formatarMoeda(
                             compra.frete +
                                 compra.acrescimoItens +
@@ -1489,8 +1575,11 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                         width: width,
                         child: _CompraImpactTile(
                           icon: Icons.inventory_2_outlined,
-                          title: context.comprasT('compras.impacts.stock.title'),
-                          description: context.comprasT('compras.impacts.stock.description')
+                          title: context.comprasT(
+                            'compras.impacts.stock.title',
+                          ),
+                          description: context
+                              .comprasT('compras.impacts.stock.description')
                               .replaceAll(
                                 '{count}',
                                 compra.itensComEstoque.toString(),
@@ -1502,18 +1591,24 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                         width: width,
                         child: _CompraImpactTile(
                           icon: Icons.account_balance_wallet_outlined,
-                          title: context.comprasT('compras.impacts.financial.title'),
-                          description: compra.gerarContaPagar
-                              ? context.comprasT('compras.impacts.financial.description')
-                                  .replaceAll(
-                                    '{count}',
-                                    parcelas.isEmpty
-                                        ? '1'
-                                        : parcelas.length.toString(),
-                                  )
-                              : context.comprasT(
-                                  'compras.impacts.financial.disabled',
-                                ),
+                          title: context.comprasT(
+                            'compras.impacts.financial.title',
+                          ),
+                          description:
+                              compra.gerarContaPagar
+                                  ? context
+                                      .comprasT(
+                                        'compras.impacts.financial.description',
+                                      )
+                                      .replaceAll(
+                                        '{count}',
+                                        parcelas.isEmpty
+                                            ? '1'
+                                            : parcelas.length.toString(),
+                                      )
+                                  : context.comprasT(
+                                    'compras.impacts.financial.disabled',
+                                  ),
                           enabled: compra.gerarContaPagar,
                         ),
                       ),
@@ -1537,22 +1632,30 @@ extension _ComprasWebEditor on _ComprasWebPageState {
         ),
         const SizedBox(height: 14),
         _CompraSurfaceCard(
-          borderColor: pendencias.isEmpty
-              ? tokens.success.withValues(alpha: 0.32)
-              : tokens.warning.withValues(alpha: 0.35),
+          borderColor:
+              pendencias.isEmpty
+                  ? tokens.success.withValues(alpha: 0.32)
+                  : tokens.warning.withValues(alpha: 0.35),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               _CompraSectionHeader(
-                icon: pendencias.isEmpty
-                    ? Icons.verified_outlined
-                    : Icons.warning_amber_rounded,
-                title: pendencias.isEmpty
-                    ? context.comprasT('compras.validation.ready.title')
-                    : context.comprasT('compras.validation.pending.title'),
-                subtitle: pendencias.isEmpty
-                    ? context.comprasT('compras.validation.ready.description')
-                    : context.comprasT('compras.validation.pending.description'),
+                icon:
+                    pendencias.isEmpty
+                        ? Icons.verified_outlined
+                        : Icons.warning_amber_rounded,
+                title:
+                    pendencias.isEmpty
+                        ? context.comprasT('compras.validation.ready.title')
+                        : context.comprasT('compras.validation.pending.title'),
+                subtitle:
+                    pendencias.isEmpty
+                        ? context.comprasT(
+                          'compras.validation.ready.description',
+                        )
+                        : context.comprasT(
+                          'compras.validation.pending.description',
+                        ),
               ),
               if (pendencias.isNotEmpty) ...<Widget>[
                 const SizedBox(height: 14),
@@ -1590,11 +1693,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    context.comprasT('compras.confirmed.description')
-                        .replaceAll(
-                          '{number}',
-                          compra.identificadorVisual,
-                        )
+                    context
+                        .comprasT('compras.confirmed.description')
+                        .replaceAll('{number}', compra.identificadorVisual)
                         .replaceAll(
                           '{date}',
                           _formatarDataHora(
@@ -1617,7 +1718,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    context.comprasT('compras.cancelled.description')
+                    context
+                        .comprasT('compras.cancelled.description')
                         .replaceAll(
                           '{reason}',
                           compra.motivoCancelamento ??
@@ -1677,7 +1779,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                   onPressed: () {
                     _store.salvar(compra);
                     _rebuild(() {});
-                    _mostrarMensagem(context.comprasT('compras.message.draftSaved'));
+                    _mostrarMensagem(
+                      context.comprasT('compras.message.draftSaved'),
+                    );
                   },
                   icon: const Icon(Icons.save_outlined, size: 18),
                   label: Text(context.comprasT('compras.action.saveDraft')),
@@ -1690,17 +1794,17 @@ extension _ComprasWebEditor on _ComprasWebPageState {
             children: <Widget>[
               if (!first)
                 OutlinedButton.icon(
-                  onPressed: () => _rebuild(
-                    () => _etapaAtual = steps[currentIndex - 1],
-                  ),
+                  onPressed:
+                      () =>
+                          _rebuild(() => _etapaAtual = steps[currentIndex - 1]),
                   icon: const Icon(Icons.arrow_back_rounded, size: 18),
                   label: Text(context.comprasT('common.back')),
                 ),
               if (!last)
                 FilledButton.icon(
-                  onPressed: () => _rebuild(
-                    () => _etapaAtual = steps[currentIndex + 1],
-                  ),
+                  onPressed:
+                      () =>
+                          _rebuild(() => _etapaAtual = steps[currentIndex + 1]),
                   icon: const Icon(Icons.arrow_forward_rounded, size: 18),
                   label: Text(context.comprasT('common.continue')),
                 )
@@ -1749,7 +1853,10 @@ extension _ComprasWebEditor on _ComprasWebPageState {
     final List<String> pendencias = _validarCompra(compra);
     if (pendencias.isNotEmpty) {
       _rebuild(() => _etapaAtual = _CompraDemoStep.resumo);
-      _mostrarMensagem(context.comprasT('compras.message.fixPending'), erro: true);
+      _mostrarMensagem(
+        context.comprasT('compras.message.fixPending'),
+        erro: true,
+      );
       return;
     }
     final bool? confirmado = await showDialog<bool>(
@@ -1768,7 +1875,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                 _CompraImpactTile(
                   icon: Icons.inventory_2_outlined,
                   title: context.comprasT('compras.impacts.stock.title'),
-                  description: context.comprasT('compras.impacts.stock.description')
+                  description: context
+                      .comprasT('compras.impacts.stock.description')
                       .replaceAll('{count}', compra.itensComEstoque.toString()),
                   enabled: compra.itensComEstoque > 0,
                 ),
@@ -1776,21 +1884,25 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                 _CompraImpactTile(
                   icon: Icons.account_balance_wallet_outlined,
                   title: context.comprasT('compras.impacts.financial.title'),
-                  description: compra.gerarContaPagar
-                      ? context.comprasT('compras.impacts.financial.description')
-                          .replaceAll(
-                            '{count}',
-                            compra.quantidadeParcelas.toString(),
-                          )
-                      : context.comprasT('compras.impacts.financial.disabled'),
+                  description:
+                      compra.gerarContaPagar
+                          ? context
+                              .comprasT('compras.impacts.financial.description')
+                              .replaceAll(
+                                '{count}',
+                                compra.quantidadeParcelas.toString(),
+                              )
+                          : context.comprasT(
+                            'compras.impacts.financial.disabled',
+                          ),
                   enabled: compra.gerarContaPagar,
                 ),
                 const SizedBox(height: 12),
                 Text(
                   context.comprasT('compras.confirm.demoNotice'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: WebThemeTokens.of(context).secondaryText,
-                      ),
+                    color: WebThemeTokens.of(context).secondaryText,
+                  ),
                 ),
               ],
             ),
@@ -1815,7 +1927,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
     final int numero = _store.confirmar(compra);
     _rebuild(() => _etapaAtual = _CompraDemoStep.resumo);
     _mostrarMensagem(
-      context.comprasT('compras.message.confirmed')
+      context
+          .comprasT('compras.message.confirmed')
           .replaceAll('#{number}', '#${numero.toString().padLeft(6, '0')}'),
     );
   }
@@ -1826,7 +1939,10 @@ extension _ComprasWebEditor on _ComprasWebPageState {
   }) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final int count = math.max(1, (constraints.maxWidth / minWidth).floor());
+        final int count = math.max(
+          1,
+          (constraints.maxWidth / minWidth).floor(),
+        );
         final int columns = math.min(count, children.length);
         final double width =
             (constraints.maxWidth - ((columns - 1) * 12)) / columns;
@@ -1861,9 +1977,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
       filled: true,
       fillColor: tokens.inputBackground,
       isDense: true,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: tokens.cardBorder),
@@ -1878,26 +1992,28 @@ extension _ComprasWebEditor on _ComprasWebPageState {
   }) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     return InkWell(
-      onTap: enabled
-          ? () async {
-              final DateTime? selected = await showDatePicker(
-                context: context,
-                initialDate: value,
-                firstDate: DateTime(2000),
-                lastDate: DateTime(2100),
-              );
-              if (selected != null) {
-                onChanged(selected);
+      onTap:
+          enabled
+              ? () async {
+                final DateTime? selected = await showDatePicker(
+                  context: context,
+                  initialDate: value,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (selected != null) {
+                  onChanged(selected);
+                }
               }
-            }
-          : null,
+              : null,
       borderRadius: BorderRadius.circular(12),
       child: InputDecorator(
         decoration: _inputDecoration(tokens).copyWith(
           prefixIcon: const Icon(Icons.event_outlined),
-          suffixIcon: enabled
-              ? const Icon(Icons.expand_more_rounded)
-              : const Icon(Icons.lock_outline_rounded, size: 18),
+          suffixIcon:
+              enabled
+                  ? const Icon(Icons.expand_more_rounded)
+                  : const Icon(Icons.lock_outline_rounded, size: 18),
         ),
         child: Text(_formatarData(value)),
       ),
@@ -1920,7 +2036,7 @@ extension _ComprasWebEditor on _ComprasWebPageState {
         FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
       ],
       decoration: _inputDecoration(tokens).copyWith(
-        prefixText: '${context.read<LocaleSettingsProvider>().currencyCode} ',
+        prefixText: '${context.read<LocaleSettingsProvider>().currencySymbol} ',
       ),
       onChanged: (String text) => onChanged(_parseNumero(text)),
     );
@@ -1964,17 +2080,20 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                         autofocus: true,
                         onChanged: (_) => setDialogState(() {}),
                         decoration: InputDecoration(
-                          hintText: context.comprasT('compras.supplier.dialog.search'),
+                          hintText: context.comprasT(
+                            'compras.supplier.dialog.search',
+                          ),
                           prefixIcon: const Icon(Icons.search_rounded),
-                          suffixIcon: busca.text.isEmpty
-                              ? null
-                              : IconButton(
-                                  onPressed: () {
-                                    busca.clear();
-                                    setDialogState(() {});
-                                  },
-                                  icon: const Icon(Icons.close_rounded),
-                                ),
+                          suffixIcon:
+                              busca.text.isEmpty
+                                  ? null
+                                  : IconButton(
+                                    onPressed: () {
+                                      busca.clear();
+                                      setDialogState(() {});
+                                    },
+                                    icon: const Icon(Icons.close_rounded),
+                                  ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -1982,60 +2101,72 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                       ),
                       const SizedBox(height: 12),
                       Expanded(
-                        child: fornecedores.isEmpty
-                            ? _CompraEmptyState(
-                                icon: Icons.storefront_outlined,
-                                title: context.comprasT(
-                                  'compras.supplier.dialog.empty.title',
-                                ),
-                                description: context.comprasT(
-                                  'compras.supplier.dialog.empty.description',
-                                ),
-                              )
-                            : ListView.separated(
-                                itemCount: fornecedores.length,
-                                separatorBuilder: (_, __) =>
-                                    Divider(color: tokens.divider, height: 1),
-                                itemBuilder: (BuildContext context, int index) {
-                                  final _FornecedorDemo fornecedor =
-                                      fornecedores[index];
-                                  final bool selected =
-                                      compra.fornecedorId == fornecedor.id;
-                                  return ListTile(
-                                    selected: selected,
-                                    selectedTileColor: tokens.selectedBackground,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    leading: CircleAvatar(
-                                      backgroundColor: tokens.surfaceMuted,
-                                      child: Icon(
-                                        Icons.storefront_outlined,
-                                        color: tokens.secondaryText,
+                        child:
+                            fornecedores.isEmpty
+                                ? _CompraEmptyState(
+                                  icon: Icons.storefront_outlined,
+                                  title: context.comprasT(
+                                    'compras.supplier.dialog.empty.title',
+                                  ),
+                                  description: context.comprasT(
+                                    'compras.supplier.dialog.empty.description',
+                                  ),
+                                )
+                                : ListView.separated(
+                                  itemCount: fornecedores.length,
+                                  separatorBuilder:
+                                      (_, __) => Divider(
+                                        color: tokens.divider,
+                                        height: 1,
                                       ),
-                                    ),
-                                    title: Text(
-                                      fornecedor.nome,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w800,
+                                  itemBuilder: (
+                                    BuildContext context,
+                                    int index,
+                                  ) {
+                                    final _FornecedorDemo fornecedor =
+                                        fornecedores[index];
+                                    final bool selected =
+                                        compra.fornecedorId == fornecedor.id;
+                                    return ListTile(
+                                      selected: selected,
+                                      selectedTileColor:
+                                          tokens.selectedBackground,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
                                       ),
-                                    ),
-                                    subtitle: Text(
-                                      '${fornecedor.documento}\n${fornecedor.email} • ${fornecedor.telefone}',
-                                    ),
-                                    isThreeLine: true,
-                                    trailing: selected
-                                        ? Icon(
-                                            Icons.check_circle_rounded,
-                                            color: tokens.success,
-                                          )
-                                        : const Icon(Icons.chevron_right_rounded),
-                                    onTap: () => Navigator.of(dialogContext).pop(
-                                      fornecedor,
-                                    ),
-                                  );
-                                },
-                              ),
+                                      leading: CircleAvatar(
+                                        backgroundColor: tokens.surfaceMuted,
+                                        child: Icon(
+                                          Icons.storefront_outlined,
+                                          color: tokens.secondaryText,
+                                        ),
+                                      ),
+                                      title: Text(
+                                        fornecedor.nome,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        '${fornecedor.documento}\n${fornecedor.email} • ${fornecedor.telefone}',
+                                      ),
+                                      isThreeLine: true,
+                                      trailing:
+                                          selected
+                                              ? Icon(
+                                                Icons.check_circle_rounded,
+                                                color: tokens.success,
+                                              )
+                                              : const Icon(
+                                                Icons.chevron_right_rounded,
+                                              ),
+                                      onTap:
+                                          () => Navigator.of(
+                                            dialogContext,
+                                          ).pop(fornecedor),
+                                    );
+                                  },
+                                ),
                       ),
                     ],
                   ),
@@ -2105,15 +2236,19 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                         labelText: context.comprasT('compras.supplier.name'),
                         prefixIcon: const Icon(Icons.storefront_outlined),
                       ),
-                      validator: (String? value) => value == null || value.trim().isEmpty
-                          ? context.comprasT('common.required')
-                          : null,
+                      validator:
+                          (String? value) =>
+                              value == null || value.trim().isEmpty
+                                  ? context.comprasT('common.required')
+                                  : null,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: documento,
                       decoration: InputDecoration(
-                        labelText: context.comprasT('compras.supplier.document'),
+                        labelText: context.comprasT(
+                          'compras.supplier.document',
+                        ),
                         prefixIcon: const Icon(Icons.badge_outlined),
                       ),
                     ),
@@ -2125,7 +2260,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                             controller: email,
                             keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
-                              labelText: context.comprasT('compras.supplier.email'),
+                              labelText: context.comprasT(
+                                'compras.supplier.email',
+                              ),
                               prefixIcon: const Icon(Icons.email_outlined),
                             ),
                           ),
@@ -2136,7 +2273,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                             controller: telefone,
                             keyboardType: TextInputType.phone,
                             decoration: InputDecoration(
-                              labelText: context.comprasT('compras.supplier.phone'),
+                              labelText: context.comprasT(
+                                'compras.supplier.phone',
+                              ),
                               prefixIcon: const Icon(Icons.phone_outlined),
                             ),
                           ),
@@ -2147,8 +2286,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                     Text(
                       context.comprasT('compras.supplier.quickAdd.demoNotice'),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: WebThemeTokens.of(context).secondaryText,
-                          ),
+                        color: WebThemeTokens.of(context).secondaryText,
+                      ),
                     ),
                   ],
                 ),
@@ -2189,7 +2328,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
   Future<void> _selecionarProduto(_CompraDemo compra) async {
     final TextEditingController busca = TextEditingController();
     try {
-      final _ProdutoCompraDemo? selecionado = await showDialog<_ProdutoCompraDemo>(
+      final _ProdutoCompraDemo?
+      selecionado = await showDialog<_ProdutoCompraDemo>(
         context: context,
         builder: (BuildContext dialogContext) {
           return StatefulBuilder(
@@ -2221,17 +2361,20 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                         autofocus: true,
                         onChanged: (_) => setDialogState(() {}),
                         decoration: InputDecoration(
-                          hintText: context.comprasT('compras.product.dialog.search'),
+                          hintText: context.comprasT(
+                            'compras.product.dialog.search',
+                          ),
                           prefixIcon: const Icon(Icons.search_rounded),
-                          suffixIcon: busca.text.isEmpty
-                              ? null
-                              : IconButton(
-                                  onPressed: () {
-                                    busca.clear();
-                                    setDialogState(() {});
-                                  },
-                                  icon: const Icon(Icons.close_rounded),
-                                ),
+                          suffixIcon:
+                              busca.text.isEmpty
+                                  ? null
+                                  : IconButton(
+                                    onPressed: () {
+                                      busca.clear();
+                                      setDialogState(() {});
+                                    },
+                                    icon: const Icon(Icons.close_rounded),
+                                  ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -2239,77 +2382,91 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                       ),
                       const SizedBox(height: 12),
                       Expanded(
-                        child: produtos.isEmpty
-                            ? _CompraEmptyState(
-                                icon: Icons.inventory_2_outlined,
-                                title: context.comprasT(
-                                  'compras.product.dialog.empty.title',
-                                ),
-                                description: context.comprasT(
-                                  'compras.product.dialog.empty.description',
-                                ),
-                              )
-                            : ListView.separated(
-                                itemCount: produtos.length,
-                                separatorBuilder: (_, __) =>
-                                    Divider(color: tokens.divider, height: 1),
-                                itemBuilder: (BuildContext context, int index) {
-                                  final _ProdutoCompraDemo produto = produtos[index];
-                                  return ListTile(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    leading: Container(
-                                      width: 42,
-                                      height: 42,
-                                      decoration: BoxDecoration(
-                                        color: tokens.surfaceMuted,
-                                        borderRadius: BorderRadius.circular(11),
+                        child:
+                            produtos.isEmpty
+                                ? _CompraEmptyState(
+                                  icon: Icons.inventory_2_outlined,
+                                  title: context.comprasT(
+                                    'compras.product.dialog.empty.title',
+                                  ),
+                                  description: context.comprasT(
+                                    'compras.product.dialog.empty.description',
+                                  ),
+                                )
+                                : ListView.separated(
+                                  itemCount: produtos.length,
+                                  separatorBuilder:
+                                      (_, __) => Divider(
+                                        color: tokens.divider,
+                                        height: 1,
                                       ),
-                                      child: Icon(
-                                        Icons.inventory_2_outlined,
-                                        color: tokens.secondaryText,
+                                  itemBuilder: (
+                                    BuildContext context,
+                                    int index,
+                                  ) {
+                                    final _ProdutoCompraDemo produto =
+                                        produtos[index];
+                                    return ListTile(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
                                       ),
-                                    ),
-                                    title: Text(
-                                      produto.nome,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                    subtitle: Text(
-                                      '${produto.codigo} • ${produto.unidade} • ${context.comprasT('compras.product.stock')}: ${_numeroEditavel(produto.estoqueAtual)}',
-                                    ),
-                                    trailing: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.end,
-                                      children: <Widget>[
-                                        Text(
-                                          context.comprasT('compras.product.lastCost'),
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.copyWith(
-                                                color: tokens.secondaryText,
-                                              ),
-                                        ),
-                                        Text(
-                                          _formatarMoeda(
-                                            produto.ultimoCusto,
-                                            codigoMoeda: compra.moeda,
-                                          ),
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w900,
+                                      leading: Container(
+                                        width: 42,
+                                        height: 42,
+                                        decoration: BoxDecoration(
+                                          color: tokens.surfaceMuted,
+                                          borderRadius: BorderRadius.circular(
+                                            11,
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                    onTap: () => Navigator.of(dialogContext).pop(
-                                      produto,
-                                    ),
-                                  );
-                                },
-                              ),
+                                        child: Icon(
+                                          Icons.inventory_2_outlined,
+                                          color: tokens.secondaryText,
+                                        ),
+                                      ),
+                                      title: Text(
+                                        produto.nome,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        '${produto.codigo} • ${produto.unidade} • ${context.comprasT('compras.product.stock')}: ${_numeroEditavel(produto.estoqueAtual)}',
+                                      ),
+                                      trailing: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        children: <Widget>[
+                                          Text(
+                                            context.comprasT(
+                                              'compras.product.lastCost',
+                                            ),
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall?.copyWith(
+                                              color: tokens.secondaryText,
+                                            ),
+                                          ),
+                                          Text(
+                                            _formatarMoeda(
+                                              produto.ultimoCusto,
+                                              codigoMoeda: compra.moeda,
+                                            ),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      onTap:
+                                          () => Navigator.of(
+                                            dialogContext,
+                                          ).pop(produto),
+                                    );
+                                  },
+                                ),
                       ),
                     ],
                   ),
@@ -2323,9 +2480,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                     onPressed: () async {
                       final _ProdutoCompraDemo? criado =
                           await _cadastrarProdutoRapido(
-                        dialogContext,
-                        compra.moeda,
-                      );
+                            dialogContext,
+                            compra.moeda,
+                          );
                       if (criado != null && dialogContext.mounted) {
                         Navigator.of(dialogContext).pop(criado);
                       }
@@ -2394,10 +2551,11 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                             labelText: context.comprasT('compras.product.name'),
                             prefixIcon: const Icon(Icons.inventory_2_outlined),
                           ),
-                          validator: (String? value) =>
-                              value == null || value.trim().isEmpty
-                                  ? context.comprasT('common.required')
-                                  : null,
+                          validator:
+                              (String? value) =>
+                                  value == null || value.trim().isEmpty
+                                      ? context.comprasT('common.required')
+                                      : null,
                         ),
                         const SizedBox(height: 12),
                         Row(
@@ -2407,8 +2565,12 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                               child: TextFormField(
                                 controller: codigo,
                                 decoration: InputDecoration(
-                                  labelText: context.comprasT('compras.product.code'),
-                                  prefixIcon: const Icon(Icons.qr_code_2_outlined),
+                                  labelText: context.comprasT(
+                                    'compras.product.code',
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.qr_code_2_outlined,
+                                  ),
                                 ),
                               ),
                             ),
@@ -2417,21 +2579,24 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                               child: DropdownButtonFormField<String>(
                                 initialValue: unidade,
                                 decoration: InputDecoration(
-                                  labelText: context.comprasT('compras.field.unit'),
+                                  labelText: context.comprasT(
+                                    'compras.field.unit',
+                                  ),
                                 ),
                                 items: const <String>[
-                                  'UN',
-                                  'CX',
-                                  'PCT',
-                                  'KG',
-                                  'LT',
-                                  'MT',
-                                ]
+                                      'UN',
+                                      'CX',
+                                      'PCT',
+                                      'KG',
+                                      'LT',
+                                      'MT',
+                                    ]
                                     .map(
-                                      (String value) => DropdownMenuItem<String>(
-                                        value: value,
-                                        child: Text(value),
-                                      ),
+                                      (String value) =>
+                                          DropdownMenuItem<String>(
+                                            value: value,
+                                            child: Text(value),
+                                          ),
                                     )
                                     .toList(growable: false),
                                 onChanged: (String? value) {
@@ -2446,22 +2611,31 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: custo,
-                          keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
                           inputFormatters: <TextInputFormatter>[
-                            FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'[0-9.,]'),
+                            ),
                           ],
                           decoration: InputDecoration(
-                            labelText: context.comprasT('compras.field.unitCost'),
+                            labelText: context.comprasT(
+                              'compras.field.unitCost',
+                            ),
                             prefixText: '$moeda ',
                           ),
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          context.comprasT('compras.product.quickAdd.demoNotice'),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: WebThemeTokens.of(context).secondaryText,
-                              ),
+                          context.comprasT(
+                            'compras.product.quickAdd.demoNotice',
+                          ),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(
+                            color: WebThemeTokens.of(context).secondaryText,
+                          ),
                         ),
                       ],
                     ),
@@ -2530,19 +2704,24 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                           controller: descricao,
                           autofocus: true,
                           decoration: InputDecoration(
-                            labelText: context.comprasT('compras.items.description'),
+                            labelText: context.comprasT(
+                              'compras.items.description',
+                            ),
                             prefixIcon: const Icon(Icons.notes_outlined),
                           ),
-                          validator: (String? value) =>
-                              value == null || value.trim().isEmpty
-                                  ? context.comprasT('common.required')
-                                  : null,
+                          validator:
+                              (String? value) =>
+                                  value == null || value.trim().isEmpty
+                                      ? context.comprasT('common.required')
+                                      : null,
                         ),
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: codigo,
                           decoration: InputDecoration(
-                            labelText: context.comprasT('compras.items.codeOptional'),
+                            labelText: context.comprasT(
+                              'compras.items.codeOptional',
+                            ),
                             prefixIcon: const Icon(Icons.tag_outlined),
                           ),
                         ),
@@ -2552,16 +2731,19 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                             Expanded(
                               child: TextFormField(
                                 controller: quantidade,
-                                keyboardType: const TextInputType.numberWithOptions(
-                                  decimal: true,
-                                ),
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
                                 inputFormatters: <TextInputFormatter>[
                                   FilteringTextInputFormatter.allow(
                                     RegExp(r'[0-9.,]'),
                                   ),
                                 ],
                                 decoration: InputDecoration(
-                                  labelText: context.comprasT('compras.field.quantity'),
+                                  labelText: context.comprasT(
+                                    'compras.field.quantity',
+                                  ),
                                 ),
                               ),
                             ),
@@ -2570,21 +2752,24 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                               child: DropdownButtonFormField<String>(
                                 initialValue: unidade,
                                 decoration: InputDecoration(
-                                  labelText: context.comprasT('compras.field.unit'),
+                                  labelText: context.comprasT(
+                                    'compras.field.unit',
+                                  ),
                                 ),
                                 items: const <String>[
-                                  'SV',
-                                  'UN',
-                                  'CX',
-                                  'PCT',
-                                  'KG',
-                                  'LT',
-                                ]
+                                      'SV',
+                                      'UN',
+                                      'CX',
+                                      'PCT',
+                                      'KG',
+                                      'LT',
+                                    ]
                                     .map(
-                                      (String value) => DropdownMenuItem<String>(
-                                        value: value,
-                                        child: Text(value),
-                                      ),
+                                      (String value) =>
+                                          DropdownMenuItem<String>(
+                                            value: value,
+                                            child: Text(value),
+                                          ),
                                     )
                                     .toList(growable: false),
                                 onChanged: (String? value) {
@@ -2598,16 +2783,19 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                             Expanded(
                               child: TextFormField(
                                 controller: valor,
-                                keyboardType: const TextInputType.numberWithOptions(
-                                  decimal: true,
-                                ),
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
                                 inputFormatters: <TextInputFormatter>[
                                   FilteringTextInputFormatter.allow(
                                     RegExp(r'[0-9.,]'),
                                   ),
                                 ],
                                 decoration: InputDecoration(
-                                  labelText: context.comprasT('compras.field.unitCost'),
+                                  labelText: context.comprasT(
+                                    'compras.field.unitCost',
+                                  ),
                                   prefixText: '${compra.moeda} ',
                                 ),
                               ),
@@ -2617,9 +2805,13 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                         const SizedBox(height: 10),
                         SwitchListTile.adaptive(
                           contentPadding: EdgeInsets.zero,
-                          title: Text(context.comprasT('compras.items.movesStock')),
+                          title: Text(
+                            context.comprasT('compras.items.movesStock'),
+                          ),
                           subtitle: Text(
-                            context.comprasT('compras.items.nonStock.toggleHelp'),
+                            context.comprasT(
+                              'compras.items.nonStock.toggleHelp',
+                            ),
                           ),
                           value: movimentaEstoque,
                           onChanged: (bool value) {
@@ -2689,7 +2881,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
               void Function(VoidCallback fn) setDialogState,
             ) {
               return AlertDialog(
-                title: Text(context.comprasT('compras.attachments.dialog.title')),
+                title: Text(
+                  context.comprasT('compras.attachments.dialog.title'),
+                ),
                 content: SizedBox(
                   width: 500,
                   child: Column(
@@ -2699,7 +2893,9 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                       DropdownButtonFormField<String>(
                         initialValue: tipo,
                         decoration: InputDecoration(
-                          labelText: context.comprasT('compras.attachments.type'),
+                          labelText: context.comprasT(
+                            'compras.attachments.type',
+                          ),
                           prefixIcon: const Icon(Icons.file_present_outlined),
                         ),
                         items: const <String>['PDF', 'XML', 'Imagem', 'Outro']
@@ -2721,14 +2917,18 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                         controller: nome,
                         autofocus: true,
                         decoration: InputDecoration(
-                          labelText: context.comprasT('compras.attachments.fileName'),
+                          labelText: context.comprasT(
+                            'compras.attachments.fileName',
+                          ),
                           hintText: switch (tipo) {
                             'PDF' => 'documento-compra.pdf',
                             'XML' => 'documento-compra.xml',
                             'Imagem' => 'foto-documento.jpg',
                             _ => 'arquivo-compra.dat',
                           },
-                          prefixIcon: const Icon(Icons.drive_file_rename_outline),
+                          prefixIcon: const Icon(
+                            Icons.drive_file_rename_outline,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -2739,10 +2939,14 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          context.comprasT('compras.attachments.dialog.demoNotice'),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: WebThemeTokens.of(context).secondaryText,
-                              ),
+                          context.comprasT(
+                            'compras.attachments.dialog.demoNotice',
+                          ),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(
+                            color: WebThemeTokens.of(context).secondaryText,
+                          ),
                         ),
                       ),
                     ],
@@ -2765,9 +2969,10 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                       Navigator.of(dialogContext).pop(
                         _CompraDemoAnexo(
                           id: _store.novoId('anexo'),
-                          nome: typedName.isEmpty
-                              ? 'documento-${DateTime.now().millisecondsSinceEpoch}$extension'
-                              : typedName,
+                          nome:
+                              typedName.isEmpty
+                                  ? 'documento-${DateTime.now().millisecondsSinceEpoch}$extension'
+                                  : typedName,
                           tipo: tipo,
                           tamanho: '${12 + math.Random().nextInt(280)} KB',
                           adicionadoEm: DateTime.now(),
@@ -2829,8 +3034,8 @@ extension _ComprasWebEditor on _ComprasWebPageState {
                   Text(
                     context.comprasT('compras.cancel.demoNotice'),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: WebThemeTokens.of(context).secondaryText,
-                        ),
+                      color: WebThemeTokens.of(context).secondaryText,
+                    ),
                   ),
                 ],
               ),

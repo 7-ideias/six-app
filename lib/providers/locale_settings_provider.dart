@@ -62,6 +62,8 @@ class LocaleSettingsProvider extends ChangeNotifier {
 
   String get currencyCode => currentFormatting.currencyCode;
 
+  String get currencySymbol => currencySymbolForCode(currencyCode);
+
   String get timeZone => currentFormatting.timeZone;
 
   String get dateFormat => currentFormatting.dateFormat;
@@ -102,7 +104,8 @@ class LocaleSettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<ConfiguracaoRegionalizacaoSistema> carregarRegionalizacaoDaEmpresa() async {
+  Future<ConfiguracaoRegionalizacaoSistema>
+  carregarRegionalizacaoDaEmpresa() async {
     _regionalizacaoLoading = true;
     _regionalizacaoError = null;
     notifyListeners();
@@ -252,16 +255,83 @@ class LocaleSettingsProvider extends ChangeNotifier {
     final bool negativo = normalizado.startsWith('-');
     final List<String> partes = normalizado.replaceFirst('-', '').split('.');
     final String inteiro = _aplicarSeparadorDeMilhar(partes.first);
-    final String decimal = casasDecimais > 0 && partes.length > 1
-        ? '$decimalSeparator${partes[1]}'
-        : '';
+    final String decimal =
+        casasDecimais > 0 && partes.length > 1
+            ? '$decimalSeparator${partes[1]}'
+            : '';
 
     return '${negativo ? '-' : ''}$inteiro$decimal';
   }
 
-  String formatCurrency(num value, {bool showCurrencyCode = true}) {
+  String formatCurrency(
+    num value, {
+    bool showCurrencyCode = false,
+    bool showCurrencySymbol = true,
+  }) {
     final String valor = formatDecimal(value);
-    return showCurrencyCode ? '$currencyCode $valor' : valor;
+    if (showCurrencyCode) return '$currencyCode $valor';
+    return showCurrencySymbol ? '$currencySymbol $valor' : valor;
+  }
+
+  String formatCurrencyWithSymbol(num value) {
+    return formatCurrency(value);
+  }
+
+  String stripCurrencyMarkers(String value, {String? code}) {
+    return stripCurrencyMarkersForCode(value, code ?? currencyCode);
+  }
+
+  static String currencySymbolForCode(String code) {
+    switch (code.trim().toUpperCase()) {
+      case 'BRL':
+        return 'R\$';
+      case 'USD':
+        return '\$';
+      case 'EUR':
+        return '€';
+      case 'ARS':
+        return 'AR\$';
+      case 'MXN':
+        return 'MX\$';
+      case 'PLN':
+        return 'zł';
+      default:
+        return code.trim().toUpperCase();
+    }
+  }
+
+  static String stripCurrencyMarkersForCode(String value, String code) {
+    String cleaned = value;
+    final Set<String> markers = <String>{
+      code.trim(),
+      code.trim().toUpperCase(),
+      currencySymbolForCode(code),
+      'BRL',
+      'USD',
+      'EUR',
+      'ARS',
+      'MXN',
+      'PLN',
+      'COP',
+      'CLP',
+      'R\$',
+      '\$',
+      '€',
+      'AR\$',
+      'MX\$',
+      'zł',
+    };
+
+    for (final String marker in markers.where(
+      (String item) => item.isNotEmpty,
+    )) {
+      cleaned = cleaned.replaceAll(
+        RegExp(RegExp.escape(marker), caseSensitive: false),
+        '',
+      );
+    }
+
+    return cleaned.trim();
   }
 
   String formatDate(DateTime value) {
@@ -285,9 +355,10 @@ class LocaleSettingsProvider extends ChangeNotifier {
   String formatTime(DateTime value) {
     if (timeFormat.toLowerCase() == '12h') {
       final bool afternoon = value.hour >= 12;
-      final int hour12 = value.hour == 0
-          ? 12
-          : value.hour > 12
+      final int hour12 =
+          value.hour == 0
+              ? 12
+              : value.hour > 12
               ? value.hour - 12
               : value.hour;
       return '${_twoDigits(hour12)}:${_twoDigits(value.minute)} ${afternoon ? 'PM' : 'AM'}';

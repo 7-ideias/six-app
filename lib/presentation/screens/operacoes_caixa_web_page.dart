@@ -457,10 +457,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             onPressed: _confirmarEncerramentoSessao,
             icon: const Icon(Icons.power_settings_new_rounded),
             label: Text(
-              _txt(
-                'caixa.operacoes.closeSessionAction',
-                'Encerrar caixa',
-              ),
+              _txt('caixa.operacoes.closeSessionAction', 'Encerrar caixa'),
             ),
           ),
         if (_temCaixaAberto)
@@ -2334,7 +2331,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   String _currencyInputPrefix() {
     try {
-      return '${context.read<LocaleSettingsProvider>().currencyCode} ';
+      return '${context.read<LocaleSettingsProvider>().currencySymbol} ';
     } catch (_) {
       return '';
     }

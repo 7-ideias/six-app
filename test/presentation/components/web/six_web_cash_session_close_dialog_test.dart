@@ -21,7 +21,7 @@ void main() {
     expect(find.text('Encerrar sessão de caixa?'), findsOneWidget);
     expect(find.text('Caixa 1'), findsOneWidget);
     expect(find.text('4'), findsOneWidget);
-    expect(find.text('BRL 510,93'), findsOneWidget);
+    expect(find.text('R\$ 510,93'), findsOneWidget);
     expect(find.text('Resumo operacional disponível'), findsOneWidget);
     expect(find.text('Encerrar caixa'), findsOneWidget);
     expect(find.byType(BackdropFilter), findsOneWidget);
@@ -118,21 +118,22 @@ Future<void> _pumpHarness(
       ],
       home: Scaffold(
         body: Builder(
-          builder: (BuildContext context) => Center(
-            child: FilledButton(
-              onPressed: () async {
-                final bool result = await showSixWebCashSessionCloseDialog(
-                  context: context,
-                  cashDeskName: 'Caixa 1',
-                  movementCount: 4,
-                  expectedBalance: 'BRL 510,93',
-                  onConfirm: onConfirm,
-                );
-                onResult?.call(result);
-              },
-              child: const Text('Abrir confirmação'),
-            ),
-          ),
+          builder:
+              (BuildContext context) => Center(
+                child: FilledButton(
+                  onPressed: () async {
+                    final bool result = await showSixWebCashSessionCloseDialog(
+                      context: context,
+                      cashDeskName: 'Caixa 1',
+                      movementCount: 4,
+                      expectedBalance: 'R\$ 510,93',
+                      onConfirm: onConfirm,
+                    );
+                    onResult?.call(result);
+                  },
+                  child: const Text('Abrir confirmação'),
+                ),
+              ),
         ),
       ),
     ),

@@ -438,7 +438,7 @@ void main() {
 
         expect(find.text('Conferência dos valores'), findsOneWidget);
         expect(find.text('Saldo esperado'), findsWidgets);
-        expect(find.textContaining('BRL'), findsWidgets);
+        expect(find.textContaining('R\$'), findsWidgets);
 
         await _enterTextField(tester, 'Dinheiro apurado', '180,10');
         await _enterTextField(tester, 'Pix apurado', '90,20');

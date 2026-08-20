@@ -211,7 +211,7 @@ void main() {
         expect(find.text(_longCustomerName), findsWidgets);
         expect(find.text('PAGAMENTO_PARCIAL'), findsWidgets);
         expect(find.text('Valor em aberto'), findsWidgets);
-        expect(find.textContaining('BRL'), findsWidgets);
+        expect(find.textContaining('R\$'), findsWidgets);
         expect(find.byIcon(Icons.receipt_long_outlined), findsWidgets);
 
         await _openFirstSaleDetail(tester);
@@ -381,7 +381,7 @@ void main() {
 
       expect(find.text('Cancelar venda em aberto?'), findsOneWidget);
       expect(find.text('Venda PDV 1001'), findsWidgets);
-      expect(find.textContaining('BRL'), findsWidgets);
+      expect(find.textContaining('R\$'), findsWidgets);
       expect(successApi.cancelCalls, 0);
 
       await _tapScrollableButton<OutlinedButton>(tester, 'Voltar');
@@ -474,7 +474,7 @@ void main() {
         find.text('AGUARDANDO_PAGAMENTO_PARCIAL_COM_VALIDACAO_OPERACIONAL'),
         findsWidgets,
       );
-      expect(find.textContaining('BRL'), findsWidgets);
+      expect(find.textContaining('R\$'), findsWidgets);
       expect(tester.takeException(), isNull);
 
       await _openFirstSaleDetail(tester);

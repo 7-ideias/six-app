@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sixpos/data/datasources/operational_procedure_mock_data_source.dart';
 import 'package:sixpos/data/models/caixa_models.dart';
+import 'package:sixpos/data/models/documento_models.dart';
 import 'package:sixpos/data/models/operacao_models.dart';
 import 'package:sixpos/data/models/operational_procedure_flow_models.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
@@ -213,7 +214,7 @@ void main() {
       expect(find.text('Serviço'), findsWidgets);
       expect(find.text('2'), findsWidgets);
       expect(find.text('Total'), findsOneWidget);
-      expect(find.textContaining('BRL'), findsWidgets);
+      expect(find.textContaining('R\$'), findsWidgets);
       expect(
         _hasDecoratedAncestorColor(
           tester,
@@ -892,12 +893,18 @@ class _FakeOperacaoService implements OperacaoService {
   }
 
   @override
-  Future<void> imprimirComprovanteDaOperacao({
+  Future<DocumentoPdfResponse> imprimirComprovanteDaOperacao({
     required String idOperacao,
     required FormatoImpressaoOperacao formato,
     required OperacaoVendaInput input,
   }) async {
     printCalls += 1;
+    return const DocumentoPdfResponse(
+      arquivoBase64: '',
+      nomeArquivo: 'comprovante.pdf',
+      mimeType: 'application/pdf',
+      tamanhoBytes: 0,
+    );
   }
 }
 

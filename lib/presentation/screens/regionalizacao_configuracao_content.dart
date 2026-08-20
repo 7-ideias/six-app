@@ -7,10 +7,7 @@ import '../../providers/locale_settings_provider.dart';
 import '../components/mobile_motion.dart';
 
 class RegionalizacaoConfiguracaoContent extends StatefulWidget {
-  const RegionalizacaoConfiguracaoContent({
-    super.key,
-    this.embedded = false,
-  });
+  const RegionalizacaoConfiguracaoContent({super.key, this.embedded = false});
 
   final bool embedded;
 
@@ -50,185 +47,190 @@ class _RegionalizacaoConfiguracaoContentState
 
   static const List<_RegionalizacaoOption> _countryOptions =
       <_RegionalizacaoOption>[
-    _RegionalizacaoOption(
-      value: 'BR',
-      labelKey: 'configuracoes.countryBrazil',
-      labelFallback: 'Brasil',
-      subtitleFallback: 'pt-BR',
-    ),
-    _RegionalizacaoOption(
-      value: 'US',
-      labelKey: 'configuracoes.countryUnitedStates',
-      labelFallback: 'Estados Unidos',
-      subtitleFallback: 'en-US',
-    ),
-    _RegionalizacaoOption(
-      value: 'ES',
-      labelKey: 'configuracoes.countrySpain',
-      labelFallback: 'Espanha',
-      subtitleFallback: 'es-ES',
-    ),
-  ];
+        _RegionalizacaoOption(
+          value: 'BR',
+          labelKey: 'configuracoes.countryBrazil',
+          labelFallback: 'Brasil',
+          subtitleFallback: 'pt-BR',
+        ),
+        _RegionalizacaoOption(
+          value: 'US',
+          labelKey: 'configuracoes.countryUnitedStates',
+          labelFallback: 'Estados Unidos',
+          subtitleFallback: 'en-US',
+        ),
+        _RegionalizacaoOption(
+          value: 'ES',
+          labelKey: 'configuracoes.countrySpain',
+          labelFallback: 'Espanha',
+          subtitleFallback: 'es-ES',
+        ),
+      ];
 
   static const List<_RegionalizacaoOption> _currencyOptions =
       <_RegionalizacaoOption>[
-    _RegionalizacaoOption(
-      value: 'BRL',
-      labelKey: 'configuracoes.currencyBrl',
-      labelFallback: 'Real brasileiro',
-      subtitleFallback: 'BRL',
-    ),
-    _RegionalizacaoOption(
-      value: 'USD',
-      labelKey: 'configuracoes.currencyUsd',
-      labelFallback: 'Dólar americano',
-      subtitleFallback: 'USD',
-    ),
-    _RegionalizacaoOption(
-      value: 'EUR',
-      labelKey: 'configuracoes.currencyEur',
-      labelFallback: 'Euro',
-      subtitleFallback: 'EUR',
-    ),
-    _RegionalizacaoOption(
-      value: 'ARS',
-      labelKey: 'configuracoes.currencyArs',
-      labelFallback: 'Peso argentino',
-      subtitleFallback: 'ARS',
-    ),
-    _RegionalizacaoOption(
-      value: 'MXN',
-      labelKey: 'configuracoes.currencyMxn',
-      labelFallback: 'Peso mexicano',
-      subtitleFallback: 'MXN',
-    ),
-  ];
+        _RegionalizacaoOption(
+          value: 'BRL',
+          labelKey: 'configuracoes.currencyBrl',
+          labelFallback: 'Real brasileiro',
+          subtitleFallback: 'BRL',
+          displayLabel: 'R\$',
+        ),
+        _RegionalizacaoOption(
+          value: 'USD',
+          labelKey: 'configuracoes.currencyUsd',
+          labelFallback: 'Dólar americano',
+          subtitleFallback: 'USD',
+          displayLabel: '\$',
+        ),
+        _RegionalizacaoOption(
+          value: 'EUR',
+          labelKey: 'configuracoes.currencyEur',
+          labelFallback: 'Euro',
+          subtitleFallback: 'EUR',
+          displayLabel: '€',
+        ),
+        _RegionalizacaoOption(
+          value: 'ARS',
+          labelKey: 'configuracoes.currencyArs',
+          labelFallback: 'Peso argentino',
+          subtitleFallback: 'ARS',
+          displayLabel: 'AR\$',
+        ),
+        _RegionalizacaoOption(
+          value: 'MXN',
+          labelKey: 'configuracoes.currencyMxn',
+          labelFallback: 'Peso mexicano',
+          subtitleFallback: 'MXN',
+          displayLabel: 'MX\$',
+        ),
+      ];
 
   static const List<_RegionalizacaoOption> _timeZoneOptions =
       <_RegionalizacaoOption>[
-    _RegionalizacaoOption(
-      value: 'America/Sao_Paulo',
-      labelKey: 'configuracoes.timeZoneSaoPaulo',
-      labelFallback: 'São Paulo',
-      subtitleFallback: 'America/Sao_Paulo',
-    ),
-    _RegionalizacaoOption(
-      value: 'America/New_York',
-      labelKey: 'configuracoes.timeZoneNewYork',
-      labelFallback: 'Nova York',
-      subtitleFallback: 'America/New_York',
-    ),
-    _RegionalizacaoOption(
-      value: 'Europe/Madrid',
-      labelKey: 'configuracoes.timeZoneMadrid',
-      labelFallback: 'Madri',
-      subtitleFallback: 'Europe/Madrid',
-    ),
-    _RegionalizacaoOption(
-      value: 'UTC',
-      labelKey: 'configuracoes.timeZoneUtc',
-      labelFallback: 'UTC',
-      subtitleFallback: 'UTC',
-    ),
-  ];
+        _RegionalizacaoOption(
+          value: 'America/Sao_Paulo',
+          labelKey: 'configuracoes.timeZoneSaoPaulo',
+          labelFallback: 'São Paulo',
+          subtitleFallback: 'America/Sao_Paulo',
+        ),
+        _RegionalizacaoOption(
+          value: 'America/New_York',
+          labelKey: 'configuracoes.timeZoneNewYork',
+          labelFallback: 'Nova York',
+          subtitleFallback: 'America/New_York',
+        ),
+        _RegionalizacaoOption(
+          value: 'Europe/Madrid',
+          labelKey: 'configuracoes.timeZoneMadrid',
+          labelFallback: 'Madri',
+          subtitleFallback: 'Europe/Madrid',
+        ),
+        _RegionalizacaoOption(
+          value: 'UTC',
+          labelKey: 'configuracoes.timeZoneUtc',
+          labelFallback: 'UTC',
+          subtitleFallback: 'UTC',
+        ),
+      ];
 
   static const List<_RegionalizacaoOption> _dateFormatOptions =
       <_RegionalizacaoOption>[
-    _RegionalizacaoOption(
-      value: 'dd/MM/yyyy',
-      labelKey: 'configuracoes.dateFormatBr',
-      labelFallback: '31/12/2026',
-      subtitleFallback: 'dd/MM/yyyy',
-    ),
-    _RegionalizacaoOption(
-      value: 'MM/dd/yyyy',
-      labelKey: 'configuracoes.dateFormatUs',
-      labelFallback: '12/31/2026',
-      subtitleFallback: 'MM/dd/yyyy',
-    ),
-    _RegionalizacaoOption(
-      value: 'yyyy-MM-dd',
-      labelKey: 'configuracoes.dateFormatIso',
-      labelFallback: '2026-12-31',
-      subtitleFallback: 'yyyy-MM-dd',
-    ),
-  ];
+        _RegionalizacaoOption(
+          value: 'dd/MM/yyyy',
+          labelKey: 'configuracoes.dateFormatBr',
+          labelFallback: '31/12/2026',
+          subtitleFallback: 'dd/MM/yyyy',
+        ),
+        _RegionalizacaoOption(
+          value: 'MM/dd/yyyy',
+          labelKey: 'configuracoes.dateFormatUs',
+          labelFallback: '12/31/2026',
+          subtitleFallback: 'MM/dd/yyyy',
+        ),
+        _RegionalizacaoOption(
+          value: 'yyyy-MM-dd',
+          labelKey: 'configuracoes.dateFormatIso',
+          labelFallback: '2026-12-31',
+          subtitleFallback: 'yyyy-MM-dd',
+        ),
+      ];
 
   static const List<_RegionalizacaoOption> _timeFormatOptions =
       <_RegionalizacaoOption>[
-    _RegionalizacaoOption(
-      value: '24h',
-      labelKey: 'configuracoes.timeFormat24h',
-      labelFallback: '24 horas',
-      subtitleFallback: '18:30',
-    ),
-    _RegionalizacaoOption(
-      value: '12h',
-      labelKey: 'configuracoes.timeFormat12h',
-      labelFallback: '12 horas',
-      subtitleFallback: '06:30 PM',
-    ),
-  ];
+        _RegionalizacaoOption(
+          value: '24h',
+          labelKey: 'configuracoes.timeFormat24h',
+          labelFallback: '24 horas',
+          subtitleFallback: '18:30',
+        ),
+        _RegionalizacaoOption(
+          value: '12h',
+          labelKey: 'configuracoes.timeFormat12h',
+          labelFallback: '12 horas',
+          subtitleFallback: '06:30 PM',
+        ),
+      ];
 
   static const List<_RegionalizacaoOption> _decimalSeparatorOptions =
       <_RegionalizacaoOption>[
-    _RegionalizacaoOption(
-      value: ',',
-      labelKey: 'configuracoes.decimalComma',
-      labelFallback: 'Vírgula',
-      subtitleFallback: '10,50',
-    ),
-    _RegionalizacaoOption(
-      value: '.',
-      labelKey: 'configuracoes.decimalDot',
-      labelFallback: 'Ponto',
-      subtitleFallback: '10.50',
-    ),
-  ];
+        _RegionalizacaoOption(
+          value: ',',
+          labelKey: 'configuracoes.decimalComma',
+          labelFallback: 'Vírgula',
+          subtitleFallback: '10,50',
+        ),
+        _RegionalizacaoOption(
+          value: '.',
+          labelKey: 'configuracoes.decimalDot',
+          labelFallback: 'Ponto',
+          subtitleFallback: '10.50',
+        ),
+      ];
 
   static const List<_RegionalizacaoOption> _thousandSeparatorOptions =
       <_RegionalizacaoOption>[
-    _RegionalizacaoOption(
-      value: '.',
-      labelKey: 'configuracoes.thousandDot',
-      labelFallback: 'Ponto',
-      subtitleFallback: '1.000',
-    ),
-    _RegionalizacaoOption(
-      value: ',',
-      labelKey: 'configuracoes.thousandComma',
-      labelFallback: 'Vírgula',
-      subtitleFallback: '1,000',
-    ),
-    _RegionalizacaoOption(
-      value: ' ',
-      labelKey: 'configuracoes.thousandSpace',
-      labelFallback: 'Espaço',
-      subtitleFallback: '1 000',
-    ),
-  ];
+        _RegionalizacaoOption(
+          value: '.',
+          labelKey: 'configuracoes.thousandDot',
+          labelFallback: 'Ponto',
+          subtitleFallback: '1.000',
+        ),
+        _RegionalizacaoOption(
+          value: ',',
+          labelKey: 'configuracoes.thousandComma',
+          labelFallback: 'Vírgula',
+          subtitleFallback: '1,000',
+        ),
+        _RegionalizacaoOption(
+          value: ' ',
+          labelKey: 'configuracoes.thousandSpace',
+          labelFallback: 'Espaço',
+          subtitleFallback: '1 000',
+        ),
+      ];
 
   static const List<_RegionalizacaoOption> _firstDayOptions =
       <_RegionalizacaoOption>[
-    _RegionalizacaoOption(
-      value: 'MONDAY',
-      labelKey: 'common.monday',
-      labelFallback: 'Segunda-feira',
-      subtitleFallback: 'MONDAY',
-    ),
-    _RegionalizacaoOption(
-      value: 'SUNDAY',
-      labelKey: 'common.sunday',
-      labelFallback: 'Domingo',
-      subtitleFallback: 'SUNDAY',
-    ),
-    _RegionalizacaoOption(
-      value: 'SATURDAY',
-      labelKey: 'common.saturday',
-      labelFallback: 'Sábado',
-      subtitleFallback: 'SATURDAY',
-    ),
-  ];
+        _RegionalizacaoOption(
+          value: 'MONDAY',
+          labelKey: 'common.monday',
+          labelFallback: 'Segunda-feira',
+          subtitleFallback: 'MONDAY',
+        ),
+        _RegionalizacaoOption(
+          value: 'SUNDAY',
+          labelKey: 'common.sunday',
+          labelFallback: 'Domingo',
+          subtitleFallback: 'SUNDAY',
+        ),
+        _RegionalizacaoOption(
+          value: 'SATURDAY',
+          labelKey: 'common.saturday',
+          labelFallback: 'Sábado',
+          subtitleFallback: 'SATURDAY',
+        ),
+      ];
 
   @override
   void initState() {
@@ -249,9 +251,10 @@ class _RegionalizacaoConfiguracaoContentState
     });
 
     try {
-      final config = await context
-          .read<LocaleSettingsProvider>()
-          .carregarRegionalizacaoDaEmpresa();
+      final config =
+          await context
+              .read<LocaleSettingsProvider>()
+              .carregarRegionalizacaoDaEmpresa();
 
       if (!mounted) return;
       setState(() => _aplicarConfiguracao(config));
@@ -341,11 +344,13 @@ class _RegionalizacaoConfiguracaoContentState
   }
 
   ConfiguracaoRegionalizacaoSistema _montarConfiguracaoAtualizada() {
-    final config = _configuracaoAtual ??
+    final config =
+        _configuracaoAtual ??
         ConfiguracaoRegionalizacaoSistema.defaultConfiguration();
-    final pattern = _numberPatternController.text.trim().isEmpty
-        ? _suggestNumberPattern()
-        : _numberPatternController.text.trim();
+    final pattern =
+        _numberPatternController.text.trim().isEmpty
+            ? _suggestNumberPattern()
+            : _numberPatternController.text.trim();
 
     return config.copyWith(
       languageCode: _idiomaSelecionado.locale.languageCode,
@@ -409,9 +414,10 @@ class _RegionalizacaoConfiguracaoContentState
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<LocaleSettingsProvider>();
-    final padding = widget.embedded
-        ? EdgeInsets.zero
-        : const EdgeInsets.fromLTRB(16, 16, 16, 24);
+    final padding =
+        widget.embedded
+            ? EdgeInsets.zero
+            : const EdgeInsets.fromLTRB(16, 16, 16, 24);
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -434,11 +440,7 @@ class _RegionalizacaoConfiguracaoContentState
                 delay: const Duration(milliseconds: 70),
                 child: LayoutBuilder(
                   builder: (BuildContext context, BoxConstraints inner) {
-                    return _buildContent(
-                      context,
-                      inner.maxWidth,
-                      provider,
-                    );
+                    return _buildContent(context, inner.maxWidth, provider);
                   },
                 ),
               ),
@@ -535,7 +537,10 @@ class _RegionalizacaoConfiguracaoContentState
                     fallback:
                         'Idioma, país, moeda, fuso horário e padrões financeiros da empresa.',
                   ),
-                  style: const TextStyle(color: Color(0xCCE2E8F0), height: 1.35),
+                  style: const TextStyle(
+                    color: Color(0xCCE2E8F0),
+                    height: 1.35,
+                  ),
                 ),
               ],
             ),
@@ -573,7 +578,8 @@ class _RegionalizacaoConfiguracaoContentState
       _RegionalizacaoPreviewItem(
         icon: Icons.public_rounded,
         label: context.t('configuracoes.activeLocale', fallback: 'Locale'),
-        value: '${_idiomaSelecionado.locale.languageCode}-${_paisSelecionado.value}',
+        value:
+            '${_idiomaSelecionado.locale.languageCode}-${_paisSelecionado.value}',
       ),
     ];
 
@@ -598,7 +604,7 @@ class _RegionalizacaoConfiguracaoContentState
               context: context,
               theme: theme,
               icon: Icons.hub_rounded,
-              label: provider.currencyCode,
+              label: provider.currencySymbol,
               color: theme.colorScheme.primary,
             ),
           ),
@@ -607,21 +613,23 @@ class _RegionalizacaoConfiguracaoContentState
             builder: (BuildContext context, BoxConstraints constraints) {
               final bool compact = constraints.maxWidth < 760;
               final double spacing = 12;
-              final double itemWidth = compact
-                  ? constraints.maxWidth
-                  : (constraints.maxWidth - spacing) / 2;
+              final double itemWidth =
+                  compact
+                      ? constraints.maxWidth
+                      : (constraints.maxWidth - spacing) / 2;
 
               return Wrap(
                 spacing: spacing,
                 runSpacing: spacing,
-                children: items
-                    .map(
-                      (item) => SizedBox(
-                        width: itemWidth,
-                        child: _buildPreviewItem(context, theme, item),
-                      ),
-                    )
-                    .toList(),
+                children:
+                    items
+                        .map(
+                          (item) => SizedBox(
+                            width: itemWidth,
+                            child: _buildPreviewItem(context, theme, item),
+                          ),
+                        )
+                        .toList(),
               );
             },
           ),
@@ -718,7 +726,10 @@ class _RegionalizacaoConfiguracaoContentState
           _buildOptionGroup(
             context: context,
             theme: theme,
-            title: context.t('configuracoes.countryCode', fallback: 'País/região'),
+            title: context.t(
+              'configuracoes.countryCode',
+              fallback: 'País/região',
+            ),
             icon: Icons.flag_rounded,
             options: _optionsWithSelected(_countryOptions, _paisSelecionado),
             selected: _paisSelecionado,
@@ -728,11 +739,18 @@ class _RegionalizacaoConfiguracaoContentState
           _buildOptionGroup(
             context: context,
             theme: theme,
-            title: context.t('configuracoes.timeZone', fallback: 'Fuso horário'),
+            title: context.t(
+              'configuracoes.timeZone',
+              fallback: 'Fuso horário',
+            ),
             icon: Icons.schedule_rounded,
-            options: _optionsWithSelected(_timeZoneOptions, _timeZoneSelecionado),
+            options: _optionsWithSelected(
+              _timeZoneOptions,
+              _timeZoneSelecionado,
+            ),
             selected: _timeZoneSelecionado,
-            onSelected: (option) => setState(() => _timeZoneSelecionado = option),
+            onSelected:
+                (option) => setState(() => _timeZoneSelecionado = option),
           ),
           const SizedBox(height: 18),
           _buildOptionGroup(
@@ -743,9 +761,13 @@ class _RegionalizacaoConfiguracaoContentState
               fallback: 'Primeiro dia da semana',
             ),
             icon: Icons.event_available_rounded,
-            options: _optionsWithSelected(_firstDayOptions, _firstDaySelecionado),
+            options: _optionsWithSelected(
+              _firstDayOptions,
+              _firstDaySelecionado,
+            ),
             selected: _firstDaySelecionado,
-            onSelected: (option) => setState(() => _firstDaySelecionado = option),
+            onSelected:
+                (option) => setState(() => _firstDaySelecionado = option),
           ),
         ],
       ),
@@ -760,33 +782,38 @@ class _RegionalizacaoConfiguracaoContentState
           context,
           theme,
           Icons.language_rounded,
-          context.t('configuracoes.systemLanguage', fallback: 'Idioma do sistema'),
+          context.t(
+            'configuracoes.systemLanguage',
+            fallback: 'Idioma do sistema',
+          ),
         ),
         const SizedBox(height: 10),
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final bool compact = constraints.maxWidth < 720;
             final double spacing = compact ? 10 : 12;
-            final double itemWidth = compact
-                ? constraints.maxWidth
-                : (constraints.maxWidth - (spacing * 2)) / 3;
+            final double itemWidth =
+                compact
+                    ? constraints.maxWidth
+                    : (constraints.maxWidth - (spacing * 2)) / 3;
 
             return Wrap(
               spacing: spacing,
               runSpacing: spacing,
-              children: _idiomas
-                  .map(
-                    (option) => SizedBox(
-                      width: itemWidth,
-                      child: _buildLanguageOption(
-                        context: context,
-                        theme: theme,
-                        option: option,
-                        selected: option == _idiomaSelecionado,
-                      ),
-                    ),
-                  )
-                  .toList(),
+              children:
+                  _idiomas
+                      .map(
+                        (option) => SizedBox(
+                          width: itemWidth,
+                          child: _buildLanguageOption(
+                            context: context,
+                            theme: theme,
+                            option: option,
+                            selected: option == _idiomaSelecionado,
+                          ),
+                        ),
+                      )
+                      .toList(),
             );
           },
         ),
@@ -863,21 +890,35 @@ class _RegionalizacaoConfiguracaoContentState
           _buildOptionGroup(
             context: context,
             theme: theme,
-            title: context.t('configuracoes.dateFormat', fallback: 'Formato de data'),
+            title: context.t(
+              'configuracoes.dateFormat',
+              fallback: 'Formato de data',
+            ),
             icon: Icons.calendar_month_rounded,
-            options: _optionsWithSelected(_dateFormatOptions, _dateFormatSelecionado),
+            options: _optionsWithSelected(
+              _dateFormatOptions,
+              _dateFormatSelecionado,
+            ),
             selected: _dateFormatSelecionado,
-            onSelected: (option) => setState(() => _dateFormatSelecionado = option),
+            onSelected:
+                (option) => setState(() => _dateFormatSelecionado = option),
           ),
           const SizedBox(height: 18),
           _buildOptionGroup(
             context: context,
             theme: theme,
-            title: context.t('configuracoes.timeFormat', fallback: 'Formato de hora'),
+            title: context.t(
+              'configuracoes.timeFormat',
+              fallback: 'Formato de hora',
+            ),
             icon: Icons.access_time_rounded,
-            options: _optionsWithSelected(_timeFormatOptions, _timeFormatSelecionado),
+            options: _optionsWithSelected(
+              _timeFormatOptions,
+              _timeFormatSelecionado,
+            ),
             selected: _timeFormatSelecionado,
-            onSelected: (option) => setState(() => _timeFormatSelecionado = option),
+            onSelected:
+                (option) => setState(() => _timeFormatSelecionado = option),
           ),
           const SizedBox(height: 18),
           _buildOptionGroup(
@@ -982,7 +1023,8 @@ class _RegionalizacaoConfiguracaoContentState
               fallback:
                   'Apenas persiste a preferência. O fluxo de venda multi-moedas não é alterado nesta etapa.',
             ),
-            onChanged: (value) => setState(() => _allowMultipleCurrencies = value),
+            onChanged:
+                (value) => setState(() => _allowMultipleCurrencies = value),
           ),
           const SizedBox(height: 12),
           _buildSwitchCard(
@@ -999,7 +1041,8 @@ class _RegionalizacaoConfiguracaoContentState
               fallback:
                   'Disponibiliza a regra para cálculos e formatações financeiras centralizadas.',
             ),
-            onChanged: (value) => setState(() => _applyFinancialRounding = value),
+            onChanged:
+                (value) => setState(() => _applyFinancialRounding = value),
           ),
         ],
       ),
@@ -1024,62 +1067,71 @@ class _RegionalizacaoConfiguracaoContentState
           builder: (BuildContext context, BoxConstraints constraints) {
             final bool compact = constraints.maxWidth < 760;
             final double spacing = 10;
-            final double itemWidth = compact
-                ? constraints.maxWidth
-                : (constraints.maxWidth - spacing) / 2;
+            final double itemWidth =
+                compact
+                    ? constraints.maxWidth
+                    : (constraints.maxWidth - spacing) / 2;
 
             return Wrap(
               spacing: spacing,
               runSpacing: spacing,
-              children: options
-                  .map(
-                    (option) => SizedBox(
-                      width: itemWidth,
-                      child: _SelectableContainer(
-                        selected: option.value == selected.value,
-                        onTap: () => onSelected(option),
-                        child: Row(
-                          children: <Widget>[
-                            _buildOptionIcon(
-                              theme,
-                              option.value.trim().isEmpty
-                                  ? '—'
-                                  : option.value.trim(),
-                              option.value == selected.value,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Text(
-                                    option.label(context),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w900,
-                                    ),
+              children:
+                  options
+                      .map(
+                        (option) => SizedBox(
+                          width: itemWidth,
+                          child: _SelectableContainer(
+                            selected: option.value == selected.value,
+                            onTap: () => onSelected(option),
+                            child: Row(
+                              children: <Widget>[
+                                _buildOptionIcon(
+                                  theme,
+                                  option.badge,
+                                  option.value == selected.value,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      Text(
+                                        option.label(context),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        option.subtitle(context),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color:
+                                                  theme
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                            ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    option.subtitle(context),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(width: 8),
+                                _buildSelectedIcon(
+                                  theme,
+                                  option.value == selected.value,
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            _buildSelectedIcon(theme, option.value == selected.value),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-                  )
-                  .toList(),
+                      )
+                      .toList(),
             );
           },
         ),
@@ -1103,21 +1155,23 @@ class _RegionalizacaoConfiguracaoContentState
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: options
-              .map(
-                (value) => ChoiceChip(
-                  label: Text(value.toString()),
-                  selected: _decimalPlaces == value,
-                  onSelected: (_) {
-                    setState(() {
-                      _decimalPlaces = value;
-                      _numberPatternController.text = _suggestNumberPattern();
-                    });
-                  },
-                  visualDensity: VisualDensity.compact,
-                ),
-              )
-              .toList(),
+          children:
+              options
+                  .map(
+                    (value) => ChoiceChip(
+                      label: Text(value.toString()),
+                      selected: _decimalPlaces == value,
+                      onSelected: (_) {
+                        setState(() {
+                          _decimalPlaces = value;
+                          _numberPatternController.text =
+                              _suggestNumberPattern();
+                        });
+                      },
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  )
+                  .toList(),
         ),
       ],
     );
@@ -1200,24 +1254,26 @@ class _RegionalizacaoConfiguracaoContentState
         final Widget reloadButton = OutlinedButton.icon(
           onPressed: saving ? null : _carregarRegionalizacao,
           icon: const Icon(Icons.refresh_rounded),
-          label: Text(
-            context.t('common.reload', fallback: 'Recarregar'),
-          ),
+          label: Text(context.t('common.reload', fallback: 'Recarregar')),
         );
 
         final Widget saveButton = FilledButton.icon(
           onPressed: saving ? null : _salvar,
-          icon: saving
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.save_rounded),
+          icon:
+              saving
+                  ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                  : const Icon(Icons.save_rounded),
           label: Text(
             saving
                 ? context.t('common.saving', fallback: 'Salvando...')
-                : context.t('common.saveChanges', fallback: 'Salvar alterações'),
+                : context.t(
+                  'common.saveChanges',
+                  fallback: 'Salvar alterações',
+                ),
           ),
         );
 
@@ -1351,9 +1407,10 @@ class _RegionalizacaoConfiguracaoContentState
       height: 42,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: selected
-            ? theme.colorScheme.primary.withOpacity(0.12)
-            : theme.colorScheme.surfaceContainerHighest.withOpacity(0.55),
+        color:
+            selected
+                ? theme.colorScheme.primary.withOpacity(0.12)
+                : theme.colorScheme.surfaceContainerHighest.withOpacity(0.55),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Text(
@@ -1363,9 +1420,10 @@ class _RegionalizacaoConfiguracaoContentState
         style: TextStyle(
           fontSize: value.length > 3 ? 11 : 13,
           fontWeight: FontWeight.w900,
-          color: selected
-              ? theme.colorScheme.primary
-              : theme.colorScheme.onSurfaceVariant,
+          color:
+              selected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -1374,17 +1432,18 @@ class _RegionalizacaoConfiguracaoContentState
   Widget _buildSelectedIcon(ThemeData theme, bool selected) {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 160),
-      child: selected
-          ? Icon(
-              Icons.check_circle_rounded,
-              key: const ValueKey<String>('selected'),
-              color: theme.colorScheme.primary,
-            )
-          : Icon(
-              Icons.radio_button_unchecked_rounded,
-              key: const ValueKey<String>('unselected'),
-              color: theme.colorScheme.outline,
-            ),
+      child:
+          selected
+              ? Icon(
+                Icons.check_circle_rounded,
+                key: const ValueKey<String>('selected'),
+                color: theme.colorScheme.primary,
+              )
+              : Icon(
+                Icons.radio_button_unchecked_rounded,
+                key: const ValueKey<String>('unselected'),
+                color: theme.colorScheme.outline,
+              ),
     );
   }
 
@@ -1456,9 +1515,10 @@ class _RegionalizacaoConfiguracaoContentState
   }
 
   String _suggestNumberPattern() {
-    final decimals = _decimalPlaces <= 0
-        ? ''
-        : '${_decimalSeparatorSelecionado.value}${'0' * _decimalPlaces}';
+    final decimals =
+        _decimalPlaces <= 0
+            ? ''
+            : '${_decimalSeparatorSelecionado.value}${'0' * _decimalPlaces}';
     return '#${_thousandSeparatorSelecionado.value}##0$decimals';
   }
 }
@@ -1479,9 +1539,10 @@ class _SelectableContainer extends StatelessWidget {
     final theme = Theme.of(context);
     final Color borderColor =
         selected ? theme.colorScheme.primary : theme.colorScheme.outlineVariant;
-    final Color backgroundColor = selected
-        ? theme.colorScheme.primary.withOpacity(0.08)
-        : theme.colorScheme.surface;
+    final Color backgroundColor =
+        selected
+            ? theme.colorScheme.primary.withOpacity(0.08)
+            : theme.colorScheme.surface;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
@@ -1490,15 +1551,16 @@ class _SelectableContainer extends StatelessWidget {
         color: backgroundColor,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: borderColor, width: selected ? 1.4 : 1),
-        boxShadow: selected
-            ? <BoxShadow>[
-                BoxShadow(
-                  color: theme.colorScheme.primary.withOpacity(0.12),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ]
-            : null,
+        boxShadow:
+            selected
+                ? <BoxShadow>[
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withOpacity(0.12),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+                : null,
       ),
       child: Material(
         color: Colors.transparent,
@@ -1506,10 +1568,7 @@ class _SelectableContainer extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: child,
-          ),
+          child: Padding(padding: const EdgeInsets.all(14), child: child),
         ),
       ),
     );
@@ -1517,10 +1576,7 @@ class _SelectableContainer extends StatelessWidget {
 }
 
 class _RegionalizacaoCard extends StatelessWidget {
-  const _RegionalizacaoCard({
-    required this.child,
-    required this.embedded,
-  });
+  const _RegionalizacaoCard({required this.child, required this.embedded});
 
   final Widget child;
   final bool embedded;
@@ -1621,18 +1677,27 @@ class _RegionalizacaoOption {
     required this.labelKey,
     required this.labelFallback,
     required this.subtitleFallback,
+    this.displayLabel,
   });
 
   final String value;
   final String labelKey;
   final String labelFallback;
   final String subtitleFallback;
+  final String? displayLabel;
+  String get badge =>
+      (displayLabel ?? value).trim().isEmpty
+          ? '—'
+          : (displayLabel ?? value).trim();
 
   String label(BuildContext context) {
-    return context.t(labelKey, fallback: labelFallback);
+    return displayLabel ?? context.t(labelKey, fallback: labelFallback);
   }
 
-  String subtitle(BuildContext context) => subtitleFallback;
+  String subtitle(BuildContext context) {
+    if (displayLabel == null) return subtitleFallback;
+    return '$value - ${context.t(labelKey, fallback: labelFallback)}';
+  }
 }
 
 class _LanguageOption {
@@ -1733,15 +1798,16 @@ class _RegionalizacaoPreviewFormatter {
     final bool negativo = normalizado.startsWith('-');
     final List<String> partes = normalizado.replaceFirst('-', '').split('.');
     final String inteiro = _aplicarSeparadorDeMilhar(partes.first);
-    final String decimal = casasDecimais > 0 && partes.length > 1
-        ? '${formatting.decimalSeparator}${partes[1]}'
-        : '';
+    final String decimal =
+        casasDecimais > 0 && partes.length > 1
+            ? '${formatting.decimalSeparator}${partes[1]}'
+            : '';
 
     return '${negativo ? '-' : ''}$inteiro$decimal';
   }
 
   String formatCurrency(num value) {
-    return '${formatting.currencyCode} ${formatDecimal(value)}';
+    return '${LocaleSettingsProvider.currencySymbolForCode(formatting.currencyCode)} ${formatDecimal(value)}';
   }
 
   String formatDate(DateTime value) {
@@ -1765,9 +1831,10 @@ class _RegionalizacaoPreviewFormatter {
   String formatTime(DateTime value) {
     if (formatting.timeFormat.toLowerCase() == '12h') {
       final bool afternoon = value.hour >= 12;
-      final int hour12 = value.hour == 0
-          ? 12
-          : value.hour > 12
+      final int hour12 =
+          value.hour == 0
+              ? 12
+              : value.hour > 12
               ? value.hour - 12
               : value.hour;
       return '${_twoDigits(hour12)}:${_twoDigits(value.minute)} ${afternoon ? 'PM' : 'AM'}';

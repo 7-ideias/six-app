@@ -71,30 +71,35 @@ class _RegionalizacaoMobileScreenState
           labelKey: 'configuracoes.currencyBrl',
           labelFallback: 'Real brasileiro',
           subtitleFallback: 'BRL',
+          displayLabel: 'R\$',
         ),
         _RegionalizacaoOption(
           value: 'USD',
           labelKey: 'configuracoes.currencyUsd',
           labelFallback: 'Dólar americano',
           subtitleFallback: 'USD',
+          displayLabel: '\$',
         ),
         _RegionalizacaoOption(
           value: 'EUR',
           labelKey: 'configuracoes.currencyEur',
           labelFallback: 'Euro',
           subtitleFallback: 'EUR',
+          displayLabel: '€',
         ),
         _RegionalizacaoOption(
           value: 'ARS',
           labelKey: 'configuracoes.currencyArs',
           labelFallback: 'Peso argentino',
           subtitleFallback: 'ARS',
+          displayLabel: 'AR\$',
         ),
         _RegionalizacaoOption(
           value: 'MXN',
           labelKey: 'configuracoes.currencyMxn',
           labelFallback: 'Peso mexicano',
           subtitleFallback: 'MXN',
+          displayLabel: 'MX\$',
         ),
       ];
 
@@ -1744,7 +1749,7 @@ class _OptionPickerSheetState extends State<_OptionPickerSheet> {
                           return _PickerOptionTile(
                             title: option.label(context),
                             subtitle: option.subtitle(context),
-                            badge: option.value,
+                            badge: option.badge,
                             selected: isSelected,
                             onTap: () => Navigator.of(context).pop(option),
                           );
@@ -2133,18 +2138,27 @@ class _RegionalizacaoOption {
     required this.labelKey,
     required this.labelFallback,
     required this.subtitleFallback,
+    this.displayLabel,
   });
 
   final String value;
   final String labelKey;
   final String labelFallback;
   final String subtitleFallback;
+  final String? displayLabel;
+  String get badge =>
+      (displayLabel ?? value).trim().isEmpty
+          ? '—'
+          : (displayLabel ?? value).trim();
 
   String label(BuildContext context) {
-    return context.t(labelKey, fallback: labelFallback);
+    return displayLabel ?? context.t(labelKey, fallback: labelFallback);
   }
 
-  String subtitle(BuildContext context) => subtitleFallback;
+  String subtitle(BuildContext context) {
+    if (displayLabel == null) return subtitleFallback;
+    return '$value - ${context.t(labelKey, fallback: labelFallback)}';
+  }
 }
 
 class _LanguageOption {
@@ -2240,7 +2254,7 @@ class _RegionalizacaoPreviewFormatter {
   }
 
   String formatCurrency(num value) {
-    return '${formatting.currencyCode} ${formatDecimal(value)}';
+    return '${LocaleSettingsProvider.currencySymbolForCode(formatting.currencyCode)} ${formatDecimal(value)}';
   }
 
   String formatDate(DateTime value) {

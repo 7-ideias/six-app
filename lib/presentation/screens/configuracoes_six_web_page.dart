@@ -833,7 +833,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   String _formatoNumeroSelecionado = '1.234,56';
 
   // Financeiro / moeda
-  String _moedaSelecionada = 'BRL - Real Brasileiro (R\$)';
+  String _moedaSelecionada = 'R\$ - Real Brasileiro';
   String _posicaoSimboloSelecionada = 'Antes do valor';
   String _casasDecimaisSelecionadas = '2';
   String _separadorDecimalSelecionado = 'Vírgula';
@@ -3660,10 +3660,10 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                       label: 'Moeda principal',
                       value: _moedaSelecionada,
                       items: const [
-                        'BRL - Real Brasileiro (R\$)',
-                        'USD - US Dollar (\$)',
-                        'EUR - Euro (€)',
-                        'PLN - Złoty (zł)',
+                        'R\$ - Real Brasileiro',
+                        '\$ - US Dollar',
+                        '€ - Euro',
+                        'zł - Złoty',
                       ],
                       onChanged: (valor) {
                         setState(() {
@@ -6086,9 +6086,17 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   }
 
   String _mapMoedaSelecionadaParaCurrencyCode(String moedaSelecionada) {
-    if (moedaSelecionada.startsWith('USD')) return 'USD';
-    if (moedaSelecionada.startsWith('EUR')) return 'EUR';
-    if (moedaSelecionada.startsWith('PLN')) return 'PLN';
+    final String normalized = moedaSelecionada.trim().toUpperCase();
+    if (normalized.contains('USD') || normalized.startsWith('\$')) {
+      return 'USD';
+    }
+    if (normalized.contains('EUR') || normalized.startsWith('€')) return 'EUR';
+    if (normalized.contains('PLN') || normalized.startsWith('ZŁ')) {
+      return 'PLN';
+    }
+    if (normalized.contains('BRL') || normalized.startsWith('R\$')) {
+      return 'BRL';
+    }
     return 'BRL';
   }
 
