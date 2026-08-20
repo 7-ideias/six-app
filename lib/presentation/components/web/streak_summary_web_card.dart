@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../data/models/streak_models.dart';
 import '../../../l10n/six_i18n.dart';
+import '../../theme/web_theme_tokens.dart';
 import '../../utils/streak_texts.dart';
 
 class StreakSummaryWebCard extends StatelessWidget {
@@ -24,6 +25,7 @@ class StreakSummaryWebCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
 
     if (hasError && streaks == null) {
       return _ErrorState(onRetry: onRetry);
@@ -41,16 +43,22 @@ class StreakSummaryWebCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color:
+            colorScheme.brightness == Brightness.dark
+                ? Color.alphaBlend(
+                  Colors.white.withValues(alpha: 0.028),
+                  tokens.surface,
+                )
+                : colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.86),
-        ),
+        border: Border.all(color: tokens.cardBorder.withValues(alpha: 0.82)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.035),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF020617).withValues(
+              alpha: colorScheme.brightness == Brightness.dark ? 0.20 : 0.05,
+            ),
+            blurRadius: colorScheme.brightness == Brightness.dark ? 24 : 18,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -66,7 +74,7 @@ class StreakSummaryWebCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: _fireColor.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: _fireColor.withValues(alpha: 0.16)),
+                  border: Border.all(color: _fireColor.withValues(alpha: 0.14)),
                 ),
                 child: const Icon(
                   Icons.local_fire_department_rounded,
@@ -98,7 +106,7 @@ class StreakSummaryWebCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                        color: tokens.secondaryText,
                         height: 1.35,
                       ),
                     ),
@@ -172,6 +180,7 @@ class _MetricTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
 
     return Container(
       constraints: const BoxConstraints(minHeight: 76),
@@ -179,14 +188,19 @@ class _MetricTile extends StatelessWidget {
       decoration: BoxDecoration(
         color:
             emphasized
-                ? colorScheme.primary.withValues(alpha: 0.06)
+                ? colorScheme.primary.withValues(alpha: 0.09)
+                : colorScheme.brightness == Brightness.dark
+                ? Color.alphaBlend(
+                  Colors.white.withValues(alpha: 0.05),
+                  tokens.surfaceMuted,
+                )
                 : colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color:
               emphasized
-                  ? colorScheme.primary.withValues(alpha: 0.24)
-                  : colorScheme.outlineVariant,
+                  ? colorScheme.primary.withValues(alpha: 0.18)
+                  : tokens.cardBorder.withValues(alpha: 0.72),
         ),
       ),
       child: Row(
@@ -201,7 +215,7 @@ class _MetricTile extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -222,7 +236,7 @@ class _MetricTile extends StatelessWidget {
             scope.currentDays.toString(),
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w900,
-              color: emphasized ? colorScheme.primary : colorScheme.onSurface,
+              color: emphasized ? tokens.info : colorScheme.onSurface,
             ),
           ),
         ],

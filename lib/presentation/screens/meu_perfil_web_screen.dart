@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -6,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/user_profile_avatar_image.dart';
 import 'package:sixpos/presentation/components/web/streak_summary_web_card.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/presentation/utils/profile_image_payload.dart';
 
 import '../../data/models/usuario_model.dart';
@@ -15,26 +17,111 @@ import '../../providers/streak_provider.dart';
 import '../../providers/usuario_provider.dart';
 
 void showMeuPerfilWebDialog(BuildContext context) {
-  showDialog<void>(
+  final bool reduceMotion =
+      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+  showGeneralDialog<void>(
     context: context,
     barrierDismissible: true,
-    builder: (BuildContext dialogContext) {
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    barrierColor: Colors.transparent,
+    transitionDuration: Duration(milliseconds: reduceMotion ? 1 : 280),
+    pageBuilder: (
+      BuildContext dialogContext,
+      Animation<double> animation,
+      Animation<double> secondaryAnimation,
+    ) {
       final Size size = MediaQuery.sizeOf(dialogContext);
       final bool compact = size.width < 760;
+      final WebThemeTokens tokens = WebThemeTokens.of(dialogContext);
 
-      return Dialog(
-        insetPadding: EdgeInsets.symmetric(
-          horizontal: compact ? 16 : 32,
-          vertical: compact ? 16 : 24,
-        ),
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: 980,
-            maxHeight: size.height - (compact ? 32 : 48),
+      return Semantics(
+        namesRoute: true,
+        label: 'Meu Perfil',
+        child: Material(
+          type: MaterialType.transparency,
+          child: Stack(
+            children: <Widget>[
+              Positioned.fill(
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(
+                    sigmaX: reduceMotion ? 0 : 12,
+                    sigmaY: reduceMotion ? 0 : 12,
+                  ),
+                  child: ColoredBox(
+                    color: const Color(0xFF08111F).withValues(alpha: 0.76),
+                  ),
+                ),
+              ),
+              SafeArea(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compact ? 16 : 32,
+                      vertical: compact ? 16 : 24,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: 980,
+                        maxHeight: size.height - (compact ? 32 : 48),
+                      ),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(
+                            color: tokens.cardBorder.withValues(alpha: 0.7),
+                          ),
+                          boxShadow: <BoxShadow>[
+                            BoxShadow(
+                              color: const Color(
+                                0xFF020617,
+                              ).withValues(alpha: 0.38),
+                              blurRadius: 42,
+                              offset: const Offset(0, 24),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(30),
+                          child: const MeuPerfilWebScreen(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          child: const MeuPerfilWebScreen(),
+        ),
+      );
+    },
+    transitionBuilder: (
+      BuildContext context,
+      Animation<double> animation,
+      Animation<double> secondaryAnimation,
+      Widget child,
+    ) {
+      final CurvedAnimation curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+
+      return FadeTransition(
+        opacity: curved,
+        child: AnimatedBuilder(
+          animation: curved,
+          child: child,
+          builder: (BuildContext context, Widget? child) {
+            final double progress = curved.value.clamp(0.0, 1.0);
+            return Transform.translate(
+              offset: Offset(0, 26 * (1 - progress)),
+              child: Transform.scale(
+                scale: 0.96 + (0.04 * progress),
+                child: child,
+              ),
+            );
+          },
         ),
       );
     },
@@ -164,30 +251,60 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
     super.dispose();
   }
 
+  Color _panelBackground(WebThemeTokens tokens) {
+    return Color.alphaBlend(
+      Colors.white.withValues(alpha: 0.028),
+      tokens.surface,
+    );
+  }
+
+  Color _fieldBackground(WebThemeTokens tokens) {
+    return Color.alphaBlend(
+      Colors.white.withValues(alpha: 0.055),
+      tokens.surfaceMuted,
+    );
+  }
+
   InputDecoration _inputDecoration(
     BuildContext context,
     String label, {
     required IconData icon,
   }) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
 
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, size: 20),
+      labelStyle: theme.textTheme.bodySmall?.copyWith(
+        color: tokens.mutedText,
+        fontWeight: FontWeight.w600,
+      ),
+      floatingLabelStyle: theme.textTheme.bodySmall?.copyWith(
+        color: tokens.secondaryText,
+        fontWeight: FontWeight.w600,
+      ),
+      prefixIcon: Icon(icon, size: 20, color: tokens.secondaryText),
       prefixIconConstraints: const BoxConstraints(minWidth: 44),
       filled: true,
-      fillColor: colorScheme.surface,
+      fillColor:
+          colorScheme.brightness == Brightness.dark
+              ? _fieldBackground(tokens)
+              : tokens.inputBackground,
       floatingLabelBehavior: FloatingLabelBehavior.auto,
       contentPadding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(
-          color: colorScheme.outline.withValues(alpha: 0.24),
+          color: tokens.cardBorder.withValues(alpha: 0.72),
         ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+        borderSide: BorderSide(
+          color: colorScheme.primary.withValues(alpha: 0.88),
+          width: 1.25,
+        ),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -228,6 +345,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
   }) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
 
     return _entry(
       order: order,
@@ -235,16 +353,19 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: colorScheme.surface,
+          color:
+              colorScheme.brightness == Brightness.dark
+                  ? _panelBackground(tokens)
+                  : tokens.surfaceElevated,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.86),
-          ),
+          border: Border.all(color: tokens.cardBorder.withValues(alpha: 0.82)),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.035),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
+              color: const Color(0xFF020617).withValues(
+                alpha: colorScheme.brightness == Brightness.dark ? 0.20 : 0.06,
+              ),
+              blurRadius: colorScheme.brightness == Brightness.dark ? 24 : 18,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
@@ -258,10 +379,20 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(alpha: 0.10),
+                    color:
+                        colorScheme.brightness == Brightness.dark
+                            ? colorScheme.primary.withValues(alpha: 0.10)
+                            : colorScheme.primary.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: colorScheme.primary.withValues(alpha: 0.12),
+                    ),
                   ),
-                  child: Icon(icon, color: colorScheme.primary, size: 23),
+                  child: Icon(
+                    icon,
+                    color: tokens.info.withValues(alpha: 0.92),
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -282,7 +413,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                          color: tokens.secondaryText,
                           height: 1.35,
                         ),
                       ),
@@ -461,9 +592,16 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
 
     return Material(
-      color: theme.colorScheme.surface,
+      color:
+          theme.colorScheme.brightness == Brightness.dark
+              ? Color.alphaBlend(
+                Colors.white.withValues(alpha: 0.02),
+                tokens.surface,
+              )
+              : tokens.surfaceElevated,
       child: ListenableBuilder(
         listenable: _usuarioProvider,
         builder: (BuildContext context, _) {
@@ -501,12 +639,20 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
   Widget _buildHeader(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 22, 18, 18),
       decoration: BoxDecoration(
-        color: colorScheme.primary.withValues(alpha: 0.06),
-        border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
+        gradient: LinearGradient(
+          colors: <Color>[
+            colorScheme.primary.withValues(alpha: 0.11),
+            tokens.surfaceMuted.withValues(alpha: 0.94),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border(bottom: BorderSide(color: tokens.divider)),
       ),
       child: Row(
         children: <Widget>[
@@ -530,7 +676,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                    color: tokens.secondaryText,
                     height: 1.35,
                   ),
                 ),
@@ -581,7 +727,9 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
   }
 
   Widget _buildHeaderAvatar(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final String imageValue = _usuarioProvider.usuario?.foto ?? '';
 
     return Semantics(
@@ -598,10 +746,15 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
           height: 52,
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: colorScheme.primary.withValues(alpha: 0.12),
+            gradient: LinearGradient(
+              colors: <Color>[
+                colorScheme.primary.withValues(alpha: 0.18),
+                tokens.info.withValues(alpha: 0.08),
+              ],
+            ),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: colorScheme.primary.withValues(alpha: 0.18),
+              color: colorScheme.primary.withValues(alpha: 0.22),
             ),
           ),
           child:
@@ -814,16 +967,21 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
 
   Widget _buildFooter(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
 
     return SafeArea(
       top: false,
       child: Container(
         padding: const EdgeInsets.fromLTRB(24, 14, 24, 20),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          border: Border(
-            top: BorderSide(color: theme.colorScheme.outlineVariant),
-          ),
+          color:
+              theme.colorScheme.brightness == Brightness.dark
+                  ? Color.alphaBlend(
+                    Colors.white.withValues(alpha: 0.03),
+                    tokens.surface,
+                  )
+                  : tokens.surfaceElevated,
+          border: Border(top: BorderSide(color: tokens.divider)),
         ),
         child: Row(
           children: <Widget>[
@@ -833,7 +991,7 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: tokens.secondaryText,
                   fontWeight: FontWeight.w600,
                 ),
               ),
