@@ -32,6 +32,7 @@ import 'package:sixpos/presentation/screens/categorias_produtos_servicos_web_pag
 import 'package:sixpos/presentation/screens/recebimento_pagamento_web.dart';
 import 'package:sixpos/presentation/components/web/six_web_logout_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
+import 'package:sixpos/presentation/components/web/venda_em_andamento_fab_web.dart';
 import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/workspace_home_web.dart';
 import 'package:sixpos/presentation/services/web_authenticated_bootstrap_service.dart';
@@ -717,6 +718,81 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
               'Abrir assistente minimizado',
           extended: true,
           highlighted: true,
+        ),
+      ),
+    );
+  }
+
+  bool get _possuiVendaEmAndamentoParaRetomar {
+    return _vendaNaoLiquidadaEmConsulta != null ||
+        _produtosSelecionados.isNotEmpty ||
+        _formasPagamentoConfirmadas.isNotEmpty ||
+        _clienteIdentificado != null ||
+        _clienteIdentificadoController.text.trim().isNotEmpty;
+  }
+
+  bool get _deveExibirVendaEmAndamentoFlutuante {
+    return _moduloAtual != ModuloCentralPDV.vendas &&
+        _possuiVendaEmAndamentoParaRetomar;
+  }
+
+  double _totalVendaEmAndamentoFlutuante(double totalAtual) {
+    final VendaNaoLiquidadaModel? venda = _vendaNaoLiquidadaEmConsulta;
+    if (venda == null) {
+      return totalAtual;
+    }
+
+    final bool possuiRecebimentoAnterior =
+        venda.recebimentos.isNotEmpty ||
+        (venda.valorOriginal - venda.valorAberto).abs() > 0.009;
+    return possuiRecebimentoAnterior ? venda.valorAberto : totalAtual;
+  }
+
+  String _resumoVendaEmAndamentoFlutuante(
+    LocaleSettingsProvider regionalizacao,
+    double totalAtual,
+  ) {
+    final int quantidadeItens = _calcularQuantidadeItens();
+    if (quantidadeItens > 0) {
+      final AppLocalizations? l10n = AppLocalizations.of(context);
+      final String itens = l10n?.pdvWebItemsCounterLabel ?? 'itens';
+      final String totalFormatado = regionalizacao.formatCurrency(
+        _totalVendaEmAndamentoFlutuante(totalAtual),
+      );
+      return '$quantidadeItens $itens  •  $totalFormatado';
+    }
+
+    if (_clienteIdentificado != null ||
+        _clienteIdentificadoController.text.trim().isNotEmpty) {
+      final AppLocalizations? l10n = AppLocalizations.of(context);
+      return l10n?.pdvWebCustomerIdentifiedStatus ?? 'Cliente identificado';
+    }
+
+    final AppLocalizations? l10n = AppLocalizations.of(context);
+    return l10n?.pdvWebPaymentDefinedLabel ?? 'Pagamento definido';
+  }
+
+  Widget _buildVendaEmAndamentoFlutuante(
+    LocaleSettingsProvider regionalizacao,
+    double totalAtual,
+  ) {
+    final AppLocalizations? l10n = AppLocalizations.of(context);
+    return Positioned(
+      right: 24,
+      bottom: _assistenteIAMinimizado ? 96 : 24,
+      child: SafeArea(
+        minimum: const EdgeInsets.only(right: 4, bottom: 4),
+        child: VendaEmAndamentoFabWeb(
+          titulo: context.t(
+            'pdv.openSale.status',
+            fallback: 'Venda em aberto',
+          ),
+          resumo: _resumoVendaEmAndamentoFlutuante(
+            regionalizacao,
+            totalAtual,
+          ),
+          tooltip: l10n?.pdvWebContinueSaleAction ?? 'Continuar venda',
+          onPressed: _iniciarVenda,
         ),
       ),
     );
@@ -3095,6 +3171,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     final ThemeData theme = Theme.of(context);
     _pdvTheme = WebPdvTheme.resolve(theme);
     final double total = _calcularTotal();
+    final LocaleSettingsProvider regionalizacao =
+        context.watch<LocaleSettingsProvider>();
     final bool modoExpandidoAtivo =
         _moduloAtual == ModuloCentralPDV.vendas && _modoExpandidoFrenteCaixa;
     final WebThemeTokens webTokens = WebThemeTokens.of(context);
@@ -3139,6 +3217,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         body: Stack(
           children: <Widget>[
             Positioned.fill(child: webShell),
+            if (_deveExibirVendaEmAndamentoFlutuante)
+              _buildVendaEmAndamentoFlutuante(regionalizacao, total),
             if (_assistenteIAMinimizado) _buildAssistenteIAMinimizado(),
           ],
         ),
