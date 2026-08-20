@@ -20,20 +20,13 @@ import '../../domain/services/aparencia/aparencia_service.dart';
 import '../../design_system/helpers/six_theme_resolver.dart';
 import '../components/six_backend_loading.dart';
 import '../components/web/six_web_select_field.dart';
+import '../components/web/six_web_settings_dialog.dart';
 import '../theme/web_theme_tokens.dart';
 
 void showConfiguracoesSixWebDialog(BuildContext context) {
-  final WebThemeTokens tokens = WebThemeTokens.of(context);
-  final double barrierAlpha =
-      Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42;
-
-  showDialog<void>(
+  showSixWebSettingsDialog(
     context: context,
-    barrierDismissible: true,
-    barrierColor: tokens.workspaceBackground.withValues(alpha: barrierAlpha),
     builder: (BuildContext dialogContext) {
-      final Size size = MediaQuery.of(dialogContext).size;
-
       void fecharDialog() {
         final NavigatorState navigator = Navigator.of(dialogContext);
         if (navigator.canPop()) {
@@ -41,40 +34,7 @@ void showConfiguracoesSixWebDialog(BuildContext context) {
         }
       }
 
-      return CallbackShortcuts(
-        bindings: <ShortcutActivator, VoidCallback>{
-          const SingleActivator(LogicalKeyboardKey.escape): fecharDialog,
-        },
-        child: Focus(
-          autofocus: true,
-          child: Center(
-            child: Container(
-              width: size.width * 0.9,
-              height: size.height * 0.9,
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(
-                color: tokens.surfaceElevated,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: tokens.cardBorder),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.14),
-                    blurRadius: 32,
-                    offset: const Offset(0, 18),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: tokens.surfaceElevated,
-                child: ConfiguracoesSixWebPage(
-                  embedded: true,
-                  onBack: fecharDialog,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
+      return ConfiguracoesSixWebPage(embedded: true, onBack: fecharDialog);
     },
   );
 }
