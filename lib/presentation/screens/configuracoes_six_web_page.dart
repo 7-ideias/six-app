@@ -22,6 +22,7 @@ import '../components/six_backend_loading.dart';
 import '../components/web/six_web_select_field.dart';
 import '../components/web/six_web_settings_dialog.dart';
 import '../theme/web_theme_tokens.dart';
+import 'documentos_personalizados_web_content.dart';
 
 void showConfiguracoesSixWebDialog(BuildContext context) {
   showSixWebSettingsDialog(
@@ -867,27 +868,6 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   final TextEditingController _mensagemProntoRetiradaController =
       TextEditingController(text: 'Seu equipamento está pronto para retirada.');
 
-  // Documentos
-  String _modeloOrcamentoSelecionado = 'Modelo corporativo moderno';
-  String _modeloOrdemServicoSelecionado = 'Modelo técnico com checklist';
-  String _modeloReciboSelecionado = 'Modelo enxuto com logo';
-  bool _exibirLogoNoPdf = true;
-  bool _exibirAssinaturaCliente = true;
-  bool _exibirQrCode = false;
-  String _tamanhoPapelSelecionado = 'A4';
-  String _idiomaDocumentoSelecionado = 'Mesmo idioma do sistema';
-  String _moedaDocumentoSelecionada = 'Mesma moeda da empresa';
-  final TextEditingController
-  _rodapeDocumentoController = TextEditingController(
-    text:
-        'Obrigado pela preferência. Este documento foi gerado automaticamente pelo Six.',
-  );
-  final TextEditingController
-  _termosCondicoesController = TextEditingController(
-    text:
-        'Após aprovação do orçamento, poderá haver necessidade de peças adicionais conforme análise técnica.',
-  );
-
   // Operação
   bool _controlarEstoque = true;
   bool _exigirClienteNaVenda = false;
@@ -1009,8 +989,6 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     _assinaturaMensagemController.dispose();
     _mensagemOrdemCriadaController.dispose();
     _mensagemProntoRetiradaController.dispose();
-    _rodapeDocumentoController.dispose();
-    _termosCondicoesController.dispose();
     _nomeCatalogoController.dispose();
     _slugCatalogoController.dispose();
     _prefixoMesaController.dispose();
@@ -4054,202 +4032,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   }
 
   Widget _buildSecaoDocumentos() {
-    return Column(
-      children: [
-        _buildSectionHeader(
-          titulo: 'Documentos, PDFs e comprovantes',
-          descricao: _descricaoSecao(SecaoConfiguracaoSix.documentos),
-          icone: Icons.picture_as_pdf_rounded,
-        ),
-        const SizedBox(height: 20),
-        _buildBigCard(
-          title: 'Modelos principais',
-          subtitle:
-              'Escolha os padrões visuais que serão aplicados em orçamentos, ordem de serviço e comprovantes.',
-          child: Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: [
-              SizedBox(
-                width: 320,
-                child: _buildDropdownField(
-                  label: 'Modelo de orçamento',
-                  value: _modeloOrcamentoSelecionado,
-                  items: const [
-                    'Modelo corporativo moderno',
-                    'Modelo técnico detalhado',
-                    'Modelo comercial enxuto',
-                  ],
-                  onChanged: (valor) {
-                    setState(() {
-                      _modeloOrcamentoSelecionado = valor!;
-                    });
-                  },
-                ),
-              ),
-              SizedBox(
-                width: 320,
-                child: _buildDropdownField(
-                  label: 'Modelo de ordem de serviço',
-                  value: _modeloOrdemServicoSelecionado,
-                  items: const [
-                    'Modelo técnico com checklist',
-                    'Modelo padrão resumido',
-                    'Modelo com termos ampliados',
-                  ],
-                  onChanged: (valor) {
-                    setState(() {
-                      _modeloOrdemServicoSelecionado = valor!;
-                    });
-                  },
-                ),
-              ),
-              SizedBox(
-                width: 320,
-                child: _buildDropdownField(
-                  label: 'Modelo de recibo',
-                  value: _modeloReciboSelecionado,
-                  items: const [
-                    'Modelo enxuto com logo',
-                    'Modelo fiscal completo',
-                    'Modelo simples',
-                  ],
-                  onChanged: (valor) {
-                    setState(() {
-                      _modeloReciboSelecionado = valor!;
-                    });
-                  },
-                ),
-              ),
-              SizedBox(
-                width: 320,
-                child: _buildDropdownField(
-                  label: 'Tamanho do papel',
-                  value: _tamanhoPapelSelecionado,
-                  items: const ['A4', 'Carta', '80mm térmico'],
-                  onChanged: (valor) {
-                    setState(() {
-                      _tamanhoPapelSelecionado = valor!;
-                    });
-                  },
-                ),
-              ),
-              SizedBox(
-                width: 320,
-                child: _buildDropdownField(
-                  label: 'Idioma do documento',
-                  value: _idiomaDocumentoSelecionado,
-                  items: const [
-                    'Mesmo idioma do sistema',
-                    'Português (Brasil)',
-                    'English (US)',
-                    'Español',
-                  ],
-                  onChanged: (valor) {
-                    setState(() {
-                      _idiomaDocumentoSelecionado = valor!;
-                    });
-                  },
-                ),
-              ),
-              SizedBox(
-                width: 320,
-                child: _buildDropdownField(
-                  label: 'Moeda do documento',
-                  value: _moedaDocumentoSelecionada,
-                  items: const ['Mesma moeda da empresa', 'BRL', 'USD', 'EUR'],
-                  onChanged: (valor) {
-                    setState(() {
-                      _moedaDocumentoSelecionada = valor!;
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-        _buildBigCard(
-          title: 'Composição visual do PDF',
-          subtitle:
-              'Ajustes que impactam o compartilhamento via email, WhatsApp e a apresentação final do documento.',
-          child: Column(
-            children: [
-              Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: [
-                  SizedBox(
-                    width: 420,
-                    child: _buildSwitchTile(
-                      title: 'Exibir logo no PDF',
-                      subtitle: 'Inclui a identidade da empresa no cabeçalho.',
-                      value: _exibirLogoNoPdf,
-                      onChanged: (valor) {
-                        setState(() {
-                          _exibirLogoNoPdf = valor;
-                        });
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    width: 420,
-                    child: _buildSwitchTile(
-                      title: 'Exibir assinatura do cliente',
-                      subtitle:
-                          'Mantém a tela pronta para futuros fluxos de assinatura.',
-                      value: _exibirAssinaturaCliente,
-                      onChanged: (valor) {
-                        setState(() {
-                          _exibirAssinaturaCliente = valor;
-                        });
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    width: 420,
-                    child: _buildSwitchTile(
-                      title: 'Exibir QR Code',
-                      subtitle:
-                          'Pode ser usado para validação, consulta ou link temporário no futuro.',
-                      value: _exibirQrCode,
-                      onChanged: (valor) {
-                        setState(() {
-                          _exibirQrCode = valor;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: [
-                  SizedBox(
-                    width: 460,
-                    child: _buildTextField(
-                      label: 'Rodapé padrão',
-                      controller: _rodapeDocumentoController,
-                      maxLines: 3,
-                    ),
-                  ),
-                  SizedBox(
-                    width: 460,
-                    child: _buildTextField(
-                      label: 'Termos e condições',
-                      controller: _termosCondicoesController,
-                      maxLines: 5,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+    return const DocumentosPersonalizadosWebContent();
   }
 
   Widget _buildSecaoOperacao() {

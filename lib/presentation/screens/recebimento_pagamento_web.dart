@@ -1,10 +1,14 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/di/operacao_module.dart';
+import 'package:sixpos/core/utils/pdf_download.dart';
 import 'package:sixpos/data/models/caixa_models.dart';
+import 'package:sixpos/data/models/documento_models.dart';
 import 'package:sixpos/data/models/operacao_models.dart';
 import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
 import 'package:sixpos/domain/services/operacao/operacao_service.dart';
@@ -937,17 +941,27 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
         );
         if (formato != null) {
           try {
-            await _operacaoService.imprimirComprovanteDaOperacao(
-              idOperacao: uuidOperacao,
-              formato: formato,
-              input: input,
+            final DocumentoPdfResponse pdf = await _operacaoService
+                .imprimirComprovanteDaOperacao(
+                  idOperacao: uuidOperacao,
+                  formato: formato,
+                );
+            if (pdf.arquivoBase64.trim().isEmpty) {
+              throw StateError('PDF_VAZIO');
+            }
+            final bool downloadIniciado = iniciarDownloadPdf(
+              bytes: Uint8List.fromList(base64Decode(pdf.arquivoBase64)),
+              nomeArquivo: pdf.nomeArquivo,
+              mimeType: pdf.mimeType,
             );
 
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  'Solicitação de impressão enviada (${_rotuloFormatoImpressao(formato)}).',
+                  downloadIniciado
+                      ? 'Comprovante gerado e download iniciado (${_rotuloFormatoImpressao(formato)}).'
+                      : 'Comprovante gerado, mas o navegador bloqueou o download.',
                 ),
               ),
             );

@@ -5,16 +5,16 @@ import 'package:http/http.dart' as http;
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/http_client_factory.dart';
+import '../../models/documento_models.dart';
 import '../../models/operacao_models.dart';
 
 abstract class OperacaoApiClient {
   Future<OperacaoInserirResponse> inserirOperacao({
     required OperacaoInserirRequest request,
   });
-  Future<void> imprimirComprovanteOperacao({
+  Future<DocumentoPdfResponse> imprimirComprovanteOperacao({
     required String idOperacao,
     required FormatoImpressaoOperacao formato,
-    required OperacaoInserirRequest request,
   });
 }
 
@@ -56,10 +56,9 @@ class HttpOperacaoApiClient implements OperacaoApiClient {
   }
 
   @override
-  Future<void> imprimirComprovanteOperacao({
+  Future<DocumentoPdfResponse> imprimirComprovanteOperacao({
     required String idOperacao,
     required FormatoImpressaoOperacao formato,
-    required OperacaoInserirRequest request,
   }) async {
     final authService = AuthService();
     final jwtToken = await authService.getAccessToken();
@@ -69,26 +68,35 @@ class HttpOperacaoApiClient implements OperacaoApiClient {
       '${AppConfig.baseUrl}/operacao/impressao/comprovante/$idOperacao?formato=${formato.apiValue}',
     );
 
-    final httpRequest =
-        http.Request('GET', uri)
-          ..headers.addAll({
-            'idUnicoDaEmpresa': idUnicoDaEmpresa ?? '',
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $jwtToken',
-          })
-          ..body = jsonEncode(request.toJson());
+    final response = await _httpClient.get(
+      uri,
+      headers: {
+        'idUnicoDaEmpresa': idUnicoDaEmpresa ?? '',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $jwtToken',
+      },
+    );
 
-    final streamedResponse = await _httpClient.send(httpRequest);
-    final response = await http.Response.fromStream(streamedResponse);
-
-    if (response.statusCode != 200 &&
-        response.statusCode != 201 &&
-        response.statusCode != 204) {
+    if (response.statusCode != 200 && response.statusCode != 201) {
       throw OperacaoApiException(
         statusCode: response.statusCode,
         body: response.body,
       );
     }
+
+    final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    if (decoded is! Map) {
+      throw OperacaoApiException(
+        statusCode: response.statusCode,
+        body: 'RESPOSTA_PDF_INVALIDA',
+      );
+    }
+    return DocumentoPdfResponse.fromJson(
+      decoded.map(
+        (dynamic key, dynamic value) =>
+            MapEntry<String, dynamic>(key.toString(), value),
+      ),
+    );
   }
 }
 
