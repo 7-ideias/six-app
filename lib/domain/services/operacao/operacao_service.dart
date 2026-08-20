@@ -1,4 +1,5 @@
 import '../../../core/state/loading_do_mobile_comunicando_com_backend_controller.dart';
+import '../../../data/models/documento_models.dart';
 import '../../../data/models/operacao_models.dart';
 import '../../../data/services/operacao/operacao_api_client.dart';
 import '../../../mappers/operacao_mapper.dart';
@@ -23,16 +24,11 @@ class OperacaoService {
     );
   }
 
-  Future<void> imprimirComprovanteDaOperacao({
+  Future<DocumentoPdfResponse> imprimirComprovanteDaOperacao({
     required String idOperacao,
     required FormatoImpressaoOperacao formato,
-    required OperacaoVendaInput input,
-  }) async {
-    final request = _mapper.toRequest(input);
-    await _apiClient.imprimirComprovanteOperacao(
-      idOperacao: idOperacao,
-      formato: formato,
-      request: request,
-    );
-  }
+  }) => _apiClient.imprimirComprovanteOperacao(
+    idOperacao: idOperacao,
+    formato: formato,
+  );
 }
