@@ -1,16 +1,19 @@
 import 'dart:convert';
 
-import 'package:sixpos/core/network/logging_interceptor.dart';
 import 'package:sixpos/data/models/estoque_dashboard_model.dart';
 import 'package:sixpos/data/models/produto_dashboard_model.dart';
 import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/models/servico_dashboard_model.dart';
-import 'package:http_interceptor/http_interceptor.dart';
+import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 import 'auth_service.dart';
+import 'http_client_factory.dart';
 
 class ProdutoService {
+  ProdutoService({http.Client? httpClient})
+    : client = httpClient ?? createHttpClient();
+
   final String endpointList = '${AppConfig.baseUrl}/private/api/produto/lista';
   final String endpointCadastro =
       '${AppConfig.baseUrl}/private/api/produto/cadastro';
@@ -26,7 +29,7 @@ class ProdutoService {
   final String endpointRelatorioListagemPdf =
       '${AppConfig.baseUrl}/private/api/produto/relatorio/listagem/pdf';
 
-  final client = InterceptedClient.build(interceptors: [LoggingInterceptor()]);
+  final http.Client client;
 
   Future<ProdutoResponseModel> produtosList(
     Map<String, String>? headers,
@@ -40,12 +43,10 @@ class ProdutoService {
 
     try {
       print('🌐 GET $url');
-      print('🟦 Headers: $headers');
 
       final response = await client.get(url, headers: headers);
 
       print('✅ STATUS: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final jsonMap = jsonDecode(response.body);
@@ -78,12 +79,10 @@ class ProdutoService {
 
     try {
       print('🌐 GET $url');
-      print('🟦 Headers: $headers');
 
       final response = await client.get(url, headers: headers);
 
       print('✅ STATUS: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
 
       if (response.statusCode != 200) {
         throw Exception(
@@ -118,12 +117,10 @@ class ProdutoService {
 
     try {
       print('🌐 GET $url');
-      print('🟦 Headers: $headers');
 
       final response = await client.get(url, headers: headers);
 
       print('✅ STATUS: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
 
       if (response.statusCode != 200) {
         throw Exception(
@@ -158,12 +155,10 @@ class ProdutoService {
 
     try {
       print('🌐 GET $url');
-      print('🟦 Headers: $headers');
 
       final response = await client.get(url, headers: headers);
 
       print('✅ STATUS: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
 
       if (response.statusCode != 200) {
         throw Exception(
@@ -199,13 +194,10 @@ class ProdutoService {
       final body = jsonEncode(produto.toJson());
 
       print('🌐 POST $url');
-      print('🟦 Headers: $headers');
-      print('📦 Body: $body');
 
       final response = await client.post(url, headers: headers, body: body);
 
       print('✅ STATUS: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
 
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception('Erro ao cadastrar produto: ${response.statusCode}');
@@ -288,13 +280,10 @@ class ProdutoService {
       final body = jsonEncode(request.toJson());
 
       print('🌐 PUT $url');
-      print('🟦 Headers: $headers');
-      print('📦 Body: $body');
 
       final response = await client.put(url, headers: headers, body: body);
 
       print('✅ STATUS: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
 
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception('Erro ao atualizar produto: ${response.statusCode}');
@@ -319,12 +308,10 @@ class ProdutoService {
 
     try {
       print('🌐 GET $url');
-      print('🟦 Headers: $headers');
 
       final response = await client.get(url, headers: headers);
 
       print('✅ STATUS: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
 
       if (response.statusCode != 200) {
         throw Exception(

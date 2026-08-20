@@ -5,6 +5,7 @@ import 'package:sixpos/data/models/tela_inicial_models.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/http_client_factory.dart';
 
 abstract class TelaInicialWebApiClient {
   Future<TelaInicialModel> getResumo();
@@ -14,7 +15,7 @@ class HttpResumoDaEmpresaApiClient implements TelaInicialWebApiClient {
   HttpResumoDaEmpresaApiClient({
     http.Client? httpClient,
     this.canal = 'web',
-  }) : _httpClient = httpClient ?? http.Client();
+  }) : _httpClient = httpClient ?? createHttpClient();
 
   final http.Client _httpClient;
   final String canal;

@@ -3,13 +3,14 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:sixpos/core/config/app_config.dart';
 import 'package:sixpos/core/services/auth_service.dart';
+import 'package:sixpos/core/services/http_client_factory.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 
 class AgendaFinanceiraLancamentoService {
   final http.Client _httpClient;
 
   AgendaFinanceiraLancamentoService({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+    : _httpClient = httpClient ?? createHttpClient();
 
   String get _endpointCadastro =>
       '${AppConfig.baseUrl}/private/api/agenda-financeira/lancamentos2';

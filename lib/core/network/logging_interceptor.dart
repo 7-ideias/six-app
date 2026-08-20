@@ -14,12 +14,6 @@ class LoggingInterceptor implements HttpInterceptor {
   @override
   Future<BaseRequest> interceptRequest({required BaseRequest request}) async {
     print('[HTTP] REQUEST => ${request.method} ${request.url}');
-    print('[HEADERS] => ${request.headers}');
-
-    if (request is Request) {
-      print('[BODY] => ${request.body}');
-    }
-
     return request;
   }
 
@@ -27,11 +21,7 @@ class LoggingInterceptor implements HttpInterceptor {
   Future<BaseResponse> interceptResponse({
     required BaseResponse response,
   }) async {
-    if (response is Response) {
-      print('[HTTP] RESPONSE ${response.statusCode} => ${response.body}');
-    } else {
-      print('[HTTP] RESPONSE ${response.statusCode}');
-    }
+    print('[HTTP] RESPONSE ${response.statusCode}');
 
     return response;
   }

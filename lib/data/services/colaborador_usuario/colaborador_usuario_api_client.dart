@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/http_client_factory.dart';
 import '../../models/colaborador_autorizacoes_model.dart';
 import '../../models/colaborador_usuario_model.dart';
 
@@ -19,7 +20,7 @@ class HttpColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
     http.Client? httpClient,
     Future<String?> Function()? accessTokenProvider,
     Future<String?> Function()? empresaIdProvider,
-  }) : _httpClient = httpClient ?? http.Client(),
+  }) : _httpClient = httpClient ?? createHttpClient(),
        _accessTokenProvider =
            accessTokenProvider ?? AuthService().getAccessToken,
        _empresaIdProvider = empresaIdProvider ?? AuthService().getEmpresaId;

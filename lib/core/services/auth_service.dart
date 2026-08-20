@@ -43,10 +43,13 @@ class AuthService {
   static const Duration _refreshSafetyWindow = Duration(seconds: 30);
   static const Duration _refreshRetryDelay = Duration(seconds: 30);
   static const Duration _fallbackRefreshDelay = Duration(minutes: 4);
+  static const Duration _authRequestTimeout = Duration(seconds: 20);
 
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
-  AuthService._internal();
+  AuthService._internal() {
+    registerUnauthorizedTokenRefreshHandler(_recoverFromUnauthorized);
+  }
 
   Timer? _refreshTimer;
   Future<void>? _refreshFuture;
@@ -74,7 +77,7 @@ class AuthService {
         uri,
         headers: {'Content-Type': 'application/json'},
         body: requestBody,
-      );
+      ).timeout(_authRequestTimeout);
     } on http.ClientException catch (e) {
       debugPrint('[AuthService] ClientException no POST $uri: $e');
       throw Exception(
@@ -176,12 +179,11 @@ class AuthService {
         response = await client.post(
           uri,
           headers: {'Content-Type': 'application/json'},
-        );
+        ).timeout(_authRequestTimeout);
       } else {
         final String? refreshTokenStr = await getRefreshToken();
 
         if (refreshTokenStr == null || refreshTokenStr.isEmpty) {
-          await _clearLocalAuthData();
           throw const AuthRefreshException(
             type: AuthRefreshFailureType.invalidSession,
             message: 'No refresh token found',
@@ -192,7 +194,7 @@ class AuthService {
           uri,
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'refreshToken': refreshTokenStr}),
-        );
+        ).timeout(_authRequestTimeout);
       }
     } on AuthRefreshException {
       rethrow;
@@ -219,14 +221,22 @@ class AuthService {
           message: e.message,
         );
       }
-      final authData = AuthResponseModel.fromJson(decoded);
+      final AuthResponseModel authData;
+      try {
+        authData = AuthResponseModel.fromJson(decoded);
+      } catch (error) {
+        throw AuthRefreshException(
+          type: AuthRefreshFailureType.temporaryFailure,
+          statusCode: response.statusCode,
+          message: error.toString(),
+        );
+      }
       await _saveAuthData(authData);
       _scheduleRefreshTimer(authData);
       return;
     }
 
-    if (response.statusCode == 401 || response.statusCode == 403) {
-      await _clearLocalAuthData();
+    if (response.statusCode == 401) {
       throw AuthRefreshException(
         type: AuthRefreshFailureType.invalidSession,
         statusCode: response.statusCode,
@@ -257,6 +267,9 @@ class AuthService {
         await refreshToken();
       } catch (error) {
         debugPrint('[AuthService] Refresh agendado falhou: $error');
+        if (error is AuthRefreshException && error.isInvalidSession) {
+          return;
+        }
         await _scheduleRefreshRetryIfPossible();
       }
     });
@@ -294,7 +307,27 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     final String? accessToken = prefs.getString(_accessTokenKey);
     if (accessToken == null || accessToken.trim().isEmpty) {
-      return accessToken;
+      if (!kIsWeb) {
+        final String storedRefreshToken =
+            prefs.getString(_refreshTokenKey)?.trim() ?? '';
+        if (storedRefreshToken.isEmpty) {
+          return accessToken;
+        }
+      }
+
+      try {
+        await refreshToken();
+      } catch (error) {
+        debugPrint(
+          '[AuthService] Recuperação de access token ausente falhou: $error',
+        );
+        if (error is AuthRefreshException && error.isInvalidSession) {
+          rethrow;
+        }
+        await _scheduleRefreshRetryIfPossible();
+      }
+
+      return prefs.getString(_accessTokenKey);
     }
 
     if (await _shouldRefreshAccessToken(prefs, accessToken)) {
@@ -302,6 +335,10 @@ class AuthService {
         await refreshToken();
       } catch (error) {
         debugPrint('[AuthService] Refresh sob demanda falhou: $error');
+        if (error is AuthRefreshException && error.isInvalidSession) {
+          rethrow;
+        }
+        await _scheduleRefreshRetryIfPossible();
       }
 
       return prefs.getString(_accessTokenKey);
@@ -344,6 +381,10 @@ class AuthService {
     await _clearLocalAuthData();
   }
 
+  Future<void> clearLocalSession() {
+    return _clearLocalAuthData();
+  }
+
   Future<String?> getRefreshToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_refreshTokenKey);
@@ -363,13 +404,13 @@ class AuthService {
           await _client().post(
             uri,
             headers: const {'Content-Type': 'application/json'},
-          );
+          ).timeout(_authRequestTimeout);
         } else if (refreshToken != null && refreshToken.trim().isNotEmpty) {
           await _client().post(
             uri,
             headers: const {'Content-Type': 'application/json'},
             body: jsonEncode({'refreshToken': refreshToken}),
-          );
+          ).timeout(_authRequestTimeout);
         }
       } catch (e) {
         debugPrint('[AuthService] logout remoto falhou: $e');
@@ -380,6 +421,8 @@ class AuthService {
   }
 
   Future<void> _clearLocalAuthData() async {
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_accessTokenKey);
     await prefs.remove(_refreshTokenKey);
@@ -548,9 +591,30 @@ class AuthService {
         await refreshToken();
       } catch (error) {
         debugPrint('[AuthService] Nova tentativa de refresh falhou: $error');
+        if (error is AuthRefreshException && error.isInvalidSession) {
+          return;
+        }
         await _scheduleRefreshRetryIfPossible();
       }
     });
+  }
+
+  Future<String?> _recoverFromUnauthorized(
+    String rejectedAccessToken,
+  ) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String currentAccessToken =
+        prefs.getString(_accessTokenKey)?.trim() ?? '';
+
+    if (currentAccessToken.isNotEmpty &&
+        currentAccessToken != rejectedAccessToken) {
+      return currentAccessToken;
+    }
+
+    await refreshToken();
+    final String renewedAccessToken =
+        prefs.getString(_accessTokenKey)?.trim() ?? '';
+    return renewedAccessToken.isEmpty ? null : renewedAccessToken;
   }
 
   Future<String?> getUserEmail() async {

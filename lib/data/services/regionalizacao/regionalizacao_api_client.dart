@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/http_client_factory.dart';
 import '../../models/regionalizacao_models.dart';
 
 abstract class RegionalizacaoApiClient {
@@ -17,7 +18,7 @@ abstract class RegionalizacaoApiClient {
 class HttpRegionalizacaoApiClient implements RegionalizacaoApiClient {
   HttpRegionalizacaoApiClient({
     http.Client? httpClient,
-  }) : _httpClient = httpClient ?? http.Client();
+  }) : _httpClient = httpClient ?? createHttpClient();
 
   final http.Client _httpClient;
 
