@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_destination_resolver.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_item.dart';
+import 'package:sixpos/presentation/navigation/web_navigation_registry.dart';
 import 'package:sixpos/presentation/navigation/web_sidebar_navigation.dart';
+import 'package:sixpos/presentation/screens/consulta_vendas_web_page.dart';
 import 'package:sixpos/presentation/screens/devolucoes_produtos_web_page.dart';
 import 'package:sixpos/presentation/screens/etiquetas_web_page.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
@@ -68,6 +71,11 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
     final String activeTitle = _activeTitle(context, effectiveDestination);
     final Widget effectiveChild = switch (effectiveDestination) {
       WebNavigationDestination.catalogLabels => const EtiquetasWebPage(),
+      WebNavigationDestination.operationsSales => ConsultaVendasWebPage(
+        onNovaVenda: () =>
+            _resolveDestination(WebNavigationDestination.operationsPointOfSale),
+        onAbrirDevolucoes: _abrirDevolucoesDaVenda,
+      ),
       WebNavigationDestination.operationsReturns =>
         const DevolucoesProdutosWebPage(),
       _ => widget.child,
@@ -145,14 +153,13 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
   }
 
   void _resolveDestination(WebNavigationDestination destination) {
-    if (destination == WebNavigationDestination.catalogLabels ||
-        destination == WebNavigationDestination.operationsReturns) {
+    if (_isShellManaged(destination)) {
       setState(() {
         _shellManagedDestination = destination;
         _expandedGroupIds.add(
           destination == WebNavigationDestination.catalogLabels
-              ? 'catalog'
-              : 'operations',
+              ? WebNavigationIds.catalog
+              : WebNavigationIds.operations,
         );
       });
       return;
@@ -161,10 +168,14 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
     if (_shellManagedDestination != null) {
       setState(() => _shellManagedDestination = null);
     }
-    final WebNavigationResolutionResult result = widget.resolver.resolve(destination);
+    final WebNavigationResolutionResult result = widget.resolver.resolve(
+      destination,
+    );
     if (result.handled || !mounted) return;
 
-    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
+    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(
+      context,
+    );
     messenger?.hideCurrentSnackBar();
     messenger?.showSnackBar(
       SnackBar(
@@ -180,13 +191,53 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
     );
   }
 
+  bool _isShellManaged(WebNavigationDestination destination) {
+    return destination == WebNavigationDestination.catalogLabels ||
+        destination == WebNavigationDestination.operationsSales ||
+        destination == WebNavigationDestination.operationsReturns;
+  }
+
+  Future<void> _abrirDevolucoesDaVenda(String identificador) async {
+    final String codigo = identificador.trim();
+    if (codigo.isEmpty) return;
+
+    await Clipboard.setData(ClipboardData(text: codigo));
+    if (!mounted) return;
+
+    setState(() {
+      _shellManagedDestination = WebNavigationDestination.operationsReturns;
+      _expandedGroupIds.add(WebNavigationIds.operations);
+    });
+
+    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(
+      context,
+    );
+    messenger?.hideCurrentSnackBar();
+    messenger?.showSnackBar(
+      SnackBar(
+        content: Text(
+          _shellText(
+            context,
+            'sales.query.returnCodeCopied',
+            'Código da venda copiado. Cole-o no campo de busca para iniciar a devolução ou troca.',
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   String _activeTitle(
     BuildContext context,
     WebNavigationDestination? destination,
   ) {
     final WebNavigationItem? activeItem = _findItemByDestination(destination);
     if (activeItem == null) {
-      return _shellText(context, 'web.shell.workspace', 'Workspace operacional');
+      return _shellText(
+        context,
+        'web.shell.workspace',
+        'Workspace operacional',
+      );
     }
     if (destination == WebNavigationDestination.catalogLabels) {
       final String language = Localizations.localeOf(context).languageCode;

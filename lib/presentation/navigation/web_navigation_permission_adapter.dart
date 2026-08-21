@@ -13,6 +13,8 @@ abstract final class WebNavigationPermissionAdapter {
     }
     return <WebNavigationPermission>{
       if (provider.podeFazerVenda) WebNavigationPermission.podeFazerVenda,
+      if (provider.podeFazerVenda || provider.podeVerQuantoVendeu)
+        WebNavigationPermission.podeConsultarVendas,
       if (provider.podeFazerDevolucao)
         WebNavigationPermission.podeFazerDevolucao,
       if (provider.podeLancarAssistenciaTecnica)
@@ -40,11 +42,9 @@ abstract final class WebNavigationPermissionAdapter {
 
   static bool canApplySidebarFiltering(
     ColaboradorAutorizacoesProvider provider,
-  ) =>
-      _canUseProviderPermissions(provider);
+  ) => _canUseProviderPermissions(provider);
 
   static bool _canUseProviderPermissions(
     ColaboradorAutorizacoesProvider provider,
-  ) =>
-      provider.ehAdministrador || provider.autorizacoesCarregadasComSucesso;
+  ) => provider.ehAdministrador || provider.autorizacoesCarregadasComSucesso;
 }

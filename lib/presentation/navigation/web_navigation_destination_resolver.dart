@@ -29,31 +29,28 @@ class WebNavigationResolutionResult {
 
   factory WebNavigationResolutionResult.handled(
     WebNavigationDestination destination,
-  ) =>
-      WebNavigationResolutionResult._(
-        status: WebNavigationResolutionStatus.handled,
-        destination: destination,
-      );
+  ) => WebNavigationResolutionResult._(
+    status: WebNavigationResolutionStatus.handled,
+    destination: destination,
+  );
 
   factory WebNavigationResolutionResult.reserved(
     WebNavigationDestination destination, {
     String? reason,
-  }) =>
-      WebNavigationResolutionResult._(
-        status: WebNavigationResolutionStatus.reserved,
-        destination: destination,
-        reason: reason,
-      );
+  }) => WebNavigationResolutionResult._(
+    status: WebNavigationResolutionStatus.reserved,
+    destination: destination,
+    reason: reason,
+  );
 
   factory WebNavigationResolutionResult.unsupported({
     WebNavigationDestination? destination,
     String? reason,
-  }) =>
-      WebNavigationResolutionResult._(
-        status: WebNavigationResolutionStatus.unsupported,
-        destination: destination,
-        reason: reason,
-      );
+  }) => WebNavigationResolutionResult._(
+    status: WebNavigationResolutionStatus.unsupported,
+    destination: destination,
+    reason: reason,
+  );
 
   final WebNavigationResolutionStatus status;
   final WebNavigationDestination? destination;
@@ -79,6 +76,11 @@ class WebNavigationDestinationResolver {
         return actions.openHome();
       case WebNavigationDestination.operationsPointOfSale:
         return actions.openPointOfSale();
+      case WebNavigationDestination.operationsSales:
+        return WebNavigationResolutionResult.reserved(
+          destination,
+          reason: 'Destino gerenciado pelo shell Web.',
+        );
       case WebNavigationDestination.operationsTechnicalServices:
         return actions.openTechnicalServices();
       case WebNavigationDestination.operationsPurchases:

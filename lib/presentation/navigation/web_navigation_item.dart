@@ -76,6 +76,7 @@ class WebNavigationItem {
 enum WebNavigationDestination {
   home,
   operationsPointOfSale,
+  operationsSales,
   operationsTechnicalServices,
   operationsPurchases,
   operationsReservations,
@@ -96,6 +97,7 @@ enum WebNavigationDestination {
 
 enum WebNavigationPermission {
   podeFazerVenda,
+  podeConsultarVendas,
   podeFazerDevolucao,
   podeLancarAssistenciaTecnica,
   podeEditarCliente,
@@ -113,17 +115,17 @@ enum WebNavigationVisibilityKind { authenticated, anyOf, unresolved }
 
 class WebNavigationVisibilityRule {
   const WebNavigationVisibilityRule.authenticated()
-      : kind = WebNavigationVisibilityKind.authenticated,
-        anyOf = const <WebNavigationPermission>[],
-        note = null;
+    : kind = WebNavigationVisibilityKind.authenticated,
+      anyOf = const <WebNavigationPermission>[],
+      note = null;
 
   const WebNavigationVisibilityRule.anyOf(this.anyOf)
-      : kind = WebNavigationVisibilityKind.anyOf,
-        note = null;
+    : kind = WebNavigationVisibilityKind.anyOf,
+      note = null;
 
   const WebNavigationVisibilityRule.unresolved(this.note)
-      : kind = WebNavigationVisibilityKind.unresolved,
-        anyOf = const <WebNavigationPermission>[];
+    : kind = WebNavigationVisibilityKind.unresolved,
+      anyOf = const <WebNavigationPermission>[];
 
   final WebNavigationVisibilityKind kind;
   final List<WebNavigationPermission> anyOf;
