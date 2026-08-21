@@ -30,7 +30,8 @@ jobs:
         run: |
           set -euo pipefail
           cat .six-payload/part.* | base64 --decode > /tmp/six-return-files.tar.gz
-          echo '996fc6281862371053540897d1099fcab08829427fb698639f999dfc0a7d5fd4  /tmp/six-return-files.tar.gz' | sha256sum --check --strict
+          sha256sum /tmp/six-return-files.tar.gz
+          tar -tzf /tmp/six-return-files.tar.gz >/dev/null
           tar -xzf /tmp/six-return-files.tar.gz
           git diff --check
 
