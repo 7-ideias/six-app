@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +9,7 @@ import '../../data/services/vendas/consulta_vendas_api_client.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/six_backend_loading.dart';
+import '../components/web/six_web_select_field.dart';
 import '../theme/web_theme_tokens.dart';
 
 class ConsultaVendasWebPage extends StatefulWidget {
@@ -146,16 +149,34 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
   }
 
   Future<void> _abrirDetalhe(VendaConsultaResumo venda) async {
-    await showDialog<void>(
+    final bool reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    await showGeneralDialog<void>(
       context: context,
       barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        return _VendaDetalheDialog(
-          api: _api,
-          identificador: venda.idOperacao,
-          onAbrirDevolucoes: _abrirDevolucoes,
-        );
-      },
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.transparent,
+      transitionDuration: Duration(milliseconds: reduceMotion ? 1 : 300),
+      pageBuilder:
+          (
+            BuildContext dialogContext,
+            Animation<double> animation,
+            Animation<double> secondaryAnimation,
+          ) => _VendaDetalheRouteSurface(
+            animation: animation,
+            child: _VendaDetalheDialog(
+              api: _api,
+              identificador: venda.idOperacao,
+              onAbrirDevolucoes: _abrirDevolucoes,
+            ),
+          ),
+      transitionBuilder:
+          (
+            BuildContext dialogContext,
+            Animation<double> animation,
+            Animation<double> secondaryAnimation,
+            Widget child,
+          ) => child,
     );
   }
 
@@ -174,7 +195,8 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
         'sales.query.returnCopied',
         pt: 'Código da venda copiado. Abra Devoluções e trocas para continuar.',
         en: 'Sale code copied. Open Returns and exchanges to continue.',
-        es: 'Código de venta copiado. Abra Devoluciones y cambios para continuar.',
+        es:
+            'Código de venta copiado. Abra Devoluciones y cambios para continuar.',
       ),
     );
   }
@@ -184,8 +206,8 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
     final ThemeData baseTheme = Theme.of(context);
     final ThemeData webTheme = WebThemeTokens.applyTo(baseTheme);
     final WebThemeTokens tokens = WebThemeTokens.resolve(baseTheme);
-    final LocaleSettingsProvider regionalizacao = context
-        .watch<LocaleSettingsProvider>();
+    final LocaleSettingsProvider regionalizacao =
+        context.watch<LocaleSettingsProvider>();
 
     return AnimatedTheme(
       data: webTheme,
@@ -256,9 +278,12 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
           _text(
             context,
             'sales.query.subtitle',
-            pt: 'Consulte, filtre e acompanhe todo o ciclo das vendas deste comércio.',
-            en: 'Search, filter and follow the complete sales lifecycle for this business.',
-            es: 'Consulte, filtre y acompañe todo el ciclo de ventas de este comercio.',
+            pt:
+                'Consulte, filtre e acompanhe todo o ciclo das vendas deste comércio.',
+            en:
+                'Search, filter and follow the complete sales lifecycle for this business.',
+            es:
+                'Consulte, filtre y acompañe todo el ciclo de ventas de este comercio.',
           ),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: tokens.secondaryText,
@@ -273,6 +298,15 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
       runSpacing: 10,
       children: <Widget>[
         OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: tokens.info,
+            backgroundColor: tokens.surfaceMuted.withValues(alpha: 0.35),
+            side: BorderSide(color: tokens.selectedBorder),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
           onPressed: _carregando ? null : () => _carregar(),
           icon: const Icon(Icons.refresh_rounded),
           label: Text(
@@ -304,18 +338,19 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
     return _SurfaceCard(
       tokens: tokens,
       padding: const EdgeInsets.all(18),
-      child: compacto
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[titulo, const SizedBox(height: 16), acoes],
-            )
-          : Row(
-              children: <Widget>[
-                Expanded(child: titulo),
-                const SizedBox(width: 20),
-                acoes,
-              ],
-            ),
+      child:
+          compacto
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[titulo, const SizedBox(height: 16), acoes],
+              )
+              : Row(
+                children: <Widget>[
+                  Expanded(child: titulo),
+                  const SizedBox(width: 20),
+                  acoes,
+                ],
+              ),
     );
   }
 
@@ -427,15 +462,37 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
     bool compacto,
   ) {
     final ThemeData theme = Theme.of(context);
+    final bool dark = theme.brightness == Brightness.dark;
+    final Color inputFillColor =
+        dark
+            ? tokens.surfaceElevated.withValues(alpha: 0.94)
+            : tokens.inputBackground;
     final InputDecoration decoration = InputDecoration(
       filled: true,
-      fillColor: tokens.inputBackground,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      fillColor: inputFillColor,
+      labelStyle: theme.textTheme.bodyMedium?.copyWith(
+        color: tokens.secondaryText,
+        fontWeight: FontWeight.w600,
+      ),
+      floatingLabelStyle: theme.textTheme.labelMedium?.copyWith(
+        color: tokens.info,
+        fontWeight: FontWeight.w700,
+      ),
+      hintStyle: theme.textTheme.bodyMedium?.copyWith(
+        color: tokens.mutedText,
+        fontWeight: FontWeight.w500,
+      ),
+      prefixIconColor: tokens.info,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(color: tokens.cardBorder),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
     );
 
     return _SurfaceCard(
@@ -511,96 +568,70 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
                 value: regionalizacao.formatDate(_dataFinal),
                 onPressed: () => _selecionarData(inicial: false),
               ),
-              SizedBox(
+              SixWebSelectField(
                 width: 210,
-                child: DropdownButtonFormField<String>(
-                  value: _statusFinanceiro ?? '',
-                  decoration: decoration.copyWith(
-                    labelText: _text(
-                      context,
-                      'sales.query.financialStatus',
-                      pt: 'Situação financeira',
-                      en: 'Financial status',
-                      es: 'Situación financiera',
-                    ),
-                  ),
-                  items: <DropdownMenuItem<String>>[
-                    DropdownMenuItem<String>(
-                      value: '',
-                      child: Text(
-                        _text(
-                          context,
-                          'common.all',
-                          pt: 'Todas',
-                          en: 'All',
-                          es: 'Todas',
-                        ),
-                      ),
-                    ),
-                    for (final String value in const <String>[
-                      'QUITADA',
-                      'PARCIAL',
-                      'EM_ABERTO',
-                      'CANCELADA',
-                    ])
-                      DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(_statusFinanceiroLabel(context, value)),
-                      ),
-                  ],
-                  onChanged: (String? value) {
-                    setState(() {
-                      _statusFinanceiro = value == null || value.isEmpty
-                          ? null
-                          : value;
-                    });
-                  },
+                label: _text(
+                  context,
+                  'sales.query.financialStatus',
+                  pt: 'Situação financeira',
+                  en: 'Financial status',
+                  es: 'Situación financiera',
                 ),
+                value:
+                    _statusFinanceiro == null
+                        ? _allLabel(context)
+                        : _statusFinanceiroLabel(context, _statusFinanceiro!),
+                items: <String>[
+                  _allLabel(context),
+                  for (final String value in const <String>[
+                    'QUITADA',
+                    'PARCIAL',
+                    'EM_ABERTO',
+                    'CANCELADA',
+                  ])
+                    _statusFinanceiroLabel(context, value),
+                ],
+                icon: Icons.account_balance_wallet_outlined,
+                onSelected: (String selected) {
+                  setState(() {
+                    _statusFinanceiro = _financialStatusValueFromLabel(
+                      context,
+                      selected,
+                    );
+                  });
+                },
               ),
-              SizedBox(
+              SixWebSelectField(
                 width: 210,
-                child: DropdownButtonFormField<String>(
-                  value: _statusDevolucao ?? '',
-                  decoration: decoration.copyWith(
-                    labelText: _text(
-                      context,
-                      'sales.query.returnStatus',
-                      pt: 'Situação da devolução',
-                      en: 'Return status',
-                      es: 'Situación de devolución',
-                    ),
-                  ),
-                  items: <DropdownMenuItem<String>>[
-                    DropdownMenuItem<String>(
-                      value: '',
-                      child: Text(
-                        _text(
-                          context,
-                          'common.all',
-                          pt: 'Todas',
-                          en: 'All',
-                          es: 'Todas',
-                        ),
-                      ),
-                    ),
-                    for (final String value in const <String>[
-                      'SEM_DEVOLUCAO',
-                      'PARCIAL',
-                      'TOTAL',
-                    ])
-                      DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(_statusDevolucaoLabel(context, value)),
-                      ),
-                  ],
-                  onChanged: (String? value) {
-                    setState(() {
-                      _statusDevolucao = value == null || value.isEmpty
-                          ? null
-                          : value;
-                    });
-                  },
+                label: _text(
+                  context,
+                  'sales.query.returnStatus',
+                  pt: 'Situação da devolução',
+                  en: 'Return status',
+                  es: 'Situación de devolución',
                 ),
+                value:
+                    _statusDevolucao == null
+                        ? _allLabel(context)
+                        : _statusDevolucaoLabel(context, _statusDevolucao!),
+                items: <String>[
+                  _allLabel(context),
+                  for (final String value in const <String>[
+                    'SEM_DEVOLUCAO',
+                    'PARCIAL',
+                    'TOTAL',
+                  ])
+                    _statusDevolucaoLabel(context, value),
+                ],
+                icon: Icons.assignment_return_outlined,
+                onSelected: (String selected) {
+                  setState(() {
+                    _statusDevolucao = _returnStatusValueFromLabel(
+                      context,
+                      selected,
+                    );
+                  });
+                },
               ),
               SizedBox(
                 width: 155,
@@ -638,37 +669,45 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
                   ),
                 ),
               ),
-              SizedBox(
+              SixWebSelectField(
                 width: 195,
-                child: DropdownButtonFormField<String>(
-                  value: _ordenacao,
-                  decoration: decoration.copyWith(
-                    labelText: _text(
-                      context,
-                      'sales.query.order',
-                      pt: 'Ordenar por',
-                      en: 'Sort by',
-                      es: 'Ordenar por',
-                    ),
-                  ),
-                  items: <DropdownMenuItem<String>>[
-                    for (final String value in const <String>[
-                      'MAIS_RECENTES',
-                      'MAIS_ANTIGAS',
-                      'MAIOR_VALOR',
-                      'MENOR_VALOR',
-                    ])
-                      DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(_ordenacaoLabel(context, value)),
-                      ),
-                  ],
-                  onChanged: (String? value) {
-                    if (value != null) setState(() => _ordenacao = value);
-                  },
+                label: _text(
+                  context,
+                  'sales.query.order',
+                  pt: 'Ordenar por',
+                  en: 'Sort by',
+                  es: 'Ordenar por',
                 ),
+                value: _ordenacaoLabel(context, _ordenacao),
+                items: <String>[
+                  for (final String value in const <String>[
+                    'MAIS_RECENTES',
+                    'MAIS_ANTIGAS',
+                    'MAIOR_VALOR',
+                    'MENOR_VALOR',
+                  ])
+                    _ordenacaoLabel(context, value),
+                ],
+                icon: Icons.swap_vert_rounded,
+                onSelected: (String selected) {
+                  setState(() {
+                    _ordenacao = _orderValueFromLabel(context, selected);
+                  });
+                },
               ),
               OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: tokens.info,
+                  backgroundColor: tokens.surfaceMuted.withValues(alpha: 0.35),
+                  side: BorderSide(color: tokens.selectedBorder),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
                 onPressed: _carregando ? null : _limparFiltros,
                 icon: const Icon(Icons.filter_alt_off_outlined),
                 label: Text(
@@ -742,9 +781,12 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
                         _text(
                           context,
                           'sales.query.resultsHint',
-                          pt: 'Selecione uma venda para visualizar itens, recebimentos, devoluções e histórico.',
-                          en: 'Select a sale to view items, receipts, returns and history.',
-                          es: 'Seleccione una venta para ver artículos, cobros, devoluciones e historial.',
+                          pt:
+                              'Selecione uma venda para visualizar itens, recebimentos, devoluções e histórico.',
+                          en:
+                              'Select a sale to view items, receipts, returns and history.',
+                          es:
+                              'Seleccione una venta para ver artículos, cobros, devoluciones e historial.',
                         ),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: tokens.secondaryText,
@@ -836,12 +878,14 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
               resultado: resultado,
               tamanhoPagina: _tamanhoPagina,
               carregando: _carregando,
-              onPrevious: resultado.paginaAtual > 0
-                  ? () => _carregar(pagina: resultado.paginaAtual - 1)
-                  : null,
-              onNext: resultado.paginaAtual + 1 < resultado.totalPaginas
-                  ? () => _carregar(pagina: resultado.paginaAtual + 1)
-                  : null,
+              onPrevious:
+                  resultado.paginaAtual > 0
+                      ? () => _carregar(pagina: resultado.paginaAtual - 1)
+                      : null,
+              onNext:
+                  resultado.paginaAtual + 1 < resultado.totalPaginas
+                      ? () => _carregar(pagina: resultado.paginaAtual + 1)
+                      : null,
               onPageSizeChanged: (int value) {
                 setState(() => _tamanhoPagina = value);
                 _carregar(pagina: 0);
@@ -1116,8 +1160,10 @@ class _TableHeaderCell extends StatelessWidget {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.labelMedium
-              ?.copyWith(color: tokens.mutedText, fontWeight: FontWeight.w900),
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: tokens.mutedText,
+            fontWeight: FontWeight.w900,
+          ),
         ),
       ),
     );
@@ -1328,11 +1374,12 @@ class _VendasCompactList extends StatelessWidget {
                       Expanded(
                         child: Text(
                           venda.identificadorPreferencial,
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(
-                                color: tokens.primaryText,
-                                fontWeight: FontWeight.w900,
-                              ),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleSmall?.copyWith(
+                            color: tokens.primaryText,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
                       Text(
@@ -1434,8 +1481,10 @@ class _StatusChip extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.labelSmall
-            ?.copyWith(color: color, fontWeight: FontWeight.w900),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w900,
+        ),
       ),
     );
   }
@@ -1530,8 +1579,9 @@ class _PaginationFooter extends StatelessWidget {
             children: <Widget>[
               Text(
                 _t(context, 'Por página', 'Per page', 'Por página'),
-                style: Theme.of(context).textTheme.labelMedium
-                    ?.copyWith(color: tokens.secondaryText),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelMedium?.copyWith(color: tokens.secondaryText),
               ),
               const SizedBox(width: 8),
               DropdownButton<int>(
@@ -1542,11 +1592,12 @@ class _PaginationFooter extends StatelessWidget {
                   DropdownMenuItem<int>(value: 50, child: Text('50')),
                   DropdownMenuItem<int>(value: 100, child: Text('100')),
                 ],
-                onChanged: carregando
-                    ? null
-                    : (int? value) {
-                        if (value != null) onPageSizeChanged(value);
-                      },
+                onChanged:
+                    carregando
+                        ? null
+                        : (int? value) {
+                          if (value != null) onPageSizeChanged(value);
+                        },
               ),
               const SizedBox(width: 8),
               IconButton(
@@ -1624,8 +1675,9 @@ class _EstadoVazioVendas extends StatelessWidget {
               'Ajuste el período o elimine algunos filtros para ampliar la consulta.',
             ),
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium
-                ?.copyWith(color: tokens.secondaryText),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: tokens.secondaryText),
           ),
         ],
       ),
@@ -1755,75 +1807,159 @@ class _VendaDetalheDialogState extends State<_VendaDetalheDialog> {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final Size size = MediaQuery.sizeOf(context);
-    return Dialog(
-      insetPadding: const EdgeInsets.all(20),
-      backgroundColor: Colors.transparent,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 1120,
-          maxHeight: size.height * 0.90,
-        ),
-        child: Material(
-          color: tokens.surface,
-          borderRadius: BorderRadius.circular(20),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 17, 12, 15),
-                child: Row(
-                  children: <Widget>[
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: tokens.selectedBackground,
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                      child: Icon(
-                        Icons.receipt_long_outlined,
-                        color: tokens.info,
-                      ),
+    return Shortcuts(
+      shortcuts: const <ShortcutActivator, Intent>{
+        SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
+      },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          DismissIntent: CallbackAction<DismissIntent>(
+            onInvoke: (DismissIntent intent) {
+              Navigator.of(context).maybePop();
+              return null;
+            },
+          ),
+        },
+        child: Focus(
+          autofocus: true,
+          child: Semantics(
+            namesRoute: true,
+            label: _t(
+              context,
+              'Detalhes da venda',
+              'Sale details',
+              'Detalles de la venta',
+            ),
+            child: Dialog(
+              insetPadding: const EdgeInsets.all(24),
+              backgroundColor: Colors.transparent,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 1120,
+                  maxHeight: size.height * 0.90,
+                ),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: tokens.cardBorder.withValues(alpha: 0.85),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: const Color(0xFF020617).withValues(alpha: 0.38),
+                        blurRadius: 42,
+                        offset: const Offset(0, 24),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Material(
+                      color: tokens.surfaceElevated,
+                      clipBehavior: Clip.antiAlias,
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Text(
-                            _t(
-                              context,
-                              'Detalhes da venda',
-                              'Sale details',
-                              'Detalles de la venta',
-                            ),
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              color: tokens.primaryText,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          Text(
-                            widget.identificador,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: tokens.mutedText,
+                          Container(
+                            height: 4,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: <Color>[
+                                  Theme.of(context).colorScheme.secondary,
+                                  tokens.info.withValues(alpha: 0.92),
+                                ],
+                              ),
                             ),
                           ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 22, 18, 18),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Container(
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    color: tokens.selectedBackground,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: tokens.selectedBorder,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.receipt_long_outlined,
+                                    color: tokens.info,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      Text(
+                                        _t(
+                                          context,
+                                          'Detalhes da venda',
+                                          'Sale details',
+                                          'Detalles de la venta',
+                                        ),
+                                        style: theme.textTheme.headlineSmall
+                                            ?.copyWith(
+                                              color: tokens.primaryText,
+                                              fontWeight: FontWeight.w900,
+                                              height: 1.1,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        widget.identificador,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color: tokens.mutedText,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: tokens.surfaceMuted,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: tokens.cardBorder,
+                                    ),
+                                  ),
+                                  child: IconButton(
+                                    tooltip: _t(
+                                      context,
+                                      'Fechar',
+                                      'Close',
+                                      'Cerrar',
+                                    ),
+                                    onPressed:
+                                        () => Navigator.of(context).maybePop(),
+                                    icon: Icon(
+                                      Icons.close_rounded,
+                                      color: tokens.secondaryText,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Divider(height: 1, color: tokens.divider),
+                          Expanded(child: _buildConteudo(context, tokens)),
                         ],
                       ),
                     ),
-                    IconButton(
-                      tooltip: _t(context, 'Fechar', 'Close', 'Cerrar'),
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              Divider(height: 1, color: tokens.divider),
-              Expanded(child: _buildConteudo(context, tokens)),
-            ],
+            ),
           ),
         ),
       ),
@@ -1871,28 +2007,77 @@ class _VendaDetalheDialogState extends State<_VendaDetalheDialog> {
           _DetalheResumoHeader(
             detalhe: detalhe,
             tokens: tokens,
-            onAbrirDevolucoes: detalhe.resumo.permiteDevolucao
-                ? () {
-                    Navigator.of(context).pop();
-                    widget.onAbrirDevolucoes(detalhe.resumo.idOperacao);
-                  }
-                : null,
+            onAbrirDevolucoes:
+                detalhe.resumo.permiteDevolucao
+                    ? () {
+                      Navigator.of(context).pop();
+                      widget.onAbrirDevolucoes(detalhe.resumo.idOperacao);
+                    }
+                    : null,
           ),
-          TabBar(
-            isScrollable: true,
-            tabs: <Widget>[
-              Tab(text: _t(context, 'Itens', 'Items', 'Artículos')),
-              Tab(text: _t(context, 'Recebimentos', 'Receipts', 'Cobros')),
-              Tab(
-                text: _t(
-                  context,
-                  'Devoluções e trocas',
-                  'Returns and exchanges',
-                  'Devoluciones y cambios',
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: tokens.surfaceMuted.withValues(alpha: 0.82),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: tokens.cardBorder),
+                ),
+                child: TabBar(
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  labelColor: tokens.primaryText,
+                  unselectedLabelColor: tokens.secondaryText,
+                  labelStyle: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+                  unselectedLabelStyle: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  dividerColor: Colors.transparent,
+                  overlayColor: WidgetStateProperty.all(Colors.transparent),
+                  splashFactory: NoSplash.splashFactory,
+                  labelPadding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 6,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
+                  indicator: BoxDecoration(
+                    color: tokens.selectedBackground,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: tokens.selectedBorder),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: const Color(0xFF020617).withValues(alpha: 0.14),
+                        blurRadius: 12,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  tabs: <Widget>[
+                    Tab(text: _t(context, 'Itens', 'Items', 'Artículos')),
+                    Tab(
+                      text: _t(context, 'Recebimentos', 'Receipts', 'Cobros'),
+                    ),
+                    Tab(
+                      text: _t(
+                        context,
+                        'Devoluções e trocas',
+                        'Returns and exchanges',
+                        'Devoluciones y cambios',
+                      ),
+                    ),
+                    Tab(text: _t(context, 'Histórico', 'History', 'Historial')),
+                  ],
                 ),
               ),
-              Tab(text: _t(context, 'Histórico', 'History', 'Historial')),
-            ],
+            ),
           ),
           Expanded(
             child: TabBarView(
@@ -1905,6 +2090,76 @@ class _VendaDetalheDialogState extends State<_VendaDetalheDialog> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _VendaDetalheRouteSurface extends StatelessWidget {
+  const _VendaDetalheRouteSurface({
+    required this.animation,
+    required this.child,
+  });
+
+  final Animation<double> animation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final Animation<double> curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+
+    return Material(
+      type: MaterialType.transparency,
+      child: AnimatedBuilder(
+        animation: curved,
+        child: child,
+        builder: (BuildContext context, Widget? dialogChild) {
+          final double progress = curved.value;
+          final Color tint =
+              Color.lerp(
+                Colors.transparent,
+                const Color(0xC40A1324),
+                progress,
+              )!;
+
+          return Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              Positioned.fill(
+                child: ClipRect(
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(
+                      sigmaX: 12 * progress,
+                      sigmaY: 12 * progress,
+                    ),
+                    child: ColoredBox(color: tint),
+                  ),
+                ),
+              ),
+              SafeArea(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Opacity(
+                      opacity: progress,
+                      child: Transform.translate(
+                        offset: Offset(0, (1 - progress) * 24),
+                        child: Transform.scale(
+                          scale: 0.96 + (0.04 * progress),
+                          child: dialogChild,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -1923,170 +2178,299 @@ class _DetalheResumoHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final LocaleSettingsProvider regionalizacao = context
-        .watch<LocaleSettingsProvider>();
+    final LocaleSettingsProvider regionalizacao =
+        context.watch<LocaleSettingsProvider>();
     final VendaConsultaResumo venda = detalhe.resumo;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Wrap(
-            spacing: 10,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              Text(
-                venda.identificadorPreferencial,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: tokens.primaryText,
-                  fontWeight: FontWeight.w900,
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+        decoration: BoxDecoration(
+          color: tokens.surfaceMuted.withValues(alpha: 0.84),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: tokens.cardBorder),
+        ),
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool compact = constraints.maxWidth < 900;
+            final double metricsWidth =
+                compact
+                    ? constraints.maxWidth
+                    : constraints.maxWidth -
+                        (onAbrirDevolucoes != null ? 210 : 0);
+            final double blockWidth =
+                metricsWidth > 980
+                    ? (metricsWidth - 36) / 4
+                    : metricsWidth > 700
+                    ? (metricsWidth - 24) / 3
+                    : metricsWidth > 420
+                    ? (metricsWidth - 12) / 2
+                    : metricsWidth;
+
+            final Widget metricsSection = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      venda.identificadorPreferencial,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: tokens.primaryText,
+                        fontWeight: FontWeight.w900,
+                        height: 1.05,
+                      ),
+                    ),
+                    _StatusChip(
+                      label: _statusFinanceiroLabel(
+                        context,
+                        venda.statusFinanceiro,
+                      ),
+                      color: _financialStatusColor(
+                        tokens,
+                        venda.statusFinanceiro,
+                      ),
+                    ),
+                    _StatusChip(
+                      label: _statusDevolucaoLabel(
+                        context,
+                        venda.statusDevolucao,
+                      ),
+                      color: _returnStatusColor(tokens, venda.statusDevolucao),
+                    ),
+                  ],
                 ),
-              ),
-              _StatusChip(
-                label: _statusFinanceiroLabel(context, venda.statusFinanceiro),
-                color: _financialStatusColor(tokens, venda.statusFinanceiro),
-              ),
-              _StatusChip(
-                label: _statusDevolucaoLabel(context, venda.statusDevolucao),
-                color: _returnStatusColor(tokens, venda.statusDevolucao),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _fallback(
-              detalhe.descricao,
-              _t(
-                context,
-                'Venda registrada no sistema',
-                'Sale recorded in the system',
-                'Venta registrada en el sistema',
-              ),
-            ),
-            style: Theme.of(context).textTheme.bodyMedium
-                ?.copyWith(color: tokens.secondaryText),
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: <Widget>[
-              _DetailInfoBlock(
-                tokens: tokens,
-                label: _t(context, 'Data', 'Date', 'Fecha'),
-                value: _formatDateTime(regionalizacao, venda.dataOperacao),
-              ),
-              _DetailInfoBlock(
-                tokens: tokens,
-                label: _t(context, 'Cliente', 'Customer', 'Cliente'),
-                value: _fallback(
-                  venda.nomeCliente,
-                  _t(
-                    context,
-                    'Não identificado',
-                    'Unidentified',
-                    'No identificado',
+                const SizedBox(height: 6),
+                Text(
+                  _fallback(
+                    detalhe.descricao,
+                    _t(
+                      context,
+                      'Venda registrada no sistema',
+                      'Sale recorded in the system',
+                      'Venta registrada en el sistema',
+                    ),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: tokens.secondaryText,
+                    height: 1.2,
                   ),
                 ),
-              ),
-              _DetailInfoBlock(
-                tokens: tokens,
-                label: _t(context, 'Vendedor', 'Seller', 'Vendedor'),
-                value: _fallback(
-                  venda.nomeColaborador,
-                  _t(context, 'Sistema', 'System', 'Sistema'),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 10,
+                  children: <Widget>[
+                    _DetailInfoLine(
+                      width: blockWidth,
+                      label: _t(context, 'Data', 'Date', 'Fecha'),
+                      value: _formatDateTime(
+                        regionalizacao,
+                        venda.dataOperacao,
+                      ),
+                    ),
+                    _DetailInfoLine(
+                      width: blockWidth,
+                      label: _t(context, 'Cliente', 'Customer', 'Cliente'),
+                      value: _fallback(
+                        venda.nomeCliente,
+                        _t(
+                          context,
+                          'Não identificado',
+                          'Unidentified',
+                          'No identificado',
+                        ),
+                      ),
+                    ),
+                    _DetailInfoLine(
+                      width: blockWidth,
+                      label: _t(context, 'Vendedor', 'Seller', 'Vendedor'),
+                      value: _fallback(
+                        venda.nomeColaborador,
+                        _t(context, 'Sistema', 'System', 'Sistema'),
+                      ),
+                    ),
+                    _DetailInfoLine(
+                      width: blockWidth,
+                      label: _t(context, 'Total', 'Total', 'Total'),
+                      numericValue: venda.valorTotal,
+                      valueFormatter: regionalizacao.formatCurrency,
+                      emphasize: true,
+                    ),
+                    _DetailInfoLine(
+                      width: blockWidth,
+                      label: _t(context, 'Recebido', 'Received', 'Recibido'),
+                      numericValue: venda.valorRecebido,
+                      valueFormatter: regionalizacao.formatCurrency,
+                    ),
+                    _DetailInfoLine(
+                      width: blockWidth,
+                      label: _t(context, 'Em aberto', 'Open', 'Abierto'),
+                      numericValue: venda.valorEmAberto,
+                      valueFormatter: regionalizacao.formatCurrency,
+                    ),
+                    _DetailInfoLine(
+                      width: blockWidth,
+                      label: _t(context, 'Devolvido', 'Returned', 'Devuelto'),
+                      numericValue: venda.valorDevolvido,
+                      valueFormatter: regionalizacao.formatCurrency,
+                    ),
+                  ],
+                ),
+              ],
+            );
+
+            if (onAbrirDevolucoes == null) {
+              return metricsSection;
+            }
+
+            final Widget actionButton = FilledButton.icon(
+              onPressed: onAbrirDevolucoes,
+              icon: const Icon(Icons.assignment_return_outlined, size: 18),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              _DetailInfoBlock(
-                tokens: tokens,
-                label: _t(context, 'Total', 'Total', 'Total'),
-                value: regionalizacao.formatCurrency(venda.valorTotal),
-              ),
-              _DetailInfoBlock(
-                tokens: tokens,
-                label: _t(context, 'Recebido', 'Received', 'Recibido'),
-                value: regionalizacao.formatCurrency(venda.valorRecebido),
-              ),
-              _DetailInfoBlock(
-                tokens: tokens,
-                label: _t(context, 'Em aberto', 'Open', 'Abierto'),
-                value: regionalizacao.formatCurrency(venda.valorEmAberto),
-              ),
-              _DetailInfoBlock(
-                tokens: tokens,
-                label: _t(context, 'Devolvido', 'Returned', 'Devuelto'),
-                value: regionalizacao.formatCurrency(venda.valorDevolvido),
-              ),
-            ],
-          ),
-          if (onAbrirDevolucoes != null) ...<Widget>[
-            const SizedBox(height: 14),
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton.icon(
-                onPressed: onAbrirDevolucoes,
-                icon: const Icon(Icons.assignment_return_outlined),
-                label: Text(
-                  _t(
-                    context,
-                    'Devolver ou trocar',
-                    'Return or exchange',
-                    'Devolver o cambiar',
-                  ),
+              label: Text(
+                _t(
+                  context,
+                  'Devolver ou trocar',
+                  'Return or exchange',
+                  'Devolver o cambiar',
                 ),
               ),
-            ),
-          ],
-        ],
+            );
+
+            if (compact) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  metricsSection,
+                  const SizedBox(height: 14),
+                  Align(alignment: Alignment.centerRight, child: actionButton),
+                ],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                Expanded(child: metricsSection),
+                const SizedBox(width: 16),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: actionButton,
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 }
 
-class _DetailInfoBlock extends StatelessWidget {
-  const _DetailInfoBlock({
-    required this.tokens,
+class _DetailInfoLine extends StatelessWidget {
+  const _DetailInfoLine({
+    required this.width,
     required this.label,
-    required this.value,
-  });
+    this.value,
+    this.numericValue,
+    this.valueFormatter,
+    this.emphasize = false,
+  }) : assert(
+         value != null || (numericValue != null && valueFormatter != null),
+         'Provide value or numericValue + valueFormatter.',
+       );
 
-  final WebThemeTokens tokens;
+  final double width;
   final String label;
-  final String value;
+  final String? value;
+  final double? numericValue;
+  final String Function(num value)? valueFormatter;
+  final bool emphasize;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 205,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: tokens.surfaceMuted,
-        borderRadius: BorderRadius.circular(13),
-        border: Border.all(color: tokens.cardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: tokens.mutedText,
-              fontWeight: FontWeight.w700,
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return SizedBox(
+      width: width,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 38),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: tokens.mutedText,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: tokens.primaryText,
-              fontWeight: FontWeight.w900,
+            const SizedBox(height: 4),
+            DefaultTextStyle(
+              style:
+                  Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: emphasize ? FontWeight.w900 : FontWeight.w800,
+                    fontSize: emphasize ? 17 : 14,
+                    height: 1.2,
+                  ) ??
+                  const TextStyle(),
+              child:
+                  numericValue != null && valueFormatter != null
+                      ? _AnimatedNumericDetailValue(
+                        key: ValueKey<String>('$label-$numericValue'),
+                        value: numericValue!,
+                        formatter: valueFormatter!,
+                      )
+                      : Text(
+                        value!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _AnimatedNumericDetailValue extends StatelessWidget {
+  const _AnimatedNumericDetailValue({
+    super.key,
+    required this.value,
+    required this.formatter,
+  });
+
+  final double value;
+  final String Function(num value) formatter;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: value),
+      duration: Duration(milliseconds: reduceMotion ? 1 : 700),
+      curve: Curves.easeOutCubic,
+      builder: (BuildContext context, double animatedValue, Widget? child) {
+        return Text(
+          formatter(animatedValue),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        );
+      },
     );
   }
 }
@@ -2099,8 +2483,8 @@ class _ItensDetalheTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final LocaleSettingsProvider regionalizacao = context
-        .watch<LocaleSettingsProvider>();
+    final LocaleSettingsProvider regionalizacao =
+        context.watch<LocaleSettingsProvider>();
     if (detalhe.itens.isEmpty) {
       return _EmptyDetailTab(
         tokens: tokens,
@@ -2113,7 +2497,7 @@ class _ItensDetalheTab extends StatelessWidget {
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       itemCount: detalhe.itens.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (BuildContext context, int index) {
@@ -2170,8 +2554,8 @@ class _RecebimentosDetalheTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final LocaleSettingsProvider regionalizacao = context
-        .watch<LocaleSettingsProvider>();
+    final LocaleSettingsProvider regionalizacao =
+        context.watch<LocaleSettingsProvider>();
     if (detalhe.recebimentos.isEmpty) {
       return _EmptyDetailTab(
         tokens: tokens,
@@ -2184,7 +2568,7 @@ class _RecebimentosDetalheTab extends StatelessWidget {
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       itemCount: detalhe.recebimentos.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (BuildContext context, int index) {
@@ -2201,10 +2585,12 @@ class _RecebimentosDetalheTab extends StatelessWidget {
             _DetailMiniMetric(
               label: _t(context, 'Origem', 'Source', 'Origen'),
               value: recebimento.origem,
+              color: tokens.info,
             ),
             _DetailMiniMetric(
               label: _t(context, 'Status', 'Status', 'Estado'),
               value: recebimento.status,
+              color: _recebimentoStatusColor(tokens, recebimento.status),
             ),
             _DetailMiniMetric(
               label: _t(
@@ -2214,10 +2600,12 @@ class _RecebimentosDetalheTab extends StatelessWidget {
                 'Valor original',
               ),
               value: regionalizacao.formatCurrency(recebimento.valorOriginal),
+              color: tokens.warning,
             ),
             _DetailMiniMetric(
               label: _t(context, 'Saldo', 'Balance', 'Saldo'),
               value: regionalizacao.formatCurrency(recebimento.valorEmAberto),
+              color: _recebimentoSaldoColor(tokens, recebimento.valorEmAberto),
             ),
             _DetailMiniMetric(
               label: _t(context, 'Colaborador', 'Employee', 'Colaborador'),
@@ -2225,6 +2613,7 @@ class _RecebimentosDetalheTab extends StatelessWidget {
                 recebimento.nomeColaborador,
                 recebimento.idColaborador,
               ),
+              color: Theme.of(context).colorScheme.secondary,
             ),
           ],
         );
@@ -2241,8 +2630,8 @@ class _DevolucoesDetalheTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final LocaleSettingsProvider regionalizacao = context
-        .watch<LocaleSettingsProvider>();
+    final LocaleSettingsProvider regionalizacao =
+        context.watch<LocaleSettingsProvider>();
     if (detalhe.devolucoes.isEmpty) {
       return _EmptyDetailTab(
         tokens: tokens,
@@ -2255,7 +2644,7 @@ class _DevolucoesDetalheTab extends StatelessWidget {
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       itemCount: detalhe.devolucoes.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (BuildContext context, int index) {
@@ -2290,8 +2679,9 @@ class _DevolucoesDetalheTab extends StatelessWidget {
               const SizedBox(height: 5),
               Text(
                 '${_formatDateTime(regionalizacao, devolucao.dataHora)} · ${_fallback(devolucao.nomeColaborador, devolucao.idColaborador)}',
-                style: Theme.of(context).textTheme.bodySmall
-                    ?.copyWith(color: tokens.secondaryText),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: tokens.secondaryText),
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -2349,8 +2739,9 @@ class _DevolucoesDetalheTab extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 5),
                     child: Text(
                       '• ${item.nomeProduto} · ${_formatQuantity(item.quantidade)} · ${item.condicao}${item.retornouAoEstoque ? ' · ${_t(context, 'retornou ao estoque', 'returned to stock', 'volvió al stock')}' : ''}',
-                      style: Theme.of(context).textTheme.bodySmall
-                          ?.copyWith(color: tokens.secondaryText),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: tokens.secondaryText,
+                      ),
                     ),
                   ),
               ],
@@ -2374,8 +2765,9 @@ class _DevolucoesDetalheTab extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 5),
                     child: Text(
                       '• ${item.nomeProduto} · ${_formatQuantity(item.quantidade)} · ${regionalizacao.formatCurrency(item.valorTotal)}',
-                      style: Theme.of(context).textTheme.bodySmall
-                          ?.copyWith(color: tokens.secondaryText),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: tokens.secondaryText,
+                      ),
                     ),
                   ),
               ],
@@ -2395,8 +2787,8 @@ class _HistoricoDetalheTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final LocaleSettingsProvider regionalizacao = context
-        .watch<LocaleSettingsProvider>();
+    final LocaleSettingsProvider regionalizacao =
+        context.watch<LocaleSettingsProvider>();
     if (detalhe.historico.isEmpty) {
       return _EmptyDetailTab(
         tokens: tokens,
@@ -2409,7 +2801,7 @@ class _HistoricoDetalheTab extends StatelessWidget {
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       itemCount: detalhe.historico.length,
       itemBuilder: (BuildContext context, int index) {
         final EventoVendaDetalhe evento = detalhe.historico[index];
@@ -2453,19 +2845,22 @@ class _HistoricoDetalheTab extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         '${_formatDateTime(regionalizacao, evento.dataHora)}${evento.referencia.trim().isNotEmpty ? ' · ${evento.referencia}' : ''}',
-                        style: Theme.of(context).textTheme.bodySmall
-                            ?.copyWith(color: tokens.secondaryText),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: tokens.secondaryText,
+                        ),
                       ),
                       if (evento.valor.abs() > 0.0001)
                         Text(
                           regionalizacao.formatCurrency(evento.valor),
-                          style: Theme.of(context).textTheme.labelMedium
-                              ?.copyWith(
-                                color: evento.valor < 0
+                          style: Theme.of(
+                            context,
+                          ).textTheme.labelMedium?.copyWith(
+                            color:
+                                evento.valor < 0
                                     ? tokens.financialNegative
                                     : tokens.financialPositive,
-                                fontWeight: FontWeight.w900,
-                              ),
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                     ],
                   ),
@@ -2497,10 +2892,10 @@ class _DetailListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: tokens.cardBackground,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
@@ -2524,8 +2919,9 @@ class _DetailListCard extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         subtitle,
-                        style: Theme.of(context).textTheme.bodySmall
-                            ?.copyWith(color: tokens.mutedText),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: tokens.mutedText,
+                        ),
                       ),
                     ],
                   ],
@@ -2550,32 +2946,51 @@ class _DetailListCard extends StatelessWidget {
 }
 
 class _DetailMiniMetric extends StatelessWidget {
-  const _DetailMiniMetric({required this.label, required this.value});
+  const _DetailMiniMetric({
+    required this.label,
+    required this.value,
+    this.color,
+  });
 
   final String label;
   final String value;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent = color ?? tokens.cardBorder;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: tokens.surfaceMuted,
+        color:
+            color == null
+                ? tokens.surfaceMuted
+                : Color.alphaBlend(
+                  accent.withValues(alpha: 0.12),
+                  tokens.surfaceMuted,
+                ),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: tokens.cardBorder),
+        border: Border.all(
+          color:
+              color == null
+                  ? tokens.cardBorder
+                  : accent.withValues(alpha: 0.38),
+        ),
       ),
       child: RichText(
         text: TextSpan(
-          style: Theme.of(context).textTheme.bodySmall
-              ?.copyWith(color: tokens.secondaryText),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: color == null ? tokens.secondaryText : accent,
+            fontWeight: FontWeight.w700,
+          ),
           children: <InlineSpan>[
             TextSpan(text: '$label: '),
             TextSpan(
               text: value,
               style: TextStyle(
                 color: tokens.primaryText,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ],
@@ -2633,6 +3048,10 @@ String _t(BuildContext context, String pt, String en, String es) {
   };
 }
 
+String _allLabel(BuildContext context) {
+  return _text(context, 'common.all', pt: 'Todas', en: 'All', es: 'Todas');
+}
+
 String _statusFinanceiroLabel(BuildContext context, String status) {
   return switch (status.trim().toUpperCase()) {
     'QUITADA' => _t(context, 'Quitada', 'Paid', 'Pagada'),
@@ -2641,6 +3060,23 @@ String _statusFinanceiroLabel(BuildContext context, String status) {
     'CANCELADA' => _t(context, 'Cancelada', 'Cancelled', 'Cancelada'),
     _ => _t(context, 'Não informada', 'Not informed', 'No informada'),
   };
+}
+
+String? _financialStatusValueFromLabel(BuildContext context, String label) {
+  if (label == _allLabel(context)) {
+    return null;
+  }
+  for (final String value in const <String>[
+    'QUITADA',
+    'PARCIAL',
+    'EM_ABERTO',
+    'CANCELADA',
+  ]) {
+    if (_statusFinanceiroLabel(context, value) == label) {
+      return value;
+    }
+  }
+  return null;
 }
 
 String _statusDevolucaoLabel(BuildContext context, String status) {
@@ -2667,6 +3103,22 @@ String _statusDevolucaoLabel(BuildContext context, String status) {
   };
 }
 
+String? _returnStatusValueFromLabel(BuildContext context, String label) {
+  if (label == _allLabel(context)) {
+    return null;
+  }
+  for (final String value in const <String>[
+    'SEM_DEVOLUCAO',
+    'PARCIAL',
+    'TOTAL',
+  ]) {
+    if (_statusDevolucaoLabel(context, value) == label) {
+      return value;
+    }
+  }
+  return null;
+}
+
 String _ordenacaoLabel(BuildContext context, String value) {
   return switch (value) {
     'MAIS_ANTIGAS' => _t(
@@ -2684,6 +3136,36 @@ String _ordenacaoLabel(BuildContext context, String value) {
     'MENOR_VALOR' => _t(context, 'Menor valor', 'Lowest amount', 'Menor valor'),
     _ => _t(context, 'Mais recentes', 'Most recent', 'Más recientes'),
   };
+}
+
+String _orderValueFromLabel(BuildContext context, String label) {
+  for (final String value in const <String>[
+    'MAIS_RECENTES',
+    'MAIS_ANTIGAS',
+    'MAIOR_VALOR',
+    'MENOR_VALOR',
+  ]) {
+    if (_ordenacaoLabel(context, value) == label) {
+      return value;
+    }
+  }
+  return 'MAIS_RECENTES';
+}
+
+Color _recebimentoStatusColor(WebThemeTokens tokens, String status) {
+  return switch (status.trim().toUpperCase()) {
+    'CONCLUIDA' || 'CONCLUÍDA' || 'RECEBIDO' || 'PAGO' => tokens.success,
+    'PENDENTE' || 'EM_ABERTO' || 'ABERTO' => tokens.warning,
+    'CANCELADA' || 'FALHOU' || 'RECUSADO' => tokens.danger,
+    _ => tokens.info,
+  };
+}
+
+Color _recebimentoSaldoColor(WebThemeTokens tokens, num saldo) {
+  if (saldo.abs() < 0.0001) {
+    return tokens.success;
+  }
+  return saldo > 0 ? tokens.warning : tokens.info;
 }
 
 Color _financialStatusColor(WebThemeTokens tokens, String status) {
