@@ -27,7 +27,9 @@ class WebNavigationResolutionResult {
     this.reason,
   });
 
-  factory WebNavigationResolutionResult.handled(WebNavigationDestination destination) =>
+  factory WebNavigationResolutionResult.handled(
+    WebNavigationDestination destination,
+  ) =>
       WebNavigationResolutionResult._(
         status: WebNavigationResolutionStatus.handled,
         destination: destination,
@@ -83,6 +85,11 @@ class WebNavigationDestinationResolver {
         return actions.openPurchases();
       case WebNavigationDestination.operationsReservations:
         return actions.openReservations();
+      case WebNavigationDestination.operationsReturns:
+        return WebNavigationResolutionResult.reserved(
+          destination,
+          reason: 'Destino gerenciado pelo shell Web.',
+        );
       case WebNavigationDestination.catalogProducts:
         return actions.openCatalogProducts();
       case WebNavigationDestination.catalogServices:

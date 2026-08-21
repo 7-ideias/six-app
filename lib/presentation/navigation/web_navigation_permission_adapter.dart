@@ -13,6 +13,8 @@ abstract final class WebNavigationPermissionAdapter {
     }
     return <WebNavigationPermission>{
       if (provider.podeFazerVenda) WebNavigationPermission.podeFazerVenda,
+      if (provider.podeFazerDevolucao)
+        WebNavigationPermission.podeFazerDevolucao,
       if (provider.podeLancarAssistenciaTecnica)
         WebNavigationPermission.podeLancarAssistenciaTecnica,
       if (provider.podeEditarCliente) WebNavigationPermission.podeEditarCliente,

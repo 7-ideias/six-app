@@ -10,6 +10,7 @@ abstract final class WebNavigationIds {
       'operations.technical_service';
   static const String operationsPurchases = 'operations.purchases';
   static const String operationsReservations = 'operations.reservations';
+  static const String operationsReturns = 'operations.returns';
   static const String catalog = 'catalog';
   static const String catalogProducts = 'catalog.products';
   static const String catalogServices = 'catalog.services';
@@ -264,11 +265,22 @@ abstract final class WebNavigationRegistry {
     }
   }
 
+  static const WebNavigationItem _operationsReturnsItem = WebNavigationItem(
+    id: WebNavigationIds.operationsReturns,
+    labelKey: 'web.navigation.operations.returns',
+    labelFallback: 'Devoluções e trocas',
+    icon: Icons.assignment_return_outlined,
+    visibility: WebNavigationVisibilityRule.anyOf(
+      <WebNavigationPermission>[WebNavigationPermission.podeFazerDevolucao],
+    ),
+    destination: WebNavigationDestination.operationsReturns,
+  );
+
   static List<WebNavigationItem> activeItemsForPermissions(
     Set<WebNavigationPermission> grantedPermissions, {
     bool includeUnresolved = true,
   }) {
-    return <WebNavigationItem>[
+    final List<WebNavigationItem> visible = <WebNavigationItem>[
       for (final WebNavigationItem item in activeItems)
         if (item.visibleForPermissions(
               grantedPermissions,
@@ -277,9 +289,38 @@ abstract final class WebNavigationRegistry {
             case final WebNavigationItem visibleItem)
           visibleItem,
     ];
+
+    if (!grantedPermissions.contains(
+      WebNavigationPermission.podeFazerDevolucao,
+    )) {
+      return visible;
+    }
+
+    final int operationsIndex = visible.indexWhere(
+      (WebNavigationItem item) => item.id == WebNavigationIds.operations,
+    );
+    if (operationsIndex < 0) return visible;
+
+    final WebNavigationItem operations = visible[operationsIndex];
+    visible[operationsIndex] = WebNavigationItem(
+      id: operations.id,
+      labelKey: operations.labelKey,
+      labelFallback: operations.labelFallback,
+      icon: operations.icon,
+      visibility: operations.visibility,
+      destination: operations.destination,
+      children: <WebNavigationItem>[
+        ...operations.children,
+        _operationsReturnsItem,
+      ],
+    );
+    return visible;
   }
 
   static WebNavigationItem? findActiveById(String id) {
+    if (id == WebNavigationIds.operationsReturns) {
+      return _operationsReturnsItem;
+    }
     for (final WebNavigationItem item in flattenActiveItems()) {
       if (item.id == id) return item;
     }

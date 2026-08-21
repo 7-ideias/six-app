@@ -79,6 +79,7 @@ enum WebNavigationDestination {
   operationsTechnicalServices,
   operationsPurchases,
   operationsReservations,
+  operationsReturns,
   catalogProducts,
   catalogServices,
   catalogStock,
@@ -95,6 +96,7 @@ enum WebNavigationDestination {
 
 enum WebNavigationPermission {
   podeFazerVenda,
+  podeFazerDevolucao,
   podeLancarAssistenciaTecnica,
   podeEditarCliente,
   podeCadastrarProduto,

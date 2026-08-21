@@ -3,6 +3,7 @@ import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_destination_resolver.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_item.dart';
 import 'package:sixpos/presentation/navigation/web_sidebar_navigation.dart';
+import 'package:sixpos/presentation/screens/devolucoes_produtos_web_page.dart';
 import 'package:sixpos/presentation/screens/etiquetas_web_page.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
@@ -65,10 +66,12 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
     final WebNavigationDestination? effectiveDestination =
         _shellManagedDestination ?? widget.activeDestination;
     final String activeTitle = _activeTitle(context, effectiveDestination);
-    final Widget effectiveChild =
-        effectiveDestination == WebNavigationDestination.catalogLabels
-            ? const EtiquetasWebPage()
-            : widget.child;
+    final Widget effectiveChild = switch (effectiveDestination) {
+      WebNavigationDestination.catalogLabels => const EtiquetasWebPage(),
+      WebNavigationDestination.operationsReturns =>
+        const DevolucoesProdutosWebPage(),
+      _ => widget.child,
+    };
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -142,10 +145,15 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
   }
 
   void _resolveDestination(WebNavigationDestination destination) {
-    if (destination == WebNavigationDestination.catalogLabels) {
+    if (destination == WebNavigationDestination.catalogLabels ||
+        destination == WebNavigationDestination.operationsReturns) {
       setState(() {
         _shellManagedDestination = destination;
-        _expandedGroupIds.add('catalog');
+        _expandedGroupIds.add(
+          destination == WebNavigationDestination.catalogLabels
+              ? 'catalog'
+              : 'operations',
+        );
       });
       return;
     }
@@ -212,7 +220,9 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
   }
 
   Iterable<WebNavigationItem> _flattenNavigationItems() sync* {
-    for (final WebNavigationItem item in widget.navigationItems) yield* item.flatten();
+    for (final WebNavigationItem item in widget.navigationItems) {
+      yield* item.flatten();
+    }
   }
 
   bool _containsDestination(
