@@ -1,0 +1,43 @@
+name: Aplicar jornada de devolucao
+
+on:
+  push:
+    branches:
+      - feature/20260820-melhorias
+    paths:
+      - '.six-payload/**'
+
+permissions:
+  contents: write
+
+jobs:
+  aplicar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obter codigo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruir arquivos da implementacao
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .six-payload/part.* | base64 --decode > /tmp/six-return-files.tar.gz
+          echo '996fc6281862371053540897d1099fcab08829427fb698639f999dfc0a7d5fd4  /tmp/six-return-files.tar.gz' | sha256sum --check --strict
+          tar -xzf /tmp/six-return-files.tar.gz
+          git diff --check
+
+      - name: Criar commit da implementacao
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lib test
+          if git diff --cached --quiet; then
+            echo 'Nenhuma alteracao de implementacao encontrada.'
+            exit 0
+          fi
+          git commit -m 'feat(devolucao): integrar jornada web e mobile'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
