@@ -53,8 +53,8 @@ jobs:
       - name: Obter dependencias
         run: flutter pub get
 
-      - name: Analisar Flutter
-        run: flutter analyze --no-fatal-infos
+      - name: Compilar Flutter Web
+        run: flutter build web --release --no-pub
 
       - name: Criar commit da implementacao
         shell: bash
