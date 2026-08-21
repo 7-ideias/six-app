@@ -6,10 +6,12 @@ abstract final class WebNavigationIds {
   static const String home = 'home';
   static const String operations = 'operations';
   static const String operationsPos = 'operations.pos';
+  static const String operationsSales = 'operations.sales';
   static const String operationsTechnicalServices =
       'operations.technical_service';
   static const String operationsPurchases = 'operations.purchases';
   static const String operationsReservations = 'operations.reservations';
+  static const String operationsReturns = 'operations.returns';
   static const String catalog = 'catalog';
   static const String catalogProducts = 'catalog.products';
   static const String catalogServices = 'catalog.services';
@@ -55,15 +57,28 @@ abstract final class WebNavigationRegistry {
           destination: WebNavigationDestination.operationsPointOfSale,
         ),
         WebNavigationItem(
+          id: WebNavigationIds.operationsSales,
+          labelKey: 'web.navigation.operations.sales',
+          labelFallback: 'Vendas',
+          icon: Icons.receipt_long_outlined,
+          visibility: WebNavigationVisibilityRule.anyOf(
+            <WebNavigationPermission>[
+              WebNavigationPermission.podeConsultarVendas,
+            ],
+          ),
+          destination: WebNavigationDestination.operationsSales,
+        ),
+        WebNavigationItem(
           id: WebNavigationIds.cash,
           labelKey: 'web.navigation.cash',
           labelFallback: 'Caixa',
           icon: Icons.payments_outlined,
-          visibility:
-              WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
-                WebNavigationPermission.podeAcessarFinanceiro,
-                WebNavigationPermission.podeReceberNoCaixa,
-              ]),
+          visibility: WebNavigationVisibilityRule.anyOf(
+            <WebNavigationPermission>[
+              WebNavigationPermission.podeAcessarFinanceiro,
+              WebNavigationPermission.podeReceberNoCaixa,
+            ],
+          ),
           destination: WebNavigationDestination.cash,
         ),
         WebNavigationItem(
@@ -112,11 +127,12 @@ abstract final class WebNavigationRegistry {
           labelKey: 'web.navigation.catalog.products',
           labelFallback: 'Produtos',
           icon: Icons.inventory_2_outlined,
-          visibility:
-              WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
-                WebNavigationPermission.podeCadastrarProduto,
-                WebNavigationPermission.podeEditarProduto,
-              ]),
+          visibility: WebNavigationVisibilityRule.anyOf(
+            <WebNavigationPermission>[
+              WebNavigationPermission.podeCadastrarProduto,
+              WebNavigationPermission.podeEditarProduto,
+            ],
+          ),
           destination: WebNavigationDestination.catalogProducts,
         ),
         WebNavigationItem(
@@ -124,11 +140,12 @@ abstract final class WebNavigationRegistry {
           labelKey: 'web.navigation.catalog.services',
           labelFallback: 'Serviços',
           icon: Icons.home_repair_service_outlined,
-          visibility:
-              WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
-                WebNavigationPermission.podeCadastrarProduto,
-                WebNavigationPermission.podeEditarProduto,
-              ]),
+          visibility: WebNavigationVisibilityRule.anyOf(
+            <WebNavigationPermission>[
+              WebNavigationPermission.podeCadastrarProduto,
+              WebNavigationPermission.podeEditarProduto,
+            ],
+          ),
           destination: WebNavigationDestination.catalogServices,
         ),
         WebNavigationItem(
@@ -160,11 +177,12 @@ abstract final class WebNavigationRegistry {
           labelKey: 'web.navigation.catalog.categories',
           labelFallback: 'Categorias',
           icon: Icons.category_outlined,
-          visibility:
-              WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
-                WebNavigationPermission.podeCadastrarProduto,
-                WebNavigationPermission.podeEditarProduto,
-              ]),
+          visibility: WebNavigationVisibilityRule.anyOf(
+            <WebNavigationPermission>[
+              WebNavigationPermission.podeCadastrarProduto,
+              WebNavigationPermission.podeEditarProduto,
+            ],
+          ),
           destination: WebNavigationDestination.catalogCategories,
         ),
       ],
@@ -264,11 +282,22 @@ abstract final class WebNavigationRegistry {
     }
   }
 
+  static const WebNavigationItem _operationsReturnsItem = WebNavigationItem(
+    id: WebNavigationIds.operationsReturns,
+    labelKey: 'web.navigation.operations.returns',
+    labelFallback: 'Devoluções e trocas',
+    icon: Icons.assignment_return_outlined,
+    visibility: WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
+      WebNavigationPermission.podeFazerDevolucao,
+    ]),
+    destination: WebNavigationDestination.operationsReturns,
+  );
+
   static List<WebNavigationItem> activeItemsForPermissions(
     Set<WebNavigationPermission> grantedPermissions, {
     bool includeUnresolved = true,
   }) {
-    return <WebNavigationItem>[
+    final List<WebNavigationItem> visible = <WebNavigationItem>[
       for (final WebNavigationItem item in activeItems)
         if (item.visibleForPermissions(
               grantedPermissions,
@@ -277,9 +306,46 @@ abstract final class WebNavigationRegistry {
             case final WebNavigationItem visibleItem)
           visibleItem,
     ];
+
+    if (!grantedPermissions.contains(
+      WebNavigationPermission.podeFazerDevolucao,
+    )) {
+      return visible;
+    }
+
+    final int operationsIndex = visible.indexWhere(
+      (WebNavigationItem item) => item.id == WebNavigationIds.operations,
+    );
+    if (operationsIndex < 0) return visible;
+
+    final WebNavigationItem operations = visible[operationsIndex];
+    final List<WebNavigationItem> children = <WebNavigationItem>[
+      ...operations.children,
+    ];
+    final int salesIndex = children.indexWhere(
+      (WebNavigationItem item) => item.id == WebNavigationIds.operationsSales,
+    );
+    children.insert(
+      salesIndex >= 0 ? salesIndex + 1 : children.length,
+      _operationsReturnsItem,
+    );
+
+    visible[operationsIndex] = WebNavigationItem(
+      id: operations.id,
+      labelKey: operations.labelKey,
+      labelFallback: operations.labelFallback,
+      icon: operations.icon,
+      visibility: operations.visibility,
+      destination: operations.destination,
+      children: children,
+    );
+    return visible;
   }
 
   static WebNavigationItem? findActiveById(String id) {
+    if (id == WebNavigationIds.operationsReturns) {
+      return _operationsReturnsItem;
+    }
     for (final WebNavigationItem item in flattenActiveItems()) {
       if (item.id == id) return item;
     }

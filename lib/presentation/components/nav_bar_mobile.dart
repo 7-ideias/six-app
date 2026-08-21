@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
+import 'package:sixpos/presentation/screens/atendimento_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/devolucoes_produtos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/gestao_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/home_page_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/atendimento_mobile_screen.dart';
 
 class NavBarMobile extends StatelessWidget {
   const NavBarMobile({
@@ -23,7 +24,7 @@ class NavBarMobile extends StatelessWidget {
 
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
       child: Container(
         height: 64,
         padding: const EdgeInsets.all(5),
@@ -46,12 +47,11 @@ class NavBarMobile extends StatelessWidget {
               activeIcon: Icons.home_rounded,
               label: context.t('mobile.nav.dash', fallback: 'dash'),
               selected: selectedIndex == MobileNavigationController.dashIndex,
-              onTap:
-                  () => _select(
-                    context,
-                    controller,
-                    MobileNavigationController.dashIndex,
-                  ),
+              onTap: () => _select(
+                context,
+                controller,
+                MobileNavigationController.dashIndex,
+              ),
             ),
             _NavItem(
               icon: Icons.manage_accounts_outlined,
@@ -59,25 +59,33 @@ class NavBarMobile extends StatelessWidget {
               label: context.t('mobile.nav.management', fallback: 'Gestão'),
               selected:
                   selectedIndex == MobileNavigationController.managementIndex,
-              onTap:
-                  () => _select(
-                    context,
-                    controller,
-                    MobileNavigationController.managementIndex,
-                  ),
+              onTap: () => _select(
+                context,
+                controller,
+                MobileNavigationController.managementIndex,
+              ),
             ),
             _NavItem(
               icon: Icons.support_agent_outlined,
               activeIcon: Icons.support_agent_rounded,
               label: context.t('mobile.nav.service', fallback: 'Atendimento'),
-              selected:
-                  selectedIndex == MobileNavigationController.serviceIndex,
-              onTap:
-                  () => _select(
-                    context,
-                    controller,
-                    MobileNavigationController.serviceIndex,
-                  ),
+              selected: selectedIndex == MobileNavigationController.serviceIndex,
+              onTap: () => _select(
+                context,
+                controller,
+                MobileNavigationController.serviceIndex,
+              ),
+            ),
+            _NavItem(
+              icon: Icons.assignment_return_outlined,
+              activeIcon: Icons.assignment_return_rounded,
+              label: context.t('mobile.nav.returns', fallback: 'Devoluções'),
+              selected: selectedIndex == MobileNavigationController.returnsIndex,
+              onTap: () => _select(
+                context,
+                controller,
+                MobileNavigationController.returnsIndex,
+              ),
             ),
           ],
         ),
@@ -107,6 +115,9 @@ class NavBarMobile extends StatelessWidget {
         break;
       case MobileNavigationController.serviceIndex:
         page = const AtendimentoMobileScreen();
+        break;
+      case MobileNavigationController.returnsIndex:
+        page = const DevolucoesProdutosMobileScreen();
         break;
       default:
         return;
@@ -148,7 +159,7 @@ class _NavItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(17),
             onTap: onTap,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
               decoration: BoxDecoration(
                 color: selected ? colors.softAccentSurface : Colors.transparent,
                 borderRadius: BorderRadius.circular(17),
@@ -168,7 +179,7 @@ class _NavItem extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: selected ? colors.titleText : colors.mutedText,
-                      fontSize: 10.5,
+                      fontSize: 9.5,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                     ),
                   ),

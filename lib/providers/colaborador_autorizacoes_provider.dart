@@ -27,6 +27,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   bool _ehAdministrador = false;
   bool _autorizacoesCarregadasComSucesso = false;
   bool _podeAcessarEtiquetas = false;
+  bool _podeFazerDevolucao = false;
 
   ColaboradorAutorizacoesModel get autorizacoes =>
       _autorizacoes ?? ColaboradorAutorizacoesModel.permitirTudo();
@@ -41,6 +42,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   bool get podeAcessarEtiquetas => _ehAdministrador || _podeAcessarEtiquetas;
 
   bool get podeFazerVenda => autorizacoes.objVendasPode.fazVenda;
+  bool get podeFazerDevolucao => _ehAdministrador || _podeFazerDevolucao;
   bool get podeLancarAssistenciaTecnica =>
       autorizacoes.objAssistenciaTecnicaPode.lancaServico;
   bool get podeEditarCliente => autorizacoes.objClientesPode.podeEditarCliente;
@@ -75,6 +77,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       _idUnicoDoUsuarioCarregado = null;
       _erro = null;
       _podeAcessarEtiquetas = kIsWeb && perfilAdmin;
+      _podeFazerDevolucao = perfilAdmin;
       _autorizacoesCarregadasComSucesso = perfilAdmin;
       notifyListeners();
       return;
@@ -110,10 +113,10 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
               ? ColaboradorAutorizacoesModel.permitirTudo()
               : carregadas;
       _idUnicoDoUsuarioCarregado = idUnicoDoUsuario;
+      _podeFazerDevolucao =
+          _ehAdministrador || carregadas.podeFazerDevolucao;
 
       if (!kIsWeb) {
-        // Etiquetas ainda não possui experiência Mobile. Evitamos introduzir
-        // chamada adicional ou alterar o comportamento Android/iOS nesta etapa.
         _podeAcessarEtiquetas = false;
       } else if (_ehAdministrador) {
         _podeAcessarEtiquetas = true;
@@ -129,6 +132,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
       _erro = e.toString();
       _autorizacoes ??= ColaboradorAutorizacoesModel.permitirTudo();
       _podeAcessarEtiquetas = kIsWeb && _ehAdministrador;
+      _podeFazerDevolucao = _ehAdministrador;
     } finally {
       _loading = false;
       notifyListeners();
@@ -144,6 +148,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     _ehAdministrador = false;
     _autorizacoesCarregadasComSucesso = false;
     _podeAcessarEtiquetas = false;
+    _podeFazerDevolucao = false;
     notifyListeners();
   }
 
@@ -158,6 +163,7 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
         detalhe.celularDeAcesso.trim().isEmpty;
 
     final bool semAutorizacaoOperacional =
+        !autorizacoes.podeFazerDevolucao &&
         !autorizacoes.objVendasPode.fazVenda &&
         !autorizacoes.objAssistenciaTecnicaPode.lancaServico &&
         !autorizacoes.objClientesPode.podeEditarCliente &&

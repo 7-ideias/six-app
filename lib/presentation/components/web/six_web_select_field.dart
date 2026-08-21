@@ -35,6 +35,9 @@ class _SixWebSelectFieldState extends State<SixWebSelectField> {
   Future<void> _openMenu() async {
     if (!widget.enabled || widget.items.isEmpty) return;
 
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool dark = Theme.of(context).brightness == Brightness.dark;
+
     final RenderBox? fieldBox = context.findRenderObject() as RenderBox?;
     final RenderBox? overlayBox =
         Overlay.of(context).context.findRenderObject() as RenderBox?;
@@ -56,7 +59,7 @@ class _SixWebSelectFieldState extends State<SixWebSelectField> {
     final String? selected = await showMenu<String>(
       context: context,
       position: position,
-      color: WebThemeTokens.of(context).menuBackground,
+      color: dark ? tokens.surfaceElevated : tokens.menuBackground,
       elevation: 10,
       constraints: BoxConstraints(
         minWidth: fieldSize.width,
@@ -64,41 +67,56 @@ class _SixWebSelectFieldState extends State<SixWebSelectField> {
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: WebThemeTokens.of(context).cardBorder),
+        side: BorderSide(color: tokens.cardBorder),
       ),
       items:
           widget.items.map((String item) {
             final bool selected = item == widget.value;
-            final WebThemeTokens tokens = WebThemeTokens.of(context);
             final ThemeData theme = Theme.of(context);
 
             return PopupMenuItem<String>(
               value: item,
               height: 50,
-              child: Row(
-                children: [
-                  Icon(
-                    selected
-                        ? Icons.check_circle_rounded
-                        : Icons.circle_outlined,
-                    size: 18,
-                    color: selected ? tokens.info : tokens.mutedText,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 9,
+                ),
+                decoration: BoxDecoration(
+                  color:
+                      selected ? tokens.selectedBackground : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color:
+                        selected ? tokens.selectedBorder : Colors.transparent,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      item,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: tokens.primaryText,
-                        fontWeight:
-                            selected ? FontWeight.w800 : FontWeight.w600,
-                        height: 1.2,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      selected
+                          ? Icons.check_circle_rounded
+                          : Icons.circle_outlined,
+                      size: 18,
+                      color: selected ? tokens.info : tokens.mutedText,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        item,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: tokens.primaryText,
+                          fontWeight:
+                              selected ? FontWeight.w800 : FontWeight.w600,
+                          height: 1.2,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           }).toList(),
@@ -115,6 +133,7 @@ class _SixWebSelectFieldState extends State<SixWebSelectField> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool dark = theme.brightness == Brightness.dark;
     final bool active = widget.enabled && (_hovered || _open);
 
     final Widget field = Semantics(
@@ -144,7 +163,13 @@ class _SixWebSelectFieldState extends State<SixWebSelectField> {
                   padding: const EdgeInsets.fromLTRB(14, 11, 12, 11),
                   decoration: BoxDecoration(
                     color:
-                        active ? tokens.surfaceMuted : tokens.inputBackground,
+                        active
+                            ? (dark
+                                ? tokens.surfaceElevated
+                                : tokens.surfaceMuted)
+                            : (dark
+                                ? tokens.surfaceElevated.withValues(alpha: 0.92)
+                                : tokens.inputBackground),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
                       color: active ? tokens.selectedBorder : tokens.cardBorder,
@@ -154,8 +179,10 @@ class _SixWebSelectFieldState extends State<SixWebSelectField> {
                         active
                             ? <BoxShadow>[
                               BoxShadow(
-                                color: tokens.info.withValues(alpha: 0.10),
-                                blurRadius: 16,
+                                color: tokens.info.withValues(
+                                  alpha: dark ? 0.14 : 0.10,
+                                ),
+                                blurRadius: dark ? 20 : 16,
                                 offset: const Offset(0, 8),
                               ),
                             ]
