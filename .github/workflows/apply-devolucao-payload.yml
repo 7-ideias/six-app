@@ -6,17 +6,23 @@ on:
       - feature/20260820-melhorias
     paths:
       - '.six-payload/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   aplicar:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-      - name: Obter codigo
+      - name: Obter codigo da branch da feature
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
 
       - name: Reconstruir arquivos da implementacao
@@ -40,4 +46,5 @@ jobs:
             exit 0
           fi
           git commit -m 'feat(devolucao): integrar jornada web e mobile'
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          TARGET_BRANCH="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          git push origin "HEAD:${TARGET_BRANCH}"
