@@ -6,7 +6,7 @@ class AppConfig {
 
   static const String autoCustomerBaseUrl = String.fromEnvironment(
     'PUBLIC_FRONTEND_URL',
-    defaultValue: 'https://six-app-iota.vercel.app/cliente/auto-cadastro',
+    defaultValue: 'https://sixoapp.com/cliente/auto-cadastro',
   );
 
   static String get publicFrontendOrigin {
