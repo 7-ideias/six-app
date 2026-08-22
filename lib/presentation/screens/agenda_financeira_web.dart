@@ -1781,6 +1781,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             ),
           ),
           OutlinedButton.icon(
+            style: _secondaryCtaStyle(theme),
             onPressed:
                 _carregando ? null : () => _consultar(mostrarFeedback: true),
             icon: const Icon(Icons.refresh_rounded),
@@ -1788,6 +1789,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           ),
           const SizedBox(width: 10),
           FilledButton.icon(
+            style: _primaryCtaStyle(theme),
             onPressed: _novoLancamento,
             icon: const Icon(Icons.add_rounded),
             label: const Text('Novo lançamento'),
@@ -1830,6 +1832,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           _drop('Status', _statusSelecionado, _status, _selecionarStatus),
           _multiSelectTipoPagamento(theme),
           FilledButton.icon(
+            style: _primaryCtaStyle(theme),
             onPressed:
                 _carregando ? null : () => _consultar(mostrarFeedback: true),
             icon: const Icon(Icons.search_rounded),
@@ -1962,6 +1965,42 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                   .toList(),
         );
       },
+    );
+  }
+
+  ButtonStyle _secondaryCtaStyle(ThemeData theme) {
+    final tokens = WebThemeTokens.of(context);
+    return OutlinedButton.styleFrom(
+      foregroundColor: tokens.info,
+      backgroundColor: Color.alphaBlend(
+        tokens.info.withValues(alpha: 0.06),
+        tokens.cardBackground,
+      ),
+      side: BorderSide(color: tokens.selectedBorder.withValues(alpha: 0.78)),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      textStyle: theme.textTheme.labelLarge?.copyWith(
+        fontWeight: FontWeight.w800,
+      ),
+    );
+  }
+
+  ButtonStyle _primaryCtaStyle(ThemeData theme) {
+    final tokens = WebThemeTokens.of(context);
+    final Color primary = theme.colorScheme.primary;
+    return FilledButton.styleFrom(
+      foregroundColor: Colors.white,
+      backgroundColor: Color.alphaBlend(
+        primary.withValues(alpha: 0.92),
+        tokens.surfaceElevated,
+      ),
+      disabledBackgroundColor: tokens.disabledBackground,
+      disabledForegroundColor: tokens.disabledForeground,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      textStyle: theme.textTheme.labelLarge?.copyWith(
+        fontWeight: FontWeight.w800,
+      ),
     );
   }
 

@@ -896,7 +896,6 @@ class _FakeOperacaoService implements OperacaoService {
   Future<DocumentoPdfResponse> imprimirComprovanteDaOperacao({
     required String idOperacao,
     required FormatoImpressaoOperacao formato,
-    required OperacaoVendaInput input,
   }) async {
     printCalls += 1;
     return const DocumentoPdfResponse(
