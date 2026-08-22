@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Appplanilha</string>
+	<string>SixoApp</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>appplanilha</string>
+	<string>SixoApp</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -50,7 +50,7 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>GIDClientID</key>
-	<string>194419403668-04a9qv3spjctqmcrssqu3vb6upgi6mg6.apps.googleusercontent.com</string>
+	<string>841074493827-2i7fbt2g0fsv7pn2ikg9k9hlfh6jl6ud.apps.googleusercontent.com</string>
 	<key>NSCameraUsageDescription</key>
 	<string>O Six precisa acessar a câmera para fotografar produtos e escanear códigos de barras no PDV.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -62,7 +62,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.194419403668-04a9qv3spjctqmcrssqu3vb6upgi6mg6</string>
+				<string>com.googleusercontent.apps.841074493827-2i7fbt2g0fsv7pn2ikg9k9hlfh6jl6ud</string>
 			</array>
 		</dict>
 	</array>

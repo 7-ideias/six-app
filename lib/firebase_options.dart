@@ -46,10 +46,10 @@ class DefaultFirebaseOptions {
   );
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAeeAVUUO0xOOKw7ifDf0hGKumrnooBGiU',
-    appId: '1:841074493827:ios:9fbc8a60d3d7e6aeb98eb6',
+    appId: '1:841074493827:ios:f1f96e7adc009a09b98eb6',
     messagingSenderId: '841074493827',
     projectId: 'sixpos-cd87e',
     storageBucket: 'sixpos-cd87e.firebasestorage.app',
-    iosBundleId: 'br.com.seteideias.appplanilha',
+    iosBundleId: 'com.sixoapp.app',
   );
 }
