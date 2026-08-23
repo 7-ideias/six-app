@@ -9,6 +9,11 @@ pubspec.lock
 .DS_Store
 /.flutter-plugins-dependencies
 /linux/
-/docs/
+/docs/*
+!/docs/ios-testflight-ci.md
 /screenshots/
-/docs/
+*.p8
+*.p12
+*.mobileprovision
+*.mobileprovision.base64.txt
+*.p12.base64.txt
