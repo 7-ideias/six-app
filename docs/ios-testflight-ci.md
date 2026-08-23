@@ -6,6 +6,7 @@ Este fluxo publica automaticamente o build iOS do SixoApp no TestFlight sem
 alterar Android, Web ou o codigo Flutter da aplicacao.
 
 - Workflow: `.github/workflows/ios-testflight.yml`
+- Script de resolucao: `scripts/ci/resolve_ios_testflight_build_config.py`
 - App: `com.sixoapp.app`
 - Team ID: `7FH3353D87`
 - Workspace iOS: `ios/Runner.xcworkspace`
@@ -149,11 +150,33 @@ O workflow resolve os defines reais do projeto antes do build:
 
 Origem de cada valor:
 
-- `API_BASE_URL`: default atual em `lib/core/config/app_config.dart`
-- `PUBLIC_FRONTEND_URL`: default atual em `lib/core/config/app_config.dart`
+- `API_BASE_URL`: `defaultValue` atual em `lib/core/config/app_config.dart`
+- `PUBLIC_FRONTEND_URL`: `defaultValue` atual em `lib/core/config/app_config.dart`
 - `APP_VERSION`: derivado do `pubspec.yaml`
 - `APP_BUILD_NUMBER`: derivado da estrategia descrita acima
 - `GOOGLE_IOS_CLIENT_ID`: `GIDClientID` em `ios/Runner/Info.plist`
+
+A resolucao agora e feita por `scripts/ci/resolve_ios_testflight_build_config.py`
+com parsing deterministico:
+
+- `pubspec.yaml`: leitura direta da linha `version:`
+- `app_config.dart`: varredura dos blocos `String.fromEnvironment(...)` e
+  coleta do `defaultValue` sem montar regex dinamica por nome de variavel
+- `Info.plist`: leitura preferencial por `/usr/libexec/PlistBuddy` ou `plutil`,
+  com fallback para `plistlib`
+
+Validacoes executadas antes do build:
+
+- nenhum valor obrigatorio pode ficar vazio;
+- `API_BASE_URL` e `PUBLIC_FRONTEND_URL` precisam ser URLs `http` ou `https`
+  validas;
+- `GOOGLE_IOS_CLIENT_ID` precisa existir no `Info.plist`, seguir o formato
+  esperado do Google OAuth e bater com um `CFBundleURLSchemes` reverso
+  correspondente;
+- `ITSAppUsesNonExemptEncryption` precisa existir uma vez com valor `false`.
+
+Em caso de falha, o script informa apenas qual configuracao nao conseguiu
+resolver e nunca imprime secrets.
 
 Nao foi criada secret nova para `GOOGLE_IOS_CLIENT_ID`, porque o valor ja faz
 parte da configuracao iOS versionada.
@@ -250,6 +273,7 @@ Os logs uteis do workflow mostram:
 - versoes do toolchain;
 - `build-name`;
 - `build-number`;
+- confirmacao de resolucao dos defines obrigatorios;
 - caminho final do `.ipa`;
 - sucesso/erro da validacao;
 - sucesso/erro do upload.
@@ -258,53 +282,9 @@ Os logs uteis do workflow mostram:
 
 Quando o certificado `Apple Distribution` mudar:
 
-1. exportar novo `.p12` com chave privada;
-2. converter para Base64;
-3. atualizar `IOS_DISTRIBUTION_CERTIFICATE_BASE64`;
-4. atualizar `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD`;
-5. executar um `workflow_dispatch` manual.
-
-## Rotacao da API Key
-
-Quando a App Store Connect API Key mudar:
-
-1. criar ou baixar a nova chave no App Store Connect;
-2. atualizar `APPLE_API_KEY_ID`;
-3. atualizar `APPLE_API_ISSUER_ID` se necessario;
-4. atualizar `APPLE_API_PRIVATE_KEY`;
-5. executar um `workflow_dispatch` manual.
-
-## Atualizacao do provisioning profile
-
-Quando o profile `SixoApp App Store` mudar:
-
-1. exportar ou baixar o novo `.mobileprovision`;
-2. converter para Base64;
-3. atualizar `IOS_PROVISIONING_PROFILE_BASE64`;
-4. executar um `workflow_dispatch` manual.
-
-## Como desabilitar temporariamente a publicacao automatica
-
-Opcoes simples:
-
-1. comentar/remover o bloco `push` do workflow;
-2. manter apenas `workflow_dispatch`;
-3. desabilitar o workflow no menu `Actions` do GitHub.
-
-## Rollback da configuracao de CI
-
-Para voltar ao estado anterior:
-
-1. remover `.github/workflows/ios-testflight.yml`;
-2. remover `ios/ExportOptions.plist` se quiser abandonar o fluxo;
-3. reverter a alteracao no `.gitignore`, se ela nao fizer mais sentido;
-4. validar que `ci.yml` e `bump-version-on-main.yml` continuam intactos.
-
-## Observacoes operacionais
-
-- O workflow depende de `ios/Podfile` e `ios/ExportOptions.plist` estarem
-  versionados junto com o restante da alteracao.
-- O `Info.plist` ja contem `ITSAppUsesNonExemptEncryption = false`; o workflow
-  valida isso e falha se a chave estiver ausente ou com outro valor.
-- O primeiro teste recomendado e manual, via `workflow_dispatch`, antes de
-  permitir publicacao automatica na `main`.
+1. exportar um novo `.p12` com chave privada;
+2. atualizar `IOS_DISTRIBUTION_CERTIFICATE_BASE64`;
+3. atualizar `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD`;
+4. revisar se o provisioning profile ainda corresponde ao novo certificado;
+5. se necessario, atualizar `IOS_PROVISIONING_PROFILE_BASE64`;
+6. executar novamente o workflow manualmente.
