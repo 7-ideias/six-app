@@ -1,5 +1,6 @@
 {
   "installCommand": "bash install_flutter.sh",
+  "ignoreCommand": "bash scripts/ci/vercel_ignore_build.sh",
   "buildCommand": "export PATH=\"$PWD/flutter/bin:$PATH\" && bash scripts/build_web_with_public_home.sh",
   "outputDirectory": "build/web",
   "redirects": [
