@@ -385,6 +385,61 @@ extension AgendaFinanceiraStatusWebPreferenciaApi
   }
 }
 
+enum CatalogoReservasPeriodoWebPreferencia {
+  hoje,
+  proximos7Dias,
+  esteMes,
+  proximoMes,
+  personalizado,
+}
+
+extension CatalogoReservasPeriodoWebPreferenciaApi
+    on CatalogoReservasPeriodoWebPreferencia {
+  String get codigo {
+    switch (this) {
+      case CatalogoReservasPeriodoWebPreferencia.hoje:
+        return 'HOJE';
+      case CatalogoReservasPeriodoWebPreferencia.proximos7Dias:
+        return 'PROXIMOS_7_DIAS';
+      case CatalogoReservasPeriodoWebPreferencia.esteMes:
+        return 'ESTE_MES';
+      case CatalogoReservasPeriodoWebPreferencia.proximoMes:
+        return 'PROXIMO_MES';
+      case CatalogoReservasPeriodoWebPreferencia.personalizado:
+        return 'PERSONALIZADO';
+    }
+  }
+
+  static CatalogoReservasPeriodoWebPreferencia? tryFromCodigo(dynamic value) {
+    final String codigo = value?.toString().trim().toUpperCase() ?? '';
+    switch (codigo) {
+      case 'HOJE':
+        return CatalogoReservasPeriodoWebPreferencia.hoje;
+      case 'PROXIMOS_7_DIAS':
+      case 'PROXIMOS7DIAS':
+        return CatalogoReservasPeriodoWebPreferencia.proximos7Dias;
+      case 'ESTE_MES':
+      case 'ESTE_MÊS':
+        return CatalogoReservasPeriodoWebPreferencia.esteMes;
+      case 'PROXIMO_MES':
+      case 'PRÓXIMO_MÊS':
+        return CatalogoReservasPeriodoWebPreferencia.proximoMes;
+      case 'PERSONALIZADO':
+      case 'INTERVALO_PERSONALIZADO':
+        return CatalogoReservasPeriodoWebPreferencia.personalizado;
+      default:
+        return null;
+    }
+  }
+
+  static CatalogoReservasPeriodoWebPreferencia fromCodigo(
+    dynamic value,
+    CatalogoReservasPeriodoWebPreferencia fallback,
+  ) {
+    return tryFromCodigo(value) ?? fallback;
+  }
+}
+
 enum AtendimentosCriadosStatusPagamentoFiltro { todos, emAberto, liquidado }
 
 extension AtendimentosCriadosStatusPagamentoFiltroApi
@@ -439,6 +494,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
   final AgendaFinanceiraTipoWebPreferencia agendaFinanceiraTipoWeb;
   final AgendaFinanceiraStatusWebPreferencia agendaFinanceiraStatusWeb;
   final List<String> agendaFinanceiraTipoDePagamentoWeb;
+  final CatalogoReservasFiltrosWebPreferencia catalogoReservasFiltrosWeb;
+  final ConsultaVendasFiltrosWebPreferencia consultaVendasFiltrosWeb;
   final AtendimentosCriadosFiltrosWebPreferencia atendimentosCriadosFiltrosWeb;
   final AtendimentosCriadosFiltrosMobilePreferencia
   atendimentosCriadosFiltrosMobile;
@@ -456,6 +513,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
     AgendaFinanceiraTipoWebPreferencia? agendaFinanceiraTipoWeb,
     AgendaFinanceiraStatusWebPreferencia? agendaFinanceiraStatusWeb,
     List<String>? agendaFinanceiraTipoDePagamentoWeb,
+    CatalogoReservasFiltrosWebPreferencia? catalogoReservasFiltrosWeb,
+    ConsultaVendasFiltrosWebPreferencia? consultaVendasFiltrosWeb,
     AtendimentosCriadosFiltrosWebPreferencia? atendimentosCriadosFiltrosWeb,
     AtendimentosCriadosFiltrosMobilePreferencia?
     atendimentosCriadosFiltrosMobile,
@@ -486,6 +545,12 @@ class PreferenciasIndividuaisDoUsuarioModel {
        agendaFinanceiraTipoDePagamentoWeb = List<String>.unmodifiable(
          _normalizarListaDeStrings(agendaFinanceiraTipoDePagamentoWeb),
        ),
+       catalogoReservasFiltrosWeb =
+           catalogoReservasFiltrosWeb ??
+           CatalogoReservasFiltrosWebPreferencia.vazia(),
+       consultaVendasFiltrosWeb =
+           consultaVendasFiltrosWeb ??
+           ConsultaVendasFiltrosWebPreferencia.vazia(),
        atendimentosCriadosFiltrosWeb =
            atendimentosCriadosFiltrosWeb ??
            AtendimentosCriadosFiltrosWebPreferencia.vazia(),
@@ -512,6 +577,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
       agendaFinanceiraTipoWeb: AgendaFinanceiraTipoWebPreferencia.todos,
       agendaFinanceiraStatusWeb: AgendaFinanceiraStatusWebPreferencia.todos,
       agendaFinanceiraTipoDePagamentoWeb: const <String>[],
+      catalogoReservasFiltrosWeb: CatalogoReservasFiltrosWebPreferencia.vazia(),
+      consultaVendasFiltrosWeb: ConsultaVendasFiltrosWebPreferencia.vazia(),
       atendimentosCriadosFiltrosWeb:
           AtendimentosCriadosFiltrosWebPreferencia.vazia(),
       atendimentosCriadosFiltrosMobile:
@@ -577,6 +644,13 @@ class PreferenciasIndividuaisDoUsuarioModel {
       agendaFinanceiraTipoDePagamentoWeb: _normalizarListaDeStrings(
         json['agendaFinanceiraTipoDePagamentoWeb'],
       ),
+      catalogoReservasFiltrosWeb:
+          CatalogoReservasFiltrosWebPreferencia.fromJson(
+            json['catalogoReservasFiltrosWeb'],
+          ),
+      consultaVendasFiltrosWeb: ConsultaVendasFiltrosWebPreferencia.fromJson(
+        json['consultaVendasFiltrosWeb'],
+      ),
       atendimentosCriadosFiltrosWeb:
           AtendimentosCriadosFiltrosWebPreferencia.fromJson(
             json['atendimentosCriadosFiltrosWeb'],
@@ -603,6 +677,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
       'agendaFinanceiraTipoWeb': agendaFinanceiraTipoWeb.codigo,
       'agendaFinanceiraStatusWeb': agendaFinanceiraStatusWeb.codigo,
       'agendaFinanceiraTipoDePagamentoWeb': agendaFinanceiraTipoDePagamentoWeb,
+      'catalogoReservasFiltrosWeb': catalogoReservasFiltrosWeb.toJson(),
+      'consultaVendasFiltrosWeb': consultaVendasFiltrosWeb.toJson(),
       'atendimentosCriadosFiltrosWeb': atendimentosCriadosFiltrosWeb.toJson(),
       'atendimentosCriadosFiltrosMobile':
           atendimentosCriadosFiltrosMobile.toJson(),
@@ -622,6 +698,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
     AgendaFinanceiraTipoWebPreferencia? agendaFinanceiraTipoWeb,
     AgendaFinanceiraStatusWebPreferencia? agendaFinanceiraStatusWeb,
     List<String>? agendaFinanceiraTipoDePagamentoWeb,
+    CatalogoReservasFiltrosWebPreferencia? catalogoReservasFiltrosWeb,
+    ConsultaVendasFiltrosWebPreferencia? consultaVendasFiltrosWeb,
     AtendimentosCriadosFiltrosWebPreferencia? atendimentosCriadosFiltrosWeb,
     AtendimentosCriadosFiltrosMobilePreferencia?
     atendimentosCriadosFiltrosMobile,
@@ -659,6 +737,10 @@ class PreferenciasIndividuaisDoUsuarioModel {
       agendaFinanceiraTipoDePagamentoWeb:
           agendaFinanceiraTipoDePagamentoWeb ??
           this.agendaFinanceiraTipoDePagamentoWeb,
+      catalogoReservasFiltrosWeb:
+          catalogoReservasFiltrosWeb ?? this.catalogoReservasFiltrosWeb,
+      consultaVendasFiltrosWeb:
+          consultaVendasFiltrosWeb ?? this.consultaVendasFiltrosWeb,
       atendimentosCriadosFiltrosWeb:
           atendimentosCriadosFiltrosWeb ?? this.atendimentosCriadosFiltrosWeb,
       atendimentosCriadosFiltrosMobile:
@@ -684,6 +766,272 @@ class PreferenciasIndividuaisDoUsuarioModel {
           .toList(growable: false);
     }
     return <String>[];
+  }
+}
+
+class CatalogoReservasFiltrosWebPreferencia {
+  const CatalogoReservasFiltrosWebPreferencia({
+    this.status = const <String>[],
+    this.periodo = CatalogoReservasPeriodoWebPreferencia.proximos7Dias,
+    this.dataInicio,
+    this.dataFim,
+  });
+
+  final List<String> status;
+  final CatalogoReservasPeriodoWebPreferencia periodo;
+  final DateTime? dataInicio;
+  final DateTime? dataFim;
+
+  factory CatalogoReservasFiltrosWebPreferencia.vazia() {
+    return const CatalogoReservasFiltrosWebPreferencia();
+  }
+
+  factory CatalogoReservasFiltrosWebPreferencia.fromJson(dynamic json) {
+    if (json is! Map<String, dynamic>) {
+      return CatalogoReservasFiltrosWebPreferencia.vazia();
+    }
+
+    return CatalogoReservasFiltrosWebPreferencia(
+      status: PreferenciasIndividuaisDoUsuarioModel._normalizarListaDeStrings(
+        json['status'],
+      ),
+      periodo: CatalogoReservasPeriodoWebPreferenciaApi.fromCodigo(
+        json['periodo'],
+        CatalogoReservasPeriodoWebPreferencia.proximos7Dias,
+      ),
+      dataInicio: _dateFromJson(json['dataInicio']),
+      dataFim: _dateFromJson(json['dataFim']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    final List<String> statusNormalizado =
+        PreferenciasIndividuaisDoUsuarioModel._normalizarListaDeStrings(status)
+          ..sort();
+    return <String, dynamic>{
+      if (statusNormalizado.isNotEmpty) 'status': statusNormalizado,
+      if (periodo != CatalogoReservasPeriodoWebPreferencia.proximos7Dias)
+        'periodo': periodo.codigo,
+      if (periodo == CatalogoReservasPeriodoWebPreferencia.personalizado &&
+          dataInicio != null)
+        'dataInicio': _dateToJson(dataInicio!),
+      if (periodo == CatalogoReservasPeriodoWebPreferencia.personalizado &&
+          dataFim != null)
+        'dataFim': _dateToJson(dataFim!),
+    };
+  }
+
+  static DateTime? _dateFromJson(dynamic value) {
+    final String raw = value?.toString().trim() ?? '';
+    if (raw.isEmpty) return null;
+    final DateTime? parsed = DateTime.tryParse(raw);
+    if (parsed == null) return null;
+    return DateTime(parsed.year, parsed.month, parsed.day);
+  }
+
+  static String _dateToJson(DateTime value) {
+    final DateTime date = DateTime(value.year, value.month, value.day);
+    final String year = date.year.toString().padLeft(4, '0');
+    final String month = date.month.toString().padLeft(2, '0');
+    final String day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
+}
+
+enum ConsultaVendasPeriodoWebPreferencia {
+  hoje,
+  ultimos7Dias,
+  ultimos30Dias,
+  esteMes,
+  mesPassado,
+  personalizado,
+}
+
+extension ConsultaVendasPeriodoWebPreferenciaApi
+    on ConsultaVendasPeriodoWebPreferencia {
+  String get codigo {
+    switch (this) {
+      case ConsultaVendasPeriodoWebPreferencia.hoje:
+        return 'HOJE';
+      case ConsultaVendasPeriodoWebPreferencia.ultimos7Dias:
+        return 'ULTIMOS_7_DIAS';
+      case ConsultaVendasPeriodoWebPreferencia.ultimos30Dias:
+        return 'ULTIMOS_30_DIAS';
+      case ConsultaVendasPeriodoWebPreferencia.esteMes:
+        return 'ESTE_MES';
+      case ConsultaVendasPeriodoWebPreferencia.mesPassado:
+        return 'MES_PASSADO';
+      case ConsultaVendasPeriodoWebPreferencia.personalizado:
+        return 'PERSONALIZADO';
+    }
+  }
+
+  static ConsultaVendasPeriodoWebPreferencia? tryFromCodigo(dynamic value) {
+    final String codigo = value?.toString().trim().toUpperCase() ?? '';
+    switch (codigo) {
+      case 'HOJE':
+        return ConsultaVendasPeriodoWebPreferencia.hoje;
+      case 'ULTIMOS_7_DIAS':
+      case 'ÚLTIMOS_7_DIAS':
+      case 'ULTIMOS7DIAS':
+        return ConsultaVendasPeriodoWebPreferencia.ultimos7Dias;
+      case 'ULTIMOS_30_DIAS':
+      case 'ÚLTIMOS_30_DIAS':
+      case 'ULTIMOS30DIAS':
+        return ConsultaVendasPeriodoWebPreferencia.ultimos30Dias;
+      case 'ESTE_MES':
+      case 'ESTE_MÊS':
+        return ConsultaVendasPeriodoWebPreferencia.esteMes;
+      case 'MES_PASSADO':
+      case 'MÊS_PASSADO':
+        return ConsultaVendasPeriodoWebPreferencia.mesPassado;
+      case 'PERSONALIZADO':
+      case 'INTERVALO_PERSONALIZADO':
+        return ConsultaVendasPeriodoWebPreferencia.personalizado;
+      default:
+        return null;
+    }
+  }
+
+  static ConsultaVendasPeriodoWebPreferencia fromCodigo(
+    dynamic value,
+    ConsultaVendasPeriodoWebPreferencia fallback,
+  ) {
+    return tryFromCodigo(value) ?? fallback;
+  }
+}
+
+class ConsultaVendasFiltrosWebPreferencia {
+  const ConsultaVendasFiltrosWebPreferencia({
+    this.busca = '',
+    this.periodo = ConsultaVendasPeriodoWebPreferencia.ultimos30Dias,
+    this.dataInicio,
+    this.dataFim,
+    this.statusFinanceiro,
+    this.statusDevolucao,
+    this.valorMinimo = '',
+    this.valorMaximo = '',
+    this.ordenacao = 'MAIS_RECENTES',
+    this.tamanhoPagina = 25,
+  });
+
+  static const Set<String> _ordenacoesValidas = <String>{
+    'MAIS_RECENTES',
+    'MAIS_ANTIGAS',
+    'MAIOR_VALOR',
+    'MENOR_VALOR',
+  };
+
+  static const Set<String> _statusFinanceirosValidos = <String>{
+    'QUITADA',
+    'PARCIAL',
+    'EM_ABERTO',
+    'CANCELADA',
+  };
+
+  static const Set<String> _statusDevolucaoValidos = <String>{
+    'SEM_DEVOLUCAO',
+    'PARCIAL',
+    'TOTAL',
+  };
+
+  final String busca;
+  final ConsultaVendasPeriodoWebPreferencia periodo;
+  final DateTime? dataInicio;
+  final DateTime? dataFim;
+  final String? statusFinanceiro;
+  final String? statusDevolucao;
+  final String valorMinimo;
+  final String valorMaximo;
+  final String ordenacao;
+  final int tamanhoPagina;
+
+  factory ConsultaVendasFiltrosWebPreferencia.vazia() {
+    return const ConsultaVendasFiltrosWebPreferencia();
+  }
+
+  factory ConsultaVendasFiltrosWebPreferencia.fromJson(dynamic json) {
+    if (json is! Map<String, dynamic>) {
+      return ConsultaVendasFiltrosWebPreferencia.vazia();
+    }
+
+    return ConsultaVendasFiltrosWebPreferencia(
+      busca: json['busca']?.toString().trim() ?? '',
+      periodo: ConsultaVendasPeriodoWebPreferenciaApi.fromCodigo(
+        json['periodo'],
+        ConsultaVendasPeriodoWebPreferencia.ultimos30Dias,
+      ),
+      dataInicio: _dateFromJson(json['dataInicio']),
+      dataFim: _dateFromJson(json['dataFim']),
+      statusFinanceiro: _validarCodigo(
+        json['statusFinanceiro'],
+        _statusFinanceirosValidos,
+      ),
+      statusDevolucao: _validarCodigo(
+        json['statusDevolucao'],
+        _statusDevolucaoValidos,
+      ),
+      valorMinimo: json['valorMinimo']?.toString().trim() ?? '',
+      valorMaximo: json['valorMaximo']?.toString().trim() ?? '',
+      ordenacao:
+          _validarCodigo(json['ordenacao'], _ordenacoesValidas) ??
+          'MAIS_RECENTES',
+      tamanhoPagina: _intFromJson(json['tamanhoPagina']) ?? 25,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      if (busca.trim().isNotEmpty) 'busca': busca.trim(),
+      if (periodo != ConsultaVendasPeriodoWebPreferencia.ultimos30Dias)
+        'periodo': periodo.codigo,
+      if (periodo == ConsultaVendasPeriodoWebPreferencia.personalizado &&
+          dataInicio != null)
+        'dataInicio': _dateToJson(dataInicio!),
+      if (periodo == ConsultaVendasPeriodoWebPreferencia.personalizado &&
+          dataFim != null)
+        'dataFim': _dateToJson(dataFim!),
+      if ((statusFinanceiro ?? '').trim().isNotEmpty)
+        'statusFinanceiro': statusFinanceiro!.trim(),
+      if ((statusDevolucao ?? '').trim().isNotEmpty)
+        'statusDevolucao': statusDevolucao!.trim(),
+      if (valorMinimo.trim().isNotEmpty) 'valorMinimo': valorMinimo.trim(),
+      if (valorMaximo.trim().isNotEmpty) 'valorMaximo': valorMaximo.trim(),
+      if (ordenacao != 'MAIS_RECENTES') 'ordenacao': ordenacao,
+      if (tamanhoPagina != 25) 'tamanhoPagina': tamanhoPagina,
+    };
+  }
+
+  static DateTime? _dateFromJson(dynamic value) {
+    final String raw = value?.toString().trim() ?? '';
+    if (raw.isEmpty) return null;
+    final DateTime? parsed = DateTime.tryParse(raw);
+    if (parsed == null) return null;
+    return DateTime(parsed.year, parsed.month, parsed.day);
+  }
+
+  static String _dateToJson(DateTime value) {
+    final DateTime date = DateTime(value.year, value.month, value.day);
+    final String year = date.year.toString().padLeft(4, '0');
+    final String month = date.month.toString().padLeft(2, '0');
+    final String day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
+
+  static String? _validarCodigo(dynamic value, Set<String> validos) {
+    final String raw = value?.toString().trim().toUpperCase() ?? '';
+    if (raw.isEmpty || !validos.contains(raw)) {
+      return null;
+    }
+    return raw;
+  }
+
+  static int? _intFromJson(dynamic value) {
+    if (value is num) {
+      final int parsed = value.toInt();
+      return parsed > 0 ? parsed : null;
+    }
+    return int.tryParse(value?.toString() ?? '');
   }
 }
 

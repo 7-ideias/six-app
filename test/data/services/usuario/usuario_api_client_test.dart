@@ -28,6 +28,18 @@ void main() {
       await client.atualizarPreferenciasIndividuais(<String, dynamic>{
         'agendaFinanceiraPeriodoWeb': 'ESTE_MES',
         'agendaFinanceiraTipoDePagamentoWeb': <String>['tipo2', 'tipo3'],
+        'catalogoReservasFiltrosWeb': <String, dynamic>{
+          'status': <String>['CONFIRMADA'],
+          'periodo': 'PERSONALIZADO',
+          'dataInicio': '2026-08-03',
+          'dataFim': '2026-08-12',
+        },
+        'consultaVendasFiltrosWeb': <String, dynamic>{
+          'busca': 'joao',
+          'periodo': 'ULTIMOS_30_DIAS',
+          'statusFinanceiro': 'QUITADA',
+          'ordenacao': 'MAIOR_VALOR',
+        },
         'atendimentosCriadosFiltrosWeb': <String, dynamic>{
           'busca': 'cliente teste',
           'statusKey': 'id:3',
@@ -54,6 +66,18 @@ void main() {
       expect(body['payload'], <String, dynamic>{
         'agendaFinanceiraPeriodoWeb': 'ESTE_MES',
         'agendaFinanceiraTipoDePagamentoWeb': <String>['tipo2', 'tipo3'],
+        'catalogoReservasFiltrosWeb': <String, dynamic>{
+          'status': <String>['CONFIRMADA'],
+          'periodo': 'PERSONALIZADO',
+          'dataInicio': '2026-08-03',
+          'dataFim': '2026-08-12',
+        },
+        'consultaVendasFiltrosWeb': <String, dynamic>{
+          'busca': 'joao',
+          'periodo': 'ULTIMOS_30_DIAS',
+          'statusFinanceiro': 'QUITADA',
+          'ordenacao': 'MAIOR_VALOR',
+        },
         'atendimentosCriadosFiltrosWeb': <String, dynamic>{
           'busca': 'cliente teste',
           'statusKey': 'id:3',

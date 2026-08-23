@@ -118,6 +118,94 @@ void main() {
       );
     });
 
+    test('serializa e desserializa filtros web de reservas do catálogo', () {
+      final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+        const <String, dynamic>{
+          'catalogoReservasFiltrosWeb': <String, dynamic>{
+            'status': <String>['CONFIRMADA', 'RECEBIDA', 'CONFIRMADA'],
+            'periodo': 'PERSONALIZADO',
+            'dataInicio': '2026-08-03',
+            'dataFim': '2026-08-12',
+          },
+        },
+      );
+
+      final filtros = preferencias.catalogoReservasFiltrosWeb;
+
+      expect(filtros.status, <String>['CONFIRMADA', 'RECEBIDA']);
+      expect(
+        filtros.periodo,
+        CatalogoReservasPeriodoWebPreferencia.personalizado,
+      );
+      expect(filtros.dataInicio, DateTime(2026, 8, 3));
+      expect(filtros.dataFim, DateTime(2026, 8, 12));
+      expect(filtros.toJson(), <String, dynamic>{
+        'status': <String>['CONFIRMADA', 'RECEBIDA'],
+        'periodo': 'PERSONALIZADO',
+        'dataInicio': '2026-08-03',
+        'dataFim': '2026-08-12',
+      });
+      expect(
+        PreferenciasIndividuaisDoUsuarioModel.fromJson(
+          const <String, dynamic>{},
+        ).catalogoReservasFiltrosWeb.toJson(),
+        isEmpty,
+      );
+    });
+
+    test('serializa e desserializa filtros web da consulta de vendas', () {
+      final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+        const <String, dynamic>{
+          'consultaVendasFiltrosWeb': <String, dynamic>{
+            'busca': 'joao',
+            'periodo': 'PERSONALIZADO',
+            'dataInicio': '2026-08-05',
+            'dataFim': '2026-08-23',
+            'statusFinanceiro': 'QUITADA',
+            'statusDevolucao': 'PARCIAL',
+            'valorMinimo': '100',
+            'valorMaximo': '900',
+            'ordenacao': 'MAIOR_VALOR',
+            'tamanhoPagina': 50,
+          },
+        },
+      );
+
+      final filtros = preferencias.consultaVendasFiltrosWeb;
+
+      expect(filtros.busca, 'joao');
+      expect(
+        filtros.periodo,
+        ConsultaVendasPeriodoWebPreferencia.personalizado,
+      );
+      expect(filtros.dataInicio, DateTime(2026, 8, 5));
+      expect(filtros.dataFim, DateTime(2026, 8, 23));
+      expect(filtros.statusFinanceiro, 'QUITADA');
+      expect(filtros.statusDevolucao, 'PARCIAL');
+      expect(filtros.valorMinimo, '100');
+      expect(filtros.valorMaximo, '900');
+      expect(filtros.ordenacao, 'MAIOR_VALOR');
+      expect(filtros.tamanhoPagina, 50);
+      expect(filtros.toJson(), <String, dynamic>{
+        'busca': 'joao',
+        'periodo': 'PERSONALIZADO',
+        'dataInicio': '2026-08-05',
+        'dataFim': '2026-08-23',
+        'statusFinanceiro': 'QUITADA',
+        'statusDevolucao': 'PARCIAL',
+        'valorMinimo': '100',
+        'valorMaximo': '900',
+        'ordenacao': 'MAIOR_VALOR',
+        'tamanhoPagina': 50,
+      });
+      expect(
+        PreferenciasIndividuaisDoUsuarioModel.fromJson(
+          const <String, dynamic>{},
+        ).consultaVendasFiltrosWeb.toJson(),
+        isEmpty,
+      );
+    });
+
     test('mantem multiplos filtros web de atendimentos criados', () {
       final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
         const <String, dynamic>{
