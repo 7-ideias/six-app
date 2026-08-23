@@ -58,14 +58,19 @@ Xcode usada em cada execucao fica registrada no log do job.
 
 ## Processo de signing
 
-O projeto nao versiona `DEVELOPMENT_TEAM` no `project.pbxproj`, entao o
-workflow injeta o signing no `xcodebuild archive` sem alterar o projeto:
+O signing manual fica versionado no target `Runner`, configuracao `Release`,
+em `ios/Runner.xcodeproj/project.pbxproj`:
 
 - `DEVELOPMENT_TEAM=7FH3353D87`
 - `PRODUCT_BUNDLE_IDENTIFIER=com.sixoapp.app`
 - `CODE_SIGN_STYLE=Manual`
 - `CODE_SIGN_IDENTITY=Apple Distribution`
 - `PROVISIONING_PROFILE_SPECIFIER=SixoApp App Store`
+
+Esses valores sao aplicados apenas ao app `Runner`. O workflow nao injeta mais
+esses overrides no `xcodebuild archive`, evitando que targets de dependencias
+como `Pods-Runner`, `FirebaseCore`, `GoogleSignIn`, `AppAuth` e
+`image_picker_ios` recebam provisioning profile indevido.
 
 O certificado `.p12` e importado em uma keychain temporaria criada no runner.
 Depois do job, a keychain e apagada.
@@ -115,9 +120,11 @@ O pipeline gera:
 2. archive assinado via `xcodebuild`;
 3. export do `.ipa` via `xcodebuild -exportArchive`.
 
-`flutter build ipa` nao foi adotado aqui porque o projeto nao versiona o team
-de signing no `project.pbxproj`. O `xcodebuild archive` com parametros
-explicitos reduz risco sem alterar o projeto iOS existente.
+O `xcodebuild archive` usa apenas argumentos gerais do build, como workspace,
+scheme, configuracao, destino, `archivePath`, `FLUTTER_BUILD_NAME` e
+`FLUTTER_BUILD_NUMBER`. O provisioning profile continua sendo consumido no
+archive/export a partir do signing do target `Runner` e do
+`ios/ExportOptions.plist`, sem propagacao global para os Pods.
 
 ## Estrategia de versionamento
 

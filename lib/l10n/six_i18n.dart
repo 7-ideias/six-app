@@ -710,7 +710,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.password': 'Senha',
     'auth.forgotPassword': 'Esqueceu a senha?',
     'auth.continue': 'Continuar',
-    'auth.noAccount': 'Ainda não tem uma conta?',
+    'auth.noAccount': 'Ainda não tem uma contaXPTO?',
     'auth.createAccount': 'Criar conta',
     'auth.signInWithApple': 'Entrar com Apple',
     'auth.signInWithGoogle': 'Entrar com Google',
