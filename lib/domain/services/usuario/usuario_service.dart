@@ -78,6 +78,7 @@ class UsuarioService {
     String? agendaFinanceiraStatusWeb,
     List<String>? agendaFinanceiraTipoDePagamentoWeb,
     Map<String, dynamic>? catalogoReservasFiltrosWeb,
+    Map<String, dynamic>? consultaVendasFiltrosWeb,
     Map<String, dynamic>? atendimentosCriadosFiltrosWeb,
     Map<String, dynamic>? atendimentosCriadosFiltrosMobile,
   }) async {
@@ -125,6 +126,9 @@ class UsuarioService {
     }
     if (catalogoReservasFiltrosWeb != null) {
       body['catalogoReservasFiltrosWeb'] = catalogoReservasFiltrosWeb;
+    }
+    if (consultaVendasFiltrosWeb != null) {
+      body['consultaVendasFiltrosWeb'] = consultaVendasFiltrosWeb;
     }
     if (atendimentosCriadosFiltrosWeb != null) {
       body['atendimentosCriadosFiltrosWeb'] = atendimentosCriadosFiltrosWeb;

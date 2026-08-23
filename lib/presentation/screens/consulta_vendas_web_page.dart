@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -5,9 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/consulta_vendas_models.dart';
+import '../../data/models/usuario_model.dart';
 import '../../data/services/vendas/consulta_vendas_api_client.dart';
+import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
+import '../../providers/usuario_provider.dart';
 import '../components/six_backend_loading.dart';
 import '../components/web/six_web_select_field.dart';
 import '../theme/web_theme_tokens.dart';
@@ -29,34 +33,73 @@ class ConsultaVendasWebPage extends StatefulWidget {
 }
 
 class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
+  static const String _periodoHoje = 'Hoje';
+  static const String _periodoUltimos7Dias = 'Últimos 7 dias';
+  static const String _periodoUltimos30Dias = 'Últimos 30 dias';
+  static const String _periodoEsteMes = 'Este mês';
+  static const String _periodoMesPassado = 'Mês passado';
+  static const String _periodoIntervaloPersonalizado =
+      'Intervalo personalizado';
+  static const List<String> _periodosFiltroData = <String>[
+    _periodoHoje,
+    _periodoUltimos7Dias,
+    _periodoUltimos30Dias,
+    _periodoEsteMes,
+    _periodoMesPassado,
+    _periodoIntervaloPersonalizado,
+  ];
+
   late final ConsultaVendasApiClient _api;
+  final UsuarioService _usuarioService = UsuarioService();
+  final UsuarioProvider _usuarioProvider = UsuarioProvider();
   final TextEditingController _buscaController = TextEditingController();
   final TextEditingController _valorMinimoController = TextEditingController();
   final TextEditingController _valorMaximoController = TextEditingController();
 
   late DateTime _dataInicial;
   late DateTime _dataFinal;
+  late DateTime _dataInicioPersonalizada;
+  late DateTime _dataFimPersonalizada;
   String? _statusFinanceiro;
   String? _statusDevolucao;
+  String _periodoSelecionado = _periodoUltimos30Dias;
   String _ordenacao = 'MAIS_RECENTES';
   int _tamanhoPagina = 25;
+  Timer? _salvarFiltrosDebounce;
 
   ConsultaVendasResponse? _resultado;
   bool _carregando = false;
+  bool _aplicandoPreferencias = false;
+  bool _usuarioAlterouFiltros = false;
   String? _erro;
 
   @override
   void initState() {
     super.initState();
     _api = widget.apiClient ?? HttpConsultaVendasApiClient();
-    final DateTime hoje = DateTime.now();
-    _dataFinal = DateTime(hoje.year, hoje.month, hoje.day);
-    _dataInicial = _dataFinal.subtract(const Duration(days: 29));
-    WidgetsBinding.instance.addPostFrameCallback((_) => _carregar());
+    final DateTime hoje = _hojeNormalizado();
+    _dataFinal = hoje;
+    _dataInicial = hoje.subtract(const Duration(days: 29));
+    _dataInicioPersonalizada = _dataInicial;
+    _dataFimPersonalizada = _dataFinal;
+    _buscaController.addListener(_onTextoFiltrosChanged);
+    _valorMinimoController.addListener(_onTextoFiltrosChanged);
+    _valorMaximoController.addListener(_onTextoFiltrosChanged);
+    Future<void>.microtask(() async {
+      await _restaurarPreferenciasConsultaVendas();
+      await _carregar(pagina: 0);
+      unawaited(
+        _restaurarPreferenciasConsultaVendasBackend(recarregarSeAlterou: true),
+      );
+    });
   }
 
   @override
   void dispose() {
+    _salvarFiltrosDebounce?.cancel();
+    _buscaController.removeListener(_onTextoFiltrosChanged);
+    _valorMinimoController.removeListener(_onTextoFiltrosChanged);
+    _valorMaximoController.removeListener(_onTextoFiltrosChanged);
     _buscaController.dispose();
     _valorMinimoController.dispose();
     _valorMaximoController.dispose();
@@ -99,44 +142,118 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
     );
   }
 
-  Future<void> _selecionarData({required bool inicial}) async {
-    final DateTime atual = inicial ? _dataInicial : _dataFinal;
+  bool get _usaPeriodoPersonalizado =>
+      _periodoSelecionado == _periodoIntervaloPersonalizado;
+
+  DateTime _hojeNormalizado() {
+    final DateTime agora = DateTime.now();
+    return DateTime(agora.year, agora.month, agora.day);
+  }
+
+  DateTime _normalizarData(DateTime value) {
+    return DateTime(value.year, value.month, value.day);
+  }
+
+  DateTimeRange _resolverPeriodoSelecionado() {
+    final DateTime hoje = _hojeNormalizado();
+    switch (_periodoSelecionado) {
+      case _periodoHoje:
+        return DateTimeRange(start: hoje, end: hoje);
+      case _periodoUltimos7Dias:
+        return DateTimeRange(
+          start: hoje.subtract(const Duration(days: 6)),
+          end: hoje,
+        );
+      case _periodoEsteMes:
+        return DateTimeRange(
+          start: DateTime(hoje.year, hoje.month, 1),
+          end: hoje,
+        );
+      case _periodoMesPassado:
+        final DateTime inicioMesAtual = DateTime(hoje.year, hoje.month, 1);
+        final DateTime ultimoDiaMesPassado = inicioMesAtual.subtract(
+          const Duration(days: 1),
+        );
+        return DateTimeRange(
+          start: DateTime(
+            ultimoDiaMesPassado.year,
+            ultimoDiaMesPassado.month,
+            1,
+          ),
+          end: ultimoDiaMesPassado,
+        );
+      case _periodoIntervaloPersonalizado:
+        final DateTime inicio = _normalizarData(_dataInicioPersonalizada);
+        final DateTime fim = _normalizarData(_dataFimPersonalizada);
+        return DateTimeRange(
+          start: inicio.isAfter(fim) ? fim : inicio,
+          end: fim.isBefore(inicio) ? inicio : fim,
+        );
+      case _periodoUltimos30Dias:
+      default:
+        return DateTimeRange(
+          start: hoje.subtract(const Duration(days: 29)),
+          end: hoje,
+        );
+    }
+  }
+
+  void _sincronizarPeriodoComDatas() {
+    final DateTimeRange periodo = _resolverPeriodoSelecionado();
+    _dataInicial = periodo.start;
+    _dataFinal = periodo.end;
+  }
+
+  void _ajustarPeriodoPersonalizadoSeguro() {
+    final DateTime inicio = _normalizarData(_dataInicioPersonalizada);
+    final DateTime fim = _normalizarData(_dataFimPersonalizada);
+    if (fim.isBefore(inicio)) {
+      _dataFimPersonalizada = inicio;
+    }
+  }
+
+  Future<void> _selecionarDataPersonalizada({required bool inicial}) async {
+    final DateTime atual =
+        inicial ? _dataInicioPersonalizada : _dataFimPersonalizada;
+    final DateTime firstDate =
+        inicial ? DateTime(2020) : _dataInicioPersonalizada;
     final DateTime? selecionada = await showDatePicker(
       context: context,
       initialDate: atual,
-      firstDate: DateTime(2020),
+      firstDate: firstDate,
       lastDate: DateTime.now().add(const Duration(days: 365)),
       helpText: _text(
         context,
-        inicial ? 'sales.query.startDate' : 'sales.query.endDate',
-        pt: inicial ? 'Data inicial' : 'Data final',
-        en: inicial ? 'Start date' : 'End date',
-        es: inicial ? 'Fecha inicial' : 'Fecha final',
+        inicial ? 'sales.query.customStartDate' : 'sales.query.customEndDate',
+        pt: inicial ? 'Selecionar data inicial' : 'Selecionar data final',
+        en: inicial ? 'Select start date' : 'Select end date',
+        es: inicial ? 'Seleccionar fecha inicial' : 'Seleccionar fecha final',
       ),
     );
     if (selecionada == null || !mounted) return;
 
     setState(() {
-      final DateTime normalizada = DateTime(
-        selecionada.year,
-        selecionada.month,
-        selecionada.day,
-      );
+      final DateTime normalizada = _normalizarData(selecionada);
       if (inicial) {
-        _dataInicial = normalizada;
-        if (_dataFinal.isBefore(_dataInicial)) _dataFinal = _dataInicial;
+        _dataInicioPersonalizada = normalizada;
+        _ajustarPeriodoPersonalizadoSeguro();
       } else {
-        _dataFinal = normalizada;
-        if (_dataInicial.isAfter(_dataFinal)) _dataInicial = _dataFinal;
+        _dataFimPersonalizada = normalizada;
       }
+      _sincronizarPeriodoComDatas();
     });
+    _onFiltroAlterado(salvarImediatamente: true);
   }
 
   Future<void> _limparFiltros() async {
-    final DateTime hoje = DateTime.now();
+    final DateTime hoje = _hojeNormalizado();
+    _aplicandoPreferencias = true;
     setState(() {
-      _dataFinal = DateTime(hoje.year, hoje.month, hoje.day);
+      _periodoSelecionado = _periodoUltimos30Dias;
+      _dataFinal = hoje;
       _dataInicial = _dataFinal.subtract(const Duration(days: 29));
+      _dataInicioPersonalizada = _dataInicial;
+      _dataFimPersonalizada = _dataFinal;
       _buscaController.clear();
       _valorMinimoController.clear();
       _valorMaximoController.clear();
@@ -145,7 +262,182 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
       _ordenacao = 'MAIS_RECENTES';
       _tamanhoPagina = 25;
     });
+    _aplicandoPreferencias = false;
+    _onFiltroAlterado(salvarImediatamente: true);
     await _carregar(pagina: 0);
+  }
+
+  Future<void> _restaurarPreferenciasConsultaVendas() async {
+    final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+        await _usuarioService.carregarPreferenciasIndividuaisDoCache();
+    if (!mounted || preferencias == null || _usuarioAlterouFiltros) {
+      return;
+    }
+    _aplicarPreferenciasConsultaVendas(preferencias.consultaVendasFiltrosWeb);
+  }
+
+  Future<void> _restaurarPreferenciasConsultaVendasBackend({
+    bool recarregarSeAlterou = false,
+  }) async {
+    try {
+      if (_usuarioProvider.usuario == null) {
+        await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
+      }
+      final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+          _usuarioProvider.usuario?.preferenciasIndividuaisDoUsuario;
+      if (!mounted || preferencias == null || _usuarioAlterouFiltros) {
+        return;
+      }
+      final bool alterou = _aplicarPreferenciasConsultaVendas(
+        preferencias.consultaVendasFiltrosWeb,
+      );
+      if (alterou && recarregarSeAlterou && mounted) {
+        await _carregar(pagina: 0);
+      }
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Erro ao restaurar preferencias da consulta de vendas: '
+        '$error\n$stackTrace',
+      );
+    }
+  }
+
+  bool _aplicarPreferenciasConsultaVendas(
+    ConsultaVendasFiltrosWebPreferencia filtros,
+  ) {
+    final String assinaturaAnterior = _assinaturaFiltrosAtual();
+    _aplicandoPreferencias = true;
+    if (_buscaController.text != filtros.busca) {
+      _buscaController.text = filtros.busca;
+    }
+    if (_valorMinimoController.text != filtros.valorMinimo) {
+      _valorMinimoController.text = filtros.valorMinimo;
+    }
+    if (_valorMaximoController.text != filtros.valorMaximo) {
+      _valorMaximoController.text = filtros.valorMaximo;
+    }
+    setState(() {
+      _statusFinanceiro = filtros.statusFinanceiro;
+      _statusDevolucao = filtros.statusDevolucao;
+      _ordenacao = filtros.ordenacao;
+      _tamanhoPagina = filtros.tamanhoPagina > 0 ? filtros.tamanhoPagina : 25;
+      _periodoSelecionado = _periodoLabelPreferencia(filtros.periodo);
+      if (filtros.periodo ==
+          ConsultaVendasPeriodoWebPreferencia.personalizado) {
+        if (filtros.dataInicio != null) {
+          _dataInicioPersonalizada = filtros.dataInicio!;
+        }
+        if (filtros.dataFim != null) {
+          _dataFimPersonalizada = filtros.dataFim!;
+        }
+        _ajustarPeriodoPersonalizadoSeguro();
+      }
+      _sincronizarPeriodoComDatas();
+    });
+    _aplicandoPreferencias = false;
+    return assinaturaAnterior != _assinaturaFiltrosAtual();
+  }
+
+  void _onTextoFiltrosChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+    if (_aplicandoPreferencias) {
+      return;
+    }
+    _onFiltroAlterado();
+  }
+
+  void _onFiltroAlterado({bool salvarImediatamente = false}) {
+    _usuarioAlterouFiltros = true;
+    if (salvarImediatamente) {
+      _salvarPreferenciasConsultaVendas();
+      return;
+    }
+    _agendarSalvarPreferenciasConsultaVendas();
+  }
+
+  void _agendarSalvarPreferenciasConsultaVendas() {
+    _salvarFiltrosDebounce?.cancel();
+    _salvarFiltrosDebounce = Timer(
+      const Duration(milliseconds: 450),
+      _salvarPreferenciasConsultaVendas,
+    );
+  }
+
+  void _salvarPreferenciasConsultaVendas() {
+    _salvarFiltrosDebounce?.cancel();
+    final ConsultaVendasFiltrosWebPreferencia filtros =
+        _preferenciaConsultaVendasAtual();
+
+    unawaited(
+      _usuarioService
+          .atualizarPreferenciasIndividuais(
+            consultaVendasFiltrosWeb: filtros.toJson(),
+          )
+          .catchError((Object error, StackTrace stackTrace) {
+            debugPrint(
+              'Erro ao salvar preferencias da consulta de vendas: '
+              '$error\n$stackTrace',
+            );
+          }),
+    );
+  }
+
+  ConsultaVendasFiltrosWebPreferencia _preferenciaConsultaVendasAtual() {
+    return ConsultaVendasFiltrosWebPreferencia(
+      busca: _buscaController.text,
+      periodo: _periodoPreferenciaAtual(_periodoSelecionado),
+      dataInicio: _usaPeriodoPersonalizado ? _dataInicioPersonalizada : null,
+      dataFim: _usaPeriodoPersonalizado ? _dataFimPersonalizada : null,
+      statusFinanceiro: _statusFinanceiro,
+      statusDevolucao: _statusDevolucao,
+      valorMinimo: _valorMinimoController.text,
+      valorMaximo: _valorMaximoController.text,
+      ordenacao: _ordenacao,
+      tamanhoPagina: _tamanhoPagina,
+    );
+  }
+
+  String _assinaturaFiltrosAtual() {
+    final ConsultaVendasFiltrosWebPreferencia filtros =
+        _preferenciaConsultaVendasAtual();
+    return <String>[
+      filtros.busca.trim(),
+      filtros.periodo.codigo,
+      filtros.dataInicio?.toIso8601String() ?? '',
+      filtros.dataFim?.toIso8601String() ?? '',
+      filtros.statusFinanceiro ?? '',
+      filtros.statusDevolucao ?? '',
+      filtros.valorMinimo.trim(),
+      filtros.valorMaximo.trim(),
+      filtros.ordenacao,
+      filtros.tamanhoPagina.toString(),
+    ].join('|');
+  }
+
+  bool get _temFiltrosAtivos =>
+      _buscaController.text.trim().isNotEmpty ||
+      _periodoSelecionado != _periodoUltimos30Dias ||
+      _statusFinanceiro != null ||
+      _statusDevolucao != null ||
+      _valorMinimoController.text.trim().isNotEmpty ||
+      _valorMaximoController.text.trim().isNotEmpty ||
+      _ordenacao != 'MAIS_RECENTES';
+
+  void _selecionarPeriodoFiltro(String selected) {
+    if (!_periodosFiltroData.contains(selected) ||
+        _periodoSelecionado == selected) {
+      return;
+    }
+    setState(() {
+      _periodoSelecionado = selected;
+      if (_usaPeriodoPersonalizado) {
+        _ajustarPeriodoPersonalizadoSeguro();
+      }
+      _sincronizarPeriodoComDatas();
+    });
+    _onFiltroAlterado(salvarImediatamente: true);
   }
 
   Future<void> _abrirDetalhe(VendaConsultaResumo venda) async {
@@ -498,244 +790,349 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
     return _SurfaceCard(
       tokens: tokens,
       padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool larguraCompacta = compacto || constraints.maxWidth < 1040;
+          final double campoBuscaLargura =
+              larguraCompacta ? constraints.maxWidth : 360;
+          final double campoMedioLargura =
+              larguraCompacta ? constraints.maxWidth : 220;
+          final double campoPequenoLargura =
+              larguraCompacta ? constraints.maxWidth : 170;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Icon(Icons.filter_alt_outlined, color: tokens.info),
-              const SizedBox(width: 8),
-              Text(
-                _text(
-                  context,
-                  'sales.query.filters',
-                  pt: 'Filtros',
-                  en: 'Filters',
-                  es: 'Filtros',
+              Row(
+                children: <Widget>[
+                  Icon(Icons.filter_alt_outlined, color: tokens.info),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _text(
+                        context,
+                        'sales.query.filters',
+                        pt: 'Filtros',
+                        en: 'Filters',
+                        es: 'Filtros',
+                      ),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: tokens.primaryText,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  if (_temFiltrosAtivos)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: tokens.surfaceMuted,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: tokens.cardBorder),
+                      ),
+                      child: Text(
+                        _text(
+                          context,
+                          'sales.query.filtersActive',
+                          pt: 'Filtros ativos',
+                          en: 'Active filters',
+                          es: 'Filtros activos',
+                        ),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: tokens.secondaryText,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                crossAxisAlignment: WrapCrossAlignment.end,
+                children: <Widget>[
+                  SizedBox(
+                    width: campoBuscaLargura,
+                    child: TextField(
+                      controller: _buscaController,
+                      decoration: decoration.copyWith(
+                        labelText: _text(
+                          context,
+                          'sales.query.search',
+                          pt: 'Venda, cliente, documento ou produto',
+                          en: 'Sale, customer, document or product',
+                          es: 'Venta, cliente, documento o producto',
+                        ),
+                        prefixIcon: const Icon(Icons.search_rounded),
+                      ),
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: (_) => _carregar(pagina: 0),
+                    ),
+                  ),
+                  SixWebSelectField(
+                    width: campoMedioLargura,
+                    label: _text(
+                      context,
+                      'sales.query.period',
+                      pt: 'Período',
+                      en: 'Period',
+                      es: 'Período',
+                    ),
+                    value: _periodoFiltroLabel(
+                      context,
+                      regionalizacao,
+                      _periodoSelecionado,
+                      _dataInicial,
+                      _dataFinal,
+                    ),
+                    items: <String>[
+                      for (final String value in _periodosFiltroData)
+                        _periodoFiltroItemLabel(context, value),
+                    ],
+                    icon: Icons.date_range_rounded,
+                    onSelected: (String selected) {
+                      _selecionarPeriodoFiltro(
+                        _periodoValueFromLabel(context, selected),
+                      );
+                    },
+                  ),
+                  SixWebSelectField(
+                    width: campoMedioLargura,
+                    label: _text(
+                      context,
+                      'sales.query.financialStatus',
+                      pt: 'Situação financeira',
+                      en: 'Financial status',
+                      es: 'Situación financiera',
+                    ),
+                    value:
+                        _statusFinanceiro == null
+                            ? _allLabel(context)
+                            : _statusFinanceiroLabel(
+                              context,
+                              _statusFinanceiro!,
+                            ),
+                    items: <String>[
+                      _allLabel(context),
+                      for (final String value in const <String>[
+                        'QUITADA',
+                        'PARCIAL',
+                        'EM_ABERTO',
+                        'CANCELADA',
+                      ])
+                        _statusFinanceiroLabel(context, value),
+                    ],
+                    icon: Icons.account_balance_wallet_outlined,
+                    onSelected: (String selected) {
+                      setState(() {
+                        _statusFinanceiro = _financialStatusValueFromLabel(
+                          context,
+                          selected,
+                        );
+                      });
+                      _onFiltroAlterado(salvarImediatamente: true);
+                    },
+                  ),
+                  SixWebSelectField(
+                    width: campoMedioLargura,
+                    label: _text(
+                      context,
+                      'sales.query.returnStatus',
+                      pt: 'Situação da devolução',
+                      en: 'Return status',
+                      es: 'Situación de devolución',
+                    ),
+                    value:
+                        _statusDevolucao == null
+                            ? _allLabel(context)
+                            : _statusDevolucaoLabel(context, _statusDevolucao!),
+                    items: <String>[
+                      _allLabel(context),
+                      for (final String value in const <String>[
+                        'SEM_DEVOLUCAO',
+                        'PARCIAL',
+                        'TOTAL',
+                      ])
+                        _statusDevolucaoLabel(context, value),
+                    ],
+                    icon: Icons.assignment_return_outlined,
+                    onSelected: (String selected) {
+                      setState(() {
+                        _statusDevolucao = _returnStatusValueFromLabel(
+                          context,
+                          selected,
+                        );
+                      });
+                      _onFiltroAlterado(salvarImediatamente: true);
+                    },
+                  ),
+                ],
+              ),
+              if (_usaPeriodoPersonalizado) ...<Widget>[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: <Widget>[
+                    _DateFilterButton(
+                      tokens: tokens,
+                      width: campoMedioLargura,
+                      label: _text(
+                        context,
+                        'sales.query.startDate',
+                        pt: 'Data inicial',
+                        en: 'Start date',
+                        es: 'Fecha inicial',
+                      ),
+                      value: regionalizacao.formatDate(
+                        _dataInicioPersonalizada,
+                      ),
+                      onPressed:
+                          () => _selecionarDataPersonalizada(inicial: true),
+                    ),
+                    _DateFilterButton(
+                      tokens: tokens,
+                      width: campoMedioLargura,
+                      label: _text(
+                        context,
+                        'sales.query.endDate',
+                        pt: 'Data final',
+                        en: 'End date',
+                        es: 'Fecha final',
+                      ),
+                      value: regionalizacao.formatDate(_dataFimPersonalizada),
+                      onPressed:
+                          () => _selecionarDataPersonalizada(inicial: false),
+                    ),
+                  ],
                 ),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: tokens.primaryText,
-                  fontWeight: FontWeight.w900,
-                ),
+              ],
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                crossAxisAlignment: WrapCrossAlignment.end,
+                children: <Widget>[
+                  SizedBox(
+                    width: campoPequenoLargura,
+                    child: TextField(
+                      controller: _valorMinimoController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: decoration.copyWith(
+                        labelText: _text(
+                          context,
+                          'sales.query.minimumValue',
+                          pt: 'Valor mínimo',
+                          en: 'Minimum value',
+                          es: 'Valor mínimo',
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: campoPequenoLargura,
+                    child: TextField(
+                      controller: _valorMaximoController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: decoration.copyWith(
+                        labelText: _text(
+                          context,
+                          'sales.query.maximumValue',
+                          pt: 'Valor máximo',
+                          en: 'Maximum value',
+                          es: 'Valor máximo',
+                        ),
+                      ),
+                    ),
+                  ),
+                  SixWebSelectField(
+                    width: campoMedioLargura,
+                    label: _text(
+                      context,
+                      'sales.query.order',
+                      pt: 'Ordenar por',
+                      en: 'Sort by',
+                      es: 'Ordenar por',
+                    ),
+                    value: _ordenacaoLabel(context, _ordenacao),
+                    items: <String>[
+                      for (final String value in const <String>[
+                        'MAIS_RECENTES',
+                        'MAIS_ANTIGAS',
+                        'MAIOR_VALOR',
+                        'MENOR_VALOR',
+                      ])
+                        _ordenacaoLabel(context, value),
+                    ],
+                    icon: Icons.swap_vert_rounded,
+                    onSelected: (String selected) {
+                      setState(() {
+                        _ordenacao = _orderValueFromLabel(context, selected);
+                      });
+                      _onFiltroAlterado(salvarImediatamente: true);
+                    },
+                  ),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: <Widget>[
+                      if (_temFiltrosAtivos)
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: tokens.info,
+                            backgroundColor: tokens.surfaceMuted.withValues(
+                              alpha: 0.35,
+                            ),
+                            side: BorderSide(color: tokens.selectedBorder),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 16,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          onPressed: _carregando ? null : _limparFiltros,
+                          icon: const Icon(Icons.filter_alt_off_outlined),
+                          label: Text(
+                            _text(
+                              context,
+                              'common.clear',
+                              pt: 'Limpar',
+                              en: 'Clear',
+                              es: 'Limpiar',
+                            ),
+                          ),
+                        ),
+                      FilledButton.icon(
+                        onPressed:
+                            _carregando ? null : () => _carregar(pagina: 0),
+                        icon: const Icon(Icons.search_rounded),
+                        label: Text(
+                          _text(
+                            context,
+                            'sales.query.applyFilters',
+                            pt: 'Aplicar filtros',
+                            en: 'Apply filters',
+                            es: 'Aplicar filtros',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            crossAxisAlignment: WrapCrossAlignment.end,
-            children: <Widget>[
-              SizedBox(
-                width: compacto ? double.infinity : 360,
-                child: TextField(
-                  controller: _buscaController,
-                  decoration: decoration.copyWith(
-                    labelText: _text(
-                      context,
-                      'sales.query.search',
-                      pt: 'Venda, cliente, documento ou produto',
-                      en: 'Sale, customer, document or product',
-                      es: 'Venta, cliente, documento o producto',
-                    ),
-                    prefixIcon: const Icon(Icons.search_rounded),
-                  ),
-                  textInputAction: TextInputAction.search,
-                  onSubmitted: (_) => _carregar(pagina: 0),
-                ),
-              ),
-              _DateFilterButton(
-                tokens: tokens,
-                label: _text(
-                  context,
-                  'sales.query.startDate',
-                  pt: 'Data inicial',
-                  en: 'Start date',
-                  es: 'Fecha inicial',
-                ),
-                value: regionalizacao.formatDate(_dataInicial),
-                onPressed: () => _selecionarData(inicial: true),
-              ),
-              _DateFilterButton(
-                tokens: tokens,
-                label: _text(
-                  context,
-                  'sales.query.endDate',
-                  pt: 'Data final',
-                  en: 'End date',
-                  es: 'Fecha final',
-                ),
-                value: regionalizacao.formatDate(_dataFinal),
-                onPressed: () => _selecionarData(inicial: false),
-              ),
-              SixWebSelectField(
-                width: 210,
-                label: _text(
-                  context,
-                  'sales.query.financialStatus',
-                  pt: 'Situação financeira',
-                  en: 'Financial status',
-                  es: 'Situación financiera',
-                ),
-                value:
-                    _statusFinanceiro == null
-                        ? _allLabel(context)
-                        : _statusFinanceiroLabel(context, _statusFinanceiro!),
-                items: <String>[
-                  _allLabel(context),
-                  for (final String value in const <String>[
-                    'QUITADA',
-                    'PARCIAL',
-                    'EM_ABERTO',
-                    'CANCELADA',
-                  ])
-                    _statusFinanceiroLabel(context, value),
-                ],
-                icon: Icons.account_balance_wallet_outlined,
-                onSelected: (String selected) {
-                  setState(() {
-                    _statusFinanceiro = _financialStatusValueFromLabel(
-                      context,
-                      selected,
-                    );
-                  });
-                },
-              ),
-              SixWebSelectField(
-                width: 210,
-                label: _text(
-                  context,
-                  'sales.query.returnStatus',
-                  pt: 'Situação da devolução',
-                  en: 'Return status',
-                  es: 'Situación de devolución',
-                ),
-                value:
-                    _statusDevolucao == null
-                        ? _allLabel(context)
-                        : _statusDevolucaoLabel(context, _statusDevolucao!),
-                items: <String>[
-                  _allLabel(context),
-                  for (final String value in const <String>[
-                    'SEM_DEVOLUCAO',
-                    'PARCIAL',
-                    'TOTAL',
-                  ])
-                    _statusDevolucaoLabel(context, value),
-                ],
-                icon: Icons.assignment_return_outlined,
-                onSelected: (String selected) {
-                  setState(() {
-                    _statusDevolucao = _returnStatusValueFromLabel(
-                      context,
-                      selected,
-                    );
-                  });
-                },
-              ),
-              SizedBox(
-                width: 155,
-                child: TextField(
-                  controller: _valorMinimoController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: decoration.copyWith(
-                    labelText: _text(
-                      context,
-                      'sales.query.minimumValue',
-                      pt: 'Valor mínimo',
-                      en: 'Minimum value',
-                      es: 'Valor mínimo',
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 155,
-                child: TextField(
-                  controller: _valorMaximoController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: decoration.copyWith(
-                    labelText: _text(
-                      context,
-                      'sales.query.maximumValue',
-                      pt: 'Valor máximo',
-                      en: 'Maximum value',
-                      es: 'Valor máximo',
-                    ),
-                  ),
-                ),
-              ),
-              SixWebSelectField(
-                width: 195,
-                label: _text(
-                  context,
-                  'sales.query.order',
-                  pt: 'Ordenar por',
-                  en: 'Sort by',
-                  es: 'Ordenar por',
-                ),
-                value: _ordenacaoLabel(context, _ordenacao),
-                items: <String>[
-                  for (final String value in const <String>[
-                    'MAIS_RECENTES',
-                    'MAIS_ANTIGAS',
-                    'MAIOR_VALOR',
-                    'MENOR_VALOR',
-                  ])
-                    _ordenacaoLabel(context, value),
-                ],
-                icon: Icons.swap_vert_rounded,
-                onSelected: (String selected) {
-                  setState(() {
-                    _ordenacao = _orderValueFromLabel(context, selected);
-                  });
-                },
-              ),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: tokens.info,
-                  backgroundColor: tokens.surfaceMuted.withValues(alpha: 0.35),
-                  side: BorderSide(color: tokens.selectedBorder),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                onPressed: _carregando ? null : _limparFiltros,
-                icon: const Icon(Icons.filter_alt_off_outlined),
-                label: Text(
-                  _text(
-                    context,
-                    'common.clear',
-                    pt: 'Limpar',
-                    en: 'Clear',
-                    es: 'Limpiar',
-                  ),
-                ),
-              ),
-              FilledButton.icon(
-                onPressed: _carregando ? null : () => _carregar(pagina: 0),
-                icon: const Icon(Icons.search_rounded),
-                label: Text(
-                  _text(
-                    context,
-                    'sales.query.applyFilters',
-                    pt: 'Aplicar filtros',
-                    en: 'Apply filters',
-                    es: 'Aplicar filtros',
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -888,6 +1285,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
                       : null,
               onPageSizeChanged: (int value) {
                 setState(() => _tamanhoPagina = value);
+                _onFiltroAlterado(salvarImediatamente: true);
                 _carregar(pagina: 0);
               },
             ),
@@ -1011,12 +1409,14 @@ class _KpiCard extends StatelessWidget {
 class _DateFilterButton extends StatelessWidget {
   const _DateFilterButton({
     required this.tokens,
+    required this.width,
     required this.label,
     required this.value,
     required this.onPressed,
   });
 
   final WebThemeTokens tokens;
+  final double width;
   final String label;
   final String value;
   final VoidCallback onPressed;
@@ -1025,13 +1425,13 @@ class _DateFilterButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return SizedBox(
-      width: 170,
+      width: width,
       child: OutlinedButton(
         style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           side: BorderSide(color: tokens.cardBorder),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(18),
           ),
         ),
         onPressed: onPressed,
@@ -2176,6 +2576,28 @@ class _DetalheResumoHeader extends StatelessWidget {
   final WebThemeTokens tokens;
   final VoidCallback? onAbrirDevolucoes;
 
+  Future<void> _copiarNumeroDaVenda(BuildContext context, String codigo) async {
+    await Clipboard.setData(ClipboardData(text: codigo));
+    if (!context.mounted) return;
+    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(
+      context,
+    );
+    messenger?.hideCurrentSnackBar();
+    messenger?.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(
+          _t(
+            context,
+            'Número da venda copiado.',
+            'Sale number copied.',
+            'Número de venta copiado.',
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final LocaleSettingsProvider regionalizacao =
@@ -2211,17 +2633,77 @@ class _DetalheResumoHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
+                  spacing: 12,
+                  runSpacing: 10,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: <Widget>[
-                    Text(
-                      venda.identificadorPreferencial,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: tokens.primaryText,
-                        fontWeight: FontWeight.w900,
-                        height: 1.05,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          _t(
+                            context,
+                            'Número da venda',
+                            'Sale number',
+                            'Número de venta',
+                          ),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.labelSmall?.copyWith(
+                            color: tokens.secondaryText,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth:
+                                    compact ? constraints.maxWidth - 96 : 320,
+                              ),
+                              child: Text(
+                                venda.identificadorPreferencial,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.titleLarge?.copyWith(
+                                  color: tokens.primaryText,
+                                  fontWeight: FontWeight.w900,
+                                  height: 1.05,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Tooltip(
+                              message: _t(
+                                context,
+                                'Copiar número da venda',
+                                'Copy sale number',
+                                'Copiar número de venta',
+                              ),
+                              child: IconButton(
+                                visualDensity: VisualDensity.compact,
+                                splashRadius: 18,
+                                onPressed:
+                                    () => _copiarNumeroDaVenda(
+                                      context,
+                                      venda.identificadorPreferencial,
+                                    ),
+                                icon: Icon(
+                                  Icons.content_copy_rounded,
+                                  size: 18,
+                                  color: tokens.info,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                     _StatusChip(
                       label: _statusFinanceiroLabel(
@@ -3046,6 +3528,87 @@ String _t(BuildContext context, String pt, String en, String es) {
     'es' => es,
     _ => pt,
   };
+}
+
+String _periodoFiltroItemLabel(BuildContext context, String periodo) {
+  switch (periodo) {
+    case _ConsultaVendasWebPageState._periodoHoje:
+      return _t(context, 'Hoje', 'Today', 'Hoy');
+    case _ConsultaVendasWebPageState._periodoUltimos7Dias:
+      return _t(context, 'Últimos 7 dias', 'Last 7 days', 'Últimos 7 días');
+    case _ConsultaVendasWebPageState._periodoEsteMes:
+      return _t(context, 'Este mês', 'This month', 'Este mes');
+    case _ConsultaVendasWebPageState._periodoMesPassado:
+      return _t(context, 'Mês passado', 'Last month', 'Mes pasado');
+    case _ConsultaVendasWebPageState._periodoIntervaloPersonalizado:
+      return _t(
+        context,
+        'Intervalo personalizado',
+        'Custom range',
+        'Intervalo personalizado',
+      );
+    case _ConsultaVendasWebPageState._periodoUltimos30Dias:
+    default:
+      return _t(context, 'Últimos 30 dias', 'Last 30 days', 'Últimos 30 días');
+  }
+}
+
+String _periodoFiltroLabel(
+  BuildContext context,
+  LocaleSettingsProvider regionalizacao,
+  String periodoSelecionado,
+  DateTime dataInicial,
+  DateTime dataFinal,
+) {
+  if (periodoSelecionado ==
+      _ConsultaVendasWebPageState._periodoIntervaloPersonalizado) {
+    return '${regionalizacao.formatDate(dataInicial)} - ${regionalizacao.formatDate(dataFinal)}';
+  }
+  return _periodoFiltroItemLabel(context, periodoSelecionado);
+}
+
+String _periodoValueFromLabel(BuildContext context, String label) {
+  for (final String value in _ConsultaVendasWebPageState._periodosFiltroData) {
+    if (_periodoFiltroItemLabel(context, value) == label) {
+      return value;
+    }
+  }
+  return _ConsultaVendasWebPageState._periodoUltimos30Dias;
+}
+
+String _periodoLabelPreferencia(ConsultaVendasPeriodoWebPreferencia periodo) {
+  switch (periodo) {
+    case ConsultaVendasPeriodoWebPreferencia.hoje:
+      return _ConsultaVendasWebPageState._periodoHoje;
+    case ConsultaVendasPeriodoWebPreferencia.ultimos7Dias:
+      return _ConsultaVendasWebPageState._periodoUltimos7Dias;
+    case ConsultaVendasPeriodoWebPreferencia.esteMes:
+      return _ConsultaVendasWebPageState._periodoEsteMes;
+    case ConsultaVendasPeriodoWebPreferencia.mesPassado:
+      return _ConsultaVendasWebPageState._periodoMesPassado;
+    case ConsultaVendasPeriodoWebPreferencia.personalizado:
+      return _ConsultaVendasWebPageState._periodoIntervaloPersonalizado;
+    case ConsultaVendasPeriodoWebPreferencia.ultimos30Dias:
+      return _ConsultaVendasWebPageState._periodoUltimos30Dias;
+  }
+}
+
+ConsultaVendasPeriodoWebPreferencia _periodoPreferenciaAtual(String periodo) {
+  switch (periodo) {
+    case _ConsultaVendasWebPageState._periodoHoje:
+      return ConsultaVendasPeriodoWebPreferencia.hoje;
+    case _ConsultaVendasWebPageState._periodoUltimos7Dias:
+      return ConsultaVendasPeriodoWebPreferencia.ultimos7Dias;
+    case _ConsultaVendasWebPageState._periodoEsteMes:
+      return ConsultaVendasPeriodoWebPreferencia.esteMes;
+    case _ConsultaVendasWebPageState._periodoMesPassado:
+      return ConsultaVendasPeriodoWebPreferencia.mesPassado;
+    case _ConsultaVendasWebPageState._periodoIntervaloPersonalizado:
+      return ConsultaVendasPeriodoWebPreferencia.personalizado;
+    case _ConsultaVendasWebPageState._periodoUltimos30Dias:
+    default:
+      return ConsultaVendasPeriodoWebPreferencia.ultimos30Dias;
+  }
 }
 
 String _allLabel(BuildContext context) {

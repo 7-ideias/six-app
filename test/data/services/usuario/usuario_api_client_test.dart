@@ -34,6 +34,12 @@ void main() {
           'dataInicio': '2026-08-03',
           'dataFim': '2026-08-12',
         },
+        'consultaVendasFiltrosWeb': <String, dynamic>{
+          'busca': 'joao',
+          'periodo': 'ULTIMOS_30_DIAS',
+          'statusFinanceiro': 'QUITADA',
+          'ordenacao': 'MAIOR_VALOR',
+        },
         'atendimentosCriadosFiltrosWeb': <String, dynamic>{
           'busca': 'cliente teste',
           'statusKey': 'id:3',
@@ -65,6 +71,12 @@ void main() {
           'periodo': 'PERSONALIZADO',
           'dataInicio': '2026-08-03',
           'dataFim': '2026-08-12',
+        },
+        'consultaVendasFiltrosWeb': <String, dynamic>{
+          'busca': 'joao',
+          'periodo': 'ULTIMOS_30_DIAS',
+          'statusFinanceiro': 'QUITADA',
+          'ordenacao': 'MAIOR_VALOR',
         },
         'atendimentosCriadosFiltrosWeb': <String, dynamic>{
           'busca': 'cliente teste',
