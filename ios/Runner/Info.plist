@@ -51,6 +51,8 @@
 	<true/>
 	<key>GIDClientID</key>
 	<string>841074493827-2i7fbt2g0fsv7pn2ikg9k9hlfh6jl6ud.apps.googleusercontent.com</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>O Six precisa acessar a câmera para fotografar produtos e escanear códigos de barras no PDV.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
