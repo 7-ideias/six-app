@@ -77,6 +77,21 @@ O backend é a **persistência durável** da preferência do usuário.
 
 O armazenamento local é um **cache/persistência local para resposta rápida**, e não deve ser tratado como a única fonte da configuração.
 
+Ao usar esta skill, assuma por padrão que o usuário quer o fluxo completo:
+
+```text
+alterar a preferência
+↓
+persistir no backend
+↓
+persistir/localmente em cache
+↓
+ao abrir a tela novamente, buscar/restaurar a preferência
+```
+
+Não considere a tarefa concluída se você apenas salvar no cache local ou apenas
+enviar o evento sem garantir que a tela restaure o valor ao abrir novamente.
+
 ---
 
 # Quando esta skill deve ser acionada
@@ -130,6 +145,11 @@ MOBILE
 WEB
 AMBOS
 ```
+
+Essa informação é obrigatória porque existem preferências específicas da Web e
+outras específicas do Mobile. Quando o usuário não explicitar a plataforma,
+pergunte. Quando a plataforma já estiver clara, preserve isso em todo o fluxo:
+nome do campo, payload, backend e restauração na UI.
 
 ## 2. O que deve ser persistido
 
@@ -261,6 +281,9 @@ ocultarValoresFinanceirosWeb
 
 Mas não renomeie uma preferência explicitamente definida pelo usuário.
 
+Sempre prefira nomes que deixem explícito que a preferência pertence à versão
+Web, como `algoWeb`, `filtrosWeb`, `modoXWeb`, `secaoInicialWeb`.
+
 ## AMBOS
 
 Primeiro verifique a intenção descrita.
@@ -275,6 +298,35 @@ nomeDaPreferenciaWeb
 Se o usuário explicitamente quiser uma única configuração compartilhada entre Mobile e Web, use uma preferência única.
 
 Não introduza automaticamente sincronização cruzada entre Mobile e Web se isso não estiver implícito na solicitação.
+
+## Regra de nomenclatura obrigatória
+
+Ao propor ou criar um nome de preferência, use um nome que deixe claro a qual
+plataforma ela pertence:
+
+```text
+...Web
+...Mobile
+```
+
+Exemplos corretos:
+
+```text
+catalogoReservasFiltrosWeb
+modoGestaoMobile
+ocultarValoresFinanceirosWeb
+```
+
+Exemplos a evitar quando a preferência é específica por plataforma:
+
+```text
+catalogoReservasFiltros
+modoGestao
+preferenciaDeFiltro
+```
+
+Se o usuário disser apenas "salvar esse filtro", você deve deixar explícito na
+sua interpretação se está falando de `Web`, `Mobile` ou `Ambos`.
 
 ---
 
@@ -572,6 +624,10 @@ preferenciasIndividuaisDoUsuario
 
 A nova preferência deve participar desse fluxo.
 
+Quando a preferência for específica de uma tela, entenda "inicialização" também
+como o momento em que a tela/fluxo é aberto novamente. Ou seja: ao abrir a tela,
+você deve buscar/aplicar a preferência persistida e refletir isso na UI.
+
 Quando o backend retornar um valor válido:
 
 ```text
@@ -821,6 +877,7 @@ Uma implementação de preferência só está concluída quando:
 - [ ] outras preferências não são sobrescritas;
 - [ ] a preferência é retornada pelo backend;
 - [ ] a preferência é carregada na inicialização/autenticação;
+- [ ] ao abrir a tela/fluxo novamente, a UI busca/restaura a preferência;
 - [ ] a tela restaura a escolha do usuário;
 - [ ] usuários antigos continuam funcionando;
 - [ ] não existe HTTP diretamente no widget;

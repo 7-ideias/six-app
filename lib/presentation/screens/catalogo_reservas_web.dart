@@ -1,12 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/catalogo_reserva_service.dart';
 import 'package:sixpos/data/models/catalogo_reserva_model.dart';
+import 'package:sixpos/data/models/usuario_model.dart';
+import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/six_backend_loading.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
+import 'package:sixpos/providers/usuario_provider.dart';
 
 class CatalogoReservasWebPage extends StatefulWidget {
   const CatalogoReservasWebPage({super.key});
@@ -32,6 +37,8 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
   ];
 
   final CatalogoReservaService _service = CatalogoReservaService();
+  final UsuarioService _usuarioService = UsuarioService();
+  final UsuarioProvider _usuarioProvider = UsuarioProvider();
 
   CatalogoReservaPaginaModel? _pagina;
   CatalogoReservaDetalheModel? _detalhe;
@@ -46,6 +53,8 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
   bool _carregandoDetalhe = false;
   bool _atualizandoStatus = false;
   bool _convertendo = false;
+  bool _aplicandoPreferencias = false;
+  bool _usuarioAlterouFiltros = false;
 
   List<_CatalogoReservaDropdownOption<CatalogoReservaStatus>>
   _statusDropdownOptions(BuildContext context) {
@@ -94,7 +103,11 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
     _dataInicioPersonalizada = DateTime(hoje.year, hoje.month, 1);
     _dataFimPersonalizada = hoje;
     _filtroPeriodo = _resolverPeriodoSelecionado();
-    Future<void>.microtask(() => _carregar());
+    Future<void>.microtask(() async {
+      await _restaurarPreferenciasCatalogoReservas();
+      await _restaurarPreferenciasCatalogoReservasBackend();
+      await _carregar();
+    });
   }
 
   Future<void> _carregar({int pagina = 0, String? selecionarId}) async {
@@ -311,6 +324,10 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
   void _alterarFiltroStatus(Set<CatalogoReservaStatus> status) {
     if (setEquals(_filtrosStatus, status)) return;
     setState(() => _filtrosStatus = Set<CatalogoReservaStatus>.from(status));
+    if (!_aplicandoPreferencias) {
+      _usuarioAlterouFiltros = true;
+      _salvarPreferenciasCatalogoReservas();
+    }
     _carregar();
   }
 
@@ -327,6 +344,10 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
       }
       _filtroPeriodo = _resolverPeriodoSelecionado();
     });
+    if (!_aplicandoPreferencias) {
+      _usuarioAlterouFiltros = true;
+      _salvarPreferenciasCatalogoReservas();
+    }
     _sincronizarSelecaoComFiltros();
   }
 
@@ -347,6 +368,10 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
       _ajustarPeriodoPersonalizadoSeguro();
       _filtroPeriodo = _resolverPeriodoSelecionado();
     });
+    if (!_aplicandoPreferencias) {
+      _usuarioAlterouFiltros = true;
+      _salvarPreferenciasCatalogoReservas();
+    }
     _sincronizarSelecaoComFiltros();
   }
 
@@ -374,6 +399,10 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
       _ajustarPeriodoPersonalizadoSeguro();
       _filtroPeriodo = _resolverPeriodoSelecionado();
     });
+    if (!_aplicandoPreferencias) {
+      _usuarioAlterouFiltros = true;
+      _salvarPreferenciasCatalogoReservas();
+    }
     _sincronizarSelecaoComFiltros();
   }
 
@@ -390,7 +419,105 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
       _dataFimPersonalizada = hoje;
       _filtroPeriodo = _resolverPeriodoSelecionado();
     });
+    if (!_aplicandoPreferencias) {
+      _usuarioAlterouFiltros = true;
+      _salvarPreferenciasCatalogoReservas();
+    }
     _carregar();
+  }
+
+  Future<void> _restaurarPreferenciasCatalogoReservas() async {
+    final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+        await _usuarioService.carregarPreferenciasIndividuaisDoCache();
+    if (!mounted || preferencias == null || _usuarioAlterouFiltros) {
+      return;
+    }
+    _aplicarPreferenciasCatalogoReservas(
+      preferencias.catalogoReservasFiltrosWeb,
+    );
+  }
+
+  Future<void> _restaurarPreferenciasCatalogoReservasBackend() async {
+    try {
+      if (_usuarioProvider.usuario == null) {
+        await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
+      }
+      final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+          _usuarioProvider.usuario?.preferenciasIndividuaisDoUsuario;
+      if (!mounted || preferencias == null || _usuarioAlterouFiltros) {
+        return;
+      }
+      _aplicarPreferenciasCatalogoReservas(
+        preferencias.catalogoReservasFiltrosWeb,
+      );
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Erro ao restaurar preferencias das reservas do catálogo: '
+        '$error\n$stackTrace',
+      );
+    }
+  }
+
+  void _aplicarPreferenciasCatalogoReservas(
+    CatalogoReservasFiltrosWebPreferencia filtros,
+  ) {
+    final Set<CatalogoReservaStatus> statusSelecionados =
+        filtros.status
+            .map(_statusFromPreferenceCode)
+            .whereType<CatalogoReservaStatus>()
+            .toSet();
+
+    _aplicandoPreferencias = true;
+    setState(() {
+      _filtrosStatus = statusSelecionados;
+      _periodoSelecionado = _periodoLabelPreferencia(filtros.periodo);
+      if (filtros.periodo ==
+          CatalogoReservasPeriodoWebPreferencia.personalizado) {
+        if (filtros.dataInicio != null) {
+          _dataInicioPersonalizada = filtros.dataInicio!;
+        }
+        if (filtros.dataFim != null) {
+          _dataFimPersonalizada = filtros.dataFim!;
+        }
+        _ajustarPeriodoPersonalizadoSeguro();
+      }
+      _filtroPeriodo = _resolverPeriodoSelecionado();
+    });
+    _aplicandoPreferencias = false;
+  }
+
+  void _salvarPreferenciasCatalogoReservas() {
+    final List<String> status = _filtrosStatus
+      .map((CatalogoReservaStatus item) => item.apiValue)
+      .toSet()
+      .toList(growable: false)..sort();
+
+    final CatalogoReservasFiltrosWebPreferencia filtros =
+        CatalogoReservasFiltrosWebPreferencia(
+          status: status,
+          periodo: _periodoPreferenciaAtual(),
+          dataInicio:
+              _usaPeriodoPersonalizado
+                  ? _normalizarData(_dataInicioPersonalizada)
+                  : null,
+          dataFim:
+              _usaPeriodoPersonalizado
+                  ? _normalizarData(_dataFimPersonalizada)
+                  : null,
+        );
+
+    unawaited(
+      _usuarioService
+          .atualizarPreferenciasIndividuais(
+            catalogoReservasFiltrosWeb: filtros.toJson(),
+          )
+          .catchError((Object error, StackTrace stackTrace) {
+            debugPrint(
+              'Erro ao salvar preferencias das reservas do catálogo: '
+              '$error\n$stackTrace',
+            );
+          }),
+    );
   }
 
   Future<void> _sincronizarSelecaoComFiltros() async {
@@ -501,6 +628,50 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
       default:
         return periodo;
     }
+  }
+
+  String _periodoLabelPreferencia(
+    CatalogoReservasPeriodoWebPreferencia periodo,
+  ) {
+    switch (periodo) {
+      case CatalogoReservasPeriodoWebPreferencia.hoje:
+        return _periodoHoje;
+      case CatalogoReservasPeriodoWebPreferencia.proximos7Dias:
+        return _periodoProximos7Dias;
+      case CatalogoReservasPeriodoWebPreferencia.esteMes:
+        return _periodoEsteMes;
+      case CatalogoReservasPeriodoWebPreferencia.proximoMes:
+        return _periodoProximoMes;
+      case CatalogoReservasPeriodoWebPreferencia.personalizado:
+        return _periodoIntervaloPersonalizado;
+    }
+  }
+
+  CatalogoReservasPeriodoWebPreferencia _periodoPreferenciaAtual() {
+    switch (_periodoSelecionado) {
+      case _periodoHoje:
+        return CatalogoReservasPeriodoWebPreferencia.hoje;
+      case _periodoEsteMes:
+        return CatalogoReservasPeriodoWebPreferencia.esteMes;
+      case _periodoProximoMes:
+        return CatalogoReservasPeriodoWebPreferencia.proximoMes;
+      case _periodoIntervaloPersonalizado:
+        return CatalogoReservasPeriodoWebPreferencia.personalizado;
+      case _periodoProximos7Dias:
+        return CatalogoReservasPeriodoWebPreferencia.proximos7Dias;
+      default:
+        return CatalogoReservasPeriodoWebPreferencia.proximos7Dias;
+    }
+  }
+
+  CatalogoReservaStatus? _statusFromPreferenceCode(String code) {
+    final String normalizado = code.trim().toUpperCase();
+    for (final CatalogoReservaStatus status in CatalogoReservaStatus.values) {
+      if (status.apiValue == normalizado) {
+        return status;
+      }
+    }
+    return null;
   }
 
   DateTime? _normalizarData(DateTime? value) {
@@ -643,7 +814,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
               ],
             ),
           ),
-          IconButton(
+          OutlinedButton.icon(
             onPressed:
                 _carregando
                     ? null
@@ -651,8 +822,17 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
                       pagina: _pagina?.pagina ?? 0,
                       selecionarId: _idSelecionado,
                     ),
-            tooltip: context.t('common.refresh', fallback: 'Atualizar'),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: Text(context.t('common.refresh', fallback: 'Atualizar')),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: tokens.info,
+              backgroundColor: tokens.surfaceMuted.withValues(alpha: 0.35),
+              side: BorderSide(color: tokens.selectedBorder),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
           ),
         ],
       ),
@@ -765,17 +945,26 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
         ),
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            final double larguraStatus =
-                constraints.maxWidth < 260 ? constraints.maxWidth : 248;
-            final double larguraData =
-                constraints.maxWidth < 210 ? constraints.maxWidth : 186;
+            const double filterSpacing = 10;
+            final bool usarUmaColuna = constraints.maxWidth < 520;
+            double larguraCampoFiltro;
+            if (usarUmaColuna) {
+              larguraCampoFiltro = constraints.maxWidth;
+            } else {
+              larguraCampoFiltro = (constraints.maxWidth - filterSpacing) / 2;
+              if (larguraCampoFiltro < 220) {
+                larguraCampoFiltro = 220;
+              } else if (larguraCampoFiltro > 320) {
+                larguraCampoFiltro = 320;
+              }
+            }
             return Wrap(
-              spacing: 10,
+              spacing: filterSpacing,
               runSpacing: 10,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: <Widget>[
                 SizedBox(
-                  width: larguraStatus,
+                  width: larguraCampoFiltro,
                   child: _CatalogoReservaMultiSelectDropdown<
                     CatalogoReservaStatus
                   >(
@@ -801,7 +990,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
                   ),
                 ),
                 SizedBox(
-                  width: larguraData,
+                  width: larguraCampoFiltro,
                   child: _CatalogoReservaPeriodDropdown(
                     label: context.t(
                       'catalogReservations.filters.period',
@@ -815,7 +1004,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
                 ),
                 if (_usaPeriodoPersonalizado) ...<Widget>[
                   SizedBox(
-                    width: larguraData,
+                    width: larguraCampoFiltro,
                     child: _CatalogoReservaDateField(
                       label: context.t(
                         'catalogReservations.filters.start',
@@ -828,7 +1017,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
                     ),
                   ),
                   SizedBox(
-                    width: larguraData,
+                    width: larguraCampoFiltro,
                     child: _CatalogoReservaDateField(
                       label: context.t(
                         'catalogReservations.filters.end',

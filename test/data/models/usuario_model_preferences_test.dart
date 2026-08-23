@@ -118,6 +118,41 @@ void main() {
       );
     });
 
+    test('serializa e desserializa filtros web de reservas do catálogo', () {
+      final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+        const <String, dynamic>{
+          'catalogoReservasFiltrosWeb': <String, dynamic>{
+            'status': <String>['CONFIRMADA', 'RECEBIDA', 'CONFIRMADA'],
+            'periodo': 'PERSONALIZADO',
+            'dataInicio': '2026-08-03',
+            'dataFim': '2026-08-12',
+          },
+        },
+      );
+
+      final filtros = preferencias.catalogoReservasFiltrosWeb;
+
+      expect(filtros.status, <String>['CONFIRMADA', 'RECEBIDA']);
+      expect(
+        filtros.periodo,
+        CatalogoReservasPeriodoWebPreferencia.personalizado,
+      );
+      expect(filtros.dataInicio, DateTime(2026, 8, 3));
+      expect(filtros.dataFim, DateTime(2026, 8, 12));
+      expect(filtros.toJson(), <String, dynamic>{
+        'status': <String>['CONFIRMADA', 'RECEBIDA'],
+        'periodo': 'PERSONALIZADO',
+        'dataInicio': '2026-08-03',
+        'dataFim': '2026-08-12',
+      });
+      expect(
+        PreferenciasIndividuaisDoUsuarioModel.fromJson(
+          const <String, dynamic>{},
+        ).catalogoReservasFiltrosWeb.toJson(),
+        isEmpty,
+      );
+    });
+
     test('mantem multiplos filtros web de atendimentos criados', () {
       final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
         const <String, dynamic>{
