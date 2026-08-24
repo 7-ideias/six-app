@@ -17,7 +17,7 @@ echo "[LOG SIX] Web API base URL: $API_URL"
 flutter --version
 flutter pub get
 flutter gen-l10n
-flutter build web --release --pwa-strategy=none --dart-define="API_BASE_URL=$API_URL"
+flutter build web --release --no-wasm-dry-run --dart-define="API_BASE_URL=$API_URL"
 
 grep -Fq 'name="sixapp-entrypoint" content="flutter-app"' build/web/index.html || {
   echo "[ERRO SIX] Flutter build nao gerou index.html com marker flutter-app" >&2
