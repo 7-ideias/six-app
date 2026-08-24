@@ -209,7 +209,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.weekdayShort.saturday': 'Sáb',
     'common.weekdayShort.sunday': 'Dom',
     'web.navigation.home': 'Início',
-    'web.navigation.operations': 'Operações',
+    'web.navigation.operations': 'Atendimento',
     'web.navigation.operations.pos': 'Frente de caixa',
     'web.navigation.operations.technicalService': 'Assistências técnicas',
     'web.navigation.operations.purchases': 'Compras',

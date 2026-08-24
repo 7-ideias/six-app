@@ -30,18 +30,22 @@ class WebSidebarNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool brandedSidebar = _useBrandedSidebar(theme.colorScheme);
+    final Color sidebarBackground =
+        brandedSidebar ? theme.colorScheme.primary : tokens.sidebarBackground;
     final List<WebNavigationItem> mainItems = _mainNavigationItems(items);
     final WebNavigationItem? settingsItem = _settingsNavigationItem(items);
 
     return Material(
-      color: tokens.sidebarBackground,
+      color: sidebarBackground,
       child: AnimatedContainer(
         key: const Key('web-sidebar-container'),
         duration: WebThemeTokens.transitionDuration,
         curve: WebThemeTokens.transitionCurve,
         decoration: BoxDecoration(
-          color: tokens.sidebarBackground,
+          color: sidebarBackground,
           border: Border(right: BorderSide(color: tokens.sidebarBorder)),
         ),
         child: SafeArea(
@@ -109,8 +113,14 @@ class _SidebarFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool brandedSidebar = _useBrandedSidebar(theme.colorScheme);
     final WebNavigationItem? item = settingsItem;
+    final Color dividerColor =
+        brandedSidebar
+            ? theme.colorScheme.onPrimary.withValues(alpha: 0.14)
+            : tokens.divider;
 
     return Padding(
       key: const Key('web-sidebar-footer'),
@@ -119,7 +129,7 @@ class _SidebarFooter extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Divider(height: 14, color: tokens.divider),
+          Divider(height: 14, color: dividerColor),
           if (item != null) ...<Widget>[
             _SidebarItem(
               item: item,
@@ -148,10 +158,26 @@ class _SidebarBrand extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Color brandBackground = Color.alphaBlend(
-      colorScheme.primary.withValues(alpha: 0.10),
-      tokens.surfaceMuted,
-    );
+    final bool brandedSidebar = _useBrandedSidebar(colorScheme);
+    final Color brandBackground =
+        brandedSidebar
+            ? colorScheme.onPrimary.withValues(alpha: 0.14)
+            : Color.alphaBlend(
+              colorScheme.primary.withValues(alpha: 0.10),
+              tokens.surfaceMuted,
+            );
+    final Color badgeBorder =
+        brandedSidebar
+            ? colorScheme.onPrimary.withValues(alpha: 0.18)
+            : tokens.selectedBorder;
+    final Color badgeTextColor =
+        brandedSidebar
+            ? colorScheme.onPrimary
+            : colorScheme.brightness == Brightness.dark
+            ? tokens.info
+            : colorScheme.primary;
+    final Color titleColor =
+        brandedSidebar ? colorScheme.onPrimary : tokens.primaryText;
 
     return SizedBox(
       height: 62,
@@ -168,15 +194,12 @@ class _SidebarBrand extends StatelessWidget {
               decoration: BoxDecoration(
                 color: brandBackground,
                 borderRadius: BorderRadius.circular(compact ? 10 : 12),
-                border: Border.all(color: tokens.selectedBorder),
+                border: Border.all(color: badgeBorder),
               ),
               child: Text(
                 'S',
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color:
-                      colorScheme.brightness == Brightness.dark
-                          ? tokens.info
-                          : colorScheme.primary,
+                  color: badgeTextColor,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -199,7 +222,7 @@ class _SidebarBrand extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: tokens.primaryText,
+                        color: titleColor,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -406,18 +429,53 @@ class _SidebarTile extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool brandedSidebar = _useBrandedSidebar(colorScheme);
     final bool highlighted = active || groupActive;
     final Color accent =
-        colorScheme.brightness == Brightness.dark
+        brandedSidebar
+            ? colorScheme.onPrimary
+            : colorScheme.brightness == Brightness.dark
             ? tokens.info
             : colorScheme.primary;
-    final Color foreground = highlighted ? accent : tokens.secondaryText;
+    final Color foreground =
+        brandedSidebar
+            ? (highlighted
+                ? accent
+                : colorScheme.onPrimary.withValues(alpha: 0.82))
+            : (highlighted ? accent : tokens.secondaryText);
+    final Color tileBackground =
+        brandedSidebar
+            ? (active
+                ? colorScheme.onPrimary.withValues(alpha: 0.16)
+                : groupActive
+                ? colorScheme.onPrimary.withValues(alpha: 0.10)
+                : Colors.transparent)
+            : (active
+                ? tokens.selectedBackground
+                : groupActive
+                ? tokens.hoverBackground
+                : Colors.transparent);
+    final Color tileBorder =
+        brandedSidebar
+            ? (active
+                ? colorScheme.onPrimary.withValues(alpha: 0.20)
+                : Colors.transparent)
+            : (active ? tokens.selectedBorder : Colors.transparent);
+    final Color textColor =
+        brandedSidebar
+            ? (highlighted
+                ? colorScheme.onPrimary
+                : colorScheme.onPrimary.withValues(alpha: 0.82))
+            : (highlighted ? tokens.primaryText : tokens.secondaryText);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        overlayColor: _sidebarOverlayColor(tokens),
+        overlayColor: _sidebarOverlayColor(
+          brandedSidebar: brandedSidebar,
+          tokens: tokens,
+        ),
         onTap: onTap,
         child: AnimatedContainer(
           key: ValueKey<String>('web-sidebar-tile-$label'),
@@ -425,16 +483,9 @@ class _SidebarTile extends StatelessWidget {
           height: 42,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
-            color:
-                active
-                    ? tokens.selectedBackground
-                    : groupActive
-                    ? tokens.hoverBackground
-                    : Colors.transparent,
+            color: tileBackground,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: active ? tokens.selectedBorder : Colors.transparent,
-            ),
+            border: Border.all(color: tileBorder),
           ),
           child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
@@ -481,10 +532,7 @@ class _SidebarTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.labelLarge?.copyWith(
-                        color:
-                            highlighted
-                                ? tokens.primaryText
-                                : tokens.secondaryText,
+                        color: textColor,
                         fontWeight:
                             highlighted ? FontWeight.w800 : FontWeight.w700,
                       ),
@@ -551,36 +599,50 @@ class _SidebarIconButton extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool brandedSidebar = _useBrandedSidebar(colorScheme);
     final Color accent =
-        colorScheme.brightness == Brightness.dark
+        brandedSidebar
+            ? colorScheme.onPrimary
+            : colorScheme.brightness == Brightness.dark
             ? tokens.info
             : colorScheme.primary;
+    final Color buttonBackground =
+        brandedSidebar
+            ? colorScheme.onPrimary.withValues(alpha: 0.16)
+            : tokens.selectedBackground;
+    final Color buttonBorder =
+        brandedSidebar
+            ? colorScheme.onPrimary.withValues(alpha: 0.20)
+            : tokens.selectedBorder;
+    final Color iconColor =
+        brandedSidebar
+            ? colorScheme.onPrimary.withValues(alpha: 0.82)
+            : tokens.secondaryText;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        overlayColor: _sidebarOverlayColor(tokens),
+        overlayColor: _sidebarOverlayColor(
+          brandedSidebar: brandedSidebar,
+          tokens: tokens,
+        ),
         onTap: onTap,
         child: AnimatedContainer(
           key: ValueKey<String>('web-sidebar-icon-${icon.codePoint}'),
           duration: const Duration(milliseconds: 160),
           height: 46,
           decoration: BoxDecoration(
-            color: active ? tokens.selectedBackground : Colors.transparent,
+            color: active ? buttonBackground : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: active ? tokens.selectedBorder : Colors.transparent,
+              color: active ? buttonBorder : Colors.transparent,
             ),
           ),
           child: Stack(
             alignment: Alignment.center,
             children: <Widget>[
-              Icon(
-                icon,
-                size: 21,
-                color: active ? accent : tokens.secondaryText,
-              ),
+              Icon(icon, size: 21, color: active ? accent : iconColor),
               Positioned(
                 left: 4,
                 child: AnimatedContainer(
@@ -612,18 +674,25 @@ class _CollapsedChildMenuEntry extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool brandedSidebar = _useBrandedSidebar(colorScheme);
     final Color accent =
-        colorScheme.brightness == Brightness.dark
+        brandedSidebar
+            ? colorScheme.onPrimary
+            : colorScheme.brightness == Brightness.dark
             ? tokens.info
             : colorScheme.primary;
+    final Color foreground =
+        brandedSidebar
+            ? colorScheme.onPrimary.withValues(alpha: 0.82)
+            : tokens.secondaryText;
+    final Color textColor =
+        brandedSidebar
+            ? colorScheme.onPrimary.withValues(alpha: 0.9)
+            : tokens.primaryText;
 
     return Row(
       children: <Widget>[
-        Icon(
-          item.icon,
-          size: 18,
-          color: active ? accent : tokens.secondaryText,
-        ),
+        Icon(item.icon, size: 18, color: active ? accent : foreground),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
@@ -631,7 +700,7 @@ class _CollapsedChildMenuEntry extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.labelLarge?.copyWith(
-              color: active ? accent : tokens.primaryText,
+              color: active ? accent : textColor,
               fontWeight: active ? FontWeight.w800 : FontWeight.w600,
             ),
           ),
@@ -650,7 +719,9 @@ class _SidebarVersionPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool brandedSidebar = _useBrandedSidebar(colorScheme);
     final String label = _navigationText(
       context,
       'web.shell.version',
@@ -670,9 +741,17 @@ class _SidebarVersionPill extends StatelessWidget {
           ),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: tokens.surfaceMuted,
+            color:
+                brandedSidebar
+                    ? colorScheme.onPrimary.withValues(alpha: 0.10)
+                    : tokens.surfaceMuted,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: tokens.cardBorder),
+            border: Border.all(
+              color:
+                  brandedSidebar
+                      ? colorScheme.onPrimary.withValues(alpha: 0.14)
+                      : tokens.cardBorder,
+            ),
           ),
           child:
               expanded
@@ -681,14 +760,20 @@ class _SidebarVersionPill extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelMedium?.copyWith(
-                      color: tokens.mutedText,
+                      color:
+                          brandedSidebar
+                              ? colorScheme.onPrimary.withValues(alpha: 0.84)
+                              : tokens.mutedText,
                       fontWeight: FontWeight.w800,
                     ),
                   )
                   : Icon(
                     Icons.info_outline_rounded,
                     size: 18,
-                    color: tokens.mutedText,
+                    color:
+                        brandedSidebar
+                            ? colorScheme.onPrimary.withValues(alpha: 0.84)
+                            : tokens.mutedText,
                   ),
         ),
       ),
@@ -734,14 +819,25 @@ bool _containsActiveDestination(
   );
 }
 
-WidgetStateProperty<Color?> _sidebarOverlayColor(WebThemeTokens tokens) {
+bool _useBrandedSidebar(ColorScheme colorScheme) {
+  return colorScheme.brightness != Brightness.dark;
+}
+
+WidgetStateProperty<Color?> _sidebarOverlayColor({
+  required bool brandedSidebar,
+  required WebThemeTokens tokens,
+}) {
   return WidgetStateProperty.resolveWith((Set<WidgetState> states) {
     if (states.contains(WidgetState.pressed)) {
-      return tokens.selectedBackground;
+      return brandedSidebar
+          ? Colors.white.withValues(alpha: 0.12)
+          : tokens.selectedBackground;
     }
     if (states.contains(WidgetState.hovered) ||
         states.contains(WidgetState.focused)) {
-      return tokens.hoverBackground;
+      return brandedSidebar
+          ? Colors.white.withValues(alpha: 0.08)
+          : tokens.hoverBackground;
     }
     return null;
   });
