@@ -249,6 +249,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   bool _isLoading = false;
   String _tipoCadastro = 'RESUMIDO';
   int _etapaAtual = 0;
+  bool _jornadaIniciada = false;
+  bool _seletorTipoCadastroExpandido = true;
   String _categoriaUnidadeMedida = 'UNIDADE';
   bool _controlaEstoque = true;
   bool _permiteVendaFracionada = false;
@@ -2089,11 +2091,36 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         ];
 
   void _selecionarTipoCadastro(String tipo) {
-    if (_isLoading || tipo == _tipoCadastro) return;
+    if (_isLoading) return;
+    final bool tipoAlterado = tipo != _tipoCadastro;
+    if (!tipoAlterado && !_jornadaIniciada) return;
+
     setState(() {
-      _tipoCadastro = tipo;
-      _etapaAtual = 0;
+      if (tipoAlterado) {
+        _tipoCadastro = tipo;
+        _etapaAtual = 0;
+      }
+      if (_jornadaIniciada) {
+        _seletorTipoCadastroExpandido = false;
+      }
     });
+  }
+
+  String get _rotuloTipoCadastroSelecionado => _cadastroCompleto
+      ? _t('produto.journey.completeTitle', 'Cadastro completo')
+      : _t('produto.journey.summaryTitle', 'Cadastro resumido');
+
+  void _abrirSeletorTipoCadastro() {
+    if (_isLoading || _seletorTipoCadastroExpandido) return;
+    setState(() => _seletorTipoCadastroExpandido = true);
+  }
+
+  Duration _duracaoMovimento(Duration duration) {
+    final MediaQueryData? mediaQuery = MediaQuery.maybeOf(context);
+    final bool reduzirMovimento =
+        (mediaQuery?.disableAnimations ?? false) ||
+        (mediaQuery?.accessibleNavigation ?? false);
+    return reduzirMovimento ? Duration.zero : duration;
   }
 
   Widget _buildTipoCadastroSelector(BuildContext context) {
@@ -2146,6 +2173,127 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 );
         },
       ),
+    );
+  }
+
+  Widget _buildTipoCadastroCompacto(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final String nivelSelecionado = _rotuloTipoCadastroSelecionado;
+    final String rotuloTipo = _t(
+      'produto.journey.modeLabel',
+      'Tipo de cadastro',
+    );
+    final String alterar = context.t('produto.journey.changeMode');
+
+    return Semantics(
+      key: const ValueKey<String>('produto-tipo-cadastro-compacto-web'),
+      button: true,
+      label: '$rotuloTipo: $nivelSelecionado. $alterar',
+      child: Material(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: _abrirSeletorTipoCadastro,
+          borderRadius: BorderRadius.circular(18),
+          hoverColor: tokens.info.withValues(alpha: 0.04),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 66),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: tokens.info.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(
+                    _cadastroCompleto
+                        ? Icons.fact_check_outlined
+                        : Icons.bolt_outlined,
+                    color: tokens.info,
+                    size: 21,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        rotuloTipo,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: tokens.secondaryText,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        nivelSelecionado,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: tokens.primaryText,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  alterar,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: tokens.info,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.expand_more_rounded, color: tokens.info, size: 21),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTipoCadastroControl(BuildContext context) {
+    final bool exibirSeletorCompleto =
+        !_jornadaIniciada || _seletorTipoCadastroExpandido;
+
+    return AnimatedSwitcher(
+      duration: _duracaoMovimento(const Duration(milliseconds: 240)),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SizeTransition(
+            sizeFactor: animation,
+            axisAlignment: -1,
+            child: child,
+          ),
+        );
+      },
+      child: exibirSeletorCompleto
+          ? KeyedSubtree(
+              key: const ValueKey<String>(
+                'produto-tipo-cadastro-expandido-web',
+              ),
+              child: _buildTipoCadastroSelector(context),
+            )
+          : _buildTipoCadastroCompacto(context),
     );
   }
 
@@ -2656,7 +2804,11 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     FocusScope.of(context).unfocus();
     if (_etapaAtual < _totalEtapas - 1) {
-      setState(() => _etapaAtual++);
+      setState(() {
+        _jornadaIniciada = true;
+        _seletorTipoCadastroExpandido = false;
+        _etapaAtual++;
+      });
     }
   }
 
@@ -3052,8 +3204,6 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         if (_etapaAtual == 0) {
           conteudoEtapa = Column(
             children: <Widget>[
-              _buildTipoCadastroSelector(context),
-              const SizedBox(height: 20),
               dadosPrincipais,
               if (_cadastroCompleto) ...<Widget>[
                 const SizedBox(height: 20),
@@ -3131,6 +3281,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                             builder: (BuildContext context, Widget? child) =>
                                 _buildJourneyProgress(context),
                           ),
+                          const SizedBox(height: 20),
+                          _buildTipoCadastroControl(context),
                           const SizedBox(height: 20),
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 220),

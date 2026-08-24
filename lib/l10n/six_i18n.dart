@@ -22,9 +22,9 @@ extension SixI18nBuildContext on BuildContext {
         fallback ?? _fallbacks[code]?[key] ?? _fallbacks['pt']?[key];
     if (resolvedFallback != null && resolvedFallback.isNotEmpty) {
       if (kDebugMode) {
-        debugPrint(
-          '[i18n] chave ausente: $key para idioma=$code. Usando fallback.',
-        );
+        // debugPrint(
+        //   '[i18n] chave ausente: $key para idioma=$code. Usando fallback.',
+        // );
       }
       return resolvedFallback;
     }
@@ -46,6 +46,7 @@ extension SixI18nBuildContext on BuildContext {
 
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
+    'produto.journey.changeMode': 'Alterar',
     'produto.quality.title': 'Qualidade do cadastro',
     'produto.quality.levelEssential': 'Essencial',
     'produto.quality.levelReady': 'Pronto para vender',
@@ -1649,6 +1650,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
+    'produto.journey.changeMode': 'Change',
     'produto.quality.title': 'Registration quality',
     'produto.quality.levelEssential': 'Essential',
     'produto.quality.levelReady': 'Ready to sell',
@@ -3139,6 +3141,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
+    'produto.journey.changeMode': 'Cambiar',
     'produto.quality.title': 'Calidad del registro',
     'produto.quality.levelEssential': 'Esencial',
     'produto.quality.levelReady': 'Listo para vender',
