@@ -41,6 +41,8 @@ void main() {
 
     expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
     expect(find.byIcon(Icons.storefront_outlined), findsOneWidget);
+    expect(find.text('Qualidade do cadastro'), findsOneWidget);
+    expect(find.text('Novo produto'), findsNothing);
   });
 
   testWidgets('edicao inicializa os marcadores a partir da API', (

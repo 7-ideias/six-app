@@ -68,6 +68,8 @@ void main() {
 
     expect(find.byTooltip('Marcar como favorito'), findsOneWidget);
     expect(find.byTooltip('Disponibilizar para catálogo'), findsOneWidget);
+    expect(find.text('Qualidade do cadastro'), findsOneWidget);
+    expect(find.text('Pronto para envio'), findsNothing);
 
     await tester.tap(find.byTooltip('Marcar como favorito'));
     await tester.pump();

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/models/regionalizacao_models.dart';
@@ -255,12 +256,20 @@ class LocaleSettingsProvider extends ChangeNotifier {
     final bool negativo = normalizado.startsWith('-');
     final List<String> partes = normalizado.replaceFirst('-', '').split('.');
     final String inteiro = _aplicarSeparadorDeMilhar(partes.first);
-    final String decimal =
-        casasDecimais > 0 && partes.length > 1
-            ? '$decimalSeparator${partes[1]}'
-            : '';
+    final String decimal = casasDecimais > 0 && partes.length > 1
+        ? '$decimalSeparator${partes[1]}'
+        : '';
 
     return '${negativo ? '-' : ''}$inteiro$decimal';
+  }
+
+  String formatPercent(num value, {int decimalPlaces = 0}) {
+    final int casasDecimais = decimalPlaces.clamp(0, 6).toInt();
+    final NumberFormat formatter =
+        NumberFormat.percentPattern(currentLocale.toLanguageTag())
+          ..minimumFractionDigits = casasDecimais
+          ..maximumFractionDigits = casasDecimais;
+    return formatter.format(value / 100);
   }
 
   String formatCurrency(
@@ -355,12 +364,11 @@ class LocaleSettingsProvider extends ChangeNotifier {
   String formatTime(DateTime value) {
     if (timeFormat.toLowerCase() == '12h') {
       final bool afternoon = value.hour >= 12;
-      final int hour12 =
-          value.hour == 0
-              ? 12
-              : value.hour > 12
-              ? value.hour - 12
-              : value.hour;
+      final int hour12 = value.hour == 0
+          ? 12
+          : value.hour > 12
+          ? value.hour - 12
+          : value.hour;
       return '${_twoDigits(hour12)}:${_twoDigits(value.minute)} ${afternoon ? 'PM' : 'AM'}';
     }
 

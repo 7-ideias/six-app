@@ -192,6 +192,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       widget.imagemSugestaoApiClient ?? HttpImagemSugestaoApiClient();
   late final CategoriaCatalogoApiClient _categoriaApiClient =
       widget.categoriaApiClient ?? HttpCategoriaCatalogoApiClient();
+  late final Listenable _qualidadeListenable;
 
   final TextEditingController _codigoBarrasController = TextEditingController();
   final TextEditingController _nomeProdutoController = TextEditingController();
@@ -334,6 +335,27 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   @override
   void initState() {
     super.initState();
+    _qualidadeListenable = Listenable.merge(<Listenable>[
+      _nomeProdutoController,
+      _codigoBarrasController,
+      _grupoProdutoController,
+      _precoVendaController,
+      _estoqueMinimoController,
+      _estoqueMaximoController,
+      _descricaoController,
+      _codigoInternoController,
+      _marcaController,
+      _fabricanteController,
+      _unidadeMedidaController,
+      _ncmController,
+      _cestController,
+      _cfopController,
+      _origemMercadoriaController,
+      _cstIcmsController,
+      _csosnController,
+      _cstPisController,
+      _cstCofinsController,
+    ]);
     _preencherCamposSeModoEdicao();
     _carregarCategoriasCatalogo();
     _nomeProdutoController.addListener(_onCamposSugestoesAlterados);
@@ -1210,121 +1232,6 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   Widget _buildHeader(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final String statusText = _isLoading
-        ? (_isModoEdicao
-              ? _t('produto.web.savingUpdate', 'Salvando alteração...')
-              : _t('produto.web.saving', 'Salvando...'))
-        : (_isModoEdicao
-              ? _t('produto.web.readyToEdit', 'Pronto para editar')
-              : _t('produto.web.readyToSubmit', 'Pronto para envio'));
-
-    Widget headerIcon() {
-      return Container(
-        width: 54,
-        height: 54,
-        decoration: BoxDecoration(
-          color: tokens.info.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Icon(
-          _isModoEdicao ? Icons.edit_note_rounded : Icons.add_box_outlined,
-          color: tokens.info,
-          size: 28,
-        ),
-      );
-    }
-
-    Widget titleBlock() {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            _isModoEdicao
-                ? _t('produto.web.editProductTitle', 'Edição de produto')
-                : _t('produtos.cadastroDeProdutos', 'Cadastro de produtos'),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              color: tokens.primaryText,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _isModoEdicao
-                ? _t(
-                    'produto.web.editProductSubtitle',
-                    'Revise os dados cadastrados e salve as alterações.',
-                  )
-                : _t(
-                    'produto.web.createProductSubtitle',
-                    'Informe dados comerciais, estoque, preço e imagens do catálogo.',
-                  ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: tokens.secondaryText,
-              height: 1.35,
-            ),
-          ),
-        ],
-      );
-    }
-
-    Widget statusChip() {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: tokens.surfaceMuted,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: tokens.cardBorder),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            SizedBox(
-              width: 16,
-              height: 16,
-              child: _isLoading
-                  ? CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: tokens.info,
-                    )
-                  : Icon(
-                      Icons.check_circle_outline_rounded,
-                      size: 16,
-                      color: tokens.info,
-                    ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              statusText,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: tokens.primaryText,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    Widget closeButton() {
-      return IconButton.filledTonal(
-        onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-        tooltip: _t('common.close', 'Fechar'),
-        icon: const Icon(Icons.close_rounded),
-        style: IconButton.styleFrom(
-          backgroundColor: tokens.surfaceMuted,
-          foregroundColor: tokens.info,
-          disabledBackgroundColor: tokens.disabledBackground,
-          disabledForegroundColor: tokens.disabledForeground,
-        ),
-      );
-    }
-
     final Widget favoritoAction = _buildHeaderToggleButton(
       context,
       active: _favorito,
@@ -1357,67 +1264,49 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           ? Icons.storefront_rounded
           : Icons.storefront_outlined,
     );
+    final Widget closeButton = IconButton.filledTonal(
+      onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+      tooltip: _t('common.close', 'Fechar'),
+      icon: const Icon(Icons.close_rounded),
+      style: IconButton.styleFrom(
+        backgroundColor: tokens.surfaceMuted,
+        foregroundColor: tokens.info,
+        disabledBackgroundColor: tokens.disabledBackground,
+        disabledForegroundColor: tokens.disabledForeground,
+      ),
+    );
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       decoration: BoxDecoration(
         color: tokens.surfaceMuted,
         border: Border(bottom: BorderSide(color: tokens.cardBorder)),
       ),
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final bool compact = constraints.maxWidth < 720;
-
-          if (compact) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    headerIcon(),
-                    const SizedBox(width: 14),
-                    Expanded(child: titleBlock()),
-                    const SizedBox(width: 10),
-                    closeButton(),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: <Widget>[
-                    statusChip(),
-                    favoritoAction,
-                    catalogoAction,
-                  ],
-                ),
-              ],
-            );
-          }
-
-          return Row(
-            children: <Widget>[
-              headerIcon(),
-              const SizedBox(width: 16),
-              Expanded(child: titleBlock()),
-              const SizedBox(width: 12),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                alignment: WrapAlignment.end,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[
-                  statusChip(),
-                  favoritoAction,
-                  catalogoAction,
-                  closeButton(),
-                ],
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              _isModoEdicao
+                  ? _t('produto.web.editProductTitle', 'Editar produto')
+                  : _t('produtos.cadastroDeProdutos', 'Cadastrar produto'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: tokens.primaryText,
+                fontWeight: FontWeight.w900,
               ),
-            ],
-          );
-        },
+            ),
+          ),
+          const SizedBox(width: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[favoritoAction, catalogoAction, closeButton],
+          ),
+        ],
       ),
     );
   }
@@ -2081,6 +1970,108 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
   bool get _cadastroCompleto => _tipoCadastro == 'COMPLETO';
 
+  QualidadeCadastroProduto get _qualidadeCadastro {
+    final bool servico =
+        _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico;
+    final bool estoqueConfigurado =
+        servico ||
+        !_controlaEstoque ||
+        _estoqueMinimoController.text.trim().isNotEmpty ||
+        _estoqueMaximoController.text.trim().isNotEmpty;
+    final bool detalhesInformados = <String>[
+      _descricaoController.text,
+      _marcaController.text,
+      _fabricanteController.text,
+    ].any((String value) => value.trim().isNotEmpty);
+    final bool dadosFiscaisInformados = <String>[
+      _ncmController.text,
+      _cestController.text,
+      _cfopController.text,
+      _origemMercadoriaController.text,
+      _cstIcmsController.text,
+      _csosnController.text,
+      _cstPisController.text,
+      _cstCofinsController.text,
+    ].any((String value) => value.trim().isNotEmpty);
+
+    return ProdutoCadastroFormUtils.calcularQualidadeCadastro(
+      tipoCadastro: _tipoCadastro,
+      entrada: EntradaQualidadeCadastroProduto(
+        nomeInformado: _nomeProdutoController.text.trim().isNotEmpty,
+        precoInformado:
+            ProdutoCadastroFormUtils.parseDecimal(
+              _precoVendaController.text,
+              numberFormat: _numberFormat(),
+            ) >
+            0,
+        categoriaInformada: _categoriaSelecionadaId?.trim().isNotEmpty == true,
+        identificadorInformado:
+            _codigoBarrasController.text.trim().isNotEmpty ||
+            _codigoInternoController.text.trim().isNotEmpty,
+        organizacaoInformada: _grupoProdutoController.text.trim().isNotEmpty,
+        estoqueConfigurado: estoqueConfigurado,
+        possuiImagem: _totalImagensSelecionadas > 0,
+        detalhesInformados: detalhesInformados,
+        regrasOperacionaisConfiguradas:
+            _categoriaUnidadeMedida.trim().isNotEmpty &&
+            _unidadeMedidaController.text.trim().isNotEmpty,
+        dadosFiscaisInformados: dadosFiscaisInformados,
+      ),
+    );
+  }
+
+  String _rotuloNivelQualidade(NivelQualidadeCadastroProduto nivel) {
+    return switch (nivel) {
+      NivelQualidadeCadastroProduto.essencial => context.t(
+        'produto.quality.levelEssential',
+      ),
+      NivelQualidadeCadastroProduto.prontoParaVender => context.t(
+        'produto.quality.levelReady',
+      ),
+      NivelQualidadeCadastroProduto.bemPreparado => context.t(
+        'produto.quality.levelPrepared',
+      ),
+      NivelQualidadeCadastroProduto.excelente => context.t(
+        'produto.quality.levelExcellent',
+      ),
+    };
+  }
+
+  String _rotuloMelhoria(CriterioQualidadeCadastroProduto criterio) {
+    return switch (criterio) {
+      CriterioQualidadeCadastroProduto.nome => context.t(
+        'produto.quality.actionName',
+      ),
+      CriterioQualidadeCadastroProduto.preco => context.t(
+        'produto.quality.actionPrice',
+      ),
+      CriterioQualidadeCadastroProduto.categoria => context.t(
+        'produto.quality.actionCategory',
+      ),
+      CriterioQualidadeCadastroProduto.identificador => context.t(
+        'produto.quality.actionIdentifier',
+      ),
+      CriterioQualidadeCadastroProduto.organizacao => context.t(
+        'produto.quality.actionOrganization',
+      ),
+      CriterioQualidadeCadastroProduto.estoque => context.t(
+        'produto.quality.actionStock',
+      ),
+      CriterioQualidadeCadastroProduto.imagem => context.t(
+        'produto.quality.actionImage',
+      ),
+      CriterioQualidadeCadastroProduto.detalhes => context.t(
+        'produto.quality.actionDetails',
+      ),
+      CriterioQualidadeCadastroProduto.regrasOperacionais => context.t(
+        'produto.quality.actionRules',
+      ),
+      CriterioQualidadeCadastroProduto.dadosFiscais => context.t(
+        'produto.quality.actionFiscal',
+      ),
+    };
+  }
+
   int get _totalEtapas => _cadastroCompleto ? 5 : 3;
 
   List<String> get _rotulosEtapas => _cadastroCompleto
@@ -2161,7 +2152,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   Widget _buildJourneyProgress(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final List<String> rotulos = _rotulosEtapas;
+    final QualidadeCadastroProduto qualidade = _qualidadeCadastro;
+    final List<MelhoriaQualidadeCadastroProduto> melhorias = qualidade.melhorias
+        .take(2)
+        .toList(growable: false);
+    final LocaleSettingsProvider locale = context
+        .watch<LocaleSettingsProvider>();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -2173,85 +2171,225 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool compacto = constraints.maxWidth < 700;
+          final Widget qualidadeWidget = Semantics(
+            container: true,
+            label:
+                '${context.t('produto.quality.title')}: '
+                '${locale.formatPercent(qualidade.percentual)}. '
+                '${_rotuloNivelQualidade(qualidade.nivel)}',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(end: qualidade.percentual / 100),
+                  duration: const Duration(milliseconds: 320),
+                  curve: Curves.easeOutCubic,
+                  builder: (BuildContext context, double value, Widget? child) {
+                    return SizedBox(
+                      width: 58,
+                      height: 58,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: <Widget>[
+                          SizedBox.expand(
+                            child: CircularProgressIndicator(
+                              value: value,
+                              strokeWidth: 6,
+                              strokeCap: StrokeCap.round,
+                              color: tokens.info,
+                              backgroundColor: tokens.cardBorder,
+                            ),
+                          ),
+                          Text(
+                            locale.formatPercent(value * 100),
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: tokens.primaryText,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 14),
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        context.t('produto.quality.title'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: tokens.primaryText,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        _rotuloNivelQualidade(qualidade.nivel),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: tokens.info,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+          final Widget melhoriasWidget = melhorias.isEmpty
+              ? Text(
+                  context.t('produto.quality.completeMessage'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: tokens.secondaryText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                )
+              : Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: melhorias
+                      .map((melhoria) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: tokens.surfaceMuted,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: tokens.cardBorder),
+                          ),
+                          child: Text(
+                            '${_rotuloMelhoria(melhoria.criterio)} '
+                            '+${locale.formatPercent(melhoria.pontos)}',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: tokens.primaryText,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        );
+                      })
+                      .toList(growable: false),
+                );
+          final Widget etapasWidget = compacto
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      '${_t('produto.journey.step', 'Etapa')} ${_etapaAtual + 1} '
+                      '${_t('produto.journey.of', 'de')} $_totalEtapas · ${rotulos[_etapaAtual]}',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    LinearProgressIndicator(
+                      value: (_etapaAtual + 1) / _totalEtapas,
+                      minHeight: 6,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ],
+                )
+              : Row(
+                  children: List<Widget>.generate(rotulos.length, (int index) {
+                    final bool ativa = index == _etapaAtual;
+                    final bool concluida = index < _etapaAtual;
+                    return Expanded(
+                      child: Row(
+                        children: <Widget>[
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            width: 30,
+                            height: 30,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: ativa || concluida
+                                  ? colorScheme.primary
+                                  : colorScheme.surfaceContainerHighest,
+                              shape: BoxShape.circle,
+                            ),
+                            child: concluida
+                                ? Icon(
+                                    Icons.check_rounded,
+                                    size: 17,
+                                    color: colorScheme.onPrimary,
+                                  )
+                                : Text(
+                                    '${index + 1}',
+                                    style: theme.textTheme.labelMedium
+                                        ?.copyWith(
+                                          color: ativa
+                                              ? colorScheme.onPrimary
+                                              : colorScheme.onSurfaceVariant,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                  ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              rotulos[index],
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: ativa
+                                    ? colorScheme.onSurface
+                                    : colorScheme.onSurfaceVariant,
+                                fontWeight: ativa
+                                    ? FontWeight.w900
+                                    : FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          if (index < rotulos.length - 1)
+                            Container(
+                              width: 22,
+                              height: 1,
+                              color: colorScheme.outlineVariant,
+                            ),
+                        ],
+                      ),
+                    );
+                  }),
+                );
+
           if (compacto) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  '${_t('produto.journey.step', 'Etapa')} ${_etapaAtual + 1} '
-                  '${_t('produto.journey.of', 'de')} $_totalEtapas · ${rotulos[_etapaAtual]}',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                LinearProgressIndicator(
-                  value: (_etapaAtual + 1) / _totalEtapas,
-                  minHeight: 6,
-                  borderRadius: BorderRadius.circular(999),
-                ),
+                qualidadeWidget,
+                const SizedBox(height: 12),
+                melhoriasWidget,
+                const SizedBox(height: 14),
+                Divider(height: 1, color: colorScheme.outlineVariant),
+                const SizedBox(height: 14),
+                etapasWidget,
               ],
             );
           }
 
-          return Row(
-            children: List<Widget>.generate(rotulos.length, (int index) {
-              final bool ativa = index == _etapaAtual;
-              final bool concluida = index < _etapaAtual;
-              return Expanded(
-                child: Row(
-                  children: <Widget>[
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: 30,
-                      height: 30,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: ativa || concluida
-                            ? colorScheme.primary
-                            : colorScheme.surfaceContainerHighest,
-                        shape: BoxShape.circle,
-                      ),
-                      child: concluida
-                          ? Icon(
-                              Icons.check_rounded,
-                              size: 17,
-                              color: colorScheme.onPrimary,
-                            )
-                          : Text(
-                              '${index + 1}',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: ativa
-                                    ? colorScheme.onPrimary
-                                    : colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        rotulos[index],
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: ativa
-                              ? colorScheme.onSurface
-                              : colorScheme.onSurfaceVariant,
-                          fontWeight: ativa ? FontWeight.w900 : FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    if (index < rotulos.length - 1)
-                      Container(
-                        width: 22,
-                        height: 1,
-                        color: colorScheme.outlineVariant,
-                      ),
-                  ],
-                ),
-              );
-            }),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  SizedBox(width: 280, child: qualidadeWidget),
+                  const SizedBox(width: 20),
+                  Expanded(child: melhoriasWidget),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Divider(height: 1, color: colorScheme.outlineVariant),
+              const SizedBox(height: 14),
+              etapasWidget,
+            ],
           );
         },
       ),
@@ -2988,7 +3126,11 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                       constraints: const BoxConstraints(maxWidth: 1320),
                       child: Column(
                         children: <Widget>[
-                          _buildJourneyProgress(context),
+                          AnimatedBuilder(
+                            animation: _qualidadeListenable,
+                            builder: (BuildContext context, Widget? child) =>
+                                _buildJourneyProgress(context),
+                          ),
                           const SizedBox(height: 20),
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 220),

@@ -74,6 +74,7 @@ class _CadastroProdutoMobileScreenState
       widget.categoriaApiClient ?? HttpCategoriaCatalogoApiClient();
   final ImagePicker _imagePicker = ImagePicker();
   final ScrollController _slotsScrollController = ScrollController();
+  late final Listenable _qualidadeListenable;
 
   final _nomeController = TextEditingController();
   final _codigoController = TextEditingController();
@@ -148,8 +149,9 @@ class _CadastroProdutoMobileScreenState
   }
 
   String _decimalInputHint({int decimalPlaces = 2}) {
-    final decimalSeparator =
-        context.read<LocaleSettingsProvider>().decimalSeparator;
+    final decimalSeparator = context
+        .read<LocaleSettingsProvider>()
+        .decimalSeparator;
     return '0$decimalSeparator${'0' * decimalPlaces}';
   }
 
@@ -179,6 +181,27 @@ class _CadastroProdutoMobileScreenState
   @override
   void initState() {
     super.initState();
+    _qualidadeListenable = Listenable.merge(<Listenable>[
+      _nomeController,
+      _codigoController,
+      _grupoController,
+      _precoVendaController,
+      _estoqueMinController,
+      _estoqueMaxController,
+      _descricaoController,
+      _codigoInternoController,
+      _marcaController,
+      _fabricanteController,
+      _unidadeMedidaController,
+      _ncmController,
+      _cestController,
+      _cfopController,
+      _origemMercadoriaController,
+      _cstIcmsController,
+      _csosnController,
+      _cstPisController,
+      _cstCofinsController,
+    ]);
     _tipoSelecionado = _normalizarTipo(widget.tipoInicial);
     _preencherCamposSeModoEdicao();
     _carregarCategoriasCatalogo();
@@ -234,25 +257,25 @@ class _CadastroProdutoMobileScreenState
     _ativo = produto.ativo;
     _favorito = produto.favorito;
     _disponivelParaCatalogo = produto.disponivelParaCatalogo;
-    _tipoCadastro =
-        produto.tipoCadastro.toUpperCase() == 'COMPLETO'
-            ? 'COMPLETO'
-            : 'RESUMIDO';
+    _tipoCadastro = produto.tipoCadastro.toUpperCase() == 'COMPLETO'
+        ? 'COMPLETO'
+        : 'RESUMIDO';
     _codigoController.text = produto.codigoDeBarras;
     _nomeController.text = produto.nomeProduto;
     _tipoSelecionado = _normalizarTipo(produto.tipoProduto);
     _categoriaSelecionadaId = produto.objCategoria?.idCategoria;
     _categoriaSelecionadaNome = produto.objCategoria?.nomeCategoria;
-    _modeloController.text =
-        produto.modeloProduto.trim().isEmpty
-            ? ProdutoCadastroFormUtils.modeloPadrao
-            : produto.modeloProduto;
+    _modeloController.text = produto.modeloProduto.trim().isEmpty
+        ? ProdutoCadastroFormUtils.modeloPadrao
+        : produto.modeloProduto;
     _grupoController.text = produto.objAgrupamento?.grupoDoProduto ?? '';
     _estoqueMaxController.text = produto.estoqueMaximo.toString();
     _estoqueMinController.text = produto.estoqueMinimo.toString();
     _precoVendaController.text = produto.precoVenda.toString();
-    _valorComissaoController.text =
-        produto.objComissao.valorFixoDeComissaoParaEsseProduto.toString();
+    _valorComissaoController.text = produto
+        .objComissao
+        .valorFixoDeComissaoParaEsseProduto
+        .toString();
     _produtoTemComissaoEspecial =
         produto.objComissao.produtoTemComissaoEspecial;
 
@@ -283,8 +306,8 @@ class _CadastroProdutoMobileScreenState
     _permiteEstoqueNegativo = regras?.permiteEstoqueNegativo ?? false;
     _quantidadeMinimaVendaController.text =
         regras == null || regras.quantidadeMinimaVenda == 0
-            ? ''
-            : regras.quantidadeMinimaVenda.toString();
+        ? ''
+        : regras.quantidadeMinimaVenda.toString();
 
     final ProdutoDadosFiscaisModel? fiscais = produto.dadosFiscais;
     _ncmController.text = fiscais?.ncm ?? '';
@@ -309,8 +332,8 @@ class _CadastroProdutoMobileScreenState
     });
 
     try {
-      final CategoriaCatalogoListResponse response =
-          await _categoriaApiClient.listarCategorias();
+      final CategoriaCatalogoListResponse response = await _categoriaApiClient
+          .listarCategorias();
       if (!mounted) return;
 
       setState(() {
@@ -512,13 +535,13 @@ class _CadastroProdutoMobileScreenState
           content: Text(
             _isModoEdicao
                 ? _t(
-                  'produto.mobile.updateSuccess',
-                  'Produto atualizado com sucesso!',
-                )
+                    'produto.mobile.updateSuccess',
+                    'Produto atualizado com sucesso!',
+                  )
                 : _t(
-                  'produto.mobile.createSuccess',
-                  'Produto cadastrado com sucesso!',
-                ),
+                    'produto.mobile.createSuccess',
+                    'Produto cadastrado com sucesso!',
+                  ),
           ),
           behavior: SnackBarBehavior.floating,
         ),
@@ -556,10 +579,9 @@ class _CadastroProdutoMobileScreenState
 
     SixTopNotice.show(
       context,
-      message:
-          _favorito
-              ? _t('produto.favorite.enabledFeedback', 'Favorito ativado')
-              : _t('produto.favorite.disabledFeedback', 'Favorito desativado'),
+      message: _favorito
+          ? _t('produto.favorite.enabledFeedback', 'Favorito ativado')
+          : _t('produto.favorite.disabledFeedback', 'Favorito desativado'),
       icon: _favorito ? Icons.favorite_rounded : Icons.favorite_border_rounded,
     );
   }
@@ -573,20 +595,18 @@ class _CadastroProdutoMobileScreenState
 
     SixTopNotice.show(
       context,
-      message:
-          _disponivelParaCatalogo
-              ? _t(
-                'produto.catalog.enabledFeedback',
-                'Disponível para catálogo ativado',
-              )
-              : _t(
-                'produto.catalog.disabledFeedback',
-                'Disponível para catálogo desativado',
-              ),
-      icon:
-          _disponivelParaCatalogo
-              ? Icons.storefront_rounded
-              : Icons.storefront_outlined,
+      message: _disponivelParaCatalogo
+          ? _t(
+              'produto.catalog.enabledFeedback',
+              'Disponível para catálogo ativado',
+            )
+          : _t(
+              'produto.catalog.disabledFeedback',
+              'Disponível para catálogo desativado',
+            ),
+      icon: _disponivelParaCatalogo
+          ? Icons.storefront_rounded
+          : Icons.storefront_outlined,
     );
   }
 
@@ -605,14 +625,12 @@ class _CadastroProdutoMobileScreenState
           onPressed: onPressed,
           icon: Icon(icon, size: 20),
           style: IconButton.styleFrom(
-            backgroundColor:
-                active
-                    ? SixMobilePalette.onPrimary.withValues(alpha: 0.20)
-                    : SixMobilePalette.onPrimary.withValues(alpha: 0.08),
-            foregroundColor:
-                active
-                    ? SixMobilePalette.onPrimary
-                    : SixMobilePalette.heroSupportingText,
+            backgroundColor: active
+                ? SixMobilePalette.onPrimary.withValues(alpha: 0.20)
+                : SixMobilePalette.onPrimary.withValues(alpha: 0.08),
+            foregroundColor: active
+                ? SixMobilePalette.onPrimary
+                : SixMobilePalette.heroSupportingText,
           ),
         ),
       ),
@@ -651,10 +669,9 @@ class _CadastroProdutoMobileScreenState
         throw Exception('Arquivo vazio.');
       }
 
-      final nomeArquivo =
-          arquivo.name.trim().isEmpty
-              ? 'produto-${DateTime.now().millisecondsSinceEpoch}.jpg'
-              : arquivo.name.trim();
+      final nomeArquivo = arquivo.name.trim().isEmpty
+          ? 'produto-${DateTime.now().millisecondsSinceEpoch}.jpg'
+          : arquivo.name.trim();
 
       setState(() {
         final slot = _imagemSlots[slotIndex];
@@ -840,15 +857,14 @@ class _CadastroProdutoMobileScreenState
         fontWeight: FontWeight.w600,
       ),
       decoration: _inputDecoration(label, hintText: hintText),
-      validator:
-          requiredField
-              ? (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return _t('common.required', 'Campo obrigatório');
-                }
-                return null;
+      validator: requiredField
+          ? (value) {
+              if (value == null || value.trim().isEmpty) {
+                return _t('common.required', 'Campo obrigatório');
               }
-              : null,
+              return null;
+            }
+          : null,
     );
   }
 
@@ -856,10 +872,9 @@ class _CadastroProdutoMobileScreenState
     return _MobileSelectorField(
       label: _t('produto.mobile.typeLabel', 'Tipo'),
       value: _tipoLabel(_tipoSelecionado),
-      icon:
-          _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico
-              ? Icons.design_services_outlined
-              : Icons.inventory_2_outlined,
+      icon: _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico
+          ? Icons.design_services_outlined
+          : Icons.inventory_2_outlined,
       enabled: !_isLoading,
       onTap: _abrirSeletorTipo,
     );
@@ -916,14 +931,12 @@ class _CadastroProdutoMobileScreenState
     );
     final CategoriaCatalogoModel? categoriaSelecionada =
         categoriaSelecionadaExiste ? _categoriaSelecionadaEncontrada : null;
-    final String? categoriaLabel =
-        categoriaSelecionada != null
-            ? _categoriaDisplayName(categoriaSelecionada)
-            : _categoriaSelecionadaNome?.trim();
-    final String value =
-        categoriaLabel != null && categoriaLabel.isNotEmpty
-            ? categoriaLabel
-            : _t('produto.mobile.categoryNone', 'Sem categoria');
+    final String? categoriaLabel = categoriaSelecionada != null
+        ? _categoriaDisplayName(categoriaSelecionada)
+        : _categoriaSelecionadaNome?.trim();
+    final String value = categoriaLabel != null && categoriaLabel.isNotEmpty
+        ? categoriaLabel
+        : _t('produto.mobile.categoryNone', 'Sem categoria');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1102,100 +1115,6 @@ class _CadastroProdutoMobileScreenState
     });
   }
 
-  Widget _buildHeaderCard() {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          colors: [_primaryColor, _secondaryColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: SixMobilePalette.heroShadow,
-            blurRadius: 22,
-            offset: Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: SixMobilePalette.onPrimary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: SixMobilePalette.onPrimary.withValues(alpha: 0.20),
-                  ),
-                ),
-                child: Icon(
-                  _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico
-                      ? Icons.design_services_outlined
-                      : Icons.inventory_2_outlined,
-                  color: SixMobilePalette.onPrimary,
-                ),
-              ),
-              SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _isModoEdicao
-                          ? _t(
-                            'produto.mobile.editProductTitle',
-                            'Editar produto',
-                          )
-                          : _t(
-                            'produto.mobile.newProductTitle',
-                            'Novo produto',
-                          ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: SixMobilePalette.onPrimary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      _isModoEdicao
-                          ? _t(
-                            'produto.mobile.editProductSubtitle',
-                            'Atualize os dados, fotos e status do cadastro.',
-                          )
-                          : _t(
-                            'produto.mobile.newProductSubtitle',
-                            'Cadastre dados comerciais, estoque e até 5 imagens.',
-                          ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: SixMobilePalette.heroSupportingText,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 18),
-          _buildJourneyProgress(embeddedInHeader: true),
-        ],
-      ),
-    );
-  }
-
   Widget _buildFieldPair({required Widget first, required Widget second}) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -1340,24 +1259,22 @@ class _CadastroProdutoMobileScreenState
             runSpacing: 10,
             children: [
               FilledButton.icon(
-                onPressed:
-                    _isLoading || slot.isLoading
-                        ? null
-                        : () => _selecionarImagem(
-                          ImageSource.camera,
-                          _slotSelecionadoIndex,
-                        ),
+                onPressed: _isLoading || slot.isLoading
+                    ? null
+                    : () => _selecionarImagem(
+                        ImageSource.camera,
+                        _slotSelecionadoIndex,
+                      ),
                 icon: Icon(Icons.photo_camera_outlined),
                 label: Text(_t('produto.mobile.takePhoto', 'Tirar foto')),
               ),
               OutlinedButton.icon(
-                onPressed:
-                    _isLoading || slot.isLoading
-                        ? null
-                        : () => _selecionarImagem(
-                          ImageSource.gallery,
-                          _slotSelecionadoIndex,
-                        ),
+                onPressed: _isLoading || slot.isLoading
+                    ? null
+                    : () => _selecionarImagem(
+                        ImageSource.gallery,
+                        _slotSelecionadoIndex,
+                      ),
                 icon: Icon(Icons.upload_file_outlined),
                 label: Text(
                   slot.image == null
@@ -1367,10 +1284,9 @@ class _CadastroProdutoMobileScreenState
               ),
               if (slot.image != null)
                 TextButton.icon(
-                  onPressed:
-                      _isLoading || slot.isLoading
-                          ? null
-                          : () => _removerImagemDoSlot(_slotSelecionadoIndex),
+                  onPressed: _isLoading || slot.isLoading
+                      ? null
+                      : () => _removerImagemDoSlot(_slotSelecionadoIndex),
                   icon: Icon(Icons.delete_outline),
                   label: Text(_t('produto.mobile.remove', 'Remover')),
                 ),
@@ -1416,10 +1332,9 @@ class _CadastroProdutoMobileScreenState
           child: Stack(
             children: [
               Positioned.fill(
-                child:
-                    hasImage
-                        ? _buildImageContent(slot, fit: BoxFit.cover)
-                        : _buildImagePlaceholder(),
+                child: hasImage
+                    ? _buildImageContent(slot, fit: BoxFit.cover)
+                    : _buildImagePlaceholder(),
               ),
               if (slot.isLoading)
                 Positioned.fill(
@@ -1532,27 +1447,26 @@ class _CadastroProdutoMobileScreenState
                     color: _softNeutralColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child:
-                      slot.isLoading
-                          ? Center(
-                            child: SizedBox(
-                              height: 18,
-                              width: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: _accentColor,
-                              ),
-                            ),
-                          )
-                          : hasImage
-                          ? _buildImageContent(slot, fit: BoxFit.cover)
-                          : Center(
-                            child: Icon(
-                              Icons.add_photo_alternate_outlined,
-                              color: _mutedTextColor,
-                              size: 20,
+                  child: slot.isLoading
+                      ? Center(
+                          child: SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: _accentColor,
                             ),
                           ),
+                        )
+                      : hasImage
+                      ? _buildImageContent(slot, fit: BoxFit.cover)
+                      : Center(
+                          child: Icon(
+                            Icons.add_photo_alternate_outlined,
+                            color: _mutedTextColor,
+                            size: 20,
+                          ),
+                        ),
                 ),
               ),
               SizedBox(height: 5),
@@ -1765,8 +1679,9 @@ class _CadastroProdutoMobileScreenState
               'Disponível para venda e listagens.',
             ),
             value: _ativo,
-            onChanged:
-                _isLoading ? null : (value) => setState(() => _ativo = value),
+            onChanged: _isLoading
+                ? null
+                : (value) => setState(() => _ativo = value),
           ),
           SizedBox(height: 10),
           _SwitchCard(
@@ -1779,11 +1694,9 @@ class _CadastroProdutoMobileScreenState
               'Permite ajustar o valor durante o atendimento.',
             ),
             value: _podeAlterarValorNaHora,
-            onChanged:
-                _isLoading
-                    ? null
-                    : (value) =>
-                        setState(() => _podeAlterarValorNaHora = value),
+            onChanged: _isLoading
+                ? null
+                : (value) => setState(() => _podeAlterarValorNaHora = value),
           ),
           SizedBox(height: 10),
           _SwitchCard(
@@ -1796,11 +1709,10 @@ class _CadastroProdutoMobileScreenState
               'Aplica comissão específica para este item.',
             ),
             value: _produtoTemComissaoEspecial,
-            onChanged:
-                _isLoading
-                    ? null
-                    : (value) =>
-                        setState(() => _produtoTemComissaoEspecial = value),
+            onChanged: _isLoading
+                ? null
+                : (value) =>
+                      setState(() => _produtoTemComissaoEspecial = value),
           ),
         ],
       ),
@@ -1809,22 +1721,123 @@ class _CadastroProdutoMobileScreenState
 
   bool get _cadastroCompleto => _tipoCadastro == 'COMPLETO';
 
+  QualidadeCadastroProduto get _qualidadeCadastro {
+    final bool servico =
+        _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico;
+    final bool estoqueConfigurado =
+        servico ||
+        !_controlaEstoque ||
+        _estoqueMinController.text.trim().isNotEmpty ||
+        _estoqueMaxController.text.trim().isNotEmpty;
+    final bool detalhesInformados = <String>[
+      _descricaoController.text,
+      _marcaController.text,
+      _fabricanteController.text,
+    ].any((String value) => value.trim().isNotEmpty);
+    final bool dadosFiscaisInformados = <String>[
+      _ncmController.text,
+      _cestController.text,
+      _cfopController.text,
+      _origemMercadoriaController.text,
+      _cstIcmsController.text,
+      _csosnController.text,
+      _cstPisController.text,
+      _cstCofinsController.text,
+    ].any((String value) => value.trim().isNotEmpty);
+
+    return ProdutoCadastroFormUtils.calcularQualidadeCadastro(
+      tipoCadastro: _tipoCadastro,
+      entrada: EntradaQualidadeCadastroProduto(
+        nomeInformado: _nomeController.text.trim().isNotEmpty,
+        precoInformado:
+            ProdutoCadastroFormUtils.parseDecimal(
+              _precoVendaController.text,
+              numberFormat: _numberFormat(),
+            ) >
+            0,
+        categoriaInformada: _categoriaSelecionadaId?.trim().isNotEmpty == true,
+        identificadorInformado:
+            _codigoController.text.trim().isNotEmpty ||
+            _codigoInternoController.text.trim().isNotEmpty,
+        organizacaoInformada: _grupoController.text.trim().isNotEmpty,
+        estoqueConfigurado: estoqueConfigurado,
+        possuiImagem: _totalImagensSelecionadas > 0,
+        detalhesInformados: detalhesInformados,
+        regrasOperacionaisConfiguradas:
+            _categoriaUnidadeMedida.trim().isNotEmpty &&
+            _unidadeMedidaController.text.trim().isNotEmpty,
+        dadosFiscaisInformados: dadosFiscaisInformados,
+      ),
+    );
+  }
+
+  String _rotuloNivelQualidade(NivelQualidadeCadastroProduto nivel) {
+    return switch (nivel) {
+      NivelQualidadeCadastroProduto.essencial => context.t(
+        'produto.quality.levelEssential',
+      ),
+      NivelQualidadeCadastroProduto.prontoParaVender => context.t(
+        'produto.quality.levelReady',
+      ),
+      NivelQualidadeCadastroProduto.bemPreparado => context.t(
+        'produto.quality.levelPrepared',
+      ),
+      NivelQualidadeCadastroProduto.excelente => context.t(
+        'produto.quality.levelExcellent',
+      ),
+    };
+  }
+
+  String _rotuloMelhoria(CriterioQualidadeCadastroProduto criterio) {
+    return switch (criterio) {
+      CriterioQualidadeCadastroProduto.nome => context.t(
+        'produto.quality.actionName',
+      ),
+      CriterioQualidadeCadastroProduto.preco => context.t(
+        'produto.quality.actionPrice',
+      ),
+      CriterioQualidadeCadastroProduto.categoria => context.t(
+        'produto.quality.actionCategory',
+      ),
+      CriterioQualidadeCadastroProduto.identificador => context.t(
+        'produto.quality.actionIdentifier',
+      ),
+      CriterioQualidadeCadastroProduto.organizacao => context.t(
+        'produto.quality.actionOrganization',
+      ),
+      CriterioQualidadeCadastroProduto.estoque => context.t(
+        'produto.quality.actionStock',
+      ),
+      CriterioQualidadeCadastroProduto.imagem => context.t(
+        'produto.quality.actionImage',
+      ),
+      CriterioQualidadeCadastroProduto.detalhes => context.t(
+        'produto.quality.actionDetails',
+      ),
+      CriterioQualidadeCadastroProduto.regrasOperacionais => context.t(
+        'produto.quality.actionRules',
+      ),
+      CriterioQualidadeCadastroProduto.dadosFiscais => context.t(
+        'produto.quality.actionFiscal',
+      ),
+    };
+  }
+
   int get _totalEtapas => _cadastroCompleto ? 5 : 3;
 
-  List<String> get _rotulosEtapas =>
-      _cadastroCompleto
-          ? <String>[
-            _t('produto.journey.identification', 'Identificação'),
-            _t('produto.journey.commercial', 'Comercial'),
-            _t('produto.journey.operation', 'Operação'),
-            _t('produto.journey.fiscal', 'Fiscal'),
-            _t('produto.journey.review', 'Revisão'),
-          ]
-          : <String>[
-            _t('produto.journey.identification', 'Identificação'),
-            _t('produto.journey.commercial', 'Comercial'),
-            _t('produto.journey.review', 'Revisão'),
-          ];
+  List<String> get _rotulosEtapas => _cadastroCompleto
+      ? <String>[
+          _t('produto.journey.identification', 'Identificação'),
+          _t('produto.journey.commercial', 'Comercial'),
+          _t('produto.journey.operation', 'Operação'),
+          _t('produto.journey.fiscal', 'Fiscal'),
+          _t('produto.journey.review', 'Revisão'),
+        ]
+      : <String>[
+          _t('produto.journey.identification', 'Identificação'),
+          _t('produto.journey.commercial', 'Comercial'),
+          _t('produto.journey.review', 'Revisão'),
+        ];
 
   void _selecionarTipoCadastro(String tipo) {
     if (_isLoading || tipo == _tipoCadastro) return;
@@ -1870,31 +1883,161 @@ class _CadastroProdutoMobileScreenState
     );
   }
 
-  Widget _buildJourneyProgress({bool embeddedInHeader = false}) {
+  Widget _buildJourneyProgress() {
     final List<String> rotulos = _rotulosEtapas;
+    final QualidadeCadastroProduto qualidade = _qualidadeCadastro;
+    final List<MelhoriaQualidadeCadastroProduto> melhorias = qualidade.melhorias
+        .take(2)
+        .toList(growable: false);
+    final LocaleSettingsProvider locale = context
+        .watch<LocaleSettingsProvider>();
+    final String percentual = locale.formatPercent(qualidade.percentual);
     return Semantics(
       container: true,
       label:
+          '${context.t('produto.quality.title')}: '
+          '$percentual. ${_rotuloNivelQualidade(qualidade.nivel)}. '
           '${_t('produto.journey.step', 'Etapa')} ${_etapaAtual + 1} '
           '${_t('produto.journey.of', 'de')} $_totalEtapas',
       child: Container(
-        padding: EdgeInsets.all(14),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color:
-              embeddedInHeader
-                  ? _surfaceColor.withValues(alpha: 0.98)
-                  : _surfaceColor,
+          color: _surfaceColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color:
-                embeddedInHeader
-                    ? SixMobilePalette.onPrimary.withValues(alpha: 0.10)
-                    : _borderColor,
-          ),
+          border: Border.all(color: _borderColor),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(end: qualidade.percentual / 100),
+                  duration: Duration(milliseconds: 320),
+                  curve: Curves.easeOutCubic,
+                  builder: (BuildContext context, double value, Widget? child) {
+                    return SizedBox(
+                      width: 62,
+                      height: 62,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: <Widget>[
+                          SizedBox.expand(
+                            child: CircularProgressIndicator(
+                              value: value,
+                              strokeWidth: 6,
+                              strokeCap: StrokeCap.round,
+                              color: _accentColor,
+                              backgroundColor: SixMobilePalette.activeBorder,
+                            ),
+                          ),
+                          Text(
+                            locale.formatPercent(value * 100),
+                            style: TextStyle(
+                              color: _titleTextColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        context.t('produto.quality.title'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _titleTextColor,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _softAccentColor,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          _rotuloNivelQualidade(qualidade.nivel),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: _accentColor,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (melhorias.isNotEmpty) ...<Widget>[
+              SizedBox(height: 12),
+              Text(
+                context.t('produto.quality.nextActions'),
+                style: TextStyle(
+                  color: _mutedTextColor,
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
+              SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: melhorias
+                    .map((melhoria) {
+                      return Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _softNeutralColor,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: _borderColor),
+                        ),
+                        child: Text(
+                          '${_rotuloMelhoria(melhoria.criterio)} '
+                          '+${locale.formatPercent(melhoria.pontos)}',
+                          style: TextStyle(
+                            color: _titleTextColor,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      );
+                    })
+                    .toList(growable: false),
+              ),
+            ] else ...<Widget>[
+              SizedBox(height: 10),
+              Text(
+                context.t('produto.quality.completeMessage'),
+                style: TextStyle(
+                  color: _mutedTextColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            SizedBox(height: 14),
+            Divider(height: 1, color: _borderColor),
+            SizedBox(height: 14),
             Text(
               '${_t('produto.journey.step', 'Etapa')} ${_etapaAtual + 1} '
               '${_t('produto.journey.of', 'de')} $_totalEtapas · ${rotulos[_etapaAtual]}',
@@ -1916,10 +2059,9 @@ class _CadastroProdutoMobileScreenState
                       right: index == rotulos.length - 1 ? 0 : 6,
                     ),
                     decoration: BoxDecoration(
-                      color:
-                          concluida || atual
-                              ? _accentColor
-                              : SixMobilePalette.activeBorder,
+                      color: concluida || atual
+                          ? _accentColor
+                          : SixMobilePalette.activeBorder,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -2095,10 +2237,9 @@ class _CadastroProdutoMobileScreenState
               'Movimenta saldo nas entradas e vendas.',
             ),
             value: _controlaEstoque,
-            onChanged:
-                _isLoading
-                    ? null
-                    : (bool value) => setState(() => _controlaEstoque = value),
+            onChanged: _isLoading
+                ? null
+                : (bool value) => setState(() => _controlaEstoque = value),
           ),
           SizedBox(height: 10),
           _SwitchCard(
@@ -2111,11 +2252,10 @@ class _CadastroProdutoMobileScreenState
               'Aceita quantidades decimais, como peso, área ou volume.',
             ),
             value: _permiteVendaFracionada,
-            onChanged:
-                _isLoading
-                    ? null
-                    : (bool value) =>
-                        setState(() => _permiteVendaFracionada = value),
+            onChanged: _isLoading
+                ? null
+                : (bool value) =>
+                      setState(() => _permiteVendaFracionada = value),
           ),
           SizedBox(height: 10),
           _SwitchCard(
@@ -2128,11 +2268,10 @@ class _CadastroProdutoMobileScreenState
               'Mantém a venda disponível mesmo sem saldo suficiente.',
             ),
             value: _permiteEstoqueNegativo,
-            onChanged:
-                _isLoading
-                    ? null
-                    : (bool value) =>
-                        setState(() => _permiteEstoqueNegativo = value),
+            onChanged: _isLoading
+                ? null
+                : (bool value) =>
+                      setState(() => _permiteEstoqueNegativo = value),
           ),
         ],
       ),
@@ -2198,8 +2337,8 @@ class _CadastroProdutoMobileScreenState
   }
 
   Widget _buildReviewCard() {
-    final LocaleSettingsProvider locale =
-        context.watch<LocaleSettingsProvider>();
+    final LocaleSettingsProvider locale = context
+        .watch<LocaleSettingsProvider>();
     final double preco = ProdutoCadastroFormUtils.parseDecimal(
       _precoVendaController.text,
       numberFormat: _numberFormat(),
@@ -2215,10 +2354,9 @@ class _CadastroProdutoMobileScreenState
         children: <Widget>[
           _ProdutoReviewRowMobile(
             label: _t('produto.mobile.productNameLabel', 'Nome do produto'),
-            value:
-                _nomeController.text.trim().isEmpty
-                    ? _t('common.notInformed', 'Não informado')
-                    : _nomeController.text.trim(),
+            value: _nomeController.text.trim().isEmpty
+                ? _t('common.notInformed', 'Não informado')
+                : _nomeController.text.trim(),
           ),
           _ProdutoReviewRowMobile(
             label: _t('produto.mobile.salePriceLabel', 'Preço de venda'),
@@ -2226,17 +2364,15 @@ class _CadastroProdutoMobileScreenState
           ),
           _ProdutoReviewRowMobile(
             label: _t('produto.fields.unitCode', 'Unidade de medida'),
-            value:
-                _unidadeMedidaController.text.trim().isEmpty
-                    ? 'UN'
-                    : _unidadeMedidaController.text.trim().toUpperCase(),
+            value: _unidadeMedidaController.text.trim().isEmpty
+                ? 'UN'
+                : _unidadeMedidaController.text.trim().toUpperCase(),
           ),
           _ProdutoReviewRowMobile(
             label: _t('produto.journey.modeLabel', 'Tipo de cadastro'),
-            value:
-                _cadastroCompleto
-                    ? _t('produto.journey.completeTitle', 'Cadastro completo')
-                    : _t('produto.journey.summaryTitle', 'Cadastro resumido'),
+            value: _cadastroCompleto
+                ? _t('produto.journey.completeTitle', 'Cadastro completo')
+                : _t('produto.journey.summaryTitle', 'Cadastro resumido'),
             isLast: true,
           ),
         ],
@@ -2290,10 +2426,9 @@ class _CadastroProdutoMobileScreenState
   @override
   Widget build(BuildContext context) {
     return SixMobilePageShell(
-      title:
-          _isModoEdicao
-              ? _t('produto.mobile.editProductTitle', 'Editar produto')
-              : _t('produto.mobile.createProductTitle', 'Cadastrar produto'),
+      title: _isModoEdicao
+          ? _t('produto.mobile.editProductTitle', 'Editar produto')
+          : _t('produto.mobile.createProductTitle', 'Cadastrar produto'),
       backgroundColor: _backgroundColor,
       primaryColor: _primaryColor,
       secondaryColor: _secondaryColor,
@@ -2307,76 +2442,75 @@ class _CadastroProdutoMobileScreenState
         _buildHeaderAction(
           active: _favorito,
           onPressed: _alternarFavorito,
-          tooltip:
-              _favorito
-                  ? _t(
-                    'produto.favorite.removeTooltip',
-                    'Remover dos favoritos',
-                  )
-                  : _t('produto.favorite.addTooltip', 'Marcar como favorito'),
-          icon:
-              _favorito
-                  ? Icons.favorite_rounded
-                  : Icons.favorite_border_rounded,
+          tooltip: _favorito
+              ? _t('produto.favorite.removeTooltip', 'Remover dos favoritos')
+              : _t('produto.favorite.addTooltip', 'Marcar como favorito'),
+          icon: _favorito
+              ? Icons.favorite_rounded
+              : Icons.favorite_border_rounded,
         ),
         _buildHeaderAction(
           active: _disponivelParaCatalogo,
           onPressed: _alternarDisponivelParaCatalogo,
-          tooltip:
-              _disponivelParaCatalogo
-                  ? _t(
-                    'produto.catalog.disableTooltip',
-                    'Retirar da disponibilidade para catálogo',
-                  )
-                  : _t(
-                    'produto.catalog.enableTooltip',
-                    'Disponibilizar para catálogo',
-                  ),
-          icon:
-              _disponivelParaCatalogo
-                  ? Icons.storefront_rounded
-                  : Icons.storefront_outlined,
+          tooltip: _disponivelParaCatalogo
+              ? _t(
+                  'produto.catalog.disableTooltip',
+                  'Retirar da disponibilidade para catálogo',
+                )
+              : _t(
+                  'produto.catalog.enableTooltip',
+                  'Disponibilizar para catálogo',
+                ),
+          icon: _disponivelParaCatalogo
+              ? Icons.storefront_rounded
+              : Icons.storefront_outlined,
         ),
       ],
-      bodyBuilder: (
-        BuildContext context,
-        ScrollController scrollController,
-        double topInset,
-      ) {
-        return SafeArea(
-          top: false,
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              controller: scrollController,
-              physics: AlwaysScrollableScrollPhysics(),
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: EdgeInsets.fromLTRB(16, topInset + 8, 16, 112),
-              children: [
-                _buildStaggeredEntry(
-                  delay: Duration(milliseconds: 60),
-                  child: _buildHeaderCard(),
+      bodyBuilder:
+          (
+            BuildContext context,
+            ScrollController scrollController,
+            double topInset,
+          ) {
+            return SafeArea(
+              top: false,
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  controller: scrollController,
+                  physics: AlwaysScrollableScrollPhysics(),
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.fromLTRB(16, topInset + 8, 16, 112),
+                  children: [
+                    _buildStaggeredEntry(
+                      delay: Duration(milliseconds: 60),
+                      child: AnimatedBuilder(
+                        animation: _qualidadeListenable,
+                        builder: (BuildContext context, Widget? child) =>
+                            _buildJourneyProgress(),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    if (_etapaAtual == 0) ...<Widget>[
+                      _buildStaggeredEntry(
+                        delay: Duration(milliseconds: 110),
+                        child: _buildTipoCadastroSelector(),
+                      ),
+                      SizedBox(height: 16),
+                    ],
+                    AnimatedSwitcher(
+                      duration: Duration(milliseconds: 220),
+                      child: Column(
+                        key: ValueKey<String>('$_tipoCadastro-$_etapaAtual'),
+                        children: _conteudoDaEtapa(),
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 16),
-                if (_etapaAtual == 0) ...<Widget>[
-                  _buildStaggeredEntry(
-                    delay: Duration(milliseconds: 110),
-                    child: _buildTipoCadastroSelector(),
-                  ),
-                  SizedBox(height: 16),
-                ],
-                AnimatedSwitcher(
-                  duration: Duration(milliseconds: 220),
-                  child: Column(
-                    key: ValueKey<String>('$_tipoCadastro-$_etapaAtual'),
-                    children: _conteudoDaEtapa(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+              ),
+            );
+          },
       bottomNavigationBar: _buildBottomActionBar(),
     );
   }
@@ -2413,38 +2547,39 @@ class _CadastroProdutoMobileScreenState
             Expanded(
               flex: 2,
               child: FilledButton.icon(
-                onPressed:
-                    _isLoading
-                        ? null
-                        : (_etapaAtual == _totalEtapas - 1
-                            ? _salvar
-                            : _avancarEtapa),
-                icon:
-                    _isLoading
-                        ? SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: SixMobilePalette.onPrimary,
-                          ),
-                        )
-                        : Icon(
-                          _etapaAtual == _totalEtapas - 1
-                              ? Icons.save_outlined
-                              : Icons.arrow_forward_rounded,
+                onPressed: _isLoading
+                    ? null
+                    : (_etapaAtual == _totalEtapas - 1
+                          ? _salvar
+                          : _avancarEtapa),
+                icon: _isLoading
+                    ? SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: SixMobilePalette.onPrimary,
                         ),
+                      )
+                    : Icon(
+                        _etapaAtual == _totalEtapas - 1
+                            ? Icons.save_outlined
+                            : Icons.arrow_forward_rounded,
+                      ),
                 label: Text(
                   _isLoading
                       ? _t('common.saving', 'Salvando...')
                       : (_etapaAtual < _totalEtapas - 1
-                          ? _t('common.continue', 'Continuar')
-                          : (_isModoEdicao
-                              ? _t('produto.mobile.saveEdit', 'Salvar edição')
-                              : _t(
-                                'produto.mobile.saveProduct',
-                                'Salvar produto',
-                              ))),
+                            ? _t('common.continue', 'Continuar')
+                            : (_isModoEdicao
+                                  ? _t(
+                                      'produto.mobile.saveEdit',
+                                      'Salvar edição',
+                                    )
+                                  : _t(
+                                      'produto.mobile.saveProduct',
+                                      'Salvar produto',
+                                    ))),
                 ),
               ),
             ),
@@ -2477,10 +2612,9 @@ class _CadastroModeOptionMobile extends StatelessWidget {
       selected: selected,
       label: title,
       child: Material(
-        color:
-            selected
-                ? SixMobilePalette.softAccentSurface
-                : SixMobilePalette.surface,
+        color: selected
+            ? SixMobilePalette.softAccentSurface
+            : SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           onTap: onTap,
@@ -2491,10 +2625,9 @@ class _CadastroModeOptionMobile extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color:
-                    selected
-                        ? SixMobilePalette.highlightedBorder
-                        : SixMobilePalette.border,
+                color: selected
+                    ? SixMobilePalette.highlightedBorder
+                    : SixMobilePalette.border,
                 width: selected ? 1.4 : 1,
               ),
             ),
@@ -2536,10 +2669,9 @@ class _CadastroModeOptionMobile extends StatelessWidget {
                 SizedBox(width: 8),
                 Icon(
                   selected ? Icons.check_circle_rounded : Icons.circle_outlined,
-                  color:
-                      selected
-                          ? SixMobilePalette.accent
-                          : SixMobilePalette.mutedText,
+                  color: selected
+                      ? SixMobilePalette.accent
+                      : SixMobilePalette.mutedText,
                 ),
               ],
             ),
@@ -2566,10 +2698,9 @@ class _ProdutoReviewRowMobile extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 11),
       decoration: BoxDecoration(
-        border:
-            isLast
-                ? null
-                : Border(bottom: BorderSide(color: SixMobilePalette.border)),
+        border: isLast
+            ? null
+            : Border(bottom: BorderSide(color: SixMobilePalette.border)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2697,10 +2828,9 @@ class _MobileSelectorField extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color:
-                    effectiveEnabled
-                        ? SixMobilePalette.border
-                        : SixMobilePalette.activeBorder,
+                color: effectiveEnabled
+                    ? SixMobilePalette.border
+                    : SixMobilePalette.activeBorder,
               ),
             ),
             child: Row(
@@ -2736,10 +2866,9 @@ class _MobileSelectorField extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color:
-                              effectiveEnabled
-                                  ? SixMobilePalette.titleText
-                                  : SixMobilePalette.mutedText,
+                          color: effectiveEnabled
+                              ? SixMobilePalette.titleText
+                              : SixMobilePalette.mutedText,
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
                         ),
@@ -2760,10 +2889,9 @@ class _MobileSelectorField extends StatelessWidget {
                 else
                   Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    color:
-                        effectiveEnabled
-                            ? SixMobilePalette.accent
-                            : SixMobilePalette.mutedText,
+                    color: effectiveEnabled
+                        ? SixMobilePalette.accent
+                        : SixMobilePalette.mutedText,
                   ),
               ],
             ),
@@ -2815,10 +2943,8 @@ class _TipoProdutoSelectorSheet extends StatelessWidget {
             title: productLabel,
             subtitle: productSubtitle,
             selected: selectedType == ProdutoCadastroFormUtils.tipoProduto,
-            onTap:
-                () => Navigator.of(
-                  context,
-                ).pop(ProdutoCadastroFormUtils.tipoProduto),
+            onTap: () =>
+                Navigator.of(context).pop(ProdutoCadastroFormUtils.tipoProduto),
           ),
           SizedBox(height: 10),
           _SelectionOptionTile(
@@ -2826,10 +2952,8 @@ class _TipoProdutoSelectorSheet extends StatelessWidget {
             title: serviceLabel,
             subtitle: serviceSubtitle,
             selected: selectedType == ProdutoCadastroFormUtils.tipoServico,
-            onTap:
-                () => Navigator.of(
-                  context,
-                ).pop(ProdutoCadastroFormUtils.tipoServico),
+            onTap: () =>
+                Navigator.of(context).pop(ProdutoCadastroFormUtils.tipoServico),
           ),
         ],
       ),
@@ -2934,17 +3058,16 @@ class _CategoriaSelectorSheetState extends State<_CategoriaSelectorSheet> {
                 Icons.search_rounded,
                 color: SixMobilePalette.accent,
               ),
-              suffixIcon:
-                  _query.isEmpty
-                      ? null
-                      : IconButton(
-                        tooltip: widget.searchHint,
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _query = '');
-                        },
-                        icon: Icon(Icons.close_rounded),
-                      ),
+              suffixIcon: _query.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: widget.searchHint,
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _query = '');
+                      },
+                      icon: Icon(Icons.close_rounded),
+                    ),
               filled: true,
               fillColor: SixMobilePalette.softNeutralSurface,
               border: OutlineInputBorder(
@@ -2967,39 +3090,34 @@ class _CategoriaSelectorSheetState extends State<_CategoriaSelectorSheet> {
                   title: widget.noCategoryLabel,
                   subtitle: widget.noCategorySubtitle,
                   selected: widget.selectedCategoryId == null,
-                  trailingLabel:
-                      widget.selectedCategoryId == null
-                          ? widget.selectedLabel
-                          : null,
-                  onTap:
-                      () => Navigator.of(
-                        context,
-                      ).pop(const _CategoriaSelectionResult(null)),
+                  trailingLabel: widget.selectedCategoryId == null
+                      ? widget.selectedLabel
+                      : null,
+                  onTap: () => Navigator.of(
+                    context,
+                  ).pop(const _CategoriaSelectionResult(null)),
                 ),
                 SizedBox(height: 10),
                 ...filtered.map((CategoriaCatalogoModel categoria) {
                   final bool selected =
                       categoria.id == widget.selectedCategoryId;
-                  final String subtitle =
-                      categoria.descricao.trim().isNotEmpty
-                          ? categoria.descricao
-                          : (categoria.ativo ? '' : widget.inactiveLabel);
+                  final String subtitle = categoria.descricao.trim().isNotEmpty
+                      ? categoria.descricao
+                      : (categoria.ativo ? '' : widget.inactiveLabel);
 
                   return Padding(
                     padding: EdgeInsets.only(bottom: 10),
                     child: _SelectionOptionTile(
                       icon: Icons.sell_outlined,
-                      title:
-                          categoria.ativo
-                              ? categoria.nome
-                              : '${categoria.nome} (${widget.inactiveLabel})',
+                      title: categoria.ativo
+                          ? categoria.nome
+                          : '${categoria.nome} (${widget.inactiveLabel})',
                       subtitle: subtitle,
                       selected: selected,
                       trailingLabel: selected ? widget.selectedLabel : null,
-                      onTap:
-                          () => Navigator.of(
-                            context,
-                          ).pop(_CategoriaSelectionResult(categoria.id)),
+                      onTap: () => Navigator.of(
+                        context,
+                      ).pop(_CategoriaSelectionResult(categoria.id)),
                     ),
                   );
                 }),
@@ -3115,10 +3233,9 @@ class _SelectionOptionTile extends StatelessWidget {
       selected: selected,
       label: trailingLabel == null ? title : '$title, $trailingLabel',
       child: Material(
-        color:
-            selected
-                ? SixMobilePalette.softAccentSurface
-                : SixMobilePalette.surface,
+        color: selected
+            ? SixMobilePalette.softAccentSurface
+            : SixMobilePalette.surface,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           onTap: onTap,
@@ -3128,10 +3245,9 @@ class _SelectionOptionTile extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color:
-                    selected
-                        ? SixMobilePalette.highlightedBorder
-                        : SixMobilePalette.border,
+                color: selected
+                    ? SixMobilePalette.highlightedBorder
+                    : SixMobilePalette.border,
                 width: selected ? 1.3 : 1,
               ),
             ),
@@ -3199,10 +3315,9 @@ class _SelectionOptionTile extends StatelessWidget {
                     selected
                         ? Icons.check_circle_rounded
                         : Icons.chevron_right_rounded,
-                    color:
-                        selected
-                            ? SixMobilePalette.accent
-                            : SixMobilePalette.mutedText,
+                    color: selected
+                        ? SixMobilePalette.accent
+                        : SixMobilePalette.mutedText,
                   ),
               ],
             ),
@@ -3316,14 +3431,14 @@ class _ImageActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground =
-        isDanger ? SixMobilePalette.error : SixMobilePalette.accent;
-    final background =
-        isDanger
-            ? (Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFF450A0A)
-                : const Color(0xFFFEF2F2))
-            : SixMobilePalette.softAccentSurface;
+    final foreground = isDanger
+        ? SixMobilePalette.error
+        : SixMobilePalette.accent;
+    final background = isDanger
+        ? (Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF450A0A)
+              : const Color(0xFFFEF2F2))
+        : SixMobilePalette.softAccentSurface;
 
     return Semantics(
       button: true,
@@ -3361,10 +3476,9 @@ class _ImageActionTile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color:
-                              isDanger
-                                  ? SixMobilePalette.error
-                                  : SixMobilePalette.titleText,
+                          color: isDanger
+                              ? SixMobilePalette.error
+                              : SixMobilePalette.titleText,
                           fontWeight: FontWeight.w900,
                         ),
                       ),

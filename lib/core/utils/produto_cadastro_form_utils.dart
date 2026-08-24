@@ -106,6 +106,90 @@ class ProdutoCadastroFormData {
   final bool usarPrecoVendaComoValorEntradaQuandoVazio;
 }
 
+enum CriterioQualidadeCadastroProduto {
+  nome,
+  preco,
+  categoria,
+  identificador,
+  organizacao,
+  estoque,
+  imagem,
+  detalhes,
+  regrasOperacionais,
+  dadosFiscais,
+}
+
+enum NivelQualidadeCadastroProduto {
+  essencial,
+  prontoParaVender,
+  bemPreparado,
+  excelente,
+}
+
+class EntradaQualidadeCadastroProduto {
+  const EntradaQualidadeCadastroProduto({
+    required this.nomeInformado,
+    required this.precoInformado,
+    required this.categoriaInformada,
+    required this.identificadorInformado,
+    required this.organizacaoInformada,
+    required this.estoqueConfigurado,
+    required this.possuiImagem,
+    required this.detalhesInformados,
+    required this.regrasOperacionaisConfiguradas,
+    required this.dadosFiscaisInformados,
+  });
+
+  final bool nomeInformado;
+  final bool precoInformado;
+  final bool categoriaInformada;
+  final bool identificadorInformado;
+  final bool organizacaoInformada;
+  final bool estoqueConfigurado;
+  final bool possuiImagem;
+  final bool detalhesInformados;
+  final bool regrasOperacionaisConfiguradas;
+  final bool dadosFiscaisInformados;
+
+  bool atende(CriterioQualidadeCadastroProduto criterio) {
+    return switch (criterio) {
+      CriterioQualidadeCadastroProduto.nome => nomeInformado,
+      CriterioQualidadeCadastroProduto.preco => precoInformado,
+      CriterioQualidadeCadastroProduto.categoria => categoriaInformada,
+      CriterioQualidadeCadastroProduto.identificador => identificadorInformado,
+      CriterioQualidadeCadastroProduto.organizacao => organizacaoInformada,
+      CriterioQualidadeCadastroProduto.estoque => estoqueConfigurado,
+      CriterioQualidadeCadastroProduto.imagem => possuiImagem,
+      CriterioQualidadeCadastroProduto.detalhes => detalhesInformados,
+      CriterioQualidadeCadastroProduto.regrasOperacionais =>
+        regrasOperacionaisConfiguradas,
+      CriterioQualidadeCadastroProduto.dadosFiscais => dadosFiscaisInformados,
+    };
+  }
+}
+
+class MelhoriaQualidadeCadastroProduto {
+  const MelhoriaQualidadeCadastroProduto({
+    required this.criterio,
+    required this.pontos,
+  });
+
+  final CriterioQualidadeCadastroProduto criterio;
+  final int pontos;
+}
+
+class QualidadeCadastroProduto {
+  const QualidadeCadastroProduto({
+    required this.percentual,
+    required this.nivel,
+    required this.melhorias,
+  });
+
+  final int percentual;
+  final NivelQualidadeCadastroProduto nivel;
+  final List<MelhoriaQualidadeCadastroProduto> melhorias;
+}
+
 class ProdutoCadastroFormUtils {
   ProdutoCadastroFormUtils._();
 
@@ -117,6 +201,72 @@ class ProdutoCadastroFormUtils {
   // resolvidas na apresentação conforme o idioma ativo.
   static const String grupoPadrao = '';
   static const String garantiaPadrao = '';
+
+  static QualidadeCadastroProduto calcularQualidadeCadastro({
+    required String tipoCadastro,
+    required EntradaQualidadeCadastroProduto entrada,
+  }) {
+    final bool cadastroCompleto =
+        tipoCadastro.trim().toUpperCase() == 'COMPLETO';
+    final Map<CriterioQualidadeCadastroProduto, int> pesos = cadastroCompleto
+        ? const <CriterioQualidadeCadastroProduto, int>{
+            CriterioQualidadeCadastroProduto.nome: 15,
+            CriterioQualidadeCadastroProduto.preco: 15,
+            CriterioQualidadeCadastroProduto.categoria: 10,
+            CriterioQualidadeCadastroProduto.identificador: 10,
+            CriterioQualidadeCadastroProduto.organizacao: 5,
+            CriterioQualidadeCadastroProduto.estoque: 10,
+            CriterioQualidadeCadastroProduto.imagem: 10,
+            CriterioQualidadeCadastroProduto.detalhes: 10,
+            CriterioQualidadeCadastroProduto.regrasOperacionais: 5,
+            CriterioQualidadeCadastroProduto.dadosFiscais: 10,
+          }
+        : const <CriterioQualidadeCadastroProduto, int>{
+            CriterioQualidadeCadastroProduto.nome: 25,
+            CriterioQualidadeCadastroProduto.preco: 20,
+            CriterioQualidadeCadastroProduto.categoria: 15,
+            CriterioQualidadeCadastroProduto.identificador: 10,
+            CriterioQualidadeCadastroProduto.organizacao: 10,
+            CriterioQualidadeCadastroProduto.estoque: 10,
+            CriterioQualidadeCadastroProduto.imagem: 10,
+          };
+
+    int percentual = 0;
+    final List<MelhoriaQualidadeCadastroProduto> melhorias =
+        <MelhoriaQualidadeCadastroProduto>[];
+
+    for (final MapEntry<CriterioQualidadeCadastroProduto, int> peso
+        in pesos.entries) {
+      if (entrada.atende(peso.key)) {
+        percentual += peso.value;
+      } else {
+        melhorias.add(
+          MelhoriaQualidadeCadastroProduto(
+            criterio: peso.key,
+            pontos: peso.value,
+          ),
+        );
+      }
+    }
+
+    melhorias.sort(
+      (
+        MelhoriaQualidadeCadastroProduto a,
+        MelhoriaQualidadeCadastroProduto b,
+      ) => b.pontos.compareTo(a.pontos),
+    );
+
+    return QualidadeCadastroProduto(
+      percentual: percentual.clamp(0, 100).toInt(),
+      nivel: switch (percentual) {
+        >= 90 => NivelQualidadeCadastroProduto.excelente,
+        >= 70 => NivelQualidadeCadastroProduto.bemPreparado,
+        >= 40 => NivelQualidadeCadastroProduto.prontoParaVender,
+        _ => NivelQualidadeCadastroProduto.essencial,
+      },
+      melhorias: List<MelhoriaQualidadeCadastroProduto>.unmodifiable(melhorias),
+    );
+  }
 
   static String normalizarTipo(String value) {
     final tipo = value.trim().toUpperCase();
