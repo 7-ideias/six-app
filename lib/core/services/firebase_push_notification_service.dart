@@ -160,19 +160,20 @@ class FirebasePushNotificationService {
       final NotificationSettings settings = await FirebaseMessaging.instance
           .requestPermission(alert: true, badge: true, sound: true)
           .timeout(const Duration(seconds: 10));
+      final AuthorizationStatus authorizationStatus =
+          settings.authorizationStatus;
 
-      switch (settings.authorizationStatus) {
-        case AuthorizationStatus.authorized:
-          break;
-        case AuthorizationStatus.provisional:
-          break;
-        case AuthorizationStatus.denied:
-          debugPrint(
-            '[FirebasePushNotificationService] Permissão de push negada.',
-          );
-          break;
-        case AuthorizationStatus.notDetermined:
-          break;
+      if (authorizationStatus == AuthorizationStatus.denied ||
+          authorizationStatus.name == 'deniedPermanently') {
+        debugPrint(
+          '[FirebasePushNotificationService] Permissão de push negada.',
+        );
+      } else if (authorizationStatus != AuthorizationStatus.authorized &&
+          authorizationStatus != AuthorizationStatus.provisional &&
+          authorizationStatus != AuthorizationStatus.notDetermined) {
+        debugPrint(
+          '[FirebasePushNotificationService] Status de permissão não mapeado: $authorizationStatus',
+        );
       }
     } on TimeoutException {
       debugPrint(
