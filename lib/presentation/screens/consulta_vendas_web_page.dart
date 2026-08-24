@@ -32,6 +32,77 @@ class ConsultaVendasWebPage extends StatefulWidget {
   State<ConsultaVendasWebPage> createState() => _ConsultaVendasWebPageState();
 }
 
+Future<void> showVendaDetalheWebDialog({
+  required BuildContext context,
+  required String identificador,
+  ConsultaVendasApiClient? apiClient,
+  ValueChanged<String>? onAbrirDevolucoes,
+}) async {
+  final ConsultaVendasApiClient api =
+      apiClient ?? HttpConsultaVendasApiClient();
+  final bool reduceMotion =
+      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+  Future<void> abrirDevolucoes(String idOperacao) async {
+    final ValueChanged<String>? callback = onAbrirDevolucoes;
+    if (callback != null) {
+      callback(idOperacao);
+      return;
+    }
+
+    await Clipboard.setData(ClipboardData(text: idOperacao));
+    if (!context.mounted) return;
+    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(
+      context,
+    );
+    messenger?.hideCurrentSnackBar();
+    messenger?.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(
+          _text(
+            context,
+            'sales.query.returnCopied',
+            pt:
+                'Código da venda copiado. Abra Devoluções e trocas para continuar.',
+            en: 'Sale code copied. Open Returns and exchanges to continue.',
+            es:
+                'Código de venta copiado. Abra Devoluciones y cambios para continuar.',
+          ),
+        ),
+      ),
+    );
+  }
+
+  await showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    barrierColor: Colors.transparent,
+    transitionDuration: Duration(milliseconds: reduceMotion ? 1 : 300),
+    pageBuilder:
+        (
+          BuildContext dialogContext,
+          Animation<double> animation,
+          Animation<double> secondaryAnimation,
+        ) => _VendaDetalheRouteSurface(
+          animation: animation,
+          child: _VendaDetalheDialog(
+            api: api,
+            identificador: identificador,
+            onAbrirDevolucoes: abrirDevolucoes,
+          ),
+        ),
+    transitionBuilder:
+        (
+          BuildContext dialogContext,
+          Animation<double> animation,
+          Animation<double> secondaryAnimation,
+          Widget child,
+        ) => child,
+  );
+}
+
 class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
   static const String _periodoHoje = 'Hoje';
   static const String _periodoUltimos7Dias = 'Últimos 7 dias';
@@ -441,55 +512,11 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
   }
 
   Future<void> _abrirDetalhe(VendaConsultaResumo venda) async {
-    final bool reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    await showGeneralDialog<void>(
+    await showVendaDetalheWebDialog(
       context: context,
-      barrierDismissible: true,
-      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: Colors.transparent,
-      transitionDuration: Duration(milliseconds: reduceMotion ? 1 : 300),
-      pageBuilder:
-          (
-            BuildContext dialogContext,
-            Animation<double> animation,
-            Animation<double> secondaryAnimation,
-          ) => _VendaDetalheRouteSurface(
-            animation: animation,
-            child: _VendaDetalheDialog(
-              api: _api,
-              identificador: venda.idOperacao,
-              onAbrirDevolucoes: _abrirDevolucoes,
-            ),
-          ),
-      transitionBuilder:
-          (
-            BuildContext dialogContext,
-            Animation<double> animation,
-            Animation<double> secondaryAnimation,
-            Widget child,
-          ) => child,
-    );
-  }
-
-  Future<void> _abrirDevolucoes(String identificador) async {
-    final ValueChanged<String>? callback = widget.onAbrirDevolucoes;
-    if (callback != null) {
-      callback(identificador);
-      return;
-    }
-
-    await Clipboard.setData(ClipboardData(text: identificador));
-    if (!mounted) return;
-    _snack(
-      _text(
-        context,
-        'sales.query.returnCopied',
-        pt: 'Código da venda copiado. Abra Devoluções e trocas para continuar.',
-        en: 'Sale code copied. Open Returns and exchanges to continue.',
-        es:
-            'Código de venta copiado. Abra Devoluciones y cambios para continuar.',
-      ),
+      identificador: venda.idOperacao,
+      apiClient: _api,
+      onAbrirDevolucoes: widget.onAbrirDevolucoes,
     );
   }
 
@@ -1291,16 +1318,6 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
             ),
         ],
       ),
-    );
-  }
-
-  void _snack(String message) {
-    final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(
-      context,
-    );
-    messenger?.hideCurrentSnackBar();
-    messenger?.showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 }

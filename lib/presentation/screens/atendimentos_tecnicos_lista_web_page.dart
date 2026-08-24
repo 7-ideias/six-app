@@ -19,6 +19,7 @@ import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
+import '../components/web/six_web_atendimento_details_dialog.dart';
 import '../components/web/six_web_atendimento_date_filter_dialog.dart';
 import '../components/web/six_web_recebimento_dialog.dart';
 import '../theme/web_theme_tokens.dart';
@@ -62,7 +63,6 @@ class _AtendimentosTecnicosListaWebPageState
   DateTime? _dataFimFiltro;
   Set<String> _tecnicoFiltroKeys = <String>{};
   Set<String> _statusFiltroKeys = <String>{};
-  String? _atendimentoExpandidoKey;
   AtendimentosCriadosStatusPagamentoFiltro _statusPagamentoFiltro =
       AtendimentosCriadosStatusPagamentoFiltro.todos;
 
@@ -225,7 +225,6 @@ class _AtendimentosTecnicosListaWebPageState
   void _recarregar() {
     setState(() {
       _future = _carregar();
-      _atendimentoExpandidoKey = null;
     });
   }
 
@@ -1511,15 +1510,11 @@ class _AtendimentosTecnicosListaWebPageState
                                     (_, __) => const SizedBox(height: 10),
                                 itemBuilder: (context, index) {
                                   final atendimento = atendimentos[index];
-                                  final expanded =
-                                      _atendimentoExpandidoKey ==
-                                      _atendimentoExpansionKey(atendimento);
                                   return _buildAtendimentoCard(
                                     theme,
                                     atendimento,
                                     statusOptions,
                                     isCompact,
-                                    expanded: expanded,
                                   );
                                 },
                               ),
@@ -2271,82 +2266,36 @@ class _AtendimentosTecnicosListaWebPageState
     );
   }
 
-  String _atendimentoExpansionKey(AtendimentoTecnicoModel atendimento) {
-    final id = atendimento.id.trim();
-    if (id.isNotEmpty) return id;
-    final numero = atendimento.numero.trim();
-    if (numero.isNotEmpty) return numero;
-    final data = atendimento.dataAtualizacao?.toIso8601String() ?? '';
-    return '${atendimento.statusCodigo}-$data-${atendimento.hashCode}';
-  }
-
-  void _alternarAtendimentoExpandido(AtendimentoTecnicoModel atendimento) {
-    final key = _atendimentoExpansionKey(atendimento);
-    setState(() {
-      _atendimentoExpandidoKey = _atendimentoExpandidoKey == key ? null : key;
-    });
-  }
-
   Widget _buildAtendimentoCard(
     ThemeData theme,
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status,
-    bool isCompact, {
-    required bool expanded,
-  }) {
+    bool isCompact,
+  ) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Color statusColor = _statusProgressColor(theme, atendimento, status);
-    final bool dark = theme.colorScheme.brightness == Brightness.dark;
     return AnimatedContainer(
       duration: WebThemeTokens.transitionDuration,
       curve: WebThemeTokens.transitionCurve,
-      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: tokens.cardBackground,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color:
-              expanded
-                  ? statusColor.withValues(alpha: dark ? 0.56 : 0.42)
-                  : tokens.cardBorder,
-        ),
+        border: Border.all(color: tokens.cardBorder),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withValues(alpha: dark ? 0.12 : 0.035),
-            blurRadius: expanded ? 16 : 12,
-            offset: Offset(0, expanded ? 8 : 6),
+            color: Colors.black.withValues(
+              alpha:
+                  theme.colorScheme.brightness == Brightness.dark
+                      ? 0.12
+                      : 0.035,
+            ),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            _buildAtendimentoResumo(
-              theme,
-              atendimento,
-              status,
-              isCompact,
-              expanded: expanded,
-              statusColor: statusColor,
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              alignment: Alignment.topCenter,
-              child:
-                  expanded
-                      ? _buildAtendimentoDetalhesExpandido(
-                        theme,
-                        atendimento,
-                        status,
-                        isCompact,
-                      )
-                      : const SizedBox.shrink(),
-            ),
-          ],
-        ),
+        child: _buildAtendimentoResumo(theme, atendimento, status, isCompact),
       ),
     );
   }
@@ -2355,10 +2304,9 @@ class _AtendimentosTecnicosListaWebPageState
     ThemeData theme,
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status,
-    bool isCompact, {
-    required bool expanded,
-    required Color statusColor,
-  }) {
+    bool isCompact,
+  ) {
+    final Color statusColor = _statusProgressColor(theme, atendimento, status);
     final Widget identity = _buildAtendimentoIdentity(
       theme,
       atendimento,
@@ -2375,15 +2323,11 @@ class _AtendimentosTecnicosListaWebPageState
       atendimento,
       isCompact: isCompact,
     );
-    final Widget expandControl = _expandControl(
-      theme,
-      expanded: expanded,
-      onPressed: () => _alternarAtendimentoExpandido(atendimento),
+    final Widget detailsControl = _detailsControl(
+      onPressed: () => _abrirDetalhesAtendimento(atendimento, status),
     );
     final Widget tapTarget = _summaryTapTarget(
-      theme,
-      expanded: expanded,
-      onTap: () => _alternarAtendimentoExpandido(atendimento),
+      onTap: () => _abrirDetalhesAtendimento(atendimento, status),
       child:
           isCompact
               ? Column(
@@ -2394,7 +2338,7 @@ class _AtendimentosTecnicosListaWebPageState
                     children: <Widget>[
                       Expanded(child: identity),
                       const SizedBox(width: 8),
-                      expandControl,
+                      detailsControl,
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -2433,24 +2377,19 @@ class _AtendimentosTecnicosListaWebPageState
                     child: primaryActions,
                   ),
                   const SizedBox(width: 8),
-                  expandControl,
+                  detailsControl,
                 ],
               ),
     );
   }
 
-  Widget _summaryTapTarget(
-    ThemeData theme, {
-    required bool expanded,
+  Widget _summaryTapTarget({
     required VoidCallback onTap,
     required Widget child,
   }) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final String label = context.t(
-      expanded
-          ? 'atendimentoTecnico.lista.collapseDetails'
-          : 'atendimentoTecnico.lista.expandDetails',
-      fallback: expanded ? 'Recolher detalhes' : 'Expandir detalhes',
+      'atendimentoTecnico.lista.openDetails',
+      fallback: 'Ver detalhes',
     );
     return Semantics(
       button: true,
@@ -2466,13 +2405,6 @@ class _AtendimentosTecnicosListaWebPageState
               duration: WebThemeTokens.transitionDuration,
               curve: WebThemeTokens.transitionCurve,
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color:
-                    expanded
-                        ? tokens.selectedBackground.withValues(alpha: 0.58)
-                        : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-              ),
               child: child,
             ),
           ),
@@ -2555,28 +2487,16 @@ class _AtendimentosTecnicosListaWebPageState
     return LayoutBuilder(
       builder: (context, constraints) {
         final double maxWidth = constraints.maxWidth;
-        final int columns =
-            maxWidth >= 780
-                ? 5
-                : maxWidth >= 620
-                ? 4
-                : maxWidth >= 460
-                ? 3
-                : 2;
-        final double spacing = 8;
-        final double rawItemWidth =
-            (maxWidth - ((columns - 1) * spacing)) / columns;
-        final double itemWidth =
-            maxWidth < 116
-                ? maxWidth
-                : rawItemWidth.clamp(116.0, maxWidth).toDouble();
+        final bool stackPills = maxWidth < 420;
+        final double pillMaxWidth =
+            stackPills ? maxWidth : (maxWidth * 0.34).clamp(150.0, 220.0);
         return Wrap(
-          spacing: spacing,
+          spacing: 8,
           runSpacing: 8,
           children: <Widget>[
-            _summaryMetricBlock(
+            _summaryMetricPill(
               theme,
-              width: itemWidth,
+              maxWidth: pillMaxWidth,
               label: context.t(
                 'atendimentoTecnico.lista.summary.status',
                 fallback: 'Status',
@@ -2585,9 +2505,9 @@ class _AtendimentosTecnicosListaWebPageState
               icon: Icons.flag_outlined,
               emphasisColor: statusColor,
             ),
-            _summaryMetricBlock(
+            _summaryMetricPill(
               theme,
-              width: itemWidth,
+              maxWidth: pillMaxWidth,
               label: context.t(
                 'atendimentoTecnico.lista.summary.total',
                 fallback: 'Total',
@@ -2595,9 +2515,9 @@ class _AtendimentosTecnicosListaWebPageState
               value: _formatarMoeda(atendimento.valorTotalAtendimento),
               icon: Icons.payments_outlined,
             ),
-            _summaryMetricBlock(
+            _summaryMetricPill(
               theme,
-              width: itemWidth,
+              maxWidth: pillMaxWidth,
               label: context.t(
                 'atendimentoTecnico.lista.summary.openAmount',
                 fallback: 'Aberto',
@@ -2609,9 +2529,9 @@ class _AtendimentosTecnicosListaWebPageState
                       ? tokens.financialNegative
                       : null,
             ),
-            _summaryMetricBlock(
+            _summaryMetricPill(
               theme,
-              width: itemWidth,
+              maxWidth: pillMaxWidth,
               label: context.t(
                 'atendimentoTecnico.lista.summary.delivery',
                 fallback: 'Entrega',
@@ -2621,9 +2541,9 @@ class _AtendimentosTecnicosListaWebPageState
               emphasisColor:
                   _entregaAtrasada(atendimento) ? tokens.danger : null,
             ),
-            _summaryMetricBlock(
+            _summaryMetricPill(
               theme,
-              width: itemWidth,
+              maxWidth: pillMaxWidth,
               label: context.t(
                 'atendimentoTecnico.lista.summary.validity',
                 fallback: 'Validade',
@@ -2637,64 +2557,56 @@ class _AtendimentosTecnicosListaWebPageState
     );
   }
 
-  Widget _summaryMetricBlock(
+  Widget _summaryMetricPill(
     ThemeData theme, {
-    required double width,
+    required double maxWidth,
     required String label,
     required String value,
     required IconData icon,
     Color? emphasisColor,
   }) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Color foreground = emphasisColor ?? tokens.primaryText;
-    final Color iconColor = emphasisColor ?? tokens.secondaryText;
-    return SizedBox(
-      width: width,
+    final Color accent = emphasisColor ?? tokens.secondaryText;
+    final Color valueColor = emphasisColor ?? tokens.primaryText;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
       child: Container(
-        constraints: const BoxConstraints(minHeight: 52),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color:
-              emphasisColor == null
-                  ? tokens.surfaceMuted
-                  : emphasisColor.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color:
-                emphasisColor == null
-                    ? tokens.cardBorder
-                    : emphasisColor.withValues(alpha: 0.28),
+          color: Color.alphaBlend(
+            accent.withValues(alpha: 0.10),
+            tokens.cardBackground,
           ),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: accent.withValues(alpha: 0.28)),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(icon, size: 16, color: iconColor),
-            const SizedBox(width: 7),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: tokens.mutedText,
-                      fontWeight: FontWeight.w800,
+            Icon(icon, size: 14, color: accent),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text.rich(
+                TextSpan(
+                  children: <InlineSpan>[
+                    TextSpan(
+                      text: '$label: ',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: accent,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: foreground,
-                      fontWeight: FontWeight.w900,
+                    TextSpan(
+                      text: value,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: valueColor,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -2771,53 +2683,195 @@ class _AtendimentosTecnicosListaWebPageState
     );
   }
 
-  Widget _expandControl(
-    ThemeData theme, {
-    required bool expanded,
-    required VoidCallback onPressed,
-  }) {
+  Widget _detailsControl({required VoidCallback onPressed}) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final String tooltip = context.t(
-      expanded
-          ? 'atendimentoTecnico.lista.collapseDetails'
-          : 'atendimentoTecnico.lista.expandDetails',
-      fallback: expanded ? 'Recolher detalhes' : 'Expandir detalhes',
+      'atendimentoTecnico.lista.openDetails',
+      fallback: 'Ver detalhes',
     );
     return Tooltip(
       message: tooltip,
       child: IconButton.filledTonal(
         onPressed: onPressed,
         style: IconButton.styleFrom(
-          backgroundColor:
-              expanded ? tokens.selectedBackground : tokens.surfaceMuted,
-          foregroundColor: expanded ? tokens.info : tokens.secondaryText,
+          backgroundColor: tokens.surfaceMuted,
+          foregroundColor: tokens.info,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
         ),
-        icon: AnimatedRotation(
-          turns: expanded ? 0.5 : 0,
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          child: const Icon(Icons.keyboard_arrow_down_rounded),
-        ),
+        icon: const Icon(Icons.visibility_outlined),
       ),
     );
   }
 
-  Widget _buildAtendimentoDetalhesExpandido(
+  Future<void> _abrirDetalhesAtendimento(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
+    final ThemeData theme = Theme.of(context);
+    final Color statusColor = _statusProgressColor(theme, atendimento, status);
+    final String cliente = _clienteLabelAtendimento(atendimento);
+    final String tecnico = _tecnicoLabelAtendimento(atendimento);
+
+    return showSixWebAtendimentoDetailsDialog(
+      context: context,
+      equipmentTitle: _equipamentoTitulo(atendimento),
+      attendanceNumber: atendimento.numero,
+      customerLabel: cliente,
+      technicianLabel: tecnico,
+      accentColor: statusColor,
+      accentIcon: _equipamentoIcon(atendimento),
+      summaryMetrics: _buildAtendimentoMetricCards(
+        atendimento,
+        status,
+        statusColor: statusColor,
+      ),
+      statusChips: _buildAtendimentoStatusChips(theme, atendimento, status),
+      actionContent: _buildDetalhesDialogActions(theme, atendimento, status),
+      progressContent: _statusProgressBar(theme, atendimento, status),
+      detailsContent: _buildDetalhesInlineAtendimento(
+        theme,
+        atendimento,
+        status,
+      ),
+    );
+  }
+
+  Widget _buildDetalhesDialogActions(
     ThemeData theme,
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status,
-    bool isCompact,
   ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool compact = constraints.maxWidth < 760;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            _buildAcoesPrimariasDetalhesAtendimento(
+              theme,
+              atendimento,
+              isCompact: compact,
+            ),
+            const SizedBox(height: 10),
+            _buildAcoesSecundariasDetalhesAtendimento(
+              theme,
+              atendimento,
+              status,
+              isCompact: compact,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildAcoesPrimariasDetalhesAtendimento(
+    ThemeData theme,
+    AtendimentoTecnicoModel atendimento, {
+    required bool isCompact,
+  }) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      alignment: isCompact ? WrapAlignment.start : WrapAlignment.end,
+      children: <Widget>[
+        _actionButton(
+          theme,
+          label: 'Receber',
+          icon: Icons.payments_outlined,
+          onPressed:
+              atendimento.operacaoLiquidada
+                  ? null
+                  : () async {
+                    Navigator.of(context).maybePop();
+                    await Future<void>.delayed(Duration.zero);
+                    if (!mounted) return;
+                    await _abrirRecebimento(atendimento);
+                  },
+          filled: true,
+        ),
+        _actionButton(
+          theme,
+          label: 'Editar',
+          icon: Icons.edit_note_rounded,
+          onPressed: () async {
+            Navigator.of(context).maybePop();
+            await Future<void>.delayed(Duration.zero);
+            if (!mounted) return;
+            await _abrirEditarAtendimento(atendimento);
+          },
+        ),
+      ],
+    );
+  }
+
+  List<SixWebAtendimentoDetailsMetric> _buildAtendimentoMetricCards(
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status, {
+    required Color statusColor,
+  }) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return <SixWebAtendimentoDetailsMetric>[
+      SixWebAtendimentoDetailsMetric(
+        label: context.t(
+          'atendimentoTecnico.lista.summary.status',
+          fallback: 'Status',
+        ),
+        value: _statusLabel(atendimento, status),
+        icon: Icons.flag_outlined,
+        emphasisColor: statusColor,
+      ),
+      SixWebAtendimentoDetailsMetric(
+        label: context.t(
+          'atendimentoTecnico.lista.summary.total',
+          fallback: 'Total',
+        ),
+        value: _formatarMoeda(atendimento.valorTotalAtendimento),
+        icon: Icons.payments_outlined,
+      ),
+      SixWebAtendimentoDetailsMetric(
+        label: context.t(
+          'atendimentoTecnico.lista.summary.openAmount',
+          fallback: 'Aberto',
+        ),
+        value: _formatarMoeda(atendimento.valorEmAberto),
+        icon: Icons.account_balance_wallet_outlined,
+        emphasisColor:
+            atendimento.valorEmAberto > 0 ? tokens.financialNegative : null,
+      ),
+      SixWebAtendimentoDetailsMetric(
+        label: context.t(
+          'atendimentoTecnico.lista.summary.delivery',
+          fallback: 'Entrega',
+        ),
+        value: _formatarDataCurta(atendimento.dataEntregaPrevista),
+        icon: Icons.assignment_turned_in_outlined,
+        emphasisColor: _entregaAtrasada(atendimento) ? tokens.danger : null,
+      ),
+      SixWebAtendimentoDetailsMetric(
+        label: context.t(
+          'atendimentoTecnico.lista.summary.validity',
+          fallback: 'Validade',
+        ),
+        value: _formatarDataCurta(atendimento.validadeOrcamentoEm),
+        icon: Icons.event_available_outlined,
+      ),
+    ];
+  }
+
+  List<Widget> _buildAtendimentoStatusChips(
+    ThemeData theme,
+    AtendimentoTecnicoModel atendimento,
+    List<DominioOpcaoModel> status,
+  ) {
     final bool pagamentoAberto = _pagamentoEmAberto(atendimento);
     final bool entregaAtrasada = _entregaAtrasada(atendimento);
     final bool clienteNaoAssinou = _clienteNaoAssinouAtendimentoAberto(
       atendimento,
     );
-    final List<Widget> chips = <Widget>[
+    return <Widget>[
       pagamentoAberto ? _naoLiquidadaChip(theme) : _liquidadaChip(theme),
       if (clienteNaoAssinou) _customerNotSignedChip(theme),
       if (atendimento.assinaturaAprovada) _signedChip(theme),
@@ -2841,39 +2895,9 @@ class _AtendimentosTecnicosListaWebPageState
         Icons.update_rounded,
       ),
     ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.surface.withValues(alpha: 0.52),
-        border: Border(top: BorderSide(color: tokens.cardBorder)),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        isCompact ? 14 : 18,
-        16,
-        isCompact ? 14 : 18,
-        isCompact ? 16 : 18,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Wrap(spacing: 8, runSpacing: 8, children: chips),
-          const SizedBox(height: 14),
-          _statusProgressBar(theme, atendimento, status),
-          const SizedBox(height: 14),
-          _buildAcoesSecundariasAtendimento(
-            theme,
-            atendimento,
-            status,
-            isCompact: isCompact,
-          ),
-          const SizedBox(height: 16),
-          _buildDetalhesInlineAtendimento(theme, atendimento, status),
-        ],
-      ),
-    );
   }
 
-  Widget _buildAcoesSecundariasAtendimento(
+  Widget _buildAcoesSecundariasDetalhesAtendimento(
     ThemeData theme,
     AtendimentoTecnicoModel atendimento,
     List<DominioOpcaoModel> status, {
@@ -2897,20 +2921,37 @@ class _AtendimentosTecnicosListaWebPageState
           onPressed:
               _gerandoLinkStatus
                   ? null
-                  : () => _gerarLinkStatusPublico(atendimento),
+                  : () async {
+                    Navigator.of(context).maybePop();
+                    await Future<void>.delayed(Duration.zero);
+                    if (!mounted) return;
+                    await _gerarLinkStatusPublico(atendimento);
+                  },
         ),
         _actionButton(
           theme,
           label: _gerandoLink ? 'Gerando...' : 'Link assinatura',
           icon: Icons.draw_outlined,
           onPressed:
-              _gerandoLink ? null : () => _gerarLinkAssinatura(atendimento),
+              _gerandoLink
+                  ? null
+                  : () async {
+                    Navigator.of(context).maybePop();
+                    await Future<void>.delayed(Duration.zero);
+                    if (!mounted) return;
+                    await _gerarLinkAssinatura(atendimento);
+                  },
         ),
         _actionButton(
           theme,
           label: 'Mudar status',
           icon: Icons.swap_horiz_rounded,
-          onPressed: () => _abrirAlterarStatusDialog(atendimento, status),
+          onPressed: () async {
+            Navigator.of(context).maybePop();
+            await Future<void>.delayed(Duration.zero);
+            if (!mounted) return;
+            await _abrirAlterarStatusDialog(atendimento, status);
+          },
         ),
       ],
     );
@@ -3056,21 +3097,43 @@ class _AtendimentosTecnicosListaWebPageState
     return SizedBox(
       width: width,
       child: Container(
-        padding: const EdgeInsets.only(left: 12),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
         decoration: BoxDecoration(
-          border: Border(left: BorderSide(color: tokens.cardBorder, width: 2)),
+          color: tokens.cardBackground,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: tokens.cardBorder),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withValues(
+                alpha:
+                    theme.colorScheme.brightness == Brightness.dark
+                        ? 0.10
+                        : 0.03,
+              ),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(
-              title,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: tokens.primaryText,
-                fontWeight: FontWeight.w900,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: tokens.surfaceMuted,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: tokens.cardBorder),
+              ),
+              child: Text(
+                title,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: tokens.primaryText,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
-            const SizedBox(height: 9),
+            const SizedBox(height: 12),
             ...children,
           ],
         ),

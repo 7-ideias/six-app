@@ -232,6 +232,88 @@ const Map<String, Map<String, String>> _fallbacks = {
         'A sessão foi finalizada e permanece disponível no histórico.',
     'caixa.operacoes.closeDialogError':
         'Não foi possível encerrar o caixa. Verifique sua conexão e tente novamente.',
+    'caixa.operacoes.cancelDialogTitle': 'Cancelar movimentação?',
+    'caixa.operacoes.cancelDialogSubtitle':
+        'Revise os vínculos desta operação antes de cancelar. Dependendo do histórico financeiro, o lançamento pode precisar permanecer registrado.',
+    'caixa.operacoes.cancelDialogOperation': 'Operação',
+    'caixa.operacoes.cancelDialogMethod': 'Forma',
+    'caixa.operacoes.cancelDialogAmount': 'Valor',
+    'caixa.operacoes.cancelDialogChecklist':
+        'Se a movimentação estiver vinculada a recebimentos ou lançamentos futuros, o cancelamento poderá ser bloqueado para preservar o histórico.',
+    'caixa.operacoes.cancelDialogBack': 'Voltar',
+    'caixa.operacoes.cancelDialogConfirm': 'Cancelar operação',
+    'caixa.operacoes.cancelDialogProcessing': 'Cancelando...',
+    'caixa.operacoes.cancelDialogSuccessTitle': 'Movimentação cancelada',
+    'caixa.operacoes.cancelDialogSuccessMessage':
+        'O histórico do caixa foi atualizado e a operação não seguirá ativa na sessão atual.',
+    'caixa.operacoes.cancelDialogError':
+        'Não foi possível cancelar a movimentação agora. Revise os vínculos financeiros e tente novamente.',
+    'caixa.operacoes.cancelDialogLinkedRecordsError':
+        'Esta movimentação possui vínculo com recebimentos ou lançamentos futuros e precisa permanecer registrada no histórico financeiro.',
+    'caixa.operacoes.cancelDialogPermissionError':
+        'Você não possui permissão para cancelar esta movimentação.',
+    'caixa.operacoes.cancelDialogConnectivityError':
+        'Não foi possível falar com o servidor agora. Verifique sua conexão e tente novamente.',
+    'caixa.operacoes.cancelDialogLikelyLinkedError':
+        'Não foi possível cancelar esta movimentação porque ela pode estar vinculada a outros registros financeiros. Revise os recebimentos relacionados e tente novamente.',
+    'caixa.operacoes.addEntryAction': 'Adicionar lançamento',
+    'caixa.operacoes.launchDialogTitle': 'Registrar lançamento operacional',
+    'caixa.operacoes.launchDialogSubtitle':
+        'Preencha os dados da operação e revise antes de registrar no caixa.',
+    'caixa.operacoes.launchDialogTypeLabel': 'Tipo da operação',
+    'caixa.operacoes.launchDialogSelect': 'Selecione',
+    'caixa.operacoes.launchDialogAmountLabel': 'Valor',
+    'caixa.operacoes.launchDialogRelatedTypeLabel': 'Forma relacionada',
+    'caixa.operacoes.launchDialogReferenceLabel': 'Referência / comprovante',
+    'caixa.operacoes.launchDialogReferenceHint': 'Ex.: MOV-001',
+    'caixa.operacoes.launchDialogObservationLabel': 'Observação',
+    'caixa.operacoes.launchDialogObservationHint':
+        'Descreva o motivo da movimentação com clareza.',
+    'caixa.operacoes.launchDialogLinkedSaleLabel': 'Possui vínculo com venda',
+    'caixa.operacoes.launchDialogLinkedSaleHint':
+        'Use em estornos ou situações relacionadas a atendimento anterior.',
+    'caixa.operacoes.launchDialogReviewAction': 'Revisar lançamento',
+    'caixa.operacoes.launchDialogTypeRequired': 'Selecione o tipo da operação.',
+    'caixa.operacoes.launchDialogRelatedTypeRequired':
+        'Selecione a forma relacionada.',
+    'caixa.operacoes.launchDialogAmountRequired': 'Informe um valor válido.',
+    'caixa.operacoes.launchDialogReviewTitle':
+        'Confirmar lançamento operacional?',
+    'caixa.operacoes.launchDialogReviewSubtitle':
+        'Revise os dados abaixo antes de registrar a movimentação no caixa.',
+    'caixa.operacoes.launchDialogChecklist': 'Resumo pronto para confirmação.',
+    'caixa.operacoes.launchDialogEditAction': 'Editar dados',
+    'caixa.operacoes.launchDialogConfirmAction': 'Registrar movimentação',
+    'caixa.operacoes.launchDialogProcessing': 'Registrando...',
+    'caixa.operacoes.launchDialogError':
+        'Não foi possível registrar a movimentação. Verifique os dados e tente novamente.',
+    'caixa.operacoes.launchDialogSuccessTitle':
+        'Movimentação registrada com sucesso',
+    'caixa.operacoes.launchDialogSuccessMessage':
+        'O lançamento já aparece no histórico e no resumo do caixa.',
+    'caixa.operacoes.launchDialogAvailableMethods': 'Formas ativas',
+    'caixa.operacoes.launchDialogLinkedSaleTag': 'Vinculado a venda',
+    'caixa.operacoes.historyTodayOnly': 'Somente hoje',
+    'caixa.operacoes.historyPeriod': 'Período',
+    'caixa.operacoes.historyPeriodToday': 'Hoje',
+    'caixa.operacoes.historyPeriodLast7Days': 'Últimos 7 dias',
+    'caixa.operacoes.historyPeriodLast30Days': 'Últimos 30 dias',
+    'caixa.operacoes.historyPeriodThisMonth': 'Este mês',
+    'caixa.operacoes.historyPeriodLastMonth': 'Mês passado',
+    'caixa.operacoes.historyPeriodCustomRange': 'Intervalo personalizado',
+    'caixa.operacoes.historyNature': 'Natureza',
+    'caixa.operacoes.historyStatus': 'Status',
+    'caixa.operacoes.historyOperation': 'Operação',
+    'caixa.operacoes.historyMethod': 'Forma',
+    'caixa.operacoes.historyStartDate': 'Data inicial',
+    'caixa.operacoes.historyEndDate': 'Data final',
+    'caixa.operacoes.historyStartDateHelp': 'Selecionar data inicial',
+    'caixa.operacoes.historyEndDateHelp': 'Selecionar data final',
+    'caixa.operacoes.historyClearFilters': 'Limpar filtros',
+    'caixa.operacoes.historyNoResultsFiltered':
+        'Nenhuma movimentação encontrada com os filtros aplicados.',
+    'caixa.operacoes.historyNoResultsToday':
+        'Nenhuma movimentação registrada hoje.',
     'web.standalone.quote': 'Orçamento',
     'web.standalone.serviceOrder': 'Ordem de serviço',
     'web.shell.expandSidebar': 'Expandir navegação',
@@ -420,6 +502,12 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.filters.status.allWithCount':
         'Todos os status ({count})',
     'atendimentoTecnico.filters.status.selectedFallback': 'Status selecionado',
+    'atendimentoTecnico.lista.openDetails': 'Ver detalhes',
+    'atendimentoTecnico.lista.detailsDialog.title': 'Detalhes do atendimento',
+    'atendimentoTecnico.lista.detailsDialog.subtitle':
+        'Revise financeiro, andamento e histórico completos antes de seguir para outra ação.',
+    'atendimentoTecnico.lista.detailsDialog.barrierLabel':
+        'Fechar detalhes do atendimento',
     'atendimentoTecnico.web.dateFilterDialog.barrierLabel':
         'Fechar filtro de data',
     'atendimentoTecnico.web.dateFilterDialog.filterLabel': 'Data',
@@ -1728,6 +1816,87 @@ const Map<String, Map<String, String>> _fallbacks = {
         'The session has ended and remains available in the history.',
     'caixa.operacoes.closeDialogError':
         'Unable to close the cash register. Check your connection and try again.',
+    'caixa.operacoes.cancelDialogTitle': 'Cancel transaction?',
+    'caixa.operacoes.cancelDialogSubtitle':
+        'Review this transaction linkage before canceling. Depending on the financial history, the entry may need to remain recorded.',
+    'caixa.operacoes.cancelDialogOperation': 'Transaction',
+    'caixa.operacoes.cancelDialogMethod': 'Method',
+    'caixa.operacoes.cancelDialogAmount': 'Amount',
+    'caixa.operacoes.cancelDialogChecklist':
+        'If the transaction is linked to future receipts or related entries, cancellation may be blocked to preserve the history.',
+    'caixa.operacoes.cancelDialogBack': 'Back',
+    'caixa.operacoes.cancelDialogConfirm': 'Cancel transaction',
+    'caixa.operacoes.cancelDialogProcessing': 'Canceling...',
+    'caixa.operacoes.cancelDialogSuccessTitle': 'Transaction canceled',
+    'caixa.operacoes.cancelDialogSuccessMessage':
+        'The cash history has been updated and this transaction is no longer active in the current session.',
+    'caixa.operacoes.cancelDialogError':
+        'Unable to cancel this transaction right now. Review related financial links and try again.',
+    'caixa.operacoes.cancelDialogLinkedRecordsError':
+        'This transaction is linked to future receipts or entries and must remain recorded in the financial history.',
+    'caixa.operacoes.cancelDialogPermissionError':
+        'You do not have permission to cancel this transaction.',
+    'caixa.operacoes.cancelDialogConnectivityError':
+        'Unable to reach the server right now. Check your connection and try again.',
+    'caixa.operacoes.cancelDialogLikelyLinkedError':
+        'Unable to cancel this transaction because it may be linked to other financial records. Review the related receipts and try again.',
+    'caixa.operacoes.addEntryAction': 'Add entry',
+    'caixa.operacoes.launchDialogTitle': 'Register operational entry',
+    'caixa.operacoes.launchDialogSubtitle':
+        'Fill in the operation details and review them before posting to the cash register.',
+    'caixa.operacoes.launchDialogTypeLabel': 'Operation type',
+    'caixa.operacoes.launchDialogSelect': 'Select',
+    'caixa.operacoes.launchDialogAmountLabel': 'Amount',
+    'caixa.operacoes.launchDialogRelatedTypeLabel': 'Related method',
+    'caixa.operacoes.launchDialogReferenceLabel': 'Reference / receipt',
+    'caixa.operacoes.launchDialogReferenceHint': 'Example: MOV-001',
+    'caixa.operacoes.launchDialogObservationLabel': 'Note',
+    'caixa.operacoes.launchDialogObservationHint':
+        'Describe the reason for the movement clearly.',
+    'caixa.operacoes.launchDialogLinkedSaleLabel': 'Linked to a sale',
+    'caixa.operacoes.launchDialogLinkedSaleHint':
+        'Use this for reversals or cases related to a previous service.',
+    'caixa.operacoes.launchDialogReviewAction': 'Review entry',
+    'caixa.operacoes.launchDialogTypeRequired': 'Select the operation type.',
+    'caixa.operacoes.launchDialogRelatedTypeRequired':
+        'Select the related method.',
+    'caixa.operacoes.launchDialogAmountRequired': 'Enter a valid amount.',
+    'caixa.operacoes.launchDialogReviewTitle': 'Confirm operational entry?',
+    'caixa.operacoes.launchDialogReviewSubtitle':
+        'Review the details below before posting the movement to the cash register.',
+    'caixa.operacoes.launchDialogChecklist': 'Summary ready for confirmation.',
+    'caixa.operacoes.launchDialogEditAction': 'Edit details',
+    'caixa.operacoes.launchDialogConfirmAction': 'Register movement',
+    'caixa.operacoes.launchDialogProcessing': 'Registering...',
+    'caixa.operacoes.launchDialogError':
+        'The movement could not be registered. Check the details and try again.',
+    'caixa.operacoes.launchDialogSuccessTitle':
+        'Movement registered successfully',
+    'caixa.operacoes.launchDialogSuccessMessage':
+        'The entry is already visible in the history and cash summary.',
+    'caixa.operacoes.launchDialogAvailableMethods': 'Active methods',
+    'caixa.operacoes.launchDialogLinkedSaleTag': 'Linked to sale',
+    'caixa.operacoes.historyTodayOnly': 'Today only',
+    'caixa.operacoes.historyPeriod': 'Period',
+    'caixa.operacoes.historyPeriodToday': 'Today',
+    'caixa.operacoes.historyPeriodLast7Days': 'Last 7 days',
+    'caixa.operacoes.historyPeriodLast30Days': 'Last 30 days',
+    'caixa.operacoes.historyPeriodThisMonth': 'This month',
+    'caixa.operacoes.historyPeriodLastMonth': 'Last month',
+    'caixa.operacoes.historyPeriodCustomRange': 'Custom range',
+    'caixa.operacoes.historyNature': 'Direction',
+    'caixa.operacoes.historyStatus': 'Status',
+    'caixa.operacoes.historyOperation': 'Operation',
+    'caixa.operacoes.historyMethod': 'Method',
+    'caixa.operacoes.historyStartDate': 'Start date',
+    'caixa.operacoes.historyEndDate': 'End date',
+    'caixa.operacoes.historyStartDateHelp': 'Select start date',
+    'caixa.operacoes.historyEndDateHelp': 'Select end date',
+    'caixa.operacoes.historyClearFilters': 'Clear filters',
+    'caixa.operacoes.historyNoResultsFiltered':
+        'No transactions found for the selected filters.',
+    'caixa.operacoes.historyNoResultsToday':
+        'No transactions registered today.',
     'web.standalone.quote': 'Quote',
     'web.standalone.serviceOrder': 'Service order',
     'web.shell.expandSidebar': 'Expand navigation',
@@ -1902,6 +2071,12 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.filters.status.all': 'All statuses',
     'atendimentoTecnico.filters.status.allWithCount': 'All statuses ({count})',
     'atendimentoTecnico.filters.status.selectedFallback': 'Selected status',
+    'atendimentoTecnico.lista.openDetails': 'View details',
+    'atendimentoTecnico.lista.detailsDialog.title': 'Service details',
+    'atendimentoTecnico.lista.detailsDialog.subtitle':
+        'Review the financials, progress, and complete history before moving to another action.',
+    'atendimentoTecnico.lista.detailsDialog.barrierLabel':
+        'Close service details',
     'atendimentoTecnico.web.dateFilterDialog.barrierLabel': 'Close date filter',
     'atendimentoTecnico.web.dateFilterDialog.filterLabel': 'Date',
     'atendimentoTecnico.web.dateFilterDialog.title': 'Filter by date',
@@ -3113,6 +3288,90 @@ const Map<String, Map<String, String>> _fallbacks = {
         'La sesión ha finalizado y permanece disponible en el historial.',
     'caixa.operacoes.closeDialogError':
         'No se pudo cerrar la caja. Compruebe su conexión e inténtelo de nuevo.',
+    'caixa.operacoes.cancelDialogTitle': '¿Cancelar movimiento?',
+    'caixa.operacoes.cancelDialogSubtitle':
+        'Revise los vínculos de esta operación antes de cancelarla. Según el historial financiero, el registro puede necesitar mantenerse.',
+    'caixa.operacoes.cancelDialogOperation': 'Operación',
+    'caixa.operacoes.cancelDialogMethod': 'Forma',
+    'caixa.operacoes.cancelDialogAmount': 'Importe',
+    'caixa.operacoes.cancelDialogChecklist':
+        'Si el movimiento está vinculado a cobros o registros futuros, la cancelación puede bloquearse para preservar el historial.',
+    'caixa.operacoes.cancelDialogBack': 'Volver',
+    'caixa.operacoes.cancelDialogConfirm': 'Cancelar operación',
+    'caixa.operacoes.cancelDialogProcessing': 'Cancelando...',
+    'caixa.operacoes.cancelDialogSuccessTitle': 'Movimiento cancelado',
+    'caixa.operacoes.cancelDialogSuccessMessage':
+        'El historial de caja se actualizó y esta operación ya no seguirá activa en la sesión actual.',
+    'caixa.operacoes.cancelDialogError':
+        'No se pudo cancelar el movimiento ahora. Revise los vínculos financieros e inténtelo nuevamente.',
+    'caixa.operacoes.cancelDialogLinkedRecordsError':
+        'Este movimiento está vinculado a cobros o registros futuros y debe permanecer registrado en el historial financiero.',
+    'caixa.operacoes.cancelDialogPermissionError':
+        'No tienes permiso para cancelar este movimiento.',
+    'caixa.operacoes.cancelDialogConnectivityError':
+        'No fue posible comunicarse con el servidor ahora. Revise su conexión e inténtelo nuevamente.',
+    'caixa.operacoes.cancelDialogLikelyLinkedError':
+        'No fue posible cancelar este movimiento porque puede estar vinculado a otros registros financieros. Revise los cobros relacionados e inténtelo nuevamente.',
+    'caixa.operacoes.addEntryAction': 'Agregar lanzamiento',
+    'caixa.operacoes.launchDialogTitle': 'Registrar lanzamiento operativo',
+    'caixa.operacoes.launchDialogSubtitle':
+        'Complete los datos de la operación y revíselos antes de registrarla en la caja.',
+    'caixa.operacoes.launchDialogTypeLabel': 'Tipo de operación',
+    'caixa.operacoes.launchDialogSelect': 'Seleccione',
+    'caixa.operacoes.launchDialogAmountLabel': 'Importe',
+    'caixa.operacoes.launchDialogRelatedTypeLabel': 'Forma relacionada',
+    'caixa.operacoes.launchDialogReferenceLabel': 'Referencia / comprobante',
+    'caixa.operacoes.launchDialogReferenceHint': 'Ej.: MOV-001',
+    'caixa.operacoes.launchDialogObservationLabel': 'Observación',
+    'caixa.operacoes.launchDialogObservationHint':
+        'Describa con claridad el motivo del movimiento.',
+    'caixa.operacoes.launchDialogLinkedSaleLabel':
+        'Tiene vínculo con una venta',
+    'caixa.operacoes.launchDialogLinkedSaleHint':
+        'Úselo en reversiones o situaciones relacionadas con una atención anterior.',
+    'caixa.operacoes.launchDialogReviewAction': 'Revisar lanzamiento',
+    'caixa.operacoes.launchDialogTypeRequired':
+        'Seleccione el tipo de operación.',
+    'caixa.operacoes.launchDialogRelatedTypeRequired':
+        'Seleccione la forma relacionada.',
+    'caixa.operacoes.launchDialogAmountRequired': 'Ingrese un importe válido.',
+    'caixa.operacoes.launchDialogReviewTitle':
+        '¿Confirmar lanzamiento operativo?',
+    'caixa.operacoes.launchDialogReviewSubtitle':
+        'Revise los datos a continuación antes de registrar el movimiento en la caja.',
+    'caixa.operacoes.launchDialogChecklist': 'Resumen listo para confirmar.',
+    'caixa.operacoes.launchDialogEditAction': 'Editar datos',
+    'caixa.operacoes.launchDialogConfirmAction': 'Registrar movimiento',
+    'caixa.operacoes.launchDialogProcessing': 'Registrando...',
+    'caixa.operacoes.launchDialogError':
+        'No fue posible registrar el movimiento. Revise los datos e inténtelo nuevamente.',
+    'caixa.operacoes.launchDialogSuccessTitle':
+        'Movimiento registrado correctamente',
+    'caixa.operacoes.launchDialogSuccessMessage':
+        'El lanzamiento ya aparece en el historial y en el resumen de caja.',
+    'caixa.operacoes.launchDialogAvailableMethods': 'Formas activas',
+    'caixa.operacoes.launchDialogLinkedSaleTag': 'Vinculado a venta',
+    'caixa.operacoes.historyTodayOnly': 'Solo hoy',
+    'caixa.operacoes.historyPeriod': 'Período',
+    'caixa.operacoes.historyPeriodToday': 'Hoy',
+    'caixa.operacoes.historyPeriodLast7Days': 'Últimos 7 días',
+    'caixa.operacoes.historyPeriodLast30Days': 'Últimos 30 días',
+    'caixa.operacoes.historyPeriodThisMonth': 'Este mes',
+    'caixa.operacoes.historyPeriodLastMonth': 'Mes pasado',
+    'caixa.operacoes.historyPeriodCustomRange': 'Intervalo personalizado',
+    'caixa.operacoes.historyNature': 'Naturaleza',
+    'caixa.operacoes.historyStatus': 'Estado',
+    'caixa.operacoes.historyOperation': 'Operación',
+    'caixa.operacoes.historyMethod': 'Forma',
+    'caixa.operacoes.historyStartDate': 'Fecha inicial',
+    'caixa.operacoes.historyEndDate': 'Fecha final',
+    'caixa.operacoes.historyStartDateHelp': 'Seleccionar fecha inicial',
+    'caixa.operacoes.historyEndDateHelp': 'Seleccionar fecha final',
+    'caixa.operacoes.historyClearFilters': 'Limpiar filtros',
+    'caixa.operacoes.historyNoResultsFiltered':
+        'No se encontraron movimientos con los filtros aplicados.',
+    'caixa.operacoes.historyNoResultsToday':
+        'No se registraron movimientos hoy.',
     'web.standalone.quote': 'Presupuesto',
     'web.standalone.serviceOrder': 'Orden de servicio',
     'web.shell.expandSidebar': 'Expandir navegación',
@@ -3297,6 +3556,12 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.filters.status.allWithCount':
         'Todos los estados ({count})',
     'atendimentoTecnico.filters.status.selectedFallback': 'Estado seleccionado',
+    'atendimentoTecnico.lista.openDetails': 'Ver detalles',
+    'atendimentoTecnico.lista.detailsDialog.title': 'Detalles del servicio',
+    'atendimentoTecnico.lista.detailsDialog.subtitle':
+        'Revise finanzas, avance e historial completo antes de continuar con otra acción.',
+    'atendimentoTecnico.lista.detailsDialog.barrierLabel':
+        'Cerrar detalles del servicio',
     'atendimentoTecnico.web.dateFilterDialog.barrierLabel':
         'Cerrar filtro de fecha',
     'atendimentoTecnico.web.dateFilterDialog.filterLabel': 'Fecha',
