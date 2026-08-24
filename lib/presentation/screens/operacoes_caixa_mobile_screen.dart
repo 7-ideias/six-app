@@ -2065,6 +2065,17 @@ class _OperacoesCaixaMobileScreenState
                       ),
                       value: referencia,
                     ),
+                    if (movimento.codigoOperacao.trim().isNotEmpty) ...<Widget>[
+                      SizedBox(height: 10),
+                      _movementDetailTile(
+                        icon: Icons.tag_rounded,
+                        label: _txt(
+                          'caixa.operacoes.mobile.operationCode',
+                          'Código da operação',
+                        ),
+                        value: movimento.codigoOperacao,
+                      ),
+                    ],
                     SizedBox(height: 10),
                     _movementDetailTile(
                       icon: Icons.notes_rounded,

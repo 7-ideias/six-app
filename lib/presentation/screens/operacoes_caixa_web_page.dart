@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -5,13 +7,18 @@ import 'package:provider/provider.dart';
 import '../../core/di/caixa_module.dart';
 import '../../data/models/caixa_completo_movimentos_models.dart';
 import '../../data/models/caixa_models.dart';
+import '../../data/services/caixa/caixa_api_client.dart';
 import '../../domain/services/caixa/caixa_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/empresa_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
+import '../components/web/six_web_cash_movement_cancel_dialog.dart';
 import '../components/web/six_web_cash_session_close_dialog.dart';
+import '../components/web/six_web_operational_launch_dialog.dart';
+import '../components/web/six_web_select_field.dart';
+import 'consulta_vendas_web_page.dart';
 import '../components/web_dashboard_widgets.dart';
 import '../theme/web_theme_tokens.dart';
 
@@ -26,16 +33,29 @@ class OperacoesCaixaWebPage extends StatefulWidget {
 }
 
 class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
+  static const String _historicoTodosKey = '__all__';
+  static const String _periodoHoje = 'Hoje';
+  static const String _periodoUltimos7Dias = 'Últimos 7 dias';
+  static const String _periodoUltimos30Dias = 'Últimos 30 dias';
+  static const String _periodoEsteMes = 'Este mês';
+  static const String _periodoMesPassado = 'Mês passado';
+  static const String _periodoIntervaloPersonalizado =
+      'Intervalo personalizado';
+  static const List<String> _periodosFiltroHistorico = <String>[
+    _periodoHoje,
+    _periodoUltimos7Dias,
+    _periodoUltimos30Dias,
+    _periodoEsteMes,
+    _periodoMesPassado,
+    _periodoIntervaloPersonalizado,
+  ];
+
   final CaixaService _caixaService = CaixaModule.caixaService;
   final ScrollController _scrollController = ScrollController();
-  final GlobalKey _formularioMovimentoKey = GlobalKey();
 
   final TextEditingController _trocoInicialController = TextEditingController(
     text: '200,00',
   );
-  final TextEditingController _valorController = TextEditingController();
-  final TextEditingController _observacaoController = TextEditingController();
-  final TextEditingController _referenciaController = TextEditingController();
   final TextEditingController _fechamentoDinheiroController =
       TextEditingController();
   final TextEditingController _fechamentoPixController =
@@ -47,14 +67,19 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
 
   bool _isLoading = false;
   bool _confirmandoAberturaCaixa = false;
-  bool _vincularVenda = false;
   bool _mostrarPainelFechamento = false;
-  bool _mostrarApenasHoje = false;
+  late DateTime _dataHistoricoInicial;
+  late DateTime _dataHistoricoFinal;
+  late DateTime _dataHistoricoInicioPersonalizada;
+  late DateTime _dataHistoricoFimPersonalizada;
+  String _periodoHistoricoSelecionado = _periodoHoje;
+  String? _filtroHistoricoNatureza;
+  String? _filtroHistoricoStatus;
+  String? _filtroHistoricoTipo;
+  String? _filtroHistoricoForma;
 
   CaixaSessao? _sessaoAtual;
   CaixaOuGuiche? _caixaSelecionado;
-  OperacaoCaixaTipo? _tipoSelecionado;
-  TiposRecebimento? _tipoRecebimentoSelecionado;
   InformacoesCaixaComSomatorioResponse? _movimentosComSomatorio;
   ResumoCaixa? _resumo;
 
@@ -65,6 +90,11 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   @override
   void initState() {
     super.initState();
+    final DateTime hoje = _hojeNormalizado();
+    _dataHistoricoInicial = hoje;
+    _dataHistoricoFinal = hoje;
+    _dataHistoricoInicioPersonalizada = hoje;
+    _dataHistoricoFimPersonalizada = hoje;
     _carregarDadosIniciais();
   }
 
@@ -72,9 +102,6 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   void dispose() {
     _scrollController.dispose();
     _trocoInicialController.dispose();
-    _valorController.dispose();
-    _observacaoController.dispose();
-    _referenciaController.dispose();
     _fechamentoDinheiroController.dispose();
     _fechamentoPixController.dispose();
     _fechamentoCartaoController.dispose();
@@ -109,28 +136,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   .map((nome) => CaixaOuGuiche(id: nome, nome: nome))
                   .toList(growable: false);
 
-      final tiposAtivos = informacoesBasicas.tiposRecebimento
-          .where((item) => item.ativo)
-          .toList(growable: false)
-        ..sort((a, b) => a.ordemExibicao.compareTo(b.ordemExibicao));
-
       final idPreferencial = idCaixaPreferencial ?? _caixaSelecionado?.id;
       CaixaOuGuiche? caixaPreferencial;
       if (idPreferencial != null) {
         for (final caixa in caixas) {
           if (caixa.id == idPreferencial) {
             caixaPreferencial = caixa;
-            break;
-          }
-        }
-      }
-
-      TiposRecebimento? tipoPreferencial;
-      final codigoAtual = _tipoRecebimentoSelecionado?.codigoTipo;
-      if (codigoAtual != null) {
-        for (final tipo in tiposAtivos) {
-          if (tipo.codigoTipo == codigoAtual) {
-            tipoPreferencial = tipo;
             break;
           }
         }
@@ -143,9 +154,6 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         _caixaSelecionado =
             caixaPreferencial ??
             (_caixasDisponiveis.isNotEmpty ? _caixasDisponiveis.first : null);
-        _tipoRecebimentoSelecionado =
-            tipoPreferencial ??
-            (tiposAtivos.isNotEmpty ? tiposAtivos.first : null);
         _sessaoAtual = sessao;
         _movimentos = <MovimentoCaixa>[];
         _movimentosComSomatorio = null;
@@ -221,38 +229,13 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     Navigator.of(context).maybePop();
   }
 
-  Future<void> _irParaFormularioOperacional() async {
-    if (!_temCaixaAberto) {
-      _mostrarAvisoCaixaNaoAberto();
-      return;
-    }
-
-    if (_mostrarPainelFechamento) {
-      setState(() => _mostrarPainelFechamento = false);
-      await WidgetsBinding.instance.endOfFrame;
-    }
-
-    final currentContext = _formularioMovimentoKey.currentContext;
-    if (currentContext == null) return;
-
-    await Scrollable.ensureVisible(
-      currentContext,
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
-      alignment: 0.08,
-    );
-  }
-
   void _alternarPainelFechamento() {
     if (!_temCaixaAberto) {
       _mostrarAvisoCaixaNaoAberto();
       return;
     }
 
-    setState(() {
-      _mostrarPainelFechamento = !_mostrarPainelFechamento;
-      _tipoSelecionado = null;
-    });
+    setState(() => _mostrarPainelFechamento = !_mostrarPainelFechamento);
   }
 
   @override
@@ -330,21 +313,16 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                                       order: 1,
                                       child: _buildContextoOperacao(theme),
                                     ),
-                                    const SizedBox(height: 12),
-                                    SixWebEntry(
-                                      order: 2,
-                                      child: _buildFormularioMovimento(theme),
-                                    ),
                                     if (_mostrarPainelFechamento) ...<Widget>[
                                       const SizedBox(height: 12),
                                       SixWebEntry(
-                                        order: 3,
+                                        order: 2,
                                         child: _buildPainelFechamento(theme),
                                       ),
                                     ],
                                     const SizedBox(height: 12),
                                     SixWebEntry(
-                                      order: 4,
+                                      order: 3,
                                       child: _buildHistorico(theme),
                                     ),
                                   ],
@@ -372,21 +350,16 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                                 order: 2,
                                 child: _buildResumoLateral(theme),
                               ),
-                              const SizedBox(height: 12),
-                              SixWebEntry(
-                                order: 3,
-                                child: _buildFormularioMovimento(theme),
-                              ),
                               if (_mostrarPainelFechamento) ...<Widget>[
                                 const SizedBox(height: 12),
                                 SixWebEntry(
-                                  order: 4,
+                                  order: 3,
                                   child: _buildPainelFechamento(theme),
                                 ),
                               ],
                               const SizedBox(height: 12),
                               SixWebEntry(
-                                order: 5,
+                                order: 4,
                                 child: _buildHistorico(theme),
                               ),
                             ],
@@ -472,10 +445,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             ),
           ),
         if (_temCaixaAberto)
-          OutlinedButton.icon(
-            onPressed: _irParaFormularioOperacional,
-            icon: const Icon(Icons.edit_note_rounded),
-            label: const Text('Operacional'),
+          FilledButton.icon(
+            onPressed: _isLoading ? null : _abrirDialogoLancamentoOperacional,
+            icon: const Icon(Icons.add_rounded),
+            label: Text(
+              _txt('caixa.operacoes.addEntryAction', 'Adicionar lançamento'),
+            ),
           ),
         if (_temCaixaAberto)
           OutlinedButton.icon(
@@ -563,9 +538,14 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 ),
               ),
               helper:
-                  _mostrarApenasHoje
-                      ? 'Filtro de hoje ativo'
-                      : 'Todos visíveis',
+                  _usaPeriodoHistoricoPersonalizado
+                      ? _txt(
+                        'caixa.operacoes.historyPeriodCustomRange',
+                        'Intervalo personalizado',
+                      )
+                      : _historicoPeriodoItemLabel(
+                        _periodoHistoricoSelecionado,
+                      ),
               icon: Icons.receipt_long_outlined,
             ),
           ],
@@ -837,170 +817,15 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     );
   }
 
-  Widget _buildFormularioMovimento(ThemeData theme) {
-    return Container(
-      key: _formularioMovimentoKey,
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(theme),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _sectionHeader(
-            theme,
-            title: 'Lançamento operacional',
-            subtitle:
-                _tipoSelecionado == null
-                    ? 'Selecione o tipo da operação e preencha os dados do lançamento.'
-                    : 'Preencha os dados da operação ${_labelTipo(_tipoSelecionado!)}.',
-            icon: Icons.edit_note_rounded,
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: <Widget>[
-              _buildFieldBox(
-                theme,
-                width: 260,
-                label: 'Tipo da operação',
-                child: _buildWebSelectorDropdown<OperacaoCaixaTipo>(
-                  theme,
-                  menuWidth: 260,
-                  value: _tipoSelecionado,
-                  items: OperacaoCaixaTipo.values
-                      .where((e) => e != OperacaoCaixaTipo.fechamentoCaixa)
-                      .toList(growable: false),
-                  onSelected:
-                      (value) => setState(() => _tipoSelecionado = value),
-                  itemLabel: _labelTipo,
-                  itemSubtitle: (item) => item.codigoApi,
-                  itemIcon: _iconeTipo,
-                  hint: 'Selecione',
-                  emptyMessage: 'Nenhum tipo disponível.',
-                ),
-              ),
-              _buildFieldBox(
-                theme,
-                width: 220,
-                label: 'Valor',
-                child: _buildTextField(
-                  theme,
-                  controller: _valorController,
-                  hint: '0,00',
-                  prefix: _currencyInputPrefix(),
-                ),
-              ),
-              _buildFieldBox(
-                theme,
-                width: 280,
-                label: 'Forma relacionada',
-                child: _buildWebSelectorDropdown<TiposRecebimento>(
-                  theme,
-                  menuWidth: 280,
-                  value: _tipoRecebimentoSelecionado,
-                  items: _tiposRecebimentoAtivosOrdenados(),
-                  onSelected:
-                      (value) =>
-                          setState(() => _tipoRecebimentoSelecionado = value),
-                  itemLabel:
-                      (item) => _descricaoTipoRecebimentoConfigurado(item),
-                  itemSubtitle: (item) => item.codigoTipo,
-                  itemIcon: (_) => Icons.payments_outlined,
-                  hint: 'Selecione',
-                  emptyMessage: 'Nenhuma forma relacionada ativa.',
-                ),
-              ),
-              _buildFieldBox(
-                theme,
-                width: 240,
-                label: 'Caixa / guichê',
-                child: _buildReadOnlyField(
-                  theme,
-                  _sessaoAtual?.nomeCaixa ?? '--',
-                ),
-              ),
-              _buildFieldBox(
-                theme,
-                width: 260,
-                label: 'Referência / comprovante',
-                child: _buildTextField(
-                  theme,
-                  controller: _referenciaController,
-                  hint: 'Ex.: MOV-001',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            crossAxisAlignment: WrapCrossAlignment.start,
-            children: <Widget>[
-              _buildFieldBox(
-                theme,
-                width: 540,
-                label: 'Observação',
-                child: TextField(
-                  controller: _observacaoController,
-                  maxLines: 4,
-                  decoration: _inputDecoration(
-                    theme,
-                    hint: 'Descreva o motivo da movimentação com clareza.',
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 300,
-                child: Theme(
-                  data: theme.copyWith(checkboxTheme: _checkboxTheme(theme)),
-                  child: CheckboxListTile(
-                    value: _vincularVenda,
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Possui vínculo com venda'),
-                    subtitle: const Text(
-                      'Use em estornos ou situações relacionadas a atendimento anterior.',
-                    ),
-                    onChanged:
-                        (value) =>
-                            setState(() => _vincularVenda = value ?? false),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: <Widget>[
-              FilledButton.icon(
-                onPressed: _isLoading ? null : _salvarMovimento,
-                icon: const Icon(Icons.save_outlined),
-                label: const Text('Registrar movimentação'),
-              ),
-              OutlinedButton.icon(
-                onPressed: _limparFormularioMovimento,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Limpar formulário'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildHistorico(ThemeData theme) {
     final tokens = WebThemeTokens.of(context);
-    final movimentosVisiveis =
-        _mostrarApenasHoje
-            ? _movimentos
-                .where((m) => _isSameDay(m.dataHoraMovimento, DateTime.now()))
-                .toList(growable: false)
-            : _movimentos;
+    final regionalizacao = context.watch<LocaleSettingsProvider>();
+    final movimentosVisiveis = _movimentosHistoricoFiltrados();
+    final opcoesNatureza = _opcoesFiltroHistoricoNatureza();
+    final opcoesStatus = _opcoesFiltroHistoricoStatus();
+    final opcoesTipo = _opcoesFiltroHistoricoTipo();
+    final opcoesForma = _opcoesFiltroHistoricoForma();
+    const double campoFiltroLargura = 220;
 
     return Container(
       width: double.infinity,
@@ -1019,30 +844,140 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                   icon: Icons.history_rounded,
                 ),
               ),
-              FilterChip(
-                backgroundColor: tokens.surfaceMuted,
-                selectedColor: tokens.selectedBackground,
-                checkmarkColor: tokens.info,
-                side: BorderSide(color: tokens.cardBorder),
-                labelStyle: TextStyle(
-                  color: tokens.secondaryText,
-                  fontWeight: FontWeight.w700,
-                ),
-                label: const Text('Somente hoje'),
-                selected: _mostrarApenasHoje,
-                onSelected:
-                    (value) => setState(() => _mostrarApenasHoje = value),
-              ),
             ],
           ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: _softBox(theme),
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: <Widget>[
+                SixWebSelectField(
+                  width: campoFiltroLargura,
+                  label: _txt('caixa.operacoes.historyPeriod', 'Período'),
+                  value: _historicoPeriodoFiltroLabel(regionalizacao),
+                  items: <String>[
+                    for (final String value in _periodosFiltroHistorico)
+                      _historicoPeriodoItemLabel(value),
+                  ],
+                  icon: Icons.date_range_rounded,
+                  onSelected: (String selected) {
+                    _selecionarPeriodoHistorico(
+                      _historicoPeriodoValueFromLabel(selected),
+                    );
+                  },
+                ),
+                if (opcoesNatureza.length > 1)
+                  _buildHistoricoPopupFiltro(
+                    theme,
+                    icon: Icons.compare_arrows_rounded,
+                    title: _txt('caixa.operacoes.historyNature', 'Natureza'),
+                    value: _filtroHistoricoNatureza,
+                    options: opcoesNatureza,
+                    onSelected:
+                        (value) =>
+                            setState(() => _filtroHistoricoNatureza = value),
+                  ),
+                if (opcoesStatus.length > 1)
+                  _buildHistoricoPopupFiltro(
+                    theme,
+                    icon: Icons.flag_outlined,
+                    title: _txt('caixa.operacoes.historyStatus', 'Status'),
+                    value: _filtroHistoricoStatus,
+                    options: opcoesStatus,
+                    onSelected:
+                        (value) =>
+                            setState(() => _filtroHistoricoStatus = value),
+                  ),
+                if (opcoesTipo.length > 1)
+                  _buildHistoricoPopupFiltro(
+                    theme,
+                    icon: Icons.receipt_long_outlined,
+                    title: _txt('caixa.operacoes.historyOperation', 'Operação'),
+                    value: _filtroHistoricoTipo,
+                    options: opcoesTipo,
+                    onSelected:
+                        (value) => setState(() => _filtroHistoricoTipo = value),
+                  ),
+                if (opcoesForma.length > 1)
+                  _buildHistoricoPopupFiltro(
+                    theme,
+                    icon: Icons.payments_outlined,
+                    title: _txt('caixa.operacoes.historyMethod', 'Forma'),
+                    value: _filtroHistoricoForma,
+                    options: opcoesForma,
+                    onSelected:
+                        (value) =>
+                            setState(() => _filtroHistoricoForma = value),
+                  ),
+                if (_temFiltrosHistoricoAtivos)
+                  OutlinedButton.icon(
+                    onPressed: _limparFiltrosHistorico,
+                    icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
+                    label: Text(
+                      _txt(
+                        'caixa.operacoes.historyClearFilters',
+                        'Limpar filtros',
+                      ),
+                    ),
+                    style: _outlinedButtonStyle(theme),
+                  ),
+              ],
+            ),
+          ),
+          if (_usaPeriodoHistoricoPersonalizado) ...<Widget>[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: <Widget>[
+                _HistoricoDateFilterButton(
+                  tokens: tokens,
+                  width: campoFiltroLargura,
+                  label: _txt(
+                    'caixa.operacoes.historyStartDate',
+                    'Data inicial',
+                  ),
+                  value: regionalizacao.formatDate(
+                    _dataHistoricoInicioPersonalizada,
+                  ),
+                  onPressed:
+                      () =>
+                          _selecionarDataHistoricoPersonalizada(inicial: true),
+                ),
+                _HistoricoDateFilterButton(
+                  tokens: tokens,
+                  width: campoFiltroLargura,
+                  label: _txt('caixa.operacoes.historyEndDate', 'Data final'),
+                  value: regionalizacao.formatDate(
+                    _dataHistoricoFimPersonalizada,
+                  ),
+                  onPressed:
+                      () =>
+                          _selecionarDataHistoricoPersonalizada(inicial: false),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 14),
           if (movimentosVisiveis.isEmpty)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(18),
               decoration: _softBox(theme),
-              child: const Text(
-                'Nenhuma movimentação registrada após a abertura do caixa.',
+              child: Text(
+                _temFiltrosHistoricoAtivos
+                    ? _txt(
+                      'caixa.operacoes.historyNoResultsFiltered',
+                      'Nenhuma movimentação encontrada com os filtros aplicados.',
+                    )
+                    : _txt(
+                      'caixa.operacoes.historyNoResultsToday',
+                      'Nenhuma movimentação registrada hoje.',
+                    ),
               ),
             )
           else
@@ -1056,6 +991,102 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                       _buildMovimentoCard(theme, movimentosVisiveis[index]),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHistoricoPopupFiltro(
+    ThemeData theme, {
+    required IconData icon,
+    required String title,
+    required String? value,
+    required List<_HistoricoFiltroOption> options,
+    required ValueChanged<String?> onSelected,
+  }) {
+    final tokens = WebThemeTokens.of(context);
+    final selectedLabel = _labelFiltroHistoricoSelecionado(options, value);
+    return PopupMenuButton<String>(
+      tooltip: title,
+      color: tokens.surfaceElevated,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      onSelected:
+          (selected) =>
+              onSelected(selected == _historicoTodosKey ? null : selected),
+      itemBuilder: (context) {
+        final List<_HistoricoFiltroOption> menuOptions =
+            <_HistoricoFiltroOption>[
+              _HistoricoFiltroOption(
+                value: _historicoTodosKey,
+                label: _txt('common.all', 'Todos'),
+              ),
+              ...options,
+            ];
+        return menuOptions
+            .map((option) {
+              final bool selected =
+                  value == null
+                      ? option.value == _historicoTodosKey
+                      : option.value == value;
+              return PopupMenuItem<String>(
+                value: option.value,
+                child: Row(
+                  children: <Widget>[
+                    Icon(
+                      selected
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      size: 18,
+                      color: selected ? tokens.info : tokens.secondaryText,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        option.label,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: tokens.primaryText,
+                          fontWeight:
+                              selected ? FontWeight.w800 : FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            })
+            .toList(growable: false);
+      },
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 170, maxWidth: 240),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: tokens.cardBackground,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: value == null ? tokens.cardBorder : tokens.selectedBorder,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(icon, size: 18, color: tokens.secondaryText),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '$title: $selectedLabel',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: tokens.primaryText,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.expand_more_rounded, size: 18, color: tokens.mutedText),
+          ],
+        ),
       ),
     );
   }
@@ -1148,6 +1179,12 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                               ? 'Sem referência'
                               : movimento.referencia,
                         ),
+                        if (movimento.codigoOperacao.trim().isNotEmpty)
+                          _inlineInfo(
+                            theme,
+                            Icons.tag_rounded,
+                            movimento.codigoOperacao,
+                          ),
                       ],
                     ),
                   ],
@@ -1183,11 +1220,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
                 runSpacing: 8,
                 children: <Widget>[
                   OutlinedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Forma relacionada: $forma')),
-                      );
-                    },
+                    onPressed: () => _abrirDetalhesMovimento(movimento),
                     child: const Text('Detalhes'),
                   ),
                   if (movimento.status.toLowerCase() != 'cancelada')
@@ -1401,7 +1434,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
             runSpacing: 10,
             children: <Widget>[
               FilledButton.icon(
-                onPressed: _isLoading ? null : _fecharCaixa,
+                onPressed: _isLoading ? null : _confirmarEncerramentoSessao,
                 icon: const Icon(Icons.task_alt_rounded),
                 label: const Text('Concluir fechamento'),
               ),
@@ -1579,20 +1612,23 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     required double width,
     required String label,
     required Widget child,
+    bool showLabel = true,
   }) {
     final tokens = WebThemeTokens.of(context);
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(
-          label,
-          style: TextStyle(
-            color: tokens.secondaryText,
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
+        if (showLabel) ...<Widget>[
+          Text(
+            label,
+            style: TextStyle(
+              color: tokens.secondaryText,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
+          const SizedBox(height: 8),
+        ],
         child,
       ],
     );
@@ -1656,118 +1692,6 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               )
               .toList(),
       onChanged: onChanged,
-    );
-  }
-
-  Widget _buildWebSelectorDropdown<T>(
-    ThemeData theme, {
-    required double menuWidth,
-    required T? value,
-    required List<T> items,
-    required void Function(T) onSelected,
-    required String Function(T item) itemLabel,
-    required String Function(T item) itemSubtitle,
-    required IconData Function(T item) itemIcon,
-    required String hint,
-    required String emptyMessage,
-  }) {
-    final tokens = WebThemeTokens.of(context);
-    final T? selectedValue = items.contains(value) ? value : null;
-    final String selectedLabel =
-        selectedValue == null ? hint : itemLabel(selectedValue);
-    final Color borderColor =
-        selectedValue == null ? tokens.cardBorder : tokens.selectedBorder;
-
-    return Semantics(
-      button: true,
-      label: selectedValue == null ? hint : selectedLabel,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () async {
-          final selected = await _showWebSelectorDialog<T>(
-            menuWidth: menuWidth,
-            selected: selectedValue,
-            items: items,
-            itemLabel: itemLabel,
-            itemSubtitle: itemSubtitle,
-            itemIcon: itemIcon,
-            emptyMessage: emptyMessage,
-          );
-          if (!mounted || selected == null) return;
-          onSelected(selected);
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: tokens.inputBackground,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: borderColor,
-              width: selectedValue == null ? 1 : 1.2,
-            ),
-          ),
-          child: Row(
-            children: <Widget>[
-              Icon(
-                selectedValue == null
-                    ? Icons.tune_rounded
-                    : itemIcon(selectedValue),
-                color: selectedValue == null ? tokens.mutedText : tokens.info,
-                size: 20,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  selectedLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color:
-                        selectedValue == null
-                            ? tokens.secondaryText
-                            : tokens.primaryText,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: tokens.mutedText,
-                size: 22,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<T?> _showWebSelectorDialog<T>({
-    required double menuWidth,
-    required T? selected,
-    required List<T> items,
-    required String Function(T item) itemLabel,
-    required String Function(T item) itemSubtitle,
-    required IconData Function(T item) itemIcon,
-    required String emptyMessage,
-  }) {
-    final tokens = WebThemeTokens.of(context);
-    return showDialog<T>(
-      context: context,
-      barrierColor: tokens.workspaceBackground.withValues(alpha: 0.72),
-      builder:
-          (context) => _WebSelectorDialog<T>(
-            width: menuWidth,
-            selected: selected,
-            items: items,
-            itemLabel: itemLabel,
-            itemSubtitle: itemSubtitle,
-            itemIcon: itemIcon,
-            emptyMessage: emptyMessage,
-          ),
     );
   }
 
@@ -1884,6 +1808,336 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   List<TiposRecebimento> _tiposRecebimentoAtivosOrdenados() {
     return _tiposRecebimento.where((item) => item.ativo).toList(growable: false)
       ..sort((a, b) => a.ordemExibicao.compareTo(b.ordemExibicao));
+  }
+
+  bool get _temFiltrosHistoricoAtivos =>
+      _periodoHistoricoSelecionado != _periodoHoje ||
+      _filtroHistoricoNatureza != null ||
+      _filtroHistoricoStatus != null ||
+      _filtroHistoricoTipo != null ||
+      _filtroHistoricoForma != null;
+
+  bool get _usaPeriodoHistoricoPersonalizado =>
+      _periodoHistoricoSelecionado == _periodoIntervaloPersonalizado;
+
+  void _limparFiltrosHistorico() {
+    setState(() {
+      final DateTime hoje = _hojeNormalizado();
+      _periodoHistoricoSelecionado = _periodoHoje;
+      _dataHistoricoInicial = hoje;
+      _dataHistoricoFinal = hoje;
+      _dataHistoricoInicioPersonalizada = hoje;
+      _dataHistoricoFimPersonalizada = hoje;
+      _filtroHistoricoNatureza = null;
+      _filtroHistoricoStatus = null;
+      _filtroHistoricoTipo = null;
+      _filtroHistoricoForma = null;
+    });
+  }
+
+  List<MovimentoCaixa> _movimentosHistoricoFiltrados() {
+    Iterable<MovimentoCaixa> movimentos = _movimentos;
+    final DateTimeRange periodo = _resolverPeriodoHistoricoSelecionado();
+    movimentos = movimentos.where(
+      (m) => _isWithinDateRange(m.dataHoraMovimento, periodo),
+    );
+
+    if (_filtroHistoricoNatureza != null) {
+      movimentos = movimentos.where(
+        (m) =>
+            _normalizeHistoricoFiltro(m.natureza) == _filtroHistoricoNatureza,
+      );
+    }
+
+    if (_filtroHistoricoStatus != null) {
+      movimentos = movimentos.where(
+        (m) => _normalizeHistoricoFiltro(m.status) == _filtroHistoricoStatus,
+      );
+    }
+
+    if (_filtroHistoricoTipo != null) {
+      movimentos = movimentos.where(
+        (m) =>
+            _normalizeHistoricoFiltro(m.tipoMovimento) == _filtroHistoricoTipo,
+      );
+    }
+
+    if (_filtroHistoricoForma != null) {
+      movimentos = movimentos.where(
+        (m) => _chaveFiltroHistoricoForma(m) == _filtroHistoricoForma,
+      );
+    }
+
+    return movimentos.toList(growable: false);
+  }
+
+  DateTime _hojeNormalizado() {
+    final DateTime agora = DateTime.now();
+    return DateTime(agora.year, agora.month, agora.day);
+  }
+
+  DateTime _normalizarData(DateTime value) {
+    return DateTime(value.year, value.month, value.day);
+  }
+
+  DateTimeRange _resolverPeriodoHistoricoSelecionado() {
+    final DateTime hoje = _hojeNormalizado();
+    switch (_periodoHistoricoSelecionado) {
+      case _periodoHoje:
+        return DateTimeRange(start: hoje, end: hoje);
+      case _periodoUltimos7Dias:
+        return DateTimeRange(
+          start: hoje.subtract(const Duration(days: 6)),
+          end: hoje,
+        );
+      case _periodoEsteMes:
+        return DateTimeRange(
+          start: DateTime(hoje.year, hoje.month, 1),
+          end: hoje,
+        );
+      case _periodoMesPassado:
+        final DateTime inicioMesAtual = DateTime(hoje.year, hoje.month, 1);
+        final DateTime ultimoDiaMesPassado = inicioMesAtual.subtract(
+          const Duration(days: 1),
+        );
+        return DateTimeRange(
+          start: DateTime(
+            ultimoDiaMesPassado.year,
+            ultimoDiaMesPassado.month,
+            1,
+          ),
+          end: ultimoDiaMesPassado,
+        );
+      case _periodoIntervaloPersonalizado:
+        final DateTime inicio = _normalizarData(
+          _dataHistoricoInicioPersonalizada,
+        );
+        final DateTime fim = _normalizarData(_dataHistoricoFimPersonalizada);
+        return DateTimeRange(
+          start: inicio.isAfter(fim) ? fim : inicio,
+          end: fim.isBefore(inicio) ? inicio : fim,
+        );
+      case _periodoUltimos30Dias:
+      default:
+        return DateTimeRange(
+          start: hoje.subtract(const Duration(days: 29)),
+          end: hoje,
+        );
+    }
+  }
+
+  void _sincronizarPeriodoHistoricoComDatas() {
+    final DateTimeRange periodo = _resolverPeriodoHistoricoSelecionado();
+    _dataHistoricoInicial = periodo.start;
+    _dataHistoricoFinal = periodo.end;
+  }
+
+  void _ajustarPeriodoHistoricoPersonalizadoSeguro() {
+    final DateTime inicio = _normalizarData(_dataHistoricoInicioPersonalizada);
+    final DateTime fim = _normalizarData(_dataHistoricoFimPersonalizada);
+    if (fim.isBefore(inicio)) {
+      _dataHistoricoFimPersonalizada = inicio;
+    }
+  }
+
+  void _selecionarPeriodoHistorico(String selected) {
+    if (!_periodosFiltroHistorico.contains(selected) ||
+        _periodoHistoricoSelecionado == selected) {
+      return;
+    }
+    setState(() {
+      _periodoHistoricoSelecionado = selected;
+      if (_usaPeriodoHistoricoPersonalizado) {
+        _ajustarPeriodoHistoricoPersonalizadoSeguro();
+      }
+      _sincronizarPeriodoHistoricoComDatas();
+    });
+  }
+
+  Future<void> _selecionarDataHistoricoPersonalizada({
+    required bool inicial,
+  }) async {
+    final DateTime atual =
+        inicial
+            ? _dataHistoricoInicioPersonalizada
+            : _dataHistoricoFimPersonalizada;
+    final DateTime firstDate =
+        inicial ? DateTime(2020) : _dataHistoricoInicioPersonalizada;
+    final DateTime? selecionada = await showDatePicker(
+      context: context,
+      initialDate: atual,
+      firstDate: firstDate,
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      helpText: _txt(
+        inicial
+            ? 'caixa.operacoes.historyStartDateHelp'
+            : 'caixa.operacoes.historyEndDateHelp',
+        inicial ? 'Selecionar data inicial' : 'Selecionar data final',
+      ),
+    );
+    if (selecionada == null || !mounted) return;
+
+    setState(() {
+      final DateTime normalizada = _normalizarData(selecionada);
+      if (inicial) {
+        _dataHistoricoInicioPersonalizada = normalizada;
+        _ajustarPeriodoHistoricoPersonalizadoSeguro();
+      } else {
+        _dataHistoricoFimPersonalizada = normalizada;
+      }
+      _sincronizarPeriodoHistoricoComDatas();
+    });
+  }
+
+  String _historicoPeriodoItemLabel(String periodo) {
+    switch (periodo) {
+      case _periodoHoje:
+        return _txt('caixa.operacoes.historyPeriodToday', 'Hoje');
+      case _periodoUltimos7Dias:
+        return _txt('caixa.operacoes.historyPeriodLast7Days', 'Últimos 7 dias');
+      case _periodoEsteMes:
+        return _txt('caixa.operacoes.historyPeriodThisMonth', 'Este mês');
+      case _periodoMesPassado:
+        return _txt('caixa.operacoes.historyPeriodLastMonth', 'Mês passado');
+      case _periodoIntervaloPersonalizado:
+        return _txt(
+          'caixa.operacoes.historyPeriodCustomRange',
+          'Intervalo personalizado',
+        );
+      case _periodoUltimos30Dias:
+      default:
+        return _txt(
+          'caixa.operacoes.historyPeriodLast30Days',
+          'Últimos 30 dias',
+        );
+    }
+  }
+
+  String _historicoPeriodoFiltroLabel(LocaleSettingsProvider regionalizacao) {
+    if (_usaPeriodoHistoricoPersonalizado) {
+      return '${regionalizacao.formatDate(_dataHistoricoInicial)} - ${regionalizacao.formatDate(_dataHistoricoFinal)}';
+    }
+    return _historicoPeriodoItemLabel(_periodoHistoricoSelecionado);
+  }
+
+  String _historicoPeriodoValueFromLabel(String label) {
+    for (final String value in _periodosFiltroHistorico) {
+      if (_historicoPeriodoItemLabel(value) == label) {
+        return value;
+      }
+    }
+    return _periodoHoje;
+  }
+
+  List<_HistoricoFiltroOption> _opcoesFiltroHistoricoNatureza() {
+    final Set<String> naturezas =
+        _movimentos
+            .map((m) => _normalizeHistoricoFiltro(m.natureza))
+            .where((value) => value.isNotEmpty)
+            .toSet();
+    final List<_HistoricoFiltroOption> options = <_HistoricoFiltroOption>[];
+    for (final value in <String>['entrada', 'saida']) {
+      if (naturezas.contains(value)) {
+        options.add(
+          _HistoricoFiltroOption(value: value, label: _labelNatureza(value)),
+        );
+      }
+    }
+    return options;
+  }
+
+  List<_HistoricoFiltroOption> _opcoesFiltroHistoricoStatus() {
+    final Map<String, String> labels = <String, String>{};
+    for (final movimento in _movimentos) {
+      final value = _normalizeHistoricoFiltro(movimento.status);
+      if (value.isEmpty || labels.containsKey(value)) continue;
+      labels[value] = _labelStatusMovimento(movimento.status);
+    }
+
+    final List<String> orderedKeys = <String>[
+      'concluida',
+      'aberta',
+      'pendenteconferencia',
+      'cancelada',
+    ];
+    final List<_HistoricoFiltroOption> options = <_HistoricoFiltroOption>[];
+    for (final key in orderedKeys) {
+      final label = labels.remove(key);
+      if (label != null) {
+        options.add(_HistoricoFiltroOption(value: key, label: label));
+      }
+    }
+
+    final remaining =
+        labels.entries.toList()..sort((a, b) => a.value.compareTo(b.value));
+    options.addAll(
+      remaining.map(
+        (entry) => _HistoricoFiltroOption(value: entry.key, label: entry.value),
+      ),
+    );
+    return options;
+  }
+
+  List<_HistoricoFiltroOption> _opcoesFiltroHistoricoTipo() {
+    final Map<String, String> labels = <String, String>{};
+    for (final movimento in _movimentos) {
+      final value = _normalizeHistoricoFiltro(movimento.tipoMovimento);
+      if (value.isEmpty || labels.containsKey(value)) continue;
+      labels[value] = _labelTipo(movimento.tipoMovimento);
+    }
+
+    final entries =
+        labels.entries.toList()..sort((a, b) => a.value.compareTo(b.value));
+    return entries
+        .map(
+          (entry) =>
+              _HistoricoFiltroOption(value: entry.key, label: entry.value),
+        )
+        .toList(growable: false);
+  }
+
+  List<_HistoricoFiltroOption> _opcoesFiltroHistoricoForma() {
+    final Map<String, String> labels = <String, String>{};
+    for (final movimento in _movimentos) {
+      final value = _chaveFiltroHistoricoForma(movimento);
+      if (value.isEmpty || labels.containsKey(value)) continue;
+      labels[value] = _descricaoTipoRecebimentoMovimento(movimento);
+    }
+
+    final entries =
+        labels.entries.toList()..sort((a, b) => a.value.compareTo(b.value));
+    return entries
+        .map(
+          (entry) =>
+              _HistoricoFiltroOption(value: entry.key, label: entry.value),
+        )
+        .toList(growable: false);
+  }
+
+  String _labelFiltroHistoricoSelecionado(
+    List<_HistoricoFiltroOption> options,
+    String? value,
+  ) {
+    if (value == null) {
+      return _txt('common.all', 'Todos');
+    }
+    for (final option in options) {
+      if (option.value == value) return option.label;
+    }
+    return _txt('common.all', 'Todos');
+  }
+
+  String _chaveFiltroHistoricoForma(MovimentoCaixa movimento) {
+    final codigo = _normalizeHistoricoFiltro(movimento.codigoTipoRecebimento);
+    if (codigo.isNotEmpty) return 'codigo:$codigo';
+    final descricao = _normalizeHistoricoFiltro(
+      _descricaoTipoRecebimentoMovimento(movimento),
+    );
+    return descricao.isNotEmpty ? 'descricao:$descricao' : '';
+  }
+
+  String _normalizeHistoricoFiltro(String? value) {
+    return value?.trim().toLowerCase() ?? '';
   }
 
   String _descricaoTipoRecebimentoConfigurado(TiposRecebimento tipo) {
@@ -2035,93 +2289,84 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     return confirmou;
   }
 
-  Future<void> _salvarMovimento() async {
+  List<OperacaoCaixaTipo> _tiposOperacaoDisponiveis() {
+    return OperacaoCaixaTipo.values
+        .where((tipo) => tipo != OperacaoCaixaTipo.fechamentoCaixa)
+        .toList(growable: false);
+  }
+
+  Future<void> _abrirDialogoLancamentoOperacional() async {
     if (!_temCaixaAberto) {
       _mostrarAvisoCaixaNaoAberto();
       return;
     }
-    if (_tipoSelecionado == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecione o tipo da operação.')),
-      );
-      return;
-    }
-    if (_tipoRecebimentoSelecionado == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecione a forma relacionada.')),
-      );
-      return;
+
+    if (_mostrarPainelFechamento) {
+      setState(() => _mostrarPainelFechamento = false);
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
     }
 
-    final valor = _parseCurrency(_valorController.text);
-    if (valor <= 0) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Informe um valor válido.')));
-      return;
+    final String cashDeskName =
+        _sessaoAtual?.nomeCaixa.trim().isNotEmpty == true
+            ? _sessaoAtual!.nomeCaixa.trim()
+            : _txt('caixa.operacoes.closeDialogCashDesk', 'Caixa');
+
+    await showSixWebOperationalLaunchDialog(
+      context: context,
+      cashDeskName: cashDeskName,
+      operationTypes: _tiposOperacaoDisponiveis(),
+      relatedTypes: _tiposRecebimentoAtivosOrdenados(),
+      operationLabel: _labelTipo,
+      operationIcon: _iconeTipo,
+      relatedTypeLabel: _descricaoTipoRecebimentoConfigurado,
+      currencySymbol: _currencyInputPrefix().trim(),
+      formatCurrency: _formatCurrency,
+      onConfirm: _registrarMovimentacaoOperacional,
+    );
+  }
+
+  Future<void> _registrarMovimentacaoOperacional(
+    SixWebOperationalLaunchSubmission submission,
+  ) async {
+    final CaixaSessao? sessaoAtual = _sessaoAtual;
+    if (sessaoAtual == null) {
+      throw StateError('Cash session unavailable');
     }
 
     setState(() => _isLoading = true);
     try {
       await _caixaService.registrarMovimentacao(
         RegistrarMovimentoRequest(
-          idSessaoCaixa: _sessaoAtual!.idSessaoCaixa,
-          tipoMovimento: _tipoSelecionado!,
-          codigoTipoRecebimento: _tipoRecebimentoSelecionado!.codigoTipo,
-          valor: valor,
-          observacao: _observacaoController.text.trim(),
-          referencia: _referenciaController.text.trim(),
-          vinculadoVenda: _vincularVenda,
+          idSessaoCaixa: sessaoAtual.idSessaoCaixa,
+          tipoMovimento: submission.operationType,
+          codigoTipoRecebimento: submission.relatedType.codigoTipo,
+          valor: submission.amount,
+          observacao: submission.observation,
+          referencia: submission.reference,
+          vinculadoVenda: submission.linkedSale,
         ),
       );
-      await _carregarMovimentosEResumo(_sessaoAtual!.idSessaoCaixa);
-      _limparFormularioMovimento();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Movimentação registrada com sucesso.')),
+
+      final List<MovimentoCaixa> movimentos = await _caixaService
+          .listarMovimentacoes(sessaoAtual.idSessaoCaixa);
+      final InformacoesCaixaComSomatorioResponse movimentosComSomatorio =
+          await _caixaService.buscarResumoDeMovimentosComSomatorio(
+            sessaoAtual.idSessaoCaixa,
+          );
+      final ResumoCaixa resumo = await _caixaService.buscarResumo(
+        sessaoAtual.idSessaoCaixa,
       );
-    } catch (e) {
-      _mostrarErro('Erro ao registrar movimentação: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
 
-  void _limparFormularioMovimento() {
-    setState(() {
-      _tipoSelecionado = null;
-      _valorController.clear();
-      _observacaoController.clear();
-      _referenciaController.clear();
-      _vincularVenda = false;
-      final tipos = _tiposRecebimentoAtivosOrdenados();
-      _tipoRecebimentoSelecionado = tipos.isNotEmpty ? tipos.first : null;
-    });
-  }
-
-  Future<void> _fecharCaixa() async {
-    if (!_temCaixaAberto) {
-      _mostrarAvisoCaixaNaoAberto();
-      return;
-    }
-
-    setState(() => _isLoading = true);
-    try {
-      await _caixaService.fecharCaixa(_montarRequestFechamentoCaixa());
-      await _carregarDadosIniciais();
       if (!mounted) return;
       setState(() {
-        _mostrarPainelFechamento = false;
-        _fechamentoDinheiroController.clear();
-        _fechamentoPixController.clear();
-        _fechamentoCartaoController.clear();
-        _fechamentoObservacaoController.clear();
+        _movimentosComSomatorio = movimentosComSomatorio;
+        _movimentos =
+            movimentos.isNotEmpty
+                ? movimentos
+                : movimentosComSomatorio.movimento;
+        _resumo = resumo;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Caixa fechado com sucesso.')),
-      );
-    } catch (e) {
-      _mostrarErro('Erro ao fechar caixa: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -2183,39 +2428,101 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   }
 
   Future<void> _cancelarMovimento(MovimentoCaixa movimento) async {
+    final CaixaSessao? sessaoAtual = _sessaoAtual;
+    if (sessaoAtual == null) return;
+
     final forma = _descricaoTipoRecebimentoMovimento(movimento);
-    final tokens = WebThemeTokens.of(context);
-    final confirmou =
-        await showDialog<bool>(
-          context: context,
-          barrierColor: tokens.workspaceBackground.withValues(alpha: 0.72),
-          builder:
-              (context) => _buildConfirmDialog(
-                title: 'Cancelar movimentação?',
-                message:
-                    'Deseja cancelar a operação ${_labelTipo(movimento.tipoMovimento)} em $forma no valor de ${_formatCurrency(movimento.valor)}?',
-                cancelLabel: 'Voltar',
-                confirmLabel: 'Cancelar operação',
-                danger: true,
-              ),
-        ) ??
-        false;
+    final confirmou = await showSixWebCashMovementCancelDialog(
+      context: context,
+      operationLabel: _labelTipo(movimento.tipoMovimento),
+      paymentMethodLabel: forma,
+      amountLabel: _formatCurrency(movimento.valor),
+      onConfirm: () async {
+        await _caixaService.cancelarMovimentacao(movimento.idMovimento);
+        await _carregarMovimentosEResumo(sessaoAtual.idSessaoCaixa);
+      },
+      errorMessageBuilder: _mensagemErroCancelamentoMovimento,
+    );
 
     if (!confirmou) return;
+  }
 
-    setState(() => _isLoading = true);
-    try {
-      await _caixaService.cancelarMovimentacao(movimento.idMovimento);
-      await _carregarMovimentosEResumo(_sessaoAtual!.idSessaoCaixa);
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Movimentação cancelada.')));
-    } catch (e) {
-      _mostrarErro('Erro ao cancelar movimentação: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+  String _mensagemErroCancelamentoMovimento(Object error) {
+    final String genericMessage = _txt(
+      'caixa.operacoes.cancelDialogError',
+      'Não foi possível cancelar a movimentação agora. Revise os vínculos financeiros e tente novamente.',
+    );
+    if (error is! CaixaApiException) return genericMessage;
+
+    final String rawBody = error.body.trim();
+    final String technicalDetails =
+        '${error.toString()} $rawBody'.toLowerCase();
+    if (technicalDetails.contains('recebimento_futuro') ||
+        technicalDetails.contains('fk_recebimento_futuro_operacao') ||
+        technicalDetails.contains('operacao_financeira')) {
+      return _txt(
+        'caixa.operacoes.cancelDialogLinkedRecordsError',
+        'Esta movimentação possui vínculo com recebimentos ou lançamentos futuros e precisa permanecer registrada no histórico financeiro.',
+      );
     }
+
+    if (error.statusCode == 403) {
+      return _txt(
+        'caixa.operacoes.cancelDialogPermissionError',
+        'Você não possui permissão para cancelar esta movimentação.',
+      );
+    }
+
+    if (error.statusCode == 0 ||
+        error.statusCode == 408 ||
+        error.statusCode == 504) {
+      return _txt(
+        'caixa.operacoes.cancelDialogConnectivityError',
+        'Não foi possível falar com o servidor agora. Verifique sua conexão e tente novamente.',
+      );
+    }
+
+    final String? backendMessage = _extrairMensagemDoBody(rawBody);
+    final String normalizedMessage = backendMessage?.toLowerCase() ?? '';
+    final bool backendMessageIsGeneric =
+        normalizedMessage.isEmpty ||
+        normalizedMessage.contains('erro inesperado') ||
+        normalizedMessage.contains('internal server error') ||
+        normalizedMessage.contains('tente novamente');
+
+    if (error.statusCode >= 500 &&
+        (technicalDetails.contains('agf_999') || backendMessageIsGeneric)) {
+      return _txt(
+        'caixa.operacoes.cancelDialogLikelyLinkedError',
+        'Não foi possível cancelar esta movimentação porque ela pode estar vinculada a outros registros financeiros. Revise os recebimentos relacionados e tente novamente.',
+      );
+    }
+
+    if (backendMessage != null && backendMessage.trim().isNotEmpty) {
+      return backendMessage;
+    }
+
+    return genericMessage;
+  }
+
+  String? _extrairMensagemDoBody(String body) {
+    if (body.isEmpty) return null;
+
+    try {
+      final dynamic decoded = jsonDecode(body);
+      if (decoded is Map) {
+        for (final String key in <String>['message', 'mensagem', 'title']) {
+          final String? value = decoded[key]?.toString();
+          if (value != null && value.trim().isNotEmpty) {
+            return value.trim();
+          }
+        }
+      }
+    } catch (_) {
+      // Alguns endpoints retornam corpo não JSON; nesse caso usamos o fallback.
+    }
+
+    return null;
   }
 
   AlertDialog _buildConfirmDialog({
@@ -2306,6 +2613,48 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     }
   }
 
+  Future<void> _abrirDetalhesMovimento(MovimentoCaixa movimento) async {
+    if (_isMovimentoVenda(movimento)) {
+      final String identificadorVenda = _identificadorVendaMovimento(movimento);
+      if (identificadorVenda.isEmpty) {
+        _mostrarErro(
+          'Não foi possível identificar o código da venda desta movimentação.',
+        );
+        return;
+      }
+
+      await showVendaDetalheWebDialog(
+        context: context,
+        identificador: identificadorVenda,
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    final String forma = _descricaoTipoRecebimentoMovimento(movimento);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Forma relacionada: $forma')));
+  }
+
+  bool _isMovimentoVenda(MovimentoCaixa movimento) {
+    final String tipoMovimento = movimento.tipoMovimento.trim().toLowerCase();
+    return tipoMovimento == 'venda' || tipoMovimento.startsWith('venda_');
+  }
+
+  String _identificadorVendaMovimento(MovimentoCaixa movimento) {
+    final String codigoOperacao = movimento.codigoOperacao.trim();
+    if (codigoOperacao.isNotEmpty) {
+      return codigoOperacao;
+    }
+
+    final String referencia = movimento.referencia.trim();
+    if (referencia.toLowerCase() == 'sem referencia') {
+      return '';
+    }
+    return referencia;
+  }
+
   String _labelTipo(dynamic tipo) {
     String? tipoStr;
     if (tipo is OperacaoCaixaTipo) {
@@ -2372,18 +2721,6 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
         return 'Cancelada';
       case 'pendenteconferencia':
         return 'Pendente conferência';
-      default:
-        return status;
-    }
-  }
-
-  String _labelSessao(String? status) {
-    if (status == null) return '--';
-    switch (status.toLowerCase()) {
-      case 'aberta':
-        return 'Aberta';
-      case 'fechada':
-        return 'Fechada';
       default:
         return status;
     }
@@ -2458,176 +2795,19 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     }
   }
 
-  bool _isSameDay(String? value, DateTime other) {
+  bool _isWithinDateRange(String? value, DateTimeRange range) {
     if (value == null || value.isEmpty) return false;
     try {
-      final dateTime = DateTime.parse(value);
-      return dateTime.year == other.year &&
-          dateTime.month == other.month &&
-          dateTime.day == other.day;
+      final DateTime dateTime = DateTime.parse(value);
+      final DateTime current = DateTime(
+        dateTime.year,
+        dateTime.month,
+        dateTime.day,
+      );
+      return !current.isBefore(range.start) && !current.isAfter(range.end);
     } catch (_) {
       return false;
     }
-  }
-}
-
-class _WebSelectorDialog<T> extends StatelessWidget {
-  const _WebSelectorDialog({
-    required this.width,
-    required this.selected,
-    required this.items,
-    required this.itemLabel,
-    required this.itemSubtitle,
-    required this.itemIcon,
-    required this.emptyMessage,
-  });
-
-  final double width;
-  final T? selected;
-  final List<T> items;
-  final String Function(T item) itemLabel;
-  final String Function(T item) itemSubtitle;
-  final IconData Function(T item) itemIcon;
-  final String emptyMessage;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = WebThemeTokens.of(context);
-
-    return Dialog(
-      insetPadding: const EdgeInsets.all(24),
-      backgroundColor: tokens.surfaceElevated,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minWidth: width,
-          maxWidth: width + 120,
-          maxHeight: 420,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child:
-              items.isEmpty
-                  ? Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      emptyMessage,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: tokens.secondaryText,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  )
-                  : ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 6),
-                    itemBuilder: (context, index) {
-                      final item = items[index];
-                      return _WebSelectorMenuItem(
-                        selected: item == selected,
-                        title: itemLabel(item),
-                        subtitle: itemSubtitle(item),
-                        icon: itemIcon(item),
-                        onTap: () => Navigator.of(context).pop(item),
-                      );
-                    },
-                  ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WebSelectorMenuItem extends StatelessWidget {
-  const _WebSelectorMenuItem({
-    required this.selected,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final bool selected;
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = WebThemeTokens.of(context);
-    final accent = tokens.info;
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: selected ? tokens.selectedBackground : tokens.surfaceMuted,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected ? tokens.selectedBorder : tokens.cardBorder,
-          ),
-        ),
-        child: Row(
-          children: <Widget>[
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color:
-                    selected ? tokens.cardBackground : tokens.inputBackground,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: accent, size: 19),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: tokens.primaryText,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  if (subtitle.trim().isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: tokens.secondaryText,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              selected
-                  ? Icons.check_circle_rounded
-                  : Icons.chevron_right_rounded,
-              color: selected ? accent : tokens.mutedText,
-              size: 21,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 
@@ -2648,4 +2828,73 @@ class _ResumoTipoRecebimentoData {
 
   final String label;
   final double valor;
+}
+
+class _HistoricoFiltroOption {
+  const _HistoricoFiltroOption({required this.value, required this.label});
+
+  final String value;
+  final String label;
+}
+
+class _HistoricoDateFilterButton extends StatelessWidget {
+  const _HistoricoDateFilterButton({
+    required this.tokens,
+    required this.width,
+    required this.label,
+    required this.value,
+    required this.onPressed,
+  });
+
+  final WebThemeTokens tokens;
+  final double width;
+  final String label;
+  final String value;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return SizedBox(
+      width: width,
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          side: BorderSide(color: tokens.cardBorder),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+        onPressed: onPressed,
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.calendar_today_outlined, size: 18, color: tokens.info),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: tokens.mutedText,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: tokens.primaryText,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

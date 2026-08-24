@@ -255,6 +255,7 @@ class MovimentoCaixa {
   final String descricao;
   final String observacao;
   final String referencia;
+  final String codigoOperacao;
   final String idColaborador;
   final String nomeColaborador;
   final String dataHoraMovimento;
@@ -271,6 +272,7 @@ class MovimentoCaixa {
     required this.descricao,
     required this.observacao,
     required this.referencia,
+    required this.codigoOperacao,
     required this.idColaborador,
     required this.nomeColaborador,
     required this.dataHoraMovimento,
@@ -287,6 +289,7 @@ class MovimentoCaixa {
     String? colaborador,
     String? observacao,
     String? referencia,
+    String? codigoOperacao,
     String? dataHora,
     String? status,
     bool? vinculadoVenda,
@@ -302,6 +305,7 @@ class MovimentoCaixa {
       descricao: descricao,
       observacao: observacao ?? this.observacao,
       referencia: referencia ?? this.referencia,
+      codigoOperacao: codigoOperacao ?? this.codigoOperacao,
       idColaborador: idColaborador,
       nomeColaborador: colaborador ?? this.nomeColaborador,
       dataHoraMovimento: dataHora ?? this.dataHoraMovimento,
@@ -321,6 +325,7 @@ class MovimentoCaixa {
       descricao: json['descricao'] ?? '',
       observacao: json['observacao'] ?? '',
       referencia: json['referencia'] ?? '',
+      codigoOperacao: json['codigoOperacao']?.toString() ?? '',
       idColaborador: json['idColaborador'] ?? '',
       nomeColaborador: json['nomeColaborador'] ?? '',
       dataHoraMovimento: json['dataHoraMovimento'] ?? '',
