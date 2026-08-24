@@ -41,6 +41,10 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
+dependency_overrides:
+  firebase_core_web: 3.9.0
+  firebase_messaging_web: 4.2.1
+
 flutter:
   generate: true
   uses-material-design: true
