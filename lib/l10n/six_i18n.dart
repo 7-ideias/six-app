@@ -22,9 +22,9 @@ extension SixI18nBuildContext on BuildContext {
         fallback ?? _fallbacks[code]?[key] ?? _fallbacks['pt']?[key];
     if (resolvedFallback != null && resolvedFallback.isNotEmpty) {
       if (kDebugMode) {
-        debugPrint(
-          '[i18n] chave ausente: $key para idioma=$code. Usando fallback.',
-        );
+        // debugPrint(
+        //   '[i18n] chave ausente: $key para idioma=$code. Usando fallback.',
+        // );
       }
       return resolvedFallback;
     }

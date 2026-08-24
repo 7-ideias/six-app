@@ -342,35 +342,21 @@ class _CatalogSuccessState extends StatelessWidget {
       _entry(
         reduceMotion: reduceMotion,
         delay: Duration(milliseconds: 220),
-        child: _SectionTitle(
+        child: _CatalogPendingAccordion(
           title: summary.pendingSection.title,
           subtitle: summary.pendingSection.description,
+          metrics: pendingMetrics,
+          reduceMotion: reduceMotion,
+          showRestrictedStockNotice: !canViewStock,
+          onMetricTap: onPendingMetric,
         ),
       ),
-      SizedBox(height: 10),
-      ...pendingMetrics.asMap().entries.map((
-        MapEntry<int, CatalogHealthMetric> entry,
-      ) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: 10),
-          child: _entry(
-            reduceMotion: reduceMotion,
-            delay: Duration(milliseconds: 260 + (entry.key * 40)),
-            child: _CatalogPendingCard(
-              metric: entry.value,
-              onTap: () => onPendingMetric(entry.value),
-            ),
-          ),
-        );
-      }),
-      if (!canViewStock) ...<Widget>[
-        SizedBox(height: 2),
-        _entry(
-          reduceMotion: reduceMotion,
-          delay: Duration(milliseconds: 320),
-          child: const _RestrictedStockNotice(),
-        ),
-      ],
+      SizedBox(height: 16),
+      _entry(
+        reduceMotion: reduceMotion,
+        delay: Duration(milliseconds: 280),
+        child: const _VirtualCatalogHealthAccordion(),
+      ),
     ];
 
     return Column(
@@ -622,39 +608,330 @@ class _CatalogEntryCard extends StatelessWidget {
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title, required this.subtitle});
+class _CatalogPendingAccordion extends StatelessWidget {
+  const _CatalogPendingAccordion({
+    required this.title,
+    required this.subtitle,
+    required this.metrics,
+    required this.reduceMotion,
+    required this.showRestrictedStockNotice,
+    required this.onMetricTap,
+  });
 
   final String title;
   final String subtitle;
+  final List<CatalogHealthMetric> metrics;
+  final bool reduceMotion;
+  final bool showRestrictedStockNotice;
+  final ValueChanged<CatalogHealthMetric> onMetricTap;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          title,
-          style: TextStyle(
-            color: SixMobilePalette.titleText,
-            fontSize: 16,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        SizedBox(height: 4),
-        Text(
-          subtitle,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: SixMobilePalette.mutedText,
-            height: 1.3,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
+    final int visiblePendingCount = metrics.fold<int>(
+      0,
+      (int total, CatalogHealthMetric metric) =>
+          total + (metric.isPositive ? 0 : metric.value),
     );
+
+    return _CatalogAccordionShell(
+      title: title,
+      subtitle: subtitle,
+      badgeLabel: visiblePendingCount.toString(),
+      highlightedBadge: visiblePendingCount > 0,
+      reduceMotion: reduceMotion,
+      body: Column(
+        children: <Widget>[
+          ...metrics.asMap().entries.map((
+            MapEntry<int, CatalogHealthMetric> entry,
+          ) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: entry.key == metrics.length - 1 ? 0 : 10,
+              ),
+              child: _CatalogPendingCard(
+                metric: entry.value,
+                onTap: () => onMetricTap(entry.value),
+              ),
+            );
+          }),
+          if (showRestrictedStockNotice) ...<Widget>[
+            if (metrics.isNotEmpty) const SizedBox(height: 10),
+            const _RestrictedStockNotice(),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _VirtualCatalogHealthAccordion extends StatelessWidget {
+  const _VirtualCatalogHealthAccordion();
+
+  @override
+  Widget build(BuildContext context) {
+    return _CatalogAccordionShell(
+      title: context.t(
+        'catalogHealth.mobile.virtual.title',
+        fallback: 'Saúde do catálogo virtual',
+      ),
+      subtitle: context.t(
+        'catalogReservations.subtitle',
+        fallback: 'Acompanhe solicitações recebidas pelo catálogo virtual.',
+      ),
+      reduceMotion:
+          MediaQuery.disableAnimationsOf(context) ||
+          MediaQuery.accessibleNavigationOf(context),
+      body: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: SixMobilePalette.softNeutralSurface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: SixMobilePalette.border),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: SixMobilePalette.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: SixMobilePalette.border),
+              ),
+              child: Icon(
+                Icons.public_rounded,
+                color: SixMobilePalette.accent,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    context.t(
+                      'gestao.featureInProgress',
+                      fallback: 'Fluxo mobile em evolução.',
+                    ),
+                    style: TextStyle(
+                      color: SixMobilePalette.titleText,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    context.t(
+                      'catalogReservations.subtitle',
+                      fallback:
+                          'Acompanhe solicitações recebidas pelo catálogo virtual.',
+                    ),
+                    style: TextStyle(
+                      color: SixMobilePalette.mutedText,
+                      height: 1.35,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CatalogAccordionShell extends StatefulWidget {
+  const _CatalogAccordionShell({
+    required this.title,
+    required this.subtitle,
+    required this.body,
+    required this.reduceMotion,
+    this.badgeLabel,
+    this.highlightedBadge = false,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget body;
+  final bool reduceMotion;
+  final String? badgeLabel;
+  final bool highlightedBadge;
+
+  @override
+  State<_CatalogAccordionShell> createState() => _CatalogAccordionShellState();
+}
+
+class _CatalogAccordionShellState extends State<_CatalogAccordionShell> {
+  bool _expanded = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final Duration duration =
+        widget.reduceMotion ? Duration.zero : const Duration(milliseconds: 220);
+    final Color borderColor =
+        _expanded
+            ? SixMobilePalette.highlightedBorder.withValues(alpha: 0.72)
+            : SixMobilePalette.border;
+
+    return Semantics(
+      container: true,
+      child: Material(
+        color: SixMobilePalette.surface,
+        borderRadius: BorderRadius.circular(22),
+        child: AnimatedContainer(
+          duration: duration,
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            color: SixMobilePalette.surface,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: borderColor),
+            boxShadow:
+                _expanded
+                    ? <BoxShadow>[
+                      BoxShadow(
+                        color: SixMobilePalette.heroShadow.withValues(
+                          alpha: 0.08,
+                        ),
+                        blurRadius: 14,
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
+                    : const <BoxShadow>[],
+          ),
+          child: Column(
+            children: <Widget>[
+              InkWell(
+                borderRadius: BorderRadius.circular(22),
+                onTap: _toggleExpanded,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              widget.title,
+                              style: TextStyle(
+                                color: SixMobilePalette.titleText,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            if (widget.subtitle.trim().isNotEmpty) ...<Widget>[
+                              SizedBox(height: 4),
+                              Text(
+                                widget.subtitle,
+                                maxLines: _expanded ? 3 : 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: SixMobilePalette.mutedText,
+                                  height: 1.3,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          if (widget.badgeLabel != null) ...<Widget>[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    widget.highlightedBadge
+                                        ? SixMobilePalette.error.withValues(
+                                          alpha: 0.08,
+                                        )
+                                        : SixMobilePalette.softNeutralSurface,
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color:
+                                      widget.highlightedBadge
+                                          ? SixMobilePalette.errorBorder
+                                              .withValues(alpha: 0.6)
+                                          : SixMobilePalette.border,
+                                ),
+                              ),
+                              child: Text(
+                                widget.badgeLabel!,
+                                style: TextStyle(
+                                  color:
+                                      widget.highlightedBadge
+                                          ? SixMobilePalette.error
+                                          : SixMobilePalette.mutedText,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          AnimatedRotation(
+                            turns: _expanded ? 0.5 : 0,
+                            duration: duration,
+                            curve: Curves.easeOutCubic,
+                            child: Icon(
+                              Icons.expand_more_rounded,
+                              color: SixMobilePalette.mutedText,
+                              size: 22,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              ClipRect(
+                child: AnimatedSize(
+                  duration: duration,
+                  curve: Curves.easeOutCubic,
+                  child:
+                      _expanded
+                          ? Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                            child: Column(
+                              children: <Widget>[
+                                Container(
+                                  height: 1,
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  color: SixMobilePalette.border,
+                                ),
+                                widget.body,
+                              ],
+                            ),
+                          )
+                          : const SizedBox.shrink(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _toggleExpanded() {
+    setState(() {
+      _expanded = !_expanded;
+    });
   }
 }
 

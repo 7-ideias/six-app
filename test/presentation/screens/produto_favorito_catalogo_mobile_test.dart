@@ -7,6 +7,7 @@ import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/data/models/categoria_catalogo_model.dart';
 import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/models/regionalizacao_models.dart';
+import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/data/services/categoria_catalogo/categoria_catalogo_api_client.dart';
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
 import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
@@ -16,6 +17,7 @@ import 'package:sixpos/presentation/screens/produto_cadastrar_mobile_screen.dart
 import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/providers/produtos_list_provider.dart';
+import 'package:sixpos/providers/usuario_provider.dart';
 
 void main() {
   setUp(() {
@@ -24,10 +26,12 @@ void main() {
       'idUnicoDaEmpresa': 'empresa-test',
     });
     SixThemeResolver().atualizarTema(TemaSistema.claro);
+    UsuarioProvider().clear();
   });
 
   tearDown(() {
     SixThemeResolver().atualizarTema(TemaSistema.claro);
+    UsuarioProvider().clear();
   });
 
   testWidgets('cadastro inicia com ambos os marcadores desativados', (
@@ -179,26 +183,188 @@ void main() {
     },
   );
 
-  testWidgets('coracao da lista mobile reflete o valor persistido e atualiza', (
+  testWidgets('listagem vertical renderiza busca fixa, filtros rapidos e cards', (
     WidgetTester tester,
   ) async {
     final _FakeProdutoService service = _FakeProdutoService();
-    final ProdutoModel produtoInicial = _produto(id: 'p1');
 
     await _pumpMobileCatalog(
       tester,
       produtoService: service,
-      products: <ProdutoModel>[produtoInicial],
+      products: <ProdutoModel>[
+        _produto(id: 'p1', codigo: '8263838373', precoVenda: 700),
+        _produto(id: 'p2', ativo: false, codigo: '1782837590'),
+      ],
     );
 
-    expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
+    expect(find.text('Produtos'), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('produto-persistent-search-field')), findsOneWidget);
+    expect(find.text('Buscar produto ou código'), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('produto-vertical-filter-button')), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('produto-quick-filter-todos')), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('produto-quick-filter-ativos')), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('produto-quick-filter-low-stock')), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('produto-quick-count')), findsOneWidget);
+    expect(find.byKey(_cardKey('p1')), findsOneWidget);
+    expect(find.byKey(_cardKey('p2')), findsOneWidget);
+    expect(find.text('R\$ 700,00'), findsOneWidget);
+    expect(find.text('Cód. 8263838373'), findsOneWidget);
+  });
 
-    await tester.tap(find.byTooltip('Marcar como favorito').first);
+  testWidgets('arrastar para esquerda revela acoes e mantem apenas um item aberto', (
+    WidgetTester tester,
+  ) async {
+    await _pumpMobileCatalog(
+      tester,
+      produtoService: _FakeProdutoService(),
+      products: <ProdutoModel>[_produto(id: 'p1'), _produto(id: 'p2')],
+    );
+
+    final Offset posicaoInicialPrimeiro = tester.getTopLeft(find.byKey(_cardKey('p1')));
+    final Offset posicaoInicialSegundo = tester.getTopLeft(find.byKey(_cardKey('p2')));
+
+    await _abrirAcoesDoCard(tester, 'p1');
+    final Offset posicaoAbertaPrimeiro = tester.getTopLeft(find.byKey(_cardKey('p1')));
+    expect(posicaoAbertaPrimeiro.dx, lessThan(posicaoInicialPrimeiro.dx));
+
+    await _abrirAcoesDoCard(tester, 'p2');
+    final Offset posicaoFechadaPrimeiro = tester.getTopLeft(find.byKey(_cardKey('p1')));
+    final Offset posicaoAbertaSegundo = tester.getTopLeft(find.byKey(_cardKey('p2')));
+
+    expect((posicaoFechadaPrimeiro.dx - posicaoInicialPrimeiro.dx).abs(), lessThan(1));
+    expect(posicaoAbertaSegundo.dx, lessThan(posicaoInicialSegundo.dx));
+  });
+
+  testWidgets('acao de favorito usa o servico existente e alterna para icone preenchido', (
+    WidgetTester tester,
+  ) async {
+    final _FakeProdutoService service = _FakeProdutoService();
+
+    await _pumpMobileCatalog(
+      tester,
+      produtoService: service,
+      products: <ProdutoModel>[_produto(id: 'p1', favorito: false)],
+    );
+
+    await _abrirAcoesDoCard(tester, 'p1');
+    await tester.tap(find.byKey(_favoriteActionKey('p1')));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump(const Duration(milliseconds: 220));
 
-    expect(service.lastUpdatedProduct?.favorito, isTrue);
-    expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
+    expect(service.favoriteUpdateCount, 1);
+    expect(service.lastFavoriteProdutoId, 'p1');
+    expect(service.lastFavoriteValue, isTrue);
+
+    final Icon icon = tester.widget<Icon>(
+      find.descendant(
+        of: find.byKey(_favoriteActionKey('p1')),
+        matching: find.byType(Icon),
+      ).first,
+    );
+    expect(icon.icon, Icons.favorite_rounded);
+  });
+
+  testWidgets('acao de catalogo usa o servico existente e alterna para icone preenchido', (
+    WidgetTester tester,
+  ) async {
+    final _FakeProdutoService service = _FakeProdutoService();
+
+    await _pumpMobileCatalog(
+      tester,
+      produtoService: service,
+      products: <ProdutoModel>[
+        _produto(id: 'p1', disponivelParaCatalogo: false),
+      ],
+    );
+
+    await _abrirAcoesDoCard(tester, 'p1');
+    await tester.tap(find.byKey(_catalogActionKey('p1')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 220));
+
+    expect(service.catalogUpdateCount, 1);
+    expect(service.lastCatalogProdutoId, 'p1');
+    expect(service.lastCatalogValue, isTrue);
+
+    final Icon icon = tester.widget<Icon>(
+      find.descendant(
+        of: find.byKey(_catalogActionKey('p1')),
+        matching: find.byType(Icon),
+      ).first,
+    );
+    expect(icon.icon, Icons.storefront_rounded);
+  });
+
+  testWidgets('toque no card fechado dispara a abertura da edicao', (
+    WidgetTester tester,
+  ) async {
+    final _TestNavigatorObserver observer = _TestNavigatorObserver();
+
+    await _pumpMobileCatalog(
+      tester,
+      produtoService: _FakeProdutoService(),
+      products: <ProdutoModel>[_produto(id: 'p1')],
+      navigatorObserver: observer,
+    );
+
+    await tester.tap(find.byKey(_cardKey('p1')));
+    await tester.pumpAndSettle();
+
+    expect(observer.pushCount, greaterThanOrEqualTo(1));
+  });
+
+  testWidgets('modo de selecao preserva composicao sem swipe vertical moderno', (
+    WidgetTester tester,
+  ) async {
+    await _pumpMobileCatalog(
+      tester,
+      produtoService: _FakeProdutoService(),
+      products: <ProdutoModel>[_produto(id: 'p1')],
+      isSelecao: true,
+      permitirSelecaoMultipla: true,
+    );
+
+    expect(find.byKey(const ValueKey<String>('produto-persistent-search-field')), findsNothing);
+    expect(find.byKey(_cardKey('p1')), findsNothing);
+    expect(find.text('Selecione um ou mais itens'), findsOneWidget);
+  });
+
+  testWidgets('modo horizontal preserva a pagina em carrossel', (
+    WidgetTester tester,
+  ) async {
+    await _pumpMobileCatalog(
+      tester,
+      produtoService: _FakeProdutoService(),
+      products: <ProdutoModel>[_produto(id: 'p1'), _produto(id: 'p2')],
+      modoExibicaoMobile: ModoDeExibicaoUsuario.horizontal,
+    );
+
+    expect(find.byType(PageView), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('produto-persistent-search-field')), findsNothing);
+    expect(find.byKey(_cardKey('p1')), findsNothing);
+  });
+
+  testWidgets('lista vertical evita overflow em 320px e 390px com texto longo e sem imagem', (
+    WidgetTester tester,
+  ) async {
+    for (final Size size in const <Size>[Size(320, 780), Size(390, 860)]) {
+      await _pumpMobileCatalog(
+        tester,
+        produtoService: _FakeProdutoService(),
+        products: <ProdutoModel>[
+          _produto(
+            id: 'p-long',
+            nome: 'Bateria Turbo Max Ultra Longa Referencia 89573 Para Teste',
+            codigo: '',
+            imagens: const <ProdutoImagemModel>[],
+          ),
+        ],
+        size: size,
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byIcon(Icons.inventory_2_outlined), findsOneWidget);
+    }
   });
 
   testWidgets('formulario renderiza sem overflow em viewport mobile estreita', (
@@ -276,13 +442,23 @@ Future<void> _pumpMobileCatalog(
   WidgetTester tester, {
   required _FakeProdutoService produtoService,
   required List<ProdutoModel> products,
+  Size size = const Size(390, 860),
+  bool isSelecao = false,
+  bool permitirSelecaoMultipla = false,
+  ModoDeExibicaoUsuario modoExibicaoMobile = ModoDeExibicaoUsuario.vertical,
+  NavigatorObserver? navigatorObserver,
 }) async {
   tester.view.devicePixelRatio = 1;
-  tester.view.physicalSize = const Size(390, 860);
+  tester.view.physicalSize = size;
   addTearDown(() {
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
   });
+
+  UsuarioProvider().clear();
+  if (modoExibicaoMobile != ModoDeExibicaoUsuario.vertical) {
+    UsuarioProvider().setUsuario(_usuarioComModo(modoExibicaoMobile));
+  }
 
   final ProdutosListProvider<ProdutoModel> provider =
       ProdutosListProvider<ProdutoModel>(fetchFunction: (_) async => products);
@@ -309,7 +485,15 @@ Future<void> _pumpMobileCatalog(
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        home: ProdutolistMobileScreen(produtoService: produtoService),
+        navigatorObservers:
+            navigatorObserver == null
+                ? const <NavigatorObserver>[]
+                : <NavigatorObserver>[navigatorObserver],
+        home: ProdutolistMobileScreen(
+          produtoService: produtoService,
+          isSelecao: isSelecao,
+          permitirSelecaoMultipla: permitirSelecaoMultipla,
+        ),
       ),
     ),
   );
@@ -321,16 +505,22 @@ Future<void> _pumpMobileCatalog(
 
 ProdutoModel _produto({
   String id = 'produto-1',
+  String nome = 'Cabo USB',
   bool favorito = false,
   bool disponivelParaCatalogo = false,
+  bool ativo = true,
+  String codigo = '789123',
+  double precoVenda = 25.9,
+  int estoqueAtual = 1,
+  int estoqueMinimo = 1,
 }) {
   return ProdutoModel(
     id: id,
-    ativo: true,
+    ativo: ativo,
     favorito: favorito,
     disponivelParaCatalogo: disponivelParaCatalogo,
-    codigoDeBarras: '789123',
-    nomeProduto: 'Cabo USB',
+    codigoDeBarras: codigo,
+    nomeProduto: nome,
     tipoProduto: 'PRODUTO',
     objCategoria: ObjCategoria(idCategoria: 'cat-1', nomeCategoria: 'Peças'),
     objAgrupamento: ObjAgrupamento(grupoDoProduto: 'Cabos'),
@@ -340,21 +530,64 @@ ProdutoModel _produto({
     ),
     modeloProduto: 'UNIDADE',
     estoqueMaximo: 10,
-    estoqueMinimo: 1,
-    precoVenda: 25.9,
+    estoqueMinimo: estoqueMinimo,
+    precoVenda: precoVenda,
     objComissao: ObjComissao(
       produtoTemComissaoEspecial: false,
       valorFixoDeComissaoParaEsseProduto: 0,
     ),
     objEntradaSaidaProduto: <ObjEntradaSaidaProduto>[
-      ObjEntradaSaidaProduto(quantidade: 1, valorCusto: 10, valorDaVenda: 25.9),
+      ObjEntradaSaidaProduto(
+        quantidade: estoqueAtual.toDouble(),
+        valorCusto: 10,
+        valorDaVenda: precoVenda,
+      ),
     ],
+  );
+}
+
+Future<void> _abrirAcoesDoCard(WidgetTester tester, String produtoId) async {
+  await tester.drag(find.byKey(_cardKey(produtoId)), const Offset(-170, 0));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 220));
+}
+
+ValueKey<String> _cardKey(String produtoId) =>
+    ValueKey<String>('produto-vertical-card-${_produtoChave(produtoId)}');
+
+ValueKey<String> _favoriteActionKey(String produtoId) =>
+    ValueKey<String>('produto-action-favorite-${_produtoChave(produtoId)}');
+
+ValueKey<String> _catalogActionKey(String produtoId) =>
+    ValueKey<String>('produto-action-catalog-${_produtoChave(produtoId)}');
+
+String _produtoChave(String produtoId) => 'tipo:PRODUTO|id:$produtoId';
+
+UsuarioModel _usuarioComModo(ModoDeExibicaoUsuario modo) {
+  return UsuarioModel(
+    nome: 'Teste',
+    sobrenome: 'Usuário',
+    cpf: '',
+    registroProfissional: '',
+    email: 'teste@six.app',
+    preferenciasIndividuaisDoUsuario: PreferenciasIndividuaisDoUsuarioModel(
+      ocultarValoresFinanceirosWeb: false,
+      modoDeExibicaoProdutosMobile: modo,
+    ),
   );
 }
 
 class _FakeProdutoService extends ProdutoService {
   ProdutoModel? lastUpdatedProduct;
   ProdutoModel? lastCreatedProduct;
+  String? lastFavoriteProdutoId;
+  bool? lastFavoriteAtivo;
+  bool? lastFavoriteValue;
+  int favoriteUpdateCount = 0;
+  String? lastCatalogProdutoId;
+  bool? lastCatalogAtivo;
+  bool? lastCatalogValue;
+  int catalogUpdateCount = 0;
 
   @override
   Future<String?> cadastrarProduto(ProdutoModel produto) async {
@@ -365,6 +598,40 @@ class _FakeProdutoService extends ProdutoService {
   @override
   Future<void> atualizarProduto(ProdutoModel produto) async {
     lastUpdatedProduct = produto;
+  }
+
+  @override
+  Future<void> atualizarFavoritoProduto({
+    required String produtoId,
+    required bool ativo,
+    required bool favorito,
+  }) async {
+    favoriteUpdateCount += 1;
+    lastFavoriteProdutoId = produtoId;
+    lastFavoriteAtivo = ativo;
+    lastFavoriteValue = favorito;
+  }
+
+  @override
+  Future<void> atualizarDisponivelParaCatalogoProduto({
+    required String produtoId,
+    required bool ativo,
+    required bool disponivelParaCatalogo,
+  }) async {
+    catalogUpdateCount += 1;
+    lastCatalogProdutoId = produtoId;
+    lastCatalogAtivo = ativo;
+    lastCatalogValue = disponivelParaCatalogo;
+  }
+}
+
+class _TestNavigatorObserver extends NavigatorObserver {
+  int pushCount = 0;
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    pushCount += 1;
+    super.didPush(route, previousRoute);
   }
 }
 

@@ -679,12 +679,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       MapEntry<int, ProdutoModel> entry,
     ) {
       final int itemDelay = 190 + ((entry.key * 28).clamp(0, 180)).toInt();
-      return Padding(
-        padding: EdgeInsets.only(bottom: isSelecao ? 8 : 12),
-        child: SixStaggeredEntry(
-          delay: Duration(milliseconds: itemDelay),
-          child: _buildProdutoCard(entry.value),
-        ),
+      return SixStaggeredEntry(
+        delay: Duration(milliseconds: itemDelay),
+        child: _buildProdutoCard(entry.value),
       );
     }).toList();
   }
@@ -984,6 +981,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   Widget _buildFavoritoVisualButton(
     ProdutoModel produto, {
     bool sobreImagem = false,
+    double size = 34,
+    double iconSize = 19,
   }) {
     final bool favorito = _produtoFavoritoVisual(produto);
     final bool atualizando = _favoritosAtualizando.contains(
@@ -1002,8 +1001,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           borderRadius: BorderRadius.circular(999),
           child: AnimatedContainer(
             duration: Duration(milliseconds: 180),
-            width: 34,
-            height: 34,
+            width: size,
+            height: size,
             decoration: BoxDecoration(
               color:
                   favorito
@@ -1029,10 +1028,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             child:
                 atualizando
                     ? Padding(
-                      padding: const EdgeInsets.all(8),
+                      padding: EdgeInsets.all(size <= 30 ? 7 : 8),
                       child: SizedBox(
-                        width: 18,
-                        height: 18,
+                        width: iconSize,
+                        height: iconSize,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: favorito ? Colors.white : Color(0xFFEF4444),
@@ -1044,7 +1043,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                           ? Icons.favorite_rounded
                           : Icons.favorite_border_rounded,
                       color: favorito ? Colors.white : Color(0xFFEF4444),
-                      size: 19,
+                      size: iconSize,
                     ),
           ),
         ),
@@ -1055,6 +1054,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   Widget _buildCatalogoVisualButton(
     ProdutoModel produto, {
     bool sobreImagem = false,
+    double size = 34,
+    double iconSize = 19,
   }) {
     final bool disponivelParaCatalogo = produto.disponivelParaCatalogo;
     final bool atualizando = _catalogoAtualizando.contains(
@@ -1082,8 +1083,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           borderRadius: BorderRadius.circular(999),
           child: AnimatedContainer(
             duration: Duration(milliseconds: 180),
-            width: 34,
-            height: 34,
+            width: size,
+            height: size,
             decoration: BoxDecoration(
               color:
                   disponivelParaCatalogo
@@ -1109,10 +1110,10 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             child:
                 atualizando
                     ? Padding(
-                      padding: const EdgeInsets.all(8),
+                      padding: EdgeInsets.all(size <= 30 ? 7 : 8),
                       child: SizedBox(
-                        width: 18,
-                        height: 18,
+                        width: iconSize,
+                        height: iconSize,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color:
@@ -1130,7 +1131,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                           disponivelParaCatalogo
                               ? _onAccentColor
                               : _accentColor,
-                      size: 19,
+                      size: iconSize,
                     ),
           ),
         ),
@@ -1253,117 +1254,102 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
     final bool ativo = produto.ativo == true;
     final bool isProduto = _matchesTipoSelecionado(produto, 'PRODUTO');
-    final int imagensCount = produto.imagens?.length ?? 0;
+    final String titulo =
+        produto.nomeProduto.isEmpty
+            ? _t('produto.webList.itemWithoutName', 'Item sem nome')
+            : produto.nomeProduto;
+    final String subtitulo = _resumoProdutoVertical(produto, ativo);
 
-    return Material(
-      color: _surfaceColor,
-      borderRadius: BorderRadius.circular(22),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
-        onTap: () => _editarProduto(produto),
-        child: Container(
-          padding: EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: _borderColor),
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: SixMobilePalette.navigationShadow,
-                blurRadius: 14,
-                offset: Offset(0, 6),
+    return _SwipeRevealTile(
+      key: ValueKey<String>('produto-vertical-${_chaveProduto(produto)}'),
+      backgroundColor: _softNeutralColor,
+      dividerColor: _borderColor,
+      onTap: () => _editarProduto(produto),
+      actions: <_SwipeRevealAction>[
+        _SwipeRevealAction(
+          semanticLabel:
+              produto.disponivelParaCatalogo
+                  ? _t(
+                    'produto.catalog.disableTooltip',
+                    'Retirar da disponibilidade para catálogo',
+                  )
+                  : _t(
+                    'produto.catalog.enableTooltip',
+                    'Disponibilizar para catálogo',
+                  ),
+          icon:
+              produto.disponivelParaCatalogo
+                  ? Icons.storefront_rounded
+                  : Icons.storefront_outlined,
+          foregroundColor:
+              produto.disponivelParaCatalogo ? _onAccentColor : _accentColor,
+          backgroundColor:
+              produto.disponivelParaCatalogo ? _accentColor : _surfaceColor,
+          borderColor:
+              produto.disponivelParaCatalogo ? _accentColor : _borderColor,
+          isLoading: _catalogoAtualizando.contains(_chaveProduto(produto)),
+          onTap: () => _alternarDisponivelParaCatalogoVisual(produto),
+        ),
+        _SwipeRevealAction(
+          semanticLabel:
+              produto.favorito
+                  ? _t(
+                    'produto.favorite.removeTooltip',
+                    'Remover dos favoritos',
+                  )
+                  : _t('produto.favorite.addTooltip', 'Marcar como favorito'),
+          icon:
+              produto.favorito
+                  ? Icons.favorite_rounded
+                  : Icons.favorite_border_rounded,
+          foregroundColor: produto.favorito ? Colors.white : Color(0xFFEF4444),
+          backgroundColor: produto.favorito ? Color(0xFFEF4444) : _surfaceColor,
+          borderColor: Color(0xFFFCA5A5),
+          isLoading: _favoritosAtualizando.contains(_chaveProduto(produto)),
+          onTap: () => _alternarFavoritoVisual(produto),
+        ),
+      ],
+      child: Container(
+        color: _surfaceColor,
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: <Widget>[
+            _buildThumbnail(produto, isProduto, size: 44),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    titulo,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.15,
+                      fontWeight: FontWeight.w900,
+                      color: _titleTextColor,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    subtitulo,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.2,
+                      fontWeight: FontWeight.w600,
+                      color: _mutedTextColor,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _buildThumbnail(produto, isProduto, size: 54),
-              SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            produto.nomeProduto,
-                            maxLines: _exibicaoHorizontal ? 1 : 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 16,
-                              height: 1.2,
-                              fontWeight: FontWeight.w900,
-                              color: _titleTextColor,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        _buildFavoritoVisualButton(produto),
-                        SizedBox(width: 8),
-                        _buildCatalogoVisualButton(produto),
-                        SizedBox(width: 8),
-                        _StatusChip(ativo: ativo),
-                      ],
-                    ),
-                    SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: <Widget>[
-                        _InfoChip(
-                          icon: Icons.qr_code_2_rounded,
-                          label:
-                              produto.codigoDeBarras.isEmpty
-                                  ? 'Sem código'
-                                  : 'Código ${produto.codigoDeBarras}',
-                        ),
-                        if (produto.modeloProduto.isNotEmpty)
-                          _InfoChip(
-                            icon: Icons.straighten_rounded,
-                            label: produto.modeloProduto,
-                          ),
-                        _InfoChip(
-                          icon: Icons.photo_library_outlined,
-                          label:
-                              '$imagensCount foto${imagensCount == 1 ? '' : 's'}',
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 12),
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            _formatCurrency(produto.precoVenda),
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              color: _titleTextColor,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: _softAccentColor,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            Icons.edit_outlined,
-                            color: _accentColor,
-                            size: 19,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+            SizedBox(width: 8),
+            Icon(Icons.chevron_right_rounded, color: _mutedTextColor, size: 20),
+          ],
         ),
       ),
     );
@@ -3288,6 +3274,50 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     return partes.join('. ');
   }
 
+  String _resumoProdutoVertical(ProdutoModel produto, bool ativo) {
+    final List<String> partes = <String>[_formatCurrency(produto.precoVenda)];
+    final String codigo = produto.codigoDeBarras.trim();
+    final String categoria = _categoriaProdutoLabel(produto);
+    final String grupo = _grupoProdutoLabel(produto);
+    final String alertaEstoque = _alertaEstoqueProdutoVertical(produto);
+
+    if (codigo.isNotEmpty) {
+      partes.add(codigo);
+    } else if (categoria.isNotEmpty) {
+      partes.add(categoria);
+    } else if (grupo.isNotEmpty) {
+      partes.add(grupo);
+    } else {
+      partes.add(
+        _matchesTipoSelecionado(produto, 'PRODUTO')
+            ? _t('produto.mobile.typeProduct', 'Produto')
+            : _t('produto.mobile.typeService', 'Serviço'),
+      );
+    }
+
+    if (!ativo) {
+      partes.add(_t('common.inactive', 'Inativo'));
+    } else if (alertaEstoque.isNotEmpty) {
+      partes.add(alertaEstoque);
+    }
+
+    return partes.join(' • ');
+  }
+
+  String _alertaEstoqueProdutoVertical(ProdutoModel produto) {
+    switch (_situacaoEstoque(produto)) {
+      case _ProdutoSituacaoEstoqueMobile.estoqueBaixo:
+        return _t('produto.webList.stockLow', 'Estoque baixo');
+      case _ProdutoSituacaoEstoqueMobile.semEstoque:
+        return _t('produto.webList.stockOut', 'Sem estoque');
+      case _ProdutoSituacaoEstoqueMobile.estoqueNegativo:
+        return _t('produto.webList.stockNegative', 'Estoque negativo');
+      case _ProdutoSituacaoEstoqueMobile.emEstoque:
+      case _ProdutoSituacaoEstoqueMobile.naoAplicavel:
+        return '';
+    }
+  }
+
   Widget _buildProdutoInfoSection({
     required String title,
     required List<Widget> children,
@@ -3427,6 +3457,181 @@ class _ProdutoSelecionadoMobile {
     return _ProdutoSelecionadoMobile(
       produto: produto,
       quantidade: quantidade ?? this.quantidade,
+    );
+  }
+}
+
+class _SwipeRevealAction {
+  const _SwipeRevealAction({
+    required this.semanticLabel,
+    required this.icon,
+    required this.foregroundColor,
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.onTap,
+    this.isLoading = false,
+  });
+
+  final String semanticLabel;
+  final IconData icon;
+  final Color foregroundColor;
+  final Color backgroundColor;
+  final Color borderColor;
+  final FutureOr<void> Function() onTap;
+  final bool isLoading;
+}
+
+class _SwipeRevealTile extends StatefulWidget {
+  const _SwipeRevealTile({
+    super.key,
+    required this.child,
+    required this.actions,
+    required this.onTap,
+    required this.backgroundColor,
+    required this.dividerColor,
+  });
+
+  final Widget child;
+  final List<_SwipeRevealAction> actions;
+  final VoidCallback onTap;
+  final Color backgroundColor;
+  final Color dividerColor;
+
+  @override
+  State<_SwipeRevealTile> createState() => _SwipeRevealTileState();
+}
+
+class _SwipeRevealTileState extends State<_SwipeRevealTile> {
+  static const double _actionWidth = 54;
+  static const double _tileHeight = 64;
+  static const double _dividerLeadingInset = 68;
+  static const double _dividerTrailingInset = 12;
+  double _dragOffset = 0;
+
+  double get _maxReveal => widget.actions.length * _actionWidth;
+
+  void _handleHorizontalDragUpdate(DragUpdateDetails details) {
+    final double nextOffset = _dragOffset + details.primaryDelta!;
+    setState(() {
+      _dragOffset = nextOffset.clamp(-_maxReveal, 0.0);
+    });
+  }
+
+  void _handleHorizontalDragEnd(DragEndDetails details) {
+    final double velocity = details.primaryVelocity ?? 0;
+    final bool shouldOpen =
+        velocity < -240 || _dragOffset.abs() > (_maxReveal * 0.42);
+
+    setState(() {
+      _dragOffset = shouldOpen ? -_maxReveal : 0;
+    });
+  }
+
+  Future<void> _handleAction(_SwipeRevealAction action) async {
+    setState(() => _dragOffset = 0);
+    await action.onTap();
+  }
+
+  void _handleTap() {
+    if (_dragOffset != 0) {
+      setState(() => _dragOffset = 0);
+      return;
+    }
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: _tileHeight,
+      child: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          DecoratedBox(
+            decoration: BoxDecoration(color: widget.backgroundColor),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(
+                width: _maxReveal,
+                child: Row(
+                  children: widget.actions
+                      .map((_SwipeRevealAction action) {
+                        return Expanded(
+                          child: Semantics(
+                            button: true,
+                            label: action.semanticLabel,
+                            child: Material(
+                              color: action.backgroundColor,
+                              child: InkWell(
+                                onTap:
+                                    action.isLoading
+                                        ? null
+                                        : () => _handleAction(action),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border(
+                                      left: BorderSide(
+                                        color: action.borderColor,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child:
+                                        action.isLoading
+                                            ? SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: action.foregroundColor,
+                                              ),
+                                            )
+                                            : Icon(
+                                              action.icon,
+                                              color: action.foregroundColor,
+                                              size: 19,
+                                            ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      })
+                      .toList(growable: false),
+                ),
+              ),
+            ),
+          ),
+          AnimatedContainer(
+            duration: Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            transform: Matrix4.translationValues(_dragOffset, 0, 0),
+            child: Material(
+              color: Colors.transparent,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _handleTap,
+                onHorizontalDragUpdate: _handleHorizontalDragUpdate,
+                onHorizontalDragEnd: _handleHorizontalDragEnd,
+                child: widget.child,
+              ),
+            ),
+          ),
+          IgnorePointer(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  left: _dividerLeadingInset,
+                  right: _dividerTrailingInset,
+                ),
+                child: Container(height: 1, color: widget.dividerColor),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -3602,45 +3807,6 @@ class _CatalogStatusChip extends StatelessWidget {
           fontWeight: FontWeight.w900,
           color: foregroundColor,
         ),
-      ),
-    );
-  }
-}
-
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(maxWidth: 180),
-      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-      decoration: BoxDecoration(
-        color: SixMobilePalette.softNeutralSurface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: SixMobilePalette.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 13, color: SixMobilePalette.mutedText),
-          SizedBox(width: 5),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: SixMobilePalette.mutedText,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
