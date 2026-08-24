@@ -223,14 +223,8 @@ class ProdutoService {
   }
 
   Future<void> atualizarProduto(ProdutoModel produto) async {
-    await _atualizarProduto(
-      ProdutoAtualizacaoParcialRequest(
-        id: produto.id ?? '',
-        ativo: produto.ativo,
-        favorito: produto.favorito,
-        disponivelParaCatalogo: produto.disponivelParaCatalogo,
-      ),
-    );
+    final String id = produto.id ?? '';
+    await _enviarAtualizacao(id: id, payload: produto.toJson());
   }
 
   Future<void> atualizarFavoritoProduto({
@@ -264,6 +258,13 @@ class ProdutoService {
   Future<void> _atualizarProduto(
     ProdutoAtualizacaoParcialRequest request,
   ) async {
+    await _enviarAtualizacao(id: request.id, payload: request.toJson());
+  }
+
+  Future<void> _enviarAtualizacao({
+    required String id,
+    required Map<String, dynamic> payload,
+  }) async {
     final url = Uri.parse(endpointAtualizacao);
     final authService = AuthService();
     final token = await authService.getAccessToken();
@@ -275,12 +276,12 @@ class ProdutoService {
       'Authorization': 'Bearer $token',
     };
 
-    if (request.id.isEmpty) {
+    if (id.isEmpty) {
       throw Exception('Produto sem ID para atualização.');
     }
 
     try {
-      final body = jsonEncode(request.toJson());
+      final body = jsonEncode(payload);
 
       print('🌐 PUT $url');
 

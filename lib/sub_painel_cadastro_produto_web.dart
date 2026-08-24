@@ -87,8 +87,8 @@ class SubPainelCadastroProduto extends StatelessWidget {
 
     return CallbackShortcuts(
       bindings: <ShortcutActivator, VoidCallback>{
-        const SingleActivator(LogicalKeyboardKey.escape):
-            () => _fecharSubPainel(context),
+        const SingleActivator(LogicalKeyboardKey.escape): () =>
+            _fecharSubPainel(context),
       },
       child: Focus(
         autofocus: true,
@@ -127,8 +127,9 @@ Future<bool?> showSubPainelCadastroProduto(
   bool modoEdicao = false,
 }) {
   final WebThemeTokens tokens = WebThemeTokens.of(context);
-  final double barrierAlpha =
-      Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42;
+  final double barrierAlpha = Theme.of(context).brightness == Brightness.dark
+      ? 0.70
+      : 0.42;
   return showDialog<bool>(
     context: context,
     barrierDismissible: true,
@@ -191,6 +192,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       widget.imagemSugestaoApiClient ?? HttpImagemSugestaoApiClient();
   late final CategoriaCatalogoApiClient _categoriaApiClient =
       widget.categoriaApiClient ?? HttpCategoriaCatalogoApiClient();
+  late final Listenable _qualidadeListenable;
 
   final TextEditingController _codigoBarrasController = TextEditingController();
   final TextEditingController _nomeProdutoController = TextEditingController();
@@ -217,6 +219,25 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   );
   final TextEditingController _valorVendaEntradaController =
       TextEditingController(text: '0');
+  final TextEditingController _descricaoController = TextEditingController();
+  final TextEditingController _codigoInternoController =
+      TextEditingController();
+  final TextEditingController _marcaController = TextEditingController();
+  final TextEditingController _fabricanteController = TextEditingController();
+  final TextEditingController _unidadeMedidaController = TextEditingController(
+    text: 'UN',
+  );
+  final TextEditingController _quantidadeMinimaVendaController =
+      TextEditingController();
+  final TextEditingController _ncmController = TextEditingController();
+  final TextEditingController _cestController = TextEditingController();
+  final TextEditingController _cfopController = TextEditingController();
+  final TextEditingController _origemMercadoriaController =
+      TextEditingController();
+  final TextEditingController _cstIcmsController = TextEditingController();
+  final TextEditingController _csosnController = TextEditingController();
+  final TextEditingController _cstPisController = TextEditingController();
+  final TextEditingController _cstCofinsController = TextEditingController();
 
   bool _ativo = true;
   bool _favorito = false;
@@ -226,6 +247,12 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   bool _podeAlterarValorNaHora = false;
   bool _produtoTemComissaoEspecial = false;
   bool _isLoading = false;
+  String _tipoCadastro = 'RESUMIDO';
+  int _etapaAtual = 0;
+  String _categoriaUnidadeMedida = 'UNIDADE';
+  bool _controlaEstoque = true;
+  bool _permiteVendaFracionada = false;
+  bool _permiteEstoqueNegativo = false;
   String _tipoSelecionado = ProdutoCadastroFormUtils.tipoProduto;
   List<CategoriaCatalogoModel> _categoriasCatalogo =
       const <CategoriaCatalogoModel>[];
@@ -260,11 +287,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       .whereType<ProdutoImagemModel>()
       .toList(growable: false);
 
-  Set<int> get _sugestoesAplicadasIds =>
-      _imagemSlots
-          .map((slot) => slot.image?.sugestaoId)
-          .whereType<int>()
-          .toSet();
+  Set<int> get _sugestoesAplicadasIds => _imagemSlots
+      .map((slot) => slot.image?.sugestaoId)
+      .whereType<int>()
+      .toSet();
 
   int get _indicePrimeiroSlotLivre =>
       _imagemSlots.indexWhere((slot) => slot.image == null);
@@ -288,8 +314,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   }
 
   String _decimalInputHint({int decimalPlaces = 2}) {
-    final decimalSeparator =
-        context.read<LocaleSettingsProvider>().decimalSeparator;
+    final decimalSeparator = context
+        .read<LocaleSettingsProvider>()
+        .decimalSeparator;
     return '0$decimalSeparator${'0' * decimalPlaces}';
   }
 
@@ -308,6 +335,27 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   @override
   void initState() {
     super.initState();
+    _qualidadeListenable = Listenable.merge(<Listenable>[
+      _nomeProdutoController,
+      _codigoBarrasController,
+      _grupoProdutoController,
+      _precoVendaController,
+      _estoqueMinimoController,
+      _estoqueMaximoController,
+      _descricaoController,
+      _codigoInternoController,
+      _marcaController,
+      _fabricanteController,
+      _unidadeMedidaController,
+      _ncmController,
+      _cestController,
+      _cfopController,
+      _origemMercadoriaController,
+      _cstIcmsController,
+      _csosnController,
+      _cstPisController,
+      _cstCofinsController,
+    ]);
     _preencherCamposSeModoEdicao();
     _carregarCategoriasCatalogo();
     _nomeProdutoController.addListener(_onCamposSugestoesAlterados);
@@ -337,6 +385,20 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     _quantidadeEntradaController.dispose();
     _valorCustoController.dispose();
     _valorVendaEntradaController.dispose();
+    _descricaoController.dispose();
+    _codigoInternoController.dispose();
+    _marcaController.dispose();
+    _fabricanteController.dispose();
+    _unidadeMedidaController.dispose();
+    _quantidadeMinimaVendaController.dispose();
+    _ncmController.dispose();
+    _cestController.dispose();
+    _cfopController.dispose();
+    _origemMercadoriaController.dispose();
+    _cstIcmsController.dispose();
+    _csosnController.dispose();
+    _cstPisController.dispose();
+    _cstCofinsController.dispose();
     super.dispose();
   }
 
@@ -388,15 +450,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       keyboardType: keyboardType,
       maxLines: maxLines,
       decoration: _inputDecoration(context, label, hintText: hintText),
-      validator:
-          requiredField
-              ? (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return _t('common.required', 'Campo obrigatório');
-                }
-                return null;
+      validator: requiredField
+          ? (value) {
+              if (value == null || value.trim().isEmpty) {
+                return _t('common.required', 'Campo obrigatório');
               }
-              : null,
+              return null;
+            }
+          : null,
     );
   }
 
@@ -444,10 +505,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       descricao: descricao,
       categoria:
           _categoriaSelecionadaNome ?? _grupoProdutoController.text.trim(),
-      tipo:
-          _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico
-              ? 'servico'
-              : 'produto',
+      tipo: _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico
+          ? 'servico'
+          : 'produto',
       quantidade: 6,
     );
   }
@@ -529,8 +589,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     }
 
     final bool slotAtivoLivre = _slotSelecionado.image == null;
-    final int slotIndex =
-        slotAtivoLivre ? _slotSelecionadoIndex : _indicePrimeiroSlotLivre;
+    final int slotIndex = slotAtivoLivre
+        ? _slotSelecionadoIndex
+        : _indicePrimeiroSlotLivre;
     setState(() {
       final slot = _imagemSlots[slotIndex];
       slot.image = ProdutoImagemModel(
@@ -560,20 +621,24 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     _grupoProdutoController.text = produto.objAgrupamento?.grupoDoProduto ?? '';
     _categoriaSelecionadaId = produto.objCategoria?.idCategoria;
     _categoriaSelecionadaNome = produto.objCategoria?.nomeCategoria;
-    _modeloProdutoController.text =
-        produto.modeloProduto.trim().isEmpty
-            ? ProdutoCadastroFormUtils.modeloPadrao
-            : produto.modeloProduto;
+    _modeloProdutoController.text = produto.modeloProduto.trim().isEmpty
+        ? ProdutoCadastroFormUtils.modeloPadrao
+        : produto.modeloProduto;
     _estoqueMaximoController.text = produto.estoqueMaximo.toString();
     _estoqueMinimoController.text = produto.estoqueMinimo.toString();
     _precoVendaController.text = produto.precoVenda.toString();
-    _valorComissaoController.text =
-        produto.objComissao.valorFixoDeComissaoParaEsseProduto.toString();
+    _valorComissaoController.text = produto
+        .objComissao
+        .valorFixoDeComissaoParaEsseProduto
+        .toString();
     _produtoTemComissaoEspecial =
         produto.objComissao.produtoTemComissaoEspecial;
     _ativo = produto.ativo;
     _favorito = produto.favorito;
     _disponivelParaCatalogo = produto.disponivelParaCatalogo;
+    _tipoCadastro = produto.tipoCadastro.toUpperCase() == 'COMPLETO'
+        ? 'COMPLETO'
+        : 'RESUMIDO';
 
     if (produto.objetoServico != null) {
       _tempoGarantiaController.text = produto.objetoServico!.tempoDaGarantia;
@@ -588,6 +653,33 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       _valorCustoController.text = entrada.valorCusto.toString();
       _valorVendaEntradaController.text = entrada.valorDaVenda.toString();
     }
+
+    final ProdutoDetalhesModel? detalhes = produto.detalhes;
+    _descricaoController.text = detalhes?.descricao ?? '';
+    _codigoInternoController.text = detalhes?.codigoInterno ?? '';
+    _marcaController.text = detalhes?.marca ?? '';
+    _fabricanteController.text = detalhes?.fabricante ?? '';
+
+    final ProdutoRegrasOperacionaisModel? regras = produto.regrasOperacionais;
+    _categoriaUnidadeMedida = regras?.categoriaUnidadeMedida ?? 'UNIDADE';
+    _unidadeMedidaController.text = regras?.unidadeMedida ?? 'UN';
+    _controlaEstoque = regras?.controlaEstoque ?? true;
+    _permiteVendaFracionada = regras?.permiteVendaFracionada ?? false;
+    _permiteEstoqueNegativo = regras?.permiteEstoqueNegativo ?? false;
+    _quantidadeMinimaVendaController.text =
+        regras == null || regras.quantidadeMinimaVenda == 0
+        ? ''
+        : regras.quantidadeMinimaVenda.toString();
+
+    final ProdutoDadosFiscaisModel? fiscais = produto.dadosFiscais;
+    _ncmController.text = fiscais?.ncm ?? '';
+    _cestController.text = fiscais?.cest ?? '';
+    _cfopController.text = fiscais?.cfop ?? '';
+    _origemMercadoriaController.text = fiscais?.origemMercadoria ?? '';
+    _cstIcmsController.text = fiscais?.cstIcms ?? '';
+    _csosnController.text = fiscais?.csosn ?? '';
+    _cstPisController.text = fiscais?.cstPis ?? '';
+    _cstCofinsController.text = fiscais?.cstCofins ?? '';
 
     for (final slot in _imagemSlots) {
       slot.reset();
@@ -612,8 +704,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     });
 
     try {
-      final CategoriaCatalogoListResponse response =
-          await _categoriaApiClient.listarCategorias();
+      final CategoriaCatalogoListResponse response = await _categoriaApiClient
+          .listarCategorias();
 
       if (!mounted) return;
 
@@ -732,8 +824,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       (CategoriaCatalogoModel categoria) =>
           categoria.id == _categoriaSelecionadaId,
     );
-    final String? valor =
-        categoriaSelecionadaExiste ? _categoriaSelecionadaId : null;
+    final String? valor = categoriaSelecionadaExiste
+        ? _categoriaSelecionadaId
+        : null;
     final String label = _t('produto.web.categoryLabel', 'Categoria');
 
     return SizedBox(
@@ -743,10 +836,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         value: valor ?? _categoriaSemCategoriaMenuId,
         icon: Icons.category_outlined,
         enabled: !_carregandoCategorias,
-        placeholder:
-            _carregandoCategorias
-                ? _t('common.loading', 'Carregando...')
-                : _t('produto.web.categoryHint', 'Selecione uma categoria'),
+        placeholder: _carregandoCategorias
+            ? _t('common.loading', 'Carregando...')
+            : _t('produto.web.categoryHint', 'Selecione uma categoria'),
         showPlaceholder: _carregandoCategorias,
         errorText: _carregandoCategorias ? null : _erroCategorias,
         tooltip: '${_t('common.select', 'Selecionar')} $label',
@@ -760,18 +852,16 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             (CategoriaCatalogoModel categoria) => _SixWebDropdownOption(
               value: categoria.id,
               label: _categoriaDisplayName(categoria),
-              icon:
-                  categoria.ativo
-                      ? Icons.label_outline_rounded
-                      : Icons.visibility_off_outlined,
+              icon: categoria.ativo
+                  ? Icons.label_outline_rounded
+                  : Icons.visibility_off_outlined,
             ),
           ),
         ],
         onSelected: (String selectedValue) {
-          final String? value =
-              selectedValue == _categoriaSemCategoriaMenuId
-                  ? null
-                  : selectedValue;
+          final String? value = selectedValue == _categoriaSemCategoriaMenuId
+              ? null
+              : selectedValue;
           setState(() {
             _categoriaSelecionadaId = value;
             final CategoriaCatalogoModel? categoria =
@@ -811,6 +901,25 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         valorVendaEntrada: _valorVendaEntradaController.text,
         imagens: _imagensParaEnvio,
         numberFormat: _numberFormat(),
+        tipoCadastro: _tipoCadastro,
+        descricao: _descricaoController.text,
+        codigoInterno: _codigoInternoController.text,
+        marca: _marcaController.text,
+        fabricante: _fabricanteController.text,
+        categoriaUnidadeMedida: _categoriaUnidadeMedida,
+        unidadeMedida: _unidadeMedidaController.text,
+        controlaEstoque: _controlaEstoque,
+        permiteVendaFracionada: _permiteVendaFracionada,
+        permiteEstoqueNegativo: _permiteEstoqueNegativo,
+        quantidadeMinimaVenda: _quantidadeMinimaVendaController.text,
+        ncm: _ncmController.text,
+        cest: _cestController.text,
+        cfop: _cfopController.text,
+        origemMercadoria: _origemMercadoriaController.text,
+        cstIcms: _cstIcmsController.text,
+        csosn: _csosnController.text,
+        cstPis: _cstPisController.text,
+        cstCofins: _cstCofinsController.text,
       ),
     );
   }
@@ -825,8 +934,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
     await input.onChange.first;
 
-    final html.File? file =
-        input.files?.isNotEmpty == true ? input.files!.first : null;
+    final html.File? file = input.files?.isNotEmpty == true
+        ? input.files!.first
+        : null;
     if (file == null) return;
 
     final reader = html.FileReader();
@@ -922,13 +1032,13 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             content: Text(
               _isModoEdicao
                   ? _t(
-                    'produto.web.updateSuccess',
-                    'Produto atualizado com sucesso!',
-                  )
+                      'produto.web.updateSuccess',
+                      'Produto atualizado com sucesso!',
+                    )
                   : _t(
-                    'produto.web.createSuccess',
-                    'Produto cadastrado com sucesso!',
-                  ),
+                      'produto.web.createSuccess',
+                      'Produto cadastrado com sucesso!',
+                    ),
             ),
             actions: <Widget>[
               TextButton(
@@ -1068,10 +1178,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   void _mostrarFeedbackFavorito(bool favorito) {
     SixTopNotice.show(
       context,
-      message:
-          favorito
-              ? _t('produto.favorite.enabledFeedback', 'Favorito ativado')
-              : _t('produto.favorite.disabledFeedback', 'Favorito desativado'),
+      message: favorito
+          ? _t('produto.favorite.enabledFeedback', 'Favorito ativado')
+          : _t('produto.favorite.disabledFeedback', 'Favorito desativado'),
       icon: favorito ? Icons.favorite_rounded : Icons.favorite_border_rounded,
     );
   }
@@ -1079,20 +1188,18 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   void _mostrarFeedbackCatalogo(bool disponivelParaCatalogo) {
     SixTopNotice.show(
       context,
-      message:
-          disponivelParaCatalogo
-              ? _t(
-                'produto.catalog.enabledFeedback',
-                'Disponível para catálogo ativado',
-              )
-              : _t(
-                'produto.catalog.disabledFeedback',
-                'Disponível para catálogo desativado',
-              ),
-      icon:
-          disponivelParaCatalogo
-              ? Icons.storefront_rounded
-              : Icons.storefront_outlined,
+      message: disponivelParaCatalogo
+          ? _t(
+              'produto.catalog.enabledFeedback',
+              'Disponível para catálogo ativado',
+            )
+          : _t(
+              'produto.catalog.disabledFeedback',
+              'Disponível para catálogo desativado',
+            ),
+      icon: disponivelParaCatalogo
+          ? Icons.storefront_rounded
+          : Icons.storefront_outlined,
     );
   }
 
@@ -1111,8 +1218,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         onPressed: onPressed,
         icon: Icon(icon, size: 20),
         style: IconButton.styleFrom(
-          backgroundColor:
-              active ? tokens.info.withValues(alpha: 0.18) : tokens.surface,
+          backgroundColor: active
+              ? tokens.info.withValues(alpha: 0.18)
+              : tokens.surface,
           foregroundColor: active ? tokens.info : tokens.secondaryText,
           disabledBackgroundColor: tokens.disabledBackground,
           disabledForegroundColor: tokens.disabledForeground,
@@ -1124,224 +1232,81 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   Widget _buildHeader(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final String statusText =
-        _isLoading
-            ? (_isModoEdicao
-                ? _t('produto.web.savingUpdate', 'Salvando alteração...')
-                : _t('produto.web.saving', 'Salvando...'))
-            : (_isModoEdicao
-                ? _t('produto.web.readyToEdit', 'Pronto para editar')
-                : _t('produto.web.readyToSubmit', 'Pronto para envio'));
-
-    Widget headerIcon() {
-      return Container(
-        width: 54,
-        height: 54,
-        decoration: BoxDecoration(
-          color: tokens.info.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Icon(
-          _isModoEdicao ? Icons.edit_note_rounded : Icons.add_box_outlined,
-          color: tokens.info,
-          size: 28,
-        ),
-      );
-    }
-
-    Widget titleBlock() {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            _isModoEdicao
-                ? _t('produto.web.editProductTitle', 'Edição de produto')
-                : _t('produtos.cadastroDeProdutos', 'Cadastro de produtos'),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              color: tokens.primaryText,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _isModoEdicao
-                ? _t(
-                  'produto.web.editProductSubtitle',
-                  'Revise os dados cadastrados e salve as alterações.',
-                )
-                : _t(
-                  'produto.web.createProductSubtitle',
-                  'Informe dados comerciais, estoque, preço e imagens do catálogo.',
-                ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: tokens.secondaryText,
-              height: 1.35,
-            ),
-          ),
-        ],
-      );
-    }
-
-    Widget statusChip() {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: tokens.surfaceMuted,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: tokens.cardBorder),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            SizedBox(
-              width: 16,
-              height: 16,
-              child:
-                  _isLoading
-                      ? CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: tokens.info,
-                      )
-                      : Icon(
-                        Icons.check_circle_outline_rounded,
-                        size: 16,
-                        color: tokens.info,
-                      ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              statusText,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: tokens.primaryText,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    Widget closeButton() {
-      return IconButton.filledTonal(
-        onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-        tooltip: _t('common.close', 'Fechar'),
-        icon: const Icon(Icons.close_rounded),
-        style: IconButton.styleFrom(
-          backgroundColor: tokens.surfaceMuted,
-          foregroundColor: tokens.info,
-          disabledBackgroundColor: tokens.disabledBackground,
-          disabledForegroundColor: tokens.disabledForeground,
-        ),
-      );
-    }
-
     final Widget favoritoAction = _buildHeaderToggleButton(
       context,
       active: _favorito,
-      onPressed:
-          (_isLoading || _favoritoAtualizando)
-              ? null
-              : () {
-                _alternarFavorito();
-              },
-      tooltip:
-          _favorito
-              ? _t('produto.favorite.removeTooltip', 'Remover dos favoritos')
-              : _t('produto.favorite.addTooltip', 'Marcar como favorito'),
+      onPressed: (_isLoading || _favoritoAtualizando)
+          ? null
+          : () {
+              _alternarFavorito();
+            },
+      tooltip: _favorito
+          ? _t('produto.favorite.removeTooltip', 'Remover dos favoritos')
+          : _t('produto.favorite.addTooltip', 'Marcar como favorito'),
       icon: _favorito ? Icons.favorite_rounded : Icons.favorite_border_rounded,
     );
 
     final Widget catalogoAction = _buildHeaderToggleButton(
       context,
       active: _disponivelParaCatalogo,
-      onPressed:
-          (_isLoading || _catalogoAtualizando)
-              ? null
-              : () {
-                _alternarDisponivelParaCatalogo();
-              },
-      tooltip:
-          _disponivelParaCatalogo
-              ? _t(
-                'produto.catalog.disableTooltip',
-                'Retirar da disponibilidade para catálogo',
-              )
-              : _t(
-                'produto.catalog.enableTooltip',
-                'Disponibilizar para catálogo',
-              ),
-      icon:
-          _disponivelParaCatalogo
-              ? Icons.storefront_rounded
-              : Icons.storefront_outlined,
+      onPressed: (_isLoading || _catalogoAtualizando)
+          ? null
+          : () {
+              _alternarDisponivelParaCatalogo();
+            },
+      tooltip: _disponivelParaCatalogo
+          ? _t(
+              'produto.catalog.disableTooltip',
+              'Retirar da disponibilidade para catálogo',
+            )
+          : _t('produto.catalog.enableTooltip', 'Disponibilizar para catálogo'),
+      icon: _disponivelParaCatalogo
+          ? Icons.storefront_rounded
+          : Icons.storefront_outlined,
+    );
+    final Widget closeButton = IconButton.filledTonal(
+      onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+      tooltip: _t('common.close', 'Fechar'),
+      icon: const Icon(Icons.close_rounded),
+      style: IconButton.styleFrom(
+        backgroundColor: tokens.surfaceMuted,
+        foregroundColor: tokens.info,
+        disabledBackgroundColor: tokens.disabledBackground,
+        disabledForegroundColor: tokens.disabledForeground,
+      ),
     );
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       decoration: BoxDecoration(
         color: tokens.surfaceMuted,
         border: Border(bottom: BorderSide(color: tokens.cardBorder)),
       ),
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final bool compact = constraints.maxWidth < 720;
-
-          if (compact) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    headerIcon(),
-                    const SizedBox(width: 14),
-                    Expanded(child: titleBlock()),
-                    const SizedBox(width: 10),
-                    closeButton(),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: <Widget>[
-                    statusChip(),
-                    favoritoAction,
-                    catalogoAction,
-                  ],
-                ),
-              ],
-            );
-          }
-
-          return Row(
-            children: <Widget>[
-              headerIcon(),
-              const SizedBox(width: 16),
-              Expanded(child: titleBlock()),
-              const SizedBox(width: 12),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                alignment: WrapAlignment.end,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[
-                  statusChip(),
-                  favoritoAction,
-                  catalogoAction,
-                  closeButton(),
-                ],
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              _isModoEdicao
+                  ? _t('produto.web.editProductTitle', 'Editar produto')
+                  : _t('produtos.cadastroDeProdutos', 'Cadastrar produto'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: tokens.primaryText,
+                fontWeight: FontWeight.w900,
               ),
-            ],
-          );
-        },
+            ),
+          ),
+          const SizedBox(width: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[favoritoAction, catalogoAction, closeButton],
+          ),
+        ],
       ),
     );
   }
@@ -1449,16 +1414,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       curve: Curves.easeOutCubic,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color:
-            value
-                ? colorScheme.primary.withValues(alpha: 0.045)
-                : colorScheme.surface,
+        color: value
+            ? colorScheme.primary.withValues(alpha: 0.045)
+            : colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color:
-              value
-                  ? colorScheme.primary.withValues(alpha: 0.28)
-                  : colorScheme.outlineVariant,
+          color: value
+              ? colorScheme.primary.withValues(alpha: 0.28)
+              : colorScheme.outlineVariant,
         ),
       ),
       child: Row(
@@ -1540,25 +1503,23 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             runSpacing: 10,
             children: <Widget>[
               FilledButton.icon(
-                onPressed:
-                    _isLoading || slotAtivo.isLoading
-                        ? null
-                        : () => _selecionarFotoParaSlot(_slotSelecionadoIndex),
+                onPressed: _isLoading || slotAtivo.isLoading
+                    ? null
+                    : () => _selecionarFotoParaSlot(_slotSelecionadoIndex),
                 icon: const Icon(Icons.upload_file_outlined),
                 label: Text(
                   slotAtivo.image == null
                       ? _t(
-                        'produto.web.addActiveSlotImage',
-                        'Adicionar no slot ativo',
-                      )
+                          'produto.web.addActiveSlotImage',
+                          'Adicionar no slot ativo',
+                        )
                       : _t('produto.web.changeImage', 'Trocar imagem'),
                 ),
               ),
               OutlinedButton.icon(
-                onPressed:
-                    _isLoading || slotAtivo.image == null
-                        ? null
-                        : () => _removerImagemDoSlot(_slotSelecionadoIndex),
+                onPressed: _isLoading || slotAtivo.image == null
+                    ? null
+                    : () => _removerImagemDoSlot(_slotSelecionadoIndex),
                 icon: const Icon(Icons.delete_outline),
                 label: Text(
                   _t(
@@ -1596,13 +1557,13 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           Text(
             _temSlotLivre
                 ? _t(
-                  'produto.web.applyAiSuggestionHint',
-                  'Você pode aplicar sugestões de IA no slot ativo ou no próximo slot livre.',
-                )
+                    'produto.web.applyAiSuggestionHint',
+                    'Você pode aplicar sugestões de IA no slot ativo ou no próximo slot livre.',
+                  )
                 : _t(
-                  'produto.web.imageLimitReachedHint',
-                  'Limite de imagens atingido. Remova uma miniatura para continuar.',
-                ),
+                    'produto.web.imageLimitReachedHint',
+                    'Limite de imagens atingido. Remova uma miniatura para continuar.',
+                  ),
             style: TextStyle(
               fontSize: 12,
               color: tokens.secondaryText,
@@ -1658,37 +1619,36 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     final bool hasImage = slotAtivo.image != null;
     final bool isSugestao = slotAtivo.image?.origem == 'SUGESTAO';
 
-    final Widget imageContent =
-        hasImage
-            ? _buildImageContent(
-              context,
-              slotAtivo,
-              fit: BoxFit.cover,
-              brokenIconSize: 34,
-            )
-            : Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Icon(
-                  Icons.photo_camera_back_outlined,
-                  size: 38,
-                  color: tokens.info,
+    final Widget imageContent = hasImage
+        ? _buildImageContent(
+            context,
+            slotAtivo,
+            fit: BoxFit.cover,
+            brokenIconSize: 34,
+          )
+        : Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Icon(
+                Icons.photo_camera_back_outlined,
+                size: 38,
+                color: tokens.info,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Nenhuma imagem no slot ${_slotSelecionadoIndex + 1}',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: tokens.primaryText,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Nenhuma imagem no slot ${_slotSelecionadoIndex + 1}',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: tokens.primaryText,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Use o botão de upload ou escolha uma sugestão por IA.',
-                  style: TextStyle(fontSize: 12, color: tokens.secondaryText),
-                ),
-              ],
-            );
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Use o botão de upload ou escolha uma sugestão por IA.',
+                style: TextStyle(fontSize: 12, color: tokens.secondaryText),
+              ),
+            ],
+          );
 
     return Container(
       width: double.infinity,
@@ -1751,17 +1711,16 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     final bool hasImage = slot.image != null;
     final bool isAtivo = index == _slotSelecionadoIndex;
 
-    final Widget thumb =
-        hasImage
-            ? _buildImageContent(
-              context,
-              slot,
-              fit: BoxFit.cover,
-              brokenIconSize: 20,
-              loadingSize: 18,
-              preferThumbnail: true,
-            )
-            : Icon(Icons.add_photo_alternate_outlined, color: tokens.mutedText);
+    final Widget thumb = hasImage
+        ? _buildImageContent(
+            context,
+            slot,
+            fit: BoxFit.cover,
+            brokenIconSize: 20,
+            loadingSize: 18,
+            preferThumbnail: true,
+          )
+        : Icon(Icons.add_photo_alternate_outlined, color: tokens.mutedText);
 
     return InkWell(
       onTap: () => setState(() => _slotSelecionadoIndex = index),
@@ -1787,16 +1746,15 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 color: tokens.surfaceMuted,
               ),
               clipBehavior: Clip.antiAlias,
-              child:
-                  slot.isLoading
-                      ? const Center(
-                        child: SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                      : Center(child: thumb),
+              child: slot.isLoading
+                  ? const Center(
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : Center(child: thumb),
             ),
             const SizedBox(height: 6),
             Text(
@@ -1920,13 +1878,13 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             child: Text(
               _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico
                   ? _t(
-                    'produto.web.serviceModeSummary',
-                    'Modo serviço ligado: destaque maior para garantia e alteração de valor.',
-                  )
+                      'produto.web.serviceModeSummary',
+                      'Modo serviço ligado: destaque maior para garantia e alteração de valor.',
+                    )
                   : _t(
-                    'produto.web.productModeSummary',
-                    'Modo produto ligado: foco em estoque, custo e preço de venda.',
-                  ),
+                      'produto.web.productModeSummary',
+                      'Modo produto ligado: foco em estoque, custo e preço de venda.',
+                    ),
               style: TextStyle(
                 color: colorScheme.onSurface.withOpacity(0.74),
                 fontSize: 12,
@@ -1968,14 +1926,13 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     return Container(
       padding: EdgeInsets.only(bottom: isLast ? 0 : 12, top: 12),
       decoration: BoxDecoration(
-        border:
-            isLast
-                ? null
-                : Border(
-                  bottom: BorderSide(
-                    color: tokens.cardBorder.withValues(alpha: 0.72),
-                  ),
+        border: isLast
+            ? null
+            : Border(
+                bottom: BorderSide(
+                  color: tokens.cardBorder.withValues(alpha: 0.72),
                 ),
+              ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2011,6 +1968,707 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     );
   }
 
+  bool get _cadastroCompleto => _tipoCadastro == 'COMPLETO';
+
+  QualidadeCadastroProduto get _qualidadeCadastro {
+    final bool servico =
+        _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico;
+    final bool estoqueConfigurado =
+        servico ||
+        !_controlaEstoque ||
+        _estoqueMinimoController.text.trim().isNotEmpty ||
+        _estoqueMaximoController.text.trim().isNotEmpty;
+    final bool detalhesInformados = <String>[
+      _descricaoController.text,
+      _marcaController.text,
+      _fabricanteController.text,
+    ].any((String value) => value.trim().isNotEmpty);
+    final bool dadosFiscaisInformados = <String>[
+      _ncmController.text,
+      _cestController.text,
+      _cfopController.text,
+      _origemMercadoriaController.text,
+      _cstIcmsController.text,
+      _csosnController.text,
+      _cstPisController.text,
+      _cstCofinsController.text,
+    ].any((String value) => value.trim().isNotEmpty);
+
+    return ProdutoCadastroFormUtils.calcularQualidadeCadastro(
+      tipoCadastro: _tipoCadastro,
+      entrada: EntradaQualidadeCadastroProduto(
+        nomeInformado: _nomeProdutoController.text.trim().isNotEmpty,
+        precoInformado:
+            ProdutoCadastroFormUtils.parseDecimal(
+              _precoVendaController.text,
+              numberFormat: _numberFormat(),
+            ) >
+            0,
+        categoriaInformada: _categoriaSelecionadaId?.trim().isNotEmpty == true,
+        identificadorInformado:
+            _codigoBarrasController.text.trim().isNotEmpty ||
+            _codigoInternoController.text.trim().isNotEmpty,
+        organizacaoInformada: _grupoProdutoController.text.trim().isNotEmpty,
+        estoqueConfigurado: estoqueConfigurado,
+        possuiImagem: _totalImagensSelecionadas > 0,
+        detalhesInformados: detalhesInformados,
+        regrasOperacionaisConfiguradas:
+            _categoriaUnidadeMedida.trim().isNotEmpty &&
+            _unidadeMedidaController.text.trim().isNotEmpty,
+        dadosFiscaisInformados: dadosFiscaisInformados,
+      ),
+    );
+  }
+
+  String _rotuloNivelQualidade(NivelQualidadeCadastroProduto nivel) {
+    return switch (nivel) {
+      NivelQualidadeCadastroProduto.essencial => context.t(
+        'produto.quality.levelEssential',
+      ),
+      NivelQualidadeCadastroProduto.prontoParaVender => context.t(
+        'produto.quality.levelReady',
+      ),
+      NivelQualidadeCadastroProduto.bemPreparado => context.t(
+        'produto.quality.levelPrepared',
+      ),
+      NivelQualidadeCadastroProduto.excelente => context.t(
+        'produto.quality.levelExcellent',
+      ),
+    };
+  }
+
+  String _rotuloMelhoria(CriterioQualidadeCadastroProduto criterio) {
+    return switch (criterio) {
+      CriterioQualidadeCadastroProduto.nome => context.t(
+        'produto.quality.actionName',
+      ),
+      CriterioQualidadeCadastroProduto.preco => context.t(
+        'produto.quality.actionPrice',
+      ),
+      CriterioQualidadeCadastroProduto.categoria => context.t(
+        'produto.quality.actionCategory',
+      ),
+      CriterioQualidadeCadastroProduto.identificador => context.t(
+        'produto.quality.actionIdentifier',
+      ),
+      CriterioQualidadeCadastroProduto.organizacao => context.t(
+        'produto.quality.actionOrganization',
+      ),
+      CriterioQualidadeCadastroProduto.estoque => context.t(
+        'produto.quality.actionStock',
+      ),
+      CriterioQualidadeCadastroProduto.imagem => context.t(
+        'produto.quality.actionImage',
+      ),
+      CriterioQualidadeCadastroProduto.detalhes => context.t(
+        'produto.quality.actionDetails',
+      ),
+      CriterioQualidadeCadastroProduto.regrasOperacionais => context.t(
+        'produto.quality.actionRules',
+      ),
+      CriterioQualidadeCadastroProduto.dadosFiscais => context.t(
+        'produto.quality.actionFiscal',
+      ),
+    };
+  }
+
+  int get _totalEtapas => _cadastroCompleto ? 5 : 3;
+
+  List<String> get _rotulosEtapas => _cadastroCompleto
+      ? <String>[
+          _t('produto.journey.identification', 'Identificação'),
+          _t('produto.journey.commercial', 'Comercial'),
+          _t('produto.journey.operation', 'Operação'),
+          _t('produto.journey.fiscal', 'Fiscal'),
+          _t('produto.journey.review', 'Revisão'),
+        ]
+      : <String>[
+          _t('produto.journey.identification', 'Identificação'),
+          _t('produto.journey.commercial', 'Comercial'),
+          _t('produto.journey.review', 'Revisão'),
+        ];
+
+  void _selecionarTipoCadastro(String tipo) {
+    if (_isLoading || tipo == _tipoCadastro) return;
+    setState(() {
+      _tipoCadastro = tipo;
+      _etapaAtual = 0;
+    });
+  }
+
+  Widget _buildTipoCadastroSelector(BuildContext context) {
+    return _buildSectionCard(
+      context: context,
+      title: _t('produto.journey.modeTitle', 'Escolha o nível do cadastro'),
+      subtitle: _t(
+        'produto.journey.modeSubtitle',
+        'Comece simples ou registre detalhes operacionais e fiscais.',
+      ),
+      icon: Icons.route_outlined,
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool compacto = constraints.maxWidth < 720;
+          final Widget resumido = _CadastroModeOptionWeb(
+            icon: Icons.bolt_outlined,
+            title: _t('produto.journey.summaryTitle', 'Cadastro resumido'),
+            subtitle: _t(
+              'produto.journey.summarySubtitle',
+              'Para colocar o item em operação rapidamente.',
+            ),
+            selected: !_cadastroCompleto,
+            onTap: () => _selecionarTipoCadastro('RESUMIDO'),
+          );
+          final Widget completo = _CadastroModeOptionWeb(
+            icon: Icons.fact_check_outlined,
+            title: _t('produto.journey.completeTitle', 'Cadastro completo'),
+            subtitle: _t(
+              'produto.journey.completeSubtitle',
+              'Inclui regras operacionais e dados fiscais opcionais.',
+            ),
+            selected: _cadastroCompleto,
+            onTap: () => _selecionarTipoCadastro('COMPLETO'),
+          );
+          return compacto
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    resumido,
+                    const SizedBox(height: 12),
+                    completo,
+                  ],
+                )
+              : Row(
+                  children: <Widget>[
+                    Expanded(child: resumido),
+                    const SizedBox(width: 14),
+                    Expanded(child: completo),
+                  ],
+                );
+        },
+      ),
+    );
+  }
+
+  Widget _buildJourneyProgress(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final List<String> rotulos = _rotulosEtapas;
+    final QualidadeCadastroProduto qualidade = _qualidadeCadastro;
+    final List<MelhoriaQualidadeCadastroProduto> melhorias = qualidade.melhorias
+        .take(2)
+        .toList(growable: false);
+    final LocaleSettingsProvider locale = context
+        .watch<LocaleSettingsProvider>();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool compacto = constraints.maxWidth < 700;
+          final Widget qualidadeWidget = Semantics(
+            container: true,
+            label:
+                '${context.t('produto.quality.title')}: '
+                '${locale.formatPercent(qualidade.percentual)}. '
+                '${_rotuloNivelQualidade(qualidade.nivel)}',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(end: qualidade.percentual / 100),
+                  duration: const Duration(milliseconds: 320),
+                  curve: Curves.easeOutCubic,
+                  builder: (BuildContext context, double value, Widget? child) {
+                    return SizedBox(
+                      width: 58,
+                      height: 58,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: <Widget>[
+                          SizedBox.expand(
+                            child: CircularProgressIndicator(
+                              value: value,
+                              strokeWidth: 6,
+                              strokeCap: StrokeCap.round,
+                              color: tokens.info,
+                              backgroundColor: tokens.cardBorder,
+                            ),
+                          ),
+                          Text(
+                            locale.formatPercent(value * 100),
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: tokens.primaryText,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 14),
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        context.t('produto.quality.title'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: tokens.primaryText,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        _rotuloNivelQualidade(qualidade.nivel),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: tokens.info,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+          final Widget melhoriasWidget = melhorias.isEmpty
+              ? Text(
+                  context.t('produto.quality.completeMessage'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: tokens.secondaryText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                )
+              : Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: melhorias
+                      .map((melhoria) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: tokens.surfaceMuted,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: tokens.cardBorder),
+                          ),
+                          child: Text(
+                            '${_rotuloMelhoria(melhoria.criterio)} '
+                            '+${locale.formatPercent(melhoria.pontos)}',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: tokens.primaryText,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        );
+                      })
+                      .toList(growable: false),
+                );
+          final Widget etapasWidget = compacto
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      '${_t('produto.journey.step', 'Etapa')} ${_etapaAtual + 1} '
+                      '${_t('produto.journey.of', 'de')} $_totalEtapas · ${rotulos[_etapaAtual]}',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    LinearProgressIndicator(
+                      value: (_etapaAtual + 1) / _totalEtapas,
+                      minHeight: 6,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ],
+                )
+              : Row(
+                  children: List<Widget>.generate(rotulos.length, (int index) {
+                    final bool ativa = index == _etapaAtual;
+                    final bool concluida = index < _etapaAtual;
+                    return Expanded(
+                      child: Row(
+                        children: <Widget>[
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            width: 30,
+                            height: 30,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: ativa || concluida
+                                  ? colorScheme.primary
+                                  : colorScheme.surfaceContainerHighest,
+                              shape: BoxShape.circle,
+                            ),
+                            child: concluida
+                                ? Icon(
+                                    Icons.check_rounded,
+                                    size: 17,
+                                    color: colorScheme.onPrimary,
+                                  )
+                                : Text(
+                                    '${index + 1}',
+                                    style: theme.textTheme.labelMedium
+                                        ?.copyWith(
+                                          color: ativa
+                                              ? colorScheme.onPrimary
+                                              : colorScheme.onSurfaceVariant,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                  ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              rotulos[index],
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: ativa
+                                    ? colorScheme.onSurface
+                                    : colorScheme.onSurfaceVariant,
+                                fontWeight: ativa
+                                    ? FontWeight.w900
+                                    : FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          if (index < rotulos.length - 1)
+                            Container(
+                              width: 22,
+                              height: 1,
+                              color: colorScheme.outlineVariant,
+                            ),
+                        ],
+                      ),
+                    );
+                  }),
+                );
+
+          if (compacto) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                qualidadeWidget,
+                const SizedBox(height: 12),
+                melhoriasWidget,
+                const SizedBox(height: 14),
+                Divider(height: 1, color: colorScheme.outlineVariant),
+                const SizedBox(height: 14),
+                etapasWidget,
+              ],
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  SizedBox(width: 280, child: qualidadeWidget),
+                  const SizedBox(width: 20),
+                  Expanded(child: melhoriasWidget),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Divider(height: 1, color: colorScheme.outlineVariant),
+              const SizedBox(height: 14),
+              etapasWidget,
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDetalhesComplementares(
+    BuildContext context, {
+    required bool telaGrande,
+    required bool telaMedia,
+  }) {
+    return _buildSectionCard(
+      context: context,
+      title: _t('produto.journey.detailsTitle', 'Detalhes complementares'),
+      subtitle: _t(
+        'produto.journey.detailsSubtitle',
+        'Informações opcionais para busca, catálogo e organização.',
+      ),
+      icon: Icons.notes_outlined,
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 16,
+        children: <Widget>[
+          SizedBox(
+            width: double.infinity,
+            child: _buildTextField(
+              context: context,
+              controller: _descricaoController,
+              label: _t('produto.fields.description', 'Descrição'),
+              maxLines: 3,
+            ),
+          ),
+          SizedBox(
+            width: telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
+            child: _buildTextField(
+              context: context,
+              controller: _codigoInternoController,
+              label: _t('produto.fields.internalCode', 'Código interno'),
+            ),
+          ),
+          SizedBox(
+            width: telaGrande ? 260 : (telaMedia ? 240 : double.infinity),
+            child: _buildTextField(
+              context: context,
+              controller: _marcaController,
+              label: _t('produto.fields.brand', 'Marca'),
+            ),
+          ),
+          SizedBox(
+            width: telaGrande ? 300 : (telaMedia ? 280 : double.infinity),
+            child: _buildTextField(
+              context: context,
+              controller: _fabricanteController,
+              label: _t('produto.fields.manufacturer', 'Fabricante'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _categoriaUnidadeLabel(String codigo) {
+    const Map<String, String> fallbacks = <String, String>{
+      'UNIDADE': 'Unidade',
+      'AREA': 'Área',
+      'DISTANCIA': 'Distância',
+      'VOLUME': 'Volume',
+      'TEMPO': 'Tempo',
+      'PESO': 'Peso',
+      'MOEDA': 'Moeda',
+    };
+    return _t(
+      'produto.unitCategory.${codigo.toLowerCase()}',
+      fallbacks[codigo] ?? codigo,
+    );
+  }
+
+  Widget _buildRegrasOperacionais(
+    BuildContext context, {
+    required bool telaGrande,
+    required bool telaMedia,
+  }) {
+    const List<String> categorias = <String>[
+      'UNIDADE',
+      'AREA',
+      'DISTANCIA',
+      'VOLUME',
+      'TEMPO',
+      'PESO',
+      'MOEDA',
+    ];
+    return _buildSectionCard(
+      context: context,
+      title: _t('produto.journey.operationalRulesTitle', 'Regras operacionais'),
+      subtitle: _t(
+        'produto.journey.operationalRulesSubtitle',
+        'Defina como este item será medido, vendido e controlado.',
+      ),
+      icon: Icons.tune_outlined,
+      child: Column(
+        children: <Widget>[
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: <Widget>[
+              SizedBox(
+                width: telaGrande ? 280 : (telaMedia ? 260 : double.infinity),
+                child: _SixWebDropdownField(
+                  label: _t(
+                    'produto.fields.unitCategory',
+                    'Categoria da unidade',
+                  ),
+                  value: _categoriaUnidadeMedida,
+                  icon: Icons.straighten_outlined,
+                  options: categorias
+                      .map(
+                        (String codigo) => _SixWebDropdownOption(
+                          value: codigo,
+                          label: _categoriaUnidadeLabel(codigo),
+                          icon: Icons.straighten_outlined,
+                        ),
+                      )
+                      .toList(growable: false),
+                  onSelected: (String value) =>
+                      setState(() => _categoriaUnidadeMedida = value),
+                ),
+              ),
+              SizedBox(
+                width: telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
+                child: _buildTextField(
+                  context: context,
+                  controller: _unidadeMedidaController,
+                  label: _t('produto.fields.unitCode', 'Unidade de medida'),
+                  hintText: _t('produto.fields.unitCodeHint', 'Ex.: UN, KG, M'),
+                ),
+              ),
+              SizedBox(
+                width: telaGrande ? 230 : (telaMedia ? 230 : double.infinity),
+                child: _buildTextField(
+                  context: context,
+                  controller: _quantidadeMinimaVendaController,
+                  label: _t(
+                    'produto.fields.minimumSaleQuantity',
+                    'Quantidade mínima',
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: <Widget>[
+              SizedBox(
+                width: telaGrande ? 320 : double.infinity,
+                child: _buildSwitchTile(
+                  context: context,
+                  title: _t('produto.fields.trackStock', 'Controlar estoque'),
+                  subtitle: _t(
+                    'produto.fields.trackStockHelp',
+                    'Movimenta saldo nas entradas e vendas.',
+                  ),
+                  value: _controlaEstoque,
+                  onChanged: (bool value) =>
+                      setState(() => _controlaEstoque = value),
+                ),
+              ),
+              SizedBox(
+                width: telaGrande ? 320 : double.infinity,
+                child: _buildSwitchTile(
+                  context: context,
+                  title: _t(
+                    'produto.fields.allowFractionalSale',
+                    'Permitir venda fracionada',
+                  ),
+                  subtitle: _t(
+                    'produto.fields.allowFractionalSaleHelp',
+                    'Aceita quantidades decimais para peso, área ou volume.',
+                  ),
+                  value: _permiteVendaFracionada,
+                  onChanged: (bool value) =>
+                      setState(() => _permiteVendaFracionada = value),
+                ),
+              ),
+              SizedBox(
+                width: telaGrande ? 320 : double.infinity,
+                child: _buildSwitchTile(
+                  context: context,
+                  title: _t(
+                    'produto.fields.allowNegativeStock',
+                    'Permitir estoque negativo',
+                  ),
+                  subtitle: _t(
+                    'produto.fields.allowNegativeStockHelp',
+                    'Mantém a venda disponível mesmo sem saldo suficiente.',
+                  ),
+                  value: _permiteEstoqueNegativo,
+                  onChanged: (bool value) =>
+                      setState(() => _permiteEstoqueNegativo = value),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDadosFiscais(
+    BuildContext context, {
+    required bool telaGrande,
+    required bool telaMedia,
+  }) {
+    final double largura = telaGrande
+        ? 240
+        : (telaMedia ? 220 : double.infinity);
+    Widget campo(TextEditingController controller, String label) {
+      return SizedBox(
+        width: largura,
+        child: _buildTextField(
+          context: context,
+          controller: controller,
+          label: label,
+        ),
+      );
+    }
+
+    return _buildSectionCard(
+      context: context,
+      title: _t('produto.journey.fiscalTitle', 'Dados fiscais e contábeis'),
+      subtitle: _t(
+        'produto.journey.fiscalSubtitle',
+        'Preencha somente o que sua operação ou contador exigir.',
+      ),
+      icon: Icons.receipt_long_outlined,
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 16,
+        children: <Widget>[
+          campo(_ncmController, _t('produto.fields.ncm', 'NCM')),
+          campo(_cestController, _t('produto.fields.cest', 'CEST')),
+          campo(_cfopController, _t('produto.fields.cfop', 'CFOP')),
+          campo(
+            _origemMercadoriaController,
+            _t('produto.fields.goodsOrigin', 'Origem da mercadoria'),
+          ),
+          campo(_cstIcmsController, _t('produto.fields.cstIcms', 'CST ICMS')),
+          campo(_csosnController, _t('produto.fields.csosn', 'CSOSN')),
+          campo(_cstPisController, _t('produto.fields.cstPis', 'CST PIS')),
+          campo(
+            _cstCofinsController,
+            _t('produto.fields.cstCofins', 'CST COFINS'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _avancarEtapa() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    FocusScope.of(context).unfocus();
+    if (_etapaAtual < _totalEtapas - 1) {
+      setState(() => _etapaAtual++);
+    }
+  }
+
+  void _voltarEtapa() {
+    FocusScope.of(context).unfocus();
+    if (_etapaAtual > 0) {
+      setState(() => _etapaAtual--);
+    } else {
+      Navigator.of(context).pop();
+    }
+  }
+
   Widget _buildActionsBar(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
 
@@ -2037,15 +2695,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         runSpacing: 16,
         children: <Widget>[
           Text(
-            _isModoEdicao
-                ? _t(
-                  'produto.web.reviewAndSaveUpdate',
-                  'Revise os dados e conclua a alteração.',
-                )
-                : _t(
-                  'produto.web.reviewAndSaveCreate',
-                  'Revise os dados e conclua o cadastro.',
-                ),
+            '${_t('produto.journey.step', 'Etapa')} ${_etapaAtual + 1} '
+            '${_t('produto.journey.of', 'de')} $_totalEtapas · ${_rotulosEtapas[_etapaAtual]}',
             style: TextStyle(
               color: tokens.primaryText,
               fontWeight: FontWeight.w700,
@@ -2057,31 +2708,49 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             runSpacing: 12,
             children: <Widget>[
               OutlinedButton(
-                onPressed:
-                    _isLoading ? null : () => Navigator.of(context).pop(),
-                child: Text(_t('common.cancel', 'Cancelar')),
+                onPressed: _isLoading ? null : _voltarEtapa,
+                child: Text(
+                  _etapaAtual == 0
+                      ? _t('common.cancel', 'Cancelar')
+                      : _t('common.back', 'Voltar'),
+                ),
               ),
               FilledButton.icon(
-                onPressed: _isLoading ? null : _salvarProduto,
-                icon:
-                    _isLoading
-                        ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : const Icon(Icons.save_outlined),
+                onPressed: _isLoading
+                    ? null
+                    : (_etapaAtual == _totalEtapas - 1
+                          ? _salvarProduto
+                          : _avancarEtapa),
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        _etapaAtual == _totalEtapas - 1
+                            ? Icons.save_outlined
+                            : Icons.arrow_forward_rounded,
+                      ),
                 label: Text(
                   _isLoading
                       ? (_isModoEdicao
-                          ? _t(
-                            'produto.web.savingUpdate',
-                            'Salvando alteração...',
-                          )
-                          : _t('produto.web.saving', 'Salvando...'))
-                      : (_isModoEdicao
-                          ? _t('produto.web.saveUpdate', 'Salvar alteração')
-                          : _t('produto.web.saveProduct', 'Salvar produto')),
+                            ? _t(
+                                'produto.web.savingUpdate',
+                                'Salvando alteração...',
+                              )
+                            : _t('produto.web.saving', 'Salvando...'))
+                      : (_etapaAtual < _totalEtapas - 1
+                            ? _t('common.continue', 'Continuar')
+                            : (_isModoEdicao
+                                  ? _t(
+                                      'produto.web.saveUpdate',
+                                      'Salvar alteração',
+                                    )
+                                  : _t(
+                                      'produto.web.saveProduct',
+                                      'Salvar produto',
+                                    ))),
                 ),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
@@ -2123,7 +2792,6 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   controller: _codigoBarrasController,
                   label: _t('produto.web.skuLabel', 'Código de barras'),
                   hintText: _t('produto.web.skuHint', 'Ex.: 789000000001'),
-                  requiredField: true,
                 ),
               ),
               SizedBox(
@@ -2154,7 +2822,6 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   controller: _modeloProdutoController,
                   label: _t('produto.web.modelLabel', 'Modelo'),
                   hintText: ProdutoCadastroFormUtils.modeloPadrao,
-                  requiredField: true,
                 ),
               ),
               SizedBox(
@@ -2189,7 +2856,6 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   controller: _estoqueMaximoController,
                   label: _t('produto.web.maxStockLabel', 'Estoque máximo'),
                   keyboardType: TextInputType.number,
-                  requiredField: true,
                 ),
               ),
               SizedBox(
@@ -2199,7 +2865,6 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   controller: _estoqueMinimoController,
                   label: _t('produto.web.minStockLabel', 'Estoque mínimo'),
                   keyboardType: TextInputType.number,
-                  requiredField: true,
                 ),
               ),
               SizedBox(
@@ -2212,7 +2877,6 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     decimal: true,
                   ),
                   hintText: _decimalInputHint(),
-                  requiredField: true,
                 ),
               ),
             ],
@@ -2237,8 +2901,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 runSpacing: 16,
                 children: <Widget>[
                   SizedBox(
-                    width:
-                        telaGrande ? 250 : (telaMedia ? 240 : double.infinity),
+                    width: telaGrande
+                        ? 250
+                        : (telaMedia ? 240 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _tempoGarantiaController,
@@ -2250,8 +2915,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     ),
                   ),
                   SizedBox(
-                    width:
-                        telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
+                    width: telaGrande
+                        ? 220
+                        : (telaMedia ? 220 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _valorComissaoController,
@@ -2301,9 +2967,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                         'Permite ajustar o valor durante o atendimento.',
                       ),
                       value: _podeAlterarValorNaHora,
-                      onChanged:
-                          (value) =>
-                              setState(() => _podeAlterarValorNaHora = value),
+                      onChanged: (value) =>
+                          setState(() => _podeAlterarValorNaHora = value),
                     ),
                   ),
                   SizedBox(
@@ -2319,10 +2984,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                         'Aplica comissão específica para este item.',
                       ),
                       value: _produtoTemComissaoEspecial,
-                      onChanged:
-                          (value) => setState(
-                            () => _produtoTemComissaoEspecial = value,
-                          ),
+                      onChanged: (value) =>
+                          setState(() => _produtoTemComissaoEspecial = value),
                     ),
                   ),
                 ],
@@ -2352,7 +3015,6 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  requiredField: true,
                 ),
               ),
               SizedBox(
@@ -2365,7 +3027,6 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     decimal: true,
                   ),
                   hintText: _decimalInputHint(),
-                  requiredField: true,
                 ),
               ),
               SizedBox(
@@ -2381,34 +3042,76 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     decimal: true,
                   ),
                   hintText: _decimalInputHint(),
-                  requiredField: true,
                 ),
               ),
             ],
           ),
         );
 
-        final Widget conteudoEsquerdo = Column(
-          children: <Widget>[
-            dadosPrincipais,
-            const SizedBox(height: 20),
-            estoquePreco,
-            const SizedBox(height: 20),
-            servicoComissao,
-            const SizedBox(height: 20),
-            movimentacao,
-          ],
-        );
-
-        final Widget conteudoDireito = Column(
-          children: <Widget>[
-            _buildFotoCard(context),
-            const SizedBox(height: 20),
-            _buildSugestoesImagemCard(context),
-            const SizedBox(height: 20),
-            _buildResumoCard(context),
-          ],
-        );
+        late final Widget conteudoEtapa;
+        if (_etapaAtual == 0) {
+          conteudoEtapa = Column(
+            children: <Widget>[
+              _buildTipoCadastroSelector(context),
+              const SizedBox(height: 20),
+              dadosPrincipais,
+              if (_cadastroCompleto) ...<Widget>[
+                const SizedBox(height: 20),
+                _buildDetalhesComplementares(
+                  context,
+                  telaGrande: telaGrande,
+                  telaMedia: telaMedia,
+                ),
+              ],
+            ],
+          );
+        } else if (_etapaAtual == 1) {
+          conteudoEtapa = Column(
+            children: <Widget>[
+              estoquePreco,
+              const SizedBox(height: 20),
+              servicoComissao,
+              const SizedBox(height: 20),
+              movimentacao,
+            ],
+          );
+        } else if (_cadastroCompleto && _etapaAtual == 2) {
+          conteudoEtapa = _buildRegrasOperacionais(
+            context,
+            telaGrande: telaGrande,
+            telaMedia: telaMedia,
+          );
+        } else if (_cadastroCompleto && _etapaAtual == 3) {
+          conteudoEtapa = _buildDadosFiscais(
+            context,
+            telaGrande: telaGrande,
+            telaMedia: telaMedia,
+          );
+        } else {
+          final Widget imagens = Column(
+            children: <Widget>[
+              _buildFotoCard(context),
+              const SizedBox(height: 20),
+              _buildSugestoesImagemCard(context),
+            ],
+          );
+          conteudoEtapa = telaGrande
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(flex: 7, child: imagens),
+                    const SizedBox(width: 24),
+                    Expanded(flex: 4, child: _buildResumoCard(context)),
+                  ],
+                )
+              : Column(
+                  children: <Widget>[
+                    _buildResumoCard(context),
+                    const SizedBox(height: 20),
+                    imagens,
+                  ],
+                );
+        }
 
         return Form(
           key: _formKey,
@@ -2421,27 +3124,25 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 1320),
-                      child:
-                          telaGrande
-                              ? Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Expanded(flex: 7, child: conteudoEsquerdo),
-                                  const SizedBox(width: 24),
-                                  Expanded(flex: 4, child: conteudoDireito),
-                                ],
-                              )
-                              : Column(
-                                children: <Widget>[
-                                  _buildFotoCard(context),
-                                  const SizedBox(height: 20),
-                                  _buildSugestoesImagemCard(context),
-                                  const SizedBox(height: 20),
-                                  _buildResumoCard(context),
-                                  const SizedBox(height: 20),
-                                  conteudoEsquerdo,
-                                ],
+                      child: Column(
+                        children: <Widget>[
+                          AnimatedBuilder(
+                            animation: _qualidadeListenable,
+                            builder: (BuildContext context, Widget? child) =>
+                                _buildJourneyProgress(context),
+                          ),
+                          const SizedBox(height: 20),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 220),
+                            child: KeyedSubtree(
+                              key: ValueKey<String>(
+                                '$_tipoCadastro-$_etapaAtual',
                               ),
+                              child: conteudoEtapa,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -2460,6 +3161,102 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           ),
         );
       },
+    );
+  }
+}
+
+class _CadastroModeOptionWeb extends StatelessWidget {
+  const _CadastroModeOptionWeb({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: title,
+      child: Material(
+        color: selected
+            ? colorScheme.primary.withValues(alpha: 0.06)
+            : colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: selected
+                    ? colorScheme.primary.withValues(alpha: 0.50)
+                    : colorScheme.outlineVariant,
+                width: selected ? 1.4 : 1,
+              ),
+            ),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: colorScheme.primary),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Icon(
+                  selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+                  color: selected
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -2578,24 +3375,20 @@ class _SixWebDropdownFieldState extends State<_SixWebDropdownField> {
         maxWidth: box.size.width,
         maxHeight: 360,
       ),
-      items:
-          widget.options
-              .map(
-                (_SixWebDropdownOption option) => PopupMenuItem<String>(
-                  value: option.value,
-                  height: 44,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  child: _SixWebDropdownMenuItem(
-                    option: option,
-                    selected: option.value == effectiveValue,
-                    colorScheme: colorScheme,
-                  ),
-                ),
-              )
-              .toList(),
+      items: widget.options
+          .map(
+            (_SixWebDropdownOption option) => PopupMenuItem<String>(
+              value: option.value,
+              height: 44,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              child: _SixWebDropdownMenuItem(
+                option: option,
+                selected: option.value == effectiveValue,
+                colorScheme: colorScheme,
+              ),
+            ),
+          )
+          .toList(),
     );
 
     if (!mounted) {
@@ -2615,18 +3408,16 @@ class _SixWebDropdownFieldState extends State<_SixWebDropdownField> {
     final bool active = widget.enabled && (_open || _hover);
     final bool hasError =
         widget.errorText != null && widget.errorText!.trim().isNotEmpty;
-    final Color borderColor =
-        hasError
-            ? colorScheme.error
-            : active
-            ? colorScheme.primary.withValues(alpha: 0.42)
-            : colorScheme.outline.withValues(alpha: 0.22);
-    final Color backgroundColor =
-        widget.enabled
-            ? (active
-                ? colorScheme.primary.withValues(alpha: 0.05)
-                : colorScheme.surface)
-            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.34);
+    final Color borderColor = hasError
+        ? colorScheme.error
+        : active
+        ? colorScheme.primary.withValues(alpha: 0.42)
+        : colorScheme.outline.withValues(alpha: 0.22);
+    final Color backgroundColor = widget.enabled
+        ? (active
+              ? colorScheme.primary.withValues(alpha: 0.05)
+              : colorScheme.surface)
+        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.34);
 
     return Semantics(
       button: true,
@@ -2639,10 +3430,9 @@ class _SixWebDropdownFieldState extends State<_SixWebDropdownField> {
             message: widget.tooltip ?? widget.label,
             waitDuration: const Duration(milliseconds: 450),
             child: MouseRegion(
-              cursor:
-                  widget.enabled
-                      ? SystemMouseCursors.click
-                      : SystemMouseCursors.basic,
+              cursor: widget.enabled
+                  ? SystemMouseCursors.click
+                  : SystemMouseCursors.basic,
               onEnter: (_) => setState(() => _hover = true),
               onExit: (_) => setState(() => _hover = false),
               child: Material(
@@ -2663,28 +3453,26 @@ class _SixWebDropdownFieldState extends State<_SixWebDropdownField> {
                       color: backgroundColor,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: borderColor),
-                      boxShadow:
-                          active
-                              ? <BoxShadow>[
-                                BoxShadow(
-                                  color: colorScheme.primary.withValues(
-                                    alpha: 0.10,
-                                  ),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 8),
+                      boxShadow: active
+                          ? <BoxShadow>[
+                              BoxShadow(
+                                color: colorScheme.primary.withValues(
+                                  alpha: 0.10,
                                 ),
-                              ]
-                              : null,
+                                blurRadius: 18,
+                                offset: const Offset(0, 8),
+                              ),
+                            ]
+                          : null,
                     ),
                     child: Row(
                       children: <Widget>[
                         Icon(
                           widget.icon,
                           size: 20,
-                          color:
-                              widget.enabled
-                                  ? colorScheme.primary
-                                  : colorScheme.onSurfaceVariant,
+                          color: widget.enabled
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -2707,10 +3495,9 @@ class _SixWebDropdownFieldState extends State<_SixWebDropdownField> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color:
-                                      widget.showPlaceholder
-                                          ? colorScheme.onSurfaceVariant
-                                          : colorScheme.onSurface,
+                                  color: widget.showPlaceholder
+                                      ? colorScheme.onSurfaceVariant
+                                      : colorScheme.onSurface,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
@@ -2724,10 +3511,9 @@ class _SixWebDropdownFieldState extends State<_SixWebDropdownField> {
                           curve: Curves.easeOutCubic,
                           child: Icon(
                             Icons.keyboard_arrow_down_rounded,
-                            color:
-                                active
-                                    ? colorScheme.primary
-                                    : colorScheme.onSurfaceVariant,
+                            color: active
+                                ? colorScheme.primary
+                                : colorScheme.onSurfaceVariant,
                             size: 20,
                           ),
                         ),
@@ -2776,20 +3562,18 @@ class _SixWebDropdownMenuItem extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
-        color:
-            selected
-                ? colorScheme.primary.withValues(alpha: 0.08)
-                : Colors.transparent,
+        color: selected
+            ? colorScheme.primary.withValues(alpha: 0.08)
+            : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: <Widget>[
           Icon(
             selected ? Icons.check_circle_rounded : option.icon,
-            color:
-                selected
-                    ? colorScheme.primary
-                    : colorScheme.primary.withValues(alpha: 0.78),
+            color: selected
+                ? colorScheme.primary
+                : colorScheme.primary.withValues(alpha: 0.78),
             size: 18,
           ),
           const SizedBox(width: 10),
