@@ -37,12 +37,11 @@ void main() {
 
     await tester.pumpWidget(
       ChangeNotifierProvider<LocaleSettingsProvider>(
-        create:
-            (_) => LocaleSettingsProvider(
-              regionalizacaoService: RegionalizacaoService(
-                apiClient: _FakeRegionalizacaoApiClient(),
-              ),
-            ),
+        create: (_) => LocaleSettingsProvider(
+          regionalizacaoService: RegionalizacaoService(
+            apiClient: _FakeRegionalizacaoApiClient(),
+          ),
+        ),
         child: MaterialApp(
           locale: const Locale('pt'),
           supportedLocales: const <Locale>[Locale('pt')],
@@ -78,6 +77,10 @@ void main() {
     await tester.pump();
     expect(find.text('Disponível para catálogo ativado'), findsOneWidget);
 
+    for (int etapa = 0; etapa < 2; etapa++) {
+      await tester.tap(find.text('Continuar'));
+      await tester.pumpAndSettle();
+    }
     await tester.tap(find.text('Salvar alteração'));
     await tester.pump();
 

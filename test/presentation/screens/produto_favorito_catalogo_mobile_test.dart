@@ -56,6 +56,36 @@ void main() {
     expect(find.byIcon(Icons.storefront_rounded), findsOneWidget);
   });
 
+  testWidgets(
+    'cadastro completo organiza regras e dados fiscais em cinco etapas',
+    (WidgetTester tester) async {
+      await _pumpMobileForm(
+        tester,
+        produto: _produto(),
+        produtoService: _FakeProdutoService(),
+      );
+
+      await tester.tap(find.text('Cadastro completo'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Etapa 1 de 5'), findsWidgets);
+
+      await tester.tap(find.text('Continuar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continuar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Regras operacionais'), findsOneWidget);
+      expect(find.text('Categoria da unidade'), findsOneWidget);
+
+      await tester.tap(find.text('Continuar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dados fiscais e contábeis'), findsOneWidget);
+      expect(find.text('NCM'), findsOneWidget);
+    },
+  );
+
   testWidgets('toque no coracao alterna apenas favorito e mostra feedback', (
     WidgetTester tester,
   ) async {
@@ -69,6 +99,7 @@ void main() {
     expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
     expect(find.byIcon(Icons.storefront_outlined), findsOneWidget);
 
+    await _avancarAteRevisao(tester);
     await tester.tap(find.text('Salvar edição'));
     await tester.pump();
 
@@ -93,6 +124,7 @@ void main() {
       expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
       expect(find.byIcon(Icons.storefront_rounded), findsOneWidget);
 
+      await _avancarAteRevisao(tester);
       await tester.tap(find.text('Salvar edição'));
       await tester.pump();
 
@@ -144,6 +176,13 @@ void main() {
   });
 }
 
+Future<void> _avancarAteRevisao(WidgetTester tester) async {
+  for (int etapa = 0; etapa < 2; etapa++) {
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+  }
+}
+
 Future<void> _pumpMobileForm(
   WidgetTester tester, {
   required ProdutoModel? produto,
@@ -161,12 +200,11 @@ Future<void> _pumpMobileForm(
 
   await tester.pumpWidget(
     ChangeNotifierProvider<LocaleSettingsProvider>(
-      create:
-          (_) => LocaleSettingsProvider(
-            regionalizacaoService: RegionalizacaoService(
-              apiClient: _FakeRegionalizacaoApiClient(),
-            ),
-          ),
+      create: (_) => LocaleSettingsProvider(
+        regionalizacaoService: RegionalizacaoService(
+          apiClient: _FakeRegionalizacaoApiClient(),
+        ),
+      ),
       child: MaterialApp(
         locale: const Locale('pt'),
         supportedLocales: const <Locale>[Locale('pt')],
@@ -210,12 +248,11 @@ Future<void> _pumpMobileCatalog(
           value: provider,
         ),
         ChangeNotifierProvider<LocaleSettingsProvider>(
-          create:
-              (_) => LocaleSettingsProvider(
-                regionalizacaoService: RegionalizacaoService(
-                  apiClient: _FakeRegionalizacaoApiClient(),
-                ),
-              ),
+          create: (_) => LocaleSettingsProvider(
+            regionalizacaoService: RegionalizacaoService(
+              apiClient: _FakeRegionalizacaoApiClient(),
+            ),
+          ),
         ),
       ],
       child: MaterialApp(

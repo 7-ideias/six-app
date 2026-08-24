@@ -18,6 +18,10 @@ class ProdutoModel {
   final ObjComissao objComissao;
   final List<ObjEntradaSaidaProduto>? objEntradaSaidaProduto;
   final List<ProdutoImagemModel>? imagens;
+  final String tipoCadastro;
+  final ProdutoDetalhesModel? detalhes;
+  final ProdutoRegrasOperacionaisModel? regrasOperacionais;
+  final ProdutoDadosFiscaisModel? dadosFiscais;
 
   ProdutoModel({
     this.id,
@@ -37,6 +41,10 @@ class ProdutoModel {
     required this.objComissao,
     this.objEntradaSaidaProduto,
     this.imagens,
+    this.tipoCadastro = 'RESUMIDO',
+    this.detalhes,
+    this.regrasOperacionais,
+    this.dadosFiscais,
   });
 
   factory ProdutoModel.fromJson(Map<String, dynamic> json) {
@@ -52,49 +60,56 @@ class ProdutoModel {
       nomeProduto: json['nomeProduto'] ?? '',
       tipoProduto:
           json['tipoPoduto'] ?? 'PRODUTO', // Note o 'tipoPoduto' do curl
-      objCategoria:
-          json['objCategoria'] != null
-              ? ObjCategoria.fromJson(
-                Map<String, dynamic>.from(json['objCategoria']),
-              )
-              : null,
-      objAgrupamento:
-          json['objAgrupamento'] != null
-              ? ObjAgrupamento.fromJson(
-                Map<String, dynamic>.from(json['objAgrupamento']),
-              )
-              : null,
-      objetoServico:
-          objetoServicoJson != null
-              ? ObjetoServico.fromJson(
-                Map<String, dynamic>.from(objetoServicoJson),
-              )
-              : null,
+      objCategoria: json['objCategoria'] != null
+          ? ObjCategoria.fromJson(
+              Map<String, dynamic>.from(json['objCategoria']),
+            )
+          : null,
+      objAgrupamento: json['objAgrupamento'] != null
+          ? ObjAgrupamento.fromJson(
+              Map<String, dynamic>.from(json['objAgrupamento']),
+            )
+          : null,
+      objetoServico: objetoServicoJson != null
+          ? ObjetoServico.fromJson(Map<String, dynamic>.from(objetoServicoJson))
+          : null,
       modeloProduto: json['modeloProduto'] ?? 'UNIDADE',
       estoqueMaximo: (json['estoqueMaximo'] ?? 0).toInt(),
       estoqueMinimo: (json['estoqueMinimo'] ?? 0).toInt(),
       precoVenda: (json['precoVenda'] ?? 0.0).toDouble(),
-      objComissao:
-          json['objComissao'] != null
-              ? ObjComissao.fromJson(
-                Map<String, dynamic>.from(json['objComissao']),
-              )
-              : ObjComissao(
-                produtoTemComissaoEspecial: false,
-                valorFixoDeComissaoParaEsseProduto: 0,
-              ),
-      objEntradaSaidaProduto:
-          json['objEntradaSaidaProduto'] != null
-              ? (json['objEntradaSaidaProduto'] as List)
-                  .whereType<Map>()
-                  .map(
-                    (Map i) => ObjEntradaSaidaProduto.fromJson(
-                      Map<String, dynamic>.from(i),
-                    ),
-                  )
-                  .toList()
-              : null,
+      objComissao: json['objComissao'] != null
+          ? ObjComissao.fromJson(Map<String, dynamic>.from(json['objComissao']))
+          : ObjComissao(
+              produtoTemComissaoEspecial: false,
+              valorFixoDeComissaoParaEsseProduto: 0,
+            ),
+      objEntradaSaidaProduto: json['objEntradaSaidaProduto'] != null
+          ? (json['objEntradaSaidaProduto'] as List)
+                .whereType<Map>()
+                .map(
+                  (Map i) => ObjEntradaSaidaProduto.fromJson(
+                    Map<String, dynamic>.from(i),
+                  ),
+                )
+                .toList()
+          : null,
       imagens: _imagensFromJson(json),
+      tipoCadastro: json['tipoCadastro']?.toString() ?? 'RESUMIDO',
+      detalhes: json['detalhes'] is Map
+          ? ProdutoDetalhesModel.fromJson(
+              Map<String, dynamic>.from(json['detalhes'] as Map),
+            )
+          : null,
+      regrasOperacionais: json['regrasOperacionais'] is Map
+          ? ProdutoRegrasOperacionaisModel.fromJson(
+              Map<String, dynamic>.from(json['regrasOperacionais'] as Map),
+            )
+          : null,
+      dadosFiscais: json['dadosFiscais'] is Map
+          ? ProdutoDadosFiscaisModel.fromJson(
+              Map<String, dynamic>.from(json['dadosFiscais'] as Map),
+            )
+          : null,
     );
   }
 
@@ -147,15 +162,20 @@ class ProdutoModel {
       'tipoPoduto': tipoProduto, // Note o 'tipoPoduto' do curl
       'objCategoria': objCategoria?.toJson(),
       'objAgrupamento': objAgrupamento?.toJson(),
-      'objetoServico': objetoServico?.toJson(),
+      'objServico': objetoServico?.toJson(),
       'modeloProduto': modeloProduto,
       'estoqueMaximo': estoqueMaximo,
       'estoqueMinimo': estoqueMinimo,
       'precoVenda': precoVenda,
       'objComissao': objComissao.toJson(),
-      'objEntradaSaidaProduto':
-          objEntradaSaidaProduto?.map((e) => e.toJson()).toList(),
+      'objEntradaSaidaProduto': objEntradaSaidaProduto
+          ?.map((e) => e.toJson())
+          .toList(),
       'imagens': imagens?.take(5).map((e) => e.toJson()).toList(),
+      'tipoCadastro': tipoCadastro,
+      'detalhes': detalhes?.toJson(),
+      'regrasOperacionais': regrasOperacionais?.toJson(),
+      'dadosFiscais': dadosFiscais?.toJson(),
     };
   }
 
@@ -177,6 +197,10 @@ class ProdutoModel {
     ObjComissao? objComissao,
     List<ObjEntradaSaidaProduto>? objEntradaSaidaProduto,
     List<ProdutoImagemModel>? imagens,
+    String? tipoCadastro,
+    ProdutoDetalhesModel? detalhes,
+    ProdutoRegrasOperacionaisModel? regrasOperacionais,
+    ProdutoDadosFiscaisModel? dadosFiscais,
   }) {
     return ProdutoModel(
       id: id ?? this.id,
@@ -198,8 +222,128 @@ class ProdutoModel {
       objEntradaSaidaProduto:
           objEntradaSaidaProduto ?? this.objEntradaSaidaProduto,
       imagens: imagens ?? this.imagens,
+      tipoCadastro: tipoCadastro ?? this.tipoCadastro,
+      detalhes: detalhes ?? this.detalhes,
+      regrasOperacionais: regrasOperacionais ?? this.regrasOperacionais,
+      dadosFiscais: dadosFiscais ?? this.dadosFiscais,
     );
   }
+}
+
+class ProdutoDetalhesModel {
+  const ProdutoDetalhesModel({
+    this.descricao = '',
+    this.codigoInterno = '',
+    this.marca = '',
+    this.fabricante = '',
+  });
+
+  final String descricao;
+  final String codigoInterno;
+  final String marca;
+  final String fabricante;
+
+  factory ProdutoDetalhesModel.fromJson(Map<String, dynamic> json) {
+    return ProdutoDetalhesModel(
+      descricao: json['descricao']?.toString() ?? '',
+      codigoInterno: json['codigoInterno']?.toString() ?? '',
+      marca: json['marca']?.toString() ?? '',
+      fabricante: json['fabricante']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'descricao': descricao,
+    'codigoInterno': codigoInterno,
+    'marca': marca,
+    'fabricante': fabricante,
+  };
+}
+
+class ProdutoRegrasOperacionaisModel {
+  const ProdutoRegrasOperacionaisModel({
+    this.categoriaUnidadeMedida = 'UNIDADE',
+    this.unidadeMedida = 'UN',
+    this.controlaEstoque = true,
+    this.permiteVendaFracionada = false,
+    this.permiteEstoqueNegativo = false,
+    this.quantidadeMinimaVenda = 0,
+  });
+
+  final String categoriaUnidadeMedida;
+  final String unidadeMedida;
+  final bool controlaEstoque;
+  final bool permiteVendaFracionada;
+  final bool permiteEstoqueNegativo;
+  final double quantidadeMinimaVenda;
+
+  factory ProdutoRegrasOperacionaisModel.fromJson(Map<String, dynamic> json) {
+    return ProdutoRegrasOperacionaisModel(
+      categoriaUnidadeMedida:
+          json['categoriaUnidadeMedida']?.toString() ?? 'UNIDADE',
+      unidadeMedida: json['unidadeMedida']?.toString() ?? 'UN',
+      controlaEstoque: json['controlaEstoque'] != false,
+      permiteVendaFracionada: json['permiteVendaFracionada'] == true,
+      permiteEstoqueNegativo: json['permiteEstoqueNegativo'] == true,
+      quantidadeMinimaVenda:
+          (json['quantidadeMinimaVenda'] as num?)?.toDouble() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'categoriaUnidadeMedida': categoriaUnidadeMedida,
+    'unidadeMedida': unidadeMedida,
+    'controlaEstoque': controlaEstoque,
+    'permiteVendaFracionada': permiteVendaFracionada,
+    'permiteEstoqueNegativo': permiteEstoqueNegativo,
+    'quantidadeMinimaVenda': quantidadeMinimaVenda,
+  };
+}
+
+class ProdutoDadosFiscaisModel {
+  const ProdutoDadosFiscaisModel({
+    this.ncm = '',
+    this.cest = '',
+    this.cfop = '',
+    this.origemMercadoria = '',
+    this.cstIcms = '',
+    this.csosn = '',
+    this.cstPis = '',
+    this.cstCofins = '',
+  });
+
+  final String ncm;
+  final String cest;
+  final String cfop;
+  final String origemMercadoria;
+  final String cstIcms;
+  final String csosn;
+  final String cstPis;
+  final String cstCofins;
+
+  factory ProdutoDadosFiscaisModel.fromJson(Map<String, dynamic> json) {
+    return ProdutoDadosFiscaisModel(
+      ncm: json['ncm']?.toString() ?? '',
+      cest: json['cest']?.toString() ?? '',
+      cfop: json['cfop']?.toString() ?? '',
+      origemMercadoria: json['origemMercadoria']?.toString() ?? '',
+      cstIcms: json['cstIcms']?.toString() ?? '',
+      csosn: json['csosn']?.toString() ?? '',
+      cstPis: json['cstPis']?.toString() ?? '',
+      cstCofins: json['cstCofins']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'ncm': ncm,
+    'cest': cest,
+    'cfop': cfop,
+    'origemMercadoria': origemMercadoria,
+    'cstIcms': cstIcms,
+    'csosn': csosn,
+    'cstPis': cstPis,
+    'cstCofins': cstCofins,
+  };
 }
 
 class ProdutoAtualizacaoParcialRequest {
@@ -250,14 +394,11 @@ class ProdutoResponseModel {
       erroNoEstoque: (json['erroNoEstoque'] ?? false) as bool,
       qtSemEstoque: (json['qtSemEstoque'] ?? 0.0).toDouble(),
       vlEstoqueEmGrana: (json['vlEstoqueEmGrana'] ?? 0.0).toDouble(),
-      produtosList:
-          json['produtosList'] != null
-              ? (json['produtosList'] as List)
-                  .map(
-                    (i) => ProdutoModel.fromJson(Map<String, dynamic>.from(i)),
-                  )
-                  .toList()
-              : [],
+      produtosList: json['produtosList'] != null
+          ? (json['produtosList'] as List)
+                .map((i) => ProdutoModel.fromJson(Map<String, dynamic>.from(i)))
+                .toList()
+          : [],
     );
   }
 

@@ -38,6 +38,25 @@ class ProdutoCadastroFormData {
     required this.valorVendaEntrada,
     required this.imagens,
     required this.numberFormat,
+    this.tipoCadastro = 'RESUMIDO',
+    this.descricao = '',
+    this.codigoInterno = '',
+    this.marca = '',
+    this.fabricante = '',
+    this.categoriaUnidadeMedida = 'UNIDADE',
+    this.unidadeMedida = 'UN',
+    this.controlaEstoque = true,
+    this.permiteVendaFracionada = false,
+    this.permiteEstoqueNegativo = false,
+    this.quantidadeMinimaVenda = '',
+    this.ncm = '',
+    this.cest = '',
+    this.cfop = '',
+    this.origemMercadoria = '',
+    this.cstIcms = '',
+    this.csosn = '',
+    this.cstPis = '',
+    this.cstCofins = '',
     this.usarPrecoVendaComoValorEntradaQuandoVazio = false,
   });
 
@@ -65,6 +84,25 @@ class ProdutoCadastroFormData {
   final String valorVendaEntrada;
   final List<ProdutoImagemModel> imagens;
   final ProdutoCadastroNumberFormat numberFormat;
+  final String tipoCadastro;
+  final String descricao;
+  final String codigoInterno;
+  final String marca;
+  final String fabricante;
+  final String categoriaUnidadeMedida;
+  final String unidadeMedida;
+  final bool controlaEstoque;
+  final bool permiteVendaFracionada;
+  final bool permiteEstoqueNegativo;
+  final String quantidadeMinimaVenda;
+  final String ncm;
+  final String cest;
+  final String cfop;
+  final String origemMercadoria;
+  final String cstIcms;
+  final String csosn;
+  final String cstPis;
+  final String cstCofins;
   final bool usarPrecoVendaComoValorEntradaQuandoVazio;
 }
 
@@ -132,12 +170,9 @@ class ProdutoCadastroFormUtils {
     final String valorVendaEntradaText = data.valorVendaEntrada.trim();
     final double valorVendaEntrada =
         valorVendaEntradaText.isEmpty &&
-                data.usarPrecoVendaComoValorEntradaQuandoVazio
-            ? precoVenda
-            : parseDecimal(
-              valorVendaEntradaText,
-              numberFormat: data.numberFormat,
-            );
+            data.usarPrecoVendaComoValorEntradaQuandoVazio
+        ? precoVenda
+        : parseDecimal(valorVendaEntradaText, numberFormat: data.numberFormat);
 
     return ProdutoModel(
       id: data.id,
@@ -153,22 +188,19 @@ class ProdutoCadastroFormUtils {
         categoriaSelecionada: data.categoriaSelecionada,
       ),
       objAgrupamento: ObjAgrupamento(
-        grupoDoProduto:
-            data.grupoProduto.trim().isEmpty
-                ? grupoPadrao
-                : data.grupoProduto.trim(),
+        grupoDoProduto: data.grupoProduto.trim().isEmpty
+            ? grupoPadrao
+            : data.grupoProduto.trim(),
       ),
       objetoServico: ObjetoServico(
-        tempoDaGarantia:
-            data.tempoGarantia.trim().isEmpty
-                ? garantiaPadrao
-                : data.tempoGarantia.trim(),
+        tempoDaGarantia: data.tempoGarantia.trim().isEmpty
+            ? garantiaPadrao
+            : data.tempoGarantia.trim(),
         podeAlterarOValorNaHora: data.podeAlterarValorNaHora,
       ),
-      modeloProduto:
-          data.modeloProduto.trim().isEmpty
-              ? modeloPadrao
-              : data.modeloProduto.trim(),
+      modeloProduto: data.modeloProduto.trim().isEmpty
+          ? modeloPadrao
+          : data.modeloProduto.trim(),
       estoqueMaximo: parseInteger(
         data.estoqueMaximo,
         numberFormat: data.numberFormat,
@@ -199,6 +231,40 @@ class ProdutoCadastroFormUtils {
         ),
       ],
       imagens: data.imagens,
+      tipoCadastro: data.tipoCadastro.trim().toUpperCase() == 'COMPLETO'
+          ? 'COMPLETO'
+          : 'RESUMIDO',
+      detalhes: ProdutoDetalhesModel(
+        descricao: data.descricao.trim(),
+        codigoInterno: data.codigoInterno.trim(),
+        marca: data.marca.trim(),
+        fabricante: data.fabricante.trim(),
+      ),
+      regrasOperacionais: ProdutoRegrasOperacionaisModel(
+        categoriaUnidadeMedida: data.categoriaUnidadeMedida.trim().isEmpty
+            ? 'UNIDADE'
+            : data.categoriaUnidadeMedida.trim().toUpperCase(),
+        unidadeMedida: data.unidadeMedida.trim().isEmpty
+            ? 'UN'
+            : data.unidadeMedida.trim().toUpperCase(),
+        controlaEstoque: data.controlaEstoque,
+        permiteVendaFracionada: data.permiteVendaFracionada,
+        permiteEstoqueNegativo: data.permiteEstoqueNegativo,
+        quantidadeMinimaVenda: parseDecimal(
+          data.quantidadeMinimaVenda,
+          numberFormat: data.numberFormat,
+        ),
+      ),
+      dadosFiscais: ProdutoDadosFiscaisModel(
+        ncm: data.ncm.trim(),
+        cest: data.cest.trim(),
+        cfop: data.cfop.trim(),
+        origemMercadoria: data.origemMercadoria.trim(),
+        cstIcms: data.cstIcms.trim(),
+        csosn: data.csosn.trim(),
+        cstPis: data.cstPis.trim(),
+        cstCofins: data.cstCofins.trim(),
+      ),
     );
   }
 
