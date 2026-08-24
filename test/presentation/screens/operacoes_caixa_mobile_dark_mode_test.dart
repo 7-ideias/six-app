@@ -920,6 +920,7 @@ MovimentoCaixa _movement({
   String descricaoTipo = 'Pix',
   String observacao = 'Movimentação operacional registrada no caixa',
   String referencia = 'MOV-001',
+  String codigoOperacao = 'OP-001',
   String dataHora = '2026-08-08T09:30:00',
   String status = 'concluida',
 }) {
@@ -934,6 +935,7 @@ MovimentoCaixa _movement({
     descricao: descricaoTipo,
     observacao: observacao,
     referencia: referencia,
+    codigoOperacao: codigoOperacao,
     idColaborador: 'colab-caixa',
     nomeColaborador: _operatorName,
     dataHoraMovimento: dataHora,
