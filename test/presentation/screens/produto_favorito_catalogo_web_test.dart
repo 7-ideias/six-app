@@ -79,7 +79,25 @@ void main() {
     await tester.pump();
     expect(find.text('Disponível para catálogo ativado'), findsOneWidget);
 
-    for (int etapa = 0; etapa < 2; etapa++) {
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey<String>('produto-tipo-cadastro-compacto-web')),
+      findsOneWidget,
+    );
+    expect(find.text('Escolha o nível do cadastro'), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('produto-tipo-cadastro-compacto-web')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cadastro completo'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Etapa 1 de 5'), findsWidgets);
+
+    for (int etapa = 0; etapa < 4; etapa++) {
       await tester.tap(find.text('Continuar'));
       await tester.pumpAndSettle();
     }

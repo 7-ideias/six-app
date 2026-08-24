@@ -122,6 +122,8 @@ class _CadastroProdutoMobileScreenState
   bool _slotsHintPlayed = false;
   String _tipoCadastro = 'RESUMIDO';
   int _etapaAtual = 0;
+  bool _jornadaIniciada = false;
+  bool _seletorTipoCadastroExpandido = true;
   String _categoriaUnidadeMedida = 'UNIDADE';
   bool _controlaEstoque = true;
   bool _permiteVendaFracionada = false;
@@ -1840,11 +1842,36 @@ class _CadastroProdutoMobileScreenState
         ];
 
   void _selecionarTipoCadastro(String tipo) {
-    if (_isLoading || tipo == _tipoCadastro) return;
+    if (_isLoading) return;
+    final bool tipoAlterado = tipo != _tipoCadastro;
+    if (!tipoAlterado && !_jornadaIniciada) return;
+
     setState(() {
-      _tipoCadastro = tipo;
-      _etapaAtual = 0;
+      if (tipoAlterado) {
+        _tipoCadastro = tipo;
+        _etapaAtual = 0;
+      }
+      if (_jornadaIniciada) {
+        _seletorTipoCadastroExpandido = false;
+      }
     });
+  }
+
+  String get _rotuloTipoCadastroSelecionado => _cadastroCompleto
+      ? _t('produto.journey.completeTitle', 'Cadastro completo')
+      : _t('produto.journey.summaryTitle', 'Cadastro resumido');
+
+  void _abrirSeletorTipoCadastro() {
+    if (_isLoading || _seletorTipoCadastroExpandido) return;
+    setState(() => _seletorTipoCadastroExpandido = true);
+  }
+
+  Duration _duracaoMovimento(Duration duration) {
+    final MediaQueryData? mediaQuery = MediaQuery.maybeOf(context);
+    final bool reduzirMovimento =
+        (mediaQuery?.disableAnimations ?? false) ||
+        (mediaQuery?.accessibleNavigation ?? false);
+    return reduzirMovimento ? Duration.zero : duration;
   }
 
   Widget _buildTipoCadastroSelector() {
@@ -1880,6 +1907,126 @@ class _CadastroProdutoMobileScreenState
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTipoCadastroCompacto() {
+    final String nivelSelecionado = _rotuloTipoCadastroSelecionado;
+    final String rotuloTipo = _t(
+      'produto.journey.modeLabel',
+      'Tipo de cadastro',
+    );
+    final String alterar = context.t('produto.journey.changeMode');
+
+    return Semantics(
+      key: const ValueKey<String>('produto-tipo-cadastro-compacto-mobile'),
+      button: true,
+      label: '$rotuloTipo: $nivelSelecionado. $alterar',
+      child: Material(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: _abrirSeletorTipoCadastro,
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 64),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: _borderColor),
+            ),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: _softAccentColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    _cadastroCompleto
+                        ? Icons.fact_check_outlined
+                        : Icons.bolt_outlined,
+                    color: _accentColor,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        rotuloTipo,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _mutedTextColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        nivelSelecionado,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _titleTextColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  alterar,
+                  style: TextStyle(
+                    color: _accentColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(width: 2),
+                Icon(Icons.expand_more_rounded, color: _accentColor, size: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTipoCadastroControl() {
+    final bool exibirSeletorCompleto =
+        !_jornadaIniciada || _seletorTipoCadastroExpandido;
+
+    return AnimatedSwitcher(
+      duration: _duracaoMovimento(const Duration(milliseconds: 240)),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SizeTransition(
+            sizeFactor: animation,
+            axisAlignment: -1,
+            child: child,
+          ),
+        );
+      },
+      child: exibirSeletorCompleto
+          ? KeyedSubtree(
+              key: const ValueKey<String>(
+                'produto-tipo-cadastro-expandido-mobile',
+              ),
+              child: _buildTipoCadastroSelector(),
+            )
+          : _buildTipoCadastroCompacto(),
     );
   }
 
@@ -2410,7 +2557,11 @@ class _CadastroProdutoMobileScreenState
     if (!(_formKey.currentState?.validate() ?? false)) return;
     FocusScope.of(context).unfocus();
     if (_etapaAtual < _totalEtapas - 1) {
-      setState(() => _etapaAtual++);
+      setState(() {
+        _jornadaIniciada = true;
+        _seletorTipoCadastroExpandido = false;
+        _etapaAtual++;
+      });
     }
   }
 
@@ -2492,13 +2643,11 @@ class _CadastroProdutoMobileScreenState
                       ),
                     ),
                     SizedBox(height: 16),
-                    if (_etapaAtual == 0) ...<Widget>[
-                      _buildStaggeredEntry(
-                        delay: Duration(milliseconds: 110),
-                        child: _buildTipoCadastroSelector(),
-                      ),
-                      SizedBox(height: 16),
-                    ],
+                    _buildStaggeredEntry(
+                      delay: Duration(milliseconds: 110),
+                      child: _buildTipoCadastroControl(),
+                    ),
+                    SizedBox(height: 16),
                     AnimatedSwitcher(
                       duration: Duration(milliseconds: 220),
                       child: Column(

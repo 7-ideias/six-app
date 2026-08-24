@@ -88,6 +88,50 @@ void main() {
     },
   );
 
+  testWidgets(
+    'nivel recolhe apos iniciar e continua disponivel para alteracao',
+    (WidgetTester tester) async {
+      await _pumpMobileForm(
+        tester,
+        produto: _produto(),
+        produtoService: _FakeProdutoService(),
+      );
+
+      expect(find.text('Escolha o nível do cadastro'), findsOneWidget);
+
+      await tester.tap(find.text('Continuar'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(
+          const ValueKey<String>('produto-tipo-cadastro-compacto-mobile'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Escolha o nível do cadastro'), findsNothing);
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('produto-tipo-cadastro-compacto-mobile'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Escolha o nível do cadastro'), findsOneWidget);
+
+      await tester.tap(find.text('Cadastro completo'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Etapa 1 de 5'), findsWidgets);
+      expect(
+        find.byKey(
+          const ValueKey<String>('produto-tipo-cadastro-compacto-mobile'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
   testWidgets('toque no coracao alterna apenas favorito e mostra feedback', (
     WidgetTester tester,
   ) async {
