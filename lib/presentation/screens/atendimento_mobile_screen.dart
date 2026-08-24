@@ -11,6 +11,7 @@ import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
+import 'package:sixpos/presentation/screens/devolucoes_produtos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/opcoes_venda_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operacoes_caixa_mobile_screen.dart';
@@ -329,9 +330,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         subtitle: _txt('operacao.mobile.returnSubtitle', 'Registrar devolução'),
         assetPath: _returnAsset,
         accentColor: _returnAccent,
-        onTap: null,
-        enabled: false,
-        statusLabel: _txt('operacao.mobile.returnUnavailable', 'Em breve'),
+        onTap: () => _go(DevolucoesProdutosMobileScreen()),
       ),
     ];
   }

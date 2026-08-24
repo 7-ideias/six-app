@@ -3,7 +3,6 @@ import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
 import 'package:sixpos/presentation/screens/atendimento_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/devolucoes_produtos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/gestao_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/home_page_mobile_screen.dart';
 
@@ -76,17 +75,6 @@ class NavBarMobile extends StatelessWidget {
                 MobileNavigationController.serviceIndex,
               ),
             ),
-            _NavItem(
-              icon: Icons.assignment_return_outlined,
-              activeIcon: Icons.assignment_return_rounded,
-              label: context.t('mobile.nav.returns', fallback: 'Devoluções'),
-              selected: selectedIndex == MobileNavigationController.returnsIndex,
-              onTap: () => _select(
-                context,
-                controller,
-                MobileNavigationController.returnsIndex,
-              ),
-            ),
           ],
         ),
       ),
@@ -115,9 +103,6 @@ class NavBarMobile extends StatelessWidget {
         break;
       case MobileNavigationController.serviceIndex:
         page = const AtendimentoMobileScreen();
-        break;
-      case MobileNavigationController.returnsIndex:
-        page = const DevolucoesProdutosMobileScreen();
         break;
       default:
         return;

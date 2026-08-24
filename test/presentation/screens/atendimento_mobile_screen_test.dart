@@ -10,6 +10,7 @@ import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dar
 import 'package:sixpos/domain/models/regionalizacao_models.dart';
 import 'package:sixpos/domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
+import 'package:sixpos/presentation/components/nav_bar_mobile.dart';
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
 import 'package:sixpos/presentation/screens/atendimento_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_mobile_screen.dart';
@@ -20,6 +21,21 @@ import 'package:sixpos/presentation/screens/opcoes_servicos_atendimento_mobile_s
 import 'package:sixpos/providers/locale_settings_provider.dart';
 
 void main() {
+  testWidgets('navbar mobile mantém apenas os três destinos principais', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(bottomNavigationBar: NavBarMobile()),
+      ),
+    );
+
+    expect(find.text('dash'), findsOneWidget);
+    expect(find.text('Gestão'), findsOneWidget);
+    expect(find.text('Atendimento'), findsOneWidget);
+    expect(find.text('Devoluções'), findsNothing);
+  });
+
   testWidgets('exibe ações principais sem seção acompanhe hoje', (
     WidgetTester tester,
   ) async {
@@ -57,7 +73,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('preserva as navegações e mantém devoluções bloqueada', (
+  testWidgets('preserva as navegações e abre devoluções pelo atendimento', (
     WidgetTester tester,
   ) async {
     final List<String> navigations = await _pumpAtendimento(tester);
@@ -88,8 +104,9 @@ void main() {
       'ServicosAtendimentoMobileScreen',
       'ReceberMobileScreen',
       'OperacoesCaixaMobileScreen',
+      'DevolucoesProdutosMobileScreen',
     ]);
-    expect(find.text('Em breve'), findsWidgets);
+    expect(find.text('Em breve'), findsNothing);
   });
 
   testWidgets('menu receber abre vendas e serviços a receber', (

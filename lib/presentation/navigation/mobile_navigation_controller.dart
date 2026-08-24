@@ -7,9 +7,8 @@ class MobileNavigationController extends ValueNotifier<int> {
   static const int dashIndex = 0;
   static const int managementIndex = 1;
   static const int serviceIndex = 2;
-  static const int returnsIndex = 3;
   static const int firstIndex = dashIndex;
-  static const int lastIndex = returnsIndex;
+  static const int lastIndex = serviceIndex;
 
   void select(int index) {
     final bool isValid = index >= firstIndex && index <= lastIndex;
