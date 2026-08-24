@@ -1,11 +1,9 @@
-!/pubspecx.lock
 !/pubspec.yaml
-!/pubspecx.lock
+!/pubspec.lock
 /.idea/
 /build/
 /.dart_tool/
 /assets/translations/
-pubspec.lock
 .DS_Store
 /.flutter-plugins-dependencies
 /linux/
