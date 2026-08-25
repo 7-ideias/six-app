@@ -868,6 +868,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.googleLoginError': 'Não foi possível concluir o login com Google.',
     'auth.session.validatingTitle': 'Entrando no Six',
     'auth.session.validatingMessage': 'Validando sua sessão com segurança...',
+    'splash.preparingWorkspace': 'Preparando seu espaço...',
+    'splash.validatingSession': 'Validando sua sessão...',
+    'splash.syncingAccount': 'Sincronizando seus dados...',
+    'splash.connectedTagline': 'Tudo conectado. Tudo sob controle.',
     'auth.session.temporaryErrorTitle': 'Não foi possível validar sua sessão',
     'auth.session.temporaryErrorMessage':
         'Sua sessão foi preservada. Verifique sua conexão e tente novamente.',
@@ -2877,6 +2881,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.googleLoginError': 'Could not complete Google sign-in.',
     'auth.session.validatingTitle': 'Signing in to Six',
     'auth.session.validatingMessage': 'Validating your session securely...',
+    'splash.preparingWorkspace': 'Preparing your workspace...',
+    'splash.validatingSession': 'Validating your session...',
+    'splash.syncingAccount': 'Syncing your data...',
+    'splash.connectedTagline': 'Everything connected. Everything in control.',
     'auth.session.temporaryErrorTitle': 'Could not validate your session',
     'auth.session.temporaryErrorMessage':
         'Your session was preserved. Check your connection and try again.',
@@ -4229,6 +4237,10 @@ const Map<String, Map<String, String>> _fallbacks = {
         'No se pudo completar el inicio de sesión con Google.',
     'auth.session.validatingTitle': 'Entrando a Six',
     'auth.session.validatingMessage': 'Validando tu sesión de forma segura...',
+    'splash.preparingWorkspace': 'Preparando tu espacio...',
+    'splash.validatingSession': 'Validando tu sesión...',
+    'splash.syncingAccount': 'Sincronizando tus datos...',
+    'splash.connectedTagline': 'Todo conectado. Todo bajo control.',
     'auth.session.temporaryErrorTitle': 'No se pudo validar tu sesión',
     'auth.session.temporaryErrorMessage':
         'Tu sesión fue preservada. Verifica tu conexión e inténtalo de nuevo.',

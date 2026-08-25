@@ -79,6 +79,7 @@ flutter:
     - "assets/animations/tela login/9.webp"
     - "assets/animations/tela login/10.webp"
     - assets/images/placeholder.png
+    - assets/images/sixoapp_splash_symbol.png
     - assets/images/six-logo-flecha.webp
     - "assets/images/atendimento mobile/atendimento-hero.webp"
     - "assets/images/atendimento mobile/atendimento-hero-acento.webp"
