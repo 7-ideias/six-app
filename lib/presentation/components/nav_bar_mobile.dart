@@ -3,7 +3,6 @@ import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
 import 'package:sixpos/presentation/screens/atendimento_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/devolucoes_produtos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/gestao_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/home_page_mobile_screen.dart';
 
@@ -47,11 +46,25 @@ class NavBarMobile extends StatelessWidget {
               activeIcon: Icons.home_rounded,
               label: context.t('mobile.nav.dash', fallback: 'dash'),
               selected: selectedIndex == MobileNavigationController.dashIndex,
-              onTap: () => _select(
-                context,
-                controller,
-                MobileNavigationController.dashIndex,
-              ),
+              onTap:
+                  () => _select(
+                    context,
+                    controller,
+                    MobileNavigationController.dashIndex,
+                  ),
+            ),
+            _NavItem(
+              icon: Icons.support_agent_outlined,
+              activeIcon: Icons.support_agent_rounded,
+              label: context.t('mobile.nav.service', fallback: 'Atendimento'),
+              selected:
+                  selectedIndex == MobileNavigationController.serviceIndex,
+              onTap:
+                  () => _select(
+                    context,
+                    controller,
+                    MobileNavigationController.serviceIndex,
+                  ),
             ),
             _NavItem(
               icon: Icons.manage_accounts_outlined,
@@ -59,33 +72,12 @@ class NavBarMobile extends StatelessWidget {
               label: context.t('mobile.nav.management', fallback: 'Gestão'),
               selected:
                   selectedIndex == MobileNavigationController.managementIndex,
-              onTap: () => _select(
-                context,
-                controller,
-                MobileNavigationController.managementIndex,
-              ),
-            ),
-            _NavItem(
-              icon: Icons.support_agent_outlined,
-              activeIcon: Icons.support_agent_rounded,
-              label: context.t('mobile.nav.service', fallback: 'Atendimento'),
-              selected: selectedIndex == MobileNavigationController.serviceIndex,
-              onTap: () => _select(
-                context,
-                controller,
-                MobileNavigationController.serviceIndex,
-              ),
-            ),
-            _NavItem(
-              icon: Icons.assignment_return_outlined,
-              activeIcon: Icons.assignment_return_rounded,
-              label: context.t('mobile.nav.returns', fallback: 'Devoluções'),
-              selected: selectedIndex == MobileNavigationController.returnsIndex,
-              onTap: () => _select(
-                context,
-                controller,
-                MobileNavigationController.returnsIndex,
-              ),
+              onTap:
+                  () => _select(
+                    context,
+                    controller,
+                    MobileNavigationController.managementIndex,
+                  ),
             ),
           ],
         ),
@@ -115,9 +107,6 @@ class NavBarMobile extends StatelessWidget {
         break;
       case MobileNavigationController.serviceIndex:
         page = const AtendimentoMobileScreen();
-        break;
-      case MobileNavigationController.returnsIndex:
-        page = const DevolucoesProdutosMobileScreen();
         break;
       default:
         return;

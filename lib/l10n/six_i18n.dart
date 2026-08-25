@@ -209,7 +209,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.weekdayShort.saturday': 'Sáb',
     'common.weekdayShort.sunday': 'Dom',
     'web.navigation.home': 'Início',
-    'web.navigation.operations': 'Operações',
+    'web.navigation.operations': 'Atendimento',
     'web.navigation.operations.pos': 'Frente de caixa',
     'web.navigation.operations.technicalService': 'Assistências técnicas',
     'web.navigation.operations.purchases': 'Compras',
@@ -382,6 +382,47 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.empty.attention': 'Nenhuma pendência importante agora.',
     'workspaceHome.empty.quickActions':
         'Nenhuma ação rápida disponível para suas permissões.',
+    'dashboardInicio.mobileCompanyFilterTooltip':
+        'Filtrar comércios: {comercio}',
+    'dashboardInicio.mobileCompanyFilterTitle': 'Filtrar comércios',
+    'dashboardInicio.mobileCompanyFilterSubtitle':
+        'Escolha um comércio para visualizar a dashboard.',
+    'dashboardInicio.mobileCompanyFilterAll': 'Todos',
+    'dashboardInicio.mobileCompanyFilterSearchHint': 'Buscar comércio',
+    'dashboardInicio.mobileCompanyFilterEmptyTitle':
+        'Nenhum comércio disponível',
+    'dashboardInicio.mobileCompanyFilterEmptyMessage':
+        'Não encontramos vínculos ativos para este usuário.',
+    'dashboardInicio.mobileCompanyFilterLoadError':
+        'Não foi possível carregar os comércios disponíveis agora.',
+    'dashboardInicio.mobileCompanyFilterSwitchError':
+        'Não foi possível trocar o comércio agora. Tente novamente.',
+    'dashboardInicio.mobileDashboardFilterTitle': 'Filtrar dashboard',
+    'dashboardInicio.mobileDashboardFilterSubtitle':
+        'Escolha o comércio e, se precisar, refine por colaborador.',
+    'dashboardInicio.mobileDashboardFilterCompanyLabel': 'Comércio',
+    'dashboardInicio.mobileDashboardFilterCompanyHelper':
+        'Define qual comércio alimenta os indicadores exibidos.',
+    'dashboardInicio.mobileCollaboratorFilterLabel': 'Colaborador',
+    'dashboardInicio.mobileCollaboratorFilterAll': 'Todos os colaboradores',
+    'dashboardInicio.mobileCollaboratorFilterHelper':
+        'Mostra os indicadores do colaborador selecionado na dashboard.',
+    'dashboardInicio.mobileCollaboratorFilterDisabledHelper':
+        'Escolha um comércio específico para filtrar colaboradores.',
+    'dashboardInicio.mobileCollaboratorFilterLoadingHelper':
+        'Carregando colaboradores do comércio atual.',
+    'dashboardInicio.mobileCollaboratorFilterTitle': 'Filtrar colaborador',
+    'dashboardInicio.mobileCollaboratorFilterSubtitle':
+        'Escolha um colaborador para refinar os indicadores.',
+    'dashboardInicio.mobileCollaboratorFilterSearchHint': 'Buscar colaborador',
+    'dashboardInicio.mobileCollaboratorFilterEmptyTitle':
+        'Nenhum colaborador disponível',
+    'dashboardInicio.mobileCollaboratorFilterEmptyMessage':
+        'Não encontramos colaboradores ativos neste comércio.',
+    'dashboardInicio.mobileCollaboratorFilterLoadError':
+        'Não foi possível carregar os colaboradores deste comércio agora.',
+    'dashboardInicio.mobileCollaboratorFilterSelectedFallback':
+        'Colaborador selecionado',
     'workspaceHome.cash.title': 'Caixa',
     'workspaceHome.cash.open': 'Aberto',
     'workspaceHome.cash.closed': 'Fechado',
@@ -1426,8 +1467,8 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Venda, serviço ou recebimento em poucos passos',
     'atendimento.mobile.chooseOperation': 'Escolha a operação para iniciar.',
     'atendimento.mobile.salesMenuTitle': 'Vendas',
-    'atendimento.mobile.newSaleTitle': 'Nova venda',
-    'atendimento.mobile.newSaleSubtitle': 'Vender produtos',
+    'atendimento.mobile.newSaleTitle': 'Vendas',
+    'atendimento.mobile.newSaleSubtitle': 'Opções',
     'atendimento.mobile.consultSalesTitle': 'Consultar vendas',
     'atendimento.mobile.consultSalesSubtitle': 'Consultar histórico de vendas',
     'atendimento.mobile.newServiceTitle': 'Serviços',
@@ -1485,6 +1526,112 @@ const Map<String, Map<String, String>> _fallbacks = {
     'operacao.mobile.returnTitle': 'Devoluções',
     'operacao.mobile.returnSubtitle': 'Registrar devolução',
     'operacao.mobile.returnUnavailable': 'Em breve',
+
+    // Devoluções mobile
+    'devolucao.mobile.title': 'Devoluções',
+    'devolucao.mobile.introTitle': 'Localize a venda',
+    'devolucao.mobile.introSubtitle':
+        'Use o código do comprovante para iniciar uma devolução ou troca.',
+    'devolucao.mobile.saleCodeLabel': 'Código ou ID da venda',
+    'devolucao.mobile.saleCodeHint': 'Ex.: VEN-1024',
+    'devolucao.mobile.searchSale': 'Buscar venda',
+    'devolucao.mobile.searching': 'Buscando...',
+    'devolucao.mobile.operationCompleted': 'Operação concluída',
+    'devolucao.mobile.saleFound': 'Venda encontrada',
+    'devolucao.mobile.changeSale': 'Trocar venda',
+    'devolucao.mobile.unidentifiedCustomer': 'Cliente não identificado',
+    'devolucao.mobile.productsValue': 'Valor dos produtos',
+    'devolucao.mobile.returnBalance': 'Saldo devolvível',
+    'devolucao.mobile.hasEligibleItems': 'Possui itens disponíveis',
+    'devolucao.mobile.noEligibleBalance': 'Sem itens disponíveis',
+    'devolucao.mobile.operationTypeTitle': 'O que será feito?',
+    'devolucao.mobile.operationTypeSubtitle':
+        'Escolha entre devolver ou trocar produtos.',
+    'devolucao.mobile.returnOnly': 'Somente devolução',
+    'devolucao.mobile.exchange': 'Troca',
+    'devolucao.mobile.itemsTitle': 'Produtos que retornam',
+    'devolucao.mobile.itemsSubtitle':
+        'Selecione os itens e informe quantidade, condição e motivo.',
+    'devolucao.mobile.noItems':
+        'Esta venda não possui itens disponíveis para devolução.',
+    'devolucao.mobile.soldValue': 'Vendido: {value}',
+    'devolucao.mobile.availableValue': 'Disponível: {value}',
+    'devolucao.mobile.quantity': 'Quantidade',
+    'devolucao.mobile.maximumQuantity': 'Máximo: {value}',
+    'devolucao.mobile.condition': 'Condição do produto',
+    'devolucao.mobile.reason': 'Motivo da devolução',
+    'devolucao.mobile.stockReturn': 'Retornar ao estoque',
+    'devolucao.mobile.stockReturnOn':
+        'O saldo disponível do produto será recomposto.',
+    'devolucao.mobile.stockReturnOff':
+        'A devolução será registrada sem recompor o estoque.',
+    'devolucao.mobile.exchangeItemsTitle': 'Produtos da troca',
+    'devolucao.mobile.exchangeItemsSubtitle':
+        'Os novos produtos sairão do estoque pelo preço atual.',
+    'devolucao.mobile.addProduct': 'Adicionar produto',
+    'devolucao.mobile.exchangeEmpty':
+        'Adicione o produto que o cliente receberá.',
+    'devolucao.mobile.selectExchangeProduct': 'Escolher produto da troca',
+    'devolucao.mobile.searchProduct': 'Buscar produto',
+    'devolucao.mobile.noProductsTitle': 'Nenhum produto encontrado',
+    'devolucao.mobile.noProductsMessage':
+        'Revise a busca ou o cadastro de produtos ativos.',
+    'devolucao.mobile.productPrice': 'Preço atual: {value}',
+    'devolucao.mobile.perUnit': '{value} por unidade',
+    'devolucao.mobile.remove': 'Remover produto',
+    'devolucao.mobile.financialTitle': 'Acerto financeiro',
+    'devolucao.mobile.returnedProducts': 'Produtos devolvidos',
+    'devolucao.mobile.exchangeProducts': 'Produtos da troca',
+    'devolucao.mobile.differenceReceive': 'Diferença a receber',
+    'devolucao.mobile.refundValue': 'Valor a reembolsar',
+    'devolucao.mobile.customerPays': 'O cliente paga a diferença.',
+    'devolucao.mobile.companyRefunds': 'A empresa reembolsa o cliente.',
+    'devolucao.mobile.noFinancialMovement': 'Não haverá movimento financeiro.',
+    'devolucao.mobile.paymentMethod': 'Forma de pagamento ou reembolso',
+    'devolucao.mobile.paymentHelper': 'Exige sessão de caixa aberta.',
+    'devolucao.mobile.selectPayment': 'Selecionar forma',
+    'devolucao.mobile.searchPayment': 'Buscar forma',
+    'devolucao.mobile.noPaymentMethods': 'Nenhuma forma disponível',
+    'devolucao.mobile.noPaymentMethodsMessage':
+        'Configure uma forma de recebimento imediato antes de concluir.',
+    'devolucao.mobile.reviewTitle': 'Revisar e concluir',
+    'devolucao.mobile.reviewSubtitle':
+        'Confirme os dados antes de movimentar estoque e caixa.',
+    'devolucao.mobile.notes': 'Observações internas (opcional)',
+    'devolucao.mobile.processing': 'Processando...',
+    'devolucao.mobile.completeExchange': 'Concluir troca',
+    'devolucao.mobile.completeReturn': 'Concluir devolução',
+    'devolucao.mobile.confirmationHelper':
+        'A confirmação pode movimentar estoque e registrar o acerto no caixa.',
+    'devolucao.mobile.recentTitle': 'Operações recentes',
+    'devolucao.mobile.recentSubtitle':
+        'Últimas devoluções e trocas desta empresa.',
+    'devolucao.mobile.loadingRecent': 'Carregando operações recentes',
+    'devolucao.mobile.emptyRecent':
+        'Nenhuma devolução ou troca concluída recentemente.',
+    'devolucao.mobile.successMessage': 'Operação {code} concluída com sucesso.',
+    'devolucao.mobile.unexpectedError':
+        'Não foi possível concluir a operação. Tente novamente.',
+    'devolucao.mobile.validation.saleRequired':
+        'Informe o código ou identificador da venda.',
+    'devolucao.mobile.validation.invalidQuantity':
+        'Informe uma quantidade válida para {product}.',
+    'devolucao.mobile.validation.quantityExceeded':
+        'A quantidade de {product} supera o saldo devolvível.',
+    'devolucao.mobile.validation.reasonRequired':
+        'Informe o motivo da devolução de {product}.',
+    'devolucao.mobile.validation.selectReturnItem':
+        'Selecione pelo menos um produto para devolver.',
+    'devolucao.mobile.validation.selectExchangeItem':
+        'Adicione pelo menos um produto para a troca.',
+    'devolucao.mobile.validation.selectPayment':
+        'Selecione a forma usada no acerto da diferença.',
+    'devolucao.mobile.condition.sealed': 'Novo / lacrado',
+    'devolucao.mobile.condition.opened': 'Aberto',
+    'devolucao.mobile.condition.used': 'Usado',
+    'devolucao.mobile.condition.defective': 'Com defeito',
+    'devolucao.mobile.condition.damaged': 'Avariado',
+    'devolucao.mobile.condition.other': 'Outra condição',
 
     // Vendas não liquidadas mobile
     'vendasNaoLiquidadas.recebimentos': 'Recebimentos',
@@ -2048,6 +2195,46 @@ const Map<String, Map<String, String>> _fallbacks = {
     'streak.startedToday': 'Your streak started today.',
     'streak.loading': 'Loading your streak days.',
     'streak.loadError': 'Could not load your streak.',
+    'dashboardInicio.mobileCompanyFilterTooltip':
+        'Filter businesses: {comercio}',
+    'dashboardInicio.mobileCompanyFilterTitle': 'Filter businesses',
+    'dashboardInicio.mobileCompanyFilterSubtitle':
+        'Choose a business to view on the dashboard.',
+    'dashboardInicio.mobileCompanyFilterAll': 'All',
+    'dashboardInicio.mobileCompanyFilterSearchHint': 'Search business',
+    'dashboardInicio.mobileCompanyFilterEmptyTitle': 'No business available',
+    'dashboardInicio.mobileCompanyFilterEmptyMessage':
+        'We could not find active links for this user.',
+    'dashboardInicio.mobileCompanyFilterLoadError':
+        'Could not load the available businesses right now.',
+    'dashboardInicio.mobileCompanyFilterSwitchError':
+        'Could not switch the business right now. Try again.',
+    'dashboardInicio.mobileDashboardFilterTitle': 'Filter dashboard',
+    'dashboardInicio.mobileDashboardFilterSubtitle':
+        'Choose the business and, if needed, refine by collaborator.',
+    'dashboardInicio.mobileDashboardFilterCompanyLabel': 'Business',
+    'dashboardInicio.mobileDashboardFilterCompanyHelper':
+        'Defines which business feeds the displayed indicators.',
+    'dashboardInicio.mobileCollaboratorFilterLabel': 'Collaborator',
+    'dashboardInicio.mobileCollaboratorFilterAll': 'All collaborators',
+    'dashboardInicio.mobileCollaboratorFilterHelper':
+        'Shows the dashboard indicators for the selected collaborator.',
+    'dashboardInicio.mobileCollaboratorFilterDisabledHelper':
+        'Choose a specific business before filtering collaborators.',
+    'dashboardInicio.mobileCollaboratorFilterLoadingHelper':
+        'Loading collaborators for the current business.',
+    'dashboardInicio.mobileCollaboratorFilterTitle': 'Filter collaborator',
+    'dashboardInicio.mobileCollaboratorFilterSubtitle':
+        'Choose a collaborator to refine the indicators.',
+    'dashboardInicio.mobileCollaboratorFilterSearchHint': 'Search collaborator',
+    'dashboardInicio.mobileCollaboratorFilterEmptyTitle':
+        'No collaborator available',
+    'dashboardInicio.mobileCollaboratorFilterEmptyMessage':
+        'We could not find active collaborators for this business.',
+    'dashboardInicio.mobileCollaboratorFilterLoadError':
+        'Could not load the collaborators for this business right now.',
+    'dashboardInicio.mobileCollaboratorFilterSelectedFallback':
+        'Selected collaborator',
     'mobile.nav.dash': 'dash',
     'mobile.nav.management': 'Management',
     'mobile.nav.service': 'Service',
@@ -2922,8 +3109,8 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Sale, service or receipt in a few steps',
     'atendimento.mobile.chooseOperation': 'Choose the operation to start.',
     'atendimento.mobile.salesMenuTitle': 'Sales',
-    'atendimento.mobile.newSaleTitle': 'New sale',
-    'atendimento.mobile.newSaleSubtitle': 'Sell products',
+    'atendimento.mobile.newSaleTitle': 'Sales',
+    'atendimento.mobile.newSaleSubtitle': 'Options',
     'atendimento.mobile.consultSalesTitle': 'View sales',
     'atendimento.mobile.consultSalesSubtitle': 'View sales history',
     'atendimento.mobile.newServiceTitle': 'Services',
@@ -2977,6 +3164,113 @@ const Map<String, Map<String, String>> _fallbacks = {
     'operacao.mobile.returnTitle': 'Returns',
     'operacao.mobile.returnSubtitle': 'Register return',
     'operacao.mobile.returnUnavailable': 'Coming soon',
+
+    // Mobile returns
+    'devolucao.mobile.title': 'Returns',
+    'devolucao.mobile.introTitle': 'Find the sale',
+    'devolucao.mobile.introSubtitle':
+        'Use the receipt code to start a return or exchange.',
+    'devolucao.mobile.saleCodeLabel': 'Sale code or ID',
+    'devolucao.mobile.saleCodeHint': 'Example: SALE-1024',
+    'devolucao.mobile.searchSale': 'Find sale',
+    'devolucao.mobile.searching': 'Searching...',
+    'devolucao.mobile.operationCompleted': 'Operation completed',
+    'devolucao.mobile.saleFound': 'Sale found',
+    'devolucao.mobile.changeSale': 'Change sale',
+    'devolucao.mobile.unidentifiedCustomer': 'Unidentified customer',
+    'devolucao.mobile.productsValue': 'Product value',
+    'devolucao.mobile.returnBalance': 'Returnable balance',
+    'devolucao.mobile.hasEligibleItems': 'Items are available',
+    'devolucao.mobile.noEligibleBalance': 'No items available',
+    'devolucao.mobile.operationTypeTitle': 'What will be done?',
+    'devolucao.mobile.operationTypeSubtitle':
+        'Choose between returning or exchanging products.',
+    'devolucao.mobile.returnOnly': 'Return only',
+    'devolucao.mobile.exchange': 'Exchange',
+    'devolucao.mobile.itemsTitle': 'Products being returned',
+    'devolucao.mobile.itemsSubtitle':
+        'Select the items and enter quantity, condition and reason.',
+    'devolucao.mobile.noItems': 'This sale has no items available for return.',
+    'devolucao.mobile.soldValue': 'Sold: {value}',
+    'devolucao.mobile.availableValue': 'Available: {value}',
+    'devolucao.mobile.quantity': 'Quantity',
+    'devolucao.mobile.maximumQuantity': 'Maximum: {value}',
+    'devolucao.mobile.condition': 'Product condition',
+    'devolucao.mobile.reason': 'Reason for return',
+    'devolucao.mobile.stockReturn': 'Return to inventory',
+    'devolucao.mobile.stockReturnOn':
+        'The available product balance will be restored.',
+    'devolucao.mobile.stockReturnOff':
+        'The return will be recorded without restoring inventory.',
+    'devolucao.mobile.exchangeItemsTitle': 'Exchange products',
+    'devolucao.mobile.exchangeItemsSubtitle':
+        'New products will leave inventory at the current price.',
+    'devolucao.mobile.addProduct': 'Add product',
+    'devolucao.mobile.exchangeEmpty':
+        'Add the product the customer will receive.',
+    'devolucao.mobile.selectExchangeProduct': 'Choose exchange product',
+    'devolucao.mobile.searchProduct': 'Search products',
+    'devolucao.mobile.noProductsTitle': 'No products found',
+    'devolucao.mobile.noProductsMessage':
+        'Review the search or the active product catalog.',
+    'devolucao.mobile.productPrice': 'Current price: {value}',
+    'devolucao.mobile.perUnit': '{value} per unit',
+    'devolucao.mobile.remove': 'Remove product',
+    'devolucao.mobile.financialTitle': 'Financial settlement',
+    'devolucao.mobile.returnedProducts': 'Returned products',
+    'devolucao.mobile.exchangeProducts': 'Exchange products',
+    'devolucao.mobile.differenceReceive': 'Difference to receive',
+    'devolucao.mobile.refundValue': 'Refund amount',
+    'devolucao.mobile.customerPays': 'The customer pays the difference.',
+    'devolucao.mobile.companyRefunds': 'The company refunds the customer.',
+    'devolucao.mobile.noFinancialMovement':
+        'There will be no financial movement.',
+    'devolucao.mobile.paymentMethod': 'Payment or refund method',
+    'devolucao.mobile.paymentHelper': 'Requires an open cash session.',
+    'devolucao.mobile.selectPayment': 'Select method',
+    'devolucao.mobile.searchPayment': 'Search methods',
+    'devolucao.mobile.noPaymentMethods': 'No methods available',
+    'devolucao.mobile.noPaymentMethodsMessage':
+        'Configure an immediate payment method before completing.',
+    'devolucao.mobile.reviewTitle': 'Review and complete',
+    'devolucao.mobile.reviewSubtitle':
+        'Confirm the data before moving inventory and cash.',
+    'devolucao.mobile.notes': 'Internal notes (optional)',
+    'devolucao.mobile.processing': 'Processing...',
+    'devolucao.mobile.completeExchange': 'Complete exchange',
+    'devolucao.mobile.completeReturn': 'Complete return',
+    'devolucao.mobile.confirmationHelper':
+        'Confirmation may move inventory and record the cash settlement.',
+    'devolucao.mobile.recentTitle': 'Recent operations',
+    'devolucao.mobile.recentSubtitle':
+        'Latest returns and exchanges for this business.',
+    'devolucao.mobile.loadingRecent': 'Loading recent operations',
+    'devolucao.mobile.emptyRecent':
+        'No returns or exchanges were completed recently.',
+    'devolucao.mobile.successMessage':
+        'Operation {code} completed successfully.',
+    'devolucao.mobile.unexpectedError':
+        'The operation could not be completed. Please try again.',
+    'devolucao.mobile.validation.saleRequired':
+        'Enter the sale code or identifier.',
+    'devolucao.mobile.validation.invalidQuantity':
+        'Enter a valid quantity for {product}.',
+    'devolucao.mobile.validation.quantityExceeded':
+        'The quantity of {product} exceeds the returnable balance.',
+    'devolucao.mobile.validation.reasonRequired':
+        'Enter the return reason for {product}.',
+    'devolucao.mobile.validation.selectReturnItem':
+        'Select at least one product to return.',
+    'devolucao.mobile.validation.selectExchangeItem':
+        'Add at least one product to the exchange.',
+    'devolucao.mobile.validation.selectPayment':
+        'Select the method used to settle the difference.',
+    'devolucao.mobile.condition.sealed': 'New / sealed',
+    'devolucao.mobile.condition.opened': 'Opened',
+    'devolucao.mobile.condition.used': 'Used',
+    'devolucao.mobile.condition.defective': 'Defective',
+    'devolucao.mobile.condition.damaged': 'Damaged',
+    'devolucao.mobile.condition.other': 'Other condition',
 
     // Open sales mobile
     'vendasNaoLiquidadas.recebimentos': 'Receipts',
@@ -3545,6 +3839,47 @@ const Map<String, Map<String, String>> _fallbacks = {
     'streak.startedToday': 'Tu racha empezó hoy.',
     'streak.loading': 'Cargando tus días de racha.',
     'streak.loadError': 'No se pudo cargar tu racha.',
+    'dashboardInicio.mobileCompanyFilterTooltip':
+        'Filtrar comercios: {comercio}',
+    'dashboardInicio.mobileCompanyFilterTitle': 'Filtrar comercios',
+    'dashboardInicio.mobileCompanyFilterSubtitle':
+        'Elige un comercio para ver el dashboard.',
+    'dashboardInicio.mobileCompanyFilterAll': 'Todos',
+    'dashboardInicio.mobileCompanyFilterSearchHint': 'Buscar comercio',
+    'dashboardInicio.mobileCompanyFilterEmptyTitle':
+        'Ningún comercio disponible',
+    'dashboardInicio.mobileCompanyFilterEmptyMessage':
+        'No encontramos vínculos activos para este usuario.',
+    'dashboardInicio.mobileCompanyFilterLoadError':
+        'No se pudieron cargar los comercios disponibles ahora.',
+    'dashboardInicio.mobileCompanyFilterSwitchError':
+        'No se pudo cambiar el comercio ahora. Inténtalo de nuevo.',
+    'dashboardInicio.mobileDashboardFilterTitle': 'Filtrar dashboard',
+    'dashboardInicio.mobileDashboardFilterSubtitle':
+        'Elige el comercio y, si hace falta, refina por colaborador.',
+    'dashboardInicio.mobileDashboardFilterCompanyLabel': 'Comercio',
+    'dashboardInicio.mobileDashboardFilterCompanyHelper':
+        'Define qué comercio alimenta los indicadores mostrados.',
+    'dashboardInicio.mobileCollaboratorFilterLabel': 'Colaborador',
+    'dashboardInicio.mobileCollaboratorFilterAll': 'Todos los colaboradores',
+    'dashboardInicio.mobileCollaboratorFilterHelper':
+        'Muestra los indicadores del colaborador seleccionado en el dashboard.',
+    'dashboardInicio.mobileCollaboratorFilterDisabledHelper':
+        'Elige un comercio específico para filtrar colaboradores.',
+    'dashboardInicio.mobileCollaboratorFilterLoadingHelper':
+        'Cargando colaboradores del comercio actual.',
+    'dashboardInicio.mobileCollaboratorFilterTitle': 'Filtrar colaborador',
+    'dashboardInicio.mobileCollaboratorFilterSubtitle':
+        'Elige un colaborador para refinar los indicadores.',
+    'dashboardInicio.mobileCollaboratorFilterSearchHint': 'Buscar colaborador',
+    'dashboardInicio.mobileCollaboratorFilterEmptyTitle':
+        'Ningún colaborador disponible',
+    'dashboardInicio.mobileCollaboratorFilterEmptyMessage':
+        'No encontramos colaboradores activos en este comercio.',
+    'dashboardInicio.mobileCollaboratorFilterLoadError':
+        'No se pudieron cargar los colaboradores de este comercio ahora.',
+    'dashboardInicio.mobileCollaboratorFilterSelectedFallback':
+        'Colaborador seleccionado',
     'mobile.nav.dash': 'dash',
     'mobile.nav.management': 'Gestión',
     'mobile.nav.service': 'Atención',
@@ -4454,8 +4789,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.heroSubtitle': 'Venta, servicio o cobro en pocos pasos',
     'atendimento.mobile.chooseOperation': 'Elige la operación para iniciar.',
     'atendimento.mobile.salesMenuTitle': 'Ventas',
-    'atendimento.mobile.newSaleTitle': 'Nueva venta',
-    'atendimento.mobile.newSaleSubtitle': 'Vender productos',
+    'atendimento.mobile.newSaleTitle': 'Ventas',
+    'atendimento.mobile.newSaleSubtitle': 'Opciones',
     'atendimento.mobile.consultSalesTitle': 'Consultar ventas',
     'atendimento.mobile.consultSalesSubtitle': 'Consultar historial de ventas',
     'atendimento.mobile.newServiceTitle': 'Servicios',
@@ -4508,6 +4843,112 @@ const Map<String, Map<String, String>> _fallbacks = {
     'operacao.mobile.returnTitle': 'Devoluciones',
     'operacao.mobile.returnSubtitle': 'Registrar devolución',
     'operacao.mobile.returnUnavailable': 'Próximamente',
+
+    // Devoluciones mobile
+    'devolucao.mobile.title': 'Devoluciones',
+    'devolucao.mobile.introTitle': 'Localiza la venta',
+    'devolucao.mobile.introSubtitle':
+        'Usa el código del comprobante para iniciar una devolución o cambio.',
+    'devolucao.mobile.saleCodeLabel': 'Código o ID de la venta',
+    'devolucao.mobile.saleCodeHint': 'Ej.: VEN-1024',
+    'devolucao.mobile.searchSale': 'Buscar venta',
+    'devolucao.mobile.searching': 'Buscando...',
+    'devolucao.mobile.operationCompleted': 'Operación concluida',
+    'devolucao.mobile.saleFound': 'Venta encontrada',
+    'devolucao.mobile.changeSale': 'Cambiar venta',
+    'devolucao.mobile.unidentifiedCustomer': 'Cliente no identificado',
+    'devolucao.mobile.productsValue': 'Valor de los productos',
+    'devolucao.mobile.returnBalance': 'Saldo devolvible',
+    'devolucao.mobile.hasEligibleItems': 'Hay artículos disponibles',
+    'devolucao.mobile.noEligibleBalance': 'Sin artículos disponibles',
+    'devolucao.mobile.operationTypeTitle': '¿Qué se hará?',
+    'devolucao.mobile.operationTypeSubtitle':
+        'Elige entre devolver o cambiar productos.',
+    'devolucao.mobile.returnOnly': 'Solo devolución',
+    'devolucao.mobile.exchange': 'Cambio',
+    'devolucao.mobile.itemsTitle': 'Productos que regresan',
+    'devolucao.mobile.itemsSubtitle':
+        'Selecciona los artículos e informa cantidad, condición y motivo.',
+    'devolucao.mobile.noItems':
+        'Esta venta no tiene artículos disponibles para devolución.',
+    'devolucao.mobile.soldValue': 'Vendido: {value}',
+    'devolucao.mobile.availableValue': 'Disponible: {value}',
+    'devolucao.mobile.quantity': 'Cantidad',
+    'devolucao.mobile.maximumQuantity': 'Máximo: {value}',
+    'devolucao.mobile.condition': 'Condición del producto',
+    'devolucao.mobile.reason': 'Motivo de la devolución',
+    'devolucao.mobile.stockReturn': 'Regresar al inventario',
+    'devolucao.mobile.stockReturnOn':
+        'El saldo disponible del producto será repuesto.',
+    'devolucao.mobile.stockReturnOff':
+        'La devolución se registrará sin reponer el inventario.',
+    'devolucao.mobile.exchangeItemsTitle': 'Productos del cambio',
+    'devolucao.mobile.exchangeItemsSubtitle':
+        'Los nuevos productos saldrán del inventario al precio actual.',
+    'devolucao.mobile.addProduct': 'Agregar producto',
+    'devolucao.mobile.exchangeEmpty':
+        'Agrega el producto que recibirá el cliente.',
+    'devolucao.mobile.selectExchangeProduct': 'Elegir producto del cambio',
+    'devolucao.mobile.searchProduct': 'Buscar producto',
+    'devolucao.mobile.noProductsTitle': 'No se encontraron productos',
+    'devolucao.mobile.noProductsMessage':
+        'Revisa la búsqueda o el catálogo de productos activos.',
+    'devolucao.mobile.productPrice': 'Precio actual: {value}',
+    'devolucao.mobile.perUnit': '{value} por unidad',
+    'devolucao.mobile.remove': 'Quitar producto',
+    'devolucao.mobile.financialTitle': 'Ajuste financiero',
+    'devolucao.mobile.returnedProducts': 'Productos devueltos',
+    'devolucao.mobile.exchangeProducts': 'Productos del cambio',
+    'devolucao.mobile.differenceReceive': 'Diferencia por cobrar',
+    'devolucao.mobile.refundValue': 'Valor a reembolsar',
+    'devolucao.mobile.customerPays': 'El cliente paga la diferencia.',
+    'devolucao.mobile.companyRefunds': 'La empresa reembolsa al cliente.',
+    'devolucao.mobile.noFinancialMovement': 'No habrá movimiento financiero.',
+    'devolucao.mobile.paymentMethod': 'Forma de pago o reembolso',
+    'devolucao.mobile.paymentHelper': 'Requiere una sesión de caja abierta.',
+    'devolucao.mobile.selectPayment': 'Seleccionar forma',
+    'devolucao.mobile.searchPayment': 'Buscar forma',
+    'devolucao.mobile.noPaymentMethods': 'No hay formas disponibles',
+    'devolucao.mobile.noPaymentMethodsMessage':
+        'Configura una forma de cobro inmediato antes de concluir.',
+    'devolucao.mobile.reviewTitle': 'Revisar y concluir',
+    'devolucao.mobile.reviewSubtitle':
+        'Confirma los datos antes de mover inventario y caja.',
+    'devolucao.mobile.notes': 'Observaciones internas (opcional)',
+    'devolucao.mobile.processing': 'Procesando...',
+    'devolucao.mobile.completeExchange': 'Concluir cambio',
+    'devolucao.mobile.completeReturn': 'Concluir devolución',
+    'devolucao.mobile.confirmationHelper':
+        'La confirmación puede mover inventario y registrar el ajuste en caja.',
+    'devolucao.mobile.recentTitle': 'Operaciones recientes',
+    'devolucao.mobile.recentSubtitle':
+        'Últimas devoluciones y cambios de esta empresa.',
+    'devolucao.mobile.loadingRecent': 'Cargando operaciones recientes',
+    'devolucao.mobile.emptyRecent':
+        'No se concluyeron devoluciones o cambios recientemente.',
+    'devolucao.mobile.successMessage': 'Operación {code} concluida con éxito.',
+    'devolucao.mobile.unexpectedError':
+        'No fue posible concluir la operación. Inténtalo de nuevo.',
+    'devolucao.mobile.validation.saleRequired':
+        'Informa el código o identificador de la venta.',
+    'devolucao.mobile.validation.invalidQuantity':
+        'Informa una cantidad válida para {product}.',
+    'devolucao.mobile.validation.quantityExceeded':
+        'La cantidad de {product} supera el saldo devolvible.',
+    'devolucao.mobile.validation.reasonRequired':
+        'Informa el motivo de devolución de {product}.',
+    'devolucao.mobile.validation.selectReturnItem':
+        'Selecciona al menos un producto para devolver.',
+    'devolucao.mobile.validation.selectExchangeItem':
+        'Agrega al menos un producto para el cambio.',
+    'devolucao.mobile.validation.selectPayment':
+        'Selecciona la forma usada para ajustar la diferencia.',
+    'devolucao.mobile.condition.sealed': 'Nuevo / sellado',
+    'devolucao.mobile.condition.opened': 'Abierto',
+    'devolucao.mobile.condition.used': 'Usado',
+    'devolucao.mobile.condition.defective': 'Con defecto',
+    'devolucao.mobile.condition.damaged': 'Averiado',
+    'devolucao.mobile.condition.other': 'Otra condición',
 
     // Ventas no liquidadas mobile
     'vendasNaoLiquidadas.recebimentos': 'Cobros',

@@ -6,7 +6,6 @@ import '../../providers/locale_settings_provider.dart';
 import '../../providers/streak_provider.dart';
 import '../navigation/mobile_navigation_controller.dart';
 import 'atendimento_mobile_screen.dart';
-import 'devolucoes_produtos_mobile_screen.dart';
 import 'gestao_mobile_screen.dart';
 import 'home_page_mobile_screen.dart';
 
@@ -54,7 +53,7 @@ class _MobileMainShellState extends State<MobileMainShell>
       parent: _transitionController,
       curve: _transitionCurve,
     );
-    _pages = List<Widget?>.filled(4, null);
+    _pages = List<Widget?>.filled(3, null);
     _pages[widget.initialIndex] = _createPage(widget.initialIndex);
     _selectedIndex = widget.initialIndex;
 
@@ -108,8 +107,6 @@ class _MobileMainShellState extends State<MobileMainShell>
         return const GestaoMobileScreen();
       case MobileNavigationController.serviceIndex:
         return const AtendimentoMobileScreen();
-      case MobileNavigationController.returnsIndex:
-        return const DevolucoesProdutosMobileScreen(showBackButton: false);
       default:
         throw ArgumentError.value(
           index,

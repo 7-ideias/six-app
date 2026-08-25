@@ -9,8 +9,10 @@ import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile_action.dart';
+import 'package:sixpos/presentation/components/mobile/six_imagem_canetinha.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
+import 'package:sixpos/presentation/screens/devolucoes_produtos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/opcoes_venda_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operacoes_caixa_mobile_screen.dart';
@@ -49,18 +51,30 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   static const Color _cashAccent = Color(0xFF0F766E);
   static const Color _returnAccent = Color(0xFFEF4444);
 
-  static const String _heroAsset =
+  static const String _heroAssetContorno =
       'assets/images/atendimento mobile/atendimento-hero.webp';
-  static const String _saleAsset =
-      'assets/images/atendimento mobile/acao-nova-venda.png';
-  static const String _serviceAsset =
-      'assets/images/atendimento mobile/acao-novo-servico.png';
-  static const String _receiveAsset =
-      'assets/images/atendimento mobile/acao-receber.png';
-  static const String _cashAsset =
-      'assets/images/atendimento mobile/acao-operacoes-caixa.png';
-  static const String _returnAsset =
-      'assets/images/atendimento mobile/acao-devolucoes.png';
+  static const String _heroAssetAcento =
+      'assets/images/atendimento mobile/atendimento-hero-acento.webp';
+  static const String _saleAssetContorno =
+      'assets/images/atendimento mobile/acao-nova-venda.webp';
+  static const String _saleAssetAcento =
+      'assets/images/atendimento mobile/acao-nova-venda-acento.webp';
+  static const String _serviceAssetContorno =
+      'assets/images/atendimento mobile/acao-novo-servico.webp';
+  static const String _serviceAssetAcento =
+      'assets/images/atendimento mobile/acao-novo-servico-acento.webp';
+  static const String _receiveAssetContorno =
+      'assets/images/atendimento mobile/acao-receber.webp';
+  static const String _receiveAssetAcento =
+      'assets/images/atendimento mobile/acao-receber-acento.webp';
+  static const String _cashAssetContorno =
+      'assets/images/atendimento mobile/acao-operacoes-caixa.webp';
+  static const String _cashAssetAcento =
+      'assets/images/atendimento mobile/acao-operacoes-caixa-acento.webp';
+  static const String _returnAssetContorno =
+      'assets/images/atendimento mobile/acao-devolucoes.webp';
+  static const String _returnAssetAcento =
+      'assets/images/atendimento mobile/acao-devolucoes-acento.webp';
 
   late final TelaInicialWebApiClient _api;
   late final OperationalProcedureFlowCoordinator _procedureCoordinator;
@@ -202,7 +216,8 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
                       'atendimento.mobile.heroSubtitle',
                       'Venda, serviço ou recebimento em poucos passos',
                     ),
-                    assetPath: _heroAsset,
+                    assetContorno: _heroAssetContorno,
+                    assetAcento: _heroAssetAcento,
                   ),
                 ),
                 SizedBox(height: 16),
@@ -277,7 +292,8 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         id: 'new-sale',
         title: _txt('atendimento.mobile.newSaleTitle', 'Nova venda'),
         subtitle: _txt('atendimento.mobile.newSaleSubtitle', 'Vender produtos'),
-        assetPath: _saleAsset,
+        assetContorno: _saleAssetContorno,
+        assetAcento: _saleAssetAcento,
         accentColor: _accent,
         onTap: _openSalesMenu,
       ),
@@ -288,7 +304,8 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
           'atendimento.mobile.newServiceSubtitle',
           'Criar ou acompanhar',
         ),
-        assetPath: _serviceAsset,
+        assetContorno: _serviceAssetContorno,
+        assetAcento: _serviceAssetAcento,
         accentColor: _serviceAccent,
         onTap: () => _go(OpcoesServicosAtendimentoMobileScreen()),
       ),
@@ -304,7 +321,8 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
           'atendimento.mobile.receiveSubtitle',
           'Vendas em aberto',
         ),
-        assetPath: _receiveAsset,
+        assetContorno: _receiveAssetContorno,
+        assetAcento: _receiveAssetAcento,
         accentColor: _receiveAccent,
         onTap: () => _go(ReceberMobileScreen()),
         badgeValue: _resumo?.totalVendasAbertas,
@@ -319,7 +337,8 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
           'atendimento.mobile.cashOperationsSubtitle',
           'Abrir e movimentar',
         ),
-        assetPath: _cashAsset,
+        assetContorno: _cashAssetContorno,
+        assetAcento: _cashAssetAcento,
         accentColor: _cashAccent,
         onTap: () => _go(OperacoesCaixaMobileScreen()),
       ),
@@ -327,11 +346,10 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         id: 'return',
         title: _txt('operacao.mobile.returnTitle', 'Devoluções'),
         subtitle: _txt('operacao.mobile.returnSubtitle', 'Registrar devolução'),
-        assetPath: _returnAsset,
+        assetContorno: _returnAssetContorno,
+        assetAcento: _returnAssetAcento,
         accentColor: _returnAccent,
-        onTap: null,
-        enabled: false,
-        statusLabel: _txt('operacao.mobile.returnUnavailable', 'Em breve'),
+        onTap: () => _go(DevolucoesProdutosMobileScreen()),
       ),
     ];
   }
@@ -355,12 +373,14 @@ class _AtendimentoHeroCard extends StatelessWidget {
   const _AtendimentoHeroCard({
     required this.title,
     required this.subtitle,
-    required this.assetPath,
+    required this.assetContorno,
+    required this.assetAcento,
   });
 
   final String title;
   final String subtitle;
-  final String assetPath;
+  final String assetContorno;
+  final String assetAcento;
 
   @override
   Widget build(BuildContext context) {
@@ -406,19 +426,13 @@ class _AtendimentoHeroCard extends StatelessWidget {
                   bottom: illustrationBottomOffset,
                   width: illustrationWidth,
                   height: illustrationHeight,
-                  child: ExcludeSemantics(
-                    child: Image.asset(
-                      assetPath,
-                      fit: BoxFit.contain,
-                      filterQuality: FilterQuality.medium,
-                      errorBuilder: (
-                        BuildContext context,
-                        Object error,
-                        StackTrace? stackTrace,
-                      ) {
-                        return SizedBox.shrink();
-                      },
-                    ),
+                  child: SixImagemCanetinha(
+                    assetContorno: assetContorno,
+                    assetAcento: assetAcento,
+                    largura: illustrationWidth,
+                    altura: illustrationHeight,
+                    corContorno: colors.titleText,
+                    corAcento: colors.accent,
                   ),
                 ),
                 Padding(
@@ -734,23 +748,14 @@ class _ActionCardContent extends StatelessWidget {
             shape: BoxShape.circle,
           ),
           child: Center(
-            child: Image.asset(
-              data.assetPath,
-              width: imageSize,
-              height: imageSize,
+            child: SixImagemCanetinha(
+              assetContorno: data.assetContorno,
+              assetAcento: data.assetAcento,
+              largura: imageSize,
+              altura: imageSize,
               fit: BoxFit.contain,
-              filterQuality: FilterQuality.medium,
-              errorBuilder: (
-                BuildContext context,
-                Object error,
-                StackTrace? stackTrace,
-              ) {
-                return Icon(
-                  Icons.image_not_supported_outlined,
-                  color: enabled ? data.accentColor : colors.mutedText,
-                  size: _isPrimary ? 22 : 18,
-                );
-              },
+              corContorno: colors.titleText,
+              corAcento: colors.accent,
             ),
           ),
         ),
@@ -923,7 +928,8 @@ class _PrimaryActionData {
     required this.id,
     required this.title,
     required this.subtitle,
-    required this.assetPath,
+    required this.assetContorno,
+    required this.assetAcento,
     required this.accentColor,
     required this.onTap,
     this.enabled = true,
@@ -934,7 +940,8 @@ class _PrimaryActionData {
   final String id;
   final String title;
   final String subtitle;
-  final String assetPath;
+  final String assetContorno;
+  final String assetAcento;
   final Color accentColor;
   final VoidCallback? onTap;
   final bool enabled;

@@ -42,7 +42,7 @@ abstract final class WebNavigationRegistry {
     WebNavigationItem(
       id: WebNavigationIds.operations,
       labelKey: 'web.navigation.operations',
-      labelFallback: 'Operações',
+      labelFallback: 'Atendimento',
       icon: Icons.bolt_outlined,
       visibility: WebNavigationVisibilityRule.authenticated(),
       children: <WebNavigationItem>[
@@ -73,12 +73,11 @@ abstract final class WebNavigationRegistry {
           labelKey: 'web.navigation.cash',
           labelFallback: 'Caixa',
           icon: Icons.payments_outlined,
-          visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[
-              WebNavigationPermission.podeAcessarFinanceiro,
-              WebNavigationPermission.podeReceberNoCaixa,
-            ],
-          ),
+          visibility:
+              WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
+                WebNavigationPermission.podeAcessarFinanceiro,
+                WebNavigationPermission.podeReceberNoCaixa,
+              ]),
           destination: WebNavigationDestination.cash,
         ),
         WebNavigationItem(
@@ -127,12 +126,11 @@ abstract final class WebNavigationRegistry {
           labelKey: 'web.navigation.catalog.products',
           labelFallback: 'Produtos',
           icon: Icons.inventory_2_outlined,
-          visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[
-              WebNavigationPermission.podeCadastrarProduto,
-              WebNavigationPermission.podeEditarProduto,
-            ],
-          ),
+          visibility:
+              WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
+                WebNavigationPermission.podeCadastrarProduto,
+                WebNavigationPermission.podeEditarProduto,
+              ]),
           destination: WebNavigationDestination.catalogProducts,
         ),
         WebNavigationItem(
@@ -140,12 +138,11 @@ abstract final class WebNavigationRegistry {
           labelKey: 'web.navigation.catalog.services',
           labelFallback: 'Serviços',
           icon: Icons.home_repair_service_outlined,
-          visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[
-              WebNavigationPermission.podeCadastrarProduto,
-              WebNavigationPermission.podeEditarProduto,
-            ],
-          ),
+          visibility:
+              WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
+                WebNavigationPermission.podeCadastrarProduto,
+                WebNavigationPermission.podeEditarProduto,
+              ]),
           destination: WebNavigationDestination.catalogServices,
         ),
         WebNavigationItem(
@@ -177,12 +174,11 @@ abstract final class WebNavigationRegistry {
           labelKey: 'web.navigation.catalog.categories',
           labelFallback: 'Categorias',
           icon: Icons.category_outlined,
-          visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[
-              WebNavigationPermission.podeCadastrarProduto,
-              WebNavigationPermission.podeEditarProduto,
-            ],
-          ),
+          visibility:
+              WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
+                WebNavigationPermission.podeCadastrarProduto,
+                WebNavigationPermission.podeEditarProduto,
+              ]),
           destination: WebNavigationDestination.catalogCategories,
         ),
       ],
