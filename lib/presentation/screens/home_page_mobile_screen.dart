@@ -531,10 +531,16 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  context.t(
-                    'dashboardInicio.mobileGreetingSubtitle',
-                    fallback: 'Veja os principais movimentos do comércio hoje.',
-                  ),
+                  context
+                      .t(
+                        'dashboardInicio.mobileGreetingSubtitle',
+                        fallback:
+                            'Veja os principais movimentos de {empresa} hoje.',
+                      )
+                      .replaceAll(
+                        '{empresa}',
+                        _rotuloDoFiltroSelecionado(context),
+                      ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
