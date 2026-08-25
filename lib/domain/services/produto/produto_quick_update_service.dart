@@ -47,6 +47,22 @@ class ProdutoQuickUpdateService {
     return atualizado;
   }
 
+  Future<ProdutoModel> alternarStatusAtivo(ProdutoModel produto) async {
+    final String? produtoId = produto.id;
+    if (produtoId == null || produtoId.isEmpty) {
+      throw Exception('Produto sem ID para atualização.');
+    }
+
+    final ProdutoModel atualizado = produto.copyWith(ativo: !produto.ativo);
+
+    await _produtoService.atualizarStatusProduto(
+      produtoId: produtoId,
+      ativo: atualizado.ativo,
+    );
+
+    return atualizado;
+  }
+
   Future<void> atualizarFavorito({
     required String produtoId,
     required bool ativo,
@@ -76,6 +92,20 @@ class ProdutoQuickUpdateService {
       produtoId: produtoId,
       ativo: ativo,
       disponivelParaCatalogo: disponivelParaCatalogo,
+    );
+  }
+
+  Future<void> atualizarStatusAtivo({
+    required String produtoId,
+    required bool ativo,
+  }) {
+    if (produtoId.isEmpty) {
+      throw Exception('Produto sem ID para atualização.');
+    }
+
+    return _produtoService.atualizarStatusProduto(
+      produtoId: produtoId,
+      ativo: ativo,
     );
   }
 }

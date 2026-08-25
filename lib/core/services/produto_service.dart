@@ -255,6 +255,15 @@ class ProdutoService {
     );
   }
 
+  Future<void> atualizarStatusProduto({
+    required String produtoId,
+    required bool ativo,
+  }) async {
+    await _atualizarProduto(
+      ProdutoAtualizacaoParcialRequest(id: produtoId, ativo: ativo),
+    );
+  }
+
   Future<void> _atualizarProduto(
     ProdutoAtualizacaoParcialRequest request,
   ) async {

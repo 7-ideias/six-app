@@ -388,6 +388,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'dashboardInicio.mobileCompanyFilterSubtitle':
         'Escolha um comércio para visualizar a dashboard.',
     'dashboardInicio.mobileCompanyFilterAll': 'Todos',
+    'dashboardInicio.mobileGreetingSubtitle':
+        'Veja os principais movimentos de {empresa} hoje.',
     'dashboardInicio.mobileCompanyFilterSearchHint': 'Buscar comércio',
     'dashboardInicio.mobileCompanyFilterEmptyTitle':
         'Nenhum comércio disponível',
@@ -2128,6 +2130,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.section.quickActions': 'Quick actions',
     'workspaceHome.empty.today':
         'No summary block is available for your permissions.',
+    'dashboardInicio.mobileGreetingSubtitle':
+        'See the main activity for {empresa} today.',
     'workspaceHome.empty.attention': 'No important pending items right now.',
     'workspaceHome.empty.quickActions':
         'No quick action is available for your permissions.',
@@ -3769,6 +3773,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.section.quickActions': 'Acciones rápidas',
     'workspaceHome.empty.today':
         'Ningún bloque del resumen está disponible para tus permisos.',
+    'dashboardInicio.mobileGreetingSubtitle':
+        'Consulta los principales movimientos de {empresa} hoy.',
     'workspaceHome.empty.attention': 'No hay pendientes importantes por ahora.',
     'workspaceHome.empty.quickActions':
         'No hay acciones rápidas disponibles para tus permisos.',
