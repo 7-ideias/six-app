@@ -1,29 +1,27 @@
 import 'package:flutter/material.dart';
 
-/// Ilustração do atendimento com suporte a arte pronta ou duas camadas.
+/// Ilustração em duas camadas que acompanha as cores do tema ativo.
 class SixImagemCanetinha extends StatelessWidget {
   const SixImagemCanetinha({
     super.key,
     required this.assetContorno,
+    required this.assetAcento,
     required this.largura,
     required this.altura,
-    this.assetAcento,
     this.fit = BoxFit.contain,
     this.rotuloSemantico,
     this.corContorno,
     this.corAcento,
-    this.preservarCoresOriginais = false,
   });
 
   final String assetContorno;
-  final String? assetAcento;
+  final String assetAcento;
   final double largura;
   final double altura;
   final BoxFit fit;
   final String? rotuloSemantico;
   final Color? corContorno;
   final Color? corAcento;
-  final bool preservarCoresOriginais;
 
   @override
   Widget build(BuildContext context) {
@@ -31,31 +29,22 @@ class SixImagemCanetinha extends StatelessWidget {
     final Widget imagem = SizedBox(
       width: largura,
       height: altura,
-      child:
-          preservarCoresOriginais || (assetAcento?.trim().isEmpty ?? true)
-              ? Image.asset(
-                assetContorno,
-                fit: fit,
-                filterQuality: FilterQuality.high,
-                isAntiAlias: true,
-                excludeFromSemantics: true,
-              )
-              : Stack(
-                fit: StackFit.expand,
-                alignment: Alignment.center,
-                children: <Widget>[
-                  _CamadaImagemCanetinha(
-                    asset: assetContorno,
-                    cor: corContorno ?? colorScheme.onSurface,
-                    fit: fit,
-                  ),
-                  _CamadaImagemCanetinha(
-                    asset: assetAcento!,
-                    cor: corAcento ?? colorScheme.primary,
-                    fit: fit,
-                  ),
-                ],
-              ),
+      child: Stack(
+        fit: StackFit.expand,
+        alignment: Alignment.center,
+        children: <Widget>[
+          _CamadaImagemCanetinha(
+            asset: assetContorno,
+            cor: corContorno ?? colorScheme.onSurface,
+            fit: fit,
+          ),
+          _CamadaImagemCanetinha(
+            asset: assetAcento,
+            cor: corAcento ?? colorScheme.primary,
+            fit: fit,
+          ),
+        ],
+      ),
     );
     final String? rotulo = rotuloSemantico?.trim();
 

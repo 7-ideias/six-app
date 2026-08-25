@@ -1,7 +1,7 @@
 name: sixpos
 description: "Six Point of Sale"
 publish_to: 'none'
-version: 1.139.0+140
+version: 1.140.0+141
 environment:
   sdk: ^3.7.0
 
@@ -73,7 +73,18 @@ flutter:
     - "assets/animations/tela login/10.webp"
     - assets/images/placeholder.png
     - assets/images/six-logo-flecha.webp
-    - "assets/images/atendimento mobile/"
+    - "assets/images/atendimento mobile/atendimento-hero.webp"
+    - "assets/images/atendimento mobile/atendimento-hero-acento.webp"
+    - "assets/images/atendimento mobile/acao-nova-venda.webp"
+    - "assets/images/atendimento mobile/acao-nova-venda-acento.webp"
+    - "assets/images/atendimento mobile/acao-novo-servico.webp"
+    - "assets/images/atendimento mobile/acao-novo-servico-acento.webp"
+    - "assets/images/atendimento mobile/acao-receber.webp"
+    - "assets/images/atendimento mobile/acao-receber-acento.webp"
+    - "assets/images/atendimento mobile/acao-operacoes-caixa.webp"
+    - "assets/images/atendimento mobile/acao-operacoes-caixa-acento.webp"
+    - "assets/images/atendimento mobile/acao-devolucoes.webp"
+    - "assets/images/atendimento mobile/acao-devolucoes-acento.webp"
     - "assets/images/vendas mobile/vendas.webp"
     - "assets/images/vendas mobile/recebimento.webp"
     - "assets/images/vendas mobile/consultar.webp"
