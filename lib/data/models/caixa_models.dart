@@ -39,6 +39,38 @@ class InformacoesBasicasCaixaResponse {
     );
   }
 
+  List<CaixaOuGuiche> get caixasOuGuichesMesclados {
+    final List<CaixaOuGuiche> resultado = <CaixaOuGuiche>[];
+    final Set<String> chaves = <String>{};
+
+    for (final CaixaOuGuiche item in caixaOuGuiche) {
+      final String nomeNormalizado = item.nome.trim();
+      final String idNormalizado = item.id.trim();
+      final String chave =
+          idNormalizado.isNotEmpty
+              ? 'id:$idNormalizado'
+              : 'nome:${nomeNormalizado.toLowerCase()}';
+
+      if (chaves.add(chave)) {
+        resultado.add(item);
+      }
+    }
+
+    for (final String nome in caixas) {
+      final String nomeNormalizado = nome.trim();
+      if (nomeNormalizado.isEmpty) continue;
+
+      final String chavePorNome = 'nome:${nomeNormalizado.toLowerCase()}';
+      final bool jaExiste = chaves.contains(chavePorNome);
+      if (jaExiste) continue;
+
+      chaves.add(chavePorNome);
+      resultado.add(CaixaOuGuiche(id: nomeNormalizado, nome: nomeNormalizado));
+    }
+
+    return List<CaixaOuGuiche>.unmodifiable(resultado);
+  }
+
   static List<CaixaOuGuiche> _parseCaixaOuGuiche(dynamic value) {
     if (value is! Map) return [];
 

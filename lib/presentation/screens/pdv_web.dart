@@ -889,16 +889,22 @@ extension _PdvWeb on _PaginaPrincipalWebState {
 
   String _labelSessaoCaixaPdv(CaixaSessao sessao, AppLocalizations? l10n) {
     final String nomeCaixa = sessao.nomeCaixa.trim();
+    final String nomeColaborador = sessao.nomeColaboradorAbertura.trim();
     final String statusLabel =
         _sessaoCaixaPdvAberta(sessao)
             ? (l10n?.pdvWebSessionActive ?? 'Sessão ativa')
             : (l10n?.pdvCashSessionClosed ?? 'Sessão fechada');
 
-    if (nomeCaixa.isEmpty) {
-      return statusLabel;
+    final List<String> partes = <String>[];
+    if (nomeCaixa.isNotEmpty) {
+      partes.add(nomeCaixa);
+    }
+    partes.add(statusLabel);
+    if (nomeColaborador.isNotEmpty) {
+      partes.add(nomeColaborador);
     }
 
-    return '$nomeCaixa · $statusLabel';
+    return partes.join(' · ');
   }
 
   Widget _buildTempoAtivoSessaoCaixaPdvChip(CaixaSessao sessao) {

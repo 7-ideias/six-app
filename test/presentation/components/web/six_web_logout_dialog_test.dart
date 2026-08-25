@@ -145,12 +145,68 @@ void main() {
     expect(result, isTrue);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('applies dedicated dark colors to surface and actions', (
+    WidgetTester tester,
+  ) async {
+    await _pumpHarness(
+      tester,
+      onConfirm: () async {},
+      themeMode: ThemeMode.dark,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF4F46E5),
+          brightness: Brightness.light,
+        ),
+      ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF4F46E5),
+          brightness: Brightness.dark,
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Abrir logout'));
+    await tester.pumpAndSettle();
+
+    final Finder dialogMaterialFinder = find.ancestor(
+      of: find.byKey(const ValueKey<String>('logout-review')),
+      matching: find.byType(Material),
+    );
+    final Material dialogMaterial = tester.widget<Material>(
+      dialogMaterialFinder.first,
+    );
+    final Finder dialogScope = find.byKey(
+      const ValueKey<String>('logout-review'),
+    );
+    final FilledButton filledButton = tester.widget<FilledButton>(
+      find.descendant(of: dialogScope, matching: find.byType(FilledButton)),
+    );
+    final TextButton textButton = tester.widget<TextButton>(
+      find.descendant(of: dialogScope, matching: find.byType(TextButton)),
+    );
+
+    expect(dialogMaterial.color, const Color(0xFF17253A));
+    expect(
+      filledButton.style?.backgroundColor?.resolve(<WidgetState>{}),
+      const Color(0xFF4151D9),
+    );
+    expect(
+      textButton.style?.foregroundColor?.resolve(<WidgetState>{}),
+      const Color(0xFF8DAAFD),
+    );
+    expect(tester.takeException(), isNull);
+  });
 }
 
 Future<void> _pumpHarness(
   WidgetTester tester, {
   required Future<void> Function() onConfirm,
   ValueChanged<bool>? onResult,
+  ThemeData? theme,
+  ThemeData? darkTheme,
+  ThemeMode? themeMode,
 }) async {
   tester.view.physicalSize = const Size(1400, 900);
   tester.view.devicePixelRatio = 1;
@@ -160,6 +216,9 @@ Future<void> _pumpHarness(
   await tester.pumpWidget(
     MaterialApp(
       locale: const Locale('pt', 'BR'),
+      theme: theme,
+      darkTheme: darkTheme,
+      themeMode: themeMode ?? ThemeMode.light,
       supportedLocales: const <Locale>[Locale('pt', 'BR')],
       localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
         GlobalMaterialLocalizations.delegate,
