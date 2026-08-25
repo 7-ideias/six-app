@@ -117,6 +117,10 @@ class _SixWebLogoutDialogState extends State<SixWebLogoutDialog>
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final _LogoutDialogPalette palette = _LogoutDialogPalette.resolve(
+      theme,
+      tokens,
+    );
 
     return PopScope(
       canPop: !_isBusy,
@@ -144,6 +148,7 @@ class _SixWebLogoutDialogState extends State<SixWebLogoutDialog>
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: palette.outline),
                     boxShadow: <BoxShadow>[
                       BoxShadow(
                         color: const Color(0xFF020617).withValues(alpha: 0.28),
@@ -155,7 +160,7 @@ class _SixWebLogoutDialogState extends State<SixWebLogoutDialog>
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(24),
                     child: Material(
-                      color: tokens.surfaceElevated,
+                      color: palette.surface,
                       surfaceTintColor: Colors.transparent,
                       child: Stack(
                         children: <Widget>[
@@ -167,14 +172,14 @@ class _SixWebLogoutDialogState extends State<SixWebLogoutDialog>
                             switchOutCurve: Curves.easeInCubic,
                             child:
                                 _state == _LogoutDialogState.success
-                                    ? _buildSuccess(theme, tokens)
-                                    : _buildReview(theme, tokens),
+                                    ? _buildSuccess(theme, tokens, palette)
+                                    : _buildReview(theme, tokens, palette),
                           ),
                           Positioned(
                             top: 0,
                             left: 0,
                             right: 0,
-                            child: Container(height: 3, color: tokens.info),
+                            child: Container(height: 3, color: palette.accent),
                           ),
                         ],
                       ),
@@ -189,7 +194,11 @@ class _SixWebLogoutDialogState extends State<SixWebLogoutDialog>
     );
   }
 
-  Widget _buildReview(ThemeData theme, WebThemeTokens tokens) {
+  Widget _buildReview(
+    ThemeData theme,
+    WebThemeTokens tokens,
+    _LogoutDialogPalette palette,
+  ) {
     return Padding(
       key: const ValueKey<String>('logout-review'),
       padding: const EdgeInsets.fromLTRB(28, 30, 28, 24),
@@ -202,8 +211,8 @@ class _SixWebLogoutDialogState extends State<SixWebLogoutDialog>
             children: <Widget>[
               _LogoutDialogIcon(
                 animation: _iconController,
-                accent: tokens.info,
-                surfaceColor: tokens.surfaceElevated,
+                accent: palette.accent,
+                surfaceColor: palette.surface,
               ),
               const SizedBox(width: 18),
               Expanded(
@@ -241,12 +250,12 @@ class _SixWebLogoutDialogState extends State<SixWebLogoutDialog>
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: tokens.info.withValues(alpha: 0.12),
+                  color: palette.accentSoft,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.shield_outlined,
-                  color: tokens.info,
+                  color: palette.accent,
                   size: 15,
                 ),
               ),
@@ -308,12 +317,23 @@ class _SixWebLogoutDialogState extends State<SixWebLogoutDialog>
             children: <Widget>[
               TextButton(
                 onPressed: _isBusy ? null : _cancel,
+                style: TextButton.styleFrom(
+                  foregroundColor: palette.secondaryActionForeground,
+                ),
                 child: Text(
                   _txt('web.logout.dialog.back', 'Continuar conectado'),
                 ),
               ),
               FilledButton.icon(
                 onPressed: _isBusy ? null : _confirm,
+                style: FilledButton.styleFrom(
+                  backgroundColor: palette.primaryActionBackground,
+                  foregroundColor: palette.primaryActionForeground,
+                  disabledBackgroundColor:
+                      palette.primaryActionDisabledBackground,
+                  disabledForegroundColor:
+                      palette.primaryActionDisabledForeground,
+                ),
                 icon: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 160),
                   child:
@@ -353,7 +373,11 @@ class _SixWebLogoutDialogState extends State<SixWebLogoutDialog>
     );
   }
 
-  Widget _buildSuccess(ThemeData theme, WebThemeTokens tokens) {
+  Widget _buildSuccess(
+    ThemeData theme,
+    WebThemeTokens tokens,
+    _LogoutDialogPalette palette,
+  ) {
     return Padding(
       key: const ValueKey<String>('logout-success'),
       padding: const EdgeInsets.symmetric(horizontal: 38, vertical: 42),
@@ -371,7 +395,7 @@ class _SixWebLogoutDialogState extends State<SixWebLogoutDialog>
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: tokens.success.withValues(alpha: 0.13),
+                color: palette.successSoft,
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.check_rounded, color: tokens.success, size: 42),
@@ -435,8 +459,8 @@ class _LogoutRouteSurface extends StatelessWidget {
               ),
               child: ColoredBox(
                 color: const Color(
-                  0xFF0B1324,
-                ).withValues(alpha: 0.74 * progress),
+                  0xFF081120,
+                ).withValues(alpha: 0.78 * progress),
               ),
             ),
             SafeArea(
@@ -460,6 +484,63 @@ class _LogoutRouteSurface extends StatelessWidget {
         );
       },
       child: child,
+    );
+  }
+}
+
+class _LogoutDialogPalette {
+  const _LogoutDialogPalette({
+    required this.surface,
+    required this.outline,
+    required this.accent,
+    required this.accentSoft,
+    required this.successSoft,
+    required this.secondaryActionForeground,
+    required this.primaryActionBackground,
+    required this.primaryActionForeground,
+    required this.primaryActionDisabledBackground,
+    required this.primaryActionDisabledForeground,
+  });
+
+  final Color surface;
+  final Color outline;
+  final Color accent;
+  final Color accentSoft;
+  final Color successSoft;
+  final Color secondaryActionForeground;
+  final Color primaryActionBackground;
+  final Color primaryActionForeground;
+  final Color primaryActionDisabledBackground;
+  final Color primaryActionDisabledForeground;
+
+  static _LogoutDialogPalette resolve(ThemeData theme, WebThemeTokens tokens) {
+    if (theme.brightness == Brightness.dark) {
+      const Color accent = Color(0xFF4F8CFF);
+      return _LogoutDialogPalette(
+        surface: const Color(0xFF17253A),
+        outline: const Color(0xFF31507A),
+        accent: accent,
+        accentSoft: accent.withValues(alpha: 0.16),
+        successSoft: tokens.success.withValues(alpha: 0.16),
+        secondaryActionForeground: const Color(0xFF8DAAFD),
+        primaryActionBackground: const Color(0xFF4151D9),
+        primaryActionForeground: Colors.white,
+        primaryActionDisabledBackground: const Color(0xFF24324B),
+        primaryActionDisabledForeground: const Color(0xFF8FA0B8),
+      );
+    }
+
+    return _LogoutDialogPalette(
+      surface: tokens.surfaceElevated,
+      outline: tokens.cardBorder,
+      accent: tokens.info,
+      accentSoft: tokens.info.withValues(alpha: 0.12),
+      successSoft: tokens.success.withValues(alpha: 0.13),
+      secondaryActionForeground: tokens.info,
+      primaryActionBackground: theme.colorScheme.primary,
+      primaryActionForeground: theme.colorScheme.onPrimary,
+      primaryActionDisabledBackground: tokens.disabledBackground,
+      primaryActionDisabledForeground: tokens.disabledForeground,
     );
   }
 }
