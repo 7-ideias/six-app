@@ -6,10 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/di/caixa_module.dart';
 import '../../core/services/empresa_service.dart';
+import '../../data/models/caixa_models.dart';
 import '../../data/models/dominio_models.dart';
 import '../../data/models/empresa_model.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
+import '../../domain/services/caixa/caixa_service.dart';
 import '../../domain/models/regionalizacao_models.dart';
 import '../../l10n/web_i18n_store.dart';
 import '../../providers/locale_settings_provider.dart';
@@ -227,6 +230,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   late final EmpresaService _empresaService;
   late final AparenciaService _aparenciaService;
   late final AtendimentoTecnicoService _atendimentoTecnicoService;
+  late final CaixaService _caixaService;
   final Map<String, TextEditingController> _statusPtControllers =
       <String, TextEditingController>{};
   final Map<String, TextEditingController> _statusEnControllers =
@@ -236,6 +240,10 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   List<DominioStatusAtendimentoCustomizacaoModel>
   _statusAtendimentoCustomizacoes =
       const <DominioStatusAtendimentoCustomizacaoModel>[];
+  List<CaixaOuGuiche> _caixasOuGuichesConfigurados = const <CaixaOuGuiche>[];
+  bool _carregandoCaixasOuGuiches = false;
+  bool _salvandoCaixaOuGuiche = false;
+  String? _erroCaixasOuGuiches;
 
   @override
   void initState() {
@@ -243,9 +251,11 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     _empresaService = EmpresaService();
     _aparenciaService = AparenciaService(apiClient: HttpAparenciaApiClient());
     _atendimentoTecnicoService = AtendimentoTecnicoService();
+    _caixaService = CaixaModule.caixaService;
     _carregarDadosDaEmpresa();
     _carregarAparencia();
     _carregarStatusAtendimentoCustomizacoes();
+    _carregarCaixasOuGuiches();
   }
 
   Future<void> _carregarAparencia() async {
@@ -269,6 +279,189 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     } finally {
       if (mounted) {
         setState(() => _carregandoAparencia = false);
+      }
+    }
+  }
+
+  Future<void> _carregarCaixasOuGuiches() async {
+    setState(() {
+      _carregandoCaixasOuGuiches = true;
+      _erroCaixasOuGuiches = null;
+    });
+
+    try {
+      final informacoes = await _caixaService.buscarInformacoesBasicasDoCaixa();
+      final caixas =
+          informacoes.caixaOuGuiche.isNotEmpty
+              ? informacoes.caixaOuGuiche
+              : informacoes.caixas
+                  .map((nome) => CaixaOuGuiche(id: nome, nome: nome))
+                  .toList(growable: false);
+
+      if (!mounted) return;
+      setState(() {
+        _caixasOuGuichesConfigurados = caixas;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _erroCaixasOuGuiches =
+            'Não foi possível carregar os caixas e guichês configurados.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _carregandoCaixasOuGuiches = false);
+      }
+    }
+  }
+
+  Future<void> _abrirDialogoCaixaOuGuiche({CaixaOuGuiche? caixa}) async {
+    final String? nome = await showDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        final theme = Theme.of(dialogContext);
+        final tokens = WebThemeTokens.of(dialogContext);
+        final TextEditingController controller = TextEditingController(
+          text: caixa?.nome ?? '',
+        );
+        String? erro;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: tokens.cardBackground,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(color: tokens.cardBorder),
+              ),
+              title: Text(
+                caixa == null ? 'Novo caixa / guichê' : 'Editar caixa / guichê',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: tokens.primaryText,
+                ),
+              ),
+              content: SizedBox(
+                width: 420,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      caixa == null
+                          ? 'Cadastre um nome para organizar os pontos de operação disponíveis na abertura de caixa.'
+                          : 'Atualize o nome exibido para os operadores na abertura e no acompanhamento da sessão.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: tokens.secondaryText,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: controller,
+                      autofocus: true,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) {
+                        final nomeNormalizado = controller.text.trim();
+                        if (nomeNormalizado.isEmpty) {
+                          setDialogState(() {
+                            erro = 'Informe um nome para continuar.';
+                          });
+                          return;
+                        }
+                        Navigator.of(dialogContext).pop(nomeNormalizado);
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Nome do caixa / guichê',
+                        hintText: 'Exemplo: Caixa principal',
+                        errorText: erro,
+                        filled: true,
+                        fillColor: tokens.inputBackground,
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: BorderSide(color: tokens.cardBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: BorderSide(
+                            color: tokens.selectedBorder,
+                            width: 1.4,
+                          ),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final nomeNormalizado = controller.text.trim();
+                    if (nomeNormalizado.isEmpty) {
+                      setDialogState(() {
+                        erro = 'Informe um nome para continuar.';
+                      });
+                      return;
+                    }
+                    Navigator.of(dialogContext).pop(nomeNormalizado);
+                  },
+                  child: Text(caixa == null ? 'Criar caixa' : 'Salvar nome'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (nome == null || nome.isEmpty || !mounted) return;
+
+    setState(() => _salvandoCaixaOuGuiche = true);
+    try {
+      if (caixa == null) {
+        await _caixaService.criarCaixaOuGuiche(nome);
+      } else {
+        await _caixaService.editarCaixaOuGuiche(id: caixa.id, nome: nome);
+      }
+
+      await _carregarCaixasOuGuiches();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              caixa == null
+                  ? 'Caixa criado com sucesso.'
+                  : 'Nome do caixa atualizado com sucesso.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              caixa == null
+                  ? 'Não foi possível criar o caixa agora.'
+                  : 'Não foi possível atualizar o nome do caixa.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() => _salvandoCaixaOuGuiche = false);
       }
     }
   }
@@ -4054,6 +4247,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         const SizedBox(height: 20),
         _buildEstoqueCaixaOperacionalCard(),
         const SizedBox(height: 20),
+        _buildCaixasGuichesOperacionalCard(),
+        const SizedBox(height: 20),
         _buildDescontoComissaoOperacionalCard(),
         const SizedBox(height: 20),
         _buildUnidadesAssistenciaOperacionalCard(),
@@ -5195,6 +5390,238 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     );
   }
 
+  Widget _buildCaixasGuichesOperacionalCard() {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+
+    return _buildBigCard(
+      title: 'Caixas e guichês',
+      subtitle:
+          'Cadastre e renomeie os pontos de operação que aparecem na abertura de caixa do atendimento.',
+      trailing: FilledButton.icon(
+        onPressed:
+            _carregandoCaixasOuGuiches || _salvandoCaixaOuGuiche
+                ? null
+                : () => _abrirDialogoCaixaOuGuiche(),
+        icon: const Icon(Icons.add_rounded, size: 18),
+        label: const Text('Novo caixa'),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: tokens.surfaceMuted,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: tokens.cardBorder),
+            ),
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 10,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              alignment: WrapAlignment.spaceBetween,
+              children: [
+                SizedBox(
+                  width: 640,
+                  child: Text(
+                    'Os nomes cadastrados aqui alimentam a seleção de caixa / guichê na abertura de sessão e ajudam a separar os pontos de operação do comércio.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: tokens.secondaryText,
+                      height: 1.4,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildOperationalSummaryPill(
+                      icon: Icons.point_of_sale_rounded,
+                      title: '${_caixasOuGuichesConfigurados.length} cadastros',
+                      subtitle: 'Disponíveis',
+                    ),
+                    OutlinedButton.icon(
+                      onPressed:
+                          _carregandoCaixasOuGuiches || _salvandoCaixaOuGuiche
+                              ? null
+                              : _carregarCaixasOuGuiches,
+                      icon: const Icon(Icons.refresh_rounded, size: 18),
+                      label: const Text('Atualizar lista'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          if (_carregandoCaixasOuGuiches)
+            SixBackendLoading(
+              presentation: SixBackendLoadingPresentation.updateBanner,
+              title: 'Carregando caixas e guichês',
+              subtitle:
+                  'Estamos sincronizando os pontos de operação disponíveis para abertura de caixa.',
+              animation: SixBackendLoadingAnimation.skeletonPulse,
+              leadingIcon: Icons.sync_alt_rounded,
+              backgroundColor: tokens.surfaceMuted,
+              borderColor: tokens.cardBorder,
+            )
+          else if (_erroCaixasOuGuiches != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: tokens.surfaceMuted,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: tokens.cardBorder),
+              ),
+              child: Wrap(
+                spacing: 14,
+                runSpacing: 12,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline_rounded,
+                    color: tokens.danger,
+                    size: 22,
+                  ),
+                  SizedBox(
+                    width: 520,
+                    child: Text(
+                      _erroCaixasOuGuiches ?? '',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: tokens.primaryText,
+                        height: 1.4,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  FilledButton.icon(
+                    onPressed:
+                        _salvandoCaixaOuGuiche
+                            ? null
+                            : _carregarCaixasOuGuiches,
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: const Text('Tentar novamente'),
+                  ),
+                ],
+              ),
+            )
+          else if (_caixasOuGuichesConfigurados.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: tokens.surfaceMuted,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: tokens.cardBorder),
+              ),
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                alignment: WrapAlignment.spaceBetween,
+                children: [
+                  SizedBox(
+                    width: 560,
+                    child: Text(
+                      'Nenhum caixa ou guichê foi cadastrado ainda. Crie o primeiro para liberar uma lista organizada na abertura operacional.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: tokens.secondaryText,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                  FilledButton.icon(
+                    onPressed:
+                        _salvandoCaixaOuGuiche
+                            ? null
+                            : () => _abrirDialogoCaixaOuGuiche(),
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text('Cadastrar primeiro caixa'),
+                  ),
+                ],
+              ),
+            )
+          else
+            Column(
+              children: _caixasOuGuichesConfigurados
+                  .map(_buildCaixaOuGuicheLinha)
+                  .toList(growable: false),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCaixaOuGuicheLinha(CaixaOuGuiche caixa) {
+    final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: tokens.selectedBackground,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: tokens.selectedBorder),
+            ),
+            child: Icon(
+              Icons.point_of_sale_outlined,
+              color: tokens.info,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              caixa.nome.trim().isEmpty ? 'Sem nome' : caixa.nome.trim(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: tokens.primaryText,
+              ),
+            ),
+          ),
+          Tooltip(
+            message: 'Editar caixa',
+            child: IconButton(
+              onPressed:
+                  _salvandoCaixaOuGuiche
+                      ? null
+                      : () => _abrirDialogoCaixaOuGuiche(caixa: caixa),
+              icon: const Icon(Icons.edit_outlined, size: 20),
+              color: tokens.info,
+              style: IconButton.styleFrom(
+                backgroundColor: tokens.selectedBackground,
+                foregroundColor: tokens.info,
+                disabledBackgroundColor: tokens.selectedBackground,
+                minimumSize: const Size(42, 42),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: tokens.selectedBorder),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDescontoComissaoOperacionalCard() {
     return _buildBigCard(
       title: 'Descontos e comissão',
@@ -5732,7 +6159,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           SizedBox(
             width: 680,
             child: Text(
-              'Pronto para evoluir: os campos foram desenhados como rascunho de regra operacional e ainda não persistem no backend.',
+              'Pronto para evoluir: a gestão de caixas e guichês já persiste no backend. As demais regras operacionais desta seção continuam como rascunho local nesta etapa.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: tokens.secondaryText,
                 height: 1.35,
@@ -5746,7 +6173,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 ..showSnackBar(
                   SnackBar(
                     content: const Text(
-                      'Rascunho das regras operacionais validado localmente. Backend não integrado.',
+                      'Rascunho das regras operacionais validado localmente. Apenas caixas e guichês já usam integração com backend.',
                     ),
                     behavior: SnackBarBehavior.floating,
                     backgroundColor: tokens.info,
