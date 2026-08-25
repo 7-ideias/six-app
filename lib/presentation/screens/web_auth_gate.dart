@@ -176,9 +176,14 @@ class _WebAuthGateState extends State<WebAuthGate> {
         WebAuthGateStatus.checkingSession ||
         WebAuthGateStatus.restoringSession ||
         WebAuthGateStatus.bootstrapping ||
-        WebAuthGateStatus.unauthenticated => const Scaffold(
-          key: ValueKey<String>('web-auth-gate-loading'),
-          body: SixWebSplashScene(),
+        WebAuthGateStatus.unauthenticated => Scaffold(
+          key: const ValueKey<String>('web-auth-gate-loading'),
+          body: SixWebSplashScene(
+            subtitle: context.t(
+              'splash.validatingSession',
+              fallback: 'Validando sua sessão...',
+            ),
+          ),
         ),
       },
     );
