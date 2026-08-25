@@ -38,6 +38,10 @@ class CaixaService {
     return _apiClient.getSessaoAtual();
   }
 
+  Future<List<CaixaSessao>> listarSessoesAbertas() {
+    return _apiClient.getSessoesAbertas();
+  }
+
   Future<CaixaOuGuiche> criarCaixaOuGuiche(String nome) {
     return _apiClient.criarCaixaOuGuiche(nome);
   }

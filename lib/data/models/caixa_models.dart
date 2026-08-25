@@ -200,7 +200,9 @@ class FormaMovimento {
 class CaixaSessao {
   final String idSessaoCaixa;
   final String nomeCaixa;
+  final String idCaixaOuGuiche;
   final String idColaboradorAbertura;
+  final String nomeColaboradorAbertura;
   final String dataHoraAbertura;
   final double valorAbertura;
   final String status; // aberta, fechada
@@ -208,7 +210,9 @@ class CaixaSessao {
   CaixaSessao({
     required this.idSessaoCaixa,
     required this.nomeCaixa,
+    required this.idCaixaOuGuiche,
     required this.idColaboradorAbertura,
+    required this.nomeColaboradorAbertura,
     required this.dataHoraAbertura,
     required this.valorAbertura,
     required this.status,
@@ -218,7 +222,9 @@ class CaixaSessao {
     return CaixaSessao(
       idSessaoCaixa: json['idSessaoCaixa']?.toString() ?? '',
       nomeCaixa: json['nomeCaixa'] ?? '',
+      idCaixaOuGuiche: json['idCaixaOuGuiche']?.toString() ?? '',
       idColaboradorAbertura: json['idColaboradorAbertura'] ?? '',
+      nomeColaboradorAbertura: json['nomeColaboradorAbertura'] ?? '',
       dataHoraAbertura: json['dataHoraAbertura'] ?? '',
       valorAbertura: (json['valorAbertura'] as num? ?? 0).toDouble(),
       status: json['status'] ?? '',
@@ -228,16 +234,21 @@ class CaixaSessao {
   CaixaSessao copyWith({
     String? id,
     String? caixaNome,
+    String? idCaixaOuGuiche,
     String? colaborador,
+    String? nomeColaboradorAbertura,
     String? dataAbertura,
     double? valorAbertura,
     String? status,
   }) {
     return CaixaSessao(
-      idSessaoCaixa: id ?? this.idSessaoCaixa,
-      nomeCaixa: caixaNome ?? this.nomeCaixa,
-      idColaboradorAbertura: colaborador ?? this.idColaboradorAbertura,
-      dataHoraAbertura: dataAbertura ?? this.dataHoraAbertura,
+      idSessaoCaixa: id ?? idSessaoCaixa,
+      nomeCaixa: caixaNome ?? nomeCaixa,
+      idCaixaOuGuiche: idCaixaOuGuiche ?? this.idCaixaOuGuiche,
+      idColaboradorAbertura: colaborador ?? idColaboradorAbertura,
+      nomeColaboradorAbertura:
+          nomeColaboradorAbertura ?? this.nomeColaboradorAbertura,
+      dataHoraAbertura: dataAbertura ?? dataHoraAbertura,
       valorAbertura: valorAbertura ?? this.valorAbertura,
       status: status ?? this.status,
     );
@@ -295,9 +306,9 @@ class MovimentoCaixa {
     bool? vinculadoVenda,
   }) {
     return MovimentoCaixa(
-      idMovimento: id ?? this.idMovimento,
+      idMovimento: id ?? idMovimento,
       idSessaoCaixa: idSessaoCaixa,
-      tipoMovimento: tipo ?? this.tipoMovimento,
+      tipoMovimento: tipo ?? tipoMovimento,
       natureza: natureza ?? this.natureza,
       codigoTipoRecebimento: codigoTipoRecebimento,
       descricaoTipoRecebimento: descricaoTipoRecebimento,
@@ -307,8 +318,8 @@ class MovimentoCaixa {
       referencia: referencia ?? this.referencia,
       codigoOperacao: codigoOperacao ?? this.codigoOperacao,
       idColaborador: idColaborador,
-      nomeColaborador: colaborador ?? this.nomeColaborador,
-      dataHoraMovimento: dataHora ?? this.dataHoraMovimento,
+      nomeColaborador: colaborador ?? nomeColaborador,
+      dataHoraMovimento: dataHora ?? dataHoraMovimento,
       status: status ?? this.status,
     );
   }

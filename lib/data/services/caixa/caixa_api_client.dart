@@ -15,6 +15,7 @@ abstract class CaixaApiClient {
   });
   Future<void> restaurarTiposRecebimentoPadrao();
   Future<CaixaSessao?> getSessaoAtual();
+  Future<List<CaixaSessao>> getSessoesAbertas();
   Future<CaixaOuGuiche> criarCaixaOuGuiche(String nome);
   Future<CaixaOuGuiche> editarCaixaOuGuiche({
     required String id,
@@ -172,6 +173,40 @@ class HttpCaixaApiClient implements CaixaApiClient {
     }
 
     return CaixaSessao.fromJson(jsonDecode(response.body));
+  }
+
+  @override
+  Future<List<CaixaSessao>> getSessoesAbertas() async {
+    final uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/caixa/sessoes-abertas',
+    );
+    final response = await _httpClient.get(uri, headers: await _getHeaders());
+
+    if (response.statusCode != 200) {
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    if (response.body.trim().isEmpty) {
+      return const <CaixaSessao>[];
+    }
+
+    final dynamic data = jsonDecode(response.body);
+    if (data is! List) {
+      throw CaixaApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+
+    return data
+        .whereType<Map>()
+        .map(
+          (dynamic item) => CaixaSessao.fromJson(item.cast<String, dynamic>()),
+        )
+        .toList(growable: false);
   }
 
   @override
