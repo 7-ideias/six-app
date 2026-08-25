@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -51,6 +53,7 @@ class SixWebRecebimentoDialog extends StatefulWidget {
     required this.titulo,
     required this.descricao,
     required this.valorAberto,
+    this.caixaApiClient,
     this.contato,
     this.permitirParcial = true,
     this.observacaoInicial,
@@ -60,6 +63,7 @@ class SixWebRecebimentoDialog extends StatefulWidget {
   final String titulo;
   final String descricao;
   final double valorAberto;
+  final CaixaApiClient? caixaApiClient;
   final String? contato;
   final bool permitirParcial;
   final String? observacaoInicial;
@@ -74,20 +78,43 @@ class SixWebRecebimentoDialog extends StatefulWidget {
     bool permitirParcial = true,
     String? observacaoInicial,
     String? codigoTipoInicial,
+    CaixaApiClient? caixaApiClient,
   }) {
-    return showDialog<SixWebRecebimentoResultado>(
+    final bool reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    return showGeneralDialog<SixWebRecebimentoResultado>(
       context: context,
       barrierDismissible: false,
-      builder:
-          (_) => SixWebRecebimentoDialog(
+      barrierColor: Colors.transparent,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      transitionDuration: Duration(milliseconds: reduceMotion ? 1 : 300),
+      pageBuilder: (
+        BuildContext routeContext,
+        Animation<double> animation,
+        Animation<double> secondaryAnimation,
+      ) {
+        return _RecebimentoRouteSurface(
+          animation: animation,
+          reduceMotion: reduceMotion,
+          child: SixWebRecebimentoDialog(
             titulo: titulo,
             descricao: descricao,
             valorAberto: valorAberto,
+            caixaApiClient: caixaApiClient,
             contato: contato,
             permitirParcial: permitirParcial,
             observacaoInicial: observacaoInicial,
             codigoTipoInicial: codigoTipoInicial,
           ),
+        );
+      },
+      transitionBuilder:
+          (
+            BuildContext context,
+            Animation<double> animation,
+            Animation<double> secondaryAnimation,
+            Widget child,
+          ) => child,
     );
   }
 
@@ -96,15 +123,20 @@ class SixWebRecebimentoDialog extends StatefulWidget {
       _SixWebRecebimentoDialogState();
 }
 
-class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
-  final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
+class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
+    with SingleTickerProviderStateMixin {
+  late final CaixaApiClient _caixaApiClient;
   final TextEditingController _observacaoController = TextEditingController();
   final List<_RecebimentoFormaDraft> _formas = <_RecebimentoFormaDraft>[];
+  late final AnimationController _iconController;
 
   bool _carregandoTipos = true;
   String? _erroValor;
   SixWebRecebimentoTipo _tipo = SixWebRecebimentoTipo.total;
   List<SixWebTipoRecebimentoOpcao> _opcoes = _opcoesFallback;
+
+  bool get _reduceMotion =>
+      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
   static const List<SixWebTipoRecebimentoOpcao> _opcoesFallback =
       <SixWebTipoRecebimentoOpcao>[
@@ -143,6 +175,11 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
   @override
   void initState() {
     super.initState();
+    _caixaApiClient = widget.caixaApiClient ?? HttpCaixaApiClient();
+    _iconController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 760),
+    );
     _formas.add(
       _RecebimentoFormaDraft(
         opcao: _resolverInicial(_opcoes),
@@ -152,6 +189,14 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
       ),
     );
     _observacaoController.text = widget.observacaoInicial ?? '';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_reduceMotion) {
+        _iconController.value = 1;
+      } else {
+        _iconController.forward();
+      }
+    });
     _carregarTipos();
   }
 
@@ -160,6 +205,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
     for (final _RecebimentoFormaDraft forma in _formas) {
       forma.controller.dispose();
     }
+    _iconController.dispose();
     _observacaoController.dispose();
     super.dispose();
   }
@@ -352,187 +398,506 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return CallbackShortcuts(
-      bindings: <ShortcutActivator, VoidCallback>{
-        const SingleActivator(LogicalKeyboardKey.escape): () {
-          Navigator.of(context).maybePop();
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent =
+        theme.brightness == Brightness.dark
+            ? const Color(0xFF60A5FA)
+            : const Color(0xFF2563EB);
+    final Color surface =
+        theme.brightness == Brightness.dark
+            ? const Color(0xFF17253A)
+            : tokens.surfaceElevated;
+    final Color outline =
+        theme.brightness == Brightness.dark
+            ? const Color(0xFF2E4467)
+            : tokens.cardBorder;
+    final Color accentSofter = Color.alphaBlend(
+      accent.withValues(alpha: 0.08),
+      tokens.surfaceMuted,
+    );
+    final ButtonStyle primaryActionStyle = FilledButton.styleFrom(
+      backgroundColor: accent,
+      foregroundColor: Colors.white,
+      disabledBackgroundColor: tokens.disabledBackground,
+      disabledForegroundColor: tokens.disabledForeground,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    );
+
+    return PopScope(
+      canPop: true,
+      child: Shortcuts(
+        shortcuts: const <ShortcutActivator, Intent>{
+          SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
         },
-      },
-      child: Focus(
-        autofocus: true,
-        child: AlertDialog(
-          titlePadding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
-          contentPadding: const EdgeInsets.fromLTRB(24, 18, 24, 12),
-          actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
-          title: Row(
-            children: <Widget>[
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(14),
+        child: Actions(
+          actions: <Type, Action<Intent>>{
+            DismissIntent: CallbackAction<DismissIntent>(
+              onInvoke: (DismissIntent intent) {
+                Navigator.of(context).maybePop();
+                return null;
+              },
+            ),
+          },
+          child: Focus(
+            autofocus: true,
+            child: Semantics(
+              namesRoute: true,
+              label: widget.titulo,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 640,
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.9,
                 ),
-                child: Icon(
-                  Icons.payments_outlined,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  widget.titulo,
-                  style: const TextStyle(fontWeight: FontWeight.w900),
-                ),
-              ),
-            ],
-          ),
-          content: SizedBox(
-            width: 520,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(context).height * 0.68,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    Text(
-                      widget.descricao,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    if (widget.contato != null &&
-                        widget.contato!.trim().isNotEmpty) ...<Widget>[
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.contato!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: outline),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: const Color(0xFF020617).withValues(alpha: 0.30),
+                        blurRadius: 44,
+                        offset: const Offset(0, 24),
                       ),
                     ],
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest
-                            .withValues(alpha: 0.35),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Material(
+                      color: surface,
+                      surfaceTintColor: Colors.transparent,
+                      child: Stack(
                         children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              context.t(
-                                'recebimento.valorEmAberto',
-                                fallback: 'Valor em aberto',
-                              ),
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                          Positioned(
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(height: 3, color: accent),
                           ),
-                          Text(
-                            _formatarMoeda(widget.valorAberto),
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.max,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    _RecebimentoDialogIcon(
+                                      animation: _iconController,
+                                      accent: accent,
+                                      surfaceColor: surface,
+                                    ),
+                                    const SizedBox(width: 18),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          Text(
+                                            widget.titulo,
+                                            style: theme.textTheme.headlineSmall
+                                                ?.copyWith(
+                                                  color: tokens.primaryText,
+                                                  fontWeight: FontWeight.w900,
+                                                  height: 1.12,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            widget.descricao,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  color: tokens.secondaryText,
+                                                  height: 1.45,
+                                                ),
+                                          ),
+                                          if (widget.contato != null &&
+                                              widget.contato!
+                                                  .trim()
+                                                  .isNotEmpty) ...<Widget>[
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              widget.contato!,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: theme.textTheme.labelLarge
+                                                  ?.copyWith(
+                                                    color: tokens.mutedText,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 22),
+                                _buildSummaryHighlights(
+                                  theme,
+                                  tokens,
+                                  accent,
+                                  accentSofter,
+                                ),
+                                const SizedBox(height: 18),
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: <Widget>[
+                                        if (widget.permitirParcial)
+                                          Theme(
+                                            data: theme.copyWith(
+                                              segmentedButtonTheme: SegmentedButtonThemeData(
+                                                style: ButtonStyle(
+                                                  backgroundColor:
+                                                      WidgetStateProperty.resolveWith((
+                                                        Set<WidgetState> states,
+                                                      ) {
+                                                        if (states.contains(
+                                                          WidgetState.selected,
+                                                        )) {
+                                                          return accent.withValues(
+                                                            alpha:
+                                                                theme.brightness ==
+                                                                        Brightness
+                                                                            .dark
+                                                                    ? 0.18
+                                                                    : 0.12,
+                                                          );
+                                                        }
+                                                        return surface;
+                                                      }),
+                                                  foregroundColor:
+                                                      WidgetStateProperty.resolveWith((
+                                                        Set<WidgetState> states,
+                                                      ) {
+                                                        return states.contains(
+                                                              WidgetState
+                                                                  .selected,
+                                                            )
+                                                            ? accent
+                                                            : tokens
+                                                                .secondaryText;
+                                                      }),
+                                                  side: WidgetStateProperty.resolveWith(
+                                                    (Set<WidgetState> states) {
+                                                      return BorderSide(
+                                                        color:
+                                                            states.contains(
+                                                                  WidgetState
+                                                                      .selected,
+                                                                )
+                                                                ? accent
+                                                                    .withValues(
+                                                                      alpha:
+                                                                          0.65,
+                                                                    )
+                                                                : outline,
+                                                      );
+                                                    },
+                                                  ),
+                                                  overlayColor:
+                                                      WidgetStateProperty.all(
+                                                        accent.withValues(
+                                                          alpha: 0.08,
+                                                        ),
+                                                      ),
+                                                  textStyle:
+                                                      WidgetStateProperty.all(
+                                                        theme
+                                                            .textTheme
+                                                            .bodyMedium
+                                                            ?.copyWith(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w800,
+                                                            ),
+                                                      ),
+                                                  shape: WidgetStateProperty.all(
+                                                    RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            16,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  padding: WidgetStateProperty.all(
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 14,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            child: SegmentedButton<
+                                              SixWebRecebimentoTipo
+                                            >(
+                                              selected: <SixWebRecebimentoTipo>{
+                                                _tipo,
+                                              },
+                                              onSelectionChanged:
+                                                  (
+                                                    Set<SixWebRecebimentoTipo>
+                                                    value,
+                                                  ) =>
+                                                      _alterarTipo(value.first),
+                                              segments: <
+                                                ButtonSegment<
+                                                  SixWebRecebimentoTipo
+                                                >
+                                              >[
+                                                ButtonSegment<
+                                                  SixWebRecebimentoTipo
+                                                >(
+                                                  value:
+                                                      SixWebRecebimentoTipo
+                                                          .total,
+                                                  label: Text(
+                                                    context.t(
+                                                      'recebimento.total',
+                                                      fallback: 'Total',
+                                                    ),
+                                                  ),
+                                                  icon: const Icon(
+                                                    Icons.done_all_rounded,
+                                                  ),
+                                                ),
+                                                ButtonSegment<
+                                                  SixWebRecebimentoTipo
+                                                >(
+                                                  value:
+                                                      SixWebRecebimentoTipo
+                                                          .parcial,
+                                                  label: Text(
+                                                    context.t(
+                                                      'recebimento.parcial',
+                                                      fallback: 'Parcial',
+                                                    ),
+                                                  ),
+                                                  icon: const Icon(
+                                                    Icons.call_split_rounded,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        if (widget.permitirParcial)
+                                          const SizedBox(height: 16),
+                                        _formasRecebimentoSection(),
+                                        const SizedBox(height: 14),
+                                        TextField(
+                                          controller: _observacaoController,
+                                          minLines: 2,
+                                          maxLines: 3,
+                                          decoration: InputDecoration(
+                                            labelText: context.t(
+                                              'recebimento.observacao',
+                                              fallback: 'Observação',
+                                            ),
+                                            filled: true,
+                                            fillColor: tokens.inputBackground,
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                            ),
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                              borderSide: BorderSide(
+                                                color: outline,
+                                              ),
+                                            ),
+                                            focusedBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                              borderSide: BorderSide(
+                                                color: accent.withValues(
+                                                  alpha: 0.7,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: <Widget>[
+                                    TextButton(
+                                      onPressed:
+                                          () => Navigator.of(context).pop(),
+                                      child: Text(
+                                        context.t(
+                                          'common.cancel',
+                                          fallback: 'Cancelar',
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    FilledButton.icon(
+                                      style: primaryActionStyle,
+                                      onPressed:
+                                          _carregandoTipos ? null : _confirmar,
+                                      icon: const Icon(Icons.payments_rounded),
+                                      label: Text(
+                                        _tipo == SixWebRecebimentoTipo.total
+                                            ? context.t(
+                                              'recebimento.receberTotal',
+                                              fallback: 'Receber total',
+                                            )
+                                            : context.t(
+                                              'recebimento.receberParcial',
+                                              fallback: 'Receber parcial',
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    if (widget.permitirParcial)
-                      SegmentedButton<SixWebRecebimentoTipo>(
-                        selected: <SixWebRecebimentoTipo>{_tipo},
-                        onSelectionChanged:
-                            (Set<SixWebRecebimentoTipo> value) =>
-                                _alterarTipo(value.first),
-                        segments: <ButtonSegment<SixWebRecebimentoTipo>>[
-                          ButtonSegment<SixWebRecebimentoTipo>(
-                            value: SixWebRecebimentoTipo.total,
-                            label: Text(
-                              context.t('recebimento.total', fallback: 'Total'),
-                            ),
-                            icon: const Icon(Icons.done_all_rounded),
-                          ),
-                          ButtonSegment<SixWebRecebimentoTipo>(
-                            value: SixWebRecebimentoTipo.parcial,
-                            label: Text(
-                              context.t(
-                                'recebimento.parcial',
-                                fallback: 'Parcial',
-                              ),
-                            ),
-                            icon: const Icon(Icons.call_split_rounded),
-                          ),
-                        ],
-                      ),
-                    if (widget.permitirParcial) const SizedBox(height: 14),
-                    _formasRecebimentoSection(),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _observacaoController,
-                      minLines: 2,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        labelText: context.t(
-                          'recebimento.observacao',
-                          fallback: 'Observação',
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(context.t('common.cancel', fallback: 'Cancelar')),
-            ),
-            FilledButton.icon(
-              onPressed: _carregandoTipos ? null : _confirmar,
-              icon: const Icon(Icons.payments_rounded),
-              label: Text(
-                _tipo == SixWebRecebimentoTipo.total
-                    ? context.t(
-                      'recebimento.receberTotal',
-                      fallback: 'Receber total',
-                    )
-                    : context.t(
-                      'recebimento.receberParcial',
-                      fallback: 'Receber parcial',
-                    ),
-              ),
-            ),
-          ],
         ),
       ),
     );
   }
 
+  Widget _buildSummaryHighlights(
+    ThemeData theme,
+    WebThemeTokens tokens,
+    Color accent,
+    Color surfaceSoft,
+  ) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: <Widget>[
+        _buildSummaryPill(
+          theme: theme,
+          tokens: tokens,
+          accent: accent,
+          surfaceSoft: surfaceSoft,
+          icon: Icons.account_balance_wallet_rounded,
+          label: context.t(
+            'recebimento.valorEmAberto',
+            fallback: 'Valor em aberto',
+          ),
+          value: _formatarMoeda(widget.valorAberto),
+        ),
+        _buildSummaryPill(
+          theme: theme,
+          tokens: tokens,
+          accent: accent,
+          surfaceSoft: surfaceSoft,
+          icon: Icons.rule_folder_outlined,
+          label: context.t('recebimento.summaryType', fallback: 'Tipo'),
+          value:
+              _tipo == SixWebRecebimentoTipo.total
+                  ? context.t('recebimento.total', fallback: 'Total')
+                  : context.t('recebimento.parcial', fallback: 'Parcial'),
+        ),
+        _buildSummaryPill(
+          theme: theme,
+          tokens: tokens,
+          accent: accent,
+          surfaceSoft: surfaceSoft,
+          icon: Icons.layers_outlined,
+          label: context.t(
+            'recebimento.formasRecebimento',
+            fallback: 'Formas de recebimento',
+          ),
+          value: _formas.length.toString(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryPill({
+    required ThemeData theme,
+    required WebThemeTokens tokens,
+    required Color accent,
+    required Color surfaceSoft,
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 170, maxWidth: 186),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: surfaceSoft,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(icon, color: accent, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: tokens.secondaryText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _formasRecebimentoSection() {
-    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     if (_carregandoTipos) {
       return Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(
-            alpha: 0.35,
-          ),
+          color: tokens.surfaceMuted,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: tokens.cardBorder),
         ),
         child: Row(
           children: <Widget>[
@@ -548,6 +913,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
                   'recebimento.carregandoTipos',
                   fallback: 'Carregando tipos de recebimento...',
                 ),
+                style: TextStyle(color: tokens.primaryText),
               ),
             ),
           ],
@@ -580,7 +946,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
             Text(
               '${context.t('recebimento.restante', fallback: 'Restante')}: ${_formatarMoeda(restante < 0 ? 0 : restante)}',
               style: TextStyle(
-                color: theme.colorScheme.onSurfaceVariant,
+                color: tokens.secondaryText,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -598,7 +964,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
           Text(
             _erroValor!,
             style: TextStyle(
-              color: theme.colorScheme.error,
+              color: tokens.danger,
               fontSize: 12,
               fontWeight: FontWeight.w800,
             ),
@@ -620,7 +986,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
   }
 
   Widget _formaRecebimentoCard(int index, _RecebimentoFormaDraft forma) {
-    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final Set<String> codigosEmUso =
         _formas
             .where((_RecebimentoFormaDraft item) => !identical(item, forma))
@@ -637,11 +1003,9 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.25,
-        ),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
         children: <Widget>[
@@ -660,8 +1024,18 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog> {
                         '${context.t('recebimento.valorForma', fallback: 'Valor da forma')} ${index + 1}',
                     prefixText:
                         '${context.read<LocaleSettingsProvider>().currencySymbol} ',
+                    filled: true,
+                    fillColor: tokens.surfaceElevated,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: tokens.cardBorder),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: tokens.selectedBorder),
                     ),
                   ),
                 ),
@@ -896,7 +1270,7 @@ class _TipoRecebimentoDropdownState extends State<_TipoRecebimentoDropdown> {
           enabled: true,
           label: '${widget.label}: ${widget.value.descricao}',
           child: Tooltip(
-            message: 'Selecionar ${widget.label}',
+            message: widget.label,
             waitDuration: const Duration(milliseconds: 450),
             child: MouseRegion(
               cursor: SystemMouseCursors.click,
@@ -1069,4 +1443,164 @@ class _RecebimentoFormaDraft {
 
   SixWebTipoRecebimentoOpcao opcao;
   final TextEditingController controller;
+}
+
+class _RecebimentoRouteSurface extends StatelessWidget {
+  const _RecebimentoRouteSurface({
+    required this.animation,
+    required this.reduceMotion,
+    required this.child,
+  });
+
+  final Animation<double> animation;
+  final bool reduceMotion;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (BuildContext context, Widget? child) {
+        final double progress =
+            reduceMotion ? 1 : Curves.easeOutCubic.transform(animation.value);
+        return Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            BackdropFilter(
+              filter: ui.ImageFilter.blur(
+                sigmaX: 12 * progress,
+                sigmaY: 12 * progress,
+              ),
+              child: ColoredBox(
+                color: const Color(
+                  0xFF081120,
+                ).withValues(alpha: 0.78 * progress),
+              ),
+            ),
+            SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Opacity(
+                    opacity: progress,
+                    child: Transform.translate(
+                      offset: Offset(0, 18 * (1 - progress)),
+                      child: Transform.scale(
+                        scale: 0.96 + (0.04 * progress),
+                        child: child,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+      child: child,
+    );
+  }
+}
+
+class _RecebimentoDialogIcon extends StatelessWidget {
+  const _RecebimentoDialogIcon({
+    required this.animation,
+    required this.accent,
+    required this.surfaceColor,
+  });
+
+  final Animation<double> animation;
+  final Color accent;
+  final Color surfaceColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (BuildContext context, Widget? child) {
+        final double halo = Curves.easeOutCubic.transform(
+          const Interval(0, 0.72).transform(animation.value),
+        );
+        final double settle = Curves.easeOutBack
+            .transform(const Interval(0.30, 1).transform(animation.value))
+            .clamp(0.0, 1.0);
+        return SizedBox(
+          width: 68,
+          height: 68,
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: <Widget>[
+              Opacity(
+                opacity: (1 - halo) * 0.28,
+                child: Transform.scale(
+                  scale: 0.74 + (halo * 0.42),
+                  child: Container(
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: accent.withValues(alpha: 0.20),
+                    ),
+                  ),
+                ),
+              ),
+              Transform.scale(
+                scale: 0.92 + (settle * 0.08),
+                child: Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: accent.withValues(alpha: 0.38)),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: accent.withValues(alpha: 0.14),
+                        blurRadius: 18,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: <Widget>[
+                        Transform.translate(
+                          offset: Offset(0, 4 * (1 - settle)),
+                          child: Icon(
+                            Icons.payments_outlined,
+                            color: accent,
+                            size: 24,
+                          ),
+                        ),
+                        Positioned(
+                          right: 10,
+                          top: 10,
+                          child: Opacity(
+                            opacity: (0.45 + (0.55 * settle)).clamp(0.0, 1.0),
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: surfaceColor,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: accent.withValues(alpha: 0.55),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
