@@ -5,9 +5,10 @@ import '../../core/state/loading_do_mobile_comunicando_com_backend_controller.da
 import '../../data/services/regionalizacao/regionalizacao_api_client.dart';
 import '../../domain/services/regionalizacao/regionalizacao_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
+import '../../l10n/six_i18n.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/locale_settings_provider.dart';
-import '../components/six_lottie_action_overlay.dart';
+import '../components/mobile/sixoapp_mobile_loading_scene.dart';
 import '../navigation/mobile_navigation_controller.dart';
 import 'mobile_main_shell.dart';
 
@@ -20,7 +21,7 @@ class PostLoginSplashMobilePage extends StatefulWidget {
 }
 
 class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
-  static const Duration _minimumDuration = Duration(seconds: 3);
+  static const Duration _minimumDuration = Duration(milliseconds: 1600);
 
   @override
   void initState() {
@@ -86,18 +87,13 @@ class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<int>(
-      valueListenable:
-          LoadingDoMobileComunicandoComBackendController.activeOperations,
-      child: const Scaffold(body: SizedBox.expand()),
-      builder: (BuildContext context, int activeOperations, Widget? child) {
-        return SixLottieActionOverlay(
-          isLoading: activeOperations > 0,
-          title: 'Preparando seu acesso',
-          subtitle: 'Sincronizando seus dados, permissões e preferências.',
-          child: child!,
-        );
-      },
+    return Scaffold(
+      body: SixoAppMobileLoadingScene(
+        message: context.t(
+          'splash.syncingAccount',
+          fallback: 'Sincronizando seus dados...',
+        ),
+      ),
     );
   }
 }

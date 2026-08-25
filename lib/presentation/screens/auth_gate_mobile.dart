@@ -11,6 +11,7 @@ import '../../domain/services/regionalizacao/regionalizacao_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/locale_settings_provider.dart';
+import '../components/mobile/sixoapp_mobile_loading_scene.dart';
 import '../navigation/mobile_navigation_controller.dart';
 import 'auth_entry_mobile.dart';
 import 'mobile_main_shell.dart';
@@ -140,71 +141,26 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
 
   @override
   Widget build(BuildContext context) {
+    if (_status == _AuthGateMobileStatus.validating) {
+      return Scaffold(
+        body: SixoAppMobileLoadingScene(
+          message: context.t(
+            'splash.validatingSession',
+            fallback: 'Validando sua sessão...',
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: SixMobilePalette.background,
       body: SafeArea(
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 220),
-              child:
-                  _status == _AuthGateMobileStatus.validating
-                      ? _buildValidatingState(context)
-                      : _buildTemporaryErrorState(context),
-            ),
+            child: _buildTemporaryErrorState(context),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildValidatingState(BuildContext context) {
-    return Semantics(
-      key: const ValueKey<String>('auth-gate-mobile-validating'),
-      container: true,
-      liveRegion: true,
-      label: context.t(
-        'auth.session.validatingMessage',
-        fallback: 'Validando sua sessão com segurança...',
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          const _AuthGateLogo(),
-          const SizedBox(height: 22),
-          Text(
-            context.t(
-              'auth.session.validatingTitle',
-              fallback: 'Entrando no Six',
-            ),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: SixMobilePalette.titleText,
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            context.t(
-              'auth.session.validatingMessage',
-              fallback: 'Validando sua sessão com segurança...',
-            ),
-            textAlign: TextAlign.center,
-            style: TextStyle(color: SixMobilePalette.mutedText, height: 1.35),
-          ),
-          const SizedBox(height: 28),
-          SizedBox(
-            width: 28,
-            height: 28,
-            child: CircularProgressIndicator(
-              strokeWidth: 3,
-              color: SixMobilePalette.accent,
-              backgroundColor: SixMobilePalette.activeBorder,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -290,35 +246,6 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _AuthGateLogo extends StatelessWidget {
-  const _AuthGateLogo();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 72,
-      height: 72,
-      decoration: BoxDecoration(
-        color: SixMobilePalette.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: SixMobilePalette.border),
-        boxShadow: [
-          BoxShadow(
-            color: SixMobilePalette.navigationShadow,
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Icon(
-        Icons.lock_open_rounded,
-        color: SixMobilePalette.accent,
-        size: 34,
       ),
     );
   }
