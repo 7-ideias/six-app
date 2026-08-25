@@ -7,6 +7,7 @@ import '../../l10n/six_i18n.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
 import '../components/mobile_motion.dart';
 import '../coordinators/operational_procedure_flow_coordinator.dart';
+import 'consulta_vendas_mobile_screen.dart';
 import 'pdv_mobile_screen.dart';
 import 'vendas_nao_liquidadas_mobile_screen.dart';
 
@@ -34,7 +35,6 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
   static Color get _secondaryColor => SixMobilePalette.secondary;
   static Color get _accentColor => SixMobilePalette.accent;
   static const Color _receiveAccentColor = Color(0xFF16A34A);
-  static const Color _disabledAccentColor = Color(0xFF8B85A6);
   static const String _saleAsset = 'assets/images/vendas mobile/vendas.webp';
   static const String _receiveAsset =
       'assets/images/vendas mobile/recebimento.webp';
@@ -170,18 +170,12 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
                         'atendimento.mobile.consultSalesSubtitle',
                         'Consultar histórico de vendas',
                       ),
-                      badge: _t(
-                        context,
-                        'operacao.mobile.returnUnavailable',
-                        'Em breve',
-                      ),
-                      accentColor: _disabledAccentColor,
-                      illustration: const _OperationAssetIllustration(
+                      accentColor: _accentColor,
+                      illustration: _OperationAssetIllustration(
                         assetPath: _consultAsset,
-                        accentColor: _disabledAccentColor,
+                        accentColor: _accentColor,
                       ),
-                      enabled: false,
-                      onTap: null,
+                      onTap: () => _go(ConsultaVendasMobileScreen()),
                     ),
                   ),
                 ],
@@ -227,8 +221,6 @@ class _OperationActionCard extends StatelessWidget {
     required this.accentColor,
     required this.illustration,
     required this.onTap,
-    this.enabled = true,
-    this.badge,
     this.loading = false,
     this.height,
     this.compact = false,
@@ -239,52 +231,33 @@ class _OperationActionCard extends StatelessWidget {
   final Color accentColor;
   final Widget illustration;
   final VoidCallback? onTap;
-  final bool enabled;
-  final String? badge;
   final bool loading;
   final double? height;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final bool available = enabled && !loading && onTap != null;
+    final bool available = !loading && onTap != null;
     final VoidCallback? effectiveTap = available ? onTap : null;
-    final Color titleColor =
-        enabled ? accentColor : SixMobilePalette.secondary.withAlpha(205);
-    final Color subtitleColor =
-        enabled
-            ? SixMobilePalette.mutedText
-            : SixMobilePalette.mutedText.withAlpha(215);
-    final Color borderColor =
-        enabled
-            ? accentColor.withAlpha(58)
-            : SixMobilePalette.border.withAlpha(170);
-    final Color surfaceColor =
-        enabled
-            ? SixMobilePalette.surface
-            : SixMobilePalette.softNeutralSurface;
-    final String? badgeText = badge?.trim();
+    final Color titleColor = accentColor;
+    final Color subtitleColor = SixMobilePalette.mutedText;
+    final Color borderColor = accentColor.withAlpha(58);
+    final Color surfaceColor = SixMobilePalette.surface;
 
     return Semantics(
       container: true,
-      button: enabled,
+      button: true,
       enabled: available,
-      label:
-          badgeText == null || badgeText.isEmpty
-              ? '$title. $subtitle'
-              : '$title. $subtitle. $badgeText',
+      label: '$title. $subtitle',
       child: Container(
         height: height,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color:
-                  enabled
-                      ? SixMobilePalette.navigationShadow
-                      : SixMobilePalette.navigationShadow.withAlpha(10),
-              blurRadius: enabled ? 16 : 10,
-              offset: Offset(0, enabled ? 8 : 4),
+              color: SixMobilePalette.navigationShadow,
+              blurRadius: 16,
+              offset: Offset(0, 8),
             ),
           ],
         ),
@@ -318,7 +291,7 @@ class _OperationActionCard extends StatelessWidget {
                     child: Container(
                       width: 5,
                       decoration: BoxDecoration(
-                        color: enabled ? accentColor : SixMobilePalette.border,
+                        color: accentColor,
                         borderRadius: BorderRadius.horizontal(
                           left: Radius.circular(20),
                         ),
@@ -378,14 +351,6 @@ class _OperationActionCard extends StatelessWidget {
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  if (badgeText != null &&
-                                      badgeText.isNotEmpty) ...<Widget>[
-                                    SizedBox(height: compact ? 6 : 7),
-                                    _OperationStatusBadge(
-                                      label: badgeText,
-                                      accentColor: accentColor,
-                                    ),
-                                  ],
                                 ],
                               ),
                             ),
@@ -394,7 +359,7 @@ class _OperationActionCard extends StatelessWidget {
                               dimension: illustrationSize,
                               child: _OperationIllustrationPane(
                                 accentColor: accentColor,
-                                enabled: enabled,
+                                enabled: available,
                                 child: illustration,
                               ),
                             ),
@@ -402,7 +367,7 @@ class _OperationActionCard extends StatelessWidget {
                             _OperationActionTrailing(
                               accentColor: accentColor,
                               loading: loading,
-                              enabled: enabled,
+                              enabled: available,
                             ),
                           ],
                         ),
@@ -480,36 +445,6 @@ class _OperationAssetIllustration extends StatelessWidget {
         ) {
           return Icon(Icons.storefront_outlined, color: accentColor, size: 42);
         },
-      ),
-    );
-  }
-}
-
-class _OperationStatusBadge extends StatelessWidget {
-  const _OperationStatusBadge({required this.label, required this.accentColor});
-
-  final String label;
-  final Color accentColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: accentColor.withAlpha(18),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: accentColor.withAlpha(38)),
-      ),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: accentColor,
-          fontSize: 11,
-          height: 1,
-          fontWeight: FontWeight.w900,
-        ),
       ),
     );
   }
