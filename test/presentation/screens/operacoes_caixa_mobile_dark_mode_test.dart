@@ -851,7 +851,9 @@ CaixaSessao _openSession({
   return CaixaSessao(
     idSessaoCaixa: id,
     nomeCaixa: nomeCaixa,
+    idCaixaOuGuiche: 'caixa-1',
     idColaboradorAbertura: 'colab-caixa',
+    nomeColaboradorAbertura: _operatorName,
     dataHoraAbertura: '2026-08-08T08:00:00',
     valorAbertura: valorAbertura,
     status: status,
@@ -1025,6 +1027,16 @@ class _FakeCaixaApiClient implements CaixaApiClient {
   Future<CaixaSessao?> getSessaoAtual() {
     sessaoAtualCalls += 1;
     return Future<CaixaSessao?>.value(session);
+  }
+
+  @override
+  Future<List<CaixaSessao>> getSessoesAbertas() {
+    final CaixaSessao? currentSession = session;
+    return Future<List<CaixaSessao>>.value(
+      currentSession == null
+          ? const <CaixaSessao>[]
+          : <CaixaSessao>[currentSession],
+    );
   }
 
   @override

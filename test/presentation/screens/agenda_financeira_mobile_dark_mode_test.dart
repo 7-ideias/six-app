@@ -360,6 +360,9 @@ class _FakeCaixaApiClient implements CaixaApiClient {
   Future<CaixaSessao?> getSessaoAtual() async => null;
 
   @override
+  Future<List<CaixaSessao>> getSessoesAbertas() async => const <CaixaSessao>[];
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 

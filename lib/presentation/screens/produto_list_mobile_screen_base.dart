@@ -81,7 +81,6 @@ class _ProdutoMobileFilterSelection {
 
 class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   static Color get _backgroundColor => SixMobilePalette.background;
-  static Color get _secondaryColor => SixMobilePalette.secondary;
   static Color get _accentColor => SixMobilePalette.accent;
   static Color get _onAccentColor => SixMobilePalette.onAccent;
   static Color get _surfaceColor => SixMobilePalette.surface;
@@ -89,8 +88,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   static Color get _softAccentColor => SixMobilePalette.softAccentSurface;
   static Color get _softNeutralColor => SixMobilePalette.softNeutralSurface;
   static Color get _borderColor => SixMobilePalette.border;
-  static Color get _activeAccentSurface =>
-      SixMobilePalette.accent.withValues(alpha: 0.16);
   static Color get _mutedTextColor => SixMobilePalette.mutedText;
   static Color get _titleTextColor => SixMobilePalette.titleText;
 
@@ -495,9 +492,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           title:
               isSelecao
                   ? _t('produto.mobile.selectItem', 'Selecionar item')
-                  : (_isProdutoSelecionado
-                      ? _t('produto.mobile.typeProduct', 'Produtos')
-                      : _t('produto.mobile.typeService', 'Serviços')),
+                  : '',
           backgroundColor: _backgroundColor,
           primaryColor: SixMobilePalette.primary,
           secondaryColor: SixMobilePalette.secondary,
@@ -511,6 +506,36 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           actions:
               !isSelecao
                   ? <Widget>[
+                    Padding(
+                      padding: EdgeInsets.only(right: 2),
+                      child: IconButton(
+                        tooltip:
+                            _isProdutoSelecionado
+                                ? _t(
+                                  'produto.mobile.searchProducts',
+                                  'Buscar produtos',
+                                )
+                                : _t(
+                                  'produto.mobile.searchServices',
+                                  'Buscar serviços',
+                                ),
+                        onPressed: _abrirCampoBusca,
+                        icon: Icon(
+                          Icons.search_rounded,
+                          size: 21,
+                          color:
+                              _exibirCampoBusca
+                                  ? SixMobilePalette.onAccent
+                                  : null,
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor:
+                              _exibirCampoBusca
+                                  ? _accentColor
+                                  : Colors.transparent,
+                        ),
+                      ),
+                    ),
                     Padding(
                       padding: EdgeInsets.only(right: 2),
                       child: IconButton(
@@ -533,6 +558,40 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                                   ? _accentColor
                                   : Colors.transparent,
                         ),
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(right: 2),
+                      child: IconButton(
+                        tooltip:
+                            _exibicaoHorizontal
+                                ? _t(
+                                  'produto.mobile.verticalView',
+                                  'Usar visualização vertical',
+                                )
+                                : _t(
+                                  'produto.mobile.horizontalView',
+                                  'Usar visualização horizontal',
+                                ),
+                        onPressed:
+                            _salvandoPreferencia
+                                ? null
+                                : _alternarModoExibicaoProdutos,
+                        icon:
+                            _salvandoPreferencia
+                                ? SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                                : Icon(
+                                  _exibicaoHorizontal
+                                      ? Icons.view_agenda_outlined
+                                      : Icons.view_carousel_outlined,
+                                  size: 21,
+                                ),
                       ),
                     ),
                     Padding(
@@ -590,26 +649,17 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                                   ? (isSelecao ? 14 : 18)
                                   : (isSelecao ? 14 : 8),
                         ),
-                        if (!_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
-                          _buildListHeader(
-                            itensDaLista.length,
-                            provider.isLoading,
-                          ),
-                          SizedBox(height: 10),
-                        ],
                         ..._buildListContent(provider, itensDaLista, isSelecao),
                       ],
                     ),
                   ),
-                  if (_deveExibirHeaderListaFixo(isSelecao))
+                  if (_deveExibirHeaderListaFixo(isSelecao) &&
+                      _exibirCampoBusca)
                     Positioned(
                       top: topInset,
                       left: 0,
                       right: 0,
-                      child: _buildHeaderListaFixo(
-                        itensDaLista.length,
-                        provider.isLoading,
-                      ),
+                      child: _buildHeaderListaFixo(),
                     ),
                 ],
               ),
@@ -638,23 +688,18 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     return !isSelecao && !_exibicaoHorizontal && _fixarHeaderLista;
   }
 
-  Widget _buildHeaderListaFixo(int count, bool isLoading) {
+  Widget _buildHeaderListaFixo() {
+    if (!_exibirCampoBusca) {
+      return SizedBox.shrink();
+    }
+
     return Material(
       color: _backgroundColor,
       elevation: 8,
       shadowColor: SixMobilePalette.navigationShadow,
       child: Padding(
         padding: EdgeInsets.fromLTRB(16, 10, 16, 10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            _buildListHeader(count, isLoading),
-            if (_exibirCampoBusca) ...<Widget>[
-              SizedBox(height: 10),
-              _buildSearchField(),
-            ],
-          ],
-        ),
+        child: _buildSearchField(),
       ),
     );
   }
@@ -831,54 +876,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     if (temBusca) return;
 
     setState(() => _exibirCampoBusca = false);
-  }
-
-  Widget _buildBuscaListHeaderButton() {
-    return Tooltip(
-      message:
-          _isProdutoSelecionado
-              ? _t('produto.mobile.searchProducts', 'Buscar produtos')
-              : _t('produto.mobile.searchServices', 'Buscar serviços'),
-      child: InkWell(
-        onTap: _abrirCampoBusca,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            color: _exibirCampoBusca ? _activeAccentSurface : _softAccentColor,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Icon(Icons.search_rounded, color: _accentColor, size: 18),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFiltroListHeaderButton() {
-    final bool filtrosAtivos = _temFiltrosEstruturaisAtivos;
-
-    return Tooltip(
-      message: _t('produto.mobile.filtersTooltip', 'Filtros e ordenação'),
-      child: InkWell(
-        onTap: _showFilterOptions,
-        borderRadius: BorderRadius.circular(999),
-        child: AnimatedContainer(
-          duration: Duration(milliseconds: 180),
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            color: filtrosAtivos ? _activeAccentSurface : _softAccentColor,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Icon(
-            Icons.tune_rounded,
-            color: filtrosAtivos ? _secondaryColor : _accentColor,
-            size: 18,
-          ),
-        ),
-      ),
-    );
   }
 
   bool _produtoFavoritoVisual(ProdutoModel produto) {
@@ -1207,110 +1204,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildModoExibicaoListHeaderButton() {
-    return Tooltip(
-      message:
-          _exibicaoHorizontal
-              ? _t('produto.mobile.verticalView', 'Usar visualização vertical')
-              : _t(
-                'produto.mobile.horizontalView',
-                'Usar visualização horizontal',
-              ),
-      child: InkWell(
-        onTap: _salvandoPreferencia ? null : _alternarModoExibicaoProdutos,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            color: _softAccentColor,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child:
-              _salvandoPreferencia
-                  ? Center(
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  )
-                  : Icon(
-                    _exibicaoHorizontal
-                        ? Icons.view_agenda_outlined
-                        : Icons.view_carousel_outlined,
-                    color: _accentColor,
-                    size: 18,
-                  ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildListHeader(int count, bool isLoading) {
-    final String titulo =
-        widget.isSelecao
-            ? (_selecaoMultiplaAtiva
-                ? _t(
-                  'produto.mobile.selectManyItems',
-                  'Selecione um ou mais itens',
-                )
-                : (_isProdutoSelecionado
-                    ? _t(
-                      'produto.mobile.tapProductToAdd',
-                      'Toque no produto para adicionar',
-                    )
-                    : _t(
-                      'produto.mobile.tapServiceToAdd',
-                      'Toque no serviço para adicionar',
-                    )))
-            : (_isProdutoSelecionado
-                ? _t('produto.mobile.typeProduct', 'Produtos')
-                : _t('produto.mobile.typeService', 'Serviços'));
-
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: Text(
-            titulo,
-            style: TextStyle(
-              color: _titleTextColor,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-        if (isLoading) ...<Widget>[
-          SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          SizedBox(width: 10),
-        ],
-        _buildBuscaListHeaderButton(),
-        SizedBox(width: 8),
-        _buildModoExibicaoListHeaderButton(),
-        SizedBox(width: 8),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: _softAccentColor,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            '$count ${count == 1 ? _t('produto.mobile.itemSingular', 'item') : _t('produto.mobile.itemPlural', 'itens')}',
-            style: TextStyle(
-              color: _accentColor,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-      ],
     );
   }
 

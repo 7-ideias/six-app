@@ -992,11 +992,18 @@ class _FakeCaixaApiClient implements CaixaApiClient {
     return CaixaSessao(
       idSessaoCaixa: 'sessao-1',
       nomeCaixa: 'Caixa mobile',
+      idCaixaOuGuiche: 'caixa-mobile',
       idColaboradorAbertura: 'colab-caixa',
+      nomeColaboradorAbertura: 'Operador do caixa',
       dataHoraAbertura: '2026-08-08T08:00:00',
       valorAbertura: 100,
       status: 'aberta',
     );
+  }
+
+  @override
+  Future<List<CaixaSessao>> getSessoesAbertas() async {
+    return <CaixaSessao>[await getSessaoAtual() as CaixaSessao];
   }
 
   @override
