@@ -1327,7 +1327,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         produto.nomeProduto.isEmpty
             ? _t('produto.webList.itemWithoutName', 'Item sem nome')
             : produto.nomeProduto;
-    final String subtitulo = _resumoProdutoVertical(produto, ativo);
+    final String preco = _formatCurrency(produto.precoVenda);
+    final String codigo = produto.codigoDeBarras.trim();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 3),
@@ -1417,7 +1418,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             ],
           ),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Row(
               children: <Widget>[
                 _buildThumbnail(produto, isProduto, size: 44),
@@ -1425,6 +1426,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                 Expanded(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
@@ -1432,22 +1434,71 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 14,
-                          height: 1.15,
+                          fontSize: 13,
+                          height: 1.0,
                           fontWeight: FontWeight.w900,
                           color: _titleTextColor,
                         ),
                       ),
-                      SizedBox(height: 3),
-                      Text(
-                        subtitulo,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          height: 1.2,
-                          fontWeight: FontWeight.w600,
-                          color: _mutedTextColor,
+                      SizedBox(height: 2),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Flexible(
+                            child: Text(
+                              preco,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                height: 1.0,
+                                fontWeight: FontWeight.w800,
+                                color: _titleTextColor,
+                              ),
+                            ),
+                          ),
+                          if (codigo.isNotEmpty) ...<Widget>[
+                            SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                '• SKU $codigo',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  height: 1.0,
+                                  fontWeight: FontWeight.w600,
+                                  color: _mutedTextColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      SizedBox(height: 4),
+                      SizedBox(
+                        height: 18,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: BouncingScrollPhysics(),
+                          child: Row(
+                            children: <Widget>[
+                              if (isProduto) _StockStatusChip(produto: produto),
+                              if (!ativo) ...<Widget>[
+                                SizedBox(width: 4),
+                                _StatusChip(ativo: false),
+                              ],
+                              if (produto.favorito) ...<Widget>[
+                                SizedBox(width: 4),
+                                _FavoriteStatusChip(),
+                              ],
+                              SizedBox(width: 4),
+                              _CatalogStatusChip(
+                                disponivelParaCatalogo:
+                                    produto.disponivelParaCatalogo,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -3386,50 +3437,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     return partes.join('. ');
   }
 
-  String _resumoProdutoVertical(ProdutoModel produto, bool ativo) {
-    final List<String> partes = <String>[_formatCurrency(produto.precoVenda)];
-    final String codigo = produto.codigoDeBarras.trim();
-    final String categoria = _categoriaProdutoLabel(produto);
-    final String grupo = _grupoProdutoLabel(produto);
-    final String alertaEstoque = _alertaEstoqueProdutoVertical(produto);
-
-    if (codigo.isNotEmpty) {
-      partes.add(codigo);
-    } else if (categoria.isNotEmpty) {
-      partes.add(categoria);
-    } else if (grupo.isNotEmpty) {
-      partes.add(grupo);
-    } else {
-      partes.add(
-        _matchesTipoSelecionado(produto, 'PRODUTO')
-            ? _t('produto.mobile.typeProduct', 'Produto')
-            : _t('produto.mobile.typeService', 'Serviço'),
-      );
-    }
-
-    if (!ativo) {
-      partes.add(_t('common.inactive', 'Inativo'));
-    } else if (alertaEstoque.isNotEmpty) {
-      partes.add(alertaEstoque);
-    }
-
-    return partes.join(' • ');
-  }
-
-  String _alertaEstoqueProdutoVertical(ProdutoModel produto) {
-    switch (_situacaoEstoque(produto)) {
-      case _ProdutoSituacaoEstoqueMobile.estoqueBaixo:
-        return _t('produto.webList.stockLow', 'Estoque baixo');
-      case _ProdutoSituacaoEstoqueMobile.semEstoque:
-        return _t('produto.webList.stockOut', 'Sem estoque');
-      case _ProdutoSituacaoEstoqueMobile.estoqueNegativo:
-        return _t('produto.webList.stockNegative', 'Estoque negativo');
-      case _ProdutoSituacaoEstoqueMobile.emEstoque:
-      case _ProdutoSituacaoEstoqueMobile.naoAplicavel:
-        return '';
-    }
-  }
-
   Widget _buildProdutoInfoSection({
     required String title,
     required List<Widget> children,
@@ -3871,7 +3878,7 @@ class _StatusChip extends StatelessWidget {
             : (isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626));
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(999),
@@ -3881,7 +3888,8 @@ class _StatusChip extends StatelessWidget {
             ? context.t('common.active', fallback: 'Ativo')
             : context.t('common.inactive', fallback: 'Inativo'),
         style: TextStyle(
-          fontSize: 11,
+          fontSize: 10,
+          height: 1.0,
           fontWeight: FontWeight.w900,
           color: foregroundColor,
         ),
@@ -3908,7 +3916,7 @@ class _CatalogStatusChip extends StatelessWidget {
             : (isDark ? const Color(0xFFD4D4D8) : const Color(0xFF52525B));
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(999),
@@ -3924,7 +3932,97 @@ class _CatalogStatusChip extends StatelessWidget {
               fallback: 'Indisponível',
             ),
         style: TextStyle(
-          fontSize: 11,
+          fontSize: 10,
+          height: 1.0,
+          fontWeight: FontWeight.w900,
+          color: foregroundColor,
+        ),
+      ),
+    );
+  }
+}
+
+class _FavoriteStatusChip extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color backgroundColor =
+        isDark ? const Color(0xFF4C0519) : const Color(0xFFFFEEF4);
+    final Color foregroundColor =
+        isDark ? const Color(0xFFF9A8D4) : const Color(0xFFDB2777);
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        context.t('produto.favorite.status', fallback: 'Favorito'),
+        style: TextStyle(
+          fontSize: 10,
+          height: 1.0,
+          fontWeight: FontWeight.w900,
+          color: foregroundColor,
+        ),
+      ),
+    );
+  }
+}
+
+class _StockStatusChip extends StatelessWidget {
+  const _StockStatusChip({required this.produto});
+
+  final ProdutoModel produto;
+
+  double _quantidadeEstoque(ProdutoModel produto) {
+    final List<ObjEntradaSaidaProduto>? movimentacoes =
+        produto.objEntradaSaidaProduto;
+    if (movimentacoes == null || movimentacoes.isEmpty) return 0;
+
+    return movimentacoes.fold<double>(
+      0,
+      (double total, ObjEntradaSaidaProduto item) => total + item.quantidade,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final double quantidade = _quantidadeEstoque(produto);
+    final bool possuiEstoque = quantidade > 0;
+    final Color backgroundColor =
+        possuiEstoque
+            ? (isDark ? const Color(0xFF052E1A) : const Color(0xFFEAF8EE))
+            : (isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2));
+    final Color foregroundColor =
+        possuiEstoque
+            ? (isDark ? const Color(0xFF86EFAC) : const Color(0xFF16A34A))
+            : (isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626));
+
+    final String label =
+        possuiEstoque
+            ? context
+                .t('produto.webList.stockQuantity', fallback: 'Qtd {value}')
+                .replaceAll(
+                  '{value}',
+                  context.read<LocaleSettingsProvider>().formatDecimal(
+                    quantidade,
+                  ),
+                )
+            : context.t('produto.webList.stockOut', fallback: 'Sem estoque');
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          height: 1.0,
           fontWeight: FontWeight.w900,
           color: foregroundColor,
         ),
