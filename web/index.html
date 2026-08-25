@@ -20,7 +20,7 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="sixapp-entrypoint" content="flutter-app">
   <meta name="description" content="PDV para pequenos negócios brasileiros. Frente de caixa, estoque, ordens de serviço e financeiro preditivo — tudo em um só app, com IA para cadastrar produtos e prever caixa.">
-  <meta name="theme-color" content="#0F2D3A">
+  <meta name="theme-color" content="#00163A">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -39,18 +39,127 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Splash inline enquanto o Flutter inicializa — espelha o token ink (#0F2D3A)
-       e mostra o logo centralizado. Removido automaticamente quando o app monta. -->
+  <!-- Splash inline enquanto o Flutter inicializa. Removido automaticamente
+       quando o app monta e substituído pela mesma cena dentro do Flutter. -->
   <style>
-    html, body { margin: 0; padding: 0; background: #FFFFFF; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif; }
+    html, body { margin: 0; padding: 0; background: #00163A; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif; }
     #boot-splash {
       position: fixed; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      background: #FFFFFF;
+      display: grid; place-items: center;
+      overflow: hidden;
+      color: #FFFFFF;
+      background: radial-gradient(circle at 50% 42%, #063071 0, #021D48 52%, #00163A 100%);
       z-index: 9999;
       transition: opacity 240ms ease-out;
     }
-    #boot-splash img { width: 160px; height: auto; }
+    #boot-splash::before,
+    #boot-splash::after {
+      content: '';
+      position: absolute;
+      left: -8%; right: -8%;
+      height: 34%;
+      border: 1px solid rgba(20, 91, 255, 0.16);
+      border-radius: 50%;
+      transform: rotate(-8deg);
+      pointer-events: none;
+    }
+    #boot-splash::before { top: -17%; }
+    #boot-splash::after {
+      bottom: -18%;
+      border-color: rgba(20, 91, 255, 0.28);
+      box-shadow: 0 -34px 0 rgba(20, 91, 255, 0.06), 0 -68px 0 rgba(20, 91, 255, 0.035);
+    }
+    .boot-splash-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: min(88vw, 560px);
+      text-align: center;
+      animation: boot-enter 680ms cubic-bezier(.22,.75,.25,1) both;
+    }
+    .boot-splash-symbol-wrap {
+      position: relative;
+      width: clamp(168px, 26vh, 246px);
+      height: clamp(168px, 26vh, 246px);
+    }
+    .boot-splash-symbol-wrap::before {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(20,91,255,.24), transparent 72%);
+      animation: boot-breathe 2200ms ease-in-out infinite;
+    }
+    #boot-splash img {
+      position: relative;
+      width: 100%; height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 12px 26px rgba(16, 217, 240, 0.16));
+    }
+    .boot-splash-title {
+      margin-top: 14px;
+      font-size: clamp(42px, 4vw, 54px);
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: -1.7px;
+    }
+    .boot-splash-message {
+      margin-top: 24px;
+      color: #A8C6EE;
+      font-size: clamp(15px, 1.5vw, 17px);
+      font-weight: 500;
+    }
+    .boot-splash-progress {
+      position: relative;
+      width: min(284px, 64vw);
+      height: 5px;
+      margin-top: 22px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #082754;
+    }
+    .boot-splash-progress::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 30%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #10D9F0, #145BFF);
+      box-shadow: 0 0 9px rgba(16,217,240,.5);
+      animation: boot-progress 1800ms linear infinite;
+    }
+    .boot-splash-footer {
+      position: absolute;
+      left: 24px; right: 24px; bottom: 30px;
+      z-index: 1;
+      color: #8FB2E3;
+      font-size: 14px;
+      font-weight: 500;
+      text-align: center;
+    }
+    @keyframes boot-enter {
+      from { opacity: 0; transform: translateY(18px) scale(.93); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes boot-breathe {
+      0%, 100% { transform: scale(.985); }
+      50% { transform: scale(1.015); }
+    }
+    @keyframes boot-progress {
+      from { left: 0; }
+      to { left: 70%; }
+    }
+    @media (max-height: 650px) {
+      .boot-splash-symbol-wrap { width: 152px; height: 152px; }
+      .boot-splash-message { margin-top: 16px; }
+      .boot-splash-progress { margin-top: 16px; }
+      .boot-splash-footer { bottom: 18px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .boot-splash-content, .boot-splash-symbol-wrap::before, .boot-splash-progress::after { animation: none; }
+      .boot-splash-progress::after { left: 35%; }
+    }
     #boot-splash.hidden { opacity: 0; pointer-events: none; }
   </style>
 
@@ -116,8 +225,16 @@
   </script>
 </head>
 <body>
-  <div id="boot-splash">
-    <img src="icons/Icon-512.png" alt="Six POS">
+  <div id="boot-splash" role="status" aria-live="polite" aria-label="SixoApp. Preparando seu espaço...">
+    <div class="boot-splash-content" aria-hidden="true">
+      <div class="boot-splash-symbol-wrap">
+        <img src="assets/assets/images/sixoapp_splash_symbol.png" alt="">
+      </div>
+      <div class="boot-splash-title">SixoApp</div>
+      <div class="boot-splash-message">Preparando seu espaço...</div>
+      <div class="boot-splash-progress"></div>
+    </div>
+    <div class="boot-splash-footer" aria-hidden="true">Tudo conectado. Tudo sob controle.</div>
   </div>
   <script>
     // Esconde o splash quando o Flutter dispatcha o primeiro frame.

@@ -49,9 +49,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
-      return Scaffold(
-        body: SixWebSplashScene(subtitle: 'Preparando sua experiência web...'),
-      );
+      return const Scaffold(body: SixWebSplashScene());
     }
 
     return Scaffold(body: SixoAppMobileLoadingScene());
