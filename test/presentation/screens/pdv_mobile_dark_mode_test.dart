@@ -965,6 +965,16 @@ class _FakeCaixaApiClient implements CaixaApiClient {
   }
 
   @override
+  Future<List<CaixaSessao>> getSessoesAbertas() {
+    final CaixaSessao? currentSession = session;
+    return Future<List<CaixaSessao>>.value(
+      currentSession == null
+          ? const <CaixaSessao>[]
+          : <CaixaSessao>[currentSession],
+    );
+  }
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -972,7 +982,9 @@ CaixaSessao _openSession() {
   return CaixaSessao(
     idSessaoCaixa: 'sessao-pdv',
     nomeCaixa: 'Caixa PDV Mobile',
+    idCaixaOuGuiche: 'caixa-pdv',
     idColaboradorAbertura: 'colab-caixa',
+    nomeColaboradorAbertura: 'Operador do caixa',
     dataHoraAbertura: '2026-08-08T08:00:00',
     valorAbertura: 150,
     status: 'aberta',

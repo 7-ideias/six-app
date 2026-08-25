@@ -2853,6 +2853,11 @@ class _FakeCaixaApiClient implements CaixaApiClient {
   }
 
   @override
+  Future<List<CaixaSessao>> getSessoesAbertas() {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<List<TiposRecebimento>> listarTiposRecebimentoConfiguraveis() {
     throw UnimplementedError();
   }
