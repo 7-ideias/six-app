@@ -61,6 +61,8 @@ class _ConsultaVendasMobileScreenState
   ];
 
   late final ConsultaVendasApiClient _api;
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
   final TextEditingController _buscaController = TextEditingController();
 
   ConsultaVendasResponse? _resultado;
@@ -341,6 +343,7 @@ class _ConsultaVendasMobileScreenState
         return _VendaDetalheMobileSheet(
           api: _api,
           identificador: venda.idOperacao,
+          scaffoldMessengerKey: _scaffoldMessengerKey,
           title: venda.identificadorPreferencial,
         );
       },
@@ -348,9 +351,15 @@ class _ConsultaVendasMobileScreenState
   }
 
   void _snack(String mensagem) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
-    );
+    final ScaffoldMessengerState? messenger =
+        _scaffoldMessengerKey.currentState;
+    if (messenger == null) return;
+
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
+      );
   }
 
   @override
@@ -367,126 +376,131 @@ class _ConsultaVendasMobileScreenState
           valorTotalDevolvido: 0,
         );
 
-    return SixMobilePageShell(
-      title: _txt(
-        'atendimento.mobile.consultSalesTitle',
-        'Consultar vendas',
-        'View sales',
-        'Consultar ventas',
-      ),
-      backgroundColor: SixMobilePalette.background,
-      primaryColor: SixMobilePalette.primary,
-      secondaryColor: SixMobilePalette.secondary,
-      accentColor: SixMobilePalette.accent,
-      leading: IconButton(
-        tooltip: context.t('common.back', fallback: 'Voltar'),
-        icon: const Icon(Icons.arrow_back_rounded),
-        onPressed: () => Navigator.of(context).maybePop(),
-      ),
-      actions: <Widget>[
-        IconButton(
-          tooltip: _txt(
-            'sales.query.mobile.manageFilters',
-            'Abrir filtros',
-            'Open filters',
-            'Abrir filtros',
-          ),
-          icon: const Icon(Icons.tune_rounded),
-          onPressed: _carregando ? null : _abrirFiltros,
+    return ScaffoldMessenger(
+      key: _scaffoldMessengerKey,
+      child: SixMobilePageShell(
+        title: _txt(
+          'atendimento.mobile.consultSalesTitle',
+          'Consultar vendas',
+          'View sales',
+          'Consultar ventas',
         ),
-      ],
-      bodyBuilder: (
-        BuildContext context,
-        ScrollController scrollController,
-        double topInset,
-      ) {
-        return SafeArea(
-          top: false,
-          child: RefreshIndicator(
-            onRefresh: () => _consultar(mostrarFeedback: true),
-            color: _colors.accent,
-            backgroundColor: _colors.surface,
-            child: ListView(
-              controller: scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
-              children: <Widget>[
-                SixStaggeredEntry(
-                  delay: const Duration(milliseconds: 40),
-                  child: _ConsultaVendasHeroCard(
-                    title: _txt(
-                      'sales.query.mobile.title',
-                      'Histórico de vendas',
-                      'Sales history',
-                      'Historial de ventas',
-                    ),
-                    subtitle: _txt(
-                      'sales.query.mobile.subtitle',
-                      'Consulte vendas, acompanhe recebimentos e revise devoluções sem sair do fluxo mobile.',
-                      'Review sales, track receipts and inspect returns without leaving the mobile workflow.',
-                      'Consulte ventas, siga cobros y revise devoluciones sin salir del flujo móvil.',
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                SixStaggeredEntry(
-                  delay: const Duration(milliseconds: 90),
-                  child: _ConsultaVendasSummaryGrid(
-                    resumo: resumo,
-                    regionalizacao: regionalizacao,
-                    ticketMedio: resumo.ticketMedio,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                SixStaggeredEntry(
-                  delay: const Duration(milliseconds: 130),
-                  child: _buildSearchAndFilters(),
-                ),
-                if (_temFiltrosAtivos) ...<Widget>[
-                  const SizedBox(height: 10),
-                  _buildActiveFilters(regionalizacao),
-                ],
-                if (_erro != null && _resultado != null) ...<Widget>[
-                  const SizedBox(height: 10),
-                  _InlineErrorCard(message: _erro!),
-                ],
-                const SizedBox(height: 16),
-                SixStaggeredEntry(
-                  delay: const Duration(milliseconds: 170),
-                  child: _buildResultsHeader(),
-                ),
-                const SizedBox(height: 12),
-                AnimatedSwitcher(
-                  duration:
-                      MediaQuery.disableAnimationsOf(context)
-                          ? Duration.zero
-                          : const Duration(milliseconds: 220),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  child: _buildResultsBody(regionalizacao),
-                ),
-                if (_resultado != null) ...<Widget>[
-                  const SizedBox(height: 14),
-                  _PaginationCard(
-                    resultado: _resultado!,
-                    carregando: _carregando,
-                    onPrevious:
-                        _resultado!.paginaAtual > 0
-                            ? () =>
-                                _consultar(pagina: _resultado!.paginaAtual - 1)
-                            : null,
-                    onNext:
-                        _resultado!.paginaAtual + 1 < _resultado!.totalPaginas
-                            ? () =>
-                                _consultar(pagina: _resultado!.paginaAtual + 1)
-                            : null,
-                  ),
-                ],
-              ],
+        backgroundColor: SixMobilePalette.background,
+        primaryColor: SixMobilePalette.primary,
+        secondaryColor: SixMobilePalette.secondary,
+        accentColor: SixMobilePalette.accent,
+        leading: IconButton(
+          tooltip: context.t('common.back', fallback: 'Voltar'),
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        actions: <Widget>[
+          IconButton(
+            tooltip: _txt(
+              'sales.query.mobile.manageFilters',
+              'Abrir filtros',
+              'Open filters',
+              'Abrir filtros',
             ),
+            icon: const Icon(Icons.tune_rounded),
+            onPressed: _carregando ? null : _abrirFiltros,
           ),
-        );
-      },
+        ],
+        bodyBuilder: (
+          BuildContext context,
+          ScrollController scrollController,
+          double topInset,
+        ) {
+          return SafeArea(
+            top: false,
+            child: RefreshIndicator(
+              onRefresh: () => _consultar(mostrarFeedback: true),
+              color: _colors.accent,
+              backgroundColor: _colors.surface,
+              child: ListView(
+                controller: scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
+                children: <Widget>[
+                  SixStaggeredEntry(
+                    delay: const Duration(milliseconds: 40),
+                    child: _ConsultaVendasHeroCard(
+                      title: _txt(
+                        'sales.query.mobile.title',
+                        'Histórico de vendas',
+                        'Sales history',
+                        'Historial de ventas',
+                      ),
+                      subtitle: _txt(
+                        'sales.query.mobile.subtitle',
+                        'Consulte vendas, acompanhe recebimentos e revise devoluções sem sair do fluxo mobile.',
+                        'Review sales, track receipts and inspect returns without leaving the mobile workflow.',
+                        'Consulte ventas, siga cobros y revise devoluciones sin salir del flujo móvil.',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SixStaggeredEntry(
+                    delay: const Duration(milliseconds: 90),
+                    child: _ConsultaVendasSummaryGrid(
+                      resumo: resumo,
+                      regionalizacao: regionalizacao,
+                      ticketMedio: resumo.ticketMedio,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SixStaggeredEntry(
+                    delay: const Duration(milliseconds: 130),
+                    child: _buildSearchAndFilters(),
+                  ),
+                  if (_temFiltrosAtivos) ...<Widget>[
+                    const SizedBox(height: 10),
+                    _buildActiveFilters(regionalizacao),
+                  ],
+                  if (_erro != null && _resultado != null) ...<Widget>[
+                    const SizedBox(height: 10),
+                    _InlineErrorCard(message: _erro!),
+                  ],
+                  const SizedBox(height: 16),
+                  SixStaggeredEntry(
+                    delay: const Duration(milliseconds: 170),
+                    child: _buildResultsHeader(),
+                  ),
+                  const SizedBox(height: 12),
+                  AnimatedSwitcher(
+                    duration:
+                        MediaQuery.disableAnimationsOf(context)
+                            ? Duration.zero
+                            : const Duration(milliseconds: 220),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    child: _buildResultsBody(regionalizacao),
+                  ),
+                  if (_resultado != null) ...<Widget>[
+                    const SizedBox(height: 14),
+                    _PaginationCard(
+                      resultado: _resultado!,
+                      carregando: _carregando,
+                      onPrevious:
+                          _resultado!.paginaAtual > 0
+                              ? () => _consultar(
+                                pagina: _resultado!.paginaAtual - 1,
+                              )
+                              : null,
+                      onNext:
+                          _resultado!.paginaAtual + 1 < _resultado!.totalPaginas
+                              ? () => _consultar(
+                                pagina: _resultado!.paginaAtual + 1,
+                              )
+                              : null,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -2541,11 +2555,13 @@ class _VendaDetalheMobileSheet extends StatefulWidget {
   const _VendaDetalheMobileSheet({
     required this.api,
     required this.identificador,
+    required this.scaffoldMessengerKey,
     required this.title,
   });
 
   final ConsultaVendasApiClient api;
   final String identificador;
+  final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey;
   final String title;
 
   @override
@@ -2586,20 +2602,26 @@ class _VendaDetalheMobileSheetState extends State<_VendaDetalheMobileSheet> {
   Future<void> _copiarNumeroDaVenda(String value) async {
     await Clipboard.setData(ClipboardData(text: value));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _triple(
-            context,
-            'sales.query.mobile.saleCodeCopied',
-            'Número da venda copiado.',
-            'Sale number copied.',
-            'Número de venta copiado.',
+    final ScaffoldMessengerState? messenger =
+        widget.scaffoldMessengerKey.currentState;
+    if (messenger == null) return;
+
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            _triple(
+              context,
+              'sales.query.mobile.saleCodeCopied',
+              'Número da venda copiado.',
+              'Sale number copied.',
+              'Número de venta copiado.',
+            ),
           ),
+          behavior: SnackBarBehavior.floating,
         ),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      );
   }
 
   @override
