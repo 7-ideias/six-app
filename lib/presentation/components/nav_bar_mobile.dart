@@ -46,11 +46,25 @@ class NavBarMobile extends StatelessWidget {
               activeIcon: Icons.home_rounded,
               label: context.t('mobile.nav.dash', fallback: 'dash'),
               selected: selectedIndex == MobileNavigationController.dashIndex,
-              onTap: () => _select(
-                context,
-                controller,
-                MobileNavigationController.dashIndex,
-              ),
+              onTap:
+                  () => _select(
+                    context,
+                    controller,
+                    MobileNavigationController.dashIndex,
+                  ),
+            ),
+            _NavItem(
+              icon: Icons.support_agent_outlined,
+              activeIcon: Icons.support_agent_rounded,
+              label: context.t('mobile.nav.service', fallback: 'Atendimento'),
+              selected:
+                  selectedIndex == MobileNavigationController.serviceIndex,
+              onTap:
+                  () => _select(
+                    context,
+                    controller,
+                    MobileNavigationController.serviceIndex,
+                  ),
             ),
             _NavItem(
               icon: Icons.manage_accounts_outlined,
@@ -58,22 +72,12 @@ class NavBarMobile extends StatelessWidget {
               label: context.t('mobile.nav.management', fallback: 'Gestão'),
               selected:
                   selectedIndex == MobileNavigationController.managementIndex,
-              onTap: () => _select(
-                context,
-                controller,
-                MobileNavigationController.managementIndex,
-              ),
-            ),
-            _NavItem(
-              icon: Icons.support_agent_outlined,
-              activeIcon: Icons.support_agent_rounded,
-              label: context.t('mobile.nav.service', fallback: 'Atendimento'),
-              selected: selectedIndex == MobileNavigationController.serviceIndex,
-              onTap: () => _select(
-                context,
-                controller,
-                MobileNavigationController.serviceIndex,
-              ),
+              onTap:
+                  () => _select(
+                    context,
+                    controller,
+                    MobileNavigationController.managementIndex,
+                  ),
             ),
           ],
         ),

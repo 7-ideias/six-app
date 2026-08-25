@@ -382,6 +382,47 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.empty.attention': 'Nenhuma pendência importante agora.',
     'workspaceHome.empty.quickActions':
         'Nenhuma ação rápida disponível para suas permissões.',
+    'dashboardInicio.mobileCompanyFilterTooltip':
+        'Filtrar comércios: {comercio}',
+    'dashboardInicio.mobileCompanyFilterTitle': 'Filtrar comércios',
+    'dashboardInicio.mobileCompanyFilterSubtitle':
+        'Escolha um comércio para visualizar a dashboard.',
+    'dashboardInicio.mobileCompanyFilterAll': 'Todos',
+    'dashboardInicio.mobileCompanyFilterSearchHint': 'Buscar comércio',
+    'dashboardInicio.mobileCompanyFilterEmptyTitle':
+        'Nenhum comércio disponível',
+    'dashboardInicio.mobileCompanyFilterEmptyMessage':
+        'Não encontramos vínculos ativos para este usuário.',
+    'dashboardInicio.mobileCompanyFilterLoadError':
+        'Não foi possível carregar os comércios disponíveis agora.',
+    'dashboardInicio.mobileCompanyFilterSwitchError':
+        'Não foi possível trocar o comércio agora. Tente novamente.',
+    'dashboardInicio.mobileDashboardFilterTitle': 'Filtrar dashboard',
+    'dashboardInicio.mobileDashboardFilterSubtitle':
+        'Escolha o comércio e, se precisar, refine por colaborador.',
+    'dashboardInicio.mobileDashboardFilterCompanyLabel': 'Comércio',
+    'dashboardInicio.mobileDashboardFilterCompanyHelper':
+        'Define qual comércio alimenta os indicadores exibidos.',
+    'dashboardInicio.mobileCollaboratorFilterLabel': 'Colaborador',
+    'dashboardInicio.mobileCollaboratorFilterAll': 'Todos os colaboradores',
+    'dashboardInicio.mobileCollaboratorFilterHelper':
+        'Mostra os indicadores do colaborador selecionado na dashboard.',
+    'dashboardInicio.mobileCollaboratorFilterDisabledHelper':
+        'Escolha um comércio específico para filtrar colaboradores.',
+    'dashboardInicio.mobileCollaboratorFilterLoadingHelper':
+        'Carregando colaboradores do comércio atual.',
+    'dashboardInicio.mobileCollaboratorFilterTitle': 'Filtrar colaborador',
+    'dashboardInicio.mobileCollaboratorFilterSubtitle':
+        'Escolha um colaborador para refinar os indicadores.',
+    'dashboardInicio.mobileCollaboratorFilterSearchHint': 'Buscar colaborador',
+    'dashboardInicio.mobileCollaboratorFilterEmptyTitle':
+        'Nenhum colaborador disponível',
+    'dashboardInicio.mobileCollaboratorFilterEmptyMessage':
+        'Não encontramos colaboradores ativos neste comércio.',
+    'dashboardInicio.mobileCollaboratorFilterLoadError':
+        'Não foi possível carregar os colaboradores deste comércio agora.',
+    'dashboardInicio.mobileCollaboratorFilterSelectedFallback':
+        'Colaborador selecionado',
     'workspaceHome.cash.title': 'Caixa',
     'workspaceHome.cash.open': 'Aberto',
     'workspaceHome.cash.closed': 'Fechado',
@@ -1426,8 +1467,8 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Venda, serviço ou recebimento em poucos passos',
     'atendimento.mobile.chooseOperation': 'Escolha a operação para iniciar.',
     'atendimento.mobile.salesMenuTitle': 'Vendas',
-    'atendimento.mobile.newSaleTitle': 'Nova venda',
-    'atendimento.mobile.newSaleSubtitle': 'Vender produtos',
+    'atendimento.mobile.newSaleTitle': 'Vendas',
+    'atendimento.mobile.newSaleSubtitle': 'Opções',
     'atendimento.mobile.consultSalesTitle': 'Consultar vendas',
     'atendimento.mobile.consultSalesSubtitle': 'Consultar histórico de vendas',
     'atendimento.mobile.newServiceTitle': 'Serviços',
@@ -2154,6 +2195,46 @@ const Map<String, Map<String, String>> _fallbacks = {
     'streak.startedToday': 'Your streak started today.',
     'streak.loading': 'Loading your streak days.',
     'streak.loadError': 'Could not load your streak.',
+    'dashboardInicio.mobileCompanyFilterTooltip':
+        'Filter businesses: {comercio}',
+    'dashboardInicio.mobileCompanyFilterTitle': 'Filter businesses',
+    'dashboardInicio.mobileCompanyFilterSubtitle':
+        'Choose a business to view on the dashboard.',
+    'dashboardInicio.mobileCompanyFilterAll': 'All',
+    'dashboardInicio.mobileCompanyFilterSearchHint': 'Search business',
+    'dashboardInicio.mobileCompanyFilterEmptyTitle': 'No business available',
+    'dashboardInicio.mobileCompanyFilterEmptyMessage':
+        'We could not find active links for this user.',
+    'dashboardInicio.mobileCompanyFilterLoadError':
+        'Could not load the available businesses right now.',
+    'dashboardInicio.mobileCompanyFilterSwitchError':
+        'Could not switch the business right now. Try again.',
+    'dashboardInicio.mobileDashboardFilterTitle': 'Filter dashboard',
+    'dashboardInicio.mobileDashboardFilterSubtitle':
+        'Choose the business and, if needed, refine by collaborator.',
+    'dashboardInicio.mobileDashboardFilterCompanyLabel': 'Business',
+    'dashboardInicio.mobileDashboardFilterCompanyHelper':
+        'Defines which business feeds the displayed indicators.',
+    'dashboardInicio.mobileCollaboratorFilterLabel': 'Collaborator',
+    'dashboardInicio.mobileCollaboratorFilterAll': 'All collaborators',
+    'dashboardInicio.mobileCollaboratorFilterHelper':
+        'Shows the dashboard indicators for the selected collaborator.',
+    'dashboardInicio.mobileCollaboratorFilterDisabledHelper':
+        'Choose a specific business before filtering collaborators.',
+    'dashboardInicio.mobileCollaboratorFilterLoadingHelper':
+        'Loading collaborators for the current business.',
+    'dashboardInicio.mobileCollaboratorFilterTitle': 'Filter collaborator',
+    'dashboardInicio.mobileCollaboratorFilterSubtitle':
+        'Choose a collaborator to refine the indicators.',
+    'dashboardInicio.mobileCollaboratorFilterSearchHint': 'Search collaborator',
+    'dashboardInicio.mobileCollaboratorFilterEmptyTitle':
+        'No collaborator available',
+    'dashboardInicio.mobileCollaboratorFilterEmptyMessage':
+        'We could not find active collaborators for this business.',
+    'dashboardInicio.mobileCollaboratorFilterLoadError':
+        'Could not load the collaborators for this business right now.',
+    'dashboardInicio.mobileCollaboratorFilterSelectedFallback':
+        'Selected collaborator',
     'mobile.nav.dash': 'dash',
     'mobile.nav.management': 'Management',
     'mobile.nav.service': 'Service',
@@ -3028,8 +3109,8 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Sale, service or receipt in a few steps',
     'atendimento.mobile.chooseOperation': 'Choose the operation to start.',
     'atendimento.mobile.salesMenuTitle': 'Sales',
-    'atendimento.mobile.newSaleTitle': 'New sale',
-    'atendimento.mobile.newSaleSubtitle': 'Sell products',
+    'atendimento.mobile.newSaleTitle': 'Sales',
+    'atendimento.mobile.newSaleSubtitle': 'Options',
     'atendimento.mobile.consultSalesTitle': 'View sales',
     'atendimento.mobile.consultSalesSubtitle': 'View sales history',
     'atendimento.mobile.newServiceTitle': 'Services',
@@ -3758,6 +3839,47 @@ const Map<String, Map<String, String>> _fallbacks = {
     'streak.startedToday': 'Tu racha empezó hoy.',
     'streak.loading': 'Cargando tus días de racha.',
     'streak.loadError': 'No se pudo cargar tu racha.',
+    'dashboardInicio.mobileCompanyFilterTooltip':
+        'Filtrar comercios: {comercio}',
+    'dashboardInicio.mobileCompanyFilterTitle': 'Filtrar comercios',
+    'dashboardInicio.mobileCompanyFilterSubtitle':
+        'Elige un comercio para ver el dashboard.',
+    'dashboardInicio.mobileCompanyFilterAll': 'Todos',
+    'dashboardInicio.mobileCompanyFilterSearchHint': 'Buscar comercio',
+    'dashboardInicio.mobileCompanyFilterEmptyTitle':
+        'Ningún comercio disponible',
+    'dashboardInicio.mobileCompanyFilterEmptyMessage':
+        'No encontramos vínculos activos para este usuario.',
+    'dashboardInicio.mobileCompanyFilterLoadError':
+        'No se pudieron cargar los comercios disponibles ahora.',
+    'dashboardInicio.mobileCompanyFilterSwitchError':
+        'No se pudo cambiar el comercio ahora. Inténtalo de nuevo.',
+    'dashboardInicio.mobileDashboardFilterTitle': 'Filtrar dashboard',
+    'dashboardInicio.mobileDashboardFilterSubtitle':
+        'Elige el comercio y, si hace falta, refina por colaborador.',
+    'dashboardInicio.mobileDashboardFilterCompanyLabel': 'Comercio',
+    'dashboardInicio.mobileDashboardFilterCompanyHelper':
+        'Define qué comercio alimenta los indicadores mostrados.',
+    'dashboardInicio.mobileCollaboratorFilterLabel': 'Colaborador',
+    'dashboardInicio.mobileCollaboratorFilterAll': 'Todos los colaboradores',
+    'dashboardInicio.mobileCollaboratorFilterHelper':
+        'Muestra los indicadores del colaborador seleccionado en el dashboard.',
+    'dashboardInicio.mobileCollaboratorFilterDisabledHelper':
+        'Elige un comercio específico para filtrar colaboradores.',
+    'dashboardInicio.mobileCollaboratorFilterLoadingHelper':
+        'Cargando colaboradores del comercio actual.',
+    'dashboardInicio.mobileCollaboratorFilterTitle': 'Filtrar colaborador',
+    'dashboardInicio.mobileCollaboratorFilterSubtitle':
+        'Elige un colaborador para refinar los indicadores.',
+    'dashboardInicio.mobileCollaboratorFilterSearchHint': 'Buscar colaborador',
+    'dashboardInicio.mobileCollaboratorFilterEmptyTitle':
+        'Ningún colaborador disponible',
+    'dashboardInicio.mobileCollaboratorFilterEmptyMessage':
+        'No encontramos colaboradores activos en este comercio.',
+    'dashboardInicio.mobileCollaboratorFilterLoadError':
+        'No se pudieron cargar los colaboradores de este comercio ahora.',
+    'dashboardInicio.mobileCollaboratorFilterSelectedFallback':
+        'Colaborador seleccionado',
     'mobile.nav.dash': 'dash',
     'mobile.nav.management': 'Gestión',
     'mobile.nav.service': 'Atención',
@@ -4667,8 +4789,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.heroSubtitle': 'Venta, servicio o cobro en pocos pasos',
     'atendimento.mobile.chooseOperation': 'Elige la operación para iniciar.',
     'atendimento.mobile.salesMenuTitle': 'Ventas',
-    'atendimento.mobile.newSaleTitle': 'Nueva venta',
-    'atendimento.mobile.newSaleSubtitle': 'Vender productos',
+    'atendimento.mobile.newSaleTitle': 'Ventas',
+    'atendimento.mobile.newSaleSubtitle': 'Opciones',
     'atendimento.mobile.consultSalesTitle': 'Consultar ventas',
     'atendimento.mobile.consultSalesSubtitle': 'Consultar historial de ventas',
     'atendimento.mobile.newServiceTitle': 'Servicios',

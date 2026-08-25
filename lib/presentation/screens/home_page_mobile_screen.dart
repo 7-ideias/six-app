@@ -3,9 +3,14 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:sixpos/core/services/auth_service.dart';
+import 'package:sixpos/core/services/empresa_service.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
+import 'package:sixpos/data/models/colaborador_convite_model.dart';
+import 'package:sixpos/data/models/colaborador_usuario_model.dart';
 import 'package:sixpos/data/models/dashboard_inicio_model.dart';
+import 'package:sixpos/data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
@@ -15,10 +20,12 @@ import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_selection_sheet.dart';
 import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/utils/profile_image_payload.dart';
 import 'package:sixpos/providers/dashboard_inicio_provider.dart';
+import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 
 import '../components/nav_bar_mobile.dart';
@@ -33,6 +40,8 @@ class HomePageMobile extends StatefulWidget {
 }
 
 class _HomePageMobileState extends State<HomePageMobile> {
+  static const String _allCompaniesFilterValue = '__all_companies__';
+  static const String _allCollaboratorsFilterValue = '__all_collaborators__';
   static const double _profileAvatarFadeDistance = 96;
   static const double _profileAvatarFadeStart = 0.10;
   static const Duration _profileAvatarFadeDuration = Duration(
@@ -48,11 +57,16 @@ class _HomePageMobileState extends State<HomePageMobile> {
   final DateFormat _dateFmt = DateFormat('dd/MM', 'pt_BR');
 
   final ImagePicker _picker = ImagePicker();
+  final AuthService _authService = AuthService();
+  final EmpresaService _empresaService = EmpresaService();
+  final ColaboradorUsuarioApiClient _colaboradorApiClient =
+      HttpColaboradorUsuarioApiClient();
   final NotificacaoService _notificacaoService = NotificacaoService();
   final UsuarioService _usuarioService = UsuarioService();
   final DashboardInicioProvider _dashboardProvider = DashboardInicioProvider(
     initialPeriod: DashboardPeriod.last30Days,
   );
+  final EmpresaProvider _empresaProvider = EmpresaProvider();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
   final ScrollController _homeScrollController = ScrollController();
   final ValueNotifier<double> _profileAvatarScrollProgress =
@@ -70,15 +84,27 @@ class _HomePageMobileState extends State<HomePageMobile> {
   Color get _softSurface => _colors.softSurface;
   bool _salvandoFotoPerfil = false;
   bool _sincronizandoPerfilInicial = false;
+  bool _carregandoTrocaDeComercio = false;
+  bool _carregandoFiltroDeComercio = false;
+  bool _carregandoFiltroDeColaborador = false;
+  bool _podeFiltrarComercios = false;
   String? _fotoPerfilSincronizada;
+  String _comercioSelecionadoNoFiltro = _allCompaniesFilterValue;
+  String? _colaboradorSelecionadoNoFiltro;
+  List<EmpresaVinculoWebModel> _comerciosDisponiveis =
+      const <EmpresaVinculoWebModel>[];
+  List<ColaboradorUsuarioResumo> _colaboradoresDisponiveis =
+      const <ColaboradorUsuarioResumo>[];
 
   @override
   void initState() {
     super.initState();
     _notificacaoService.addListener(_onNotificacoesChanged);
     _dashboardProvider.addListener(_onDashboardChanged);
+    _empresaProvider.addListener(_onEmpresaChanged);
     _usuarioProvider.addListener(_onUsuarioChanged);
     _homeScrollController.addListener(_onHomeScrollChanged);
+    _carregarContextoDoFiltroDeComercio();
     if (!kIsWeb) {
       _configurarWebSocketMobile();
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -91,6 +117,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
   void dispose() {
     _notificacaoService.removeListener(_onNotificacoesChanged);
     _dashboardProvider.removeListener(_onDashboardChanged);
+    _empresaProvider.removeListener(_onEmpresaChanged);
     _usuarioProvider.removeListener(_onUsuarioChanged);
     _homeScrollController.removeListener(_onHomeScrollChanged);
     _homeScrollController.dispose();
@@ -136,6 +163,11 @@ class _HomePageMobileState extends State<HomePageMobile> {
     setState(() {});
   }
 
+  void _onEmpresaChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
   void _onUsuarioChanged() {
     if (!mounted) return;
     final String foto = _usuarioProvider.usuario?.foto.trim() ?? '';
@@ -163,6 +195,67 @@ class _HomePageMobileState extends State<HomePageMobile> {
     };
 
     connectStomp();
+  }
+
+  Future<void> _carregarContextoDoFiltroDeComercio() async {
+    try {
+      final String tipoPerfilUsuario = await _authService.getUserProfileType();
+      final String empresaAtual =
+          (await _authService.getEmpresaId())?.trim() ?? '';
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _podeFiltrarComercios = tipoPerfilUsuario == 'ADMIN';
+        _comercioSelecionadoNoFiltro =
+            empresaAtual.isEmpty ? _allCompaniesFilterValue : empresaAtual;
+      });
+    } catch (error) {
+      debugPrint(
+        '[HomePageMobile] Falha ao carregar contexto do filtro de comércio: $error',
+      );
+    }
+  }
+
+  Future<void> _garantirComerciosDoUsuarioCarregados() async {
+    if (_carregandoFiltroDeComercio || _comerciosDisponiveis.isNotEmpty) {
+      return;
+    }
+
+    setState(() => _carregandoFiltroDeComercio = true);
+    try {
+      final List<EmpresaVinculoWebModel> vinculos =
+          await _usuarioService.listarEmpresasVinculadas();
+      final Map<String, EmpresaVinculoWebModel> ativosPorId =
+          <String, EmpresaVinculoWebModel>{};
+
+      for (final EmpresaVinculoWebModel vinculo in vinculos) {
+        final String id = vinculo.idUnicoDaEmpresa.trim();
+        if (id.isEmpty || !vinculo.ativo) {
+          continue;
+        }
+        ativosPorId[id] = vinculo;
+      }
+
+      final List<EmpresaVinculoWebModel> comercios = ativosPorId.values.toList(
+        growable: false,
+      )..sort((EmpresaVinculoWebModel a, EmpresaVinculoWebModel b) {
+        return _rotuloDoComercio(
+          a,
+        ).toLowerCase().compareTo(_rotuloDoComercio(b).toLowerCase());
+      });
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _comerciosDisponiveis = comercios);
+    } finally {
+      if (mounted) {
+        setState(() => _carregandoFiltroDeComercio = false);
+      }
+    }
   }
 
   Future<void> _onRefresh() async {
@@ -296,6 +389,15 @@ class _HomePageMobileState extends State<HomePageMobile> {
         scrollController: _homeScrollController,
         leading: _buildAppBarProfileAction(context),
         actions: [
+          if (_podeFiltrarComercios)
+            IconButton(
+              tooltip: _tooltipFiltroDeComercio(context),
+              onPressed:
+                  _carregandoTrocaDeComercio || _carregandoFiltroDeComercio
+                      ? null
+                      : _abrirFiltroDeComercios,
+              icon: _buildCompanyFilterIcon(),
+            ),
           IconButton(
             tooltip: context.t(
               'gestao.settings.item.notifications.title',
@@ -551,6 +653,637 @@ class _HomePageMobileState extends State<HomePageMobile> {
     if (nome.isNotEmpty) return nome.split(RegExp(r'\s+')).first;
 
     return 'bem-vindo';
+  }
+
+  Widget _buildCompanyFilterIcon() {
+    if (_carregandoTrocaDeComercio || _carregandoFiltroDeComercio) {
+      return SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(
+          strokeWidth: 2.1,
+          valueColor: AlwaysStoppedAnimation<Color>(SixMobilePalette.onPrimary),
+        ),
+      );
+    }
+
+    final bool selecionouTodos =
+        _comercioSelecionadoNoFiltro == _allCompaniesFilterValue;
+    return Icon(
+      selecionouTodos ? Icons.filter_alt_outlined : Icons.filter_alt_rounded,
+    );
+  }
+
+  String _tooltipFiltroDeComercio(BuildContext context) {
+    final String comercioSelecionado = _rotuloDoFiltroSelecionado(context);
+    return context
+        .t(
+          'dashboardInicio.mobileCompanyFilterTooltip',
+          fallback: 'Filtrar comércios: {comercio}',
+        )
+        .replaceAll('{comercio}', comercioSelecionado);
+  }
+
+  Future<void> _abrirFiltroDeComercios() async {
+    try {
+      await _garantirComerciosDoUsuarioCarregados();
+      await _garantirColaboradoresDoComercioCarregados();
+    } catch (error) {
+      debugPrint(
+        '[HomePageMobile] Falha ao carregar filtros da dashboard: $error',
+      );
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            context.t(
+              'dashboardInicio.mobileCompanyFilterLoadError',
+              fallback:
+                  'Não foi possível carregar os comércios disponíveis agora.',
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    String stagedCompany = _comercioSelecionadoNoFiltro;
+    String? stagedCollaborator = _colaboradorSelecionadoNoFiltro;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.44),
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            final bool companyFilterIsAll =
+                stagedCompany == _allCompaniesFilterValue;
+            final bool loading =
+                _carregandoTrocaDeComercio || _carregandoFiltroDeColaborador;
+
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                child: Material(
+                  color: _surfaceColor,
+                  borderRadius: BorderRadius.circular(28),
+                  clipBehavior: Clip.antiAlias,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 42,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: _borderColor,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    context.t(
+                                      'dashboardInicio.mobileDashboardFilterTitle',
+                                      fallback: 'Filtrar dashboard',
+                                    ),
+                                    style: TextStyle(
+                                      color: _titleTextColor,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    context.t(
+                                      'dashboardInicio.mobileDashboardFilterSubtitle',
+                                      fallback:
+                                          'Escolha o comércio e, se precisar, refine por colaborador.',
+                                    ),
+                                    style: TextStyle(
+                                      color: _mutedTextColor,
+                                      fontSize: 13,
+                                      height: 1.3,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: context.t(
+                                'common.close',
+                                fallback: 'Fechar',
+                              ),
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: _titleTextColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        SixMobileSelectionField(
+                          label: context.t(
+                            'dashboardInicio.mobileDashboardFilterCompanyLabel',
+                            fallback: 'Comércio',
+                          ),
+                          value: _rotuloDoComercioSelecionado(stagedCompany),
+                          helperText: context.t(
+                            'dashboardInicio.mobileDashboardFilterCompanyHelper',
+                            fallback:
+                                'Define qual comércio alimenta os indicadores exibidos.',
+                          ),
+                          icon: Icons.storefront_rounded,
+                          enabled: !loading,
+                          onTap: () async {
+                            final String? selecionado =
+                                await _abrirSelecaoDeEmpresaNoSheet(
+                                  context,
+                                  selectedValue: stagedCompany,
+                                );
+                            if (selecionado == null || !mounted) {
+                              return;
+                            }
+
+                            await _aplicarFiltroDeComercio(selecionado);
+                            if (!mounted || !context.mounted) {
+                              return;
+                            }
+
+                            stagedCompany = _comercioSelecionadoNoFiltro;
+                            stagedCollaborator =
+                                _colaboradorSelecionadoNoFiltro;
+                            setModalState(() {});
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        SixMobileSelectionField(
+                          label: context.t(
+                            'dashboardInicio.mobileCollaboratorFilterLabel',
+                            fallback: 'Colaborador',
+                          ),
+                          value: _rotuloDoColaboradorSelecionadoComFallback(
+                            context,
+                            stagedCollaborator,
+                          ),
+                          hint: context.t(
+                            'dashboardInicio.mobileCollaboratorFilterAll',
+                            fallback: 'Todos os colaboradores',
+                          ),
+                          helperText:
+                              companyFilterIsAll
+                                  ? context.t(
+                                    'dashboardInicio.mobileCollaboratorFilterDisabledHelper',
+                                    fallback:
+                                        'Escolha um comércio específico para filtrar colaboradores.',
+                                  )
+                                  : _carregandoFiltroDeColaborador
+                                  ? context.t(
+                                    'dashboardInicio.mobileCollaboratorFilterLoadingHelper',
+                                    fallback:
+                                        'Carregando colaboradores do comércio atual.',
+                                  )
+                                  : context.t(
+                                    'dashboardInicio.mobileCollaboratorFilterHelper',
+                                    fallback:
+                                        'Mostra os indicadores do colaborador selecionado na dashboard.',
+                                  ),
+                          icon: Icons.manage_accounts_outlined,
+                          enabled: !companyFilterIsAll && !loading,
+                          onTap: () async {
+                            final String? selecionado =
+                                await _abrirSelecaoDeColaboradorNoSheet(
+                                  context,
+                                  selectedValue: stagedCollaborator,
+                                );
+                            if (selecionado == null || !mounted) {
+                              return;
+                            }
+
+                            _aplicarFiltroDeColaborador(selecionado);
+                            if (!mounted || !context.mounted) {
+                              return;
+                            }
+
+                            stagedCollaborator =
+                                _colaboradorSelecionadoNoFiltro;
+                            setModalState(() {});
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _aplicarFiltroDeComercio(String filtroSelecionado) async {
+    if (filtroSelecionado == _comercioSelecionadoNoFiltro) {
+      return;
+    }
+
+    if (filtroSelecionado == _allCompaniesFilterValue) {
+      setState(() {
+        _comercioSelecionadoNoFiltro = filtroSelecionado;
+        _resetCollaboratorFilterState();
+      });
+      _dashboardProvider.setCollaboratorFilter(null, reload: false);
+      await _dashboardProvider.reload();
+      return;
+    }
+
+    final String filtroAnterior = _comercioSelecionadoNoFiltro;
+    final String empresaAnterior =
+        (await _authService.getEmpresaId())?.trim() ?? '';
+
+    setState(() {
+      _carregandoTrocaDeComercio = true;
+      _comercioSelecionadoNoFiltro = filtroSelecionado;
+      _resetCollaboratorFilterState();
+    });
+
+    try {
+      if (empresaAnterior != filtroSelecionado) {
+        await _authService.setEmpresaId(filtroSelecionado);
+      }
+
+      _notificacaoService.limpar();
+      if (!kIsWeb) {
+        disconnectStomp();
+        await connectStomp(idUnicoDaEmpresa: filtroSelecionado);
+      }
+
+      await Future.wait<dynamic>(<Future<dynamic>>[
+        _empresaService.buscarDadosDaEmpresa(),
+        Future<void>.sync(
+          () => _dashboardProvider.setCollaboratorFilter(null, reload: false),
+        ),
+        _dashboardProvider.reload(),
+      ]);
+    } catch (error) {
+      debugPrint('[HomePageMobile] Falha ao trocar comércio no filtro: $error');
+      await _authService.setEmpresaId(empresaAnterior);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _comercioSelecionadoNoFiltro = filtroAnterior);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            context.t(
+              'dashboardInicio.mobileCompanyFilterSwitchError',
+              fallback:
+                  'Não foi possível trocar o comércio agora. Tente novamente.',
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _carregandoTrocaDeComercio = false);
+      }
+    }
+  }
+
+  String _rotuloDoFiltroSelecionado(BuildContext context) {
+    if (_comercioSelecionadoNoFiltro == _allCompaniesFilterValue) {
+      return context.t(
+        'dashboardInicio.mobileCompanyFilterAll',
+        fallback: 'Todos',
+      );
+    }
+
+    final EmpresaVinculoWebModel? vinculoSelecionado = _comerciosDisponiveis
+        .cast<EmpresaVinculoWebModel?>()
+        .firstWhere(
+          (EmpresaVinculoWebModel? vinculo) =>
+              vinculo?.idUnicoDaEmpresa == _comercioSelecionadoNoFiltro,
+          orElse: () => null,
+        );
+    if (vinculoSelecionado != null) {
+      return _rotuloDoComercio(vinculoSelecionado);
+    }
+
+    final String nomeFantasiaAtual =
+        _empresaProvider.empresa?.nomeFantasia.trim() ?? '';
+    if (nomeFantasiaAtual.isNotEmpty) {
+      return nomeFantasiaAtual;
+    }
+
+    return _comercioSelecionadoNoFiltro;
+  }
+
+  String _rotuloDoComercio(EmpresaVinculoWebModel vinculo) {
+    final String nomeFantasia = vinculo.nomeFantasia.trim();
+    if (nomeFantasia.isNotEmpty) {
+      return nomeFantasia;
+    }
+
+    return vinculo.idUnicoDaEmpresa.trim();
+  }
+
+  String _rotuloDoComercioSelecionado(String companyId) {
+    if (companyId == _allCompaniesFilterValue) {
+      return context.t(
+        'dashboardInicio.mobileCompanyFilterAll',
+        fallback: 'Todos',
+      );
+    }
+
+    final EmpresaVinculoWebModel? vinculoSelecionado = _comerciosDisponiveis
+        .cast<EmpresaVinculoWebModel?>()
+        .firstWhere(
+          (EmpresaVinculoWebModel? vinculo) =>
+              vinculo?.idUnicoDaEmpresa == companyId,
+          orElse: () => null,
+        );
+    if (vinculoSelecionado != null) {
+      return _rotuloDoComercio(vinculoSelecionado);
+    }
+
+    return companyId;
+  }
+
+  Future<String?> _abrirSelecaoDeEmpresaNoSheet(
+    BuildContext context, {
+    required String selectedValue,
+  }) {
+    final List<SixMobileSelectionOption<String>> options =
+        <SixMobileSelectionOption<String>>[
+          SixMobileSelectionOption<String>(
+            value: _allCompaniesFilterValue,
+            title: context.t(
+              'dashboardInicio.mobileCompanyFilterAll',
+              fallback: 'Todos',
+            ),
+            icon: Icons.layers_rounded,
+          ),
+          ..._comerciosDisponiveis.map(
+            (EmpresaVinculoWebModel vinculo) =>
+                SixMobileSelectionOption<String>(
+                  value: vinculo.idUnicoDaEmpresa,
+                  title: _rotuloDoComercio(vinculo),
+                  icon: Icons.storefront_rounded,
+                ),
+          ),
+        ];
+
+    return showSixMobileSelectionSheet<String>(
+      context: context,
+      title: context.t(
+        'dashboardInicio.mobileCompanyFilterTitle',
+        fallback: 'Filtrar comércios',
+      ),
+      subtitle: context.t(
+        'dashboardInicio.mobileCompanyFilterSubtitle',
+        fallback: 'Escolha um comércio para visualizar a dashboard.',
+      ),
+      options: options,
+      selectedValue: selectedValue,
+      emptyTitle: context.t(
+        'dashboardInicio.mobileCompanyFilterEmptyTitle',
+        fallback: 'Nenhum comércio disponível',
+      ),
+      searchHint: context.t(
+        'dashboardInicio.mobileCompanyFilterSearchHint',
+        fallback: 'Buscar comércio',
+      ),
+      emptyMessage: context.t(
+        'dashboardInicio.mobileCompanyFilterEmptyMessage',
+        fallback: 'Não encontramos vínculos ativos para este usuário.',
+      ),
+    );
+  }
+
+  Future<void> _garantirColaboradoresDoComercioCarregados({
+    bool force = false,
+  }) async {
+    final bool companyFilterIsAll =
+        _comercioSelecionadoNoFiltro == _allCompaniesFilterValue;
+    if (companyFilterIsAll) {
+      if (mounted) {
+        setState(_resetCollaboratorFilterState);
+      } else {
+        _resetCollaboratorFilterState();
+      }
+      return;
+    }
+
+    if (_carregandoFiltroDeColaborador) {
+      return;
+    }
+
+    if (!force && _colaboradoresDisponiveis.isNotEmpty) {
+      return;
+    }
+
+    setState(() => _carregandoFiltroDeColaborador = true);
+    try {
+      final List<ColaboradorUsuarioResumo> colaboradores =
+          await _colaboradorApiClient.listarColaboradores();
+      final List<ColaboradorUsuarioResumo> ativos = colaboradores
+        .where(
+          (ColaboradorUsuarioResumo colaborador) =>
+              colaborador.ativo && _rotuloDoColaborador(colaborador).isNotEmpty,
+        )
+        .toList(growable: false)..sort(
+        (ColaboradorUsuarioResumo a, ColaboradorUsuarioResumo b) =>
+            _rotuloDoColaborador(
+              a,
+            ).toLowerCase().compareTo(_rotuloDoColaborador(b).toLowerCase()),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _colaboradoresDisponiveis = ativos;
+        if (_colaboradorSelecionadoNoFiltro != null) {
+          final ColaboradorUsuarioResumo? selecionado = _colaboradorById(
+            _colaboradorSelecionadoNoFiltro!,
+          );
+          if (selecionado == null) {
+            _colaboradorSelecionadoNoFiltro = null;
+            _dashboardProvider.setCollaboratorFilter(null, reload: false);
+          }
+        }
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _carregandoFiltroDeColaborador = false);
+      }
+    }
+  }
+
+  Future<String?> _abrirSelecaoDeColaboradorNoSheet(
+    BuildContext context, {
+    required String? selectedValue,
+  }) {
+    final List<SixMobileSelectionOption<String>> options =
+        <SixMobileSelectionOption<String>>[
+          SixMobileSelectionOption<String>(
+            value: _allCollaboratorsFilterValue,
+            title: context.t(
+              'dashboardInicio.mobileCollaboratorFilterAll',
+              fallback: 'Todos os colaboradores',
+            ),
+            icon: Icons.groups_rounded,
+          ),
+          ..._colaboradoresDisponiveis.map(
+            (ColaboradorUsuarioResumo colaborador) =>
+                SixMobileSelectionOption<String>(
+                  value: colaborador.idUnicoPessoal,
+                  title: _rotuloDoColaborador(colaborador),
+                  subtitle: _subtituloDoColaborador(colaborador),
+                  icon: Icons.person_outline_rounded,
+                ),
+          ),
+        ];
+
+    return showSixMobileSelectionSheet<String>(
+      context: context,
+      title: context.t(
+        'dashboardInicio.mobileCollaboratorFilterTitle',
+        fallback: 'Filtrar colaborador',
+      ),
+      subtitle: context.t(
+        'dashboardInicio.mobileCollaboratorFilterSubtitle',
+        fallback: 'Escolha um colaborador para refinar os indicadores.',
+      ),
+      options: options,
+      selectedValue: selectedValue ?? _allCollaboratorsFilterValue,
+      emptyTitle: context.t(
+        'dashboardInicio.mobileCollaboratorFilterEmptyTitle',
+        fallback: 'Nenhum colaborador disponível',
+      ),
+      searchHint: context.t(
+        'dashboardInicio.mobileCollaboratorFilterSearchHint',
+        fallback: 'Buscar colaborador',
+      ),
+      emptyMessage: context.t(
+        'dashboardInicio.mobileCollaboratorFilterEmptyMessage',
+        fallback: 'Não encontramos colaboradores ativos neste comércio.',
+      ),
+    );
+  }
+
+  void _aplicarFiltroDeColaborador(String filtroSelecionado) {
+    final String? collaboratorId =
+        filtroSelecionado == _allCollaboratorsFilterValue
+            ? null
+            : filtroSelecionado;
+    if (_colaboradorSelecionadoNoFiltro == collaboratorId) {
+      return;
+    }
+
+    setState(() {
+      _colaboradorSelecionadoNoFiltro = collaboratorId;
+    });
+    _dashboardProvider.setCollaboratorFilter(collaboratorId);
+  }
+
+  void _resetCollaboratorFilterState() {
+    _colaboradorSelecionadoNoFiltro = null;
+    _colaboradoresDisponiveis = const <ColaboradorUsuarioResumo>[];
+  }
+
+  ColaboradorUsuarioResumo? _colaboradorById(String collaboratorId) {
+    for (final ColaboradorUsuarioResumo colaborador
+        in _colaboradoresDisponiveis) {
+      if (colaborador.idUnicoPessoal == collaboratorId) {
+        return colaborador;
+      }
+    }
+    return null;
+  }
+
+  String _rotuloDoColaboradorSelecionadoComFallback(
+    BuildContext context,
+    String? collaboratorId,
+  ) {
+    if (collaboratorId == null) {
+      return context.t(
+        'dashboardInicio.mobileCollaboratorFilterAll',
+        fallback: 'Todos os colaboradores',
+      );
+    }
+
+    final ColaboradorUsuarioResumo? selecionado = _colaboradorById(
+      collaboratorId,
+    );
+    if (selecionado != null) {
+      return _rotuloDoColaborador(selecionado);
+    }
+
+    return context.t(
+      'dashboardInicio.mobileCollaboratorFilterSelectedFallback',
+      fallback: 'Colaborador selecionado',
+    );
+  }
+
+  String _rotuloDoColaborador(ColaboradorUsuarioResumo colaborador) {
+    final String nomeDeGuerra = colaborador.nomeDeGuerra.trim();
+    if (nomeDeGuerra.isNotEmpty) {
+      return nomeDeGuerra;
+    }
+
+    final String nome = colaborador.nome.trim();
+    if (nome.isNotEmpty) {
+      return nome;
+    }
+
+    final String email = colaborador.email.trim();
+    if (email.isNotEmpty) {
+      return email;
+    }
+
+    return colaborador.idUnicoPessoal.trim();
+  }
+
+  String? _subtituloDoColaborador(ColaboradorUsuarioResumo colaborador) {
+    final String email = colaborador.email.trim();
+    if (email.isNotEmpty) {
+      return email;
+    }
+
+    final String celular = colaborador.celularDeAcesso.trim();
+    if (celular.isNotEmpty) {
+      return celular;
+    }
+
+    return null;
   }
 
   Widget _buildNotificationIcon() {

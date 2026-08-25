@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../../../core/config/app_config.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/http_client_factory.dart';
+import '../../models/colaborador_convite_model.dart';
 import '../../models/usuario_model.dart';
 
 abstract class UsuarioApiClient {
@@ -13,6 +14,8 @@ abstract class UsuarioApiClient {
   Future<UsuarioModel?> atualizarDadosPessoais(UsuarioModel usuario);
 
   Future<void> atualizarPreferenciasIndividuais(Map<String, dynamic> body);
+
+  Future<List<EmpresaVinculoWebModel>> listarEmpresasVinculadas();
 }
 
 class HttpUsuarioApiClient implements UsuarioApiClient {
@@ -28,6 +31,9 @@ class HttpUsuarioApiClient implements UsuarioApiClient {
 
   static final Uri _preferenciasUri = Uri.parse(
     '${AppConfig.baseUrl}/private/api/eventos/atualizacoes-simples',
+  );
+  static final Uri _empresasVinculadasUri = Uri.parse(
+    '${AppConfig.baseUrl}/private/api/usuario/empresas-vinculos',
   );
 
   @override
@@ -93,21 +99,46 @@ class HttpUsuarioApiClient implements UsuarioApiClient {
     }
   }
 
-  Future<Map<String, String>> _headers({bool acceptOnly = false}) async {
+  @override
+  Future<List<EmpresaVinculoWebModel>> listarEmpresasVinculadas() async {
+    final http.Response response = await _httpClient.get(
+      _empresasVinculadasUri,
+      headers: await _headers(acceptOnly: true, includeEmpresaId: false),
+    );
+
+    if (response.statusCode != 200) {
+      throw UsuarioApiException(statusCode: response.statusCode);
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+    if (decoded is! List) {
+      throw const UsuarioApiException(statusCode: 0);
+    }
+
+    return decoded
+        .whereType<Map<String, dynamic>>()
+        .map(EmpresaVinculoWebModel.fromJson)
+        .toList(growable: false);
+  }
+
+  Future<Map<String, String>> _headers({
+    bool acceptOnly = false,
+    bool includeEmpresaId = true,
+  }) async {
     final String? token = await _authService.getAccessToken();
-    final String? empresaId = await _authService.getEmpresaId();
+    final String? empresaId =
+        includeEmpresaId ? await _authService.getEmpresaId() : null;
 
     if (token == null ||
         token.trim().isEmpty ||
-        empresaId == null ||
-        empresaId.trim().isEmpty) {
+        (includeEmpresaId && (empresaId == null || empresaId.trim().isEmpty))) {
       throw const UsuarioApiException(statusCode: 401);
     }
 
     return <String, String>{
       if (!acceptOnly) 'Content-Type': 'application/json',
       'accept': 'application/json',
-      'idUnicoDaEmpresa': empresaId,
+      if (includeEmpresaId) 'idUnicoDaEmpresa': empresaId!,
       'Authorization': 'Bearer $token',
     };
   }
