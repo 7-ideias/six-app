@@ -9,8 +9,10 @@ import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile_action.dart';
+import 'package:sixpos/presentation/components/mobile/six_imagem_canetinha.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
+import 'package:sixpos/presentation/screens/devolucoes_produtos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/opcoes_venda_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operacoes_caixa_mobile_screen.dart';
@@ -50,7 +52,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   static const Color _returnAccent = Color(0xFFEF4444);
 
   static const String _heroAsset =
-      'assets/images/atendimento mobile/atendimento-hero.webp';
+      'assets/images/atendimento mobile/atendimento-hero.png';
   static const String _saleAsset =
       'assets/images/atendimento mobile/acao-nova-venda.png';
   static const String _serviceAsset =
@@ -329,9 +331,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         subtitle: _txt('operacao.mobile.returnSubtitle', 'Registrar devolução'),
         assetPath: _returnAsset,
         accentColor: _returnAccent,
-        onTap: null,
-        enabled: false,
-        statusLabel: _txt('operacao.mobile.returnUnavailable', 'Em breve'),
+        onTap: () => _go(DevolucoesProdutosMobileScreen()),
       ),
     ];
   }
@@ -406,19 +406,11 @@ class _AtendimentoHeroCard extends StatelessWidget {
                   bottom: illustrationBottomOffset,
                   width: illustrationWidth,
                   height: illustrationHeight,
-                  child: ExcludeSemantics(
-                    child: Image.asset(
-                      assetPath,
-                      fit: BoxFit.contain,
-                      filterQuality: FilterQuality.medium,
-                      errorBuilder: (
-                        BuildContext context,
-                        Object error,
-                        StackTrace? stackTrace,
-                      ) {
-                        return SizedBox.shrink();
-                      },
-                    ),
+                  child: SixImagemCanetinha(
+                    assetContorno: assetPath,
+                    largura: illustrationWidth,
+                    altura: illustrationHeight,
+                    preservarCoresOriginais: true,
                   ),
                 ),
                 Padding(
@@ -734,23 +726,12 @@ class _ActionCardContent extends StatelessWidget {
             shape: BoxShape.circle,
           ),
           child: Center(
-            child: Image.asset(
-              data.assetPath,
-              width: imageSize,
-              height: imageSize,
+            child: SixImagemCanetinha(
+              assetContorno: data.assetPath,
+              largura: imageSize,
+              altura: imageSize,
               fit: BoxFit.contain,
-              filterQuality: FilterQuality.medium,
-              errorBuilder: (
-                BuildContext context,
-                Object error,
-                StackTrace? stackTrace,
-              ) {
-                return Icon(
-                  Icons.image_not_supported_outlined,
-                  color: enabled ? data.accentColor : colors.mutedText,
-                  size: _isPrimary ? 22 : 18,
-                );
-              },
+              preservarCoresOriginais: true,
             ),
           ),
         ),

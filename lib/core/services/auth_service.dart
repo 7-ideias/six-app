@@ -73,11 +73,13 @@ class AuthService {
     final client = _client();
     final http.Response response;
     try {
-      response = await client.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: requestBody,
-      ).timeout(_authRequestTimeout);
+      response = await client
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: requestBody,
+          )
+          .timeout(_authRequestTimeout);
     } on http.ClientException catch (e) {
       debugPrint('[AuthService] ClientException no POST $uri: $e');
       throw Exception(
@@ -176,10 +178,9 @@ class AuthService {
 
     try {
       if (kIsWeb) {
-        response = await client.post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-        ).timeout(_authRequestTimeout);
+        response = await client
+            .post(uri, headers: {'Content-Type': 'application/json'})
+            .timeout(_authRequestTimeout);
       } else {
         final String? refreshTokenStr = await getRefreshToken();
 
@@ -190,11 +191,13 @@ class AuthService {
           );
         }
 
-        response = await client.post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'refreshToken': refreshTokenStr}),
-        ).timeout(_authRequestTimeout);
+        response = await client
+            .post(
+              uri,
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({'refreshToken': refreshTokenStr}),
+            )
+            .timeout(_authRequestTimeout);
       }
     } on AuthRefreshException {
       rethrow;
@@ -401,16 +404,17 @@ class AuthService {
       final uri = Uri.parse('$baseUrl/auth/$pathLogout/logout');
       try {
         if (kIsWeb) {
-          await _client().post(
-            uri,
-            headers: const {'Content-Type': 'application/json'},
-          ).timeout(_authRequestTimeout);
+          await _client()
+              .post(uri, headers: const {'Content-Type': 'application/json'})
+              .timeout(_authRequestTimeout);
         } else if (refreshToken != null && refreshToken.trim().isNotEmpty) {
-          await _client().post(
-            uri,
-            headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode({'refreshToken': refreshToken}),
-          ).timeout(_authRequestTimeout);
+          await _client()
+              .post(
+                uri,
+                headers: const {'Content-Type': 'application/json'},
+                body: jsonEncode({'refreshToken': refreshToken}),
+              )
+              .timeout(_authRequestTimeout);
         }
       } catch (e) {
         debugPrint('[AuthService] logout remoto falhou: $e');
@@ -438,6 +442,18 @@ class AuthService {
   Future<String?> getEmpresaId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_empresaIdKey);
+  }
+
+  Future<void> setEmpresaId(String empresaId) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String normalized = empresaId.trim();
+
+    if (normalized.isEmpty) {
+      await prefs.remove(_empresaIdKey);
+      return;
+    }
+
+    await prefs.setString(_empresaIdKey, normalized);
   }
 
   Future<String?> getUserId() async {
@@ -599,9 +615,7 @@ class AuthService {
     });
   }
 
-  Future<String?> _recoverFromUnauthorized(
-    String rejectedAccessToken,
-  ) async {
+  Future<String?> _recoverFromUnauthorized(String rejectedAccessToken) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String currentAccessToken =
         prefs.getString(_accessTokenKey)?.trim() ?? '';

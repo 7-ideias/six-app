@@ -73,15 +73,7 @@ flutter:
     - "assets/animations/tela login/10.webp"
     - assets/images/placeholder.png
     - assets/images/six-logo-flecha.webp
-    - "assets/images/atendimento mobile/atendimento-hero.webp"
-    - "assets/images/atendimento mobile/acao-nova-venda.png"
-    - "assets/images/atendimento mobile/acao-novo-servico.png"
-    - "assets/images/atendimento mobile/acao-receber.png"
-    - "assets/images/atendimento mobile/acao-operacoes-caixa.png"
-    - "assets/images/atendimento mobile/acao-devolucoes.png"
-    - "assets/images/atendimento mobile/acao-nova-venda.webp"
-    - "assets/images/atendimento mobile/acao-novo-servico.webp"
-    - "assets/images/atendimento mobile/acao-receber.webp"
+    - "assets/images/atendimento mobile/"
     - "assets/images/vendas mobile/vendas.webp"
     - "assets/images/vendas mobile/recebimento.webp"
     - "assets/images/vendas mobile/consultar.webp"

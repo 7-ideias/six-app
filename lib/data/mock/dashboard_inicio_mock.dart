@@ -16,17 +16,32 @@ class DashboardInicioMock {
   DashboardInicioMock._();
 
   /// Retorna o cenário mockado correspondente ao período selecionado.
-  static DashboardInicioModel forPeriod(DashboardPeriod period) {
+  static DashboardInicioModel forPeriod(
+    DashboardPeriod period, {
+    String? collaboratorKey,
+  }) {
+    final DashboardInicioModel base;
     switch (period) {
       case DashboardPeriod.today:
-        return _today();
+        base = _today();
+        break;
       case DashboardPeriod.last7Days:
-        return _last7Days();
+        base = _last7Days();
+        break;
       case DashboardPeriod.last30Days:
-        return _last30Days();
+        base = _last30Days();
+        break;
       case DashboardPeriod.currentMonth:
-        return _currentMonth();
+        base = _currentMonth();
+        break;
     }
+
+    final String normalizedCollaboratorKey = collaboratorKey?.trim() ?? '';
+    if (normalizedCollaboratorKey.isEmpty) {
+      return base;
+    }
+
+    return _withCollaboratorFilter(base, normalizedCollaboratorKey);
   }
 
   // ─── HOJE ──────────────────────────────────────────────────────────────────
@@ -414,5 +429,163 @@ class DashboardInicioMock {
         carga: 'baixa',
       ),
     ];
+  }
+
+  static DashboardInicioModel _withCollaboratorFilter(
+    DashboardInicioModel base,
+    String collaboratorKey,
+  ) {
+    final double share = _collaboratorShare(collaboratorKey);
+
+    return DashboardInicioModel(
+      period: base.period,
+      lastUpdated: base.lastUpdated,
+      vendasRealizadas: _scaleKpi(base.vendasRealizadas, share),
+      valorRecebido: _scaleKpi(base.valorRecebido, share),
+      valorAReceber: _scaleKpi(base.valorAReceber, share),
+      resultado: _scaleKpi(base.resultado, share),
+      chartData: base.chartData
+          .map(
+            (DashboardChartPoint point) => DashboardChartPoint(
+              label: point.label,
+              vendas: _roundMoney(point.vendas * share),
+              recebimentos: _roundMoney(point.recebimentos * share),
+            ),
+          )
+          .toList(growable: false),
+      alerts: base.alerts
+          .map((DashboardAlertItem alert) => _scaleAlert(alert, share))
+          .toList(growable: false),
+      upcoming: base.upcoming
+          .map((DashboardUpcomingItem item) => _scaleUpcoming(item, share))
+          .toList(growable: false),
+      operations: _scaleOperations(base.operations, share),
+      team: base.team
+          .map((DashboardTeamMember member) => _scaleTeamMember(member, share))
+          .toList(growable: false),
+    );
+  }
+
+  static double _collaboratorShare(String collaboratorKey) {
+    final int hash = collaboratorKey.runes.fold<int>(
+      0,
+      (int value, int rune) => (value + rune) % 997,
+    );
+    return 0.18 + ((hash % 33) / 100.0);
+  }
+
+  static DashboardKpi _scaleKpi(DashboardKpi kpi, double share) {
+    return DashboardKpi(
+      value: _roundMoney(kpi.value * share),
+      previousValue:
+          kpi.previousValue == null
+              ? null
+              : _roundMoney(kpi.previousValue! * share),
+      icon: kpi.icon,
+      highlight: kpi.highlight,
+    );
+  }
+
+  static DashboardAlertItem _scaleAlert(
+    DashboardAlertItem alert,
+    double share,
+  ) {
+    final int quantidade = _scaleCount(alert.quantidade, share);
+    return DashboardAlertItem(
+      tipo: alert.tipo,
+      titulo: alert.titulo,
+      descricao: _filteredAlertDescription(alert.tipo, quantidade),
+      quantidade: quantidade.toDouble(),
+      valor: alert.valor == null ? null : _roundMoney(alert.valor! * share),
+      severity: alert.severity,
+      routeHint: alert.routeHint,
+    );
+  }
+
+  static DashboardUpcomingItem _scaleUpcoming(
+    DashboardUpcomingItem item,
+    double share,
+  ) {
+    return DashboardUpcomingItem(
+      tipo: item.tipo,
+      descricao: _filteredUpcomingDescription(item.tipo),
+      valor: item.valor <= 0 ? 0 : _roundMoney(item.valor * share),
+      dataPrevista: item.dataPrevista,
+    );
+  }
+
+  static DashboardOperationSummary _scaleOperations(
+    DashboardOperationSummary operations,
+    double share,
+  ) {
+    return DashboardOperationSummary(
+      atendimentosEmAndamento: _scaleCount(
+        operations.atendimentosEmAndamento.toDouble(),
+        share,
+      ),
+      orcamentosAguardando: _scaleCount(
+        operations.orcamentosAguardando.toDouble(),
+        share,
+      ),
+      equipamentosParaRetirada: _scaleCount(
+        operations.equipamentosParaRetirada.toDouble(),
+        share,
+      ),
+      caixasAbertos: _scaleCount(operations.caixasAbertos.toDouble(), share),
+    );
+  }
+
+  static DashboardTeamMember _scaleTeamMember(
+    DashboardTeamMember member,
+    double share,
+  ) {
+    return DashboardTeamMember(
+      nome: member.nome,
+      iniciais: member.iniciais,
+      atendimentosEmAndamento: _scaleCount(
+        member.atendimentosEmAndamento.toDouble(),
+        share,
+      ),
+      pendencias: _scaleCount(member.pendencias.toDouble(), share),
+      vendasPeriodo: _roundMoney(member.vendasPeriodo * share),
+      carga: member.carga,
+    );
+  }
+
+  static String _filteredAlertDescription(String tipo, int quantidade) {
+    switch (tipo) {
+      case 'cobrancas':
+        return '$quantidade recebimentos em atraso na carteira deste colaborador';
+      case 'contas':
+        return '$quantidade vencimentos ligados ao fluxo deste colaborador';
+      case 'atendimentos':
+        return '$quantidade ordens em acompanhamento deste colaborador';
+      case 'estoque':
+        return '$quantidade itens pedem retorno na operação deste colaborador';
+      default:
+        return '$quantidade itens exigem atenção neste filtro';
+    }
+  }
+
+  static String _filteredUpcomingDescription(String tipo) {
+    switch (tipo) {
+      case 'receber':
+        return 'Recebimentos previstos deste colaborador';
+      case 'pagar':
+        return 'Compromissos financeiros ligados a este colaborador';
+      case 'entrega':
+        return 'Entregas previstas na carteira deste colaborador';
+      default:
+        return 'Compromissos previstos neste filtro';
+    }
+  }
+
+  static int _scaleCount(double value, double share) {
+    if (value <= 0) return 0;
+    return (value * share).round().clamp(1, value.round());
+  }
+
+  static double _roundMoney(double value) {
+    return double.parse(value.toStringAsFixed(2));
   }
 }

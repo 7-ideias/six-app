@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../data/models/colaborador_convite_model.dart';
 import '../../../data/models/usuario_model.dart';
 import '../../../data/services/usuario/usuario_api_client.dart';
 import '../../../providers/usuario_provider.dart';
@@ -159,6 +160,10 @@ class UsuarioService {
       debugPrint('Erro na atualização de dados do usuário: $e');
       rethrow;
     }
+  }
+
+  Future<List<EmpresaVinculoWebModel>> listarEmpresasVinculadas() {
+    return _apiClient.listarEmpresasVinculadas();
   }
 
   Future<void> atualizarFotoDoUsuario(String foto) async {
