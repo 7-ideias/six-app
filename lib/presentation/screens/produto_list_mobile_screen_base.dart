@@ -1327,7 +1327,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         produto.nomeProduto.isEmpty
             ? _t('produto.webList.itemWithoutName', 'Item sem nome')
             : produto.nomeProduto;
-    final String subtitulo = _resumoProdutoVertical(produto, ativo);
+    final String preco = _formatCurrency(produto.precoVenda);
+    final String codigo = produto.codigoDeBarras.trim();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 3),
@@ -1336,7 +1337,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         backgroundColor: _softNeutralColor,
         dividerColor: Colors.transparent,
         borderRadius: BorderRadius.circular(18),
-        onTap: () => _editarProduto(produto),
+        onTap: () => _abrirDetalhesProduto(produto),
         actions: <_SwipeRevealAction>[
           _SwipeRevealAction(
             semanticLabel:
@@ -1417,7 +1418,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
             ],
           ),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Row(
               children: <Widget>[
                 _buildThumbnail(produto, isProduto, size: 44),
@@ -1425,6 +1426,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                 Expanded(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
@@ -1432,22 +1434,71 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 14,
-                          height: 1.15,
+                          fontSize: 13,
+                          height: 1.0,
                           fontWeight: FontWeight.w900,
                           color: _titleTextColor,
                         ),
                       ),
-                      SizedBox(height: 3),
-                      Text(
-                        subtitulo,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          height: 1.2,
-                          fontWeight: FontWeight.w600,
-                          color: _mutedTextColor,
+                      SizedBox(height: 2),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Flexible(
+                            child: Text(
+                              preco,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                height: 1.0,
+                                fontWeight: FontWeight.w800,
+                                color: _titleTextColor,
+                              ),
+                            ),
+                          ),
+                          if (codigo.isNotEmpty) ...<Widget>[
+                            SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                '• SKU $codigo',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  height: 1.0,
+                                  fontWeight: FontWeight.w600,
+                                  color: _mutedTextColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      SizedBox(height: 4),
+                      SizedBox(
+                        height: 18,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: BouncingScrollPhysics(),
+                          child: Row(
+                            children: <Widget>[
+                              if (isProduto) _StockStatusChip(produto: produto),
+                              if (!ativo) ...<Widget>[
+                                SizedBox(width: 4),
+                                _StatusChip(ativo: false),
+                              ],
+                              if (produto.favorito) ...<Widget>[
+                                SizedBox(width: 4),
+                                _FavoriteStatusChip(),
+                              ],
+                              SizedBox(width: 4),
+                              _CatalogStatusChip(
+                                disponivelParaCatalogo:
+                                    produto.disponivelParaCatalogo,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -1517,7 +1568,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       borderRadius: BorderRadius.circular(24),
       child: InkWell(
         borderRadius: BorderRadius.circular(24),
-        onTap: () => _editarProduto(produto),
+        onTap: () => _abrirDetalhesProduto(produto),
         child: Container(
           padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -2585,6 +2636,357 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     await _abrirCadastro(tipoInicial: tipoSelecionado);
   }
 
+  Future<void> _abrirDetalhesProduto(ProdutoModel produto) async {
+    final String? acao = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      useRootNavigator: true,
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.44),
+      builder: (BuildContext context) {
+        final String titulo =
+            produto.nomeProduto.isEmpty
+                ? _t('produto.webList.itemWithoutName', 'Item sem nome')
+                : produto.nomeProduto;
+        final bool ativo = produto.ativo == true;
+        final bool isProduto = _matchesTipoSelecionado(produto, 'PRODUTO');
+        final String preco = _formatCurrency(produto.precoVenda);
+        final String codigo = produto.codigoDeBarras.trim();
+        final String categoria = _categoriaProdutoLabel(produto);
+        final String grupo = _grupoProdutoLabel(produto);
+        final String estoque = _estoqueProdutoLabel(produto);
+        final String garantia = _garantiaProdutoLabel(produto);
+        final String modelo = produto.modeloProduto.trim();
+        final int imagensCount = produto.imagens?.length ?? 0;
+        final ProdutoDetalhesModel? detalhes = produto.detalhes;
+        final ProdutoRegrasOperacionaisModel? regras =
+            produto.regrasOperacionais;
+
+        return SafeArea(
+          top: false,
+          child: Container(
+            margin: EdgeInsets.fromLTRB(12, 0, 12, 12),
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
+            decoration: BoxDecoration(
+              color: _surfaceColor,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: SixMobilePalette.heroShadow,
+                  blurRadius: 28,
+                  offset: Offset(0, 12),
+                ),
+              ],
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.82,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: _borderColor,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 14),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      _buildThumbnail(produto, isProduto, size: 44),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              titulo,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: _titleTextColor,
+                                fontSize: 16,
+                                height: 1.1,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              preco,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: _titleTextColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Semantics(
+                        button: true,
+                        label: _t('common.edit', 'Editar'),
+                        child: InkWell(
+                          onTap: () => Navigator.of(context).pop('edit'),
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: _softAccentColor,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: _borderColor),
+                            ),
+                            child: Icon(
+                              Icons.edit_rounded,
+                              color: _accentColor,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 14),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      physics: BouncingScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          _buildProdutoSheetLine(
+                            label: _t('common.status', 'Status'),
+                            valueWidget: _StatusChip(ativo: ativo),
+                          ),
+                          _buildProdutoSheetLine(
+                            label: _t(
+                              'produto.catalog.statusLabel',
+                              'Catálogo',
+                            ),
+                            valueWidget: _CatalogStatusChip(
+                              disponivelParaCatalogo:
+                                  produto.disponivelParaCatalogo,
+                            ),
+                          ),
+                          if (produto.favorito)
+                            _buildProdutoSheetLine(
+                              label: _t(
+                                'produto.favorite.sectionLabel',
+                                'Favorito',
+                              ),
+                              valueWidget: _FavoriteStatusChip(),
+                            ),
+                          _buildProdutoSheetLine(
+                            label: _t(
+                              'produto.mobile.itemTypeLabel',
+                              'Tipo do item',
+                            ),
+                            value:
+                                isProduto
+                                    ? _t(
+                                      'produto.mobile.typeProduct',
+                                      'Produto',
+                                    )
+                                    : _t(
+                                      'produto.mobile.typeService',
+                                      'Serviço',
+                                    ),
+                          ),
+                          _buildProdutoSheetLine(
+                            label: _t('produto.webList.table.code', 'Código'),
+                            value:
+                                codigo.isEmpty
+                                    ? _t(
+                                      'produto.webList.codeUnavailable',
+                                      'Sem código',
+                                    )
+                                    : codigo,
+                          ),
+                          _buildProdutoSheetLine(
+                            label: _t(
+                              'produto.mobile.internalCode',
+                              'Cód. interno',
+                            ),
+                            value:
+                                (detalhes?.codigoInterno.trim().isNotEmpty ??
+                                        false)
+                                    ? detalhes!.codigoInterno.trim()
+                                    : _t(
+                                      'produto.webList.codeUnavailable',
+                                      'Sem código',
+                                    ),
+                          ),
+                          _buildProdutoSheetLine(
+                            label: _t(
+                              'produto.mobile.categoryLabel',
+                              'Categoria',
+                            ),
+                            value:
+                                categoria.isEmpty
+                                    ? _t(
+                                      'produto.webList.filter.categoryAll',
+                                      'Sem categoria',
+                                    )
+                                    : categoria,
+                          ),
+                          _buildProdutoSheetLine(
+                            label: _t('produto.mobile.groupLabel', 'Grupo'),
+                            value:
+                                grupo.isEmpty
+                                    ? _t(
+                                      'produto.webList.filter.categoryAll',
+                                      'Sem grupo',
+                                    )
+                                    : grupo,
+                          ),
+                          _buildProdutoSheetLine(
+                            label: _t('produto.mobile.modelLabel', 'Modelo'),
+                            value:
+                                modelo.isEmpty
+                                    ? _t(
+                                      'produto.mobile.modelUnavailable',
+                                      'Sem modelo',
+                                    )
+                                    : modelo,
+                          ),
+                          if (isProduto)
+                            _buildProdutoSheetLine(
+                              label: _t('workspaceHome.stock.title', 'Estoque'),
+                              valueWidget: _StockStatusChip(produto: produto),
+                            ),
+                          if (isProduto)
+                            _buildProdutoSheetLine(
+                              label: _t(
+                                'produto.mobile.minimumStock',
+                                'Estoque mínimo',
+                              ),
+                              value: _formatDecimal(produto.estoqueMinimo),
+                            ),
+                          if (isProduto)
+                            _buildProdutoSheetLine(
+                              label: _t(
+                                'produto.mobile.maximumStock',
+                                'Estoque máximo',
+                              ),
+                              value: _formatDecimal(produto.estoqueMaximo),
+                            ),
+                          if (estoque.isNotEmpty && !isProduto)
+                            _buildProdutoSheetLine(
+                              label: _t('workspaceHome.stock.title', 'Estoque'),
+                              value: estoque,
+                              valueColor: _corEstoqueProduto(produto),
+                            ),
+                          if (garantia.isNotEmpty)
+                            _buildProdutoSheetLine(
+                              label: _t(
+                                'produto.mobile.warrantyShortLabel',
+                                'Garantia',
+                              ),
+                              value: garantia.split(':').last.trim(),
+                            ),
+                          if (regras != null)
+                            _buildProdutoSheetLine(
+                              label: _t(
+                                'produto.mobile.unitLabel',
+                                'Unidade de medida',
+                              ),
+                              value:
+                                  regras.unidadeMedida.trim().isEmpty
+                                      ? _t(
+                                        'produto.mobile.unitUnavailable',
+                                        'Sem unidade',
+                                      )
+                                      : regras.unidadeMedida.trim(),
+                            ),
+                          if (regras != null)
+                            _buildProdutoSheetLine(
+                              label: _t(
+                                'produto.mobile.allowsNegativeStock',
+                                'Permite estoque negativo',
+                              ),
+                              value:
+                                  regras.permiteEstoqueNegativo
+                                      ? _t('common.yes', 'Sim')
+                                      : _t('common.no', 'Não'),
+                            ),
+                          if (regras != null)
+                            _buildProdutoSheetLine(
+                              label: _t(
+                                'produto.mobile.allowsFractionalSale',
+                                'Permite venda fracionada',
+                              ),
+                              value:
+                                  regras.permiteVendaFracionada
+                                      ? _t('common.yes', 'Sim')
+                                      : _t('common.no', 'Não'),
+                            ),
+                          _buildProdutoSheetLine(
+                            label: _t('produto.mobile.photosLabel', 'Fotos'),
+                            value: '$imagensCount',
+                          ),
+                          if (detalhes?.marca.trim().isNotEmpty ?? false)
+                            _buildProdutoSheetLine(
+                              label: _t('produto.mobile.brandLabel', 'Marca'),
+                              value: detalhes!.marca.trim(),
+                            ),
+                          if (detalhes?.fabricante.trim().isNotEmpty ?? false)
+                            _buildProdutoSheetLine(
+                              label: _t(
+                                'produto.mobile.manufacturerLabel',
+                                'Fabricante',
+                              ),
+                              value: detalhes!.fabricante.trim(),
+                            ),
+                          if (detalhes?.descricao.trim().isNotEmpty ??
+                              false) ...<Widget>[
+                            SizedBox(height: 6),
+                            Text(
+                              _t('common.description', 'Descrição'),
+                              style: TextStyle(
+                                color: _mutedTextColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              detalhes!.descricao.trim(),
+                              style: TextStyle(
+                                color: _titleTextColor,
+                                fontSize: 13,
+                                height: 1.35,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (acao == 'edit' && mounted) {
+      await _editarProduto(produto);
+    }
+  }
+
   Future<void> _editarProduto(ProdutoModel produto) async {
     await _abrirCadastro(
       produto: produto,
@@ -3386,50 +3788,6 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     return partes.join('. ');
   }
 
-  String _resumoProdutoVertical(ProdutoModel produto, bool ativo) {
-    final List<String> partes = <String>[_formatCurrency(produto.precoVenda)];
-    final String codigo = produto.codigoDeBarras.trim();
-    final String categoria = _categoriaProdutoLabel(produto);
-    final String grupo = _grupoProdutoLabel(produto);
-    final String alertaEstoque = _alertaEstoqueProdutoVertical(produto);
-
-    if (codigo.isNotEmpty) {
-      partes.add(codigo);
-    } else if (categoria.isNotEmpty) {
-      partes.add(categoria);
-    } else if (grupo.isNotEmpty) {
-      partes.add(grupo);
-    } else {
-      partes.add(
-        _matchesTipoSelecionado(produto, 'PRODUTO')
-            ? _t('produto.mobile.typeProduct', 'Produto')
-            : _t('produto.mobile.typeService', 'Serviço'),
-      );
-    }
-
-    if (!ativo) {
-      partes.add(_t('common.inactive', 'Inativo'));
-    } else if (alertaEstoque.isNotEmpty) {
-      partes.add(alertaEstoque);
-    }
-
-    return partes.join(' • ');
-  }
-
-  String _alertaEstoqueProdutoVertical(ProdutoModel produto) {
-    switch (_situacaoEstoque(produto)) {
-      case _ProdutoSituacaoEstoqueMobile.estoqueBaixo:
-        return _t('produto.webList.stockLow', 'Estoque baixo');
-      case _ProdutoSituacaoEstoqueMobile.semEstoque:
-        return _t('produto.webList.stockOut', 'Sem estoque');
-      case _ProdutoSituacaoEstoqueMobile.estoqueNegativo:
-        return _t('produto.webList.stockNegative', 'Estoque negativo');
-      case _ProdutoSituacaoEstoqueMobile.emEstoque:
-      case _ProdutoSituacaoEstoqueMobile.naoAplicavel:
-        return '';
-    }
-  }
-
   Widget _buildProdutoInfoSection({
     required String title,
     required List<Widget> children,
@@ -3498,6 +3856,51 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProdutoSheetLine({
+    required String label,
+    String? value,
+    Widget? valueWidget,
+    Color? valueColor,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(
+            width: 108,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: _mutedTextColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child:
+                  valueWidget ??
+                  Text(
+                    value ?? '',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: valueColor ?? _titleTextColor,
+                      fontSize: 12,
+                      height: 1.3,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+            ),
+          ),
         ],
       ),
     );
@@ -3871,7 +4274,7 @@ class _StatusChip extends StatelessWidget {
             : (isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626));
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(999),
@@ -3881,7 +4284,8 @@ class _StatusChip extends StatelessWidget {
             ? context.t('common.active', fallback: 'Ativo')
             : context.t('common.inactive', fallback: 'Inativo'),
         style: TextStyle(
-          fontSize: 11,
+          fontSize: 10,
+          height: 1.0,
           fontWeight: FontWeight.w900,
           color: foregroundColor,
         ),
@@ -3908,7 +4312,7 @@ class _CatalogStatusChip extends StatelessWidget {
             : (isDark ? const Color(0xFFD4D4D8) : const Color(0xFF52525B));
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(999),
@@ -3924,7 +4328,97 @@ class _CatalogStatusChip extends StatelessWidget {
               fallback: 'Indisponível',
             ),
         style: TextStyle(
-          fontSize: 11,
+          fontSize: 10,
+          height: 1.0,
+          fontWeight: FontWeight.w900,
+          color: foregroundColor,
+        ),
+      ),
+    );
+  }
+}
+
+class _FavoriteStatusChip extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color backgroundColor =
+        isDark ? const Color(0xFF4C0519) : const Color(0xFFFFEEF4);
+    final Color foregroundColor =
+        isDark ? const Color(0xFFF9A8D4) : const Color(0xFFDB2777);
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        context.t('produto.favorite.status', fallback: 'Favorito'),
+        style: TextStyle(
+          fontSize: 10,
+          height: 1.0,
+          fontWeight: FontWeight.w900,
+          color: foregroundColor,
+        ),
+      ),
+    );
+  }
+}
+
+class _StockStatusChip extends StatelessWidget {
+  const _StockStatusChip({required this.produto});
+
+  final ProdutoModel produto;
+
+  double _quantidadeEstoque(ProdutoModel produto) {
+    final List<ObjEntradaSaidaProduto>? movimentacoes =
+        produto.objEntradaSaidaProduto;
+    if (movimentacoes == null || movimentacoes.isEmpty) return 0;
+
+    return movimentacoes.fold<double>(
+      0,
+      (double total, ObjEntradaSaidaProduto item) => total + item.quantidade,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final double quantidade = _quantidadeEstoque(produto);
+    final bool possuiEstoque = quantidade > 0;
+    final Color backgroundColor =
+        possuiEstoque
+            ? (isDark ? const Color(0xFF052E1A) : const Color(0xFFEAF8EE))
+            : (isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2));
+    final Color foregroundColor =
+        possuiEstoque
+            ? (isDark ? const Color(0xFF86EFAC) : const Color(0xFF16A34A))
+            : (isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626));
+
+    final String label =
+        possuiEstoque
+            ? context
+                .t('produto.webList.stockQuantity', fallback: 'Qtd {value}')
+                .replaceAll(
+                  '{value}',
+                  context.read<LocaleSettingsProvider>().formatDecimal(
+                    quantidade,
+                  ),
+                )
+            : context.t('produto.webList.stockOut', fallback: 'Sem estoque');
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          height: 1.0,
           fontWeight: FontWeight.w900,
           color: foregroundColor,
         ),
