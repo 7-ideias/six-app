@@ -408,6 +408,7 @@ class _AtendimentoHeroCard extends StatelessWidget {
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final SixMobileColorScheme colors = context.sixMobileColors;
+          final bool isDark = Theme.of(context).brightness == Brightness.dark;
           final double width = constraints.maxWidth;
           final bool compact = width < 350 || textScale >= 1.2;
           final bool tightText = textScale >= 1.35;
@@ -446,12 +447,14 @@ class _AtendimentoHeroCard extends StatelessWidget {
                       gradient: RadialGradient(
                         colors: <Color>[
                           SixMobilePalette.brandBlue.withAlpha(
-                            Theme.of(context).brightness == Brightness.dark
-                                ? 42
-                                : 20,
+                            isDark ? 72 : 34,
+                          ),
+                          SixMobilePalette.brandViolet.withAlpha(
+                            isDark ? 24 : 12,
                           ),
                           Colors.transparent,
                         ],
+                        stops: const <double>[0, 0.56, 1],
                       ),
                     ),
                     child: SixImagemCanetinha(
@@ -462,10 +465,12 @@ class _AtendimentoHeroCard extends StatelessWidget {
                       altura: illustrationHeight,
                       corContorno: colors.titleText,
                       gradienteAcento: accentGradient,
-                      opacidadeContorno:
-                          Theme.of(context).brightness == Brightness.dark
-                              ? 0.86
-                              : 0.72,
+                      opacidadeContorno: isDark ? 1 : 0.88,
+                      reforcoContorno: compact ? 0.36 : 0.42,
+                      reforcoAcento: compact ? 0.68 : 0.76,
+                      opacidadeReforco: isDark ? 0.42 : 0.34,
+                      opacidadeBrilho: isDark ? 0.18 : 0,
+                      desfoqueBrilho: 3.2,
                     ),
                   ),
                 ),
@@ -871,6 +876,26 @@ class _ActionCardContent extends StatelessWidget {
         _isPrimary
             ? (compact ? 10.5 : 11.3) + (extraHeightFactor * 0.6)
             : (compact ? 9.0 : 9.7) + (extraHeightFactor * 0.5);
+    final Color illustrationStart =
+        isDark
+            ? Color.lerp(
+              data.brandStart,
+              colors.titleText,
+              _isPrimary ? 0.18 : 0.26,
+            )!
+            : data.brandStart;
+    final Color illustrationEnd =
+        isDark
+            ? Color.lerp(
+              data.brandEnd,
+              colors.titleText,
+              _isPrimary ? 0.46 : 0.54,
+            )!
+            : data.brandEnd;
+    final Color illustrationAccent =
+        isDark
+            ? Color.lerp(data.accentColor, colors.titleText, 0.24)!
+            : data.accentColor;
 
     return Column(
       mainAxisSize: MainAxisSize.max,
@@ -886,20 +911,37 @@ class _ActionCardContent extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: <Color>[
-                data.brandStart.withAlpha(enabled ? (isDark ? 35 : 24) : 14),
-                data.brandEnd.withAlpha(enabled ? (isDark ? 24 : 15) : 10),
+                data.brandStart.withAlpha(
+                  enabled
+                      ? isDark
+                          ? (_isPrimary ? 96 : 82)
+                          : (_isPrimary ? 60 : 52)
+                      : 18,
+                ),
+                data.brandEnd.withAlpha(
+                  enabled
+                      ? isDark
+                          ? (_isPrimary ? 64 : 54)
+                          : (_isPrimary ? 40 : 34)
+                      : 12,
+                ),
               ],
             ),
             shape: BoxShape.circle,
             border: Border.all(
-              color: data.accentColor.withAlpha(enabled ? 34 : 18),
+              color: data.accentColor.withAlpha(
+                enabled ? (_isPrimary ? 104 : 88) : 26,
+              ),
             ),
             boxShadow:
                 isDark && enabled
                     ? <BoxShadow>[
                       BoxShadow(
-                        color: data.brandStart.withAlpha(24),
-                        blurRadius: _isPrimary ? 18 : 12,
+                        color: data.brandStart.withAlpha(
+                          _isPrimary ? 72 : 58,
+                        ),
+                        blurRadius: _isPrimary ? 22 : 16,
+                        spreadRadius: _isPrimary ? 0.4 : 0,
                       ),
                     ]
                     : const <BoxShadow>[],
@@ -916,15 +958,25 @@ class _ActionCardContent extends StatelessWidget {
               gradienteContorno: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: <Color>[data.brandStart, data.brandEnd],
+                colors: <Color>[illustrationStart, illustrationEnd],
               ),
               gradienteAcento: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: <Color>[data.accentColor, data.brandEnd],
+                colors: <Color>[illustrationAccent, illustrationEnd],
               ),
-              opacidadeContorno: enabled ? 0.96 : 0.46,
+              opacidadeContorno: enabled ? 1 : 0.46,
               opacidadeAcento: enabled ? 1 : 0.48,
+              reforcoContorno: _isPrimary ? 0.62 : 0.82,
+              reforcoAcento: _isPrimary ? 0.72 : 0.92,
+              opacidadeReforco: isDark ? 0.52 : 0.44,
+              opacidadeBrilho:
+                  enabled
+                      ? isDark
+                          ? 0.62
+                          : 0.24
+                      : 0,
+              desfoqueBrilho: _isPrimary ? 4.8 : 3.4,
             ),
           ),
         ),

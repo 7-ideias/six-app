@@ -82,14 +82,16 @@ void main() {
     ]) {
       await _pumpAtendimento(tester, brightness: brightness);
 
+      final Finder hero = find.byKey(
+        const ValueKey<String>('atendimento-hero-art'),
+      );
       expect(
-        find.descendant(
-          of: find.byKey(
-            const ValueKey<String>('atendimento-hero-art'),
-          ),
-          matching: find.byType(ShaderMask),
-        ),
-        findsOneWidget,
+        tester
+            .widgetList<ShaderMask>(
+              find.descendant(of: hero, matching: find.byType(ShaderMask)),
+            )
+            .length,
+        greaterThan(1),
       );
 
       for (final String id in <String>[
@@ -110,9 +112,34 @@ void main() {
         );
 
         expect(
-          find.descendant(of: action, matching: find.byType(ShaderMask)),
-          findsNWidgets(2),
+          tester
+              .widgetList<ShaderMask>(
+                find.descendant(
+                  of: action,
+                  matching: find.byType(ShaderMask),
+                ),
+              )
+              .length,
+          greaterThan(2),
           reason: '$id em $brightness',
+        );
+        expect(
+          find.descendant(
+            of: action,
+            matching: find.byKey(
+              const ValueKey<String>('six-canetinha-brilho'),
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: action,
+            matching: find.byKey(
+              const ValueKey<String>('six-canetinha-contorno-reforco'),
+            ),
+          ),
+          findsOneWidget,
         );
 
         final Ink surfaceWidget = tester.widget<Ink>(surface);
