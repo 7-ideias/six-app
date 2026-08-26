@@ -514,6 +514,9 @@ const List<String> _webShellI18nKeys = <String>[
   'web.header.profileTooltip',
   'web.header.userMenu',
   'web.header.myProfile',
+  'web.header.theme.dark',
+  'web.header.theme.dark.enable',
+  'web.header.theme.dark.disable',
   'web.header.logout',
 ];
 

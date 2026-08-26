@@ -13,6 +13,7 @@ import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_settings_item_data.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_settings_maturity_badge.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_theme_toggle.dart';
 import 'package:sixpos/presentation/components/user_profile_avatar_image.dart';
 import 'package:sixpos/presentation/screens/login_mobile.dart';
 import 'package:sixpos/providers/theme_provider.dart';
@@ -370,24 +371,22 @@ class _LoginSettingsMobileState extends State<LoginSettingsMobile> {
                                 _GroupedItemData(
                                   icon:
                                       isDarkMode
-                                          ? Icons.dark_mode_rounded
-                                          : Icons.light_mode_rounded,
+                                          ? Icons.nightlight_round
+                                          : Icons.wb_sunny_rounded,
                                   title: themeTitle,
                                   subtitle: themeSubtitle,
                                   semanticsLabel: themeSemantics,
                                   onTap:
                                       () => _toggleTheme(context, !isDarkMode),
-                                  trailing: Switch.adaptive(
-                                    value: isDarkMode,
-                                    activeThumbColor: colors.accent,
-                                    activeTrackColor: colors.accent.withValues(
-                                      alpha: 0.34,
+                                  toggled: isDarkMode,
+                                  trailing: ExcludeSemantics(
+                                    child: SixMobileThemeToggle(
+                                      isDark: isDarkMode,
+                                      semanticsLabel: themeSemantics,
+                                      onChanged:
+                                          (bool value) =>
+                                              _toggleTheme(context, value),
                                     ),
-                                    inactiveThumbColor: colors.surface,
-                                    inactiveTrackColor: colors.softSurface,
-                                    onChanged:
-                                        (bool value) =>
-                                            _toggleTheme(context, value),
                                   ),
                                 ),
                                 _GroupedItemData(
@@ -731,6 +730,10 @@ class _LoginSettingsMobileState extends State<LoginSettingsMobile> {
     required bool isLast,
   }) {
     final bool isEnabled = !item.comingSoon;
+    final MediaQueryData? mediaQuery = MediaQuery.maybeOf(context);
+    final bool reduceMotion =
+        (mediaQuery?.disableAnimations ?? false) ||
+        (mediaQuery?.accessibleNavigation ?? false);
     final String comingSoonLabel = context.t(
       'gestao.settings.badge.comingSoon',
       fallback: 'Em breve',
@@ -739,6 +742,7 @@ class _LoginSettingsMobileState extends State<LoginSettingsMobile> {
     return Semantics(
       button: isEnabled,
       enabled: isEnabled,
+      toggled: item.toggled,
       label: item.semanticsLabel,
       child: Opacity(
         opacity: isEnabled ? 1.0 : 0.52,
@@ -775,7 +779,33 @@ class _LoginSettingsMobileState extends State<LoginSettingsMobile> {
                       borderRadius: BorderRadius.circular(13),
                     ),
                     child: AnimatedSwitcher(
-                      duration: Duration(milliseconds: 180),
+                      duration:
+                          reduceMotion
+                              ? Duration.zero
+                              : Duration(milliseconds: 180),
+                      switchInCurve: Curves.easeOutBack,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (
+                        Widget child,
+                        Animation<double> animation,
+                      ) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: ScaleTransition(
+                            scale: Tween<double>(
+                              begin: 0.76,
+                              end: 1,
+                            ).animate(animation),
+                            child: RotationTransition(
+                              turns: Tween<double>(
+                                begin: -0.08,
+                                end: 0,
+                              ).animate(animation),
+                              child: child,
+                            ),
+                          ),
+                        );
+                      },
                       child: Icon(
                         item.icon,
                         key: ValueKey<IconData>(item.icon),
@@ -1433,6 +1463,7 @@ class _GroupedItemData {
     this.comingSoon = false,
     this.onTap,
     this.trailing,
+    this.toggled,
   });
 
   final IconData icon;
@@ -1442,4 +1473,5 @@ class _GroupedItemData {
   final bool comingSoon;
   final VoidCallback? onTap;
   final Widget? trailing;
+  final bool? toggled;
 }

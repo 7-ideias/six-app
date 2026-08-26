@@ -32,6 +32,7 @@ import 'package:sixpos/presentation/screens/categorias_produtos_servicos_web_pag
 import 'package:sixpos/presentation/screens/recebimento_pagamento_web.dart';
 import 'package:sixpos/presentation/components/web/six_web_logout_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
+import 'package:sixpos/presentation/components/web/six_web_theme_menu_entry.dart';
 import 'package:sixpos/presentation/components/web/venda_em_andamento_fab_web.dart';
 import 'package:sixpos/presentation/screens/servico_dashboard_web_page.dart';
 import 'package:sixpos/presentation/screens/workspace_home_web.dart';
@@ -932,6 +933,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             tooltip: '',
             position: PopupMenuPosition.under,
             color: tokens.menuBackground,
+            constraints: const BoxConstraints(minWidth: 228, maxWidth: 248),
             onSelected: (_WebHeaderUserAction action) {
               switch (action) {
                 case _WebHeaderUserAction.profile:
@@ -968,6 +970,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                           ],
                         ),
                       ),
+                      const SixWebThemeMenuEntry<_WebHeaderUserAction>(),
                       PopupMenuItem<_WebHeaderUserAction>(
                         value: _WebHeaderUserAction.logout,
                         child: Row(

@@ -372,6 +372,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.header.profileTooltip': 'Meu perfil',
     'web.header.userMenu': 'Usuário',
     'web.header.myProfile': 'Meu perfil',
+    'web.header.theme.dark': 'Tema escuro',
+    'web.header.theme.dark.enable': 'Ativar tema escuro',
+    'web.header.theme.dark.disable': 'Desativar tema escuro',
     'web.header.logout': 'Sair',
     'web.logout.dialog.title': 'Encerrar sessão agora?',
     'web.logout.dialog.subtitle':
@@ -2172,6 +2175,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.header.profileTooltip': 'My profile',
     'web.header.userMenu': 'User',
     'web.header.myProfile': 'My profile',
+    'web.header.theme.dark': 'Dark theme',
+    'web.header.theme.dark.enable': 'Enable dark theme',
+    'web.header.theme.dark.disable': 'Disable dark theme',
     'web.header.logout': 'Sign out',
     'web.logout.dialog.title': 'End session now?',
     'web.logout.dialog.subtitle':
@@ -3864,6 +3870,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.header.profileTooltip': 'Mi perfil',
     'web.header.userMenu': 'Usuario',
     'web.header.myProfile': 'Mi perfil',
+    'web.header.theme.dark': 'Tema oscuro',
+    'web.header.theme.dark.enable': 'Activar tema oscuro',
+    'web.header.theme.dark.disable': 'Desactivar tema oscuro',
     'web.header.logout': 'Salir',
     'web.logout.dialog.title': '¿Cerrar la sesión ahora?',
     'web.logout.dialog.subtitle':
