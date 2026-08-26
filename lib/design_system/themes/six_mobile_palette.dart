@@ -40,6 +40,7 @@ abstract final class SixMobilePalette {
   static const Color brandNavyBright = Color(0xFF063071);
   static const Color brandCyan = Color(0xFF10D9F0);
   static const Color brandBlue = Color(0xFF145BFF);
+  static const Color brandViolet = Color(0xFF5A20FF);
   static const Color brandSupportingText = Color(0xFFA8C6EE);
 
   // Estrutura

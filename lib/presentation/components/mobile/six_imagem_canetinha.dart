@@ -12,6 +12,10 @@ class SixImagemCanetinha extends StatelessWidget {
     this.rotuloSemantico,
     this.corContorno,
     this.corAcento,
+    this.gradienteContorno,
+    this.gradienteAcento,
+    this.opacidadeContorno = 1,
+    this.opacidadeAcento = 1,
   });
 
   final String assetContorno;
@@ -22,6 +26,10 @@ class SixImagemCanetinha extends StatelessWidget {
   final String? rotuloSemantico;
   final Color? corContorno;
   final Color? corAcento;
+  final Gradient? gradienteContorno;
+  final Gradient? gradienteAcento;
+  final double opacidadeContorno;
+  final double opacidadeAcento;
 
   @override
   Widget build(BuildContext context) {
@@ -36,11 +44,21 @@ class SixImagemCanetinha extends StatelessWidget {
           _CamadaImagemCanetinha(
             asset: assetContorno,
             cor: corContorno ?? colorScheme.onSurface,
+            gradiente: gradienteContorno,
+            opacidade: opacidadeContorno,
+            chaveGradiente: const ValueKey<String>(
+              'six-canetinha-contorno-gradiente',
+            ),
             fit: fit,
           ),
           _CamadaImagemCanetinha(
             asset: assetAcento,
             cor: corAcento ?? colorScheme.primary,
+            gradiente: gradienteAcento,
+            opacidade: opacidadeAcento,
+            chaveGradiente: const ValueKey<String>(
+              'six-canetinha-acento-gradiente',
+            ),
             fit: fit,
           ),
         ],
@@ -64,23 +82,43 @@ class _CamadaImagemCanetinha extends StatelessWidget {
   const _CamadaImagemCanetinha({
     required this.asset,
     required this.cor,
+    required this.gradiente,
+    required this.opacidade,
+    required this.chaveGradiente,
     required this.fit,
   });
 
   final String asset;
   final Color cor;
+  final Gradient? gradiente;
+  final double opacidade;
+  final Key chaveGradiente;
   final BoxFit fit;
 
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
+    assert(opacidade >= 0 && opacidade <= 1);
+
+    final Widget imagem = Image.asset(
       asset,
       fit: fit,
-      color: cor,
-      colorBlendMode: BlendMode.srcIn,
+      color: gradiente == null ? cor : null,
+      colorBlendMode: gradiente == null ? BlendMode.srcIn : null,
       filterQuality: FilterQuality.high,
       isAntiAlias: true,
       excludeFromSemantics: true,
     );
+    final Widget camada =
+        gradiente == null
+            ? imagem
+            : ShaderMask(
+              key: chaveGradiente,
+              shaderCallback: (Rect bounds) => gradiente!.createShader(bounds),
+              blendMode: BlendMode.srcIn,
+              child: imagem,
+            );
+
+    if (opacidade == 1) return camada;
+    return Opacity(opacity: opacidade, child: camada);
   }
 }

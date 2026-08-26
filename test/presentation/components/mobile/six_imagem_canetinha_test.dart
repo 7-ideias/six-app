@@ -43,6 +43,60 @@ void main() {
     expect(find.bySemanticsLabel('Pagamento recebido'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('aplica gradientes independentes nas duas camadas', (
+    WidgetTester tester,
+  ) async {
+    const LinearGradient gradienteContorno = LinearGradient(
+      colors: <Color>[Color(0xFF10D9F0), Color(0xFF145BFF)],
+    );
+    const LinearGradient gradienteAcento = LinearGradient(
+      colors: <Color>[Color(0xFF145BFF), Color(0xFF5A20FF)],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: SixImagemCanetinha(
+              assetContorno: _assetContorno,
+              assetAcento: _assetAcento,
+              largura: 120,
+              altura: 120,
+              gradienteContorno: gradienteContorno,
+              gradienteAcento: gradienteAcento,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(
+        const ValueKey<String>('six-canetinha-contorno-gradiente'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('six-canetinha-acento-gradiente')),
+      findsOneWidget,
+    );
+
+    final List<Image> camadas =
+        tester
+            .widgetList<Image>(
+              find.descendant(
+                of: find.byType(SixImagemCanetinha),
+                matching: find.byType(Image),
+              ),
+            )
+            .toList();
+    expect(camadas, hasLength(2));
+    expect(camadas[0].color, isNull);
+    expect(camadas[1].color, isNull);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 Future<void> _pumpImagem(
