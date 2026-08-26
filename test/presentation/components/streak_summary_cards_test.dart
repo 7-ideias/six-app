@@ -93,7 +93,7 @@ void main() {
 
     expect(find.text('0 dias'), findsWidgets);
     expect(
-      find.text('Use o SixApp todos os dias para manter sua ofensiva.'),
+      find.text('Use o SixoApp todos os dias para manter sua ofensiva.'),
       findsOneWidget,
     );
   });

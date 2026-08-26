@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/six_i18n.dart';
 import '../../l10n/web_i18n_store.dart';
 
 class AdminPortalTexts {
@@ -14,11 +15,13 @@ class AdminPortalTexts {
   String _text(String key) {
     final String? backendValue = WebI18nStore.instance.string(_localeCode, key);
     if (backendValue != null && backendValue.trim().isNotEmpty) {
-      return backendValue;
+      return normalizeSixoAppBranding(backendValue);
     }
-    return _adminDefaults[_localeCode]?[key] ??
-        _adminDefaults['pt']![key] ??
-        '';
+    return normalizeSixoAppBranding(
+      _adminDefaults[_localeCode]?[key] ??
+          _adminDefaults['pt']![key] ??
+          '',
+    );
   }
 
   String get portalTitle => _text('adminPortalTitle');
@@ -84,7 +87,7 @@ _adminDefaults = <String, Map<String, String>>{
     'adminUsers': 'Usuários',
     'adminDashboardTitle': 'Visão administrativa',
     'adminDashboardSubtitle':
-        'Acompanhe a situação geral das empresas cadastradas no Six.',
+        'Acompanhe a situação geral das empresas cadastradas no SixoApp.',
     'adminCurrentPage': 'Dashboard administrativo',
     'adminOnline': 'Sistema online',
     'adminRefresh': 'Atualizar',
@@ -129,7 +132,7 @@ _adminDefaults = <String, Map<String, String>>{
     'adminUsers': 'Users',
     'adminDashboardTitle': 'Administrative overview',
     'adminDashboardSubtitle':
-        'Track the overall status of companies registered in Six.',
+        'Track the overall status of companies registered in SixoApp.',
     'adminCurrentPage': 'Admin dashboard',
     'adminOnline': 'System online',
     'adminRefresh': 'Refresh',
@@ -173,7 +176,7 @@ _adminDefaults = <String, Map<String, String>>{
     'adminUsers': 'Usuarios',
     'adminDashboardTitle': 'Visión administrativa',
     'adminDashboardSubtitle':
-        'Acompaña la situación general de las empresas registradas en Six.',
+        'Acompaña la situación general de las empresas registradas en SixoApp.',
     'adminCurrentPage': 'Dashboard administrativo',
     'adminOnline': 'Sistema en línea',
     'adminRefresh': 'Actualizar',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/presentation/components/sixoapp_brand_mark.dart';
 
 import '../../core/services/admin_portal_service.dart';
 import 'admin_dashboard_metrics.dart';
@@ -194,14 +195,25 @@ class AdminSidebar extends StatelessWidget {
                       color: AdminPalette.dark,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text('6', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
+                    child: const Padding(
+                      padding: EdgeInsets.all(5),
+                      child: SixoAppBrandMark(size: 24),
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        const Text('Six', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.w900, color: AdminPalette.dark)),
+                        const Text(
+                          'SixoApp',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: AdminPalette.dark,
+                          ),
+                        ),
                         Text(texts.portalTitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: AdminPalette.mutedText, fontWeight: FontWeight.w700)),
                       ],
                     ),

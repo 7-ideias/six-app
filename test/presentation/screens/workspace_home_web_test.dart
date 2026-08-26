@@ -60,7 +60,7 @@ void main() {
           permissions: _FakeAutorizacoesProvider(admin: true),
         );
 
-        expect(find.text('Meu dia no SixApp'), findsOneWidget);
+        expect(find.text('Meu dia no SixoApp'), findsOneWidget);
         expect(find.text('Olá, Ana'), findsOneWidget);
         expect(find.text('Assistência Cartaxo'), findsOneWidget);
         expect(find.text('Hoje: 10/08/2026'), findsOneWidget);

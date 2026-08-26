@@ -14,6 +14,7 @@ import '../../data/models/empresa_model.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import '../../domain/services/caixa/caixa_service.dart';
 import '../../domain/models/regionalizacao_models.dart';
+import '../../l10n/six_i18n.dart';
 import '../../l10n/web_i18n_store.dart';
 import '../../providers/locale_settings_provider.dart';
 
@@ -1052,7 +1053,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   final TextEditingController
   _assinaturaMensagemController = TextEditingController(
     text:
-        'Equipe Six agradece o seu contato. Qualquer dúvida, estamos à disposição.',
+        'Nossa equipe agradece o seu contato. Qualquer dúvida, estamos à disposição.',
   );
   final TextEditingController _mensagemOrdemCriadaController =
       TextEditingController(
@@ -1114,10 +1115,10 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   double _entradaMinimaFiadoPercentual = 0;
   double _percentualComissaoPadrao = 5;
   final TextEditingController _nomeCatalogoController = TextEditingController(
-    text: 'Catálogo Six Repair',
+    text: 'Catálogo Oficina Central',
   );
   final TextEditingController _slugCatalogoController = TextEditingController(
-    text: 'six-repair-center',
+    text: 'oficina-central',
   );
   final TextEditingController _prefixoMesaController = TextEditingController(
     text: 'Mesa',
@@ -1425,7 +1426,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       case SecaoConfiguracaoSix.regionalizacao:
         return 'Idioma, país, moeda, fuso horário, formatos de data e padronização financeira da empresa.';
       case SecaoConfiguracaoSix.aparencia:
-        return 'Tema, densidade visual, branding do sistema e personalização visual do Six.';
+        return 'Tema, densidade visual, identidade do sistema e personalização visual do SixoApp.';
       case SecaoConfiguracaoSix.comunicacao:
         return 'Mensagens automáticas, canais de notificação e preferências de contato com clientes.';
       case SecaoConfiguracaoSix.documentos:
@@ -3128,7 +3129,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               ),
               subtitle: _i18n(
                 'configuracoes.preferTradeNameSubtitle',
-                'Quando ativo, o Six prioriza o nome fantasia em documentos e cabeçalhos.',
+                'Quando ativo, o SixoApp prioriza o nome fantasia em documentos e cabeçalhos.',
               ),
               value: true,
               onChanged: (_) {},
@@ -3707,8 +3708,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
   String _i18n(String key, String fallback) {
     final locale = _mapIdiomaSelecionadoParaLocale(_idiomaSelecionado);
-    return WebI18nStore.instance.string(locale.toLanguageTag(), key) ??
-        fallback;
+    return normalizeSixoAppBranding(
+      WebI18nStore.instance.string(locale.toLanguageTag(), key) ?? fallback,
+    );
   }
 
   Widget _buildSecaoRegionalizacao() {
@@ -4094,7 +4096,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         _buildBigCard(
           title: 'Canais e automações',
           subtitle:
-              'Defina como o Six deve se comunicar com clientes durante o ciclo de venda e assistência técnica.',
+              'Defina como o SixoApp deve se comunicar com clientes durante o ciclo de venda e assistência técnica.',
           child: Wrap(
             spacing: 16,
             runSpacing: 16,
@@ -4785,7 +4787,7 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                 child: _buildTextField(
                   label: 'Identificador do link',
                   controller: _slugCatalogoController,
-                  helperText: 'Exemplo futuro: /catalogo/six-repair-center',
+                  helperText: 'Exemplo futuro: /catalogo/oficina-central',
                   enabled: _permitirVendaCatalogoPorLink,
                 ),
               ),

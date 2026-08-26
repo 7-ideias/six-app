@@ -607,7 +607,7 @@ class _AiAssistantWelcome extends StatelessWidget {
                 constraints: const BoxConstraints(maxWidth: 520),
                 child: Text(
                   l10n?.aiAssistantWelcomeSubtitle ??
-                      'Estou aqui para ajudar em suas solicitações e tirar dúvidas sobre o Six.',
+                      'Estou aqui para ajudar em suas solicitações e tirar dúvidas sobre o SixoApp.',
                   textAlign: TextAlign.center,
                   style: textTheme.bodyLarge?.copyWith(
                     color: colorScheme.onSurfaceVariant,

@@ -43,7 +43,7 @@ abstract final class WebNavigationRegistry {
       id: WebNavigationIds.operations,
       labelKey: 'web.navigation.operations',
       labelFallback: 'Atendimento',
-      icon: Icons.bolt_outlined,
+      icon: Icons.support_agent_outlined,
       visibility: WebNavigationVisibilityRule.authenticated(),
       children: <WebNavigationItem>[
         WebNavigationItem(
@@ -118,7 +118,7 @@ abstract final class WebNavigationRegistry {
       id: WebNavigationIds.catalog,
       labelKey: 'web.navigation.catalog',
       labelFallback: 'Catálogo',
-      icon: Icons.inventory_2_outlined,
+      icon: Icons.view_module_outlined,
       visibility: WebNavigationVisibilityRule.authenticated(),
       children: <WebNavigationItem>[
         WebNavigationItem(

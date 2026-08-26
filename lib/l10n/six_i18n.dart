@@ -3,8 +3,33 @@ import 'package:flutter/widgets.dart';
 
 import 'web_i18n_store.dart';
 
+/// Normaliza aliases históricos encontrados em pacotes de tradução antigos.
+///
+/// A regra atua somente sobre textos de interface já classificados como i18n;
+/// identificadores técnicos como `SixBack`, `sixappback.com` e chaves de API
+/// permanecem inalterados.
+String normalizeSixoAppBranding(String value) {
+  String normalized = value;
+  final List<RegExp> legacyAliases = <RegExp>[
+    RegExp(r'\bAppplanilha\b', caseSensitive: false),
+    RegExp(r'\bSix\s+POS\b', caseSensitive: false),
+    RegExp(r'\bSix\s+ERP\b', caseSensitive: false),
+    RegExp(r'\bSix\s+App\b', caseSensitive: false),
+    RegExp(r'\bSixApp\b', caseSensitive: false),
+  ];
+
+  for (final RegExp alias in legacyAliases) {
+    normalized = normalized.replaceAll(alias, 'SixoApp');
+  }
+  return normalized.replaceAllMapped(
+    RegExp(r'(^|[^A-Za-z0-9_-])Six(?=$|[^A-Za-z0-9_-])'),
+    (Match match) => '${match.group(1) ?? ''}SixoApp',
+  );
+}
+
 extension SixI18nBuildContext on BuildContext {
-  /// Resolve textos do Six a partir do pacote de traduções carregado do backend.
+  /// Resolve textos do SixoApp a partir do pacote de traduções carregado do
+  /// backend.
   ///
   /// Uso preferencial em telas web, Android e iOS:
   /// `context.t('common.save')`.
@@ -15,7 +40,7 @@ extension SixI18nBuildContext on BuildContext {
     final code = _sixCurrentLanguageCode();
     final value = SixI18nStore.instance.string(code, key);
     if (value != null && value.isNotEmpty) {
-      return value;
+      return normalizeSixoAppBranding(value);
     }
 
     final resolvedFallback =
@@ -26,7 +51,7 @@ extension SixI18nBuildContext on BuildContext {
         //   '[i18n] chave ausente: $key para idioma=$code. Usando fallback.',
         // );
       }
-      return resolvedFallback;
+      return normalizeSixoAppBranding(resolvedFallback);
     }
 
     if (kDebugMode) {
@@ -66,7 +91,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.quality.actionDetails': 'Completar detalhes',
     'produto.quality.actionRules': 'Revisar regras',
     'produto.quality.actionFiscal': 'Informar dados fiscais',
-    'app.title': 'Six',
+    'app.title': 'SixoApp',
     'common.save': 'Salvar',
     'common.cancel': 'Cancelar',
     'common.back': 'Voltar',
@@ -365,7 +390,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Preparando o retorno para a tela pública de login.',
     'web.logout.dialog.error':
         'Não foi possível encerrar a sessão agora. Tente novamente em alguns instantes.',
-    'workspaceHome.title': 'Meu dia no SixApp',
+    'workspaceHome.title': 'Meu dia no SixoApp',
     'workspaceHome.greeting': 'Olá, {name}',
     'workspaceHome.unknownUser': 'usuário',
     'workspaceHome.companyFallback': 'Comércio atual',
@@ -490,7 +515,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'streak.oneDay': '1 dia',
     'streak.days': '{count} dias',
     'streak.daysOfStreak': '{count} dias de ofensiva',
-    'streak.keepUsing': 'Use o SixApp todos os dias para manter sua ofensiva.',
+    'streak.keepUsing': 'Use o SixoApp todos os dias para manter sua ofensiva.',
     'streak.startedToday': 'Sua ofensiva começou hoje.',
     'streak.loading': 'Carregando seus dias de ofensiva.',
     'streak.loadError': 'Não foi possível carregar sua ofensiva.',
@@ -867,7 +892,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.signInWithApple': 'Entrar com Apple',
     'auth.signInWithGoogle': 'Entrar com Google',
     'auth.googleLoginError': 'Não foi possível concluir o login com Google.',
-    'auth.session.validatingTitle': 'Entrando no Six',
+    'auth.session.validatingTitle': 'Entrando no SixoApp',
     'auth.session.validatingMessage': 'Validando sua sessão com segurança...',
     'splash.preparingWorkspace': 'Preparando seu espaço...',
     'splash.validatingSession': 'Validando sua sessão...',
@@ -927,7 +952,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileCreate.passwordMismatchInline': 'As senhas não coincidem.',
     'auth.mobileCreate.passwordMismatchError':
         'As senhas informadas não são iguais. Verifique e tente novamente.',
-    'auth.entry.title': 'Bem-vindo ao Six',
+    'auth.entry.title': 'Bem-vindo ao SixoApp',
     'auth.entry.subtitle':
         'Antes de continuar, diga como deseja acessar o app.',
     'auth.entry.hasAccountTitle': 'Já tenho uma conta',
@@ -937,7 +962,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.entry.newAccountTitle': 'Sou novo por aqui',
     'auth.entry.newAccountSubtitle':
         'Veja um resumo rápido e crie sua conta para começar.',
-    'auth.entry.newAccountAction': 'Conhecer o Six',
+    'auth.entry.newAccountAction': 'Conhecer o SixoApp',
     'auth.onboarding.title': 'Comece pelo essencial',
     'auth.onboarding.subtitle':
         'Veja três pontos rápidos antes de criar sua conta.',
@@ -949,7 +974,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Mantenha produtos, serviços e informações essenciais sempre à mão.',
     'auth.onboarding.step3Title': 'Gestão para crescer',
     'auth.onboarding.step3Subtitle':
-        'Acompanhe indicadores e prepare sua operação para evoluir com o Six.',
+        'Acompanhe indicadores e prepare sua operação para evoluir com o SixoApp.',
     'auth.onboarding.skip': 'Pular',
     'auth.onboarding.next': 'Avançar',
     'auth.onboarding.createAccountAction': 'Criar minha conta',
@@ -1867,7 +1892,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.quality.actionDetails': 'Complete details',
     'produto.quality.actionRules': 'Review rules',
     'produto.quality.actionFiscal': 'Enter tax data',
-    'app.title': 'Six',
+    'app.title': 'SixoApp',
     'common.save': 'Save',
     'common.cancel': 'Cancel',
     'common.back': 'Back',
@@ -2165,7 +2190,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Preparing the return to the public login screen.',
     'web.logout.dialog.error':
         'Unable to end the session right now. Please try again in a moment.',
-    'workspaceHome.title': 'My day in SixApp',
+    'workspaceHome.title': 'My day in SixoApp',
     'workspaceHome.greeting': 'Hello, {name}',
     'workspaceHome.unknownUser': 'user',
     'workspaceHome.companyFallback': 'Current business',
@@ -2245,7 +2270,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'streak.oneDay': '1 day',
     'streak.days': '{count} days',
     'streak.daysOfStreak': '{count} day streak',
-    'streak.keepUsing': 'Use SixApp every day to keep your streak.',
+    'streak.keepUsing': 'Use SixoApp every day to keep your streak.',
     'streak.startedToday': 'Your streak started today.',
     'streak.loading': 'Loading your streak days.',
     'streak.loadError': 'Could not load your streak.',
@@ -2925,7 +2950,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.signInWithApple': 'Sign in with Apple',
     'auth.signInWithGoogle': 'Sign in with Google',
     'auth.googleLoginError': 'Could not complete Google sign-in.',
-    'auth.session.validatingTitle': 'Signing in to Six',
+    'auth.session.validatingTitle': 'Signing in to SixoApp',
     'auth.session.validatingMessage': 'Validating your session securely...',
     'splash.preparingWorkspace': 'Preparing your workspace...',
     'splash.validatingSession': 'Validating your session...',
@@ -2985,7 +3010,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileCreate.passwordMismatchInline': 'Passwords do not match.',
     'auth.mobileCreate.passwordMismatchError':
         'The passwords are different. Check them and try again.',
-    'auth.entry.title': 'Welcome to Six',
+    'auth.entry.title': 'Welcome to SixoApp',
     'auth.entry.subtitle':
         'Before continuing, choose how you want to access the app.',
     'auth.entry.hasAccountTitle': 'I already have an account',
@@ -2995,7 +3020,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.entry.newAccountTitle': 'I am new here',
     'auth.entry.newAccountSubtitle':
         'See a quick overview and create your account to get started.',
-    'auth.entry.newAccountAction': 'Explore Six',
+    'auth.entry.newAccountAction': 'Explore SixoApp',
     'auth.onboarding.title': 'Start with the essentials',
     'auth.onboarding.subtitle':
         'See three quick points before creating your account.',
@@ -3007,7 +3032,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Keep products, services and key information always at hand.',
     'auth.onboarding.step3Title': 'Management to grow',
     'auth.onboarding.step3Subtitle':
-        'Track indicators and prepare your operation to evolve with Six.',
+        'Track indicators and prepare your operation to evolve with SixoApp.',
     'auth.onboarding.skip': 'Skip',
     'auth.onboarding.next': 'Next',
     'auth.onboarding.createAccountAction': 'Create my account',
@@ -3556,7 +3581,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.quality.actionDetails': 'Completar detalles',
     'produto.quality.actionRules': 'Revisar reglas',
     'produto.quality.actionFiscal': 'Informar datos fiscales',
-    'app.title': 'Six',
+    'app.title': 'SixoApp',
     'common.save': 'Guardar',
     'common.cancel': 'Cancelar',
     'common.back': 'Volver',
@@ -3857,7 +3882,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Preparando el regreso a la pantalla pública de inicio de sesión.',
     'web.logout.dialog.error':
         'No fue posible cerrar la sesión ahora. Inténtelo nuevamente en unos instantes.',
-    'workspaceHome.title': 'Mi día en SixApp',
+    'workspaceHome.title': 'Mi día en SixoApp',
     'workspaceHome.greeting': 'Hola, {name}',
     'workspaceHome.unknownUser': 'usuario',
     'workspaceHome.companyFallback': 'Comercio actual',
@@ -3940,7 +3965,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'streak.oneDay': '1 día',
     'streak.days': '{count} días',
     'streak.daysOfStreak': '{count} días de racha',
-    'streak.keepUsing': 'Usa SixApp todos los días para mantener tu racha.',
+    'streak.keepUsing': 'Usa SixoApp todos los días para mantener tu racha.',
     'streak.startedToday': 'Tu racha empezó hoy.',
     'streak.loading': 'Cargando tus días de racha.',
     'streak.loadError': 'No se pudo cargar tu racha.',
@@ -4326,7 +4351,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.signInWithGoogle': 'Entrar con Google',
     'auth.googleLoginError':
         'No se pudo completar el inicio de sesión con Google.',
-    'auth.session.validatingTitle': 'Entrando a Six',
+    'auth.session.validatingTitle': 'Entrando a SixoApp',
     'auth.session.validatingMessage': 'Validando tu sesión de forma segura...',
     'splash.preparingWorkspace': 'Preparando tu espacio...',
     'splash.validatingSession': 'Validando tu sesión...',
@@ -4387,7 +4412,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Las contraseñas no coinciden.',
     'auth.mobileCreate.passwordMismatchError':
         'Las contraseñas son diferentes. Verifícalas e inténtalo de nuevo.',
-    'auth.entry.title': 'Bienvenido a Six',
+    'auth.entry.title': 'Bienvenido a SixoApp',
     'auth.entry.subtitle':
         'Antes de continuar, elige cómo quieres acceder a la app.',
     'auth.entry.hasAccountTitle': 'Ya tengo una cuenta',
@@ -4397,7 +4422,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.entry.newAccountTitle': 'Soy nuevo aquí',
     'auth.entry.newAccountSubtitle':
         'Mira un resumen rápido y crea tu cuenta para comenzar.',
-    'auth.entry.newAccountAction': 'Conocer Six',
+    'auth.entry.newAccountAction': 'Conocer SixoApp',
     'auth.onboarding.title': 'Empieza por lo esencial',
     'auth.onboarding.subtitle':
         'Mira tres puntos rápidos antes de crear tu cuenta.',
@@ -4409,7 +4434,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Mantén productos, servicios e información esencial siempre a mano.',
     'auth.onboarding.step3Title': 'Gestión para crecer',
     'auth.onboarding.step3Subtitle':
-        'Acompaña indicadores y prepara tu operación para evolucionar con Six.',
+        'Acompaña indicadores y prepara tu operación para evolucionar con SixoApp.',
     'auth.onboarding.skip': 'Saltar',
     'auth.onboarding.next': 'Avanzar',
     'auth.onboarding.createAccountAction': 'Crear mi cuenta',

@@ -585,7 +585,7 @@ class _CadastroColaboradorWebBodyState
                   ),
                   SizedBox(height: 6),
                   Text(
-                    'Conectado ao backend do SixBack para cadastrar técnicos e equipe operacional.',
+                    'Conectado com segurança ao SixoApp para cadastrar técnicos e equipe operacional.',
                     style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],

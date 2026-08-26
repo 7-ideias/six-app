@@ -81,64 +81,68 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
       _ => widget.child,
     };
 
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool forceCollapsed =
-            constraints.maxWidth <= _compactSidebarBreakpoint;
-        final bool expanded = _sidebarExpanded && !forceCollapsed;
-        final double sidebarWidth = expanded
-            ? WebSidebarNavigation.expandedWidth
-            : WebSidebarNavigation.collapsedWidth;
+    return Title(
+      title: '$activeTitle · SixoApp',
+      color: theme.colorScheme.primary,
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool forceCollapsed =
+              constraints.maxWidth <= _compactSidebarBreakpoint;
+          final bool expanded = _sidebarExpanded && !forceCollapsed;
+          final double sidebarWidth = expanded
+              ? WebSidebarNavigation.expandedWidth
+              : WebSidebarNavigation.collapsedWidth;
 
-        return AnimatedContainer(
-          key: const Key('web-shell-workspace'),
-          duration: WebThemeTokens.transitionDuration,
-          curve: WebThemeTokens.transitionCurve,
-          decoration: BoxDecoration(color: tokens.workspaceBackground),
-          child: Row(
-            children: <Widget>[
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOutCubic,
-                width: sidebarWidth,
-                child: AnimatedTheme(
-                  data: webTheme,
-                  duration: WebThemeTokens.transitionDuration,
-                  curve: WebThemeTokens.transitionCurve,
-                  child: WebSidebarNavigation(
-                    items: widget.navigationItems,
-                    activeDestination: effectiveDestination,
-                    expanded: expanded,
-                    expandedGroupIds: _expandedGroupIds,
-                    onToggleGroup: _toggleGroup,
-                    onDestinationSelected: _resolveDestination,
-                    appVersion: widget.appVersion,
+          return AnimatedContainer(
+            key: const Key('web-shell-workspace'),
+            duration: WebThemeTokens.transitionDuration,
+            curve: WebThemeTokens.transitionCurve,
+            decoration: BoxDecoration(color: tokens.workspaceBackground),
+            child: Row(
+              children: <Widget>[
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOutCubic,
+                  width: sidebarWidth,
+                  child: AnimatedTheme(
+                    data: webTheme,
+                    duration: WebThemeTokens.transitionDuration,
+                    curve: WebThemeTokens.transitionCurve,
+                    child: WebSidebarNavigation(
+                      items: widget.navigationItems,
+                      activeDestination: effectiveDestination,
+                      expanded: expanded,
+                      expandedGroupIds: _expandedGroupIds,
+                      onToggleGroup: _toggleGroup,
+                      onDestinationSelected: _resolveDestination,
+                      appVersion: widget.appVersion,
+                    ),
                   ),
                 ),
-              ),
-              Expanded(
-                child: Column(
-                  children: <Widget>[
-                    AnimatedTheme(
-                      data: webTheme,
-                      duration: WebThemeTokens.transitionDuration,
-                      curve: WebThemeTokens.transitionCurve,
-                      child: WebHeader(
-                        title: activeTitle,
-                        sidebarExpanded: expanded,
-                        onToggleSidebar: _toggleSidebar,
-                        currentCommerceName: widget.currentCommerceName,
-                        actions: widget.headerActions,
+                Expanded(
+                  child: Column(
+                    children: <Widget>[
+                      AnimatedTheme(
+                        data: webTheme,
+                        duration: WebThemeTokens.transitionDuration,
+                        curve: WebThemeTokens.transitionCurve,
+                        child: WebHeader(
+                          title: activeTitle,
+                          sidebarExpanded: expanded,
+                          onToggleSidebar: _toggleSidebar,
+                          currentCommerceName: widget.currentCommerceName,
+                          actions: widget.headerActions,
+                        ),
                       ),
-                    ),
-                    Expanded(child: effectiveChild),
-                  ],
+                      Expanded(child: effectiveChild),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 

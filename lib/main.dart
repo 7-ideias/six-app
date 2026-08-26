@@ -375,7 +375,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       scaffoldMessengerKey: AppFeedback.scaffoldMessengerKey,
       onGenerateTitle:
-          (context) => AppLocalizations.of(context)?.appTitle ?? 'Six',
+          (context) => AppLocalizations.of(context)?.appTitle ?? 'SixoApp',
       debugShowCheckedModeBanner: false,
       themeMode: themeProvider.themeMode,
       theme: themeProvider.lightTheme,
@@ -447,7 +447,7 @@ class CatalogoPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final appTitle = l10n?.appTitle ?? 'Six';
+    final appTitle = l10n?.appTitle ?? 'SixoApp';
 
     return Scaffold(
       appBar: AppBar(title: Text('$appTitle - $slug')),

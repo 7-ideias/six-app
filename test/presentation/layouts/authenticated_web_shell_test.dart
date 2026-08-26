@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/sixoapp_brand_mark.dart';
 import 'package:sixpos/presentation/layouts/authenticated_web_shell.dart';
 import 'package:sixpos/presentation/layouts/web_header.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_destination_resolver.dart';
@@ -26,6 +27,15 @@ void main() {
       expect(find.text('Financeiro'), findsWidgets);
       expect(find.text('Configurações'), findsWidgets);
       expect(find.text('Relatórios'), findsNothing);
+      expect(find.text('SixoApp'), findsOneWidget);
+      expect(find.byType(SixoAppBrandMark), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is Title && widget.title == 'Início · SixoApp',
+        ),
+        findsOneWidget,
+      );
       expect(find.byKey(const Key('web-shell-content')), findsOneWidget);
 
       await tester.tap(find.text('Operações'));
@@ -63,7 +73,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Catálogo'), findsNothing);
 
-      await tester.tap(find.byIcon(Icons.inventory_2_outlined));
+      await tester.tap(find.byIcon(Icons.view_module_outlined));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Estoque'));
       await tester.pumpAndSettle();
@@ -123,7 +133,7 @@ void main() {
       expect(sidebar.expanded, isFalse);
       expect(find.text('Catálogo'), findsNothing);
 
-      await tester.tap(find.byIcon(Icons.inventory_2_outlined));
+      await tester.tap(find.byIcon(Icons.view_module_outlined));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Serviços'));
       await tester.pumpAndSettle();
@@ -313,7 +323,7 @@ void main() {
       final AnimatedContainer selectedIcon = tester.widget(
         find.byKey(
           ValueKey<String>(
-            'web-sidebar-icon-${Icons.inventory_2_outlined.codePoint}',
+            'web-sidebar-icon-${Icons.view_module_outlined.codePoint}',
           ),
         ),
       );

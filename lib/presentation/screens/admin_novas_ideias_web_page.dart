@@ -731,7 +731,7 @@ class _IdeasTexts {
         title: 'New ideas',
         eyebrow: 'Product feedback',
         subtitle:
-            'Review suggestions submitted by customers through the Six AI assistant.',
+            'Review suggestions submitted by customers through the SixoApp AI assistant.',
         search: 'Search by idea, module, screen, company, platform or language',
         records: 'ideas',
         ofLabel: 'of',
@@ -754,7 +754,7 @@ class _IdeasTexts {
         title: 'Nuevas ideas',
         eyebrow: 'Comentarios de producto',
         subtitle:
-            'Revisa las sugerencias enviadas por los clientes a través del asistente de IA de Six.',
+            'Revisa las sugerencias enviadas por los clientes a través del asistente de IA de SixoApp.',
         search:
             'Buscar por idea, módulo, pantalla, empresa, plataforma o idioma',
         records: 'ideas',
@@ -777,7 +777,7 @@ class _IdeasTexts {
       title: 'Novas ideias',
       eyebrow: 'Feedback de produto',
       subtitle:
-          'Acompanhe as sugestões enviadas pelos clientes através do assistente de IA do Six.',
+          'Acompanhe as sugestões enviadas pelos clientes através do assistente de IA do SixoApp.',
       search: 'Busque por ideia, módulo, tela, empresa, plataforma ou idioma',
       records: 'ideias',
       ofLabel: 'de',

@@ -105,7 +105,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Six'**
+  /// **'SixoApp'**
   String get appTitle;
 
   /// No description provided for @pdvQuickServiceDescription.
@@ -183,7 +183,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiAssistantHowCanIHelp.
   ///
   /// In en, this message translates to:
-  /// **'How can I help in Six?'**
+  /// **'How can I help in SixoApp?'**
   String get aiAssistantHowCanIHelp;
 
   /// No description provided for @aiAssistantFeedbackThanks.
@@ -201,7 +201,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiAssistantWelcomeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'I\'m here to help with your requests and answer questions about Six.'**
+  /// **'I\'m here to help with your requests and answer questions about SixoApp.'**
   String get aiAssistantWelcomeSubtitle;
 
   /// No description provided for @aiAssistantAvatarLabel.
