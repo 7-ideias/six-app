@@ -46,11 +46,6 @@ class AtendimentoMobileScreen extends StatefulWidget {
 }
 
 class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
-  static const Color _serviceAccent = Color(0xFF7C3AED);
-  static const Color _receiveAccent = Color(0xFF16A34A);
-  static const Color _cashAccent = Color(0xFF0F766E);
-  static const Color _returnAccent = Color(0xFFEF4444);
-
   static const String _heroAssetContorno =
       'assets/images/atendimento mobile/atendimento-hero.webp';
   static const String _heroAssetAcento =
@@ -218,6 +213,8 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
                     ),
                     assetContorno: _heroAssetContorno,
                     assetAcento: _heroAssetAcento,
+                    accentGradient:
+                        _AtendimentoVisualTokens.resolve(context).heroGradient,
                   ),
                 ),
                 SizedBox(height: 16),
@@ -287,6 +284,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   }
 
   List<_PrimaryActionData> _primaryActions() {
+    final _AtendimentoVisualTokens visual =
+        _AtendimentoVisualTokens.resolve(context);
+
     return <_PrimaryActionData>[
       _PrimaryActionData(
         id: 'new-sale',
@@ -294,7 +294,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         subtitle: _txt('atendimento.mobile.newSaleSubtitle', 'Vender produtos'),
         assetContorno: _saleAssetContorno,
         assetAcento: _saleAssetAcento,
-        accentColor: _accent,
+        accentColor: visual.saleAccent,
+        brandStart: SixMobilePalette.brandCyan,
+        brandEnd: SixMobilePalette.brandBlue,
         onTap: _openSalesMenu,
       ),
       _PrimaryActionData(
@@ -306,13 +308,18 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         ),
         assetContorno: _serviceAssetContorno,
         assetAcento: _serviceAssetAcento,
-        accentColor: _serviceAccent,
+        accentColor: visual.serviceAccent,
+        brandStart: SixMobilePalette.brandBlue,
+        brandEnd: SixMobilePalette.brandViolet,
         onTap: () => _go(OpcoesServicosAtendimentoMobileScreen()),
       ),
     ];
   }
 
   List<_PrimaryActionData> _secondaryActions() {
+    final _AtendimentoVisualTokens visual =
+        _AtendimentoVisualTokens.resolve(context);
+
     return <_PrimaryActionData>[
       _PrimaryActionData(
         id: 'receive',
@@ -323,7 +330,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         ),
         assetContorno: _receiveAssetContorno,
         assetAcento: _receiveAssetAcento,
-        accentColor: _receiveAccent,
+        accentColor: visual.receiveAccent,
+        brandStart: SixMobilePalette.brandCyan,
+        brandEnd: SixMobilePalette.brandBlue,
         onTap: () => _go(ReceberMobileScreen()),
         badgeValue: _resumo?.totalVendasAbertas,
       ),
@@ -339,7 +348,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         ),
         assetContorno: _cashAssetContorno,
         assetAcento: _cashAssetAcento,
-        accentColor: _cashAccent,
+        accentColor: visual.cashAccent,
+        brandStart: SixMobilePalette.brandBlue,
+        brandEnd: visual.cashGradientEnd,
         onTap: () => _go(OperacoesCaixaMobileScreen()),
       ),
       _PrimaryActionData(
@@ -348,7 +359,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         subtitle: _txt('operacao.mobile.returnSubtitle', 'Registrar devolução'),
         assetContorno: _returnAssetContorno,
         assetAcento: _returnAssetAcento,
-        accentColor: _returnAccent,
+        accentColor: visual.returnAccent,
+        brandStart: visual.returnAccent,
+        brandEnd: visual.returnGradientEnd,
         onTap: () => _go(DevolucoesProdutosMobileScreen()),
       ),
     ];
@@ -375,12 +388,14 @@ class _AtendimentoHeroCard extends StatelessWidget {
     required this.subtitle,
     required this.assetContorno,
     required this.assetAcento,
+    required this.accentGradient,
   });
 
   final String title;
   final String subtitle;
   final String assetContorno;
   final String assetAcento;
+  final LinearGradient accentGradient;
 
   @override
   Widget build(BuildContext context) {
@@ -393,6 +408,7 @@ class _AtendimentoHeroCard extends StatelessWidget {
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final SixMobileColorScheme colors = context.sixMobileColors;
+          final bool isDark = Theme.of(context).brightness == Brightness.dark;
           final double width = constraints.maxWidth;
           final bool compact = width < 350 || textScale >= 1.2;
           final bool tightText = textScale >= 1.35;
@@ -426,13 +442,36 @@ class _AtendimentoHeroCard extends StatelessWidget {
                   bottom: illustrationBottomOffset,
                   width: illustrationWidth,
                   height: illustrationHeight,
-                  child: SixImagemCanetinha(
-                    assetContorno: assetContorno,
-                    assetAcento: assetAcento,
-                    largura: illustrationWidth,
-                    altura: illustrationHeight,
-                    corContorno: colors.titleText,
-                    corAcento: colors.accent,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        colors: <Color>[
+                          SixMobilePalette.brandBlue.withAlpha(
+                            isDark ? 72 : 34,
+                          ),
+                          SixMobilePalette.brandViolet.withAlpha(
+                            isDark ? 24 : 12,
+                          ),
+                          Colors.transparent,
+                        ],
+                        stops: const <double>[0, 0.56, 1],
+                      ),
+                    ),
+                    child: SixImagemCanetinha(
+                      key: const ValueKey<String>('atendimento-hero-art'),
+                      assetContorno: assetContorno,
+                      assetAcento: assetAcento,
+                      largura: illustrationWidth,
+                      altura: illustrationHeight,
+                      corContorno: colors.titleText,
+                      gradienteAcento: accentGradient,
+                      opacidadeContorno: isDark ? 1 : 0.88,
+                      reforcoContorno: compact ? 0.36 : 0.42,
+                      reforcoAcento: compact ? 0.68 : 0.76,
+                      opacidadeReforco: isDark ? 0.42 : 0.34,
+                      opacidadeBrilho: isDark ? 0.18 : 0,
+                      desfoqueBrilho: 3.2,
+                    ),
                   ),
                 ),
                 Padding(
@@ -473,6 +512,72 @@ class _AtendimentoHeroCard extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _AtendimentoVisualTokens {
+  const _AtendimentoVisualTokens({
+    required this.saleAccent,
+    required this.serviceAccent,
+    required this.receiveAccent,
+    required this.cashAccent,
+    required this.returnAccent,
+    required this.cashGradientEnd,
+    required this.returnGradientEnd,
+  });
+
+  final Color saleAccent;
+  final Color serviceAccent;
+  final Color receiveAccent;
+  final Color cashAccent;
+  final Color returnAccent;
+  final Color cashGradientEnd;
+  final Color returnGradientEnd;
+
+  LinearGradient get heroGradient => const LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: <Color>[
+      SixMobilePalette.brandCyan,
+      SixMobilePalette.brandBlue,
+      SixMobilePalette.brandViolet,
+    ],
+  );
+
+  static _AtendimentoVisualTokens resolve(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return _AtendimentoVisualTokens(
+      saleAccent:
+          isDark
+              ? SixMobilePalette.brandCyan
+              : SixMobilePalette.brandBlue,
+      serviceAccent:
+          isDark
+              ? Color.lerp(
+                SixMobilePalette.brandViolet,
+                colors.titleText,
+                0.36,
+              )!
+              : SixMobilePalette.brandViolet,
+      receiveAccent:
+          isDark
+              ? SixMobilePalette.brandCyan
+              : Color.lerp(
+                SixMobilePalette.brandCyan,
+                SixMobilePalette.brandNavyDeep,
+                0.56,
+              )!,
+      cashAccent: isDark ? colors.accent : SixMobilePalette.brandBlue,
+      returnAccent: colors.error,
+      cashGradientEnd: isDark ? colors.accent : SixMobilePalette.brandCyan,
+      returnGradientEnd: Color.lerp(
+        colors.error,
+        colors.titleText,
+        isDark ? 0.18 : 0.06,
+      )!,
     );
   }
 }
@@ -592,6 +697,7 @@ class _PrimaryActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final bool enabled = data.enabled && data.onTap != null;
     final String status = data.statusLabel ?? '';
     final String badge =
@@ -623,7 +729,7 @@ class _PrimaryActionCard extends StatelessWidget {
               BoxShadow(
                 color:
                     _isPrimary
-                        ? colors.navigationShadow
+                        ? data.brandEnd.withAlpha(isDark ? 30 : 18)
                         : colors.navigationShadow.withAlpha(18),
                 blurRadius: _isPrimary ? 16 : 10,
                 offset: Offset(0, _isPrimary ? 8 : 5),
@@ -631,31 +737,45 @@ class _PrimaryActionCard extends StatelessWidget {
             ],
           ),
           child: Material(
-            color: data.accentColor.withAlpha(13),
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(radius),
             clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: enabled ? data.onTap : null,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: <Widget>[
-                  Positioned.fill(
-                    child: Container(
+            child: Ink(
+              key: ValueKey<String>('atendimento-action-surface-${data.id}'),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: <Color>[
+                    Color.alphaBlend(
+                      data.brandStart.withAlpha(isDark ? 27 : 15),
+                      colors.surface,
+                    ),
+                    Color.alphaBlend(
+                      data.brandEnd.withAlpha(isDark ? 17 : 8),
+                      colors.surface,
+                    ),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(radius),
+                border: Border.all(
+                  color:
+                      enabled
+                          ? data.accentColor.withAlpha(_isPrimary ? 68 : 46)
+                          : colors.border,
+                ),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(radius),
+                onTap: enabled ? data.onTap : null,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: <Widget>[
+                    Padding(
                       padding:
                           _isPrimary
                               ? EdgeInsets.fromLTRB(10, 11, 10, 10)
                               : EdgeInsets.fromLTRB(7, 8, 7, 8),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(radius),
-                        border: Border.all(
-                          color:
-                              enabled
-                                  ? data.accentColor.withAlpha(
-                                    _isPrimary ? 62 : 42,
-                                  )
-                                  : colors.border,
-                        ),
-                      ),
                       child: LayoutBuilder(
                         builder: (
                           BuildContext context,
@@ -671,14 +791,35 @@ class _PrimaryActionCard extends StatelessWidget {
                         },
                       ),
                     ),
-                  ),
-                  if (badge.isNotEmpty)
-                    Positioned(
-                      top: _isPrimary ? 8 : 6,
-                      right: _isPrimary ? 8 : 6,
-                      child: _ActionCounterBadge(value: badge),
-                    ),
-                ],
+                    if (_isPrimary)
+                      Positioned(
+                        top: 0,
+                        left: 22,
+                        right: 22,
+                        child: SizedBox(
+                          height: 1.4,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: <Color>[
+                                  data.brandStart.withAlpha(0),
+                                  data.brandStart.withAlpha(190),
+                                  data.brandEnd.withAlpha(190),
+                                  data.brandEnd.withAlpha(0),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (badge.isNotEmpty)
+                      Positioned(
+                        top: _isPrimary ? 8 : 6,
+                        right: _isPrimary ? 8 : 6,
+                        child: _ActionCounterBadge(value: badge),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -708,6 +849,7 @@ class _ActionCardContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final double textScale = MediaQuery.textScalerOf(context).scale(1);
     final bool compactWidth =
         constraints.maxWidth < (_isPrimary ? 150 : 102) || rowWidth < 340;
@@ -734,6 +876,26 @@ class _ActionCardContent extends StatelessWidget {
         _isPrimary
             ? (compact ? 10.5 : 11.3) + (extraHeightFactor * 0.6)
             : (compact ? 9.0 : 9.7) + (extraHeightFactor * 0.5);
+    final Color illustrationStart =
+        isDark
+            ? Color.lerp(
+              data.brandStart,
+              colors.titleText,
+              _isPrimary ? 0.18 : 0.26,
+            )!
+            : data.brandStart;
+    final Color illustrationEnd =
+        isDark
+            ? Color.lerp(
+              data.brandEnd,
+              colors.titleText,
+              _isPrimary ? 0.46 : 0.54,
+            )!
+            : data.brandEnd;
+    final Color illustrationAccent =
+        isDark
+            ? Color.lerp(data.accentColor, colors.titleText, 0.24)!
+            : data.accentColor;
 
     return Column(
       mainAxisSize: MainAxisSize.max,
@@ -741,11 +903,48 @@ class _ActionCardContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         Container(
+          key: ValueKey<String>('atendimento-action-halo-${data.id}'),
           width: imageCircleSize,
           height: imageCircleSize,
           decoration: BoxDecoration(
-            color: data.accentColor.withAlpha(enabled ? 22 : 14),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: <Color>[
+                data.brandStart.withAlpha(
+                  enabled
+                      ? isDark
+                          ? (_isPrimary ? 96 : 82)
+                          : (_isPrimary ? 60 : 52)
+                      : 18,
+                ),
+                data.brandEnd.withAlpha(
+                  enabled
+                      ? isDark
+                          ? (_isPrimary ? 64 : 54)
+                          : (_isPrimary ? 40 : 34)
+                      : 12,
+                ),
+              ],
+            ),
             shape: BoxShape.circle,
+            border: Border.all(
+              color: data.accentColor.withAlpha(
+                enabled ? (_isPrimary ? 104 : 88) : 26,
+              ),
+            ),
+            boxShadow:
+                isDark && enabled
+                    ? <BoxShadow>[
+                      BoxShadow(
+                        color: data.brandStart.withAlpha(
+                          _isPrimary ? 72 : 58,
+                        ),
+                        blurRadius: _isPrimary ? 22 : 16,
+                        spreadRadius: _isPrimary ? 0.4 : 0,
+                      ),
+                    ]
+                    : const <BoxShadow>[],
           ),
           child: Center(
             child: SixImagemCanetinha(
@@ -755,7 +954,29 @@ class _ActionCardContent extends StatelessWidget {
               altura: imageSize,
               fit: BoxFit.contain,
               corContorno: colors.titleText,
-              corAcento: colors.accent,
+              corAcento: data.accentColor,
+              gradienteContorno: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: <Color>[illustrationStart, illustrationEnd],
+              ),
+              gradienteAcento: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: <Color>[illustrationAccent, illustrationEnd],
+              ),
+              opacidadeContorno: enabled ? 1 : 0.46,
+              opacidadeAcento: enabled ? 1 : 0.48,
+              reforcoContorno: _isPrimary ? 0.62 : 0.82,
+              reforcoAcento: _isPrimary ? 0.72 : 0.92,
+              opacidadeReforco: isDark ? 0.52 : 0.44,
+              opacidadeBrilho:
+                  enabled
+                      ? isDark
+                          ? 0.62
+                          : 0.24
+                      : 0,
+              desfoqueBrilho: _isPrimary ? 4.8 : 3.4,
             ),
           ),
         ),
@@ -931,6 +1152,8 @@ class _PrimaryActionData {
     required this.assetContorno,
     required this.assetAcento,
     required this.accentColor,
+    required this.brandStart,
+    required this.brandEnd,
     required this.onTap,
     this.enabled = true,
     this.badgeValue,
@@ -943,6 +1166,8 @@ class _PrimaryActionData {
   final String assetContorno;
   final String assetAcento;
   final Color accentColor;
+  final Color brandStart;
+  final Color brandEnd;
   final VoidCallback? onTap;
   final bool enabled;
   final int? badgeValue;

@@ -73,6 +73,90 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('aplica ilustrações duotone e superfícies de marca nos temas', (
+    WidgetTester tester,
+  ) async {
+    for (final Brightness brightness in <Brightness>[
+      Brightness.light,
+      Brightness.dark,
+    ]) {
+      await _pumpAtendimento(tester, brightness: brightness);
+
+      final Finder hero = find.byKey(
+        const ValueKey<String>('atendimento-hero-art'),
+      );
+      expect(
+        tester
+            .widgetList<ShaderMask>(
+              find.descendant(of: hero, matching: find.byType(ShaderMask)),
+            )
+            .length,
+        greaterThan(1),
+      );
+
+      for (final String id in <String>[
+        'new-sale',
+        'new-service',
+        'receive',
+        'cash',
+        'return',
+      ]) {
+        final Finder action = find.byKey(
+          ValueKey<String>('atendimento-action-$id'),
+        );
+        final Finder surface = find.byKey(
+          ValueKey<String>('atendimento-action-surface-$id'),
+        );
+        final Finder halo = find.byKey(
+          ValueKey<String>('atendimento-action-halo-$id'),
+        );
+
+        expect(
+          tester
+              .widgetList<ShaderMask>(
+                find.descendant(
+                  of: action,
+                  matching: find.byType(ShaderMask),
+                ),
+              )
+              .length,
+          greaterThan(2),
+          reason: '$id em $brightness',
+        );
+        expect(
+          find.descendant(
+            of: action,
+            matching: find.byKey(
+              const ValueKey<String>('six-canetinha-brilho'),
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: action,
+            matching: find.byKey(
+              const ValueKey<String>('six-canetinha-contorno-reforco'),
+            ),
+          ),
+          findsOneWidget,
+        );
+
+        final Ink surfaceWidget = tester.widget<Ink>(surface);
+        final BoxDecoration surfaceDecoration =
+            surfaceWidget.decoration! as BoxDecoration;
+        expect(surfaceDecoration.gradient, isA<LinearGradient>());
+
+        final Container haloWidget = tester.widget<Container>(halo);
+        final BoxDecoration haloDecoration =
+            haloWidget.decoration! as BoxDecoration;
+        expect(haloDecoration.gradient, isA<LinearGradient>());
+      }
+
+      expect(tester.takeException(), isNull);
+    }
+  });
+
   testWidgets('preserva as navegações e abre devoluções pelo atendimento', (
     WidgetTester tester,
   ) async {
@@ -382,6 +466,7 @@ Future<List<String>> _pumpAtendimento(
   WidgetTester tester, {
   Size size = const Size(390, 900),
   double textScale = 1,
+  Brightness brightness = Brightness.light,
   TelaInicialWebApiClient? apiClient,
 }) async {
   final List<String> navigations = <String>[];
@@ -403,6 +488,10 @@ Future<List<String>> _pumpAtendimento(
 
   await tester.pumpWidget(
     MaterialApp(
+      theme: ThemeData.light(useMaterial3: true),
+      darkTheme: ThemeData.dark(useMaterial3: true),
+      themeMode:
+          brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
       home: MediaQuery(
         data: MediaQueryData(
           disableAnimations: true,
