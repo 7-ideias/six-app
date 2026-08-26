@@ -177,16 +177,14 @@ class _BrandMark extends StatelessWidget {
             ],
           ),
           child: Image.asset(
-            'assets/images/six-logo-flecha.webp',
+            'assets/images/sixoapp_splash_symbol.png',
             fit: BoxFit.contain,
             filterQuality: FilterQuality.high,
-            color: Colors.white,
-            colorBlendMode: BlendMode.srcIn,
           ),
         ),
         const SizedBox(width: 12),
         Text(
-          'Six',
+          'SixoApp',
           style: TextStyle(
             fontFamily: WebRootTokens.fontFamily,
             fontFamilyFallback: WebRootTokens.fontFamilyFallback,

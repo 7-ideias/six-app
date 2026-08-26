@@ -84,23 +84,42 @@ class MobileHeader extends StatelessWidget {
   }
 
   Widget _logo() {
-    final isDark = SixThemeResolver().isDark;
-    return SizedBox(
-      width: 130,
-      height: 36,
-      child: OverflowBox(
-        maxWidth: 170,
-        maxHeight: 100,
-        alignment: Alignment.centerLeft,
-        child: Image.asset(
-          'assets/images/six-logo-flecha.webp',
-          height: 80,
-          fit: BoxFit.contain,
-          filterQuality: FilterQuality.high,
-          color: isDark ? Colors.white : null,
-          colorBlendMode: isDark ? BlendMode.srcIn : null,
+    final bool isDark = SixThemeResolver().isDark;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Container(
+          width: 38,
+          height: 38,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF00163A),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0x24145BFF),
+                blurRadius: 18,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Image.asset(
+            'assets/images/sixoapp_splash_symbol.png',
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+          ),
         ),
-      ),
+        const SizedBox(width: 9),
+        Text(
+          'SixoApp',
+          style: TextStyle(
+            color: isDark ? Colors.white : WebRootTokens.ink,
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.35,
+          ),
+        ),
+      ],
     );
   }
 }

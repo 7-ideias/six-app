@@ -67,6 +67,9 @@ requireCondition(
 );
 
 requireRedirect('/home', '/');
+requireRedirect('/onboarding', '/register');
+requireRedirect('/onboarding.html', '/register');
+requireRedirect('/onboarding/flutter', '/register');
 
 requireRewrite('/atendimento/status', 'https://api.sixappback.com/atendimento/status');
 requireRewrite('/atendimento/status/assinatura', 'https://api.sixappback.com/atendimento/status/assinatura');

@@ -132,7 +132,7 @@ class _BrandSlide {
 const List<_BrandSlide> _brandSlides = <_BrandSlide>[
   _BrandSlide(
     image: 'assets/images/onboading/1-bem-vindo.webp',
-    title: 'Bem-vindo ao Six.',
+    title: 'Bem-vindo ao SixoApp.',
     description:
         'PDV, financeiro e CRM em um só app — pronto pra começar hoje.',
   ),
@@ -416,6 +416,43 @@ class _FormPane extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Container(
+                          width: 42,
+                          height: 42,
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00163A),
+                            borderRadius: BorderRadius.circular(13),
+                            boxShadow: const <BoxShadow>[
+                              BoxShadow(
+                                color: Color(0x26145BFF),
+                                blurRadius: 20,
+                                offset: Offset(0, 9),
+                              ),
+                            ],
+                          ),
+                          child: Image.asset(
+                            'assets/images/sixoapp_splash_symbol.png',
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.high,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'SixoApp',
+                          style: TextStyle(
+                            color: Color(0xFF071B42),
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 22),
                     if (showBack)
                       Align(
                         alignment: Alignment.centerLeft,

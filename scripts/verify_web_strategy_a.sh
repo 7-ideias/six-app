@@ -96,6 +96,7 @@ require_file web/public_catalog.html
 require_file web/catalogo.html
 require_file web/site-assets/css/public-base.css
 require_file web/site-assets/css/home.css
+require_file web/site-assets/css/sixoapp-public.css
 require_file web/site-assets/css/login.css
 require_file web/site-assets/css/register.css
 require_file web/site-assets/css/forgot-password.css
@@ -116,10 +117,12 @@ require_file web/site-assets/js/checkout.js
 require_file web/site-assets/js/catalog-core.mjs
 require_file web/site-assets/js/catalog.js
 require_file web/site-assets/js/home.js
-require_file web/site-assets/images/sixapp-mark.png
+require_file web/site-assets/images/sixoapp-mark.png
+require_file web/site-assets/images/sixoapp-symbol.png
 require_file web/site-assets/images/commerce-workspace.webp
 require_file build/web/site-assets/css/public-base.css
 require_file build/web/site-assets/css/home.css
+require_file build/web/site-assets/css/sixoapp-public.css
 require_file build/web/site-assets/css/login.css
 require_file build/web/site-assets/css/register.css
 require_file build/web/site-assets/css/forgot-password.css
@@ -141,7 +144,8 @@ require_file build/web/site-assets/js/catalog-core.mjs
 require_file build/web/site-assets/js/catalog.js
 require_file build/web/site-assets/js/home.js
 require_file build/web/site-assets/js/public-config.js
-require_file build/web/site-assets/images/sixapp-mark.png
+require_file build/web/site-assets/images/sixoapp-mark.png
+require_file build/web/site-assets/images/sixoapp-symbol.png
 require_file build/web/site-assets/images/commerce-workspace.webp
 require_dir build/web/assets
 require_dir build/web/canvaskit
@@ -164,9 +168,9 @@ require_not_contains build/web/index.html 'src="site-assets'
 require_contains build/web/index.html '/site-assets/css/public-base.css'
 require_contains build/web/index.html '/site-assets/css/home.css'
 require_contains build/web/index.html '/site-assets/js/home.js'
-require_contains build/web/index.html '/site-assets/images/sixapp-mark.png'
-require_contains build/web/index.html '/site-assets/images/commerce-workspace.webp'
-require_contains build/web/index.html 'href="/onboarding"'
+require_contains build/web/index.html '/site-assets/images/sixoapp-mark.png'
+require_contains build/web/index.html '/site-assets/images/sixoapp-symbol.png'
+require_not_contains build/web/index.html 'href="/onboarding"'
 validate_public_site_asset_references build/web/index.html
 
 section "LOGIN"
@@ -193,7 +197,8 @@ require_contains build/web/login.html '/site-assets/css/public-base.css'
 require_contains build/web/login.html '/site-assets/css/login.css'
 require_contains build/web/login.html '/site-assets/js/public-config.js'
 require_contains build/web/login.html '/site-assets/js/login.js'
-require_contains build/web/login.html '/site-assets/images/sixapp-mark.png'
+require_contains build/web/login.html '/site-assets/images/sixoapp-mark.png'
+require_contains build/web/login.html '/site-assets/css/sixoapp-public.css'
 require_contains build/web/login.html '/login/flutter'
 require_no_public_forbidden_terms build/web/login.html
 validate_public_site_asset_references build/web/login.html
@@ -222,7 +227,8 @@ require_contains build/web/register.html '/site-assets/css/public-base.css'
 require_contains build/web/register.html '/site-assets/css/register.css'
 require_contains build/web/register.html '/site-assets/js/public-config.js'
 require_contains build/web/register.html '/site-assets/js/register.js'
-require_contains build/web/register.html '/site-assets/images/sixapp-mark.png'
+require_contains build/web/register.html '/site-assets/images/sixoapp-mark.png'
+require_contains build/web/register.html '/site-assets/css/sixoapp-public.css'
 require_contains build/web/register.html '/register/flutter'
 require_contains build/web/register.html '<noscript>'
 require_no_public_forbidden_terms build/web/register.html
@@ -252,7 +258,8 @@ require_contains build/web/forgot-password.html '/site-assets/css/public-base.cs
 require_contains build/web/forgot-password.html '/site-assets/css/forgot-password.css'
 require_contains build/web/forgot-password.html '/site-assets/js/public-config.js'
 require_contains build/web/forgot-password.html '/site-assets/js/forgot-password.js'
-require_contains build/web/forgot-password.html '/site-assets/images/sixapp-mark.png'
+require_contains build/web/forgot-password.html '/site-assets/images/sixoapp-mark.png'
+require_contains build/web/forgot-password.html '/site-assets/css/sixoapp-public.css'
 require_contains build/web/forgot-password.html '/forgot-password/flutter'
 require_contains build/web/forgot-password.html '<noscript>'
 require_no_public_forbidden_terms build/web/forgot-password.html
@@ -281,7 +288,7 @@ require_not_contains build/web/onboarding.html 'http://'
 require_contains build/web/onboarding.html '/site-assets/css/public-base.css'
 require_contains build/web/onboarding.html '/site-assets/css/onboarding.css'
 require_contains build/web/onboarding.html '/site-assets/js/onboarding.js'
-require_contains build/web/onboarding.html '/site-assets/images/sixapp-mark.png'
+require_contains build/web/onboarding.html '/site-assets/images/sixoapp-mark.png'
 require_contains build/web/onboarding.html '/onboarding/flutter'
 require_contains build/web/onboarding.html '<noscript>'
 require_no_public_forbidden_terms build/web/onboarding.html
@@ -311,7 +318,8 @@ require_contains build/web/checkout.html '/site-assets/css/public-base.css'
 require_contains build/web/checkout.html '/site-assets/css/checkout.css'
 require_contains build/web/checkout.html '/site-assets/js/public-config.js'
 require_contains build/web/checkout.html '/site-assets/js/checkout.js'
-require_contains build/web/checkout.html '/site-assets/images/sixapp-mark.png'
+require_contains build/web/checkout.html '/site-assets/images/sixoapp-mark.png'
+require_contains build/web/checkout.html '/site-assets/css/sixoapp-public.css'
 require_contains build/web/checkout.html '/checkout/flutter'
 require_contains build/web/checkout.html '<noscript>'
 require_no_public_forbidden_terms build/web/checkout.html
@@ -339,7 +347,7 @@ require_contains build/web/catalogo.html '/site-assets/css/public-base.css'
 require_contains build/web/catalogo.html '/site-assets/css/catalog.css'
 require_contains build/web/catalogo.html '/site-assets/js/public-config.js'
 require_contains build/web/catalogo.html '/site-assets/js/catalog.js'
-require_contains build/web/catalogo.html '/site-assets/images/sixapp-mark.png'
+require_contains build/web/catalogo.html '/site-assets/images/sixoapp-mark.png'
 require_contains build/web/catalogo.html '<noscript>'
 require_no_public_forbidden_terms build/web/catalogo.html
 validate_public_site_asset_references build/web/catalogo.html
@@ -405,44 +413,48 @@ require_contains web/public_catalog.html 'name="robots" content="noindex, nofoll
 require_contains web/public_home.html '/site-assets/css/public-base.css'
 require_contains web/public_home.html '/site-assets/css/home.css'
 require_contains web/public_home.html '/site-assets/js/home.js'
-require_contains web/public_home.html '/site-assets/images/sixapp-mark.png'
-require_contains web/public_home.html '/site-assets/images/commerce-workspace.webp'
-require_contains web/public_home.html 'href="/onboarding"'
+require_contains web/public_home.html '/site-assets/images/sixoapp-mark.png'
+require_contains web/public_home.html '/site-assets/images/sixoapp-symbol.png'
+require_not_contains web/public_home.html 'href="/onboarding"'
 require_contains web/public_login.html '/site-assets/css/public-base.css'
 require_contains web/public_login.html '/site-assets/css/login.css'
 require_contains web/public_login.html '/site-assets/js/public-config.js'
 require_contains web/public_login.html '/site-assets/js/login.js'
-require_contains web/public_login.html '/site-assets/images/sixapp-mark.png'
+require_contains web/public_login.html '/site-assets/images/sixoapp-mark.png'
+require_contains web/public_login.html '/site-assets/css/sixoapp-public.css'
 require_contains web/public_register.html '/site-assets/css/public-base.css'
 require_contains web/public_register.html '/site-assets/css/register.css'
 require_contains web/public_register.html '/site-assets/js/public-config.js'
 require_contains web/public_register.html '/site-assets/js/register.js'
-require_contains web/public_register.html '/site-assets/images/sixapp-mark.png'
+require_contains web/public_register.html '/site-assets/images/sixoapp-mark.png'
+require_contains web/public_register.html '/site-assets/css/sixoapp-public.css'
 require_contains web/public_register.html '/register/flutter'
 require_contains web/public_forgot_password.html '/site-assets/css/public-base.css'
 require_contains web/public_forgot_password.html '/site-assets/css/forgot-password.css'
 require_contains web/public_forgot_password.html '/site-assets/js/public-config.js'
 require_contains web/public_forgot_password.html '/site-assets/js/forgot-password.js'
-require_contains web/public_forgot_password.html '/site-assets/images/sixapp-mark.png'
+require_contains web/public_forgot_password.html '/site-assets/images/sixoapp-mark.png'
+require_contains web/public_forgot_password.html '/site-assets/css/sixoapp-public.css'
 require_contains web/public_forgot_password.html '/forgot-password/flutter'
 require_contains web/public_onboarding.html '/site-assets/css/public-base.css'
 require_contains web/public_onboarding.html '/site-assets/css/onboarding.css'
 require_contains web/public_onboarding.html '/site-assets/js/onboarding.js'
-require_contains web/public_onboarding.html '/site-assets/images/sixapp-mark.png'
+require_contains web/public_onboarding.html '/site-assets/images/sixoapp-mark.png'
 require_contains web/public_onboarding.html '/onboarding/flutter'
 require_contains web/public_onboarding.html '<noscript>'
 require_contains web/public_checkout.html '/site-assets/css/public-base.css'
 require_contains web/public_checkout.html '/site-assets/css/checkout.css'
 require_contains web/public_checkout.html '/site-assets/js/public-config.js'
 require_contains web/public_checkout.html '/site-assets/js/checkout.js'
-require_contains web/public_checkout.html '/site-assets/images/sixapp-mark.png'
+require_contains web/public_checkout.html '/site-assets/images/sixoapp-mark.png'
+require_contains web/public_checkout.html '/site-assets/css/sixoapp-public.css'
 require_contains web/public_checkout.html '/checkout/flutter'
 require_contains web/public_checkout.html '<noscript>'
 require_contains web/public_catalog.html '/site-assets/css/public-base.css'
 require_contains web/public_catalog.html '/site-assets/css/catalog.css'
 require_contains web/public_catalog.html '/site-assets/js/public-config.js'
 require_contains web/public_catalog.html '/site-assets/js/catalog.js'
-require_contains web/public_catalog.html '/site-assets/images/sixapp-mark.png'
+require_contains web/public_catalog.html '/site-assets/images/sixoapp-mark.png'
 require_contains web/public_catalog.html '<noscript>'
 require_no_public_forbidden_terms web/public_home.html
 require_no_public_forbidden_terms web/public_login.html

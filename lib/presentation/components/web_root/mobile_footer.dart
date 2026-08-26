@@ -36,42 +36,31 @@ class MobileFooter extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Mesma técnica do desktop footer — inverte para clarear o logo
-          // sobre o fundo ink-deep.
-          // Logo footer mobile maior — antes 36h/56 asset, agora 48h/80 asset.
-          SizedBox(
-            height: 48,
-            child: ColorFiltered(
-              colorFilter: const ColorFilter.matrix(<double>[
-                -1.5,
-                0,
-                0,
-                0,
-                255,
-                0,
-                -1.5,
-                0,
-                0,
-                255,
-                0,
-                0,
-                -1.5,
-                0,
-                255,
-                0,
-                0,
-                0,
-                1,
-                0,
-              ]),
-              child: Image.asset(
-                'assets/images/six-logo-flecha.webp',
-                height: 80,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
-                alignment: Alignment.centerLeft,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: Image.asset(
+                  'assets/images/sixoapp_splash_symbol.png',
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                ),
               ),
-            ),
+              const SizedBox(width: 10),
+              const Text(
+                'SixoApp',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: WebRootTokens.fontFamily,
+                  fontFamilyFallback: WebRootTokens.fontFamilyFallback,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.35,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           const Text(
@@ -107,7 +96,7 @@ class MobileFooter extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _legal('© 2026 Six POS — feito no Brasil'),
+                _legal('© 2026 SixoApp — feito no Brasil'),
                 const SizedBox(height: 4),
                 _legal('CNPJ 00.000.000/0001-00 · v1.0.1'),
               ],

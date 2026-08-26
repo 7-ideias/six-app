@@ -58,39 +58,31 @@ class DesktopFooter extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: 56,
-          child: ColorFiltered(
-            colorFilter: const ColorFilter.matrix(<double>[
-              -1.5,
-              0,
-              0,
-              0,
-              255,
-              0,
-              -1.5,
-              0,
-              0,
-              255,
-              0,
-              0,
-              -1.5,
-              0,
-              255,
-              0,
-              0,
-              0,
-              1,
-              0,
-            ]),
-            child: Image.asset(
-              'assets/images/six-logo-flecha.webp',
-              height: 96,
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.high,
-              alignment: Alignment.centerLeft,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            SizedBox(
+              width: 48,
+              height: 48,
+              child: Image.asset(
+                'assets/images/sixoapp_splash_symbol.png',
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
+              ),
             ),
-          ),
+            const SizedBox(width: 10),
+            const Text(
+              'SixoApp',
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: WebRootTokens.fontFamily,
+                fontFamilyFallback: WebRootTokens.fontFamilyFallback,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.4,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         SizedBox(

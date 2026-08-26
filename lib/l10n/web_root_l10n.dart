@@ -315,7 +315,7 @@ class WebRootL10n {
       'checkoutCardCountryLabel': 'País',
       'checkoutCardCountryValue': 'Brasil',
       'checkoutCardFinePrint':
-          'Ao informar os dados do cartão, você autoriza a Six POS Ltda. a '
+          'Ao informar os dados do cartão, você autoriza o SixoApp a '
           'cobrar pagamentos futuros de acordo com os termos do plano.',
       'checkoutPixTitle': 'Pague em segundos com Pix',
       'checkoutPixBody':
@@ -333,7 +333,7 @@ class WebRootL10n {
       'checkoutTermsLink': 'Termos de Uso',
       'checkoutSubmit': 'Confirmar e assinar',
       'checkoutPlanDetails': 'Detalhes do plano',
-      'checkoutSubscriptionName': 'Assinatura Six POS',
+      'checkoutSubscriptionName': 'Assinatura SixoApp',
       'checkoutRenewPrefix': 'Renova em',
       'checkoutTotalToday': 'Total a pagar hoje',
       'checkoutSecure': 'Pagamento seguro e criptografado',
@@ -358,7 +358,7 @@ class WebRootL10n {
       'checkoutCardCountryLabel': 'Country',
       'checkoutCardCountryValue': 'Brazil',
       'checkoutCardFinePrint':
-          'By entering your card details, you authorize Six POS Ltda. to '
+          'By entering your card details, you authorize SixoApp to '
           'charge future payments according to the plan terms.',
       'checkoutPixTitle': 'Pay in seconds with Pix',
       'checkoutPixBody':
@@ -376,7 +376,7 @@ class WebRootL10n {
       'checkoutTermsLink': 'Terms of Use',
       'checkoutSubmit': 'Confirm and subscribe',
       'checkoutPlanDetails': 'Plan details',
-      'checkoutSubscriptionName': 'Six POS subscription',
+      'checkoutSubscriptionName': 'SixoApp subscription',
       'checkoutRenewPrefix': 'Renews on',
       'checkoutTotalToday': 'Total due today',
       'checkoutSecure': 'Secure, encrypted payment',
@@ -401,7 +401,7 @@ class WebRootL10n {
       'checkoutCardCountryLabel': 'País',
       'checkoutCardCountryValue': 'Brasil',
       'checkoutCardFinePrint':
-          'Al introducir los datos de la tarjeta, autorizas a Six POS Ltda. a '
+          'Al introducir los datos de la tarjeta, autorizas a SixoApp a '
           'cobrar pagos futuros de acuerdo con los términos del plan.',
       'checkoutPixTitle': 'Paga en segundos con Pix',
       'checkoutPixBody':
@@ -419,7 +419,7 @@ class WebRootL10n {
       'checkoutTermsLink': 'Términos de Uso',
       'checkoutSubmit': 'Confirmar y suscribir',
       'checkoutPlanDetails': 'Detalles del plan',
-      'checkoutSubscriptionName': 'Suscripción Six POS',
+      'checkoutSubscriptionName': 'Suscripción SixoApp',
       'checkoutRenewPrefix': 'Se renueva el',
       'checkoutTotalToday': 'Total a pagar hoy',
       'checkoutSecure': 'Pago seguro y cifrado',
