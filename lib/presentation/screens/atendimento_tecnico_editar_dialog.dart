@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +8,7 @@ import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/cliente_usuario_model.dart';
 import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/produto_model.dart';
+import '../../data/services/atendimento_tecnico/atendimento_tecnico_api_client.dart';
 import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
@@ -98,6 +101,7 @@ class _AtendimentoTecnicoEditarDialogState
   bool _salvando = false;
   bool _carregandoClientes = false;
   bool _carregandoResponsaveis = false;
+  bool _exibindoModalErro = false;
 
   @override
   void initState() {
@@ -324,7 +328,7 @@ class _AtendimentoTecnicoEditarDialogState
   Future<void> _selecionarValidade() async {
     final hoje = DateTime.now();
     final inicio = DateTime(hoje.year, hoje.month, hoje.day);
-    final selecionada = await showDatePicker(
+    final selecionada = await _showThemedDatePicker(
       context: context,
       initialDate:
           _validadeOrcamentoEm.isBefore(inicio) ? inicio : _validadeOrcamentoEm,
@@ -341,7 +345,7 @@ class _AtendimentoTecnicoEditarDialogState
   Future<void> _selecionarVencimentoFinanceiro() async {
     final hoje = DateTime.now();
     final inicio = DateTime(hoje.year, hoje.month, hoje.day);
-    final selecionada = await showDatePicker(
+    final selecionada = await _showThemedDatePicker(
       context: context,
       initialDate:
           _dataVencimentoEm.isBefore(inicio) ? inicio : _dataVencimentoEm,
@@ -359,7 +363,7 @@ class _AtendimentoTecnicoEditarDialogState
     final hoje = DateTime.now();
     final inicio = DateTime(hoje.year, hoje.month, hoje.day);
     final primeiraData = DateTime(2000);
-    final selecionada = await showDatePicker(
+    final selecionada = await _showThemedDatePicker(
       context: context,
       initialDate:
           _dataEntregaPrevista.isBefore(primeiraData)
@@ -396,41 +400,6 @@ class _AtendimentoTecnicoEditarDialogState
         _adicionarProduto(produto);
       }
     });
-  }
-
-  Future<void> _abrirSelecaoResponsavel() async {
-    if (_carregandoResponsaveis) {
-      _mostrarMensagem(
-        _t(
-          'atendimentoTecnico.edit.loadingTechnicians',
-          'Carregando técnicos autorizados.',
-        ),
-      );
-      return;
-    }
-    if (_responsaveis.isEmpty) {
-      _mostrarMensagem(
-        _t(
-          'atendimentoTecnico.edit.noTechnicians',
-          'Nenhum responsável técnico disponível para seleção.',
-        ),
-      );
-      return;
-    }
-
-    final _ResponsavelTecnicoWeb? responsavel =
-        await showDialog<_ResponsavelTecnicoWeb>(
-          context: context,
-          builder: (BuildContext context) {
-            return _ResponsavelTecnicoEditarWebDialog(
-              responsaveis: _responsaveis,
-              responsavelSelecionado: _responsavelSelecionado,
-            );
-          },
-        );
-
-    if (responsavel == null || !mounted) return;
-    setState(() => _responsavelSelecionado = responsavel);
   }
 
   Future<void> _abrirSelecaoCliente() async {
@@ -541,6 +510,7 @@ class _AtendimentoTecnicoEditarDialogState
     final String? nomeClienteSnapshot =
         cliente.nomeInformado ? _textoOuNulo(cliente.nome) : null;
     final _ResponsavelTecnicoWeb? responsavel = _responsavelSelecionado;
+    final bool responsavelAlterado = _responsavelTecnicoAlterado(responsavel);
 
     setState(() => _salvando = true);
     try {
@@ -569,16 +539,26 @@ class _AtendimentoTecnicoEditarDialogState
           itens: _itens
               .map((item) => item.toInput(responsavel: responsavel))
               .toList(growable: false),
-          observacaoAuditoria: _textoOuNulo(
-            _observacaoAuditoriaController.text,
+          observacaoAuditoria: _montarObservacaoAuditoria(
+            observacaoDigitada: _observacaoAuditoriaController.text,
+            responsavel: responsavel,
+            responsavelAlterado: responsavelAlterado,
           ),
         ),
       );
       if (!mounted) return;
       Navigator.of(context).pop(true);
+    } on AtendimentoTecnicoApiException catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem(_resolverMensagemErroAtualizacao(error));
     } catch (error) {
       if (!mounted) return;
-      _mostrarMensagem('Não foi possível salvar as alterações: $error');
+      _mostrarMensagem(
+        _t(
+          'atendimentoTecnico.edit.genericSaveError',
+          'Não foi possível salvar as alterações agora. Revise os dados e tente novamente.',
+        ),
+      );
     } finally {
       if (mounted) setState(() => _salvando = false);
     }
@@ -593,6 +573,51 @@ class _AtendimentoTecnicoEditarDialogState
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
+  bool _responsavelTecnicoAlterado(_ResponsavelTecnicoWeb? responsavel) {
+    final String atualId =
+        widget.atendimento.idTecnicoResponsavel?.trim() ?? '';
+    final String atualNome =
+        widget.atendimento.nomeTecnicoResponsavelSnapshot?.trim() ?? '';
+    final String novoId = responsavel?.id.trim() ?? '';
+    final String novoNome = responsavel?.nome.trim() ?? '';
+    return atualId != novoId || atualNome != novoNome;
+  }
+
+  String? _montarObservacaoAuditoria({
+    required String observacaoDigitada,
+    required _ResponsavelTecnicoWeb? responsavel,
+    required bool responsavelAlterado,
+  }) {
+    final String textoBase = observacaoDigitada.trim();
+    if (!responsavelAlterado) {
+      return textoBase.isEmpty ? null : textoBase;
+    }
+
+    final String anterior =
+        widget.atendimento.nomeTecnicoResponsavelSnapshot?.trim().isNotEmpty ==
+                true
+            ? widget.atendimento.nomeTecnicoResponsavelSnapshot!.trim()
+            : _t(
+              'atendimentoTecnico.edit.unassignedResponsible',
+              'Sem responsável anterior',
+            );
+    final String atual =
+        responsavel?.nome.trim().isNotEmpty == true
+            ? responsavel!.nome.trim()
+            : _t(
+              'atendimentoTecnico.edit.unassignedResponsibleCurrent',
+              'Sem responsável definido',
+            );
+    final String notaTecnica =
+        'Responsável técnico alterado de "$anterior" para "$atual".';
+
+    if (textoBase.isEmpty) {
+      return notaTecnica;
+    }
+
+    return '$notaTecnica $textoBase';
+  }
+
   String _formatarData(DateTime value) {
     return context.read<LocaleSettingsProvider>().formatDate(value);
   }
@@ -600,10 +625,301 @@ class _AtendimentoTecnicoEditarDialogState
   String _formatarMoeda(double value) =>
       context.read<LocaleSettingsProvider>().formatCurrency(value);
 
-  void _mostrarMensagem(String mensagem) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
+  Future<DateTime?> _showThemedDatePicker({
+    required BuildContext context,
+    required DateTime initialDate,
+    required DateTime firstDate,
+    required DateTime lastDate,
+    required String helpText,
+  }) {
+    final ThemeData baseTheme = Theme.of(context);
+    final ThemeData themedBase = WebThemeTokens.applyTo(baseTheme);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent = tokens.info;
+    final bool dark = themedBase.colorScheme.brightness == Brightness.dark;
+    final ColorScheme colorScheme =
+        dark
+            ? themedBase.colorScheme.copyWith(
+              surface: tokens.surfaceElevated,
+              onSurface: tokens.primaryText,
+              onSurfaceVariant: tokens.secondaryText,
+              primary: accent,
+              onPrimary: Colors.white,
+              outline: tokens.cardBorder,
+            )
+            : themedBase.colorScheme;
+
+    final ThemeData pickerTheme = themedBase.copyWith(
+      colorScheme: colorScheme,
+      dividerColor: tokens.divider,
+      dialogTheme: themedBase.dialogTheme.copyWith(
+        backgroundColor: tokens.surface,
+      ),
+      datePickerTheme: themedBase.datePickerTheme.copyWith(
+        backgroundColor: tokens.surface,
+        surfaceTintColor: Colors.transparent,
+        headerBackgroundColor:
+            dark ? tokens.surface : accent.withValues(alpha: 0.08),
+        headerForegroundColor: tokens.primaryText,
+        weekdayStyle: themedBase.textTheme.bodySmall?.copyWith(
+          color: tokens.secondaryText,
+          fontWeight: FontWeight.w700,
+        ),
+        dayForegroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return tokens.mutedText;
+          }
+          if (states.contains(WidgetState.selected)) {
+            return colorScheme.onPrimary;
+          }
+          return tokens.primaryText;
+        }),
+        dayBackgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+          if (states.contains(WidgetState.selected)) {
+            return accent;
+          }
+          return Colors.transparent;
+        }),
+        dayOverlayColor: WidgetStateProperty.resolveWith<Color?>((states) {
+          if (states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused) ||
+              states.contains(WidgetState.pressed)) {
+            return accent.withValues(alpha: 0.12);
+          }
+          return null;
+        }),
+        todayForegroundColor: WidgetStatePropertyAll<Color>(accent),
+        todayBorder: BorderSide(color: accent.withValues(alpha: 0.72)),
+        cancelButtonStyle: TextButton.styleFrom(foregroundColor: accent),
+        confirmButtonStyle: TextButton.styleFrom(foregroundColor: accent),
+        yearForegroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+          if (states.contains(WidgetState.selected)) {
+            return colorScheme.onPrimary;
+          }
+          return tokens.primaryText;
+        }),
+        yearBackgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+          if (states.contains(WidgetState.selected)) {
+            return accent;
+          }
+          return Colors.transparent;
+        }),
+        rangeSelectionBackgroundColor: accent.withValues(alpha: 0.16),
+        rangePickerBackgroundColor: tokens.surface,
+      ),
     );
+
+    return showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      helpText: helpText,
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: pickerTheme,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+    );
+  }
+
+  String _resolverMensagemErroAtualizacao(
+    AtendimentoTecnicoApiException error,
+  ) {
+    final String mensagemNegocio = _extrairMensagemNegocio(error.body);
+    if (mensagemNegocio.isNotEmpty) {
+      return mensagemNegocio;
+    }
+
+    if (error.statusCode == 400 ||
+        error.statusCode == 409 ||
+        error.statusCode == 422) {
+      return _t(
+        'atendimentoTecnico.edit.businessSaveError',
+        'Não foi possível salvar porque os dados informados não atendem às regras do atendimento.',
+      );
+    }
+
+    return _t(
+      'atendimentoTecnico.edit.genericSaveError',
+      'Não foi possível salvar as alterações agora. Revise os dados e tente novamente.',
+    );
+  }
+
+  String _extrairMensagemNegocio(String body) {
+    final String texto = body.trim();
+    if (texto.isEmpty) return '';
+
+    try {
+      return _coletarMensagemErro(jsonDecode(texto)).trim();
+    } catch (_) {
+      return texto;
+    }
+  }
+
+  String _coletarMensagemErro(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      for (final String key in <String>[
+        'message',
+        'mensagem',
+        'error',
+        'erro',
+        'detail',
+        'details',
+      ]) {
+        final String nested = _coletarMensagemErro(value[key]);
+        if (nested.isNotEmpty) {
+          return nested;
+        }
+      }
+
+      for (final String key in <String>[
+        'errors',
+        'fieldErrors',
+        'violations',
+      ]) {
+        final String nested = _coletarMensagemErro(value[key]);
+        if (nested.isNotEmpty) {
+          return nested;
+        }
+      }
+
+      for (final dynamic entry in value.values) {
+        final String nested = _coletarMensagemErro(entry);
+        if (nested.isNotEmpty) {
+          return nested;
+        }
+      }
+      return '';
+    }
+
+    if (value is List) {
+      for (final dynamic item in value) {
+        final String nested = _coletarMensagemErro(item);
+        if (nested.isNotEmpty) {
+          return nested;
+        }
+      }
+      return '';
+    }
+
+    if (value is String) {
+      final String texto = value.trim();
+      if (texto.isEmpty) return '';
+      if (texto.startsWith('{') || texto.startsWith('[')) {
+        try {
+          return _coletarMensagemErro(jsonDecode(texto));
+        } catch (_) {
+          return texto;
+        }
+      }
+      return texto;
+    }
+
+    return '';
+  }
+
+  void _mostrarMensagem(String mensagem) {
+    if (!mounted || _exibindoModalErro) return;
+
+    _exibindoModalErro = true;
+    final ThemeData theme = WebThemeTokens.applyTo(Theme.of(context));
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return Theme(
+          data: theme,
+          child: Dialog(
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 24,
+            ),
+            backgroundColor: tokens.surfaceElevated,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: BorderSide(color: tokens.cardBorder),
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 22, 24, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: tokens.danger.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(
+                            Icons.error_outline_rounded,
+                            color: tokens.danger,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Text(
+                            _t(
+                              'atendimentoTecnico.edit.errorDialogTitle',
+                              'Nao foi possivel concluir a edicao',
+                            ),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              color: tokens.primaryText,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: tokens.secondaryText,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      mensagem,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: tokens.secondaryText,
+                        fontWeight: FontWeight.w600,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton.icon(
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: tokens.info,
+                          foregroundColor: Colors.white,
+                        ),
+                        icon: const Icon(Icons.check_rounded),
+                        label: Text(_t('common.ok', 'Entendi')),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    ).whenComplete(() {
+      _exibindoModalErro = false;
+    });
   }
 
   void _cancelar() {
@@ -1369,70 +1685,33 @@ class _AtendimentoTecnicoEditarDialogState
 
   Widget _responsavelSelectorField(ThemeData theme, WebThemeTokens tokens) {
     final _ResponsavelTecnicoWeb? responsavel = _responsavelSelecionado;
-    final bool hasSelection = responsavel != null;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: _salvando ? null : _abrirSelecaoResponsavel,
-        borderRadius: BorderRadius.circular(12),
-        child: InputDecorator(
-          isEmpty: !hasSelection,
-          decoration: InputDecoration(
-            labelText: _t(
-              'atendimentoTecnico.edit.responsibleLabel',
-              'Responsável técnico',
-            ),
-            helperText:
-                _carregandoResponsaveis
-                    ? _t(
-                      'atendimentoTecnico.edit.loadingTechnicians',
-                      'Carregando técnicos autorizados.',
-                    )
-                    : _t(
-                      'atendimentoTecnico.edit.responsibleHelper',
-                      'Apenas técnicos autorizados para assistência.',
-                    ),
-            suffixIcon:
-                _carregandoResponsaveis
-                    ? const Padding(
-                      padding: EdgeInsets.all(14),
-                      child: SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                    : const Icon(Icons.keyboard_arrow_down_rounded),
-          ),
-          child: Row(
-            children: <Widget>[
-              Icon(Icons.engineering_outlined, color: tokens.info),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  hasSelection
-                      ? responsavel.nome
-                      : _t(
-                        'atendimentoTecnico.edit.selectResponsible',
-                        'Selecione o responsável',
-                      ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color:
-                        hasSelection
-                            ? tokens.primaryText
-                            : tokens.secondaryText,
-                    fontWeight:
-                        hasSelection ? FontWeight.w900 : FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+    return _ResponsavelTecnicoDropdownField(
+      label: _t(
+        'atendimentoTecnico.edit.responsibleLabel',
+        'Responsável técnico',
       ),
+      helperText:
+          _carregandoResponsaveis
+              ? _t(
+                'atendimentoTecnico.edit.loadingTechnicians',
+                'Carregando técnicos autorizados.',
+              )
+              : _t(
+                'atendimentoTecnico.edit.responsibleHelper',
+                'Apenas técnicos autorizados para assistência.',
+              ),
+      placeholder: _t(
+        'atendimentoTecnico.edit.selectResponsible',
+        'Selecione o responsável',
+      ),
+      selected: responsavel,
+      items: _responsaveis,
+      loading: _carregandoResponsaveis,
+      enabled:
+          !_salvando && !_carregandoResponsaveis && _responsaveis.isNotEmpty,
+      onSelected:
+          (_ResponsavelTecnicoWeb value) =>
+              setState(() => _responsavelSelecionado = value),
     );
   }
 
@@ -1915,305 +2194,304 @@ class _ResponsavelTecnicoWeb {
   final String subtitulo;
 }
 
-class _ResponsavelTecnicoEditarWebDialog extends StatefulWidget {
-  const _ResponsavelTecnicoEditarWebDialog({
-    required this.responsaveis,
-    required this.responsavelSelecionado,
-  });
-
-  final List<_ResponsavelTecnicoWeb> responsaveis;
-  final _ResponsavelTecnicoWeb? responsavelSelecionado;
-
-  @override
-  State<_ResponsavelTecnicoEditarWebDialog> createState() =>
-      _ResponsavelTecnicoEditarWebDialogState();
-}
-
-class _ResponsavelTecnicoEditarWebDialogState
-    extends State<_ResponsavelTecnicoEditarWebDialog> {
-  final TextEditingController _searchController = TextEditingController();
-  String _filter = '';
-
-  List<_ResponsavelTecnicoWeb> get _responsaveisFiltrados {
-    final String term = _normalize(_filter);
-    if (term.isEmpty) return widget.responsaveis;
-    return widget.responsaveis
-        .where((_ResponsavelTecnicoWeb item) {
-          return _normalize('${item.nome} ${item.subtitulo}').contains(term);
-        })
-        .toList(growable: false);
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final List<_ResponsavelTecnicoWeb> responsaveis = _responsaveisFiltrados;
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 640),
-        child: Column(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 12, 14),
-              child: Row(
-                children: <Widget>[
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(
-                      Icons.engineering_outlined,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          context.t(
-                            'atendimentoTecnico.edit.selectResponsibleTitle',
-                            fallback: 'Selecionar responsável técnico',
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          context.t(
-                            'atendimentoTecnico.edit.selectResponsibleSubtitle',
-                            fallback:
-                                'Busque e selecione um técnico autorizado para assistência.',
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: context.t('common.close', fallback: 'Fechar'),
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (String value) => setState(() => _filter = value),
-                decoration: InputDecoration(
-                  hintText: context.t(
-                    'atendimentoTecnico.edit.searchResponsible',
-                    fallback: 'Buscar responsável',
-                  ),
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  suffixIcon:
-                      _searchController.text.isEmpty
-                          ? null
-                          : IconButton(
-                            tooltip: context.t(
-                              'common.clear',
-                              fallback: 'Limpar',
-                            ),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() => _filter = '');
-                            },
-                            icon: const Icon(Icons.close_rounded),
-                          ),
-                  filled: true,
-                ),
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child:
-                  responsaveis.isEmpty
-                      ? _ResponsavelTecnicoWebEmptyState(
-                        text: context.t(
-                          'atendimentoTecnico.edit.noResponsibleFound',
-                          fallback: 'Nenhum técnico autorizado encontrado.',
-                        ),
-                      )
-                      : ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: responsaveis.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (BuildContext context, int index) {
-                          final _ResponsavelTecnicoWeb responsavel =
-                              responsaveis[index];
-                          final bool selected =
-                              widget.responsavelSelecionado?.id ==
-                              responsavel.id;
-                          return _ResponsavelTecnicoWebItem(
-                            responsavel: responsavel,
-                            selected: selected,
-                            onTap: () => Navigator.of(context).pop(responsavel),
-                          );
-                        },
-                      ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _normalize(String value) {
-    return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-  }
-}
-
-class _ResponsavelTecnicoWebItem extends StatelessWidget {
-  const _ResponsavelTecnicoWebItem({
-    required this.responsavel,
+class _ResponsavelTecnicoDropdownField extends StatefulWidget {
+  const _ResponsavelTecnicoDropdownField({
+    required this.label,
+    required this.helperText,
+    required this.placeholder,
     required this.selected,
-    required this.onTap,
+    required this.items,
+    required this.loading,
+    required this.enabled,
+    required this.onSelected,
   });
 
-  final _ResponsavelTecnicoWeb responsavel;
-  final bool selected;
-  final VoidCallback onTap;
+  final String label;
+  final String helperText;
+  final String placeholder;
+  final _ResponsavelTecnicoWeb? selected;
+  final List<_ResponsavelTecnicoWeb> items;
+  final bool loading;
+  final bool enabled;
+  final ValueChanged<_ResponsavelTecnicoWeb> onSelected;
 
   @override
-  Widget build(BuildContext context) {
+  State<_ResponsavelTecnicoDropdownField> createState() =>
+      _ResponsavelTecnicoDropdownFieldState();
+}
+
+class _ResponsavelTecnicoDropdownFieldState
+    extends State<_ResponsavelTecnicoDropdownField> {
+  bool _hovered = false;
+  bool _open = false;
+
+  Future<void> _openMenu() async {
+    if (!widget.enabled || widget.items.isEmpty) return;
+
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color:
-                selected
-                    ? colorScheme.primary.withValues(alpha: 0.08)
-                    : colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color:
-                  selected
-                      ? colorScheme.primary.withValues(alpha: 0.38)
-                      : colorScheme.outline.withValues(alpha: 0.18),
-              width: selected ? 1.2 : 1,
-            ),
-          ),
-          child: Row(
-            children: <Widget>[
-              CircleAvatar(
-                radius: 21,
-                backgroundColor: colorScheme.primary.withValues(alpha: 0.10),
-                child: Icon(
-                  Icons.person_outline_rounded,
-                  color: colorScheme.primary,
-                  size: 20,
+    final RenderBox? fieldBox = context.findRenderObject() as RenderBox?;
+    final RenderBox? overlayBox =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+    if (fieldBox == null || overlayBox == null) return;
+
+    final Offset fieldOffset = fieldBox.localToGlobal(
+      Offset.zero,
+      ancestor: overlayBox,
+    );
+    final Size fieldSize = fieldBox.size;
+    final RelativeRect position = RelativeRect.fromLTRB(
+      fieldOffset.dx,
+      fieldOffset.dy + fieldSize.height + 6,
+      overlayBox.size.width - fieldOffset.dx - fieldSize.width,
+      0,
+    );
+
+    setState(() => _open = true);
+    final _ResponsavelTecnicoWeb?
+    selected = await showMenu<_ResponsavelTecnicoWeb>(
+      context: context,
+      position: position,
+      color: tokens.menuBackground,
+      elevation: 12,
+      constraints: BoxConstraints(
+        minWidth: fieldSize.width,
+        maxWidth: fieldSize.width,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: tokens.cardBorder),
+      ),
+      items: widget.items
+          .map((_ResponsavelTecnicoWeb item) {
+            final bool isSelected = widget.selected?.id == item.id;
+            return PopupMenuItem<_ResponsavelTecnicoWeb>(
+              value: item,
+              height: 62,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                decoration: BoxDecoration(
+                  color:
+                      isSelected
+                          ? tokens.selectedBackground
+                          : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color:
+                        isSelected ? tokens.selectedBorder : Colors.transparent,
+                  ),
+                ),
+                child: Row(
                   children: <Widget>[
-                    Text(
-                      responsavel.nome,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: tokens.info.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        isSelected
+                            ? Icons.check_circle_rounded
+                            : Icons.engineering_outlined,
+                        size: 18,
+                        color: isSelected ? tokens.info : tokens.secondaryText,
                       ),
                     ),
-                    if (responsavel.subtitulo.trim().isNotEmpty) ...<Widget>[
-                      const SizedBox(height: 3),
-                      Text(
-                        responsavel.subtitulo,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Text(
+                            item.nome,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: tokens.primaryText,
+                              fontWeight:
+                                  isSelected
+                                      ? FontWeight.w800
+                                      : FontWeight.w700,
+                            ),
+                          ),
+                          if (item.subtitulo.trim().isNotEmpty) ...<Widget>[
+                            const SizedBox(height: 3),
+                            Text(
+                              item.subtitulo,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: tokens.mutedText,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    ],
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      isSelected
+                          ? Icons.check_rounded
+                          : Icons.chevron_right_rounded,
+                      size: 18,
+                      color: isSelected ? tokens.info : tokens.secondaryText,
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Icon(
-                selected
-                    ? Icons.check_circle_rounded
-                    : Icons.radio_button_unchecked_rounded,
-                color:
-                    selected
-                        ? colorScheme.primary
-                        : colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ),
+            );
+          })
+          .toList(growable: false),
     );
+
+    if (!mounted) return;
+    setState(() => _open = false);
+    if (selected != null && selected.id != widget.selected?.id) {
+      widget.onSelected(selected);
+    }
   }
-}
-
-class _ResponsavelTecnicoWebEmptyState extends StatelessWidget {
-  const _ResponsavelTecnicoWebEmptyState({required this.text});
-
-  final String text;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              Icons.engineering_outlined,
-              size: 36,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              text,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool active = widget.enabled && (_hovered || _open);
+    final _ResponsavelTecnicoWeb? selected = widget.selected;
+
+    return Semantics(
+      button: true,
+      enabled: widget.enabled,
+      label: widget.label,
+      value: selected?.nome ?? widget.placeholder,
+      child: AnimatedOpacity(
+        duration: WebThemeTokens.transitionDuration,
+        curve: WebThemeTokens.transitionCurve,
+        opacity: widget.enabled || widget.loading ? 1 : 0.58,
+        child: MouseRegion(
+          onEnter: (_) => setState(() => _hovered = true),
+          onExit: (_) => setState(() => _hovered = false),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: widget.loading ? null : _openMenu,
+              child: AnimatedContainer(
+                duration: WebThemeTokens.transitionDuration,
+                curve: WebThemeTokens.transitionCurve,
+                constraints: const BoxConstraints(minHeight: 74),
+                padding: const EdgeInsets.fromLTRB(14, 11, 12, 11),
+                decoration: BoxDecoration(
+                  color:
+                      active ? tokens.surfaceElevated : tokens.inputBackground,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: active ? tokens.selectedBorder : tokens.cardBorder,
+                    width: active ? 1.4 : 1,
+                  ),
+                  boxShadow:
+                      active
+                          ? <BoxShadow>[
+                            BoxShadow(
+                              color: tokens.info.withValues(alpha: 0.12),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ]
+                          : null,
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: tokens.info.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child:
+                          widget.loading
+                              ? Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: tokens.info,
+                                ),
+                              )
+                              : Icon(
+                                Icons.engineering_outlined,
+                                size: 18,
+                                color:
+                                    active ? tokens.info : tokens.secondaryText,
+                              ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Text(
+                            widget.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: tokens.secondaryText,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            selected?.nome ?? widget.placeholder,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color:
+                                  selected != null
+                                      ? tokens.primaryText
+                                      : tokens.secondaryText,
+                              fontWeight:
+                                  selected != null
+                                      ? FontWeight.w800
+                                      : FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            selected?.subtitulo.trim().isNotEmpty == true
+                                ? selected!.subtitulo
+                                : widget.helperText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: tokens.mutedText,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    AnimatedRotation(
+                      turns: _open ? 0.5 : 0,
+                      duration: WebThemeTokens.transitionDuration,
+                      curve: WebThemeTokens.transitionCurve,
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: active ? tokens.info : tokens.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
