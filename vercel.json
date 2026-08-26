@@ -8,6 +8,21 @@
       "source": "/home",
       "destination": "/",
       "permanent": false
+    },
+    {
+      "source": "/onboarding",
+      "destination": "/register",
+      "permanent": false
+    },
+    {
+      "source": "/onboarding.html",
+      "destination": "/register",
+      "permanent": false
+    },
+    {
+      "source": "/onboarding/flutter",
+      "destination": "/register",
+      "permanent": false
     }
   ],
   "headers": [

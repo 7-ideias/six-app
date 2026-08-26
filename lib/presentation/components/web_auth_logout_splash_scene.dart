@@ -300,7 +300,7 @@ class _LogoutLogoConstellation extends StatelessWidget {
                   ],
                 ),
                 child: Image.asset(
-                  'assets/images/six-logo-flecha.webp',
+                  'assets/images/sixoapp_splash_symbol.png',
                   fit: BoxFit.contain,
                   filterQuality: FilterQuality.high,
                 ),
@@ -329,7 +329,7 @@ class _LogoutProgressDots extends StatelessWidget {
     final double dotSize = compact ? 7.0 : 8.0;
 
     return Semantics(
-      label: 'Six',
+      label: 'SixoApp',
       child: Wrap(
         alignment: WrapAlignment.center,
         spacing: compact ? 8 : 10,

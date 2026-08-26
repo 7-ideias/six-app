@@ -1,27 +1,27 @@
 :root {
   color-scheme: light;
-  --color-ink: #0f2d3a;
-  --color-ink-strong: #071923;
-  --color-graphite: #25313b;
-  --color-text: #18232d;
-  --color-muted: #60707d;
-  --color-soft: #eef4f6;
+  --color-ink: #001f52;
+  --color-ink-strong: #00163a;
+  --color-graphite: #17325d;
+  --color-text: #102342;
+  --color-muted: #647795;
+  --color-soft: #edf5ff;
   --color-paper: #ffffff;
-  --color-canvas: #f6f8f9;
-  --color-line: #dce6ea;
-  --color-teal: #0f766e;
-  --color-teal-soft: #dff4ef;
-  --color-gold: #c59b55;
-  --color-gold-soft: #f7eddc;
-  --color-blue: #2563eb;
+  --color-canvas: #f4f8ff;
+  --color-line: #d8e5f5;
+  --color-teal: #00a9c6;
+  --color-teal-soft: #dffaff;
+  --color-gold: #12cfe7;
+  --color-gold-soft: #e1fbff;
+  --color-blue: #145bff;
   --color-red: #b42318;
   --color-red-soft: #fff0ed;
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 22px;
   --radius-xl: 30px;
-  --shadow-sm: 0 10px 24px rgba(15, 45, 58, 0.08);
-  --shadow-md: 0 22px 54px rgba(15, 45, 58, 0.16);
+  --shadow-sm: 0 12px 30px rgba(0, 31, 82, 0.09);
+  --shadow-md: 0 28px 72px rgba(0, 31, 82, 0.17);
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -86,7 +86,7 @@ button {
 }
 
 :focus-visible {
-  outline: 3px solid rgba(37, 99, 235, 0.52);
+  outline: 3px solid rgba(16, 217, 240, 0.62);
   outline-offset: 3px;
 }
 
@@ -129,14 +129,16 @@ button {
   display: grid;
   place-items: center;
   border-radius: 12px;
-  background: #ffffff;
-  border: 1px solid rgba(15, 45, 58, 0.10);
+  overflow: hidden;
+  background: #00163a;
+  border: 1px solid rgba(20, 91, 255, 0.18);
   box-shadow: var(--shadow-sm);
 }
 
 .brand-mark img {
-  width: 30px;
-  height: 30px;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .button {
@@ -166,13 +168,14 @@ button {
 }
 
 .button-primary {
-  background: var(--color-ink);
+  background: linear-gradient(120deg, #08cfe9, #145bff 72%);
   color: #ffffff;
-  box-shadow: 0 14px 28px rgba(15, 45, 58, 0.20);
+  box-shadow: 0 16px 34px rgba(20, 91, 255, 0.25);
 }
 
 .button-primary:hover {
-  background: var(--color-ink-strong);
+  background: linear-gradient(120deg, #10d9f0, #0d4ee6 72%);
+  box-shadow: 0 20px 42px rgba(20, 91, 255, 0.32);
 }
 
 .button-quiet {
@@ -216,7 +219,7 @@ button {
 }
 
 .language-switcher button[aria-pressed="true"] {
-  background: var(--color-ink);
+  background: linear-gradient(135deg, #08cfe9, #145bff);
   color: #ffffff;
 }
 

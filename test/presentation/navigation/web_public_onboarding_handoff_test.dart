@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -33,13 +34,29 @@ void main() {
       );
     });
 
-    test('vercel serve HTML e preserva fallback Flutter', () {
+    test('vercel remove onboarding da jornada publica', () {
       final String vercelSource = File('vercel.json').readAsStringSync();
 
-      expect(vercelSource, contains('"source": "/onboarding"'));
-      expect(vercelSource, contains('"destination": "/onboarding.html"'));
-      expect(vercelSource, contains('"source": "/onboarding/flutter"'));
-      expect(vercelSource, contains('"destination": "/flutter.html"'));
+      final Map<String, dynamic> vercel =
+          jsonDecode(vercelSource) as Map<String, dynamic>;
+      final List<dynamic> redirects = vercel['redirects'] as List<dynamic>;
+
+      for (final String source in <String>[
+        '/onboarding',
+        '/onboarding.html',
+        '/onboarding/flutter',
+      ]) {
+        expect(
+          redirects,
+          contains(
+            <String, dynamic>{
+              'source': source,
+              'destination': '/register',
+              'permanent': false,
+            },
+          ),
+        );
+      }
     });
 
     test('rotas publicas e autenticadas principais continuam corretas', () {
