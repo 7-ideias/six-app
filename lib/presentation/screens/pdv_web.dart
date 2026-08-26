@@ -1277,6 +1277,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
         label: label,
         child: OutlinedButton.icon(
           onPressed: onPressed,
+          style: _pdvShortcutOutlinedCtaStyle(),
           icon: Icon(icon),
           label: Text(label),
         ),
@@ -1477,15 +1478,14 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                       foregroundColor: _pdvTheme.iconColor,
                     ),
                     SizedBox(
-                      width: 30,
-                      child: Text(
-                        quantidade.toString(),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: _pdvTheme.primaryText,
-                        ),
+                      width: 76,
+                      height: 40,
+                      child: _buildBotaoEditarQuantidadeItem(
+                        quantidade: quantidade,
+                        onPressed:
+                            podeEditarVenda
+                                ? () => _abrirEditorQuantidadeProduto(produto)
+                                : null,
                       ),
                     ),
                     _buildBotaoQuantidadeItem(
@@ -1552,6 +1552,32 @@ extension _PdvWeb on _PaginaPrincipalWebState {
     );
   }
 
+  Widget _buildBotaoEditarQuantidadeItem({
+    required int quantidade,
+    required VoidCallback? onPressed,
+  }) {
+    final String tooltip = context.t(
+      'pdv.quantityEditor.tooltip',
+      fallback: 'Editar quantidade',
+    );
+
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        label: '$tooltip: $quantidade',
+        child: OutlinedButton(
+          onPressed: onPressed,
+          style: _pdvQuantityEditorButtonStyle(),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(quantidade.toString()),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildBotaoQuantidadeItem({
     required String tooltip,
     required String semanticLabel,
@@ -1577,6 +1603,29 @@ extension _PdvWeb on _PaginaPrincipalWebState {
         ),
       ),
     );
+  }
+
+  Future<void> _abrirEditorQuantidadeProduto(
+    Map<String, dynamic> produto,
+  ) async {
+    if (!_pdvPodeEditarVenda) {
+      return;
+    }
+
+    final String nomeProduto = (produto['nome'] ?? '').toString().trim();
+    final String codigoProduto = (produto['codigo'] ?? '').toString().trim();
+    final int quantidadeAtual = (produto['quantidade'] ?? 1) as int;
+    await showSixWebPdvQuantityDialog(
+      context: context,
+      productName: nomeProduto,
+      productCode: codigoProduto,
+      currentQuantity: quantidadeAtual,
+      onConfirm: (int novaQuantidade) async {
+        _definirQuantidadeProduto(produto, novaQuantidade);
+      },
+    );
+
+    _restaurarFocoLeituraRapidaSeCabivel();
   }
 
   Widget _buildEstadoVazioItens() {
@@ -2590,7 +2639,10 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                                       duration: const Duration(
                                         milliseconds: 220,
                                       ),
-                                      child: _buildResumoVendaLateral(),
+                                      child: Align(
+                                        alignment: Alignment.topCenter,
+                                        child: _buildResumoVendaLateral(),
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -2609,7 +2661,10 @@ extension _PdvWeb on _PaginaPrincipalWebState {
                                       duration: const Duration(
                                         milliseconds: 220,
                                       ),
-                                      child: _buildResumoVendaLateral(),
+                                      child: Align(
+                                        alignment: Alignment.topCenter,
+                                        child: _buildResumoVendaLateral(),
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -2661,6 +2716,75 @@ extension _PdvWeb on _PaginaPrincipalWebState {
     );
   }
 
+  ButtonStyle _pdvShortcutOutlinedCtaStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool dark =
+        Theme.of(context).colorScheme.brightness == Brightness.dark;
+
+    return OutlinedButton.styleFrom(
+      foregroundColor: dark ? tokens.info : _pdvTheme.iconColor,
+      disabledForegroundColor:
+          dark
+              ? tokens.secondaryText.withValues(alpha: 0.62)
+              : tokens.disabledForeground,
+      side: BorderSide(
+        color:
+            dark
+                ? tokens.selectedBorder.withValues(alpha: 0.62)
+                : _pdvTheme.cardBorder,
+      ),
+      backgroundColor:
+          dark
+              ? tokens.surfaceElevated.withValues(alpha: 0.48)
+              : Colors.transparent,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: const TextStyle(fontWeight: FontWeight.w800),
+    ).copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return dark
+              ? tokens.surfaceMuted.withValues(alpha: 0.92)
+              : tokens.disabledBackground.withValues(alpha: 0.22);
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return dark
+              ? tokens.info.withValues(alpha: 0.12)
+              : _pdvTheme.iconColor.withValues(alpha: 0.08);
+        }
+        return dark
+            ? tokens.surfaceElevated.withValues(alpha: 0.48)
+            : Colors.transparent;
+      }),
+      side: WidgetStateProperty.resolveWith<BorderSide?>((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return BorderSide(
+            color:
+                dark
+                    ? tokens.cardBorder.withValues(alpha: 0.82)
+                    : _pdvTheme.cardBorder.withValues(alpha: 0.55),
+          );
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return BorderSide(
+            color:
+                dark
+                    ? tokens.info.withValues(alpha: 0.78)
+                    : _pdvTheme.iconColor.withValues(alpha: 0.42),
+          );
+        }
+        return BorderSide(
+          color:
+              dark
+                  ? tokens.selectedBorder.withValues(alpha: 0.62)
+                  : _pdvTheme.cardBorder,
+        );
+      }),
+    );
+  }
+
   ButtonStyle _pdvDangerOutlinedCtaStyle() {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     return OutlinedButton.styleFrom(
@@ -2680,6 +2804,64 @@ extension _PdvWeb on _PaginaPrincipalWebState {
           return tokens.danger.withValues(alpha: 0.08);
         }
         return Colors.transparent;
+      }),
+    );
+  }
+
+  ButtonStyle _pdvQuantityEditorButtonStyle() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool dark =
+        Theme.of(context).colorScheme.brightness == Brightness.dark;
+
+    return OutlinedButton.styleFrom(
+      foregroundColor: _pdvTheme.primaryText,
+      disabledForegroundColor: tokens.disabledForeground,
+      backgroundColor:
+          dark
+              ? tokens.surfaceElevated.withValues(alpha: 0.82)
+              : _pdvTheme.backgroundPage,
+      side: BorderSide(
+        color:
+            dark
+                ? tokens.selectedBorder.withValues(alpha: 0.44)
+                : _pdvTheme.cardBorder,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+    ).copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return dark
+              ? tokens.surfaceMuted.withValues(alpha: 0.88)
+              : tokens.disabledBackground.withValues(alpha: 0.22);
+        }
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return dark
+              ? tokens.info.withValues(alpha: 0.10)
+              : _pdvTheme.iconColor.withValues(alpha: 0.06);
+        }
+        return dark
+            ? tokens.surfaceElevated.withValues(alpha: 0.82)
+            : _pdvTheme.backgroundPage;
+      }),
+      side: WidgetStateProperty.resolveWith<BorderSide?>((states) {
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.pressed)) {
+          return BorderSide(
+            color:
+                dark
+                    ? tokens.info.withValues(alpha: 0.72)
+                    : _pdvTheme.iconColor.withValues(alpha: 0.34),
+          );
+        }
+        return BorderSide(
+          color:
+              dark
+                  ? tokens.selectedBorder.withValues(alpha: 0.44)
+                  : _pdvTheme.cardBorder,
+        );
       }),
     );
   }

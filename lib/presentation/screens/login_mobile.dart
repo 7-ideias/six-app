@@ -21,16 +21,49 @@ class LoginPageMobile extends StatefulWidget {
 class _LoginPageMobileState extends State<LoginPageMobile> {
   final TextEditingController _loginController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FocusNode _passwordFocusNode = FocusNode();
+  final GlobalKey _submitButtonKey = GlobalKey();
   final AuthService _authService = AuthService();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    _passwordFocusNode.addListener(_handlePasswordFocusChange);
+  }
+
+  @override
   void dispose() {
+    _passwordFocusNode
+      ..removeListener(_handlePasswordFocusChange)
+      ..dispose();
     _loginController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _handlePasswordFocusChange() {
+    if (!_passwordFocusNode.hasFocus) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(
+        const Duration(milliseconds: 280),
+        _ensureSubmitButtonVisible,
+      );
+    });
+  }
+
+  Future<void> _ensureSubmitButtonVisible() async {
+    if (!mounted || !_passwordFocusNode.hasFocus) return;
+    final BuildContext? buttonContext = _submitButtonKey.currentContext;
+    if (buttonContext == null || !buttonContext.mounted) return;
+    await Scrollable.ensureVisible(
+      buttonContext,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+      alignment: 0.86,
+    );
   }
 
   Future<void> _login() async {
@@ -172,6 +205,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
               delay: const Duration(milliseconds: 100),
               child: SixoAppAuthField(
                 controller: _passwordController,
+                focusNode: _passwordFocusNode,
                 hint: context.t(
                   'auth.mobileLogin.passwordHint',
                   fallback: 'Digite sua senha',
@@ -228,13 +262,16 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
             const SizedBox(height: 8),
             SixStaggeredEntry(
               delay: const Duration(milliseconds: 140),
-              child: SixoAppAuthPrimaryButton(
-                label: context.t(
-                  'auth.mobileLogin.submit',
-                  fallback: 'Entrar',
+              child: KeyedSubtree(
+                key: _submitButtonKey,
+                child: SixoAppAuthPrimaryButton(
+                  label: context.t(
+                    'auth.mobileLogin.submit',
+                    fallback: 'Entrar',
+                  ),
+                  onPressed: _login,
+                  isLoading: _isLoading,
                 ),
-                onPressed: _login,
-                isLoading: _isLoading,
               ),
             ),
             const SizedBox(height: 22),
@@ -291,8 +328,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
             _TermsText(
               prefix: context.t(
                 'auth.termsPrefix',
-                fallback:
-                    'Ao continuar, declaro ter lido e concordo com os ',
+                fallback: 'Ao continuar, declaro ter lido e concordo com os ',
               ),
               terms: context.t(
                 'auth.terms',
