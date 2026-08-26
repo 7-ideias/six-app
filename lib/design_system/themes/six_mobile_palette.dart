@@ -32,6 +32,16 @@ abstract final class SixMobilePalette {
   static Color get secondary => _isDark ? secondaryDark : secondaryLight;
   static Color get accent => _isDark ? accentDark : accentLight;
 
+  // Assinatura visual do SixoApp em experiências de marca mobile.
+  // Estes tokens mantêm splash e área não autenticada conectadas sem alterar
+  // as superfícies funcionais do restante do aplicativo.
+  static const Color brandNavyDeep = Color(0xFF00163A);
+  static const Color brandNavy = Color(0xFF021D48);
+  static const Color brandNavyBright = Color(0xFF063071);
+  static const Color brandCyan = Color(0xFF10D9F0);
+  static const Color brandBlue = Color(0xFF145BFF);
+  static const Color brandSupportingText = Color(0xFFA8C6EE);
+
   // Estrutura
   static const Color backgroundLight = Color(0xFFF3F4F6);
   static const Color backgroundDark = Color(0xFF101214);

@@ -1,17 +1,15 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:sixpos/core/constants/six_animation_assets.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/mobile/sixoapp_auth_mobile_kit.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 
 import '../../core/exceptions/google_auth_exception.dart';
 import '../../core/services/auth_service.dart';
-import '../../l10n/six_i18n.dart';
+import 'create_account_mobile.dart';
 import 'esqueceu_senha_mobile.dart';
 import 'post_login_splash_mobile_page.dart';
-import 'signup_onboarding_mobile.dart';
 
 class LoginPageMobile extends StatefulWidget {
   const LoginPageMobile({super.key});
@@ -36,21 +34,27 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   }
 
   Future<void> _login() async {
-    final login = _loginController.text.trim();
-    final senha = _passwordController.text.trim();
+    final String login = _loginController.text.trim();
+    final String senha = _passwordController.text.trim();
 
     if (login.isEmpty || senha.isEmpty) {
-      _showSnack(context.t('auth.loginRequiredFields'));
+      _showSnack(
+        context.t(
+          'auth.loginRequiredFields',
+          fallback: 'Por favor, preencha o e-mail e a senha',
+        ),
+      );
       return;
     }
 
+    FocusScope.of(context).unfocus();
     setState(() => _isLoading = true);
     try {
       await _authService.login(login, senha);
       if (!mounted) return;
       _navigateToPostLoginSplash();
-    } catch (e) {
-      _showSnack(e.toString().replaceAll('Exception: ', ''));
+    } catch (error) {
+      _showSnack(error.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -59,12 +63,16 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   void _navigateToPostLoginSplash() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => PostLoginSplashMobilePage()),
+      MaterialPageRoute<void>(
+        builder: (_) => const PostLoginSplashMobilePage(),
+      ),
     );
   }
 
-  void _showSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _loginWithGoogle() async {
@@ -74,487 +82,226 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
       await _authService.loginWithGoogle();
       if (!mounted) return;
       _navigateToPostLoginSplash();
-    } on GoogleAuthException catch (e) {
-      if (e.code == GoogleAuthErrorCode.cancelledByUser) return;
-      _showSnack(e.message);
+    } on GoogleAuthException catch (error) {
+      if (error.code == GoogleAuthErrorCode.cancelledByUser) return;
+      _showSnack(error.message);
     } catch (_) {
-      _showSnack(context.t('auth.googleLoginError'));
+      _showSnack(
+        context.t(
+          'auth.googleLoginError',
+          fallback: 'Não foi possível concluir o login com Google.',
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _loginWithApple() {
-    _showSnack(context.t('auth.appleLoginMock'));
-    _navigateToPostLoginSplash();
-  }
-
   void _forgotPassword() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => EsqueceuSenhaMobile()),
+      MaterialPageRoute<void>(builder: (_) => const EsqueceuSenhaMobile()),
     );
   }
 
   void _createAccount() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => SignupOnboardingMobile()),
+      MaterialPageRoute<void>(builder: (_) => const CreateAccountMobile()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
-        statusBarColor: SixMobilePalette.primary,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final String backLabel = context.t('common.back', fallback: 'Voltar');
+
+    return SixoAppAuthMobileScaffold(
+      title: context.t(
+        'auth.mobileLogin.title',
+        fallback: 'Bem-vindo de volta',
       ),
-      child: Scaffold(
-        backgroundColor: SixMobilePalette.background,
-        body: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20, 18, 20, 24),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight - 42,
+      subtitle: context.t(
+        'auth.mobileLogin.subtitle',
+        fallback: 'Entre para continuar de onde parou.',
+      ),
+      compactHeader: true,
+      onBack: () => Navigator.of(context).maybePop(),
+      backSemanticLabel: backLabel,
+      body: AutofillGroup(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            SixStaggeredEntry(
+              child: Text(
+                context.t(
+                  'auth.mobileLogin.formTitle',
+                  fallback: 'Acesse seu espaço',
+                ),
+                style: TextStyle(
+                  color: colors.titleText,
+                  fontSize: 20,
+                  height: 1.2,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 60),
+              child: SixoAppAuthField(
+                controller: _loginController,
+                hint: context.t(
+                  'auth.mobileLogin.emailHint',
+                  fallback: 'voce@empresa.com',
+                ),
+                label: context.t('auth.email', fallback: 'E-mail'),
+                icon: Icons.alternate_email_rounded,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                autofillHints: const <String>[
+                  AutofillHints.username,
+                  AutofillHints.email,
+                ],
+                autocorrect: false,
+              ),
+            ),
+            const SizedBox(height: 14),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 100),
+              child: SixoAppAuthField(
+                controller: _passwordController,
+                hint: context.t(
+                  'auth.mobileLogin.passwordHint',
+                  fallback: 'Digite sua senha',
+                ),
+                label: context.t('auth.password', fallback: 'Senha'),
+                icon: Icons.lock_outline_rounded,
+                obscure: _obscurePassword,
+                textInputAction: TextInputAction.done,
+                autofillHints: const <String>[AutofillHints.password],
+                enableSuggestions: false,
+                autocorrect: false,
+                onSubmitted: (_) => _login(),
+                suffix: IconButton(
+                  tooltip: context.t(
+                    _obscurePassword
+                        ? 'auth.mobileLogin.showPassword'
+                        : 'auth.mobileLogin.hidePassword',
+                    fallback:
+                        _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
                   ),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        SixStaggeredEntry(
-                          child: const _MobileLoginLoopAnimation(),
-                        ),
-                        SizedBox(height: 18),
-                        SixStaggeredEntry(
-                          delay: Duration(milliseconds: 70),
-                          child: _MobileAuthCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _MobileAuthField(
-                                  controller: _loginController,
-                                  hint: context.t('auth.email'),
-                                  label: context.t('auth.email'),
-                                  icon: Icons.alternate_email_rounded,
-                                  keyboardType: TextInputType.emailAddress,
-                                  textInputAction: TextInputAction.next,
-                                ),
-                                SizedBox(height: 14),
-                                _MobileAuthField(
-                                  controller: _passwordController,
-                                  hint: context.t('auth.password'),
-                                  label: context.t('auth.password'),
-                                  icon: Icons.lock_outline_rounded,
-                                  obscure: _obscurePassword,
-                                  textInputAction: TextInputAction.done,
-                                  onSubmitted: (_) => _login(),
-                                  suffix: IconButton(
-                                    tooltip: context.t('auth.password'),
-                                    icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_off_outlined
-                                          : Icons.visibility_outlined,
-                                      color: SixMobilePalette.mutedText,
-                                      size: 20,
-                                    ),
-                                    onPressed:
-                                        () => setState(
-                                          () =>
-                                              _obscurePassword =
-                                                  !_obscurePassword,
-                                        ),
-                                  ),
-                                ),
-                                SizedBox(height: 14),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton(
-                                    onPressed: _forgotPassword,
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: SixMobilePalette.accent,
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 6,
-                                      ),
-                                      tapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                    child: Text(
-                                      context.t('auth.forgotPassword'),
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 12.5,
-                                        decoration: TextDecoration.underline,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(height: 12),
-                                _MobilePrimaryButton(
-                                  label: context.t('auth.continue'),
-                                  onPressed: _login,
-                                  isLoading: _isLoading,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 18),
-                        SixStaggeredEntry(
-                          delay: Duration(milliseconds: 120),
-                          child: _MobileDivider(
-                            text: context.t('auth.noAccount'),
-                          ),
-                        ),
-                        SizedBox(height: 14),
-                        SixStaggeredEntry(
-                          delay: Duration(milliseconds: 160),
-                          child: _SocialButton(
-                            label: context.t('auth.createAccount'),
-                            onPressed: _createAccount,
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        SixStaggeredEntry(
-                          delay: Duration(milliseconds: 190),
-                          child: _SocialButton(
-                            label: context.t('auth.signInWithApple'),
-                            onPressed: _loginWithApple,
-                            leading: Icon(
-                              Icons.apple,
-                              color: SixMobilePalette.titleText,
-                              size: 22,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        SixStaggeredEntry(
-                          delay: Duration(milliseconds: 220),
-                          child: _SocialButton(
-                            label: context.t('auth.signInWithGoogle'),
-                            onPressed: _loginWithGoogle,
-                            leading: const _GoogleGlyph(),
-                          ),
-                        ),
-                        Spacer(),
-                        SizedBox(height: 18),
-                        _TermsText(
-                          prefix: context.t('auth.termsPrefix'),
-                          terms: context.t('auth.terms'),
-                        ),
-                      ],
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: colors.mutedText,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    setState(() => _obscurePassword = !_obscurePassword);
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _forgotPassword,
+                style: TextButton.styleFrom(
+                  foregroundColor: SixMobilePalette.brandBlue,
+                  minimumSize: const Size(44, 44),
+                ),
+                child: Text(
+                  context.t(
+                    'auth.forgotPassword',
+                    fallback: 'Esqueceu a senha?',
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 140),
+              child: SixoAppAuthPrimaryButton(
+                label: context.t(
+                  'auth.mobileLogin.submit',
+                  fallback: 'Entrar',
+                ),
+                onPressed: _login,
+                isLoading: _isLoading,
+              ),
+            ),
+            const SizedBox(height: 22),
+            SixoAppAuthDivider(
+              label: context.t(
+                'auth.mobileLogin.socialDivider',
+                fallback: 'ou continue com',
+              ),
+            ),
+            const SizedBox(height: 16),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 180),
+              child: SixoAppAuthSecondaryButton(
+                label: context.t(
+                  'auth.signInWithGoogle',
+                  fallback: 'Entrar com Google',
+                ),
+                onPressed: _isLoading ? null : _loginWithGoogle,
+                leading: const _GoogleGlyph(),
+              ),
+            ),
+            const SizedBox(height: 22),
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                Text(
+                  context.t(
+                    'auth.mobileLogin.createPrompt',
+                    fallback: 'Primeira vez no SixoApp?',
+                  ),
+                  style: TextStyle(
+                    color: colors.mutedText,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                TextButton(
+                  onPressed: _createAccount,
+                  child: Text(
+                    context.t(
+                      'auth.mobileEntry.createAction',
+                      fallback: 'Criar minha conta',
+                    ),
+                    style: const TextStyle(
+                      color: SixMobilePalette.brandBlue,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MobileLoginLoopAnimation extends StatefulWidget {
-  const _MobileLoginLoopAnimation();
-
-  @override
-  State<_MobileLoginLoopAnimation> createState() =>
-      _MobileLoginLoopAnimationState();
-}
-
-class _MobileLoginLoopAnimationState extends State<_MobileLoginLoopAnimation>
-    with SingleTickerProviderStateMixin {
-  static const Duration _loopDuration = Duration(milliseconds: 2400);
-  static const Duration _frameFadeDuration = Duration(milliseconds: 120);
-  static const double _aspectRatio = 1916 / 821;
-
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: _loopDuration)
-      ..repeat();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    for (final asset in SixAnimationAssets.loginFrames) {
-      unawaited(precacheImage(AssetImage(asset), context));
-    }
-    _syncMotionPreference();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  int _currentFrameIndex() {
-    final index =
-        (_controller.value * SixAnimationAssets.loginFrames.length).floor();
-    return index.clamp(0, SixAnimationAssets.loginFrames.length - 1).toInt();
-  }
-
-  void _syncMotionPreference() {
-    final mediaQuery = MediaQuery.maybeOf(context);
-    final reduceMotion =
-        mediaQuery?.disableAnimations == true ||
-        mediaQuery?.accessibleNavigation == true;
-
-    if (reduceMotion && _controller.isAnimating) {
-      _controller.stop();
-    } else if (!reduceMotion && !_controller.isAnimating) {
-      _controller.repeat();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final reduceMotion =
-        mediaQuery.disableAnimations || mediaQuery.accessibleNavigation;
-
-    return Semantics(
-      container: true,
-      image: true,
-      label: 'SixApp',
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: SixMobilePalette.primary,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: SixMobilePalette.primary),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: SixMobilePalette.heroShadow,
-              blurRadius: 10,
-              offset: Offset(0, 4),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _TermsText(
+              prefix: context.t(
+                'auth.termsPrefix',
+                fallback:
+                    'Ao continuar, declaro ter lido e concordo com os ',
+              ),
+              terms: context.t(
+                'auth.terms',
+                fallback: 'Termos de Uso e Política de Privacidade',
+              ),
             ),
           ],
         ),
-        child: AspectRatio(
-          aspectRatio: _aspectRatio,
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, _) {
-              final frameAsset =
-                  SixAnimationAssets.loginFrames[reduceMotion
-                      ? 0
-                      : _currentFrameIndex()];
-
-              return AnimatedSwitcher(
-                duration: reduceMotion ? Duration.zero : _frameFadeDuration,
-                switchInCurve: Curves.easeOut,
-                switchOutCurve: Curves.easeIn,
-                child: Image.asset(
-                  frameAsset,
-                  key: ValueKey<String>(frameAsset),
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.cover,
-                  alignment: Alignment.center,
-                  filterQuality: FilterQuality.high,
-                ),
-              );
-            },
-          ),
-        ),
       ),
-    );
-  }
-}
-
-class _MobileAuthCard extends StatelessWidget {
-  const _MobileAuthCard({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: SixMobilePalette.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: SixMobilePalette.border),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: SixMobilePalette.navigationShadow,
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-}
-
-class _MobileAuthField extends StatelessWidget {
-  const _MobileAuthField({
-    required this.controller,
-    required this.hint,
-    required this.label,
-    required this.icon,
-    this.suffix,
-    this.obscure = false,
-    this.keyboardType,
-    this.textInputAction,
-    this.onSubmitted,
-  });
-
-  final TextEditingController controller;
-  final String hint;
-  final String label;
-  final IconData icon;
-  final Widget? suffix;
-  final bool obscure;
-  final TextInputType? keyboardType;
-  final TextInputAction? textInputAction;
-  final ValueChanged<String>? onSubmitted;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      obscureText: obscure,
-      keyboardType: keyboardType,
-      textInputAction: textInputAction,
-      onSubmitted: onSubmitted,
-      cursorColor: SixMobilePalette.accent,
-      style: TextStyle(
-        color: SixMobilePalette.titleText,
-        fontSize: 14.5,
-        fontWeight: FontWeight.w600,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixIcon: Icon(icon, color: SixMobilePalette.mutedText, size: 20),
-        suffixIcon: suffix,
-        filled: true,
-        fillColor: SixMobilePalette.softNeutralSurface,
-        labelStyle: TextStyle(
-          color: SixMobilePalette.mutedText,
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-        ),
-        floatingLabelStyle: TextStyle(
-          color: SixMobilePalette.accent,
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-        ),
-        hintStyle: TextStyle(color: SixMobilePalette.mutedText, fontSize: 14),
-        contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: SixMobilePalette.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: SixMobilePalette.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: SixMobilePalette.highlightedBorder,
-            width: 1.4,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MobilePrimaryButton extends StatelessWidget {
-  const _MobilePrimaryButton({
-    required this.label,
-    required this.onPressed,
-    this.isLoading = false,
-  });
-
-  final String label;
-  final VoidCallback? onPressed;
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 52,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: SixMobilePalette.accent,
-          foregroundColor: SixMobilePalette.onPrimary,
-          disabledBackgroundColor: SixMobilePalette.accent.withValues(
-            alpha: 0.58,
-          ),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child:
-            isLoading
-                ? SizedBox(
-                  height: 22,
-                  width: 22,
-                  child: CircularProgressIndicator(
-                    color: SixMobilePalette.onPrimary,
-                    strokeWidth: 2.4,
-                  ),
-                )
-                : Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800),
-                ),
-      ),
-    );
-  }
-}
-
-class _MobileDivider extends StatelessWidget {
-  const _MobileDivider({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        Expanded(child: Divider(color: SixMobilePalette.border)),
-        ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.sizeOf(context).width * 0.52,
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: SixMobilePalette.mutedText,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-        Expanded(child: Divider(color: SixMobilePalette.border)),
-      ],
     );
   }
 }
@@ -567,73 +314,29 @@ class _TermsText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 8),
-      child: RichText(
-        textAlign: TextAlign.center,
-        text: TextSpan(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Text.rich(
+        TextSpan(
           style: TextStyle(
-            fontSize: 12,
-            color: SixMobilePalette.mutedText,
-            height: 1.5,
+            color: colors.mutedText,
+            fontSize: 11.5,
+            height: 1.45,
           ),
           children: <InlineSpan>[
             TextSpan(text: prefix),
             TextSpan(
               text: terms,
               style: TextStyle(
-                color: SixMobilePalette.titleText,
+                color: colors.titleText,
                 decoration: TextDecoration.underline,
                 fontWeight: FontWeight.w700,
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  const _SocialButton({
-    required this.label,
-    required this.onPressed,
-    this.leading,
-  });
-
-  final String label;
-  final VoidCallback onPressed;
-  final Widget? leading;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 50,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: SixMobilePalette.surface,
-          foregroundColor: SixMobilePalette.titleText,
-          side: BorderSide(color: SixMobilePalette.border),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          padding: EdgeInsets.symmetric(horizontal: 14),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (leading != null) ...[leading!, SizedBox(width: 10)],
-            Flexible(
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              ),
-            ),
-          ],
-        ),
+        textAlign: TextAlign.center,
       ),
     );
   }
@@ -644,12 +347,13 @@ class _GoogleGlyph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
+    return const Text(
       'G',
+      semanticsLabel: 'Google',
       style: TextStyle(
+        color: Color(0xFF4285F4),
         fontSize: 20,
         fontWeight: FontWeight.w800,
-        color: Color(0xFF4285F4),
       ),
     );
   }

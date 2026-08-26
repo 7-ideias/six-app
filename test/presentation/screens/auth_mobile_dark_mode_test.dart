@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/domain/models/aparencia_models.dart';
 import 'package:sixpos/presentation/screens/auth_entry_mobile.dart';
 import 'package:sixpos/presentation/screens/conta_criada_mobile.dart';
@@ -10,7 +11,6 @@ import 'package:sixpos/presentation/screens/create_account_mobile.dart';
 import 'package:sixpos/presentation/screens/esqueceu_senha_mobile.dart';
 import 'package:sixpos/presentation/screens/login_mobile.dart';
 import 'package:sixpos/presentation/screens/nova_senha_mobile.dart';
-import 'package:sixpos/presentation/screens/signup_onboarding_mobile.dart';
 import 'package:sixpos/presentation/screens/verificar_codigo_recuperacao_mobile.dart';
 
 void main() {
@@ -22,23 +22,22 @@ void main() {
     SixThemeResolver().atualizarTema(TemaSistema.claro);
   });
 
-  testWidgets('auth entry mobile keeps choice cards readable in dark mode', (
+  testWidgets('auth entry mobile uses SixoApp brand and opens account creation', (
     WidgetTester tester,
   ) async {
     await _pumpMobileScreen(tester, const AuthEntryMobile());
 
-    expect(_scaffoldBackground(tester), SixMobileColorScheme.dark.background);
-    expect(find.text('Bem-vindo ao Six'), findsOneWidget);
-    expect(find.text('Já tenho uma conta'), findsOneWidget);
-    expect(find.text('Sou novo por aqui'), findsOneWidget);
-    expect(
-      _hasDecoratedAncestorColor(
-        tester,
-        find.text('Já tenho uma conta'),
-        SixMobileColorScheme.dark.surface,
-      ),
-      isTrue,
-    );
+    expect(_scaffoldBackground(tester), SixMobilePalette.brandNavyDeep);
+    expect(find.text('Seu negócio, conectado.'), findsOneWidget);
+    expect(find.text('Entrar na minha conta'), findsOneWidget);
+    expect(find.text('Criar minha conta'), findsOneWidget);
+
+    await tester.tap(find.text('Criar minha conta'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byType(CreateAccountMobile), findsOneWidget);
+    expect(find.text('Crie seu espaço'), findsOneWidget);
   });
 
   testWidgets('login mobile renders fields and validation in dark mode', (
@@ -46,13 +45,10 @@ void main() {
   ) async {
     await _pumpMobileScreen(tester, const LoginPageMobile());
 
-    expect(_scaffoldBackground(tester), SixMobileColorScheme.dark.background);
+    expect(_scaffoldBackground(tester), SixMobilePalette.brandNavyDeep);
     expect(find.byType(TextField), findsNWidgets(2));
-    final Finder continueButtonText = find.text(
-      'Continuar',
-      skipOffstage: false,
-    );
-    expect(continueButtonText, findsOneWidget);
+    final Finder loginButtonText = find.text('Entrar', skipOffstage: false);
+    expect(loginButtonText, findsOneWidget);
 
     final TextField firstField = tester.widget<TextField>(
       find.byType(TextField).first,
@@ -61,36 +57,41 @@ void main() {
       firstField.decoration?.fillColor,
       SixMobileColorScheme.dark.softSurface,
     );
-    expect(firstField.cursorColor, SixMobileColorScheme.dark.accent);
+    expect(firstField.cursorColor, SixMobilePalette.brandBlue);
 
     await tester.scrollUntilVisible(
-      continueButtonText,
+      loginButtonText,
       180,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pump();
-    await tester.tap(find.text('Continuar'));
+    await tester.tap(loginButtonText);
     await tester.pump();
 
     expect(find.text('Por favor, preencha o e-mail e a senha'), findsOneWidget);
   });
 
-  testWidgets('signup onboarding mobile keeps cards readable in dark mode', (
+  testWidgets('login account action skips the removed signup onboarding', (
     WidgetTester tester,
   ) async {
-    await _pumpMobileScreen(tester, const SignupOnboardingMobile());
+    await _pumpMobileScreen(tester, const LoginPageMobile());
 
-    expect(_scaffoldBackground(tester), SixMobileColorScheme.dark.background);
-    expect(find.text('Comece pelo essencial'), findsOneWidget);
-    expect(find.text('Atendimento organizado'), findsOneWidget);
-    expect(
-      _hasDecoratedAncestorColor(
-        tester,
-        find.text('Atendimento organizado'),
-        SixMobileColorScheme.dark.surface,
-      ),
-      isTrue,
+    final Finder createAccount = find.text(
+      'Criar minha conta',
+      skipOffstage: false,
     );
+    await tester.scrollUntilVisible(
+      createAccount,
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+    await tester.tap(createAccount);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byType(CreateAccountMobile), findsOneWidget);
+    expect(find.text('Crie seu espaço'), findsOneWidget);
   });
 
   testWidgets('create account mobile renders form controls in dark mode', (
@@ -98,11 +99,11 @@ void main() {
   ) async {
     await _pumpMobileScreen(tester, const CreateAccountMobile());
 
-    expect(_scaffoldBackground(tester), SixMobileColorScheme.dark.background);
-    expect(find.text('Criar conta'), findsOneWidget);
+    expect(_scaffoldBackground(tester), SixMobilePalette.brandNavyDeep);
+    expect(find.text('Crie seu espaço'), findsOneWidget);
     expect(find.byType(TextField), findsNWidgets(3));
     expect(find.byType(Checkbox), findsOneWidget);
-    expect(find.widgetWithText(ElevatedButton, 'Cadastrar'), findsOneWidget);
+    expect(find.widgetWithText(ElevatedButton, 'Criar conta'), findsOneWidget);
 
     final TextField firstField = tester.widget<TextField>(
       find.byType(TextField).first,
@@ -243,19 +244,4 @@ Future<void> _pumpMobileScreen(WidgetTester tester, Widget child) async {
 
 Color? _scaffoldBackground(WidgetTester tester) {
   return tester.widget<Scaffold>(find.byType(Scaffold).first).backgroundColor;
-}
-
-bool _hasDecoratedAncestorColor(
-  WidgetTester tester,
-  Finder child,
-  Color expected,
-) {
-  return tester
-      .widgetList<Container>(
-        find.ancestor(of: child, matching: find.byType(Container)),
-      )
-      .any((Container container) {
-        final Decoration? decoration = container.decoration;
-        return decoration is BoxDecoration && decoration.color == expected;
-      });
 }

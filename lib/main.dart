@@ -50,7 +50,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (kIsWeb) usePathUrlStrategy();
   final SharedPreferences? prefs = await _loadSharedPreferences();
-  final hasSeenOnboarding = prefs?.getBool('hasSeenOnboarding') ?? false;
   final ThemeProvider themeProvider = await ThemeProvider.load(
     enableLocalPersistence: !kIsWeb,
     storage:
@@ -82,7 +81,7 @@ void main() async {
               )..initialize(),
         ),
       ],
-      child: MyApp(hasSeenOnboarding: hasSeenOnboarding),
+      child: const MyApp(),
     ),
   );
 
@@ -101,9 +100,7 @@ Future<SharedPreferences?> _loadSharedPreferences() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, required this.hasSeenOnboarding});
-
-  final bool hasSeenOnboarding;
+  const MyApp({super.key});
 
   String _resolveInitialWebRoute() {
     final Uri currentUri = Uri.base;
@@ -399,7 +396,7 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: kIsWeb ? null : SplashScreen(hasSeenOnboarding: hasSeenOnboarding),
+      home: kIsWeb ? null : const SplashScreen(),
       initialRoute: kIsWeb ? _resolveInitialWebRoute() : null,
       onGenerateRoute: kIsWeb ? _onGenerateWebRoute : null,
     );
