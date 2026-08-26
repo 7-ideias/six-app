@@ -330,25 +330,15 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
             Column(children: <Widget>[_header(), Expanded(child: _body())]),
             if (_processando)
               Positioned.fill(
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.all(24),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 460),
-                    child: SixBackendLoading(
-                      title: context.t(
-                        'vendasAReceber.processingTitle',
-                        fallback: 'Processando recebimento',
-                      ),
-                      subtitle: context.t(
-                        'vendasAReceber.processingSubtitle',
-                        fallback:
-                            'Aguarde enquanto a operação financeira é sincronizada.',
-                      ),
-                      animation: SixBackendLoadingAnimation.progressSweep,
-                      leadingIcon: Icons.sync_rounded,
-                    ),
+                child: _VendasAReceberProcessingOverlay(
+                  title: context.t(
+                    'vendasAReceber.processingTitle',
+                    fallback: 'Processando recebimento',
+                  ),
+                  subtitle: context.t(
+                    'vendasAReceber.processingSubtitle',
+                    fallback:
+                        'Aguarde enquanto a operação financeira é sincronizada.',
                   ),
                 ),
               ),
@@ -1600,6 +1590,114 @@ class _VendasAReceberWebWidgetState extends State<VendasAReceberWebWidget> {
         }
         return Colors.transparent;
       }),
+    );
+  }
+}
+
+class _VendasAReceberProcessingOverlay extends StatelessWidget {
+  const _VendasAReceberProcessingOverlay({
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent =
+        theme.brightness == Brightness.dark
+            ? const Color(0xFF60A5FA)
+            : theme.colorScheme.primary;
+
+    return IgnorePointer(
+      child: Container(
+        color: const Color(0xFF081120).withValues(alpha: 0.34),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 380),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: tokens.surfaceElevated,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: tokens.cardBorder),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: const Color(0xFF020617).withValues(alpha: 0.30),
+                  blurRadius: 32,
+                  offset: const Offset(0, 18),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.4,
+                              valueColor: AlwaysStoppedAnimation<Color>(accent),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              title,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: tokens.primaryText,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              subtitle,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: tokens.secondaryText,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      minHeight: 5,
+                      backgroundColor: accent.withValues(alpha: 0.12),
+                      valueColor: AlwaysStoppedAnimation<Color>(accent),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

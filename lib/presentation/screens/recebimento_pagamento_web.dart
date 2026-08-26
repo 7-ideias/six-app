@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -1397,6 +1396,26 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
     final bool podeAdicionar = _formasPagamento.any(
       (_FormaPagamentoWeb forma) => !forma.selecionado,
     );
+    final ButtonStyle addMethodStyle = OutlinedButton.styleFrom(
+      foregroundColor:
+          theme.brightness == Brightness.dark
+              ? theme.colorScheme.primary
+              : tokens.primaryText,
+      backgroundColor:
+          theme.brightness == Brightness.dark
+              ? theme.colorScheme.primary.withValues(alpha: 0.10)
+              : Colors.transparent,
+      disabledForegroundColor: tokens.disabledForeground,
+      disabledBackgroundColor: tokens.disabledBackground,
+      minimumSize: const Size.fromHeight(48),
+      side: BorderSide(
+        color:
+            theme.brightness == Brightness.dark
+                ? theme.colorScheme.primary.withValues(alpha: 0.34)
+                : tokens.cardBorder,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
@@ -1469,12 +1488,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
                 label: Text(
                   _txt('recebimento.adicionarForma', 'Adicionar forma'),
                 ),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
+                style: addMethodStyle,
               ),
             ),
         ],
@@ -1484,8 +1498,23 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
 
   Widget _buildBarraAcoes() {
     final AppLocalizations? l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool distribuicaoValida = _distribuicaoValida();
+    final ButtonStyle cancelActionStyle = TextButton.styleFrom(
+      foregroundColor:
+          theme.brightness == Brightness.dark
+              ? tokens.primaryText
+              : theme.colorScheme.primary,
+      backgroundColor:
+          theme.brightness == Brightness.dark
+              ? tokens.surfaceMuted.withValues(alpha: 0.92)
+              : theme.colorScheme.primary.withValues(alpha: 0.08),
+      disabledForegroundColor: tokens.disabledForeground,
+      disabledBackgroundColor: tokens.disabledBackground,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    );
 
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
@@ -1497,6 +1526,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
         mainAxisAlignment: MainAxisAlignment.end,
         children: <Widget>[
           TextButton(
+            style: cancelActionStyle,
             onPressed: _salvandoOperacao ? null : _fecharTela,
             child: Text(_txt('common.cancel', 'Cancelar')),
           ),
@@ -1604,6 +1634,20 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
                       color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
+                  if (_salvandoOperacao)
+                    Positioned.fill(
+                      child: _RecebimentoPagamentoProcessingOverlay(
+                        title:
+                            AppLocalizations.of(
+                              context,
+                            )?.pdvWebProcessingReceiveAction ??
+                            'Processando recebimento',
+                        subtitle: _txt(
+                          'vendasAReceber.processingSubtitle',
+                          'Aguarde enquanto a operação financeira é sincronizada.',
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -1710,6 +1754,114 @@ class _RecebimentoPagamentoRouteSurface extends StatelessWidget {
             );
           },
           child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _RecebimentoPagamentoProcessingOverlay extends StatelessWidget {
+  const _RecebimentoPagamentoProcessingOverlay({
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent =
+        theme.brightness == Brightness.dark
+            ? const Color(0xFF60A5FA)
+            : theme.colorScheme.primary;
+
+    return IgnorePointer(
+      child: Container(
+        color: const Color(0xFF081120).withValues(alpha: 0.34),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 380),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: tokens.surfaceElevated,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: tokens.cardBorder),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: const Color(0xFF020617).withValues(alpha: 0.30),
+                  blurRadius: 32,
+                  offset: const Offset(0, 18),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.4,
+                              valueColor: AlwaysStoppedAnimation<Color>(accent),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              title,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: tokens.primaryText,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              subtitle,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: tokens.secondaryText,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      minHeight: 5,
+                      backgroundColor: accent.withValues(alpha: 0.12),
+                      valueColor: AlwaysStoppedAnimation<Color>(accent),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

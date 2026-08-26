@@ -83,6 +83,8 @@ extension _PdvWeb on _PaginaPrincipalWebState {
           },
         );
 
+    await _sincronizarTotalVendasAReceber();
+
     if (!mounted) {
       return;
     }
@@ -382,6 +384,8 @@ extension _PdvWeb on _PaginaPrincipalWebState {
         ),
       );
 
+      if (!mounted) return;
+      await _sincronizarTotalVendasAReceber();
       if (!mounted) return;
       _limparVendaAposSucessoRecebimento();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2350,7 +2354,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
               OutlinedButton.icon(
                 onPressed: _abrirVendasAReceberWeb,
                 icon: const Icon(Icons.receipt_long_outlined),
-                label: Text(
+                label: _buildPdvSalesToReceiveLabel(
                   l10n?.pdvWebSalesToReceiveAction ?? 'Vendas a receber',
                 ),
                 style: _pdvOutlinedCtaStyle(),
@@ -2385,6 +2389,20 @@ extension _PdvWeb on _PaginaPrincipalWebState {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPdvSalesToReceiveLabel(String title) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final int pendentes = _totalVendasAReceberPendentes;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 6,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: <Widget>[
+        Text(title),
+        _PdvSalesToReceiveBadge(count: pendentes, tokens: tokens),
+      ],
     );
   }
 
@@ -2778,6 +2796,139 @@ class _PdvAnimatedCurrencyTextState extends State<_PdvAnimatedCurrencyText> {
           style: widget.style,
         );
       },
+    );
+  }
+}
+
+class _PdvSalesToReceiveBadge extends StatefulWidget {
+  const _PdvSalesToReceiveBadge({required this.count, required this.tokens});
+
+  final int count;
+  final WebThemeTokens tokens;
+
+  @override
+  State<_PdvSalesToReceiveBadge> createState() =>
+      _PdvSalesToReceiveBadgeState();
+}
+
+class _PdvSalesToReceiveBadgeState extends State<_PdvSalesToReceiveBadge>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  bool get _shouldPulse => widget.count > 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1450),
+    );
+    _syncAnimation();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PdvSalesToReceiveBadge oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.count != widget.count) {
+      _syncAnimation();
+    }
+  }
+
+  void _syncAnimation() {
+    if (_shouldPulse) {
+      _controller.repeat(reverse: true);
+    } else {
+      _controller
+        ..stop()
+        ..value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final Color accent =
+        widget.count > 0
+            ? widget.tokens.warning
+            : widget.tokens.selectedBorder.withValues(alpha: 0.92);
+    final Color background =
+        widget.count > 0
+            ? Color.alphaBlend(
+              accent.withValues(
+                alpha: theme.brightness == Brightness.dark ? 0.22 : 0.14,
+              ),
+              widget.tokens.cardBackground,
+            )
+            : widget.tokens.selectedBackground;
+    final Color textColor =
+        widget.count > 0
+            ? widget.tokens.primaryText
+            : widget.tokens.secondaryText;
+    final Widget badge = AnimatedBuilder(
+      animation: _controller,
+      builder: (BuildContext context, Widget? child) {
+        final double pulse =
+            !_shouldPulse || reduceMotion ? 0 : _controller.value;
+        final double scale = 1 + (pulse * 0.08);
+        final double glow = 0.14 + (pulse * 0.12);
+        return Transform.scale(
+          scale: scale,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: accent.withValues(alpha: 0.9)),
+              boxShadow:
+                  !_shouldPulse
+                      ? const <BoxShadow>[]
+                      : <BoxShadow>[
+                        BoxShadow(
+                          color: accent.withValues(alpha: glow),
+                          blurRadius: 14 + (pulse * 10),
+                          spreadRadius: pulse * 1.5,
+                        ),
+                      ],
+            ),
+            child: child,
+          ),
+        );
+      },
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: widget.count > 9 ? 10 : 9,
+          vertical: 4,
+        ),
+        child: Text(
+          widget.count.toString(),
+          style: TextStyle(
+            color: textColor,
+            fontSize: widget.count > 99 ? 11 : 12,
+            fontWeight: FontWeight.w900,
+            height: 1,
+          ),
+        ),
+      ),
+    );
+
+    return TweenAnimationBuilder<double>(
+      key: ValueKey<int>(widget.count),
+      tween: Tween<double>(begin: 0.86, end: 1),
+      duration:
+          reduceMotion ? Duration.zero : const Duration(milliseconds: 240),
+      curve: Curves.easeOutBack,
+      builder: (BuildContext context, double value, Widget? child) {
+        return Transform.scale(scale: value, child: child);
+      },
+      child: badge,
     );
   }
 }
