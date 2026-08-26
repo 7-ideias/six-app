@@ -6,12 +6,9 @@ import 'package:sixpos/presentation/components/mobile/sixoapp_mobile_loading_sce
 import 'package:sixpos/presentation/components/six_web_splash_scene.dart';
 import 'package:sixpos/presentation/screens/auth_gate_mobile.dart';
 import 'package:sixpos/presentation/screens/login_page_web.dart';
-import 'package:sixpos/presentation/screens/on_boarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key, this.hasSeenOnboarding = true});
-
-  final bool hasSeenOnboarding;
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -43,7 +40,7 @@ class _SplashScreenState extends State<SplashScreen> {
       return LoginPageWeb();
     }
 
-    return widget.hasSeenOnboarding ? AuthGateMobile() : OnboardingScreen();
+    return const AuthGateMobile();
   }
 
   @override

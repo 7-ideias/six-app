@@ -883,6 +883,50 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.termsPrefix':
         'Ao clicar em "Continuar", declaro ter lido e concordo com os ',
     'auth.terms': 'Termos de Uso e Política de Privacidade',
+    'auth.mobileEntry.title': 'Seu negócio, conectado.',
+    'auth.mobileEntry.subtitle':
+        'Vendas, estoque e gestão no mesmo ritmo — onde você estiver.',
+    'auth.mobileEntry.sales': 'Vendas',
+    'auth.mobileEntry.stock': 'Estoque',
+    'auth.mobileEntry.management': 'Gestão',
+    'auth.mobileEntry.continueTitle': 'Como deseja continuar?',
+    'auth.mobileEntry.loginAction': 'Entrar na minha conta',
+    'auth.mobileEntry.createAction': 'Criar minha conta',
+    'auth.mobileEntry.securityNote':
+        'Acesso seguro e dados sempre protegidos.',
+    'auth.mobileLogin.title': 'Bem-vindo de volta',
+    'auth.mobileLogin.subtitle': 'Entre para continuar de onde parou.',
+    'auth.mobileLogin.formTitle': 'Acesse seu espaço',
+    'auth.mobileLogin.emailHint': 'voce@empresa.com',
+    'auth.mobileLogin.passwordHint': 'Digite sua senha',
+    'auth.mobileLogin.showPassword': 'Mostrar senha',
+    'auth.mobileLogin.hidePassword': 'Ocultar senha',
+    'auth.mobileLogin.submit': 'Entrar',
+    'auth.mobileLogin.socialDivider': 'ou continue com',
+    'auth.mobileLogin.createPrompt': 'Primeira vez no SixoApp?',
+    'auth.mobileCreate.title': 'Crie seu espaço',
+    'auth.mobileCreate.subtitle':
+        'Comece simples. O SixoApp cresce junto com seu negócio.',
+    'auth.mobileCreate.formTitle': 'Sua conta começa aqui',
+    'auth.mobileCreate.formNote': 'Leva menos de um minuto.',
+    'auth.mobileCreate.loginLabel': 'Login',
+    'auth.mobileCreate.loginHint': 'Escolha seu login de acesso',
+    'auth.mobileCreate.passwordLabel': 'Senha',
+    'auth.mobileCreate.passwordHint': 'Mínimo de 8 caracteres',
+    'auth.mobileCreate.confirmPasswordLabel': 'Confirme a senha',
+    'auth.mobileCreate.confirmPasswordHint': 'Repita sua senha',
+    'auth.mobileCreate.acceptTerms':
+        'Concordo com os Termos e a Política de Privacidade.',
+    'auth.mobileCreate.submit': 'Criar conta',
+    'auth.mobileCreate.loginPrompt': 'Já tem uma conta? Entrar',
+    'auth.mobileCreate.acceptTermsError':
+        'Aceite os Termos e Condições para continuar.',
+    'auth.mobileCreate.requiredFieldsError': 'Preencha todos os campos.',
+    'auth.mobileCreate.passwordLengthError':
+        'A senha precisa ter ao menos 8 caracteres.',
+    'auth.mobileCreate.passwordMismatchInline': 'As senhas não coincidem.',
+    'auth.mobileCreate.passwordMismatchError':
+        'As senhas informadas não são iguais. Verifique e tente novamente.',
     'auth.entry.title': 'Bem-vindo ao Six',
     'auth.entry.subtitle':
         'Antes de continuar, diga como deseja acessar o app.',
@@ -2897,6 +2941,50 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.termsPrefix':
         'By clicking "Continue", I confirm that I have read and agree with the ',
     'auth.terms': 'Terms of Use and Privacy Policy',
+    'auth.mobileEntry.title': 'Your business, connected.',
+    'auth.mobileEntry.subtitle':
+        'Sales, inventory and management moving together — wherever you are.',
+    'auth.mobileEntry.sales': 'Sales',
+    'auth.mobileEntry.stock': 'Inventory',
+    'auth.mobileEntry.management': 'Management',
+    'auth.mobileEntry.continueTitle': 'How would you like to continue?',
+    'auth.mobileEntry.loginAction': 'Sign in to my account',
+    'auth.mobileEntry.createAction': 'Create my account',
+    'auth.mobileEntry.securityNote':
+        'Secure access with your data always protected.',
+    'auth.mobileLogin.title': 'Welcome back',
+    'auth.mobileLogin.subtitle': 'Sign in to continue where you left off.',
+    'auth.mobileLogin.formTitle': 'Access your workspace',
+    'auth.mobileLogin.emailHint': 'you@company.com',
+    'auth.mobileLogin.passwordHint': 'Enter your password',
+    'auth.mobileLogin.showPassword': 'Show password',
+    'auth.mobileLogin.hidePassword': 'Hide password',
+    'auth.mobileLogin.submit': 'Sign in',
+    'auth.mobileLogin.socialDivider': 'or continue with',
+    'auth.mobileLogin.createPrompt': 'New to SixoApp?',
+    'auth.mobileCreate.title': 'Create your workspace',
+    'auth.mobileCreate.subtitle':
+        'Start simple. SixoApp grows with your business.',
+    'auth.mobileCreate.formTitle': 'Your account starts here',
+    'auth.mobileCreate.formNote': 'It takes less than a minute.',
+    'auth.mobileCreate.loginLabel': 'Login',
+    'auth.mobileCreate.loginHint': 'Choose your access login',
+    'auth.mobileCreate.passwordLabel': 'Password',
+    'auth.mobileCreate.passwordHint': 'At least 8 characters',
+    'auth.mobileCreate.confirmPasswordLabel': 'Confirm password',
+    'auth.mobileCreate.confirmPasswordHint': 'Repeat your password',
+    'auth.mobileCreate.acceptTerms':
+        'I agree to the Terms and Privacy Policy.',
+    'auth.mobileCreate.submit': 'Create account',
+    'auth.mobileCreate.loginPrompt': 'Already have an account? Sign in',
+    'auth.mobileCreate.acceptTermsError':
+        'Accept the Terms and Conditions to continue.',
+    'auth.mobileCreate.requiredFieldsError': 'Fill in all fields.',
+    'auth.mobileCreate.passwordLengthError':
+        'The password must be at least 8 characters long.',
+    'auth.mobileCreate.passwordMismatchInline': 'Passwords do not match.',
+    'auth.mobileCreate.passwordMismatchError':
+        'The passwords are different. Check them and try again.',
     'auth.entry.title': 'Welcome to Six',
     'auth.entry.subtitle':
         'Before continuing, choose how you want to access the app.',
@@ -4254,6 +4342,51 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.termsPrefix':
         'Al hacer clic en "Continuar", declaro que leí y acepto los ',
     'auth.terms': 'Términos de Uso y Política de Privacidad',
+    'auth.mobileEntry.title': 'Tu negocio, conectado.',
+    'auth.mobileEntry.subtitle':
+        'Ventas, inventario y gestión al mismo ritmo — estés donde estés.',
+    'auth.mobileEntry.sales': 'Ventas',
+    'auth.mobileEntry.stock': 'Inventario',
+    'auth.mobileEntry.management': 'Gestión',
+    'auth.mobileEntry.continueTitle': '¿Cómo quieres continuar?',
+    'auth.mobileEntry.loginAction': 'Entrar en mi cuenta',
+    'auth.mobileEntry.createAction': 'Crear mi cuenta',
+    'auth.mobileEntry.securityNote':
+        'Acceso seguro y datos siempre protegidos.',
+    'auth.mobileLogin.title': 'Bienvenido de nuevo',
+    'auth.mobileLogin.subtitle': 'Entra para continuar donde lo dejaste.',
+    'auth.mobileLogin.formTitle': 'Accede a tu espacio',
+    'auth.mobileLogin.emailHint': 'tu@empresa.com',
+    'auth.mobileLogin.passwordHint': 'Ingresa tu contraseña',
+    'auth.mobileLogin.showPassword': 'Mostrar contraseña',
+    'auth.mobileLogin.hidePassword': 'Ocultar contraseña',
+    'auth.mobileLogin.submit': 'Entrar',
+    'auth.mobileLogin.socialDivider': 'o continúa con',
+    'auth.mobileLogin.createPrompt': '¿Primera vez en SixoApp?',
+    'auth.mobileCreate.title': 'Crea tu espacio',
+    'auth.mobileCreate.subtitle':
+        'Empieza simple. SixoApp crece junto con tu negocio.',
+    'auth.mobileCreate.formTitle': 'Tu cuenta empieza aquí',
+    'auth.mobileCreate.formNote': 'Toma menos de un minuto.',
+    'auth.mobileCreate.loginLabel': 'Usuario',
+    'auth.mobileCreate.loginHint': 'Elige tu usuario de acceso',
+    'auth.mobileCreate.passwordLabel': 'Contraseña',
+    'auth.mobileCreate.passwordHint': 'Mínimo de 8 caracteres',
+    'auth.mobileCreate.confirmPasswordLabel': 'Confirma la contraseña',
+    'auth.mobileCreate.confirmPasswordHint': 'Repite tu contraseña',
+    'auth.mobileCreate.acceptTerms':
+        'Acepto los Términos y la Política de Privacidad.',
+    'auth.mobileCreate.submit': 'Crear cuenta',
+    'auth.mobileCreate.loginPrompt': '¿Ya tienes una cuenta? Entrar',
+    'auth.mobileCreate.acceptTermsError':
+        'Acepta los Términos y Condiciones para continuar.',
+    'auth.mobileCreate.requiredFieldsError': 'Completa todos los campos.',
+    'auth.mobileCreate.passwordLengthError':
+        'La contraseña debe tener al menos 8 caracteres.',
+    'auth.mobileCreate.passwordMismatchInline':
+        'Las contraseñas no coinciden.',
+    'auth.mobileCreate.passwordMismatchError':
+        'Las contraseñas son diferentes. Verifícalas e inténtalo de nuevo.',
     'auth.entry.title': 'Bienvenido a Six',
     'auth.entry.subtitle':
         'Antes de continuar, elige cómo quieres acceder a la app.',

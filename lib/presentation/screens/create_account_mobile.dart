@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:sixpos/design_system/components/auth/six_auth_input.dart';
-import 'package:sixpos/design_system/components/auth/six_auth_primary_button.dart';
-import 'package:sixpos/design_system/components/auth/six_auth_title.dart';
-import 'package:sixpos/design_system/tokens/auth_tokens.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/mobile/sixoapp_auth_mobile_kit.dart';
+import 'package:sixpos/presentation/components/mobile_motion.dart';
 
 import '../../core/services/nova_empresa_service.dart';
 import 'conta_criada_mobile.dart';
@@ -16,9 +17,10 @@ class CreateAccountMobile extends StatefulWidget {
 }
 
 class _CreateAccountMobileState extends State<CreateAccountMobile> {
-  final TextEditingController _loginCtrl = TextEditingController();
-  final TextEditingController _passwordCtrl = TextEditingController();
-  final TextEditingController _confirmPasswordCtrl = TextEditingController();
+  final TextEditingController _loginController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final NovaEmpresaService _novaEmpresaService = NovaEmpresaService();
 
   bool _obscurePassword = true;
@@ -29,60 +31,98 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
 
   @override
   void dispose() {
-    _loginCtrl.dispose();
-    _passwordCtrl.dispose();
-    _confirmPasswordCtrl.dispose();
+    _loginController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _showSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _clearPasswordMismatchError(String _) {
+    if (_passwordMismatchError == null) return;
+    setState(() => _passwordMismatchError = null);
   }
 
   Future<void> _signUp() async {
     if (!_agreeTerms) {
-      _showSnack('Aceite os Termos e Condições para continuar');
+      _showSnack(
+        context.t(
+          'auth.mobileCreate.acceptTermsError',
+          fallback: 'Aceite os Termos e Condições para continuar.',
+        ),
+      );
       return;
     }
 
-    final login = _loginCtrl.text.trim();
-    final password = _passwordCtrl.text;
-    final confirmPassword = _confirmPasswordCtrl.text;
+    final String login = _loginController.text.trim();
+    final String password = _passwordController.text;
+    final String confirmPassword = _confirmPasswordController.text;
 
     if (login.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-      _showSnack('Preencha todos os campos');
+      _showSnack(
+        context.t(
+          'auth.mobileCreate.requiredFieldsError',
+          fallback: 'Preencha todos os campos.',
+        ),
+      );
       return;
     }
 
     if (password.length < 8) {
-      _showSnack('A senha precisa ter ao menos 8 caracteres');
+      _showSnack(
+        context.t(
+          'auth.mobileCreate.passwordLengthError',
+          fallback: 'A senha precisa ter ao menos 8 caracteres.',
+        ),
+      );
       return;
     }
 
     if (password != confirmPassword) {
-      setState(() => _passwordMismatchError = 'As senhas não coincidem.');
+      setState(() {
+        _passwordMismatchError = context.t(
+          'auth.mobileCreate.passwordMismatchInline',
+          fallback: 'As senhas não coincidem.',
+        );
+      });
       _showSnack(
-        'As senhas informadas não são iguais. Verifique e tente novamente.',
+        context.t(
+          'auth.mobileCreate.passwordMismatchError',
+          fallback:
+              'As senhas informadas não são iguais. Verifique e tente novamente.',
+        ),
       );
       return;
     }
 
-    setState(() => _isLoading = true);
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _passwordMismatchError = null;
+      _isLoading = true;
+    });
     try {
-      await _novaEmpresaService.criarNovaEmpresa(login: login, senha: password);
+      await _novaEmpresaService.criarNovaEmpresa(
+        login: login,
+        senha: password,
+      );
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const ContaCriadaMobile()),
-        (route) => false,
+        MaterialPageRoute<void>(
+          builder: (_) => const ContaCriadaMobile(),
+        ),
+        (Route<dynamic> route) => false,
       );
-    } catch (e) {
-      _showSnack(e.toString().replaceAll('Exception: ', ''));
+    } catch (error) {
+      _showSnack(error.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
-  void _goBack() => Navigator.pop(context);
 
   void _goToLogin() {
     Navigator.of(context).pushReplacement(
@@ -92,149 +132,285 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
 
   @override
   Widget build(BuildContext context) {
-    final Color backgroundColor = SixAuthTokens.shellBackground(context);
-    final Color textColor = SixAuthTokens.textPrimary(context);
-    final Color mutedColor = SixAuthTokens.dividerText(context);
-    final Color primary = SixAuthTokens.interactiveColor(context);
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final String backLabel = context.t('common.back', fallback: 'Voltar');
 
-    return Scaffold(
-      backgroundColor: backgroundColor,
-      appBar: AppBar(
-        backgroundColor: backgroundColor,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_rounded, color: textColor, size: 20),
-          onPressed: _goBack,
-        ),
+    return SixoAppAuthMobileScaffold(
+      title: context.t(
+        'auth.mobileCreate.title',
+        fallback: 'Crie seu espaço',
       ),
-      body: SafeArea(
-        top: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-          children: [
-            const SixAuthTitle(
-              title: 'Criar conta',
-              subtitle: 'Informe um login e uma senha para começar',
-            ),
-            const SizedBox(height: 28),
-            SixAuthInput(
-              label: 'Login',
-              hint: 'Seu login de acesso',
-              controller: _loginCtrl,
-              textInputAction: TextInputAction.next,
-              keyboardType: TextInputType.text,
-            ),
-            const SizedBox(height: 14),
-            SixAuthInput(
-              label: 'Senha',
-              hint: 'Mínimo 8 caracteres',
-              controller: _passwordCtrl,
-              obscure: _obscurePassword,
-              textInputAction: TextInputAction.next,
-              suffix: IconButton(
-                icon: Icon(
-                  _obscurePassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  color: mutedColor,
-                  size: 20,
-                ),
-                onPressed:
-                    () => setState(() => _obscurePassword = !_obscurePassword),
-              ),
-            ),
-            const SizedBox(height: 14),
-            SixAuthInput(
-              label: 'Confirme a senha',
-              hint: 'Repita sua senha',
-              controller: _confirmPasswordCtrl,
-              obscure: _obscureConfirmPassword,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _signUp(),
-              suffix: IconButton(
-                icon: Icon(
-                  _obscureConfirmPassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  color: mutedColor,
-                  size: 20,
-                ),
-                onPressed:
-                    () => setState(
-                      () => _obscureConfirmPassword = !_obscureConfirmPassword,
+      subtitle: context.t(
+        'auth.mobileCreate.subtitle',
+        fallback: 'Comece simples. O SixoApp cresce junto com seu negócio.',
+      ),
+      compactHeader: true,
+      onBack: () => Navigator.of(context).maybePop(),
+      backSemanticLabel: backLabel,
+      body: AutofillGroup(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            SixStaggeredEntry(
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: SixMobilePalette.brandBlue.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(14),
                     ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: SixMobilePalette.brandBlue,
+                      size: 21,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          context.t(
+                            'auth.mobileCreate.formTitle',
+                            fallback: 'Sua conta começa aqui',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: colors.titleText,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          context.t(
+                            'auth.mobileCreate.formNote',
+                            fallback: 'Leva menos de um minuto.',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: colors.mutedText,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            if (_passwordMismatchError != null) ...[
-              const SizedBox(height: 6),
-              Padding(
-                padding: const EdgeInsets.only(left: 4),
-                child: Text(
-                  _passwordMismatchError!,
-                  style: TextStyle(
-                    color: SixAuthTokens.errorText(context),
-                    fontSize: 12,
+            const SizedBox(height: 20),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 50),
+              child: SixoAppAuthField(
+                controller: _loginController,
+                label: context.t(
+                  'auth.mobileCreate.loginLabel',
+                  fallback: 'Login',
+                ),
+                hint: context.t(
+                  'auth.mobileCreate.loginHint',
+                  fallback: 'Escolha seu login de acesso',
+                ),
+                icon: Icons.person_outline_rounded,
+                textInputAction: TextInputAction.next,
+                autofillHints: const <String>[AutofillHints.newUsername],
+                autocorrect: false,
+              ),
+            ),
+            const SizedBox(height: 14),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 90),
+              child: SixoAppAuthField(
+                controller: _passwordController,
+                label: context.t(
+                  'auth.mobileCreate.passwordLabel',
+                  fallback: 'Senha',
+                ),
+                hint: context.t(
+                  'auth.mobileCreate.passwordHint',
+                  fallback: 'Mínimo de 8 caracteres',
+                ),
+                icon: Icons.lock_outline_rounded,
+                obscure: _obscurePassword,
+                textInputAction: TextInputAction.next,
+                onChanged: _clearPasswordMismatchError,
+                autofillHints: const <String>[AutofillHints.newPassword],
+                enableSuggestions: false,
+                autocorrect: false,
+                suffix: _PasswordVisibilityButton(
+                  obscure: _obscurePassword,
+                  onPressed: () {
+                    setState(() => _obscurePassword = !_obscurePassword);
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 130),
+              child: SixoAppAuthField(
+                controller: _confirmPasswordController,
+                label: context.t(
+                  'auth.mobileCreate.confirmPasswordLabel',
+                  fallback: 'Confirme a senha',
+                ),
+                hint: context.t(
+                  'auth.mobileCreate.confirmPasswordHint',
+                  fallback: 'Repita sua senha',
+                ),
+                icon: Icons.verified_user_outlined,
+                obscure: _obscureConfirmPassword,
+                textInputAction: TextInputAction.done,
+                onChanged: _clearPasswordMismatchError,
+                autofillHints: const <String>[AutofillHints.newPassword],
+                enableSuggestions: false,
+                autocorrect: false,
+                onSubmitted: (_) => _signUp(),
+                suffix: _PasswordVisibilityButton(
+                  obscure: _obscureConfirmPassword,
+                  onPressed: () {
+                    setState(
+                      () => _obscureConfirmPassword =
+                          !_obscureConfirmPassword,
+                    );
+                  },
+                ),
+              ),
+            ),
+            if (_passwordMismatchError != null) ...<Widget>[
+              const SizedBox(height: 7),
+              Semantics(
+                liveRegion: true,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Text(
+                    _passwordMismatchError!,
+                    style: TextStyle(
+                      color: colors.error,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
             ],
-            const SizedBox(height: 18),
-            InkWell(
-              onTap: () => setState(() => _agreeTerms = !_agreeTerms),
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: Checkbox(
-                        value: _agreeTerms,
-                        onChanged:
-                            (v) => setState(() => _agreeTerms = v ?? false),
-                        activeColor: primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
+            const SizedBox(height: 16),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 170),
+              child: Semantics(
+                checked: _agreeTerms,
+                button: true,
+                child: InkWell(
+                  onTap: () => setState(() => _agreeTerms = !_agreeTerms),
+                  borderRadius: BorderRadius.circular(14),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: <Widget>[
+                        SizedBox.square(
+                          dimension: 32,
+                          child: Checkbox(
+                            value: _agreeTerms,
+                            onChanged: (bool? value) {
+                              setState(() => _agreeTerms = value ?? false);
+                            },
+                            activeColor: SixMobilePalette.brandBlue,
+                            checkColor: SixMobilePalette.onPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                          ),
                         ),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Concordo com os Termos e Condições',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          color: textColor,
-                          height: 1.4,
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            context.t(
+                              'auth.mobileCreate.acceptTerms',
+                              fallback:
+                                  'Concordo com os Termos e a Política de Privacidade.',
+                            ),
+                            style: TextStyle(
+                              color: colors.titleText,
+                              fontSize: 13,
+                              height: 1.4,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            SixAuthPrimaryButton(
-              label: 'Cadastrar',
-              onPressed: _signUp,
-              isLoading: _isLoading,
+            const SizedBox(height: 18),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 210),
+              child: SixoAppAuthPrimaryButton(
+                label: context.t(
+                  'auth.mobileCreate.submit',
+                  fallback: 'Criar conta',
+                ),
+                onPressed: _signUp,
+                isLoading: _isLoading,
+              ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             Center(
               child: TextButton(
                 onPressed: _goToLogin,
                 child: Text(
-                  'Já tem uma conta? Entrar',
-                  style: TextStyle(color: primary, fontWeight: FontWeight.w700),
+                  context.t(
+                    'auth.mobileCreate.loginPrompt',
+                    fallback: 'Já tem uma conta? Entrar',
+                  ),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: SixMobilePalette.brandBlue,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PasswordVisibilityButton extends StatelessWidget {
+  const _PasswordVisibilityButton({
+    required this.obscure,
+    required this.onPressed,
+  });
+
+  final bool obscure;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    return IconButton(
+      tooltip: context.t(
+        obscure
+            ? 'auth.mobileLogin.showPassword'
+            : 'auth.mobileLogin.hidePassword',
+        fallback: obscure ? 'Mostrar senha' : 'Ocultar senha',
+      ),
+      onPressed: onPressed,
+      icon: Icon(
+        obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+        color: colors.mutedText,
+        size: 20,
       ),
     );
   }
