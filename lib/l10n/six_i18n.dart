@@ -127,6 +127,27 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.updatedAt': 'Atualizado em',
     'common.lastUpdatedAt': 'Última atualização às',
     'common.notInformed': 'Não informada',
+    'pdv.quantityEditor.title': 'Editar quantidade',
+    'pdv.quantityEditor.tooltip': 'Editar quantidade',
+    'pdv.quantityEditor.subtitle':
+        'Revise o item e aplique a nova quantidade. O subtotal e o total da venda serão recalculados imediatamente.',
+    'pdv.quantityEditor.codeLabel': 'Código',
+    'pdv.quantityEditor.currentLabel': 'Quantidade atual',
+    'pdv.quantityEditor.currentHint':
+        'Ajuste fino continua disponível nos botões laterais.',
+    'pdv.quantityEditor.fieldLabel': 'Nova quantidade',
+    'pdv.quantityEditor.hint': 'Digite a quantidade desejada para este item.',
+    'pdv.quantityEditor.invalid':
+        'Informe uma quantidade inteira maior que zero.',
+    'pdv.quantityEditor.effectHint':
+        'A alteração atualiza o subtotal do item e o total da venda imediatamente.',
+    'pdv.quantityEditor.confirm': 'Aplicar quantidade',
+    'pdv.quantityEditor.processing': 'Aplicando quantidade...',
+    'pdv.quantityEditor.successTitle': 'Quantidade atualizada',
+    'pdv.quantityEditor.successMessage':
+        'O item foi recalculado e a venda já reflete a nova quantidade.',
+    'pdv.quantityEditor.error':
+        'Não foi possível atualizar a quantidade agora. Tente novamente em alguns instantes.',
     'recebimento.valorEmAberto': 'Valor em aberto',
     'recebimento.summaryType': 'Tipo',
     'recebimento.total': 'Total',
@@ -920,8 +941,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileEntry.continueTitle': 'Como deseja continuar?',
     'auth.mobileEntry.loginAction': 'Entrar na minha conta',
     'auth.mobileEntry.createAction': 'Criar minha conta',
-    'auth.mobileEntry.securityNote':
-        'Acesso seguro e dados sempre protegidos.',
+    'auth.mobileEntry.securityNote': 'Acesso seguro e dados sempre protegidos.',
     'auth.mobileLogin.title': 'Bem-vindo de volta',
     'auth.mobileLogin.subtitle': 'Entre para continuar de onde parou.',
     'auth.mobileLogin.formTitle': 'Acesse seu espaço',
@@ -1931,6 +1951,26 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.updatedAt': 'Updated at',
     'common.lastUpdatedAt': 'Last updated at',
     'common.notInformed': 'Not informed',
+    'pdv.quantityEditor.title': 'Edit quantity',
+    'pdv.quantityEditor.tooltip': 'Edit quantity',
+    'pdv.quantityEditor.subtitle':
+        'Review the item and apply the new quantity. The item subtotal and sale total will be recalculated immediately.',
+    'pdv.quantityEditor.codeLabel': 'Code',
+    'pdv.quantityEditor.currentLabel': 'Current quantity',
+    'pdv.quantityEditor.currentHint':
+        'Fine adjustment remains available on the side buttons.',
+    'pdv.quantityEditor.fieldLabel': 'New quantity',
+    'pdv.quantityEditor.hint': 'Enter the desired quantity for this item.',
+    'pdv.quantityEditor.invalid': 'Enter a whole quantity greater than zero.',
+    'pdv.quantityEditor.effectHint':
+        'The change updates the item subtotal and the sale total immediately.',
+    'pdv.quantityEditor.confirm': 'Apply quantity',
+    'pdv.quantityEditor.processing': 'Applying quantity...',
+    'pdv.quantityEditor.successTitle': 'Quantity updated',
+    'pdv.quantityEditor.successMessage':
+        'The item was recalculated and the sale already reflects the new quantity.',
+    'pdv.quantityEditor.error':
+        'Could not update the quantity right now. Try again in a moment.',
     'recebimento.valorEmAberto': 'Outstanding amount',
     'recebimento.summaryType': 'Type',
     'recebimento.total': 'Full',
@@ -3004,8 +3044,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileCreate.passwordHint': 'At least 8 characters',
     'auth.mobileCreate.confirmPasswordLabel': 'Confirm password',
     'auth.mobileCreate.confirmPasswordHint': 'Repeat your password',
-    'auth.mobileCreate.acceptTerms':
-        'I agree to the Terms and Privacy Policy.',
+    'auth.mobileCreate.acceptTerms': 'I agree to the Terms and Privacy Policy.',
     'auth.mobileCreate.submit': 'Create account',
     'auth.mobileCreate.loginPrompt': 'Already have an account? Sign in',
     'auth.mobileCreate.acceptTermsError':
@@ -3623,6 +3662,27 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.updatedAt': 'Actualizado el',
     'common.lastUpdatedAt': 'Última actualización a las',
     'common.notInformed': 'No informado',
+    'pdv.quantityEditor.title': 'Editar cantidad',
+    'pdv.quantityEditor.tooltip': 'Editar cantidad',
+    'pdv.quantityEditor.subtitle':
+        'Revisa el artículo y aplica la nueva cantidad. El subtotal del artículo y el total de la venta se recalcularán de inmediato.',
+    'pdv.quantityEditor.codeLabel': 'Código',
+    'pdv.quantityEditor.currentLabel': 'Cantidad actual',
+    'pdv.quantityEditor.currentHint':
+        'El ajuste fino sigue disponible en los botones laterales.',
+    'pdv.quantityEditor.fieldLabel': 'Nueva cantidad',
+    'pdv.quantityEditor.hint':
+        'Ingresa la cantidad deseada para este artículo.',
+    'pdv.quantityEditor.invalid': 'Ingresa una cantidad entera mayor que cero.',
+    'pdv.quantityEditor.effectHint':
+        'El cambio actualiza de inmediato el subtotal del artículo y el total de la venta.',
+    'pdv.quantityEditor.confirm': 'Aplicar cantidad',
+    'pdv.quantityEditor.processing': 'Aplicando cantidad...',
+    'pdv.quantityEditor.successTitle': 'Cantidad actualizada',
+    'pdv.quantityEditor.successMessage':
+        'El artículo fue recalculado y la venta ya refleja la nueva cantidad.',
+    'pdv.quantityEditor.error':
+        'No fue posible actualizar la cantidad ahora. Inténtalo de nuevo en unos instantes.',
     'recebimento.valorEmAberto': 'Valor pendiente',
     'recebimento.summaryType': 'Tipo',
     'recebimento.total': 'Total',
@@ -4417,8 +4477,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileCreate.requiredFieldsError': 'Completa todos los campos.',
     'auth.mobileCreate.passwordLengthError':
         'La contraseña debe tener al menos 8 caracteres.',
-    'auth.mobileCreate.passwordMismatchInline':
-        'Las contraseñas no coinciden.',
+    'auth.mobileCreate.passwordMismatchInline': 'Las contraseñas no coinciden.',
     'auth.mobileCreate.passwordMismatchError':
         'Las contraseñas son diferentes. Verifícalas e inténtalo de nuevo.',
     'auth.entry.title': 'Bienvenido a SixoApp',

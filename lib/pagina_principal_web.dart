@@ -31,6 +31,7 @@ import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_web_page.dart';
 import 'package:sixpos/presentation/screens/recebimento_pagamento_web.dart';
 import 'package:sixpos/presentation/components/web/six_web_logout_dialog.dart';
+import 'package:sixpos/presentation/components/web/six_web_pdv_quantity_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_theme_menu_entry.dart';
 import 'package:sixpos/presentation/components/web/venda_em_andamento_fab_web.dart';
@@ -2181,15 +2182,27 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   void _alterarQuantidade(Map<String, dynamic> produto, int delta) {
+    final int quantidadeAtual = (produto['quantidade'] ?? 1) as int;
+    _definirQuantidadeProduto(produto, quantidadeAtual + delta);
+  }
+
+  void _definirQuantidadeProduto(
+    Map<String, dynamic> produto,
+    int novaQuantidade,
+  ) {
     if (_vendaNaoLiquidadaEmConsulta != null &&
         !_vendaNaoLiquidadaPermiteEdicaoItens) {
       return;
     }
+
+    final int quantidadeAtual = (produto['quantidade'] ?? 1) as int;
+    if (quantidadeAtual == novaQuantidade) {
+      _restaurarFocoLeituraRapidaSeCabivel();
+      return;
+    }
+
     final String itemKey = _itemVisualKey(produto);
     setState(() {
-      final int quantidadeAtual = (produto['quantidade'] ?? 1) as int;
-      final int novaQuantidade = quantidadeAtual + delta;
-
       if (novaQuantidade <= 0) {
         _produtosSelecionados.remove(produto);
         _clearItemVisualStateForKey(itemKey);
@@ -2197,7 +2210,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         produto['quantidade'] = novaQuantidade;
         _registerItemFeedbackWithoutSetState(
           itemKey,
-          delta > 0
+          novaQuantidade > quantidadeAtual
               ? _PdvItemVisualFeedback.quantityIncreased
               : _PdvItemVisualFeedback.quantityDecreased,
         );

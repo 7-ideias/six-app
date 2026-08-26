@@ -32,8 +32,7 @@ class SixoAppAuthMobileScaffold extends StatefulWidget {
       _SixoAppAuthMobileScaffoldState();
 }
 
-class _SixoAppAuthMobileScaffoldState
-    extends State<SixoAppAuthMobileScaffold>
+class _SixoAppAuthMobileScaffoldState extends State<SixoAppAuthMobileScaffold>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ambientController;
   bool _reduceMotion = false;
@@ -127,7 +126,9 @@ class _SixoAppAuthMobileScaffoldState
                       ScrollViewKeyboardDismissBehavior.onDrag,
                   physics: const ClampingScrollPhysics(),
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
                     child: IntrinsicHeight(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -186,29 +187,32 @@ class _SixoAppAuthTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: onBack == null ? 24 : 52,
-      child: onBack == null
-          ? const SizedBox.shrink()
-          : Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: IconButton(
-                  tooltip: backSemanticLabel,
-                  onPressed: onBack,
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                  color: SixMobilePalette.onPrimary,
-                  iconSize: 20,
-                  style: IconButton.styleFrom(
-                    backgroundColor: SixMobilePalette.onPrimary.withValues(
-                      alpha: 0.08,
-                    ),
-                    side: BorderSide(
-                      color: SixMobilePalette.onPrimary.withValues(alpha: 0.12),
+      child:
+          onBack == null
+              ? const SizedBox.shrink()
+              : Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: IconButton(
+                    tooltip: backSemanticLabel,
+                    onPressed: onBack,
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                    color: SixMobilePalette.onPrimary,
+                    iconSize: 20,
+                    style: IconButton.styleFrom(
+                      backgroundColor: SixMobilePalette.onPrimary.withValues(
+                        alpha: 0.08,
+                      ),
+                      side: BorderSide(
+                        color: SixMobilePalette.onPrimary.withValues(
+                          alpha: 0.12,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
     );
   }
 }
@@ -244,9 +248,10 @@ class _SixoAppAuthHero extends StatelessWidget {
             builder: (BuildContext context, Widget? child) {
               final double progress = animation.value;
               return Transform.scale(
-                scale: reduceMotion
-                    ? 1
-                    : 1 + math.sin(progress * math.pi * 2) * 0.008,
+                scale:
+                    reduceMotion
+                        ? 1
+                        : 1 + math.sin(progress * math.pi * 2) * 0.008,
                 child: _SixoAppAuthSymbol(
                   size: symbolSize,
                   progress: progress,
@@ -451,6 +456,7 @@ class SixoAppAuthField extends StatelessWidget {
     this.obscure = false,
     this.keyboardType,
     this.textInputAction,
+    this.focusNode,
     this.onChanged,
     this.onSubmitted,
     this.autofillHints,
@@ -466,6 +472,7 @@ class SixoAppAuthField extends StatelessWidget {
   final bool obscure;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
+  final FocusNode? focusNode;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final Iterable<String>? autofillHints;
@@ -477,6 +484,7 @@ class SixoAppAuthField extends StatelessWidget {
     final SixMobileColorScheme colors = context.sixMobileColors;
     return TextField(
       controller: controller,
+      focusNode: focusNode,
       obscureText: obscure,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
@@ -578,34 +586,35 @@ class SixoAppAuthPrimaryButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(17),
           ),
         ),
-        child: isLoading
-            ? const SizedBox.square(
-                dimension: 22,
-                child: CircularProgressIndicator(
-                  color: SixMobilePalette.onPrimary,
-                  strokeWidth: 2.4,
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  if (icon != null) ...<Widget>[
-                    Icon(icon, size: 19),
-                    const SizedBox(width: 9),
-                  ],
-                  Flexible(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w800,
+        child:
+            isLoading
+                ? const SizedBox.square(
+                  dimension: 22,
+                  child: CircularProgressIndicator(
+                    color: SixMobilePalette.onPrimary,
+                    strokeWidth: 2.4,
+                  ),
+                )
+                : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    if (icon != null) ...<Widget>[
+                      Icon(icon, size: 19),
+                      const SizedBox(width: 9),
+                    ],
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
       ),
     );
   }
@@ -729,8 +738,7 @@ class _SixoAppAuthBackgroundPainter extends CustomPainter {
     for (int index = 0; index < 4; index++) {
       final double y = size.height * (0.52 + index * 0.035);
       final double amplitude = size.height * (0.020 + index * 0.004);
-      final double drift =
-          math.sin((phase + index * 0.17) * math.pi * 2) * 7;
+      final double drift = math.sin((phase + index * 0.17) * math.pi * 2) * 7;
       final Path wave =
           Path()
             ..moveTo(-size.width * 0.10, y + drift)
