@@ -54,9 +54,9 @@
     0 -76px 0 rgba(20, 91, 255, 0.025);
 }
 
-.auth-public-page > *,
-.forgot-page > *,
-.checkout-page > * {
+.auth-public-page > :not(.skip-link),
+.forgot-page > :not(.skip-link),
+.checkout-page > :not(.skip-link) {
   position: relative;
   z-index: 1;
 }
