@@ -63,10 +63,10 @@ class _RegrasOperacionaisConfiguracaoContentState
   double _percentualComissaoPadrao = 5;
 
   final TextEditingController _nomeCatalogoController = TextEditingController(
-    text: 'Catálogo Six Repair',
+    text: 'Catálogo Oficina Central',
   );
   final TextEditingController _slugCatalogoController = TextEditingController(
-    text: 'six-repair-center',
+    text: 'oficina-central',
   );
   final TextEditingController _prefixoMesaController = TextEditingController(
     text: 'Mesa',
@@ -456,7 +456,7 @@ class _RegrasOperacionaisConfiguracaoContentState
                 theme: theme,
                 label: 'Identificador do link',
                 controller: _slugCatalogoController,
-                helperText: 'Exemplo futuro: /catalogo/six-repair-center',
+                helperText: 'Exemplo futuro: /catalogo/oficina-central',
                 enabled: _permitirVendaCatalogoPorLink,
               ),
               _buildDropdownBox(

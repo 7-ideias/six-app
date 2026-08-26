@@ -9,7 +9,7 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
-  String get appTitle => 'Six';
+  String get appTitle => 'SixoApp';
 
   @override
   String get pdvQuickServiceDescription =>
@@ -50,7 +50,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiAssistantClose => 'Cerrar';
 
   @override
-  String get aiAssistantHowCanIHelp => '¿Cómo puedo ayudarte en Six?';
+  String get aiAssistantHowCanIHelp => '¿Cómo puedo ayudarte en SixoApp?';
 
   @override
   String get aiAssistantFeedbackThanks => 'Feedback registrado.';
@@ -60,7 +60,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get aiAssistantWelcomeSubtitle =>
-      'Estoy aquí para ayudar con tus solicitudes y resolver dudas sobre Six.';
+      'Estoy aquí para ayudar con tus solicitudes y resolver dudas sobre SixoApp.';
 
   @override
   String get aiAssistantAvatarLabel => 'Avatar de la asistente Lis';

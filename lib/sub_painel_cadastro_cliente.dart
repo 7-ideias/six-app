@@ -884,7 +884,7 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
                           decoration: const InputDecoration(
                             labelText: 'Base URL (opcional)',
                             hintText:
-                                'https://six-app-iota.vercel.app/cliente/auto-cadastro',
+                                'https://sixoapp.com/cliente/auto-cadastro',
                             border: OutlineInputBorder(),
                           ),
                         ),

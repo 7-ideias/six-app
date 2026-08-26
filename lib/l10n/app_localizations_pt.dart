@@ -9,7 +9,7 @@ class AppLocalizationsPt extends AppLocalizations {
   AppLocalizationsPt([String locale = 'pt']) : super(locale);
 
   @override
-  String get appTitle => 'Six';
+  String get appTitle => 'SixoApp';
 
   @override
   String get pdvQuickServiceDescription =>
@@ -49,7 +49,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiAssistantClose => 'Fechar';
 
   @override
-  String get aiAssistantHowCanIHelp => 'Como posso ajudar no Six?';
+  String get aiAssistantHowCanIHelp => 'Como posso ajudar no SixoApp?';
 
   @override
   String get aiAssistantFeedbackThanks => 'Feedback registrado.';
@@ -59,7 +59,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get aiAssistantWelcomeSubtitle =>
-      'Estou aqui para ajudar em suas solicitações e tirar dúvidas sobre o Six.';
+      'Estou aqui para ajudar em suas solicitações e tirar dúvidas sobre o SixoApp.';
 
   @override
   String get aiAssistantAvatarLabel => 'Avatar da assistente Lis';
@@ -1267,7 +1267,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   AppLocalizationsPtBr() : super('pt_BR');
 
   @override
-  String get appTitle => 'Six';
+  String get appTitle => 'SixoApp';
 
   @override
   String get aiAssistantAsk => 'Perguntar à IA';
@@ -1303,7 +1303,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get aiAssistantClose => 'Fechar';
 
   @override
-  String get aiAssistantHowCanIHelp => 'Como posso ajudar no Six?';
+  String get aiAssistantHowCanIHelp => 'Como posso ajudar no SixoApp?';
 
   @override
   String get aiAssistantFeedbackThanks => 'Feedback registrado.';
@@ -1313,7 +1313,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get aiAssistantWelcomeSubtitle =>
-      'Estou aqui para ajudar em suas solicitações e tirar dúvidas sobre o Six.';
+      'Estou aqui para ajudar em suas solicitações e tirar dúvidas sobre o SixoApp.';
 
   @override
   String get aiAssistantAvatarLabel => 'Avatar da assistente Lis';

@@ -334,7 +334,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
   bool get _last => _step == _steps.length - 1;
 
   String _link() =>
-      'https://six-app-iota.vercel.app/ordem-servico/${_osController.text.trim().toLowerCase().replaceAll(' ', '-').replaceAll('/', '-')}';
+      'https://sixoapp.com/ordem-servico/${_osController.text.trim().toLowerCase().replaceAll(' ', '-').replaceAll('/', '-')}';
 
   String _dt(DateTime? dateTime) {
     if (dateTime == null) {

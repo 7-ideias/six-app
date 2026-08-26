@@ -622,7 +622,7 @@ class _CoresFontesWebPageState extends State<CoresFontesWebPage> {
                 _buildPill(preview.escuro ? 'Preview em modo escuro' : 'Preview em modo claro', preview.primaria),
                 const SizedBox(height: 12),
                 Text(
-                  'Veja como o Six vai se comportar antes de salvar',
+                  'Veja como o SixoApp vai se comportar antes de salvar',
                   style: TextStyle(color: preview.text, fontSize: 22, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 8),

@@ -277,7 +277,7 @@ class _WorkspaceHomeHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                _text(context, 'workspaceHome.title', 'Meu dia no SixApp'),
+                _text(context, 'workspaceHome.title', 'Meu dia no SixoApp'),
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: tokens.info,
                   fontWeight: FontWeight.w800,

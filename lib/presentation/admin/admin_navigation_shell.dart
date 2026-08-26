@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/presentation/components/sixoapp_brand_mark.dart';
 
 import 'admin_portal_components.dart';
 import 'admin_portal_texts.dart';
@@ -280,13 +281,9 @@ class _AdminNavigationSidebar extends StatelessWidget {
                       color: AdminPalette.dark,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
-                      '6',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 18,
-                      ),
+                    child: const Padding(
+                      padding: EdgeInsets.all(5),
+                      child: SixoAppBrandMark(size: 24),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -295,7 +292,7 @@ class _AdminNavigationSidebar extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         const Text(
-                          'Six',
+                          'SixoApp',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(

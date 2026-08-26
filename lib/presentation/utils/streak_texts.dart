@@ -16,7 +16,7 @@ String streakCurrentMessage(BuildContext context, UserStreakScopeModel scope) {
   if (scope.currentDays <= 0) {
     return context.t(
       'streak.keepUsing',
-      fallback: 'Use o SixApp todos os dias para manter sua ofensiva.',
+      fallback: 'Use o SixoApp todos os dias para manter sua ofensiva.',
     );
   }
   if (scope.activeToday && scope.currentDays == 1) {

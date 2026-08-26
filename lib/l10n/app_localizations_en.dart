@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Six';
+  String get appTitle => 'SixoApp';
 
   @override
   String get pdvQuickServiceDescription =>
@@ -49,7 +49,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiAssistantClose => 'Close';
 
   @override
-  String get aiAssistantHowCanIHelp => 'How can I help in Six?';
+  String get aiAssistantHowCanIHelp => 'How can I help in SixoApp?';
 
   @override
   String get aiAssistantFeedbackThanks => 'Feedback saved.';
@@ -59,7 +59,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiAssistantWelcomeSubtitle =>
-      'I\'m here to help with your requests and answer questions about Six.';
+      'I\'m here to help with your requests and answer questions about SixoApp.';
 
   @override
   String get aiAssistantAvatarLabel => 'Assistant Lis avatar';
@@ -1260,7 +1260,7 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
   AppLocalizationsEnUs() : super('en_US');
 
   @override
-  String get appTitle => 'Six';
+  String get appTitle => 'SixoApp';
 
   @override
   String get aiAssistantAsk => 'Ask AI';
@@ -1296,7 +1296,7 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
   String get aiAssistantClose => 'Close';
 
   @override
-  String get aiAssistantHowCanIHelp => 'How can I help in Six?';
+  String get aiAssistantHowCanIHelp => 'How can I help in SixoApp?';
 
   @override
   String get aiAssistantFeedbackThanks => 'Feedback saved.';
@@ -1306,7 +1306,7 @@ class AppLocalizationsEnUs extends AppLocalizationsEn {
 
   @override
   String get aiAssistantWelcomeSubtitle =>
-      'I\'m here to help with your requests and answer questions about Six.';
+      'I\'m here to help with your requests and answer questions about SixoApp.';
 
   @override
   String get aiAssistantAvatarLabel => 'Assistant Lis avatar';

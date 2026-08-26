@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/sixoapp_brand_mark.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
 import 'web_navigation_item.dart';
@@ -170,12 +171,6 @@ class _SidebarBrand extends StatelessWidget {
         brandedSidebar
             ? colorScheme.onPrimary.withValues(alpha: 0.18)
             : tokens.selectedBorder;
-    final Color badgeTextColor =
-        brandedSidebar
-            ? colorScheme.onPrimary
-            : colorScheme.brightness == Brightness.dark
-            ? tokens.info
-            : colorScheme.primary;
     final Color titleColor =
         brandedSidebar ? colorScheme.onPrimary : tokens.primaryText;
 
@@ -196,12 +191,8 @@ class _SidebarBrand extends StatelessWidget {
                 borderRadius: BorderRadius.circular(compact ? 10 : 12),
                 border: Border.all(color: badgeBorder),
               ),
-              child: Text(
-                'S',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: badgeTextColor,
-                  fontWeight: FontWeight.w900,
-                ),
+              child: SixoAppBrandMark(
+                size: compact ? 24 : 29,
               ),
             );
 
@@ -218,7 +209,7 @@ class _SidebarBrand extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      _navigationText(context, 'app.title', 'SixApp'),
+                      'SixoApp',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(

@@ -381,13 +381,13 @@ class _FeedbackTexts {
       return const _FeedbackTexts(
         suggestionButton: 'Enviar idea',
         suggestionTitle: 'Idea o sugerencia',
-        suggestionHint: 'Cuéntanos qué podría mejorar en Six...',
+        suggestionHint: 'Cuéntanos qué podría mejorar en SixoApp...',
         negativeTitle: 'Cuéntanos qué faltó',
         negativeQuestion: '¿Por qué esta respuesta no te ayudó?',
         commentHint: 'Agrega más detalles (opcional)',
         createSuggestion: 'Registrar también como nueva idea',
         createSuggestionHint:
-            'La idea aparecerá para evaluación del equipo de Six.',
+            'La idea aparecerá para evaluación del equipo de SixoApp.',
         cancel: 'Cancelar',
         send: 'Enviar',
         feedbackSuccess: 'Gracias. Tu evaluación fue registrada.',
@@ -395,14 +395,14 @@ class _FeedbackTexts {
         suggestionSuccess: 'Sugerencia registrada. ¡Gracias!',
         error: 'No fue posible enviar la información.',
         genericQuestion: 'Evaluación negativa después de una respuesta de IA',
-        genericAnswer: 'Respuesta evaluada en el asistente de Six',
+        genericAnswer: 'Respuesta evaluada en el asistente de SixoApp',
         genericSuggestionContext:
             'Necesidad identificada después de una respuesta de IA.',
         reasons: <String, String>{
           'INCORRETA': 'La respuesta estaba incorrecta',
           'NAO_ENCONTREI': 'No encontré lo que necesitaba',
           'NAO_FICOU_CLARA': 'La explicación no fue clara',
-          'FUNCIONALIDADE_INEXISTENTE': 'Six no tiene lo que necesito',
+          'FUNCIONALIDADE_INEXISTENTE': 'SixoApp no tiene lo que necesito',
           'OUTRO': 'Otro motivo',
         },
       );
@@ -411,13 +411,13 @@ class _FeedbackTexts {
       return const _FeedbackTexts(
         suggestionButton: 'Send idea',
         suggestionTitle: 'Idea or suggestion',
-        suggestionHint: 'Tell us what could be improved in Six...',
+        suggestionHint: 'Tell us what could be improved in SixoApp...',
         negativeTitle: 'Tell us what was missing',
         negativeQuestion: 'Why did this answer not help?',
         commentHint: 'Add more details (optional)',
         createSuggestion: 'Also register as a new idea',
         createSuggestionHint:
-            'The idea will be available for the Six team to review.',
+            'The idea will be available for the SixoApp team to review.',
         cancel: 'Cancel',
         send: 'Send',
         feedbackSuccess: 'Thanks. Your feedback was recorded.',
@@ -425,13 +425,13 @@ class _FeedbackTexts {
         suggestionSuccess: 'Suggestion recorded. Thank you!',
         error: 'The information could not be sent.',
         genericQuestion: 'Negative rating after an AI answer',
-        genericAnswer: 'Answer rated in the Six assistant',
+        genericAnswer: 'Answer rated in the SixoApp assistant',
         genericSuggestionContext: 'Need identified after an AI answer.',
         reasons: <String, String>{
           'INCORRETA': 'The answer was incorrect',
           'NAO_ENCONTREI': 'I did not find what I needed',
           'NAO_FICOU_CLARA': 'The explanation was unclear',
-          'FUNCIONALIDADE_INEXISTENTE': 'Six does not have what I need',
+          'FUNCIONALIDADE_INEXISTENTE': 'SixoApp does not have what I need',
           'OUTRO': 'Another reason',
         },
       );
@@ -439,13 +439,13 @@ class _FeedbackTexts {
     return const _FeedbackTexts(
       suggestionButton: 'Enviar ideia',
       suggestionTitle: 'Ideia ou sugestão',
-      suggestionHint: 'Conte o que poderia melhorar no Six...',
+      suggestionHint: 'Conte o que poderia melhorar no SixoApp...',
       negativeTitle: 'Conte o que faltou',
       negativeQuestion: 'Por que esta resposta não ajudou?',
       commentHint: 'Acrescente mais detalhes (opcional)',
       createSuggestion: 'Registrar também como nova ideia',
       createSuggestionHint:
-          'A ideia ficará disponível para avaliação da equipe do Six.',
+          'A ideia ficará disponível para avaliação da equipe do SixoApp.',
       cancel: 'Cancelar',
       send: 'Enviar',
       feedbackSuccess: 'Obrigado. Sua avaliação foi registrada.',
@@ -453,14 +453,14 @@ class _FeedbackTexts {
       suggestionSuccess: 'Sugestão registrada. Obrigado!',
       error: 'Não foi possível enviar as informações.',
       genericQuestion: 'Avaliação negativa após resposta da IA',
-      genericAnswer: 'Resposta avaliada no assistente do Six',
+      genericAnswer: 'Resposta avaliada no assistente do SixoApp',
       genericSuggestionContext:
           'Necessidade identificada após uma resposta da IA.',
       reasons: <String, String>{
         'INCORRETA': 'A resposta estava incorreta',
         'NAO_ENCONTREI': 'Não encontrei o que precisava',
         'NAO_FICOU_CLARA': 'A explicação não ficou clara',
-        'FUNCIONALIDADE_INEXISTENTE': 'O Six não possui o que preciso',
+        'FUNCIONALIDADE_INEXISTENTE': 'O SixoApp não possui o que preciso',
         'OUTRO': 'Outro motivo',
       },
     );
