@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/atendimento_tecnico_models.dart';
@@ -10,12 +11,54 @@ import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.d
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
+import '../components/web/six_web_animated_dialog.dart';
+import '../theme/web_theme_tokens.dart';
 import 'produto_lista_sub_painel_web.dart';
 
+Future<bool> showAtendimentoTecnicoEditarDialog({
+  required BuildContext context,
+  required AtendimentoTecnicoModel atendimento,
+  AtendimentoTecnicoService? service,
+  ClienteUsuarioApiClient? clienteApiClient,
+  ColaboradorUsuarioApiClient? colaboradorApiClient,
+}) async {
+  final bool reduceMotion =
+      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+  final bool? result = await showSixWebAnimatedDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    barrierLabel: context.t(
+      'atendimentoTecnico.edit.dialogBarrierLabel',
+      fallback: 'Fechar edição do atendimento técnico',
+    ),
+    overlayColor: const Color(0xBF0A1324),
+    overlayBlurSigma: 12,
+    transitionDuration: Duration(milliseconds: reduceMotion ? 1 : 320),
+    builder:
+        (_) => AtendimentoTecnicoEditarDialog(
+          atendimento: atendimento,
+          service: service,
+          clienteApiClient: clienteApiClient,
+          colaboradorApiClient: colaboradorApiClient,
+        ),
+  );
+
+  return result ?? false;
+}
+
 class AtendimentoTecnicoEditarDialog extends StatefulWidget {
-  const AtendimentoTecnicoEditarDialog({super.key, required this.atendimento});
+  const AtendimentoTecnicoEditarDialog({
+    super.key,
+    required this.atendimento,
+    this.service,
+    this.clienteApiClient,
+    this.colaboradorApiClient,
+  });
 
   final AtendimentoTecnicoModel atendimento;
+  final AtendimentoTecnicoService? service;
+  final ClienteUsuarioApiClient? clienteApiClient;
+  final ColaboradorUsuarioApiClient? colaboradorApiClient;
 
   @override
   State<AtendimentoTecnicoEditarDialog> createState() =>
@@ -24,11 +67,12 @@ class AtendimentoTecnicoEditarDialog extends StatefulWidget {
 
 class _AtendimentoTecnicoEditarDialogState
     extends State<AtendimentoTecnicoEditarDialog> {
-  final AtendimentoTecnicoService _service = AtendimentoTecnicoService();
-  final ClienteUsuarioApiClient _clienteApiClient =
-      HttpClienteUsuarioApiClient();
-  final ColaboradorUsuarioApiClient _colaboradorApiClient =
-      HttpColaboradorUsuarioApiClient();
+  late final AtendimentoTecnicoService _service =
+      widget.service ?? AtendimentoTecnicoService();
+  late final ClienteUsuarioApiClient _clienteApiClient =
+      widget.clienteApiClient ?? HttpClienteUsuarioApiClient();
+  late final ColaboradorUsuarioApiClient _colaboradorApiClient =
+      widget.colaboradorApiClient ?? HttpColaboradorUsuarioApiClient();
   final TextEditingController _descricaoController = TextEditingController();
   final TextEditingController _tipoEquipamentoController =
       TextEditingController();
@@ -554,7 +598,7 @@ class _AtendimentoTecnicoEditarDialogState
   }
 
   String _formatarMoeda(double value) =>
-      'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+      context.read<LocaleSettingsProvider>().formatCurrency(value);
 
   void _mostrarMensagem(String mensagem) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -562,262 +606,664 @@ class _AtendimentoTecnicoEditarDialogState
     );
   }
 
+  void _cancelar() {
+    if (_salvando) return;
+    Navigator.of(context).pop(false);
+  }
+
   double get _total =>
       _itens.fold<double>(0, (total, item) => total + item.total);
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 980, maxHeight: 820),
-        child: Column(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: <Widget>[
-                  Icon(
-                    Icons.edit_note_rounded,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Editar ${widget.atendimento.numero}',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-                ],
+    final ThemeData baseTheme = Theme.of(context);
+    final ThemeData theme = WebThemeTokens.applyTo(baseTheme);
+    final WebThemeTokens tokens = WebThemeTokens.resolve(theme);
+    final bool reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final Size size = MediaQuery.sizeOf(context);
+    final double maxHeight = size.height > 96 ? size.height - 48 : size.height;
+    final Color accent = tokens.info;
+    final ThemeData dialogTheme = theme.copyWith(
+      inputDecorationTheme: _buildInputDecorationTheme(theme, tokens),
+      dividerTheme: theme.dividerTheme.copyWith(color: tokens.divider),
+      textSelectionTheme: theme.textSelectionTheme.copyWith(
+        cursorColor: accent,
+        selectionColor: accent.withValues(alpha: 0.24),
+        selectionHandleColor: accent,
+      ),
+    );
+
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.escape): _cancelar,
+      },
+      child: Focus(
+        autofocus: true,
+        child: Theme(
+          data: dialogTheme,
+          child: PopScope(
+            canPop: !_salvando,
+            child: Semantics(
+              namesRoute: true,
+              label: _t(
+                'atendimentoTecnico.edit.dialogTitle',
+                'Editar atendimento técnico',
               ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: <Widget>[
-                  if (widget.atendimento.assinaturaAprovada ||
-                      widget.atendimento.requerNovaAssinatura)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 14),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(
-                          alpha: 0.08,
-                        ),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Text(
-                        'Ao salvar alterações de produtos, serviços, validade, entrega prevista, vencimento financeiro ou observações, esta versão do orçamento exigirá nova assinatura do cliente.',
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  _grid(<Widget>[
-                    TextField(
-                      controller: _descricaoController,
-                      decoration: const InputDecoration(
-                        labelText: 'Descrição interna',
-                      ),
-                    ),
-                    _clienteSelectorField(theme),
-                    _responsavelSelectorField(theme),
-                    InkWell(
-                      onTap: _selecionarValidade,
-                      borderRadius: BorderRadius.circular(12),
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Validade do orçamento',
-                          helperText: 'Prazo para aprovação do cliente.',
-                          suffixIcon: Icon(Icons.event_available_outlined),
-                        ),
-                        child: Text(
-                          _formatarData(_validadeOrcamentoEm),
-                          style: const TextStyle(fontWeight: FontWeight.w900),
-                        ),
-                      ),
-                    ),
-                    InkWell(
-                      onTap: _selecionarVencimentoFinanceiro,
-                      borderRadius: BorderRadius.circular(12),
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Vencimento financeiro',
-                          helperText: 'Data usada na agenda financeira.',
-                          suffixIcon: Icon(Icons.event_note_outlined),
-                        ),
-                        child: Text(
-                          _formatarData(_dataVencimentoEm),
-                          style: const TextStyle(fontWeight: FontWeight.w900),
-                        ),
-                      ),
-                    ),
-                    InkWell(
-                      onTap: _selecionarDataEntregaPrevista,
-                      borderRadius: BorderRadius.circular(12),
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Entrega prevista',
-                          helperText:
-                              'Prazo operacional para término ou entrega.',
-                          suffixIcon: Icon(Icons.assignment_turned_in_outlined),
-                        ),
-                        child: Text(
-                          _formatarData(_dataEntregaPrevista),
-                          style: const TextStyle(fontWeight: FontWeight.w900),
-                        ),
-                      ),
-                    ),
-                    TextField(
-                      controller: _tipoEquipamentoController,
-                      decoration: const InputDecoration(
-                        labelText: 'Tipo de equipamento',
-                      ),
-                    ),
-                    TextField(
-                      controller: _marcaController,
-                      decoration: const InputDecoration(labelText: 'Marca'),
-                    ),
-                    TextField(
-                      controller: _modeloController,
-                      decoration: const InputDecoration(labelText: 'Modelo'),
-                    ),
-                    TextField(
-                      controller: _numeroSerieController,
-                      decoration: const InputDecoration(
-                        labelText: 'Número de série',
-                      ),
-                    ),
-                    TextField(
-                      controller: _imeiController,
-                      decoration: const InputDecoration(labelText: 'IMEI'),
-                    ),
-                  ]),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _acessoriosController,
-                    minLines: 2,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Acessórios / observações de entrada',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _defeitoController,
-                    minLines: 2,
-                    maxLines: 4,
-                    decoration: const InputDecoration(
-                      labelText: 'Defeito relatado',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _diagnosticoController,
-                    minLines: 2,
-                    maxLines: 4,
-                    decoration: const InputDecoration(
-                      labelText: 'Diagnóstico / novas observações técnicas',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _observacaoAuditoriaController,
-                    minLines: 2,
-                    maxLines: 4,
-                    decoration: const InputDecoration(
-                      labelText: 'Observação de auditoria da alteração',
-                      hintText:
-                          'Ex.: cliente solicitou incluir película e retirar limpeza interna',
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          'Produtos e serviços',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      OutlinedButton.icon(
-                        onPressed: () => _abrirSelecaoItens('PRODUTO'),
-                        icon: const Icon(Icons.inventory_2_outlined),
-                        label: const Text('Adicionar peça'),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton.icon(
-                        onPressed: () => _abrirSelecaoItens('SERVICO'),
-                        icon: const Icon(Icons.handyman_outlined),
-                        label: const Text('Adicionar serviço'),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 980,
+                  maxHeight: maxHeight,
+                ),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: const Color(0xFF020617).withValues(alpha: 0.34),
+                        blurRadius: 42,
+                        offset: const Offset(0, 22),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  if (_itens.isEmpty)
-                    Text(
-                      'Nenhum item vinculado.',
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurfaceVariant,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Material(
+                      key: const ValueKey<String>(
+                        'atendimento-tecnico-edit-dialog',
                       ),
-                    )
-                  else
-                    ..._itens.map((item) => _itemRow(theme, item)),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.all(18),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      'Total: ${_formatarMoeda(_total)}',
-                      style: const TextStyle(fontWeight: FontWeight.w900),
+                      color: tokens.surfaceElevated,
+                      surfaceTintColor: Colors.transparent,
+                      child: Stack(
+                        children: <Widget>[
+                          Positioned(
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(height: 3, color: accent),
+                          ),
+                          Column(
+                            children: <Widget>[
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  24,
+                                  16,
+                                  18,
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    _AtendimentoTecnicoEditImpactIcon(
+                                      accent: accent,
+                                      reduceMotion: reduceMotion,
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          Text(
+                                            _t(
+                                              'atendimentoTecnico.edit.dialogHeadline',
+                                              'Editar ${widget.atendimento.numero}',
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: theme.textTheme.headlineSmall
+                                                ?.copyWith(
+                                                  color: tokens.primaryText,
+                                                  fontWeight: FontWeight.w900,
+                                                  height: 1.15,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            _t(
+                                              'atendimentoTecnico.edit.dialogSubtitle',
+                                              'Revise dados, prazos e itens antes de salvar a nova versão do atendimento.',
+                                            ),
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  color: tokens.secondaryText,
+                                                  height: 1.45,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    IconButton(
+                                      tooltip: _t('common.close', 'Fechar'),
+                                      onPressed: _salvando ? null : _cancelar,
+                                      icon: Icon(
+                                        Icons.close_rounded,
+                                        color: tokens.secondaryText,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  0,
+                                  24,
+                                  18,
+                                ),
+                                child: _buildSummary(theme, tokens),
+                              ),
+                              Divider(height: 1, color: tokens.divider),
+                              Expanded(
+                                child: ListView(
+                                  padding: const EdgeInsets.all(20),
+                                  children: <Widget>[
+                                    if (widget.atendimento.assinaturaAprovada ||
+                                        widget.atendimento.requerNovaAssinatura)
+                                      Container(
+                                        margin: const EdgeInsets.only(
+                                          bottom: 14,
+                                        ),
+                                        padding: const EdgeInsets.all(14),
+                                        decoration: BoxDecoration(
+                                          color: accent.withValues(alpha: 0.10),
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
+                                          border: Border.all(
+                                            color: accent.withValues(
+                                              alpha: 0.28,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          _t(
+                                            'atendimentoTecnico.edit.signatureWarning',
+                                            'Ao salvar alterações de produtos, serviços, validade, entrega prevista, vencimento financeiro ou observações, esta versão do orçamento exigirá nova assinatura do cliente.',
+                                          ),
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                                color: tokens.secondaryText,
+                                                fontWeight: FontWeight.w700,
+                                                height: 1.45,
+                                              ),
+                                        ),
+                                      ),
+                                    _grid(<Widget>[
+                                      TextField(
+                                        controller: _descricaoController,
+                                        decoration: InputDecoration(
+                                          labelText: _t(
+                                            'atendimentoTecnico.edit.internalDescription',
+                                            'Descrição interna',
+                                          ),
+                                        ),
+                                      ),
+                                      _clienteSelectorField(theme, tokens),
+                                      _responsavelSelectorField(theme, tokens),
+                                      InkWell(
+                                        onTap:
+                                            _salvando
+                                                ? null
+                                                : _selecionarValidade,
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: InputDecorator(
+                                          decoration: InputDecoration(
+                                            labelText: _t(
+                                              'atendimentoTecnico.edit.validityLabel',
+                                              'Validade do orçamento',
+                                            ),
+                                            helperText: _t(
+                                              'atendimentoTecnico.edit.validityHelper',
+                                              'Prazo para aprovação do cliente.',
+                                            ),
+                                            suffixIcon: Icon(
+                                              Icons.event_available_outlined,
+                                              color: tokens.secondaryText,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            _formatarData(_validadeOrcamentoEm),
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w900,
+                                              color: tokens.primaryText,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      InkWell(
+                                        onTap:
+                                            _salvando
+                                                ? null
+                                                : _selecionarVencimentoFinanceiro,
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: InputDecorator(
+                                          decoration: InputDecoration(
+                                            labelText: _t(
+                                              'atendimentoTecnico.edit.dueDateLabel',
+                                              'Vencimento financeiro',
+                                            ),
+                                            helperText: _t(
+                                              'atendimentoTecnico.edit.dueDateHelper',
+                                              'Data usada na agenda financeira.',
+                                            ),
+                                            suffixIcon: Icon(
+                                              Icons.event_note_outlined,
+                                              color: tokens.secondaryText,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            _formatarData(_dataVencimentoEm),
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w900,
+                                              color: tokens.primaryText,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      InkWell(
+                                        onTap:
+                                            _salvando
+                                                ? null
+                                                : _selecionarDataEntregaPrevista,
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: InputDecorator(
+                                          decoration: InputDecoration(
+                                            labelText: _t(
+                                              'atendimentoTecnico.edit.deliveryDateLabel',
+                                              'Entrega prevista',
+                                            ),
+                                            helperText: _t(
+                                              'atendimentoTecnico.edit.deliveryDateHelper',
+                                              'Prazo operacional para término ou entrega.',
+                                            ),
+                                            suffixIcon: Icon(
+                                              Icons
+                                                  .assignment_turned_in_outlined,
+                                              color: tokens.secondaryText,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            _formatarData(_dataEntregaPrevista),
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w900,
+                                              color: tokens.primaryText,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      TextField(
+                                        controller: _tipoEquipamentoController,
+                                        decoration: InputDecoration(
+                                          labelText: _t(
+                                            'atendimentoTecnico.edit.equipmentType',
+                                            'Tipo de equipamento',
+                                          ),
+                                        ),
+                                      ),
+                                      TextField(
+                                        controller: _marcaController,
+                                        decoration: InputDecoration(
+                                          labelText: _t(
+                                            'common.brand',
+                                            'Marca',
+                                          ),
+                                        ),
+                                      ),
+                                      TextField(
+                                        controller: _modeloController,
+                                        decoration: InputDecoration(
+                                          labelText: _t(
+                                            'common.model',
+                                            'Modelo',
+                                          ),
+                                        ),
+                                      ),
+                                      TextField(
+                                        controller: _numeroSerieController,
+                                        decoration: InputDecoration(
+                                          labelText: _t(
+                                            'atendimentoTecnico.edit.serialNumber',
+                                            'Número de série',
+                                          ),
+                                        ),
+                                      ),
+                                      TextField(
+                                        controller: _imeiController,
+                                        decoration: const InputDecoration(
+                                          labelText: 'IMEI',
+                                        ),
+                                      ),
+                                    ]),
+                                    const SizedBox(height: 12),
+                                    TextField(
+                                      controller: _acessoriosController,
+                                      minLines: 2,
+                                      maxLines: 3,
+                                      decoration: InputDecoration(
+                                        labelText: _t(
+                                          'atendimentoTecnico.edit.accessories',
+                                          'Acessórios / observações de entrada',
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    TextField(
+                                      controller: _defeitoController,
+                                      minLines: 2,
+                                      maxLines: 4,
+                                      decoration: InputDecoration(
+                                        labelText: _t(
+                                          'atendimentoTecnico.edit.defectReported',
+                                          'Defeito relatado',
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    TextField(
+                                      controller: _diagnosticoController,
+                                      minLines: 2,
+                                      maxLines: 4,
+                                      decoration: InputDecoration(
+                                        labelText: _t(
+                                          'atendimentoTecnico.edit.diagnosis',
+                                          'Diagnóstico / novas observações técnicas',
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    TextField(
+                                      controller:
+                                          _observacaoAuditoriaController,
+                                      minLines: 2,
+                                      maxLines: 4,
+                                      decoration: InputDecoration(
+                                        labelText: _t(
+                                          'atendimentoTecnico.edit.auditObservation',
+                                          'Observação de auditoria da alteração',
+                                        ),
+                                        hintText: _t(
+                                          'atendimentoTecnico.edit.auditObservationHint',
+                                          'Ex.: cliente solicitou incluir película e retirar limpeza interna',
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 18),
+                                    Row(
+                                      children: <Widget>[
+                                        Expanded(
+                                          child: Text(
+                                            _t(
+                                              'atendimentoTecnico.edit.itemsSection',
+                                              'Produtos e serviços',
+                                            ),
+                                            style: theme.textTheme.titleMedium
+                                                ?.copyWith(
+                                                  color: tokens.primaryText,
+                                                  fontWeight: FontWeight.w900,
+                                                ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        OutlinedButton.icon(
+                                          onPressed:
+                                              _salvando
+                                                  ? null
+                                                  : () => _abrirSelecaoItens(
+                                                    'PRODUTO',
+                                                  ),
+                                          icon: const Icon(
+                                            Icons.inventory_2_outlined,
+                                          ),
+                                          label: Text(
+                                            _t(
+                                              'atendimentoTecnico.edit.addPart',
+                                              'Adicionar peça',
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        FilledButton.icon(
+                                          onPressed:
+                                              _salvando
+                                                  ? null
+                                                  : () => _abrirSelecaoItens(
+                                                    'SERVICO',
+                                                  ),
+                                          icon: const Icon(
+                                            Icons.handyman_outlined,
+                                          ),
+                                          label: Text(
+                                            _t(
+                                              'atendimentoTecnico.edit.addService',
+                                              'Adicionar serviço',
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    if (_itens.isEmpty)
+                                      Text(
+                                        _t(
+                                          'atendimentoTecnico.edit.noItems',
+                                          'Nenhum item vinculado.',
+                                        ),
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color: tokens.secondaryText,
+                                            ),
+                                      )
+                                    else
+                                      ..._itens.map(
+                                        (item) => _itemRow(theme, tokens, item),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.all(18),
+                                decoration: BoxDecoration(
+                                  color: tokens.surfaceMuted.withValues(
+                                    alpha: 0.56,
+                                  ),
+                                  border: Border(
+                                    top: BorderSide(color: tokens.divider),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: <Widget>[
+                                    Expanded(
+                                      child: Text(
+                                        '${_t('common.total', 'Total')}: ${_formatarMoeda(_total)}',
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              color: tokens.primaryText,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: _salvando ? null : _cancelar,
+                                      child: Text(
+                                        _t('common.cancel', 'Cancelar'),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    FilledButton.icon(
+                                      onPressed: _salvando ? null : _salvar,
+                                      icon:
+                                          _salvando
+                                              ? const SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                              )
+                                              : const Icon(Icons.save_outlined),
+                                      label: Text(
+                                        _salvando
+                                            ? _t('common.saving', 'Salvando...')
+                                            : _t(
+                                              'empresa.configuracao.saveChanges',
+                                              'Salvar alterações',
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  TextButton(
-                    onPressed:
-                        _salvando
-                            ? null
-                            : () => Navigator.of(context).pop(false),
-                    child: const Text('Cancelar'),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton.icon(
-                    onPressed: _salvando ? null : _salvar,
-                    icon:
-                        _salvando
-                            ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                            : const Icon(Icons.save_outlined),
-                    label: Text(
-                      _salvando ? 'Salvando...' : 'Salvar alterações',
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+
+  InputDecorationThemeData _buildInputDecorationTheme(
+    ThemeData theme,
+    WebThemeTokens tokens,
+  ) {
+    return theme.inputDecorationTheme.copyWith(
+      filled: true,
+      fillColor: tokens.inputBackground,
+      hintStyle: theme.textTheme.bodyMedium?.copyWith(color: tokens.mutedText),
+      labelStyle: theme.textTheme.bodyMedium?.copyWith(
+        color: tokens.secondaryText,
+        fontWeight: FontWeight.w700,
+      ),
+      helperStyle: theme.textTheme.bodySmall?.copyWith(
+        color: tokens.mutedText,
+        height: 1.35,
+      ),
+      suffixIconColor: tokens.secondaryText,
+      prefixIconColor: tokens.secondaryText,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: tokens.cardBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: tokens.info, width: 1.4),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: tokens.cardBorder),
+      ),
+    );
+  }
+
+  Widget _buildSummary(ThemeData theme, WebThemeTokens tokens) {
+    final _ClienteAtendimentoWeb? cliente = _clienteSelecionado;
+    final _ResponsavelTecnicoWeb? responsavel = _responsavelSelecionado;
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: <Widget>[
+        _summaryTile(
+          theme,
+          tokens,
+          icon: Icons.person_search_outlined,
+          label: _t('atendimentoTecnico.edit.clientLabel', 'Cliente'),
+          value:
+              cliente?.nome ??
+              _t('atendimentoTecnico.edit.selectClient', 'Selecione o cliente'),
+        ),
+        _summaryTile(
+          theme,
+          tokens,
+          icon: Icons.engineering_outlined,
+          label: _t(
+            'atendimentoTecnico.edit.responsibleLabel',
+            'Responsável técnico',
+          ),
+          value:
+              responsavel?.nome ??
+              _t(
+                'atendimentoTecnico.edit.selectResponsible',
+                'Selecione o responsável',
+              ),
+        ),
+        _summaryTile(
+          theme,
+          tokens,
+          icon: Icons.payments_outlined,
+          label: _t('common.total', 'Total'),
+          value: _formatarMoeda(_total),
+          emphasize: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _summaryTile(
+    ThemeData theme,
+    WebThemeTokens tokens, {
+    required IconData icon,
+    required String label,
+    required String value,
+    bool emphasize = false,
+  }) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 220, maxWidth: 292),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: tokens.info.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: tokens.info, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: tokens.mutedText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color:
+                        emphasize ? tokens.primaryText : tokens.secondaryText,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -855,10 +1301,9 @@ class _AtendimentoTecnicoEditarDialogState
     );
   }
 
-  Widget _clienteSelectorField(ThemeData theme) {
+  Widget _clienteSelectorField(ThemeData theme, WebThemeTokens tokens) {
     final _ClienteAtendimentoWeb? cliente = _clienteSelecionado;
     final bool hasSelection = cliente != null;
-    final ColorScheme colorScheme = theme.colorScheme;
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
@@ -893,7 +1338,7 @@ class _AtendimentoTecnicoEditarDialogState
           ),
           child: Row(
             children: <Widget>[
-              Icon(Icons.person_search_outlined, color: colorScheme.primary),
+              Icon(Icons.person_search_outlined, color: tokens.info),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -908,8 +1353,8 @@ class _AtendimentoTecnicoEditarDialogState
                   style: TextStyle(
                     color:
                         hasSelection
-                            ? colorScheme.onSurface
-                            : colorScheme.onSurfaceVariant,
+                            ? tokens.primaryText
+                            : tokens.secondaryText,
                     fontWeight:
                         hasSelection ? FontWeight.w900 : FontWeight.w600,
                   ),
@@ -922,10 +1367,9 @@ class _AtendimentoTecnicoEditarDialogState
     );
   }
 
-  Widget _responsavelSelectorField(ThemeData theme) {
+  Widget _responsavelSelectorField(ThemeData theme, WebThemeTokens tokens) {
     final _ResponsavelTecnicoWeb? responsavel = _responsavelSelecionado;
     final bool hasSelection = responsavel != null;
-    final ColorScheme colorScheme = theme.colorScheme;
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
@@ -963,7 +1407,7 @@ class _AtendimentoTecnicoEditarDialogState
           ),
           child: Row(
             children: <Widget>[
-              Icon(Icons.engineering_outlined, color: colorScheme.primary),
+              Icon(Icons.engineering_outlined, color: tokens.info),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -978,8 +1422,8 @@ class _AtendimentoTecnicoEditarDialogState
                   style: TextStyle(
                     color:
                         hasSelection
-                            ? colorScheme.onSurface
-                            : colorScheme.onSurfaceVariant,
+                            ? tokens.primaryText
+                            : tokens.secondaryText,
                     fontWeight:
                         hasSelection ? FontWeight.w900 : FontWeight.w600,
                   ),
@@ -992,28 +1436,34 @@ class _AtendimentoTecnicoEditarDialogState
     );
   }
 
-  Widget _itemRow(ThemeData theme, _AtendimentoItemEditavel item) {
+  Widget _itemRow(
+    ThemeData theme,
+    WebThemeTokens tokens,
+    _AtendimentoItemEditavel item,
+  ) {
     final servico = item.tipoCodigo == 'SERVICE';
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.38,
-        ),
+        color: tokens.surfaceMuted.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         children: <Widget>[
           Icon(
             servico ? Icons.handyman_outlined : Icons.inventory_2_outlined,
-            color: theme.colorScheme.primary,
+            color: tokens.info,
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               item.descricao,
-              style: const TextStyle(fontWeight: FontWeight.w900),
+              style: TextStyle(
+                color: tokens.primaryText,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
           IconButton(
@@ -1022,7 +1472,10 @@ class _AtendimentoTecnicoEditarDialogState
           ),
           Text(
             item.quantidade.toString(),
-            style: const TextStyle(fontWeight: FontWeight.w900),
+            style: TextStyle(
+              color: tokens.primaryText,
+              fontWeight: FontWeight.w900,
+            ),
           ),
           IconButton(
             onPressed: () => _alterarQuantidade(item, 1),
@@ -1033,7 +1486,10 @@ class _AtendimentoTecnicoEditarDialogState
             child: Text(
               _formatarMoeda(item.total),
               textAlign: TextAlign.right,
-              style: const TextStyle(fontWeight: FontWeight.w900),
+              style: TextStyle(
+                color: tokens.primaryText,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
           IconButton(
@@ -1071,6 +1527,60 @@ class _ClienteAtendimentoWeb {
       nome: nome.isEmpty ? 'Cliente sem nome' : nome,
       subtitulo: subtitulo.isEmpty ? 'Cliente cadastrado' : subtitulo,
       nomeInformado: nome.isNotEmpty,
+    );
+  }
+}
+
+class _AtendimentoTecnicoEditImpactIcon extends StatelessWidget {
+  const _AtendimentoTecnicoEditImpactIcon({
+    required this.accent,
+    required this.reduceMotion,
+  });
+
+  final Color accent;
+  final bool reduceMotion;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: reduceMotion ? 1 : 0.92, end: 1),
+      duration: Duration(milliseconds: reduceMotion ? 1 : 700),
+      curve: Curves.easeOutCubic,
+      builder: (BuildContext context, double value, Widget? child) {
+        return Transform.scale(
+          scale: value,
+          child: Opacity(
+            opacity: reduceMotion ? 1 : (0.72 + (value - 0.92) * 3.5),
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: <Color>[
+              accent.withValues(alpha: 0.20),
+              tokens.surfaceMuted.withValues(alpha: 0.92),
+            ],
+          ),
+          border: Border.all(color: accent.withValues(alpha: 0.26)),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: accent.withValues(alpha: 0.14),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Icon(Icons.edit_note_rounded, color: accent, size: 28),
+      ),
     );
   }
 }

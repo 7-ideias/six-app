@@ -131,6 +131,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
   late final AnimationController _iconController;
 
   bool _carregandoTipos = true;
+  bool _processando = false;
   String? _erroValor;
   SixWebRecebimentoTipo _tipo = SixWebRecebimentoTipo.total;
   List<SixWebTipoRecebimentoOpcao> _opcoes = _opcoesFallback;
@@ -308,6 +309,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
   }
 
   void _confirmar() {
+    if (_processando) return;
     final Set<String> codigos = <String>{};
     final List<RecebimentoFormaInput> recebimentos = <RecebimentoFormaInput>[];
     for (final _RecebimentoFormaDraft forma in _formas) {
@@ -379,20 +381,23 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
     }
 
     final _RecebimentoFormaDraft primeiraForma = _formas.first;
-    Navigator.of(context).pop(
-      SixWebRecebimentoResultado(
-        tipo: _tipo,
-        valor: valor,
-        codigoTipoRecebimento: primeiraForma.opcao.codigoTipo,
-        descricaoTipoRecebimento: primeiraForma.opcao.descricao,
-        formaPagamentoBackend: primeiraForma.opcao.formaPagamentoBackend,
-        recebimentos: recebimentos,
-        observacao:
-            _observacaoController.text.trim().isEmpty
-                ? null
-                : _observacaoController.text.trim(),
-      ),
+    setState(() => _processando = true);
+    final SixWebRecebimentoResultado resultado = SixWebRecebimentoResultado(
+      tipo: _tipo,
+      valor: valor,
+      codigoTipoRecebimento: primeiraForma.opcao.codigoTipo,
+      descricaoTipoRecebimento: primeiraForma.opcao.descricao,
+      formaPagamentoBackend: primeiraForma.opcao.formaPagamentoBackend,
+      recebimentos: recebimentos,
+      observacao:
+          _observacaoController.text.trim().isEmpty
+              ? null
+              : _observacaoController.text.trim(),
     );
+    Future<void>.delayed(Duration(milliseconds: _reduceMotion ? 80 : 220), () {
+      if (!mounted) return;
+      Navigator.of(context).pop(resultado);
+    });
   }
 
   @override
@@ -423,9 +428,20 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     );
-
+    final ButtonStyle cancelActionStyle = TextButton.styleFrom(
+      foregroundColor:
+          theme.brightness == Brightness.dark ? tokens.primaryText : accent,
+      backgroundColor:
+          theme.brightness == Brightness.dark
+              ? tokens.surfaceMuted.withValues(alpha: 0.92)
+              : accent.withValues(alpha: 0.08),
+      disabledForegroundColor: tokens.disabledForeground,
+      disabledBackgroundColor: tokens.disabledBackground,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    );
     return PopScope(
-      canPop: true,
+      canPop: !_processando,
       child: Shortcuts(
         shortcuts: const <ShortcutActivator, Intent>{
           SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
@@ -434,6 +450,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
           actions: <Type, Action<Intent>>{
             DismissIntent: CallbackAction<DismissIntent>(
               onInvoke: (DismissIntent intent) {
+                if (_processando) return null;
                 Navigator.of(context).maybePop();
                 return null;
               },
@@ -733,8 +750,12 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: <Widget>[
                                     TextButton(
+                                      style: cancelActionStyle,
                                       onPressed:
-                                          () => Navigator.of(context).pop(),
+                                          _processando
+                                              ? null
+                                              : () =>
+                                                  Navigator.of(context).pop(),
                                       child: Text(
                                         context.t(
                                           'common.cancel',
@@ -746,10 +767,32 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                     FilledButton.icon(
                                       style: primaryActionStyle,
                                       onPressed:
-                                          _carregandoTipos ? null : _confirmar,
-                                      icon: const Icon(Icons.payments_rounded),
+                                          _carregandoTipos || _processando
+                                              ? null
+                                              : _confirmar,
+                                      icon:
+                                          _processando
+                                              ? const SizedBox(
+                                                width: 18,
+                                                height: 18,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2.2,
+                                                      color: Colors.white,
+                                                    ),
+                                              )
+                                              : const Icon(
+                                                Icons.payments_rounded,
+                                              ),
                                       label: Text(
-                                        _tipo == SixWebRecebimentoTipo.total
+                                        _processando
+                                            ? context.t(
+                                              'vendasAReceber.processingTitle',
+                                              fallback:
+                                                  'Processando recebimento',
+                                            )
+                                            : _tipo ==
+                                                SixWebRecebimentoTipo.total
                                             ? context.t(
                                               'recebimento.receberTotal',
                                               fallback: 'Receber total',
@@ -765,6 +808,20 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                               ],
                             ),
                           ),
+                          if (_processando)
+                            Positioned.fill(
+                              child: _RecebimentoProcessingOverlay(
+                                title: context.t(
+                                  'vendasAReceber.processingTitle',
+                                  fallback: 'Processando recebimento',
+                                ),
+                                subtitle: context.t(
+                                  'vendasAReceber.processingSubtitle',
+                                  fallback:
+                                      'Aguarde enquanto a operação financeira é sincronizada.',
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -890,7 +947,30 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
   }
 
   Widget _formasRecebimentoSection() {
+    final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent =
+        theme.brightness == Brightness.dark
+            ? const Color(0xFF60A5FA)
+            : const Color(0xFF2563EB);
+    final ButtonStyle addMethodStyle = OutlinedButton.styleFrom(
+      foregroundColor:
+          theme.brightness == Brightness.dark ? accent : tokens.primaryText,
+      backgroundColor:
+          theme.brightness == Brightness.dark
+              ? accent.withValues(alpha: 0.10)
+              : Colors.transparent,
+      disabledForegroundColor: tokens.disabledForeground,
+      disabledBackgroundColor: tokens.disabledBackground,
+      side: BorderSide(
+        color:
+            theme.brightness == Brightness.dark
+                ? accent.withValues(alpha: 0.34)
+                : tokens.cardBorder,
+      ),
+      minimumSize: const Size.fromHeight(48),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    );
     if (_carregandoTipos) {
       return Container(
         padding: const EdgeInsets.all(14),
@@ -973,6 +1053,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
         ],
         OutlinedButton.icon(
           onPressed: podeAdicionar ? _adicionarForma : null,
+          style: addMethodStyle,
           icon: const Icon(Icons.add_rounded),
           label: Text(
             context.t(
@@ -1601,6 +1682,111 @@ class _RecebimentoDialogIcon extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _RecebimentoProcessingOverlay extends StatelessWidget {
+  const _RecebimentoProcessingOverlay({
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color accent =
+        theme.brightness == Brightness.dark
+            ? const Color(0xFF60A5FA)
+            : const Color(0xFF2563EB);
+
+    return IgnorePointer(
+      child: Container(
+        color: const Color(0xFF081120).withValues(alpha: 0.34),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 380),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: tokens.surfaceElevated,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: tokens.cardBorder),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: const Color(0xFF020617).withValues(alpha: 0.30),
+                  blurRadius: 32,
+                  offset: const Offset(0, 18),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2.4),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              title,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: tokens.primaryText,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              subtitle,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: tokens.secondaryText,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      minHeight: 5,
+                      backgroundColor: accent.withValues(alpha: 0.12),
+                      valueColor: AlwaysStoppedAnimation<Color>(accent),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

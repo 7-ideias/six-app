@@ -957,11 +957,11 @@ class _AtendimentosTecnicosListaWebPageState
   Future<void> _abrirEditarAtendimento(
     AtendimentoTecnicoModel atendimento,
   ) async {
-    final alterou = await showDialog<bool>(
+    final bool alterou = await showAtendimentoTecnicoEditarDialog(
       context: context,
-      builder: (_) => AtendimentoTecnicoEditarDialog(atendimento: atendimento),
+      atendimento: atendimento,
     );
-    if (alterou == true && mounted) {
+    if (alterou && mounted) {
       _recarregar();
       _mostrarMensagem(
         'Atendimento atualizado. O histórico de auditoria foi registrado e uma nova assinatura pode ser solicitada.',

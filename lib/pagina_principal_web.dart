@@ -137,15 +137,18 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   bool _registrandoReceberDepois = false;
   bool _recebendoVendaNaoLiquidada = false;
   bool _overlayRecebimentoAberto = false;
+  bool _sincronizandoTotalVendasAReceber = false;
   bool _modoExpandidoFrenteCaixa = false;
   bool _carregandoSessaoCaixaPdv = false;
   bool _sessaoCaixaPdvSincronizada = false;
   bool _erroSessaoCaixaPdv = false;
   CaixaSessao? _sessaoCaixaPdv;
   Timer? _sessaoCaixaPdvTempoAtivoTimer;
+  Timer? _vendasAReceberPollingTimer;
   DateTime _referenciaTempoSessaoCaixaPdv = DateTime.now();
   ClienteUsuario? _clienteIdentificado;
   VendaNaoLiquidadaModel? _vendaNaoLiquidadaEmConsulta;
+  int _totalVendasAReceberPendentes = 0;
 
   final TextEditingController _codigoBarrasController = TextEditingController();
   final TextEditingController _itensTotalController = TextEditingController(
@@ -309,6 +312,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     );
 
     _configurarWebSocket();
+    _iniciarPollingTotalVendasAReceber();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _registrarOfensivaWeb();
     });
@@ -324,6 +328,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     onStompErro = null;
     _monitoramentoComunicacaoTimer?.cancel();
     _sessaoCaixaPdvTempoAtivoTimer?.cancel();
+    _vendasAReceberPollingTimer?.cancel();
     disconnectStomp();
     _bellAnimationController.dispose();
     _atalhosFocusNode.dispose();
@@ -340,6 +345,45 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     _resumoVendaScrollController.dispose();
     _areaVendaScrollController.dispose();
     super.dispose();
+  }
+
+  void _iniciarPollingTotalVendasAReceber() {
+    _vendasAReceberPollingTimer?.cancel();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _sincronizarTotalVendasAReceber();
+    });
+    _vendasAReceberPollingTimer = Timer.periodic(const Duration(seconds: 20), (
+      _,
+    ) {
+      _sincronizarTotalVendasAReceber();
+    });
+  }
+
+  Future<void> _sincronizarTotalVendasAReceber() async {
+    if (!mounted || _sincronizandoTotalVendasAReceber) {
+      return;
+    }
+
+    _sincronizandoTotalVendasAReceber = true;
+    try {
+      final List<VendaNaoLiquidadaModel> vendas =
+          await _vendaNaoLiquidadaApiClient.listar();
+      if (!mounted) {
+        return;
+      }
+
+      final int total = vendas.length;
+      if (_totalVendasAReceberPendentes != total) {
+        setState(() {
+          _totalVendasAReceberPendentes = total;
+        });
+      }
+    } catch (_) {
+      // Polling silencioso: manter o último total conhecido é preferível
+      // a poluir o fluxo do PDV com mensagens transitórias.
+    } finally {
+      _sincronizandoTotalVendasAReceber = false;
+    }
   }
 
   void _configurarWebSocket() {
@@ -783,14 +827,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       child: SafeArea(
         minimum: const EdgeInsets.only(right: 4, bottom: 4),
         child: VendaEmAndamentoFabWeb(
-          titulo: context.t(
-            'pdv.openSale.status',
-            fallback: 'Venda em aberto',
-          ),
-          resumo: _resumoVendaEmAndamentoFlutuante(
-            regionalizacao,
-            totalAtual,
-          ),
+          titulo: context.t('pdv.openSale.status', fallback: 'Venda em aberto'),
+          resumo: _resumoVendaEmAndamentoFlutuante(regionalizacao, totalAtual),
           tooltip: l10n?.pdvWebContinueSaleAction ?? 'Continuar venda',
           onPressed: _iniciarVenda,
         ),
@@ -2470,6 +2508,11 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
       await _operacaoService.finalizarVenda(input);
 
+      if (!mounted) {
+        return;
+      }
+
+      await _sincronizarTotalVendasAReceber();
       if (!mounted) {
         return;
       }
