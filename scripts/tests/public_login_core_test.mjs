@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -22,6 +23,30 @@ import {
 import {
   assertPublicDictionaryParity,
 } from '../../web/site-assets/js/public-locale.mjs';
+
+const publicBaseStyles = readFileSync(
+  new URL('../../web/site-assets/css/public-base.css', import.meta.url),
+  'utf8',
+);
+const sixoAppPublicStyles = readFileSync(
+  new URL('../../web/site-assets/css/sixoapp-public.css', import.meta.url),
+  'utf8',
+);
+
+test('link de acessibilidade permanece oculto ate receber foco', () => {
+  assert.match(
+    publicBaseStyles,
+    /\.skip-link\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?transform:\s*translateY\(-150%\);/,
+  );
+  assert.match(
+    sixoAppPublicStyles,
+    /\.auth-public-page\s*>\s*:not\(\.skip-link\)/,
+  );
+  assert.doesNotMatch(
+    sixoAppPublicStyles,
+    /\.auth-public-page\s*>\s*\*/,
+  );
+});
 
 test('redirect aceita /app', () => {
   assert.equal(sanitizePublicAppRedirect('/app'), '/app');
