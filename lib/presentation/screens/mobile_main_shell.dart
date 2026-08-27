@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/services/mobile_session_restoration_service.dart';
 import '../../data/models/streak_models.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/streak_provider.dart';
 import '../navigation/mobile_navigation_controller.dart';
+import 'auth_entry_mobile.dart';
 import 'atendimento_mobile_screen.dart';
 import 'gestao_mobile_screen.dart';
 import 'home_page_mobile_screen.dart';
@@ -36,6 +40,10 @@ class _MobileMainShellState extends State<MobileMainShell>
   late final List<Widget?> _pages;
   late int _selectedIndex;
   int _transitionDirection = 0;
+  final MobileSessionRestorationService _sessionRestorationService =
+      MobileSessionRestorationService();
+  bool _restoringSessionAfterResume = false;
+  bool _redirectingToLogin = false;
 
   @override
   void initState() {
@@ -76,8 +84,50 @@ class _MobileMainShellState extends State<MobileMainShell>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _registrarOfensivaMobile();
+      unawaited(_handleAppResumed());
     }
+  }
+
+  Future<void> _handleAppResumed() async {
+    if (_restoringSessionAfterResume || _redirectingToLogin) {
+      return;
+    }
+
+    _restoringSessionAfterResume = true;
+    try {
+      final MobileSessionRestorationResult restoration =
+          await _sessionRestorationService.restore();
+
+      switch (restoration.status) {
+        case MobileSessionRestorationStatus.restored:
+          await _registrarOfensivaMobile();
+          return;
+        case MobileSessionRestorationStatus.temporaryFailure:
+          debugPrint(
+            '[MobileMainShell] Sessão preservada após falha temporária: '
+            '${restoration.error}',
+          );
+          return;
+        case MobileSessionRestorationStatus.noStoredSession:
+        case MobileSessionRestorationStatus.invalidSession:
+          _goToLogin();
+          return;
+      }
+    } finally {
+      _restoringSessionAfterResume = false;
+    }
+  }
+
+  void _goToLogin() {
+    if (!mounted || _redirectingToLogin) {
+      return;
+    }
+
+    _redirectingToLogin = true;
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil<void>(
+      MaterialPageRoute<void>(builder: (_) => const AuthEntryMobile()),
+      (Route<dynamic> route) => false,
+    );
   }
 
   void _onNavigationChanged() {
@@ -135,23 +185,19 @@ class _MobileMainShellState extends State<MobileMainShell>
 
     return MobileNavigationScope(
       controller: _navigationController,
-      child:
-          reduceMotion
-              ? _buildIndexedPages()
-              : AnimatedBuilder(
-                animation: _entryAnimation,
-                child: _buildIndexedPages(),
-                builder: (BuildContext context, Widget? child) {
-                  final double progress = _entryAnimation.value;
-                  final double dx =
-                      (1 - progress) * _slideDistance * _transitionDirection;
+      child: reduceMotion
+          ? _buildIndexedPages()
+          : AnimatedBuilder(
+              animation: _entryAnimation,
+              child: _buildIndexedPages(),
+              builder: (BuildContext context, Widget? child) {
+                final double progress = _entryAnimation.value;
+                final double dx =
+                    (1 - progress) * _slideDistance * _transitionDirection;
 
-                  return Transform.translate(
-                    offset: Offset(dx, 0),
-                    child: child,
-                  );
-                },
-              ),
+                return Transform.translate(offset: Offset(dx, 0), child: child);
+              },
+            ),
     );
   }
 

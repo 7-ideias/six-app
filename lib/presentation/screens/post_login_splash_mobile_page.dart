@@ -21,8 +21,6 @@ class PostLoginSplashMobilePage extends StatefulWidget {
 }
 
 class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
-  static const Duration _minimumDuration = Duration(milliseconds: 1600);
-
   @override
   void initState() {
     super.initState();
@@ -31,20 +29,16 @@ class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
 
   Future<void> _prepareSessionAndNavigate() async {
     await LoadingDoMobileComunicandoComBackendController.track<void>(() async {
-      await Future.wait<void>([
-        _guardedBootstrap(),
-        Future<void>.delayed(_minimumDuration),
-      ]);
+      await _guardedBootstrap();
     });
 
     if (!mounted) return;
 
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute<void>(
-        builder:
-            (_) => const MobileMainShell(
-              initialIndex: MobileNavigationController.dashIndex,
-            ),
+        builder: (_) => const MobileMainShell(
+          initialIndex: MobileNavigationController.dashIndex,
+        ),
       ),
       (route) => false,
     );
@@ -60,8 +54,8 @@ class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
   }
 
   Future<void> _bootstrapAuthenticatedSession() async {
-    final idiomaDePreferencia =
-        await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+    final idiomaDePreferencia = await UsuarioService()
+        .buscarDadosDoUsuario_atualizaProviders();
 
     if (!mounted) return;
     await context

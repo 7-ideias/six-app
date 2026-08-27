@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 
-import '../../core/services/auth_service.dart';
 import '../../core/services/empresa_service.dart';
 import '../../core/services/firebase_push_notification_service.dart';
+import '../../core/services/mobile_session_restoration_service.dart';
 import '../../data/services/regionalizacao/regionalizacao_api_client.dart';
 import '../../domain/services/regionalizacao/regionalizacao_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
@@ -26,7 +26,8 @@ class AuthGateMobile extends StatefulWidget {
 enum _AuthGateMobileStatus { validating, temporaryError }
 
 class _AuthGateMobileState extends State<AuthGateMobile> {
-  final AuthService _authService = AuthService();
+  final MobileSessionRestorationService _sessionRestorationService =
+      MobileSessionRestorationService();
   final UsuarioService _usuarioService = UsuarioService();
   _AuthGateMobileStatus _status = _AuthGateMobileStatus.validating;
   bool _restoring = false;
@@ -48,16 +49,28 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
       setState(() => _status = _AuthGateMobileStatus.validating);
     }
 
-    final String? refreshToken = await _authService.getRefreshToken();
-
-    if (refreshToken == null || refreshToken.trim().isEmpty) {
-      _restoring = false;
-      _goToLogin();
-      return;
-    }
-
     try {
-      await _authService.refreshToken();
+      final MobileSessionRestorationResult restoration =
+          await _sessionRestorationService.restore();
+
+      switch (restoration.status) {
+        case MobileSessionRestorationStatus.noStoredSession:
+        case MobileSessionRestorationStatus.invalidSession:
+          if (!mounted) return;
+          _goToLogin();
+          return;
+        case MobileSessionRestorationStatus.temporaryFailure:
+          debugPrint(
+            '[AuthGateMobile] Falha temporária ao restaurar sessão: '
+            '${restoration.error}',
+          );
+          if (mounted) {
+            setState(() => _status = _AuthGateMobileStatus.temporaryError);
+          }
+          return;
+        case MobileSessionRestorationStatus.restored:
+          break;
+      }
 
       try {
         await EmpresaService().buscarDadosDaEmpresa();
@@ -74,21 +87,6 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
 
       if (!mounted) return;
       _goToHome();
-    } on AuthRefreshException catch (error) {
-      if (error.isInvalidSession) {
-        debugPrint('[AuthGateMobile] Sessão inválida confirmada: $error');
-        await _authService.clearLocalSession();
-        if (!mounted) return;
-        _goToLogin();
-        return;
-      }
-
-      debugPrint(
-        '[AuthGateMobile] Falha temporária ao restaurar sessão: $error',
-      );
-      if (mounted) {
-        setState(() => _status = _AuthGateMobileStatus.temporaryError);
-      }
     } catch (error) {
       debugPrint('[AuthGateMobile] Falha temporária inesperada: $error');
       if (mounted) {
@@ -101,8 +99,8 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
 
   Future<void> _applyAuthenticatedLocale() async {
     try {
-      final String? idiomaDePreferencia =
-          await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
+      final String? idiomaDePreferencia = await _usuarioService
+          .buscarDadosDoUsuario_atualizaProviders();
       if (!mounted) return;
 
       final regionalizacaoService = RegionalizacaoService(
@@ -125,10 +123,9 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
   void _goToHome() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
-        builder:
-            (_) => const MobileMainShell(
-              initialIndex: MobileNavigationController.dashIndex,
-            ),
+        builder: (_) => const MobileMainShell(
+          initialIndex: MobileNavigationController.dashIndex,
+        ),
       ),
     );
   }
