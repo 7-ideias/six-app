@@ -366,6 +366,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         ),
         children: <Widget>[
           SixStaggeredEntry(
+            key: const ValueKey<String>('gestao-hub-intro'),
             delay: Duration(milliseconds: 40),
             child: _GestaoHubIntroCard(
               title: context.t(
@@ -385,23 +386,20 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               const double gap = 12;
               final double itemWidth = (gridConstraints.maxWidth - gap) / 2;
 
-              return GridView(
-                shrinkWrap: true,
-                primary: false,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: gap,
-                  mainAxisSpacing: gap,
-                  mainAxisExtent: cardHeight,
-                ),
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
                 children: <Widget>[
                   for (int index = 0; index < actions.length; index += 1)
-                    _buildReorderableHubCard(
-                      action: actions[index],
-                      index: index,
-                      itemWidth: itemWidth,
-                      cardHeight: cardHeight,
+                    SizedBox(
+                      width: itemWidth,
+                      height: cardHeight,
+                      child: _buildReorderableHubCard(
+                        action: actions[index],
+                        index: index,
+                        itemWidth: itemWidth,
+                        cardHeight: cardHeight,
+                      ),
                     ),
                 ],
               );

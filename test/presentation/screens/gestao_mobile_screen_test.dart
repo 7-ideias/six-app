@@ -8,6 +8,7 @@ import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/management_overview_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
+import 'package:sixpos/presentation/components/nav_bar_mobile.dart';
 import 'package:sixpos/presentation/screens/gestao_mobile_screen.dart';
 
 void main() {
@@ -60,6 +61,26 @@ void main() {
       'GestaoMobileScreen:financeiro',
       'GestaoMobileScreen:configuracoes',
     ]);
+  });
+
+  testWidgets('mantém os cards próximos ao resumo e acima da navegação', (
+    WidgetTester tester,
+  ) async {
+    await _pumpGestao(tester, area: null);
+
+    final Rect introRect = tester.getRect(
+      find.byKey(const ValueKey<String>('gestao-hub-intro')),
+    );
+    final Rect firstCardRect = tester.getRect(
+      find.byKey(const ValueKey<String>('gestao-hub-card-catalog')),
+    );
+    final Rect lastCardRect = tester.getRect(
+      find.byKey(const ValueKey<String>('gestao-hub-card-settings')),
+    );
+    final Rect navigationRect = tester.getRect(find.byType(NavBarMobile));
+
+    expect(firstCardRect.top - introRect.bottom, closeTo(16, 0.5));
+    expect(lastCardRect.bottom, lessThanOrEqualTo(navigationRect.top));
   });
 
   testWidgets('aciona item disponível e mantém item bloqueado sem navegação', (
