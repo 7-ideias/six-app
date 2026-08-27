@@ -49,6 +49,12 @@ void main() {
           'tecnicoKey': 'tecnico-2',
           'statusPagamento': 'LIQUIDADO',
         },
+        'ordemCardsGestaoMobile': <String>[
+          'FINANCEIRO',
+          'CATALOGO',
+          'CONFIGURACOES',
+          'PESSOAS',
+        ],
       });
 
       expect(capturedRequest.method, 'POST');
@@ -87,6 +93,12 @@ void main() {
           'tecnicoKey': 'tecnico-2',
           'statusPagamento': 'LIQUIDADO',
         },
+        'ordemCardsGestaoMobile': <String>[
+          'FINANCEIRO',
+          'CATALOGO',
+          'CONFIGURACOES',
+          'PESSOAS',
+        ],
       });
     },
   );

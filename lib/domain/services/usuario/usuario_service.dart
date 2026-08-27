@@ -82,6 +82,7 @@ class UsuarioService {
     Map<String, dynamic>? consultaVendasFiltrosWeb,
     Map<String, dynamic>? atendimentosCriadosFiltrosWeb,
     Map<String, dynamic>? atendimentosCriadosFiltrosMobile,
+    List<String>? ordemCardsGestaoMobile,
   }) async {
     final Map<String, dynamic> body = <String, dynamic>{};
     if (idiomaDePreferencia != null) {
@@ -137,6 +138,9 @@ class UsuarioService {
     if (atendimentosCriadosFiltrosMobile != null) {
       body['atendimentosCriadosFiltrosMobile'] =
           atendimentosCriadosFiltrosMobile;
+    }
+    if (ordemCardsGestaoMobile != null) {
+      body['ordemCardsGestaoMobile'] = ordemCardsGestaoMobile;
     }
 
     if (body.isEmpty) {
