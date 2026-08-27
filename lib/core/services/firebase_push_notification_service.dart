@@ -16,7 +16,9 @@ import 'notificacao_service.dart';
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await FirebasePushNotificationService.initializeFirebaseIfConfigured();
-  FirebasePushNotificationService.registrarRemoteMessage(message);
+  await FirebasePushNotificationService.registrarRemoteMessagePersistente(
+    message,
+  );
 }
 
 class FirebasePushNotificationService {
@@ -60,13 +62,8 @@ class FirebasePushNotificationService {
   }
 
   static Future<void> initializeOnAppStart() async {
-    if (!await initializeFirebaseIfConfigured()) {
+    if (!await initializeBeforeRunApp()) {
       return;
-    }
-
-    if (!_backgroundHandlerRegistrado) {
-      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-      _backgroundHandlerRegistrado = true;
     }
 
     if (_listenersConfigurados) {
@@ -78,13 +75,26 @@ class FirebasePushNotificationService {
     FirebaseMessaging.onMessage.listen(_onForegroundMessage);
     FirebaseMessaging.onMessageOpenedApp.listen(registrarRemoteMessage);
 
-    final RemoteMessage? initialMessage =
-        await FirebaseMessaging.instance.getInitialMessage();
+    final RemoteMessage? initialMessage = await FirebaseMessaging.instance
+        .getInitialMessage();
     if (initialMessage != null) {
       registrarRemoteMessage(initialMessage);
     }
 
     _listenersConfigurados = true;
+  }
+
+  static Future<bool> initializeBeforeRunApp() async {
+    if (!await initializeFirebaseIfConfigured()) {
+      return false;
+    }
+
+    if (!_backgroundHandlerRegistrado) {
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      _backgroundHandlerRegistrado = true;
+    }
+
+    return true;
   }
 
   Future<void> syncTokenForLoggedUser() async {
@@ -188,6 +198,17 @@ class FirebasePushNotificationService {
 
   Future<String?> _obterTokenFcm() async {
     try {
+      if (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS) {
+        final bool apnsDisponivel = await _aguardarTokenApns();
+        if (!apnsDisponivel) {
+          debugPrint(
+            '[FirebasePushNotificationService] Token APNs ainda indisponivel.',
+          );
+          return null;
+        }
+      }
+
       return await FirebaseMessaging.instance.getToken().timeout(
         const Duration(seconds: 12),
       );
@@ -202,6 +223,17 @@ class FirebasePushNotificationService {
       );
       return null;
     }
+  }
+
+  Future<bool> _aguardarTokenApns() async {
+    for (int tentativa = 0; tentativa < 10; tentativa++) {
+      final String? token = await FirebaseMessaging.instance.getAPNSToken();
+      if (token != null && token.trim().isNotEmpty) {
+        return true;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+    }
+    return false;
   }
 
   Future<void> _registrarTokenNoBackend(String token) async {
@@ -265,7 +297,19 @@ class FirebasePushNotificationService {
   }
 
   static void registrarRemoteMessage(RemoteMessage message) {
-    final Map<String, dynamic> payload = <String, dynamic>{
+    NotificacaoService().registrarPayload(_payloadFrom(message));
+  }
+
+  static Future<void> registrarRemoteMessagePersistente(
+    RemoteMessage message,
+  ) async {
+    await NotificacaoService().registrarPayloadPersistente(
+      _payloadFrom(message),
+    );
+  }
+
+  static Map<String, dynamic> _payloadFrom(RemoteMessage message) {
+    return <String, dynamic>{
       ...message.data,
       'tipoDeEvento': message.data['tipoDeEvento'] ?? 'PUSH_FIREBASE',
       'titulo': _titleFrom(message),
@@ -276,8 +320,6 @@ class FirebasePushNotificationService {
       if (message.sentTime != null)
         'sentTime': message.sentTime!.toIso8601String(),
     };
-
-    NotificacaoService().registrarPayload(payload);
   }
 
   static String _titleFrom(RemoteMessage message) {
