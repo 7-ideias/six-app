@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
@@ -20,64 +21,62 @@ class NavBarMobile extends StatelessWidget {
         MobileNavigationScope.maybeOf(context);
     final int selectedIndex = controller?.value ?? initialIndex;
     final SixMobileColorScheme colors = context.sixMobileColors;
+    final double textScaleFactor =
+        MediaQuery.textScalerOf(context).scale(10) / 10;
+    final double navigationHeight =
+        66 + ((textScaleFactor.clamp(1.0, 1.4) - 1) * 18);
 
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      minimum: const EdgeInsets.fromLTRB(14, 0, 14, 8),
       child: Container(
-        height: 64,
-        padding: const EdgeInsets.all(5),
+        height: navigationHeight,
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
         decoration: BoxDecoration(
           color: colors.surface,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: colors.border),
+          border: Border.all(color: colors.border.withValues(alpha: 0.72)),
           boxShadow: <BoxShadow>[
             BoxShadow(
               color: colors.navigationShadow,
-              blurRadius: 18,
-              offset: const Offset(0, 8),
+              blurRadius: 16,
+              offset: const Offset(0, 7),
             ),
           ],
         ),
         child: Row(
           children: <Widget>[
             _NavItem(
-              icon: Icons.home_outlined,
-              activeIcon: Icons.home_rounded,
-              label: context.t('mobile.nav.dash', fallback: 'dash'),
+              assetPath: _NavBarAssets.inicio,
+              label: context.t('mobile.nav.home'),
               selected: selectedIndex == MobileNavigationController.dashIndex,
-              onTap:
-                  () => _select(
-                    context,
-                    controller,
-                    MobileNavigationController.dashIndex,
-                  ),
+              onTap: () => _select(
+                context,
+                controller,
+                MobileNavigationController.dashIndex,
+              ),
             ),
             _NavItem(
-              icon: Icons.support_agent_outlined,
-              activeIcon: Icons.support_agent_rounded,
-              label: context.t('mobile.nav.service', fallback: 'Atendimento'),
+              assetPath: _NavBarAssets.atendimento,
+              label: context.t('mobile.nav.service'),
               selected:
                   selectedIndex == MobileNavigationController.serviceIndex,
-              onTap:
-                  () => _select(
-                    context,
-                    controller,
-                    MobileNavigationController.serviceIndex,
-                  ),
+              onTap: () => _select(
+                context,
+                controller,
+                MobileNavigationController.serviceIndex,
+              ),
             ),
             _NavItem(
-              icon: Icons.manage_accounts_outlined,
-              activeIcon: Icons.manage_accounts_rounded,
-              label: context.t('mobile.nav.management', fallback: 'Gestão'),
+              assetPath: _NavBarAssets.gestao,
+              label: context.t('mobile.nav.management'),
               selected:
                   selectedIndex == MobileNavigationController.managementIndex,
-              onTap:
-                  () => _select(
-                    context,
-                    controller,
-                    MobileNavigationController.managementIndex,
-                  ),
+              onTap: () => _select(
+                context,
+                controller,
+                MobileNavigationController.managementIndex,
+              ),
             ),
           ],
         ),
@@ -120,15 +119,13 @@ class NavBarMobile extends StatelessWidget {
 
 class _NavItem extends StatelessWidget {
   const _NavItem({
-    required this.icon,
-    required this.activeIcon,
+    required this.assetPath,
     required this.label,
     required this.selected,
     required this.onTap,
   });
 
-  final IconData icon;
-  final IconData activeIcon;
+  final String assetPath;
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -136,6 +133,13 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
+    final MediaQueryData mediaQuery = MediaQuery.of(context);
+    final bool reduceMotion =
+        mediaQuery.disableAnimations || mediaQuery.accessibleNavigation;
+    final Duration duration = reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 180);
+    final Color foregroundColor = selected ? colors.accent : colors.mutedText;
 
     return Expanded(
       child: Semantics(
@@ -147,28 +151,58 @@ class _NavItem extends StatelessWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(17),
             onTap: onTap,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
-              decoration: BoxDecoration(
-                color: selected ? colors.softAccentSurface : Colors.transparent,
-                borderRadius: BorderRadius.circular(17),
-              ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  Icon(
-                    selected ? activeIcon : icon,
-                    size: 21,
-                    color: selected ? colors.accent : colors.mutedText,
+                  AnimatedContainer(
+                    duration: duration,
+                    curve: Curves.easeOutCubic,
+                    width: selected ? 22 : 8,
+                    height: 2.5,
+                    decoration: BoxDecoration(
+                      color: selected ? colors.accent : Colors.transparent,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
+                  AnimatedScale(
+                    scale: selected ? 1.04 : 1,
+                    duration: duration,
+                    curve: Curves.easeOutCubic,
+                    child: AnimatedContainer(
+                      duration: duration,
+                      curve: Curves.easeOutCubic,
+                      width: 30,
+                      height: 30,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? colors.softAccentSurface
+                            : Colors.transparent,
+                        shape: BoxShape.circle,
+                      ),
+                      child: SvgPicture.asset(
+                        assetPath,
+                        width: 23,
+                        height: 23,
+                        colorFilter: ColorFilter.mode(
+                          foregroundColor,
+                          BlendMode.srcIn,
+                        ),
+                        excludeFromSemantics: true,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 1),
                   Text(
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: selected ? colors.titleText : colors.mutedText,
-                      fontSize: 9.5,
+                      color: foregroundColor,
+                      fontSize: 10,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                     ),
                   ),
@@ -180,4 +214,12 @@ class _NavItem extends StatelessWidget {
       ),
     );
   }
+}
+
+abstract final class _NavBarAssets {
+  const _NavBarAssets._();
+
+  static const String inicio = 'assets/images/navbar/nav-inicio.svg';
+  static const String atendimento = 'assets/images/navbar/nav-atendimento.svg';
+  static const String gestao = 'assets/images/navbar/nav-gestao.svg';
 }
