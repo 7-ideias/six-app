@@ -42,6 +42,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sixpos/core/services/firebase_push_notification_service.dart';
 
+import 'core/services/notificacao_service.dart';
 import 'core/services/produto_service.dart';
 import 'core/utils/browser_location.dart';
 import 'core/ui/app_feedback.dart';
@@ -52,19 +53,24 @@ void main() async {
   final SharedPreferences? prefs = await _loadSharedPreferences();
   final ThemeProvider themeProvider = await ThemeProvider.load(
     enableLocalPersistence: !kIsWeb,
-    storage:
-        prefs == null ? null : SharedPreferencesThemePreferenceStorage(prefs),
+    storage: prefs == null
+        ? null
+        : SharedPreferencesThemePreferenceStorage(prefs),
   );
+
+  if (!kIsWeb) {
+    await NotificacaoService().initialize();
+    await FirebasePushNotificationService.initializeBeforeRunApp();
+  }
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
         ChangeNotifierProvider(
-          create:
-              (_) => ProdutosListProvider<ProdutoModel>(
-                fetchFunction: ProdutoService().produtosList,
-              ),
+          create: (_) => ProdutosListProvider<ProdutoModel>(
+            fetchFunction: ProdutoService().produtosList,
+          ),
         ),
         ChangeNotifierProvider(create: (_) => EmpresaProvider()),
         ChangeNotifierProvider(
@@ -73,12 +79,11 @@ void main() async {
         ChangeNotifierProvider(create: (_) => StreakProvider()),
         ChangeNotifierProvider(
           lazy: false,
-          create:
-              (_) => LocaleSettingsProvider(
-                regionalizacaoService: RegionalizacaoService(
-                  apiClient: HttpRegionalizacaoApiClient(),
-                ),
-              )..initialize(),
+          create: (_) => LocaleSettingsProvider(
+            regionalizacaoService: RegionalizacaoService(
+              apiClient: HttpRegionalizacaoApiClient(),
+            ),
+          )..initialize(),
         ),
       ],
       child: const MyApp(),
@@ -106,8 +111,9 @@ class MyApp extends StatelessWidget {
     final Uri currentUri = Uri.base;
     final String path = currentUri.path.isEmpty ? '/' : currentUri.path;
     final String query = currentUri.hasQuery ? '?${currentUri.query}' : '';
-    final String fragment =
-        currentUri.hasFragment ? '#${currentUri.fragment}' : '';
+    final String fragment = currentUri.hasFragment
+        ? '#${currentUri.fragment}'
+        : '';
     return '$path$query$fragment';
   }
 
@@ -214,16 +220,15 @@ class MyApp extends StatelessWidget {
     if (routeUri.path == '/atendimento/assinatura') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder:
-            (_) =>
-                AtendimentoTecnicoAssinaturaPublicaPage(initialUri: routeUri),
+        builder: (_) =>
+            AtendimentoTecnicoAssinaturaPublicaPage(initialUri: routeUri),
       );
     }
     if (routeUri.path == '/atendimento/status') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder:
-            (_) => AtendimentoTecnicoStatusPublicoPage(initialUri: routeUri),
+        builder: (_) =>
+            AtendimentoTecnicoStatusPublicoPage(initialUri: routeUri),
       );
     }
     if (routeUri.path == '/onboarding') {
@@ -268,11 +273,10 @@ class MyApp extends StatelessWidget {
     if (isPublicColaboradorConviteRoute) {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder:
-            (_) => ColaboradorConvitePublicoWebPage(
-              codigo: routeUri.pathSegments[2],
-              initialUri: routeUri,
-            ),
+        builder: (_) => ColaboradorConvitePublicoWebPage(
+          codigo: routeUri.pathSegments[2],
+          initialUri: routeUri,
+        ),
       );
     }
     if (isPublicClienteAutoCadastroRoute) {
@@ -282,15 +286,13 @@ class MyApp extends StatelessWidget {
       );
     }
     if (isPublicOsRoute) {
-      final String ordemId =
-          routeUri.pathSegments.length > 1
-              ? routeUri.pathSegments[1]
-              : 'os-sem-id';
+      final String ordemId = routeUri.pathSegments.length > 1
+          ? routeUri.pathSegments[1]
+          : 'os-sem-id';
       return MaterialPageRoute<void>(
         settings: settings,
-        builder:
-            (_) =>
-                OrdemServicoPublicaPage(ordemId: ordemId, initialUri: routeUri),
+        builder: (_) =>
+            OrdemServicoPublicaPage(ordemId: ordemId, initialUri: routeUri),
       );
     }
 
@@ -320,11 +322,10 @@ class MyApp extends StatelessWidget {
   }) {
     return MaterialPageRoute<void>(
       settings: settings,
-      builder:
-          (_) => _BrowserLocationRedirectPage(
-            location: location,
-            fallbackRoute: fallbackRoute,
-          ),
+      builder: (_) => _BrowserLocationRedirectPage(
+        location: location,
+        fallbackRoute: fallbackRoute,
+      ),
     );
   }
 
@@ -334,8 +335,8 @@ class MyApp extends StatelessWidget {
   }) {
     return MaterialPageRoute<void>(
       settings: settings,
-      builder:
-          (_) => WebAuthGate(requestedLocation: settings.name, child: page),
+      builder: (_) =>
+          WebAuthGate(requestedLocation: settings.name, child: page),
     );
   }
 
@@ -349,12 +350,13 @@ class MyApp extends StatelessWidget {
       reverseTransitionDuration: const Duration(milliseconds: 280),
       pageBuilder: (_, __, ___) => page,
       transitionsBuilder: (_, animation, __, child) {
-        final slide = Tween<Offset>(
-          begin: const Offset(1.0, 0.0),
-          end: Offset.zero,
-        ).animate(
-          CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic),
-        );
+        final slide =
+            Tween<Offset>(
+              begin: const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic),
+            );
         final fade = Tween<double>(
           begin: 0.0,
           end: 1.0,
@@ -374,14 +376,15 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       scaffoldMessengerKey: AppFeedback.scaffoldMessengerKey,
-      onGenerateTitle:
-          (context) => AppLocalizations.of(context)?.appTitle ?? 'SixoApp',
+      onGenerateTitle: (context) =>
+          AppLocalizations.of(context)?.appTitle ?? 'SixoApp',
       debugShowCheckedModeBanner: false,
       themeMode: themeProvider.themeMode,
       theme: themeProvider.lightTheme,
       darkTheme: themeProvider.darkTheme,
-      themeAnimationDuration:
-          kIsWeb ? kThemeAnimationDuration : const Duration(milliseconds: 320),
+      themeAnimationDuration: kIsWeb
+          ? kThemeAnimationDuration
+          : const Duration(milliseconds: 320),
       themeAnimationCurve: kIsWeb ? Curves.linear : Curves.easeOutCubic,
       builder: (BuildContext context, Widget? child) {
         final Widget resolvedChild = child ?? const SizedBox.shrink();

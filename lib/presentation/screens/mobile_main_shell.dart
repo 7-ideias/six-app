@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/services/mobile_session_restoration_service.dart';
+import '../../core/services/firebase_push_notification_service.dart';
+import '../../core/services/notificacao_evento_sync_service.dart';
+import '../../core/services/websocket_service.dart';
 import '../../data/models/streak_models.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/streak_provider.dart';
@@ -43,6 +46,7 @@ class _MobileMainShellState extends State<MobileMainShell>
   final MobileSessionRestorationService _sessionRestorationService =
       MobileSessionRestorationService();
   bool _restoringSessionAfterResume = false;
+  bool _resumingRealtimeSession = false;
   bool _redirectingToLogin = false;
 
   @override
@@ -69,6 +73,7 @@ class _MobileMainShellState extends State<MobileMainShell>
     _navigationController.addListener(_onNavigationChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _registrarOfensivaMobile();
+      unawaited(_resumeRealtimeSession());
     });
   }
 
@@ -85,6 +90,12 @@ class _MobileMainShellState extends State<MobileMainShell>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(_handleAppResumed());
+      return;
+    }
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      disconnectStomp();
     }
   }
 
@@ -100,6 +111,7 @@ class _MobileMainShellState extends State<MobileMainShell>
 
       switch (restoration.status) {
         case MobileSessionRestorationStatus.restored:
+          await _resumeRealtimeSession();
           await _registrarOfensivaMobile();
           return;
         case MobileSessionRestorationStatus.temporaryFailure:
@@ -107,6 +119,7 @@ class _MobileMainShellState extends State<MobileMainShell>
             '[MobileMainShell] Sessão preservada após falha temporária: '
             '${restoration.error}',
           );
+          unawaited(_resumeRealtimeSession());
           return;
         case MobileSessionRestorationStatus.noStoredSession:
         case MobileSessionRestorationStatus.invalidSession:
@@ -115,6 +128,31 @@ class _MobileMainShellState extends State<MobileMainShell>
       }
     } finally {
       _restoringSessionAfterResume = false;
+    }
+  }
+
+  Future<void> _resumeRealtimeSession() async {
+    if (_redirectingToLogin) {
+      return;
+    }
+
+    unawaited(reconnectStomp());
+    if (_resumingRealtimeSession) {
+      return;
+    }
+
+    _resumingRealtimeSession = true;
+    try {
+      await Future.wait<void>(<Future<void>>[
+        FirebasePushNotificationService().syncTokenForLoggedUser(),
+        NotificacaoEventoSyncService().syncForLoggedUser().then((_) {}),
+      ]);
+    } catch (error) {
+      debugPrint(
+        '[MobileMainShell] Falha temporaria ao retomar comunicacao: $error',
+      );
+    } finally {
+      _resumingRealtimeSession = false;
     }
   }
 
