@@ -380,7 +380,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
       modulo: 'geral',
       telaAtual: 'inicio_mobile',
       child: SixMobilePageShell(
-        title: context.t('mobile.nav.dash', fallback: widget.title),
+        title: context.t('mobile.nav.home'),
         backgroundColor: _backgroundColor,
         primaryColor: _primaryColor,
         secondaryColor: _secondaryColor,

@@ -35,6 +35,7 @@ dependencies:
   syncfusion_flutter_gauges: any
   lottie: ^1.4.0
   google_fonts: ^6.3.2
+  flutter_svg: 2.0.9
 
 dev_dependencies:
   flutter_test:
@@ -81,6 +82,9 @@ flutter:
     - assets/images/placeholder.png
     - assets/images/sixoapp_splash_symbol.png
     - assets/images/six-logo-flecha.webp
+    - assets/images/navbar/nav-inicio.svg
+    - assets/images/navbar/nav-atendimento.svg
+    - assets/images/navbar/nav-gestao.svg
     - "assets/images/atendimento mobile/atendimento-hero.webp"
     - "assets/images/atendimento mobile/atendimento-hero-acento.webp"
     - "assets/images/atendimento mobile/acao-nova-venda.webp"

@@ -544,6 +544,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'streak.loading': 'Carregando seus dias de ofensiva.',
     'streak.loadError': 'Não foi possível carregar sua ofensiva.',
     'mobile.nav.dash': 'dash',
+    'mobile.nav.home': 'Início',
     'mobile.nav.management': 'Gestão',
     'mobile.nav.service': 'Atendimento',
     'empresa.configuracao.title': 'Empresa',
@@ -2364,6 +2365,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'dashboardInicio.mobileCollaboratorFilterSelectedFallback':
         'Selected collaborator',
     'mobile.nav.dash': 'dash',
+    'mobile.nav.home': 'Home',
     'mobile.nav.management': 'Management',
     'mobile.nav.service': 'Service',
     'empresa.configuracao.title': 'Company',
@@ -4086,6 +4088,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'dashboardInicio.mobileCollaboratorFilterSelectedFallback':
         'Colaborador seleccionado',
     'mobile.nav.dash': 'dash',
+    'mobile.nav.home': 'Inicio',
     'mobile.nav.management': 'Gestión',
     'mobile.nav.service': 'Atención',
     'empresa.configuracao.title': 'Empresa',
