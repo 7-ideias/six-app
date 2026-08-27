@@ -1,7 +1,7 @@
 name: sixpos
 description: "Six Point of Sale"
 publish_to: 'none'
-version: 1.162.0+163
+version: 1.163.0+164
 environment:
   sdk: ^3.7.0
 
