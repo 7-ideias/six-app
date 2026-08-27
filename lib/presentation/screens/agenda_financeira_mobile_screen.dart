@@ -6,6 +6,7 @@ import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:sixpos/data/models/caixa_models.dart';
 import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
@@ -34,15 +35,19 @@ class AgendaFinanceiraMobileScreen extends StatefulWidget {
 
 class _AgendaFinanceiraMobileScreenState
     extends State<AgendaFinanceiraMobileScreen> {
-  static Color get _backgroundColor => SixMobilePalette.background;
-  static Color get _primaryColor => SixMobilePalette.primary;
-  static Color get _secondaryColor => SixMobilePalette.secondary;
-  static Color get _accentColor => SixMobilePalette.accent;
-  static Color get _surfaceColor => SixMobilePalette.surface;
-  static Color get _mutedTextColor => SixMobilePalette.mutedText;
-  static Color get _titleTextColor => SixMobilePalette.titleText;
-  static Color get _borderColor => SixMobilePalette.border;
-  static Color get _softBlueColor => SixMobilePalette.softAccentSurface;
+  SixMobileColorScheme get _colors => context.sixMobileColors;
+  Color get _backgroundColor => _colors.background;
+  Color get _primaryColor => _colors.primary;
+  Color get _secondaryColor => _colors.secondary;
+  Color get _accentColor => _colors.accent;
+  Color get _surfaceColor => _colors.surface;
+  Color get _surfaceElevatedColor => _colors.surfaceElevated;
+  Color get _softSurfaceColor => _colors.softSurface;
+  Color get _mutedTextColor => _colors.mutedText;
+  Color get _titleTextColor => _colors.titleText;
+  Color get _borderColor => _colors.border;
+  Color get _strongBorderColor => _colors.strongBorder;
+  Color get _softBlueColor => _colors.softAccentSurface;
 
   late final AgendaFinanceiraLancamentoService _service =
       widget.lancamentoService ?? AgendaFinanceiraLancamentoService();
@@ -743,6 +748,32 @@ class _AgendaFinanceiraMobileScreenState
     }
   }
 
+  ButtonStyle _filledCtaStyle() {
+    return FilledButton.styleFrom(
+      backgroundColor: _accentColor,
+      foregroundColor: _colors.onAccent,
+      disabledBackgroundColor: _softSurfaceColor,
+      disabledForegroundColor: _mutedTextColor,
+      elevation: 0,
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+    );
+  }
+
+  ButtonStyle _outlinedCtaStyle() {
+    return OutlinedButton.styleFrom(
+      backgroundColor: _softSurfaceColor,
+      foregroundColor: _accentColor,
+      disabledBackgroundColor: _softSurfaceColor.withValues(alpha: 0.72),
+      disabledForegroundColor: _mutedTextColor,
+      side: BorderSide(color: _accentColor.withValues(alpha: 0.34)),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SixMobilePageShell(
@@ -762,12 +793,6 @@ class _AgendaFinanceiraMobileScreenState
         onPressed: () => Navigator.of(context).maybePop(),
       ),
       actions: <Widget>[
-        IconButton(
-          tooltip: 'Atualizar',
-          onPressed:
-              _carregando ? null : () => _consultar(mostrarFeedback: true),
-          icon: Icon(Icons.refresh_rounded),
-        ),
         IconButton(
           tooltip: 'Novo lançamento',
           onPressed: _executandoAcao ? null : _novoLancamento,
@@ -835,7 +860,7 @@ class _AgendaFinanceiraMobileScreenState
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: SixMobilePalette.heroShadow,
+            color: _colors.heroShadow,
             blurRadius: 16,
             offset: Offset(0, 8),
           ),
@@ -847,13 +872,15 @@ class _AgendaFinanceiraMobileScreenState
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Color(0x1AFFFFFF),
+              color: _colors.onPrimary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Color(0x33FFFFFF)),
+              border: Border.all(
+                color: _colors.onPrimary.withValues(alpha: 0.18),
+              ),
             ),
             child: Icon(
               Icons.account_balance_wallet_outlined,
-              color: SixMobilePalette.onPrimary,
+              color: _colors.onPrimary,
               size: 22,
             ),
           ),
@@ -867,7 +894,7 @@ class _AgendaFinanceiraMobileScreenState
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: SixMobilePalette.onPrimary,
+                    color: _colors.onPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                   ),
@@ -880,7 +907,7 @@ class _AgendaFinanceiraMobileScreenState
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: SixMobilePalette.heroSupportingText,
+                    color: _colors.heroSupportingText,
                     fontSize: 12.5,
                     height: 1.25,
                   ),
@@ -902,7 +929,7 @@ class _AgendaFinanceiraMobileScreenState
         border: Border.all(color: _borderColor),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: SixMobilePalette.navigationShadow.withValues(alpha: 0.70),
+            color: _colors.navigationShadow.withValues(alpha: 0.70),
             blurRadius: 14,
             offset: Offset(0, 6),
           ),
@@ -928,6 +955,7 @@ class _AgendaFinanceiraMobileScreenState
                 onPressed: _carregando ? null : _abrirFiltros,
                 icon: Icon(Icons.tune_rounded, size: 18),
                 label: Text('Filtros'),
+                style: _outlinedCtaStyle(),
               ),
               FilledButton.icon(
                 onPressed:
@@ -936,6 +964,7 @@ class _AgendaFinanceiraMobileScreenState
                         : () => _consultar(mostrarFeedback: true),
                 icon: Icon(Icons.search_rounded, size: 18),
                 label: Text('Buscar'),
+                style: _filledCtaStyle(),
               ),
             ],
           ),
@@ -970,14 +999,13 @@ class _AgendaFinanceiraMobileScreenState
                           setState(() => _periodoSelecionado = periodo);
                         },
                 selectedColor: _primaryColor,
-                backgroundColor: SixMobilePalette.softNeutralSurface,
+                backgroundColor: _softSurfaceColor,
                 side: BorderSide(
                   color: selected ? _primaryColor : _borderColor,
                 ),
                 showCheckmark: false,
                 labelStyle: TextStyle(
-                  color:
-                      selected ? SixMobilePalette.onPrimary : _titleTextColor,
+                  color: selected ? _colors.onPrimary : _titleTextColor,
                   fontWeight: FontWeight.w800,
                   fontSize: 12.5,
                 ),
@@ -986,7 +1014,7 @@ class _AgendaFinanceiraMobileScreenState
                         ? Icon(
                           Icons.check_rounded,
                           size: 15,
-                          color: SixMobilePalette.onPrimary,
+                          color: _colors.onPrimary,
                         )
                         : null,
               );
@@ -1074,7 +1102,7 @@ class _AgendaFinanceiraMobileScreenState
                 MediaQuery.of(context).viewInsets.bottom + 18,
               ),
               decoration: BoxDecoration(
-                color: _backgroundColor,
+                color: _surfaceColor,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
               child: SafeArea(
@@ -1089,7 +1117,7 @@ class _AgendaFinanceiraMobileScreenState
                           width: 42,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: SixMobilePalette.activeBorder,
+                            color: _strongBorderColor,
                             borderRadius: BorderRadius.circular(999),
                           ),
                         ),
@@ -1152,6 +1180,7 @@ class _AgendaFinanceiraMobileScreenState
                               ),
                           icon: Icon(Icons.check_rounded),
                           label: Text('Aplicar filtros'),
+                          style: _filledCtaStyle(),
                         ),
                       ),
                     ],
@@ -1209,16 +1238,13 @@ class _AgendaFinanceiraMobileScreenState
                   label: Text(value),
                   onSelected: (_) => onSelected(value),
                   selectedColor: _primaryColor,
-                  backgroundColor: SixMobilePalette.softNeutralSurface,
+                  backgroundColor: _softSurfaceColor,
                   side: BorderSide(
                     color: isSelected ? _primaryColor : _borderColor,
                   ),
                   showCheckmark: false,
                   labelStyle: TextStyle(
-                    color:
-                        isSelected
-                            ? SixMobilePalette.onPrimary
-                            : _titleTextColor,
+                    color: isSelected ? _colors.onPrimary : _titleTextColor,
                     fontWeight: FontWeight.w700,
                   ),
                 );
@@ -1248,25 +1274,25 @@ class _AgendaFinanceiraMobileScreenState
         'A pagar aberto',
         _totalPagarPrevisto,
         Icons.north_east_rounded,
-        Color(0xFF16A34A),
+        Color.lerp(Colors.greenAccent, _colors.titleText, 0.24)!,
       ),
       _ResumoAgendaCardData(
         'Saldo previsto',
         _saldoPrevisto,
         Icons.query_stats_rounded,
-        Color(0xFF7C3AED),
+        Color.lerp(Colors.deepPurpleAccent, _colors.titleText, 0.18)!,
       ),
       _ResumoAgendaCardData(
         'Recebido confirmado',
         _totalRecebidoConfirmado,
         Icons.verified_rounded,
-        Color(0xFF0891B2),
+        Color.lerp(Colors.cyanAccent, _colors.titleText, 0.22)!,
       ),
       _ResumoAgendaCardData(
         'Pago confirmado',
         _totalPagoConfirmado,
         Icons.task_alt_rounded,
-        Color(0xFFF59E0B),
+        Color.lerp(Colors.amberAccent, _colors.titleText, 0.18)!,
       ),
       _ResumoAgendaCardData(
         'Saldo confirmado',
@@ -1290,7 +1316,7 @@ class _AgendaFinanceiraMobileScreenState
         border: Border.all(color: _borderColor),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: SixMobilePalette.navigationShadow.withValues(alpha: 0.70),
+            color: _colors.navigationShadow.withValues(alpha: 0.70),
             blurRadius: 14,
             offset: Offset(0, 6),
           ),
@@ -1440,11 +1466,11 @@ class _AgendaFinanceiraMobileScreenState
             label: Text(aba),
             onSelected: (_) => setState(() => _abaSelecionada = index),
             selectedColor: _primaryColor,
-            backgroundColor: SixMobilePalette.softNeutralSurface,
+            backgroundColor: _softSurfaceColor,
             side: BorderSide(color: selected ? _primaryColor : _borderColor),
             showCheckmark: false,
             labelStyle: TextStyle(
-              color: selected ? SixMobilePalette.onPrimary : _titleTextColor,
+              color: selected ? _colors.onPrimary : _titleTextColor,
               fontWeight: FontWeight.w800,
             ),
           );
@@ -1570,6 +1596,7 @@ class _AgendaFinanceiraMobileScreenState
                     _executandoAcao ? null : () => _editarLancamento(item),
                 icon: Icon(Icons.edit_outlined, size: 18),
                 label: Text('Editar'),
+                style: _outlinedCtaStyle(),
               ),
               ...acoes
                   .take(3)
@@ -1580,6 +1607,7 @@ class _AgendaFinanceiraMobileScreenState
                               ? null
                               : () => _executarAcao(acao, item),
                       child: Text(acao),
+                      style: _outlinedCtaStyle(),
                     ),
                   ),
             ],
@@ -2023,15 +2051,11 @@ class _AgendaFinanceiraMobileScreenState
       decoration: BoxDecoration(
         color: _surfaceColor,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: SixMobilePalette.errorBorder),
+        border: Border.all(color: _colors.errorBorder),
       ),
       child: Column(
         children: <Widget>[
-          Icon(
-            Icons.error_outline_rounded,
-            color: SixMobilePalette.error,
-            size: 34,
-          ),
+          Icon(Icons.error_outline_rounded, color: _colors.error, size: 34),
           SizedBox(height: 12),
           Text(
             'Agenda indisponível',
@@ -2054,6 +2078,7 @@ class _AgendaFinanceiraMobileScreenState
                 _carregando ? null : () => _consultar(mostrarFeedback: true),
             icon: Icon(Icons.refresh_rounded),
             label: Text('Tentar novamente'),
+            style: _outlinedCtaStyle(),
           ),
         ],
       ),
@@ -2074,7 +2099,7 @@ class _AgendaFinanceiraMobileScreenState
             MediaQuery.of(context).viewInsets.bottom + 18,
           ),
           decoration: BoxDecoration(
-            color: _backgroundColor,
+            color: _surfaceColor,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: SafeArea(
@@ -2089,7 +2114,7 @@ class _AgendaFinanceiraMobileScreenState
                       width: 42,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: SixMobilePalette.activeBorder,
+                        color: _strongBorderColor,
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),
@@ -2136,6 +2161,7 @@ class _AgendaFinanceiraMobileScreenState
                     width: double.infinity,
                     child: FilledButton(
                       onPressed: () => Navigator.of(context).pop(),
+                      style: _filledCtaStyle(),
                       child: Text('Fechar'),
                     ),
                   ),
@@ -2416,6 +2442,27 @@ class _AgendaParcialBottomSheetState extends State<_AgendaParcialBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final ButtonStyle outlinedCtaStyle = OutlinedButton.styleFrom(
+      backgroundColor: colors.softSurface,
+      foregroundColor: colors.accent,
+      disabledBackgroundColor: colors.softSurface.withValues(alpha: 0.72),
+      disabledForegroundColor: colors.mutedText,
+      side: BorderSide(color: colors.accent.withValues(alpha: 0.34)),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+    );
+    final ButtonStyle filledCtaStyle = FilledButton.styleFrom(
+      backgroundColor: colors.accent,
+      foregroundColor: colors.onAccent,
+      disabledBackgroundColor: colors.softSurface,
+      disabledForegroundColor: colors.mutedText,
+      elevation: 0,
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+    );
     return Container(
       padding: EdgeInsets.fromLTRB(
         18,
@@ -2424,7 +2471,7 @@ class _AgendaParcialBottomSheetState extends State<_AgendaParcialBottomSheet> {
         MediaQuery.of(context).viewInsets.bottom + 18,
       ),
       decoration: BoxDecoration(
-        color: _AgendaFinanceiraMobileScreenState._backgroundColor,
+        color: colors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SafeArea(
@@ -2439,7 +2486,7 @@ class _AgendaParcialBottomSheetState extends State<_AgendaParcialBottomSheet> {
                   width: 42,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: _AgendaFinanceiraMobileScreenState._borderColor,
+                    color: colors.strongBorder,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -2448,7 +2495,7 @@ class _AgendaParcialBottomSheetState extends State<_AgendaParcialBottomSheet> {
               Text(
                 'Registrar parcial',
                 style: TextStyle(
-                  color: _AgendaFinanceiraMobileScreenState._titleTextColor,
+                  color: colors.titleText,
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
                 ),
@@ -2457,7 +2504,7 @@ class _AgendaParcialBottomSheetState extends State<_AgendaParcialBottomSheet> {
               Text(
                 'Valor em aberto: ${widget.valorAbertoFormatado}',
                 style: TextStyle(
-                  color: _AgendaFinanceiraMobileScreenState._mutedTextColor,
+                  color: colors.mutedText,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
@@ -2466,33 +2513,25 @@ class _AgendaParcialBottomSheetState extends State<_AgendaParcialBottomSheet> {
               TextField(
                 controller: _valorController,
                 keyboardType: TextInputType.numberWithOptions(decimal: true),
-                cursorColor: _AgendaFinanceiraMobileScreenState._accentColor,
-                style: TextStyle(
-                  color: _AgendaFinanceiraMobileScreenState._titleTextColor,
-                ),
+                cursorColor: colors.accent,
+                style: TextStyle(color: colors.titleText),
                 decoration: InputDecoration(
                   labelText: 'Valor parcial',
                   errorText: _erroValor,
                   filled: true,
-                  fillColor: _AgendaFinanceiraMobileScreenState._surfaceColor,
+                  fillColor: colors.softSurface,
+                  labelStyle: TextStyle(color: colors.mutedText),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: _AgendaFinanceiraMobileScreenState._borderColor,
-                    ),
+                    borderSide: BorderSide(color: colors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: _AgendaFinanceiraMobileScreenState._borderColor,
-                    ),
+                    borderSide: BorderSide(color: colors.border),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: _AgendaFinanceiraMobileScreenState._accentColor,
-                      width: 1.3,
-                    ),
+                    borderSide: BorderSide(color: colors.accent, width: 1.3),
                   ),
                 ),
               ),
@@ -2500,7 +2539,7 @@ class _AgendaParcialBottomSheetState extends State<_AgendaParcialBottomSheet> {
               Text(
                 'Tipo de recebimento',
                 style: TextStyle(
-                  color: _AgendaFinanceiraMobileScreenState._mutedTextColor,
+                  color: colors.mutedText,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                 ),
@@ -2520,27 +2559,18 @@ class _AgendaParcialBottomSheetState extends State<_AgendaParcialBottomSheet> {
                                 ? Icon(
                                   Icons.check_rounded,
                                   size: 16,
-                                  color: SixMobilePalette.onPrimary,
+                                  color: colors.onPrimary,
                                 )
                                 : Icon(Icons.payments_outlined, size: 16),
-                        selectedColor:
-                            _AgendaFinanceiraMobileScreenState._primaryColor,
-                        backgroundColor: SixMobilePalette.softNeutralSurface,
+                        selectedColor: colors.primary,
+                        backgroundColor: colors.softSurface,
                         side: BorderSide(
-                          color:
-                              selecionado
-                                  ? _AgendaFinanceiraMobileScreenState
-                                      ._primaryColor
-                                  : _AgendaFinanceiraMobileScreenState
-                                      ._borderColor,
+                          color: selecionado ? colors.primary : colors.border,
                         ),
                         showCheckmark: false,
                         labelStyle: TextStyle(
                           color:
-                              selecionado
-                                  ? SixMobilePalette.onPrimary
-                                  : _AgendaFinanceiraMobileScreenState
-                                      ._titleTextColor,
+                              selecionado ? colors.onPrimary : colors.titleText,
                           fontWeight: FontWeight.w800,
                         ),
                         onSelected:
@@ -2553,32 +2583,24 @@ class _AgendaParcialBottomSheetState extends State<_AgendaParcialBottomSheet> {
                 controller: _observacaoController,
                 minLines: 2,
                 maxLines: 3,
-                cursorColor: _AgendaFinanceiraMobileScreenState._accentColor,
-                style: TextStyle(
-                  color: _AgendaFinanceiraMobileScreenState._titleTextColor,
-                ),
+                cursorColor: colors.accent,
+                style: TextStyle(color: colors.titleText),
                 decoration: InputDecoration(
                   labelText: 'Observação',
                   filled: true,
-                  fillColor: _AgendaFinanceiraMobileScreenState._surfaceColor,
+                  fillColor: colors.softSurface,
+                  labelStyle: TextStyle(color: colors.mutedText),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: _AgendaFinanceiraMobileScreenState._borderColor,
-                    ),
+                    borderSide: BorderSide(color: colors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: _AgendaFinanceiraMobileScreenState._borderColor,
-                    ),
+                    borderSide: BorderSide(color: colors.border),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: _AgendaFinanceiraMobileScreenState._accentColor,
-                      width: 1.3,
-                    ),
+                    borderSide: BorderSide(color: colors.accent, width: 1.3),
                   ),
                 ),
               ),
@@ -2588,6 +2610,7 @@ class _AgendaParcialBottomSheetState extends State<_AgendaParcialBottomSheet> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(null),
+                      style: outlinedCtaStyle,
                       child: Text('Cancelar'),
                     ),
                   ),
@@ -2596,6 +2619,7 @@ class _AgendaParcialBottomSheetState extends State<_AgendaParcialBottomSheet> {
                     child: FilledButton.icon(
                       icon: Icon(Icons.check_rounded),
                       label: Text('Salvar'),
+                      style: filledCtaStyle,
                       onPressed: _salvar,
                     ),
                   ),
