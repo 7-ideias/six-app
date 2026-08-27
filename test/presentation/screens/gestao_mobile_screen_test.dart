@@ -4,51 +4,53 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/management_overview_provider.dart';
-import 'package:sixpos/presentation/components/mobile/management/management_section_selector.dart';
 import 'package:sixpos/presentation/screens/gestao_mobile_screen.dart';
 
 void main() {
-  testWidgets('troca entre as quatro opções e atualiza o estado selecionado', (
+  testWidgets('exibe hub com quatro áreas e direciona sem seletor ou loading', (
     WidgetTester tester,
   ) async {
-    await _pumpGestao(tester);
+    final List<String> navigations = <String>[];
+    await _pumpGestao(tester, navigations: navigations, area: null);
 
     expect(
-      find.byKey(const ValueKey<String>('management-area-catalog')),
+      find.byKey(const ValueKey<String>('gestao-hub-card-catalog')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('gestao-hub-card-people')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('gestao-hub-card-finance')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('gestao-hub-card-settings')),
       findsOneWidget,
     );
     expect(
       find.byKey(const ValueKey<String>('management-section-selector-surface')),
-      findsOneWidget,
+      findsNothing,
     );
-    expect(find.text('Visão geral'), findsOneWidget);
-    expect(find.text('Resumo do catálogo'), findsOneWidget);
-    expect(find.text('Produtos e Serviços'), findsOneWidget);
+    expect(find.text('Visão geral'), findsNothing);
 
-    await _selectSection(tester, 'Pessoas');
-    expect(
-      find.byKey(const ValueKey<String>('management-area-people')),
-      findsOneWidget,
-    );
-    expect(find.text('Clientes'), findsWidgets);
-    expect(find.text('Fornecedores'), findsWidgets);
-    expect(find.text('Fornecedores ainda não disponível'), findsNothing);
+    for (final String title in <String>[
+      'Catálogo',
+      'Pessoas',
+      'Financeiro',
+      'Configurações',
+    ]) {
+      await tester.tap(find.text(title));
+      await tester.pump(const Duration(milliseconds: 80));
+    }
 
-    await _selectSection(tester, 'Financeiro');
-    expect(
-      find.byKey(const ValueKey<String>('management-area-finance')),
-      findsOneWidget,
-    );
-    expect(find.text('Agenda financeira'), findsOneWidget);
-    expect(find.text('Contas a receber'), findsOneWidget);
-
-    await _selectSection(tester, 'Configurações');
-    expect(
-      find.byKey(const ValueKey<String>('management-area-settings')),
-      findsOneWidget,
-    );
-    expect(find.text('Usuários e permissões'), findsOneWidget);
-    expect(find.text('Procedimentos'), findsOneWidget);
+    expect(navigations, <String>[
+      'GestaoMobileScreen:catalogo',
+      'GestaoMobileScreen:pessoas',
+      'GestaoMobileScreen:financeiro',
+      'GestaoMobileScreen:configuracoes',
+    ]);
   });
 
   testWidgets('aciona item disponível e mantém item bloqueado sem navegação', (
@@ -61,7 +63,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 80));
     expect(navigations, contains('CatalogHealthMobileScreen'));
 
-    await _selectSection(tester, 'Pessoas');
+    await _pumpGestao(
+      tester,
+      navigations: navigations,
+      area: GestaoMobileArea.pessoas,
+    );
     await tester.tap(find.text('Fornecedores').last);
     await tester.pump(const Duration(milliseconds: 120));
 
@@ -73,9 +79,7 @@ void main() {
   testWidgets('preserva selos Em breve e Experimental em Configurações', (
     WidgetTester tester,
   ) async {
-    await _pumpGestao(tester);
-
-    await _selectSection(tester, 'Configurações');
+    await _pumpGestao(tester, area: GestaoMobileArea.configuracoes);
 
     expect(find.text('Usuários e permissões'), findsOneWidget);
     expect(find.text('Em breve'), findsAtLeastNWidgets(1));
@@ -134,7 +138,12 @@ void main() {
       expect(find.text('Catálogo sem dados para exibir'), findsOneWidget);
       expect(find.text('--'), findsWidgets);
 
-      await _selectSection(tester, 'Financeiro');
+      await _pumpGestao(
+        tester,
+        snapshot: _emptySnapshot,
+        navigations: navigations,
+        area: GestaoMobileArea.financeiro,
+      );
       expect(find.text('Agenda sem lançamentos próximos'), findsOneWidget);
 
       await tester.tap(find.text('Abrir agenda'));
@@ -167,12 +176,9 @@ void main() {
         accessibleNavigation: true,
         textScaler: TextScaler.linear(1.15),
       ),
+      area: GestaoMobileArea.configuracoes,
       showBottomNavigationBar: false,
     );
-
-    await _selectSection(tester, 'Pessoas');
-    await _selectSection(tester, 'Financeiro');
-    await _selectSection(tester, 'Configurações');
 
     expect(find.text('Configurações da empresa'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -185,6 +191,7 @@ Future<void> _pumpGestao(
   List<String>? navigations,
   MediaQueryData? mediaQueryData,
   ColaboradorAutorizacoesProvider? colaboradorProvider,
+  GestaoMobileArea? area = GestaoMobileArea.catalogo,
   bool showBottomNavigationBar = true,
 }) async {
   tester.view.devicePixelRatio = 1;
@@ -207,20 +214,28 @@ Future<void> _pumpGestao(
       ],
       child: MaterialApp(
         home: MediaQuery(
-          data: (mediaQueryData ??
-                  const MediaQueryData(
-                    disableAnimations: true,
-                    accessibleNavigation: true,
-                  ))
-              .copyWith(size: const Size(390, 900), devicePixelRatio: 1),
+          data:
+              (mediaQueryData ??
+                      const MediaQueryData(
+                        disableAnimations: true,
+                        accessibleNavigation: true,
+                      ))
+                  .copyWith(size: const Size(390, 900), devicePixelRatio: 1),
           child: GestaoMobileScreen(
             overviewProvider: overviewProvider,
+            area: area,
             showBottomNavigationBar: showBottomNavigationBar,
-            onNavigate:
-                navigations == null
-                    ? null
-                    : (_, Widget page) =>
-                        navigations.add(page.runtimeType.toString()),
+            onNavigate: navigations == null
+                ? null
+                : (_, Widget page) {
+                    if (page case GestaoMobileScreen(:final area)) {
+                      navigations.add(
+                        'GestaoMobileScreen:${area?.name ?? 'hub'}',
+                      );
+                      return;
+                    }
+                    navigations.add(page.runtimeType.toString());
+                  },
           ),
         ),
       ),
@@ -228,29 +243,6 @@ Future<void> _pumpGestao(
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 700));
-}
-
-Future<void> _selectSection(WidgetTester tester, String title) async {
-  final int index = switch (title) {
-    'Catálogo' => 0,
-    'Pessoas' => 1,
-    'Financeiro' => 2,
-    'Configurações' => 3,
-    _ => throw ArgumentError.value(title, 'title', 'Área inválida'),
-  };
-  final Finder option = find.byKey(
-    ValueKey<String>('management-section-tab-$index'),
-    skipOffstage: false,
-  );
-  final Finder selector = find.byType(ManagementSectionSelector);
-
-  for (int attempt = 0; attempt < index; attempt += 1) {
-    await tester.drag(selector, const Offset(-180, 0));
-    await tester.pump(const Duration(milliseconds: 80));
-  }
-
-  await tester.tap(option, warnIfMissed: false);
-  await tester.pump(const Duration(milliseconds: 450));
 }
 
 class _NoCatalogPermissionProvider extends ColaboradorAutorizacoesProvider {

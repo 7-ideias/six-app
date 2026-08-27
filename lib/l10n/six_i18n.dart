@@ -1431,6 +1431,9 @@ const Map<String, Map<String, String>> _fallbacks = {
 
     // Gestão — seções
     'gestao.title': 'Gestão',
+    'gestao.hub.title': 'O que você quer gerenciar?',
+    'gestao.hub.subtitle':
+        'Acesse cadastros, pessoas, financeiro e preferências.',
     'gestao.catalog.title': 'Catálogo',
     'gestao.catalog.subtitle': 'Produtos, categorias e estoque',
     'gestao.people.title': 'Pessoas',
@@ -3155,6 +3158,9 @@ const Map<String, Map<String, String>> _fallbacks = {
 
     // Management — sections
     'gestao.title': 'Management',
+    'gestao.hub.title': 'What would you like to manage?',
+    'gestao.hub.subtitle':
+        'Access catalog records, people, finances, and preferences.',
     'gestao.catalog.title': 'Catalog',
     'gestao.catalog.subtitle': 'Products, categories and inventory',
     'gestao.people.title': 'People',
@@ -4906,6 +4912,9 @@ const Map<String, Map<String, String>> _fallbacks = {
 
     // Gestión — secciones
     'gestao.title': 'Gestión',
+    'gestao.hub.title': '¿Qué quieres gestionar?',
+    'gestao.hub.subtitle':
+        'Accede a catálogos, personas, finanzas y preferencias.',
     'gestao.catalog.title': 'Catálogo',
     'gestao.catalog.subtitle': 'Productos, categorías e inventario',
     'gestao.people.title': 'Personas',
