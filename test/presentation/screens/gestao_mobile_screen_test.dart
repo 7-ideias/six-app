@@ -1,12 +1,22 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/management_overview_provider.dart';
+import 'package:sixpos/providers/usuario_provider.dart';
+import 'package:sixpos/presentation/components/nav_bar_mobile.dart';
 import 'package:sixpos/presentation/screens/gestao_mobile_screen.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    UsuarioProvider().clear();
+  });
+
   testWidgets('exibe hub com quatro áreas e direciona sem seletor ou loading', (
     WidgetTester tester,
   ) async {
@@ -53,6 +63,26 @@ void main() {
     ]);
   });
 
+  testWidgets('mantém os cards próximos ao resumo e acima da navegação', (
+    WidgetTester tester,
+  ) async {
+    await _pumpGestao(tester, area: null);
+
+    final Rect introRect = tester.getRect(
+      find.byKey(const ValueKey<String>('gestao-hub-intro')),
+    );
+    final Rect firstCardRect = tester.getRect(
+      find.byKey(const ValueKey<String>('gestao-hub-card-catalog')),
+    );
+    final Rect lastCardRect = tester.getRect(
+      find.byKey(const ValueKey<String>('gestao-hub-card-settings')),
+    );
+    final Rect navigationRect = tester.getRect(find.byType(NavBarMobile));
+
+    expect(firstCardRect.top - introRect.bottom, closeTo(16, 0.5));
+    expect(lastCardRect.bottom, lessThanOrEqualTo(navigationRect.top));
+  });
+
   testWidgets('aciona item disponível e mantém item bloqueado sem navegação', (
     WidgetTester tester,
   ) async {
@@ -74,6 +104,90 @@ void main() {
     expect(navigations.length, 1);
     expect(find.byIcon(Icons.lock_outline_rounded), findsWidgets);
     expect(find.text('Em breve'), findsWidgets);
+  });
+
+  testWidgets('restaura a ordem dos cards salva no cache do usuário', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'sixapp.preferenciasIndividuaisDoUsuario': jsonEncode(<String, dynamic>{
+        'ordemCardsGestaoMobile': <String>[
+          'FINANCEIRO',
+          'CATALOGO',
+          'CONFIGURACOES',
+          'PESSOAS',
+        ],
+      }),
+    });
+
+    await _pumpGestao(tester, area: null);
+
+    final Offset finance = tester.getTopLeft(
+      find.byKey(const ValueKey<String>('gestao-hub-card-finance')),
+    );
+    final Offset catalog = tester.getTopLeft(
+      find.byKey(const ValueKey<String>('gestao-hub-card-catalog')),
+    );
+    final Offset settings = tester.getTopLeft(
+      find.byKey(const ValueKey<String>('gestao-hub-card-settings')),
+    );
+    final Offset people = tester.getTopLeft(
+      find.byKey(const ValueKey<String>('gestao-hub-card-people')),
+    );
+
+    expect(finance.dy, closeTo(catalog.dy, 0.1));
+    expect(finance.dx, lessThan(catalog.dx));
+    expect(settings.dy, closeTo(people.dy, 0.1));
+    expect(settings.dx, lessThan(people.dx));
+    expect(finance.dy, lessThan(settings.dy));
+  });
+
+  testWidgets('reordena por pressão longa e salva a preferência no cache', (
+    WidgetTester tester,
+  ) async {
+    await _pumpGestao(tester, area: null);
+
+    final Finder catalogFinder = find.byKey(
+      const ValueKey<String>('gestao-hub-card-catalog'),
+    );
+    final Finder settingsFinder = find.byKey(
+      const ValueKey<String>('gestao-hub-card-settings'),
+    );
+    final Offset destino = tester.getCenter(settingsFinder);
+    final TestGesture gesture = await tester.startGesture(
+      tester.getCenter(catalogFinder),
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+    await gesture.moveTo(destino);
+    await tester.pump(const Duration(milliseconds: 160));
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 240));
+
+    final Offset people = tester.getTopLeft(
+      find.byKey(const ValueKey<String>('gestao-hub-card-people')),
+    );
+    final Offset finance = tester.getTopLeft(
+      find.byKey(const ValueKey<String>('gestao-hub-card-finance')),
+    );
+    final Offset settings = tester.getTopLeft(settingsFinder);
+    final Offset catalog = tester.getTopLeft(catalogFinder);
+    expect(people.dy, closeTo(finance.dy, 0.1));
+    expect(people.dx, lessThan(finance.dx));
+    expect(settings.dy, closeTo(catalog.dy, 0.1));
+    expect(settings.dx, lessThan(catalog.dx));
+
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    final String? raw = preferences.getString(
+      'sixapp.preferenciasIndividuaisDoUsuario',
+    );
+    expect(raw, isNotNull);
+    final Map<String, dynamic> json = jsonDecode(raw!) as Map<String, dynamic>;
+    expect(json['ordemCardsGestaoMobile'], <String>[
+      'PESSOAS',
+      'FINANCEIRO',
+      'CONFIGURACOES',
+      'CATALOGO',
+    ]);
   });
 
   testWidgets('preserva selos Em breve e Experimental em Configurações', (

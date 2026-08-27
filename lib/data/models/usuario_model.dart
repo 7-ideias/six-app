@@ -483,6 +483,64 @@ extension AtendimentosCriadosStatusPagamentoFiltroApi
   }
 }
 
+enum GestaoMobileCardPreferencia {
+  catalogo,
+  pessoas,
+  financeiro,
+  configuracoes,
+}
+
+extension GestaoMobileCardPreferenciaApi on GestaoMobileCardPreferencia {
+  String get codigo {
+    switch (this) {
+      case GestaoMobileCardPreferencia.catalogo:
+        return 'CATALOGO';
+      case GestaoMobileCardPreferencia.pessoas:
+        return 'PESSOAS';
+      case GestaoMobileCardPreferencia.financeiro:
+        return 'FINANCEIRO';
+      case GestaoMobileCardPreferencia.configuracoes:
+        return 'CONFIGURACOES';
+    }
+  }
+
+  static GestaoMobileCardPreferencia? tryFromCodigo(dynamic value) {
+    final String codigo = value?.toString().trim().toUpperCase() ?? '';
+    switch (codigo) {
+      case 'CATALOGO':
+        return GestaoMobileCardPreferencia.catalogo;
+      case 'PESSOAS':
+        return GestaoMobileCardPreferencia.pessoas;
+      case 'FINANCEIRO':
+        return GestaoMobileCardPreferencia.financeiro;
+      case 'CONFIGURACOES':
+        return GestaoMobileCardPreferencia.configuracoes;
+      default:
+        return null;
+    }
+  }
+
+  static List<GestaoMobileCardPreferencia> normalizarOrdem(dynamic value) {
+    if (value is Iterable) {
+      final List<GestaoMobileCardPreferencia> ordem = value
+          .map(
+            (dynamic item) => item is GestaoMobileCardPreferencia
+                ? item
+                : tryFromCodigo(item),
+          )
+          .whereType<GestaoMobileCardPreferencia>()
+          .toList(growable: false);
+      if (ordem.length == GestaoMobileCardPreferencia.values.length &&
+          ordem.toSet().length == GestaoMobileCardPreferencia.values.length) {
+        return List<GestaoMobileCardPreferencia>.unmodifiable(ordem);
+      }
+    }
+    return List<GestaoMobileCardPreferencia>.unmodifiable(
+      GestaoMobileCardPreferencia.values,
+    );
+  }
+}
+
 class PreferenciasIndividuaisDoUsuarioModel {
   final String idiomaDePreferencia;
   final ModoDeExibicaoUsuario modoDeExibicaoProdutosWeb;
@@ -499,6 +557,7 @@ class PreferenciasIndividuaisDoUsuarioModel {
   final AtendimentosCriadosFiltrosWebPreferencia atendimentosCriadosFiltrosWeb;
   final AtendimentosCriadosFiltrosMobilePreferencia
   atendimentosCriadosFiltrosMobile;
+  final List<GestaoMobileCardPreferencia> ordemCardsGestaoMobile;
 
   PreferenciasIndividuaisDoUsuarioModel({
     this.idiomaDePreferencia = '',
@@ -518,6 +577,7 @@ class PreferenciasIndividuaisDoUsuarioModel {
     AtendimentosCriadosFiltrosWebPreferencia? atendimentosCriadosFiltrosWeb,
     AtendimentosCriadosFiltrosMobilePreferencia?
     atendimentosCriadosFiltrosMobile,
+    List<GestaoMobileCardPreferencia>? ordemCardsGestaoMobile,
   }) : modoDeExibicaoProdutosWeb =
            modoDeExibicaoProdutosWeb ??
            modoDeExibicaoProdutos ??
@@ -556,7 +616,10 @@ class PreferenciasIndividuaisDoUsuarioModel {
            AtendimentosCriadosFiltrosWebPreferencia.vazia(),
        atendimentosCriadosFiltrosMobile =
            atendimentosCriadosFiltrosMobile ??
-           AtendimentosCriadosFiltrosMobilePreferencia.vazia();
+           AtendimentosCriadosFiltrosMobilePreferencia.vazia(),
+       ordemCardsGestaoMobile = GestaoMobileCardPreferenciaApi.normalizarOrdem(
+         ordemCardsGestaoMobile,
+       );
 
   ModoDeExibicaoUsuario get modoDeExibicaoProdutos =>
       kIsWeb ? modoDeExibicaoProdutosWeb : modoDeExibicaoProdutosMobile;
@@ -583,6 +646,7 @@ class PreferenciasIndividuaisDoUsuarioModel {
           AtendimentosCriadosFiltrosWebPreferencia.vazia(),
       atendimentosCriadosFiltrosMobile:
           AtendimentosCriadosFiltrosMobilePreferencia.vazia(),
+      ordemCardsGestaoMobile: GestaoMobileCardPreferencia.values,
     );
   }
 
@@ -659,6 +723,9 @@ class PreferenciasIndividuaisDoUsuarioModel {
           AtendimentosCriadosFiltrosMobilePreferencia.fromJson(
             json['atendimentosCriadosFiltrosMobile'],
           ),
+      ordemCardsGestaoMobile: GestaoMobileCardPreferenciaApi.normalizarOrdem(
+        json['ordemCardsGestaoMobile'],
+      ),
     );
   }
 
@@ -682,6 +749,9 @@ class PreferenciasIndividuaisDoUsuarioModel {
       'atendimentosCriadosFiltrosWeb': atendimentosCriadosFiltrosWeb.toJson(),
       'atendimentosCriadosFiltrosMobile':
           atendimentosCriadosFiltrosMobile.toJson(),
+      'ordemCardsGestaoMobile': ordemCardsGestaoMobile
+          .map((GestaoMobileCardPreferencia item) => item.codigo)
+          .toList(growable: false),
     };
   }
 
@@ -703,6 +773,7 @@ class PreferenciasIndividuaisDoUsuarioModel {
     AtendimentosCriadosFiltrosWebPreferencia? atendimentosCriadosFiltrosWeb,
     AtendimentosCriadosFiltrosMobilePreferencia?
     atendimentosCriadosFiltrosMobile,
+    List<GestaoMobileCardPreferencia>? ordemCardsGestaoMobile,
   }) {
     return PreferenciasIndividuaisDoUsuarioModel(
       idiomaDePreferencia: idiomaDePreferencia ?? this.idiomaDePreferencia,
@@ -746,6 +817,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
       atendimentosCriadosFiltrosMobile:
           atendimentosCriadosFiltrosMobile ??
           this.atendimentosCriadosFiltrosMobile,
+      ordemCardsGestaoMobile:
+          ordemCardsGestaoMobile ?? this.ordemCardsGestaoMobile,
     );
   }
 

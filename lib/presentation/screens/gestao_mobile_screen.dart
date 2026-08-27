@@ -1,10 +1,15 @@
-import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
+import 'dart:async';
+
+import 'package:flutter/foundation.dart'
+    show debugPrint, kIsWeb, listEquals, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
+import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_area_components.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_admin_header.dart';
@@ -27,6 +32,7 @@ import 'package:sixpos/presentation/screens/regionalizacao_mobile_screen.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/management_overview_provider.dart';
+import 'package:sixpos/providers/usuario_provider.dart';
 
 import '../components/nav_bar_mobile.dart';
 import 'empresa_configuracao_mobile.dart';
@@ -79,20 +85,111 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   static const Color _lockedAccent = Color(0xFF64748B);
 
   final NotificacaoService _notificacaoService = NotificacaoService();
+  final UsuarioService _usuarioService = UsuarioService();
+  final UsuarioProvider _usuarioProvider = UsuarioProvider();
+  List<GestaoMobileCardPreferencia> _ordemCardsGestaoMobile =
+      List<GestaoMobileCardPreferencia>.of(GestaoMobileCardPreferencia.values);
+  bool _ordemAlteradaNestaSessao = false;
   int _totalNotificacoesConhecidas = 0;
 
   @override
   void initState() {
     super.initState();
     _totalNotificacoesConhecidas = _notificacaoService.total;
+    final PreferenciasIndividuaisDoUsuarioModel? preferenciasAtuais =
+        _usuarioProvider.usuario?.preferenciasIndividuaisDoUsuario;
+    if (preferenciasAtuais != null) {
+      _ordemCardsGestaoMobile = List<GestaoMobileCardPreferencia>.of(
+        preferenciasAtuais.ordemCardsGestaoMobile,
+      );
+    }
     _notificacaoService.addListener(_onNotificacoesChanged);
+    _usuarioProvider.addListener(_onUsuarioChanged);
+    unawaited(_restaurarOrdemCardsGestaoMobile());
     _garantirWebSocketMobile();
   }
 
   @override
   void dispose() {
     _notificacaoService.removeListener(_onNotificacoesChanged);
+    _usuarioProvider.removeListener(_onUsuarioChanged);
     super.dispose();
+  }
+
+  Future<void> _restaurarOrdemCardsGestaoMobile() async {
+    final PreferenciasIndividuaisDoUsuarioModel? preferenciasCache =
+        await _usuarioService.carregarPreferenciasIndividuaisDoCache();
+    if (!mounted || _ordemAlteradaNestaSessao) return;
+
+    final PreferenciasIndividuaisDoUsuarioModel? preferenciasRemotas =
+        _usuarioProvider.usuario?.preferenciasIndividuaisDoUsuario;
+    final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+        preferenciasRemotas ?? preferenciasCache;
+    if (preferencias == null) return;
+
+    _aplicarOrdemCardsGestaoMobile(preferencias.ordemCardsGestaoMobile);
+  }
+
+  void _onUsuarioChanged() {
+    if (!mounted || _ordemAlteradaNestaSessao) return;
+    final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+        _usuarioProvider.usuario?.preferenciasIndividuaisDoUsuario;
+    if (preferencias == null) return;
+    _aplicarOrdemCardsGestaoMobile(preferencias.ordemCardsGestaoMobile);
+  }
+
+  void _aplicarOrdemCardsGestaoMobile(List<GestaoMobileCardPreferencia> ordem) {
+    final List<GestaoMobileCardPreferencia> ordemNormalizada =
+        GestaoMobileCardPreferenciaApi.normalizarOrdem(ordem);
+    if (listEquals(_ordemCardsGestaoMobile, ordemNormalizada)) return;
+    setState(() {
+      _ordemCardsGestaoMobile = List<GestaoMobileCardPreferencia>.of(
+        ordemNormalizada,
+      );
+    });
+  }
+
+  void _reordenarCardsGestaoMobile(
+    GestaoMobileCardPreferencia movido,
+    GestaoMobileCardPreferencia destino,
+  ) {
+    final int indiceOrigem = _ordemCardsGestaoMobile.indexOf(movido);
+    final int indiceDestino = _ordemCardsGestaoMobile.indexOf(destino);
+    if (indiceOrigem < 0 ||
+        indiceDestino < 0 ||
+        indiceOrigem == indiceDestino) {
+      return;
+    }
+
+    final List<GestaoMobileCardPreferencia> novaOrdem =
+        List<GestaoMobileCardPreferencia>.of(_ordemCardsGestaoMobile);
+    novaOrdem.removeAt(indiceOrigem);
+    final int indiceInsercao = indiceDestino > novaOrdem.length
+        ? novaOrdem.length
+        : indiceDestino;
+    novaOrdem.insert(indiceInsercao, movido);
+
+    setState(() {
+      _ordemAlteradaNestaSessao = true;
+      _ordemCardsGestaoMobile = novaOrdem;
+    });
+    unawaited(_salvarOrdemCardsGestaoMobile(novaOrdem));
+  }
+
+  Future<void> _salvarOrdemCardsGestaoMobile(
+    List<GestaoMobileCardPreferencia> ordem,
+  ) async {
+    try {
+      await _usuarioService.atualizarPreferenciasIndividuais(
+        ordemCardsGestaoMobile: ordem
+            .map((GestaoMobileCardPreferencia item) => item.codigo)
+            .toList(growable: false),
+      );
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Erro ao salvar ordem dos cards da Gestao Mobile: $error\n$stackTrace',
+      );
+    }
   }
 
   void _onNotificacoesChanged() {
@@ -269,6 +366,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         ),
         children: <Widget>[
           SixStaggeredEntry(
+            key: const ValueKey<String>('gestao-hub-intro'),
             delay: Duration(milliseconds: 40),
             child: _GestaoHubIntroCard(
               title: context.t(
@@ -296,9 +394,11 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
                     SizedBox(
                       width: itemWidth,
                       height: cardHeight,
-                      child: SixStaggeredEntry(
-                        delay: Duration(milliseconds: 90 + (index * 45)),
-                        child: _GestaoHubActionCard(data: actions[index]),
+                      child: _buildReorderableHubCard(
+                        action: actions[index],
+                        index: index,
+                        itemWidth: itemWidth,
+                        cardHeight: cardHeight,
                       ),
                     ),
                 ],
@@ -307,6 +407,83 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildReorderableHubCard({
+    required _GestaoHubActionData action,
+    required int index,
+    required double itemWidth,
+    required double cardHeight,
+  }) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    Widget buildCard() {
+      return Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          _GestaoHubActionCard(data: action),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: ExcludeSemantics(
+              child: IgnorePointer(
+                child: Icon(
+                  Icons.drag_indicator_rounded,
+                  size: 18,
+                  color: action.accentColor.withAlpha(isDark ? 150 : 112),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final Widget card = buildCard();
+
+    return DragTarget<GestaoMobileCardPreferencia>(
+      key: ValueKey<String>('gestao-hub-reorder-${action.id}'),
+      onWillAcceptWithDetails:
+          (DragTargetDetails<GestaoMobileCardPreferencia> details) =>
+              details.data != action.preferencia,
+      onAcceptWithDetails:
+          (DragTargetDetails<GestaoMobileCardPreferencia> details) {
+            _reordenarCardsGestaoMobile(details.data, action.preferencia);
+          },
+      builder:
+          (
+            BuildContext context,
+            List<GestaoMobileCardPreferencia?> candidateData,
+            List<dynamic> rejectedData,
+          ) {
+            final bool isDestino = candidateData.isNotEmpty;
+            return AnimatedScale(
+              scale: isDestino ? 1.025 : 1,
+              duration: const Duration(milliseconds: 140),
+              curve: Curves.easeOutCubic,
+              child: LongPressDraggable<GestaoMobileCardPreferencia>(
+                data: action.preferencia,
+                dragAnchorStrategy: pointerDragAnchorStrategy,
+                maxSimultaneousDrags: 1,
+                feedback: Material(
+                  color: Colors.transparent,
+                  child: Transform.scale(
+                    scale: 1.025,
+                    child: SizedBox(
+                      width: itemWidth,
+                      height: cardHeight,
+                      child: buildCard(),
+                    ),
+                  ),
+                ),
+                childWhenDragging: Opacity(opacity: 0.28, child: card),
+                child: SixStaggeredEntry(
+                  delay: Duration(milliseconds: 90 + (index * 45)),
+                  child: card,
+                ),
+              ),
+            );
+          },
     );
   }
 
@@ -328,64 +505,72 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
           )!;
     final Color settingsAccent = isDark ? colors.accent : colors.primary;
 
-    return <_GestaoHubActionData>[
-      _GestaoHubActionData(
-        id: 'catalog',
-        title: _areaTitle(context, GestaoMobileArea.catalogo),
-        subtitle: context.t(
-          'gestao.catalog.subtitle',
-          fallback: 'Produtos, categorias e estoque',
-        ),
-        assetContorno: _catalogAssetContorno,
-        assetAcento: _catalogAssetAcento,
-        accentColor: catalogAccent,
-        brandStart: SixMobilePalette.brandCyan,
-        brandEnd: SixMobilePalette.brandBlue,
-        onTap: () => _openArea(GestaoMobileArea.catalogo),
-      ),
-      _GestaoHubActionData(
-        id: 'people',
-        title: _areaTitle(context, GestaoMobileArea.pessoas),
-        subtitle: context.t(
-          'gestao.people.subtitle',
-          fallback: 'Clientes, equipe e parceiros',
-        ),
-        assetContorno: _peopleAssetContorno,
-        assetAcento: _peopleAssetAcento,
-        accentColor: peopleAccent,
-        brandStart: SixMobilePalette.brandBlue,
-        brandEnd: SixMobilePalette.brandViolet,
-        onTap: () => _openArea(GestaoMobileArea.pessoas),
-      ),
-      _GestaoHubActionData(
-        id: 'finance',
-        title: _areaTitle(context, GestaoMobileArea.financeiro),
-        subtitle: context.t(
-          'gestao.finance.subtitle',
-          fallback: 'Contas, agenda e recebimentos',
-        ),
-        assetContorno: _financeAssetContorno,
-        assetAcento: _financeAssetAcento,
-        accentColor: financeAccent,
-        brandStart: SixMobilePalette.brandCyan,
-        brandEnd: SixMobilePalette.brandBlue,
-        onTap: () => _openArea(GestaoMobileArea.financeiro),
-      ),
-      _GestaoHubActionData(
-        id: 'settings',
-        title: _areaTitle(context, GestaoMobileArea.configuracoes),
-        subtitle: context.t(
-          'gestao.settings.subtitle',
-          fallback: 'Empresa, idioma e integrações',
-        ),
-        assetContorno: _settingsAssetContorno,
-        assetAcento: _settingsAssetAcento,
-        accentColor: settingsAccent,
-        brandStart: SixMobilePalette.brandBlue,
-        brandEnd: SixMobilePalette.brandViolet,
-        onTap: () => _openArea(GestaoMobileArea.configuracoes),
-      ),
-    ];
+    final Map<GestaoMobileCardPreferencia, _GestaoHubActionData> actions =
+        <GestaoMobileCardPreferencia, _GestaoHubActionData>{
+          GestaoMobileCardPreferencia.catalogo: _GestaoHubActionData(
+            preferencia: GestaoMobileCardPreferencia.catalogo,
+            id: 'catalog',
+            title: _areaTitle(context, GestaoMobileArea.catalogo),
+            subtitle: context.t(
+              'gestao.catalog.subtitle',
+              fallback: 'Produtos, categorias e estoque',
+            ),
+            assetContorno: _catalogAssetContorno,
+            assetAcento: _catalogAssetAcento,
+            accentColor: catalogAccent,
+            brandStart: SixMobilePalette.brandCyan,
+            brandEnd: SixMobilePalette.brandBlue,
+            onTap: () => _openArea(GestaoMobileArea.catalogo),
+          ),
+          GestaoMobileCardPreferencia.pessoas: _GestaoHubActionData(
+            preferencia: GestaoMobileCardPreferencia.pessoas,
+            id: 'people',
+            title: _areaTitle(context, GestaoMobileArea.pessoas),
+            subtitle: context.t(
+              'gestao.people.subtitle',
+              fallback: 'Clientes, equipe e parceiros',
+            ),
+            assetContorno: _peopleAssetContorno,
+            assetAcento: _peopleAssetAcento,
+            accentColor: peopleAccent,
+            brandStart: SixMobilePalette.brandBlue,
+            brandEnd: SixMobilePalette.brandViolet,
+            onTap: () => _openArea(GestaoMobileArea.pessoas),
+          ),
+          GestaoMobileCardPreferencia.financeiro: _GestaoHubActionData(
+            preferencia: GestaoMobileCardPreferencia.financeiro,
+            id: 'finance',
+            title: _areaTitle(context, GestaoMobileArea.financeiro),
+            subtitle: context.t(
+              'gestao.finance.subtitle',
+              fallback: 'Contas, agenda e recebimentos',
+            ),
+            assetContorno: _financeAssetContorno,
+            assetAcento: _financeAssetAcento,
+            accentColor: financeAccent,
+            brandStart: SixMobilePalette.brandCyan,
+            brandEnd: SixMobilePalette.brandBlue,
+            onTap: () => _openArea(GestaoMobileArea.financeiro),
+          ),
+          GestaoMobileCardPreferencia.configuracoes: _GestaoHubActionData(
+            preferencia: GestaoMobileCardPreferencia.configuracoes,
+            id: 'settings',
+            title: _areaTitle(context, GestaoMobileArea.configuracoes),
+            subtitle: context.t(
+              'gestao.settings.subtitle',
+              fallback: 'Empresa, idioma e integrações',
+            ),
+            assetContorno: _settingsAssetContorno,
+            assetAcento: _settingsAssetAcento,
+            accentColor: settingsAccent,
+            brandStart: SixMobilePalette.brandBlue,
+            brandEnd: SixMobilePalette.brandViolet,
+            onTap: () => _openArea(GestaoMobileArea.configuracoes),
+          ),
+        };
+    return _ordemCardsGestaoMobile
+        .map((GestaoMobileCardPreferencia item) => actions[item]!)
+        .toList(growable: false);
   }
 
   Widget _buildAreaContent(
@@ -1637,6 +1822,7 @@ class _GestaoHubActionCard extends StatelessWidget {
 
 class _GestaoHubActionData {
   const _GestaoHubActionData({
+    required this.preferencia,
     required this.id,
     required this.title,
     required this.subtitle,
@@ -1648,6 +1834,7 @@ class _GestaoHubActionData {
     required this.onTap,
   });
 
+  final GestaoMobileCardPreferencia preferencia;
   final String id;
   final String title;
   final String subtitle;

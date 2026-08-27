@@ -272,5 +272,48 @@ void main() {
         isEmpty,
       );
     });
+
+    test('serializa e desserializa a ordem dos cards da Gestão Mobile', () {
+      final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+        const <String, dynamic>{
+          'ordemCardsGestaoMobile': <String>[
+            'FINANCEIRO',
+            'CATALOGO',
+            'CONFIGURACOES',
+            'PESSOAS',
+          ],
+        },
+      );
+
+      expect(preferencias.ordemCardsGestaoMobile, <GestaoMobileCardPreferencia>[
+        GestaoMobileCardPreferencia.financeiro,
+        GestaoMobileCardPreferencia.catalogo,
+        GestaoMobileCardPreferencia.configuracoes,
+        GestaoMobileCardPreferencia.pessoas,
+      ]);
+      expect(preferencias.toJson()['ordemCardsGestaoMobile'], <String>[
+        'FINANCEIRO',
+        'CATALOGO',
+        'CONFIGURACOES',
+        'PESSOAS',
+      ]);
+    });
+
+    test('usa a ordem padrão quando a preferência Mobile é inválida', () {
+      for (final dynamic ordemInvalida in <dynamic>[
+        <String>['CATALOGO', 'PESSOAS'],
+        <String>['CATALOGO', 'CATALOGO', 'FINANCEIRO', 'CONFIGURACOES'],
+        <String>['CATALOGO', 'PESSOAS', 'FINANCEIRO', 'DESCONHECIDO'],
+      ]) {
+        final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+          <String, dynamic>{'ordemCardsGestaoMobile': ordemInvalida},
+        );
+
+        expect(
+          preferencias.ordemCardsGestaoMobile,
+          GestaoMobileCardPreferencia.values,
+        );
+      }
+    });
   });
 }
