@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../../data/models/usuario_model.dart';
 import '../../data/models/operational_procedure_flow_models.dart';
 import '../../data/models/operational_procedure_models.dart';
+import '../../design_system/themes/six_mobile_color_scheme.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
+import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
+import '../components/mobile/six_imagem_canetinha.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
+import '../components/mobile/six_mobile_reorderable_card.dart';
 import '../components/mobile_motion.dart';
+import '../controllers/mobile_card_order_preference_controller.dart';
 import '../coordinators/operational_procedure_flow_coordinator.dart';
 import 'consulta_vendas_mobile_screen.dart';
 import 'pdv_mobile_screen.dart';
@@ -35,16 +41,25 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
   static Color get _secondaryColor => SixMobilePalette.secondary;
   static Color get _accentColor => SixMobilePalette.accent;
   static const Color _receiveAccentColor = Color(0xFF16A34A);
-  static const String _saleAsset = 'assets/images/vendas mobile/vendas.webp';
-  static const String _receiveAsset =
-      'assets/images/vendas mobile/recebimento.webp';
-  static const String _consultAsset =
-      'assets/images/vendas mobile/consultar.webp';
+  static const String _saleAssetContorno =
+      'assets/images/atendimento mobile/acao-nova-venda.webp';
+  static const String _saleAssetAcento =
+      'assets/images/atendimento mobile/acao-nova-venda-acento.webp';
+  static const String _receiveAssetContorno =
+      'assets/images/atendimento mobile/acao-receber.webp';
+  static const String _receiveAssetAcento =
+      'assets/images/atendimento mobile/acao-receber-acento.webp';
+  static const String _consultAssetContorno =
+      'assets/images/vendas mobile/acao-consultar-vendas.webp';
+  static const String _consultAssetAcento =
+      'assets/images/vendas mobile/acao-consultar-vendas-acento.webp';
   static const double _operationCardHeight = 136;
   static const double _operationCompactCardHeight = 112;
   static const double _operationCardGap = 10;
 
   late final OperationalProcedureFlowCoordinator _procedureCoordinator;
+  late final MobileCardOrderPreferenceController<VendasMobileCardPreferencia>
+  _ordemCardsController;
   bool _openingNewSale = false;
 
   @override
@@ -52,10 +67,99 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
     super.initState();
     _procedureCoordinator =
         widget.procedureCoordinator ?? OperationalProcedureFlowCoordinator();
+    _ordemCardsController =
+        MobileCardOrderPreferenceController<VendasMobileCardPreferencia>(
+            ordemPadrao: VendasMobileCardPreferencia.values,
+            selecionarOrdem: (preferencias) =>
+                preferencias.ordemCardsVendasMobile,
+            persistirOrdem: (ordem) =>
+                UsuarioService().atualizarPreferenciasIndividuais(
+                  ordemCardsVendasMobile: ordem
+                      .map((item) => item.codigo)
+                      .toList(growable: false),
+                ),
+            nomeDaTela: 'Vendas Mobile',
+          )
+          ..addListener(_aoAlterarOrdemDosCards)
+          ..inicializar();
+  }
+
+  @override
+  void dispose() {
+    _ordemCardsController
+      ..removeListener(_aoAlterarOrdemDosCards)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _aoAlterarOrdemDosCards() {
+    if (mounted) setState(() {});
   }
 
   String _t(BuildContext context, String key, String fallback) =>
       context.t(key, fallback: fallback);
+
+  List<_SaleActionData> _orderedActions(BuildContext context) {
+    final Map<VendasMobileCardPreferencia, _SaleActionData> actions =
+        <VendasMobileCardPreferencia, _SaleActionData>{
+          VendasMobileCardPreferencia.novaVenda: _SaleActionData(
+            preferencia: VendasMobileCardPreferencia.novaVenda,
+            id: 'new-sale',
+            title: _t(context, 'atendimento.mobile.newSaleTitle', 'Nova venda'),
+            subtitle: _t(
+              context,
+              'atendimento.mobile.newSaleSubtitle',
+              'Vender produtos',
+            ),
+            assetContorno: _saleAssetContorno,
+            assetAcento: _saleAssetAcento,
+            accentColor: _accentColor,
+            loading: _openingNewSale,
+            onTap: _startNewSale,
+          ),
+          VendasMobileCardPreferencia.vendasAReceber: _SaleActionData(
+            preferencia: VendasMobileCardPreferencia.vendasAReceber,
+            id: 'receive',
+            title: _t(
+              context,
+              'atendimento.mobile.salesToReceiveTitle',
+              'Vendas a receber',
+            ),
+            subtitle: _t(
+              context,
+              'atendimento.mobile.salesToReceiveSubtitle',
+              'Vendas não liquidadas',
+            ),
+            assetContorno: _receiveAssetContorno,
+            assetAcento: _receiveAssetAcento,
+            accentColor: _receiveAccentColor,
+            onTap: () => _go(VendasNaoLiquidadasMobileScreen()),
+          ),
+          VendasMobileCardPreferencia.consultarVendas: _SaleActionData(
+            preferencia: VendasMobileCardPreferencia.consultarVendas,
+            id: 'history',
+            title: _t(
+              context,
+              'atendimento.mobile.consultSalesTitle',
+              'Consultar vendas',
+            ),
+            subtitle: _t(
+              context,
+              'atendimento.mobile.consultSalesSubtitle',
+              'Consultar histórico de vendas',
+            ),
+            assetContorno: _consultAssetContorno,
+            assetAcento: _consultAssetAcento,
+            accentColor: _accentColor,
+            compact: true,
+            onTap: () => _go(ConsultaVendasMobileScreen()),
+          ),
+        };
+
+    return _ordemCardsController.ordem
+        .map((preferencia) => actions[preferencia]!)
+        .toList(growable: false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,116 +178,87 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
         icon: Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
-      bodyBuilder: (
-        BuildContext context,
-        ScrollController scrollController,
-        double topInset,
-      ) {
-        return SafeArea(
-          top: false,
-          child: LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              const double horizontalPadding = 16;
-              const double topPadding = 8;
-              const double bottomPadding = 24;
-              final double cardHeight =
-                  constraints.maxWidth < 340
+      bodyBuilder:
+          (
+            BuildContext context,
+            ScrollController scrollController,
+            double topInset,
+          ) {
+            return SafeArea(
+              top: false,
+              child: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  const double horizontalPadding = 16;
+                  const double topPadding = 8;
+                  const double bottomPadding = 24;
+                  final double cardHeight = constraints.maxWidth < 340
                       ? _operationCardHeight - 8
                       : _operationCardHeight;
-              final double compactCardHeight =
-                  constraints.maxWidth < 340
+                  final double compactCardHeight = constraints.maxWidth < 340
                       ? _operationCompactCardHeight - 6
                       : _operationCompactCardHeight;
+                  final double cardWidth =
+                      constraints.maxWidth - (horizontalPadding * 2);
+                  final List<_SaleActionData> actions = _orderedActions(
+                    context,
+                  );
 
-              return ListView(
-                controller: scrollController,
-                physics: AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(
-                  horizontalPadding,
-                  topInset + topPadding,
-                  horizontalPadding,
-                  bottomPadding,
-                ),
-                children: <Widget>[
-                  SixStaggeredEntry(
-                    delay: Duration(milliseconds: 40),
-                    child: _OperationActionCard(
-                      key: ValueKey<String>('nova-venda-action-new-sale'),
-                      height: cardHeight,
-                      title: _t(
-                        context,
-                        'atendimento.mobile.newSaleTitle',
-                        'Nova venda',
-                      ),
-                      subtitle: _t(
-                        context,
-                        'atendimento.mobile.newSaleSubtitle',
-                        'Vender produtos',
-                      ),
-                      accentColor: _accentColor,
-                      illustration: _OperationAssetIllustration(
-                        assetPath: _saleAsset,
-                        accentColor: _accentColor,
-                      ),
-                      loading: _openingNewSale,
-                      onTap: _startNewSale,
+                  return ListView(
+                    controller: scrollController,
+                    physics: AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      topInset + topPadding,
+                      horizontalPadding,
+                      bottomPadding,
                     ),
-                  ),
-                  SizedBox(height: _operationCardGap),
-                  SixStaggeredEntry(
-                    delay: Duration(milliseconds: 95),
-                    child: _OperationActionCard(
-                      key: ValueKey<String>('nova-venda-action-receive'),
-                      height: cardHeight,
-                      title: _t(
-                        context,
-                        'atendimento.mobile.salesToReceiveTitle',
-                        'Vendas a receber',
-                      ),
-                      subtitle: _t(
-                        context,
-                        'atendimento.mobile.salesToReceiveSubtitle',
-                        'Vendas não liquidadas',
-                      ),
-                      accentColor: _receiveAccentColor,
-                      illustration: const _OperationAssetIllustration(
-                        assetPath: _receiveAsset,
-                        accentColor: _receiveAccentColor,
-                      ),
-                      onTap: () => _go(VendasNaoLiquidadasMobileScreen()),
-                    ),
-                  ),
-                  SizedBox(height: _operationCardGap),
-                  SixStaggeredEntry(
-                    delay: Duration(milliseconds: 140),
-                    child: _OperationActionCard(
-                      key: ValueKey<String>('nova-venda-action-history'),
-                      height: compactCardHeight,
-                      compact: true,
-                      title: _t(
-                        context,
-                        'atendimento.mobile.consultSalesTitle',
-                        'Consultar vendas',
-                      ),
-                      subtitle: _t(
-                        context,
-                        'atendimento.mobile.consultSalesSubtitle',
-                        'Consultar histórico de vendas',
-                      ),
-                      accentColor: _accentColor,
-                      illustration: _OperationAssetIllustration(
-                        assetPath: _consultAsset,
-                        accentColor: _accentColor,
-                      ),
-                      onTap: () => _go(ConsultaVendasMobileScreen()),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      },
+                    children: <Widget>[
+                      for (int index = 0; index < actions.length; index++) ...[
+                        if (index > 0) SizedBox(height: _operationCardGap),
+                        SixStaggeredEntry(
+                          key: ValueKey<String>(
+                            'nova-venda-reorder-${actions[index].id}',
+                          ),
+                          delay: Duration(milliseconds: 40 + (index * 50)),
+                          child:
+                              SixMobileReorderableCard<
+                                VendasMobileCardPreferencia
+                              >(
+                                value: actions[index].preferencia,
+                                onReorder: _ordemCardsController.reordenar,
+                                feedbackWidth: cardWidth,
+                                feedbackHeight: actions[index].compact
+                                    ? compactCardHeight
+                                    : cardHeight,
+                                handleColor: actions[index].accentColor,
+                                cardBuilder: () => _OperationActionCard(
+                                  key: ValueKey<String>(
+                                    'nova-venda-action-${actions[index].id}',
+                                  ),
+                                  height: actions[index].compact
+                                      ? compactCardHeight
+                                      : cardHeight,
+                                  compact: actions[index].compact,
+                                  title: actions[index].title,
+                                  subtitle: actions[index].subtitle,
+                                  accentColor: actions[index].accentColor,
+                                  illustration: _OperationCanetinhaIllustration(
+                                    assetContorno: actions[index].assetContorno,
+                                    assetAcento: actions[index].assetAcento,
+                                    accentColor: actions[index].accentColor,
+                                  ),
+                                  loading: actions[index].loading,
+                                  onTap: actions[index].onTap,
+                                ),
+                              ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            );
+          },
     );
   }
 
@@ -275,7 +350,7 @@ class _OperationActionCard extends StatelessWidget {
                     height ??
                     (compact
                         ? _OpcoesVendaMobileScreenState
-                            ._operationCompactCardHeight
+                              ._operationCompactCardHeight
                         : _OpcoesVendaMobileScreenState._operationCardHeight),
               ),
               decoration: BoxDecoration(
@@ -299,80 +374,80 @@ class _OperationActionCard extends StatelessWidget {
                     ),
                   ),
                   LayoutBuilder(
-                    builder: (
-                      BuildContext context,
-                      BoxConstraints constraints,
-                    ) {
-                      final bool tight = constraints.maxWidth < 330;
-                      final double illustrationSize = (constraints.maxWidth *
-                              (tight ? 0.25 : 0.28))
-                          .clamp(compact ? 68.0 : 76.0, compact ? 84.0 : 98.0);
+                    builder:
+                        (BuildContext context, BoxConstraints constraints) {
+                          final bool tight = constraints.maxWidth < 330;
+                          final double illustrationSize =
+                              (constraints.maxWidth * (tight ? 0.25 : 0.28))
+                                  .clamp(
+                                    compact ? 68.0 : 76.0,
+                                    compact ? 84.0 : 98.0,
+                                  );
 
-                      return Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          tight ? 18 : 21,
-                          compact ? 13 : 16,
-                          tight ? 12 : 14,
-                          compact ? 13 : 16,
-                        ),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Text(
-                                    title,
-                                    maxLines: compact ? 1 : 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: titleColor,
-                                      fontSize:
-                                          compact
+                          return Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              tight ? 18 : 21,
+                              compact ? 13 : 16,
+                              tight ? 12 : 14,
+                              compact ? 13 : 16,
+                            ),
+                            child: Row(
+                              children: <Widget>[
+                                Expanded(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      Text(
+                                        title,
+                                        maxLines: compact ? 1 : 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: titleColor,
+                                          fontSize: compact
                                               ? (tight ? 15.5 : 16.5)
                                               : (tight ? 17 : 18.5),
-                                      height: 1.08,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                  SizedBox(height: compact ? 5 : 6),
-                                  Text(
-                                    subtitle,
-                                    maxLines: compact ? 1 : 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: subtitleColor,
-                                      fontSize:
-                                          compact
+                                          height: 1.08,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                      SizedBox(height: compact ? 5 : 6),
+                                      Text(
+                                        subtitle,
+                                        maxLines: compact ? 1 : 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: subtitleColor,
+                                          fontSize: compact
                                               ? (tight ? 10.8 : 11.4)
                                               : (tight ? 11.4 : 12.2),
-                                      height: 1.18,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                          height: 1.18,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                ),
+                                SizedBox(width: tight ? 8 : 10),
+                                SizedBox.square(
+                                  dimension: illustrationSize,
+                                  child: _OperationIllustrationPane(
+                                    accentColor: accentColor,
+                                    enabled: available,
+                                    child: illustration,
+                                  ),
+                                ),
+                                SizedBox(width: tight ? 8 : 10),
+                                _OperationActionTrailing(
+                                  accentColor: accentColor,
+                                  loading: loading,
+                                  enabled: available,
+                                ),
+                              ],
                             ),
-                            SizedBox(width: tight ? 8 : 10),
-                            SizedBox.square(
-                              dimension: illustrationSize,
-                              child: _OperationIllustrationPane(
-                                accentColor: accentColor,
-                                enabled: available,
-                                child: illustration,
-                              ),
-                            ),
-                            SizedBox(width: tight ? 8 : 10),
-                            _OperationActionTrailing(
-                              accentColor: accentColor,
-                              loading: loading,
-                              enabled: available,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                          );
+                        },
                   ),
                 ],
               ),
@@ -406,10 +481,9 @@ class _OperationIllustrationPane extends StatelessWidget {
             aspectRatio: 1,
             child: Container(
               decoration: BoxDecoration(
-                color:
-                    enabled
-                        ? accentColor.withAlpha(13)
-                        : SixMobilePalette.border.withAlpha(32),
+                color: enabled
+                    ? accentColor.withAlpha(13)
+                    : SixMobilePalette.border.withAlpha(32),
                 shape: BoxShape.circle,
               ),
               child: Padding(padding: EdgeInsets.all(4), child: child),
@@ -421,30 +495,41 @@ class _OperationIllustrationPane extends StatelessWidget {
   }
 }
 
-class _OperationAssetIllustration extends StatelessWidget {
-  const _OperationAssetIllustration({
-    required this.assetPath,
+class _OperationCanetinhaIllustration extends StatelessWidget {
+  const _OperationCanetinhaIllustration({
+    required this.assetContorno,
+    required this.assetAcento,
     required this.accentColor,
   });
 
-  final String assetPath;
+  final String assetContorno;
+  final String assetAcento;
   final Color accentColor;
 
   @override
   Widget build(BuildContext context) {
-    return Transform.scale(
-      scale: 1.12,
-      child: Image.asset(
-        assetPath,
+    return Padding(
+      padding: const EdgeInsets.all(5),
+      child: SixImagemCanetinha(
+        assetContorno: assetContorno,
+        assetAcento: assetAcento,
+        largura: 82,
+        altura: 82,
         fit: BoxFit.contain,
-        filterQuality: FilterQuality.medium,
-        errorBuilder: (
-          BuildContext context,
-          Object error,
-          StackTrace? stackTrace,
-        ) {
-          return Icon(Icons.storefront_outlined, color: accentColor, size: 42);
-        },
+        corContorno: context.sixMobileColors.titleText,
+        corAcento: accentColor,
+        gradienteContorno: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[accentColor, context.sixMobileColors.titleText],
+        ),
+        reforcoContorno: 0.62,
+        reforcoAcento: 0.76,
+        opacidadeReforco: 0.44,
+        opacidadeBrilho: Theme.of(context).brightness == Brightness.dark
+            ? 0.44
+            : 0.16,
+        desfoqueBrilho: 3.4,
       ),
     );
   }
@@ -463,41 +548,67 @@ class _OperationActionTrailing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color effectiveColor =
-        enabled ? accentColor : SixMobilePalette.mutedText;
+    final Color effectiveColor = enabled
+        ? accentColor
+        : SixMobilePalette.mutedText;
 
     return ExcludeSemantics(
       child: Container(
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color:
-              enabled
-                  ? accentColor.withAlpha(20)
-                  : SixMobilePalette.border.withAlpha(42),
+          color: enabled
+              ? accentColor.withAlpha(20)
+              : SixMobilePalette.border.withAlpha(42),
           shape: BoxShape.circle,
           border: Border.all(
-            color:
-                enabled ? accentColor.withAlpha(58) : SixMobilePalette.border,
+            color: enabled
+                ? accentColor.withAlpha(58)
+                : SixMobilePalette.border,
           ),
         ),
-        child:
-            loading
-                ? Padding(
-                  padding: EdgeInsets.all(7),
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: effectiveColor,
-                  ),
-                )
-                : Icon(
-                  enabled
-                      ? Icons.arrow_forward_rounded
-                      : Icons.lock_outline_rounded,
+        child: loading
+            ? Padding(
+                padding: EdgeInsets.all(7),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
                   color: effectiveColor,
-                  size: 16,
                 ),
+              )
+            : Icon(
+                enabled
+                    ? Icons.arrow_forward_rounded
+                    : Icons.lock_outline_rounded,
+                color: effectiveColor,
+                size: 16,
+              ),
       ),
     );
   }
+}
+
+class _SaleActionData {
+  const _SaleActionData({
+    required this.preferencia,
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.assetContorno,
+    required this.assetAcento,
+    required this.accentColor,
+    required this.onTap,
+    this.loading = false,
+    this.compact = false,
+  });
+
+  final VendasMobileCardPreferencia preferencia;
+  final String id;
+  final String title;
+  final String subtitle;
+  final String assetContorno;
+  final String assetAcento;
+  final Color accentColor;
+  final VoidCallback onTap;
+  final bool loading;
+  final bool compact;
 }

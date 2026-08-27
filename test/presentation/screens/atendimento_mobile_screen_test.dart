@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sixpos/data/datasources/operational_procedure_mock_data_source.dart';
 import 'package:sixpos/data/models/atendimento_tecnico_models.dart';
 import 'package:sixpos/data/models/regionalizacao_models.dart';
@@ -19,15 +22,19 @@ import 'package:sixpos/presentation/screens/opcoes_venda_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/receber_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/opcoes_servicos_atendimento_mobile_screen.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
+import 'package:sixpos/providers/usuario_provider.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    UsuarioProvider().clear();
+  });
+
   testWidgets('navbar mobile mantém apenas os três destinos principais', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(bottomNavigationBar: NavBarMobile()),
-      ),
+      MaterialApp(home: Scaffold(bottomNavigationBar: NavBarMobile())),
     );
 
     expect(find.text('dash'), findsOneWidget);
@@ -114,10 +121,7 @@ void main() {
         expect(
           tester
               .widgetList<ShaderMask>(
-                find.descendant(
-                  of: action,
-                  matching: find.byType(ShaderMask),
-                ),
+                find.descendant(of: action, matching: find.byType(ShaderMask)),
               )
               .length,
           greaterThan(2),
@@ -217,7 +221,152 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('menu de nova venda abre PDV e vendas a receber', (
+  testWidgets('restaura a ordem independente dos quatro menus Mobile', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'sixapp.preferenciasIndividuaisDoUsuario': jsonEncode(<String, dynamic>{
+        'ordemCardsAtendimentoMobile': <String>[
+          'RECEBER',
+          'NOVA_VENDA',
+          'DEVOLUCAO',
+          'NOVO_SERVICO',
+          'OPERACOES_CAIXA',
+        ],
+        'ordemCardsVendasMobile': <String>[
+          'CONSULTAR_VENDAS',
+          'NOVA_VENDA',
+          'VENDAS_A_RECEBER',
+        ],
+        'ordemCardsServicosMobile': <String>[
+          'SERVICOS_EM_ANDAMENTO',
+          'ORCAMENTOS_AGUARDANDO_APROVACAO',
+          'NOVO_SERVICO',
+        ],
+        'ordemCardsReceberMobile': <String>[
+          'SERVICOS_A_RECEBER',
+          'VENDAS_A_RECEBER',
+        ],
+      }),
+    });
+
+    await _pumpAtendimento(tester);
+    expect(
+      tester
+          .getTopLeft(
+            find.byKey(const ValueKey<String>('atendimento-action-receive')),
+          )
+          .dx,
+      lessThan(
+        tester
+            .getTopLeft(
+              find.byKey(const ValueKey<String>('atendimento-action-new-sale')),
+            )
+            .dx,
+      ),
+    );
+
+    await _pumpNovaVenda(tester);
+    expect(
+      tester
+          .getTopLeft(
+            find.byKey(const ValueKey<String>('nova-venda-action-history')),
+          )
+          .dy,
+      lessThan(
+        tester
+            .getTopLeft(
+              find.byKey(const ValueKey<String>('nova-venda-action-new-sale')),
+            )
+            .dy,
+      ),
+    );
+
+    await _pumpServicos(tester);
+    expect(
+      tester
+          .getTopLeft(
+            find.byKey(const ValueKey<String>('servicos-action-in-progress')),
+          )
+          .dy,
+      lessThan(
+        tester
+            .getTopLeft(
+              find.byKey(const ValueKey<String>('servicos-action-new-service')),
+            )
+            .dy,
+      ),
+    );
+
+    await _pumpReceber(tester);
+    expect(
+      tester
+          .getTopLeft(
+            find.byKey(const ValueKey<String>('receber-action-services')),
+          )
+          .dy,
+      lessThan(
+        tester
+            .getTopLeft(
+              find.byKey(const ValueKey<String>('receber-action-sales')),
+            )
+            .dy,
+      ),
+    );
+  });
+
+  testWidgets('reordena o menu Receber e salva a preferência no cache', (
+    WidgetTester tester,
+  ) async {
+    await _pumpReceber(tester);
+
+    final Finder sales = find.byKey(
+      const ValueKey<String>('receber-action-sales'),
+    );
+    final Finder services = find.byKey(
+      const ValueKey<String>('receber-action-services'),
+    );
+    final TestGesture gesture = await tester.startGesture(
+      tester.getCenter(sales),
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+    await gesture.moveTo(tester.getCenter(services));
+    await tester.pump(const Duration(milliseconds: 160));
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 240));
+
+    expect(
+      tester.getTopLeft(services).dy,
+      lessThan(tester.getTopLeft(sales).dy),
+    );
+
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    final Map<String, dynamic> cached =
+        jsonDecode(
+              preferences.getString('sixapp.preferenciasIndividuaisDoUsuario')!,
+            )
+            as Map<String, dynamic>;
+    expect(cached['ordemCardsReceberMobile'], <String>[
+      'SERVICOS_A_RECEBER',
+      'VENDAS_A_RECEBER',
+    ]);
+  });
+
+  testWidgets('usa ilustrações canetinha temáticas nos novos menus', (
+    WidgetTester tester,
+  ) async {
+    await _pumpNovaVenda(tester);
+    expect(find.byType(ShaderMask), findsWidgets);
+
+    await _pumpServicos(tester);
+    expect(find.byType(ShaderMask), findsWidgets);
+
+    await _pumpReceber(tester);
+    expect(find.byType(ShaderMask), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('menu de nova venda abre PDV, recebimentos e histórico', (
     WidgetTester tester,
   ) async {
     final List<String> navigations = await _pumpNovaVenda(tester);
@@ -226,7 +375,7 @@ void main() {
     expect(find.text('Vendas a receber'), findsOneWidget);
     expect(find.text('Consultar vendas'), findsOneWidget);
     expect(find.text('Consultar histórico de vendas'), findsOneWidget);
-    expect(find.text('Em breve'), findsWidgets);
+    expect(find.text('Em breve'), findsNothing);
 
     await tester.tap(
       find.byKey(const ValueKey<String>('nova-venda-action-new-sale')),
@@ -244,6 +393,7 @@ void main() {
     expect(navigations, <String>[
       'PdvMobileScreen',
       'VendasNaoLiquidadasMobileScreen',
+      'ConsultaVendasMobileScreen',
     ]);
     expect(tester.takeException(), isNull);
   });
@@ -257,7 +407,7 @@ void main() {
       expect(find.text('Nova venda'), findsWidgets);
       expect(find.text('Vendas a receber'), findsOneWidget);
       expect(find.text('Consultar vendas'), findsOneWidget);
-      expect(find.text('Em breve'), findsWidgets);
+      expect(find.text('Em breve'), findsNothing);
       expect(tester.takeException(), isNull, reason: 'largura $width');
     }
   });
@@ -362,96 +512,86 @@ void main() {
 }
 
 void _expectActionCardHierarchy(WidgetTester tester) {
-  final double saleHeight =
-      tester
-          .getSize(
-            find.byKey(
-              const ValueKey<String>('atendimento-action-new-sale'),
-              skipOffstage: false,
-            ),
-          )
-          .height;
-  final double saleWidth =
-      tester
-          .getSize(
-            find.byKey(
-              const ValueKey<String>('atendimento-action-new-sale'),
-              skipOffstage: false,
-            ),
-          )
-          .width;
-  final double serviceHeight =
-      tester
-          .getSize(
-            find.byKey(
-              const ValueKey<String>('atendimento-action-new-service'),
-              skipOffstage: false,
-            ),
-          )
-          .height;
-  final double serviceWidth =
-      tester
-          .getSize(
-            find.byKey(
-              const ValueKey<String>('atendimento-action-new-service'),
-              skipOffstage: false,
-            ),
-          )
-          .width;
-  final double receiveHeight =
-      tester
-          .getSize(
-            find.byKey(
-              const ValueKey<String>('atendimento-action-receive'),
-              skipOffstage: false,
-            ),
-          )
-          .height;
-  final double receiveWidth =
-      tester
-          .getSize(
-            find.byKey(
-              const ValueKey<String>('atendimento-action-receive'),
-              skipOffstage: false,
-            ),
-          )
-          .width;
-  final double cashHeight =
-      tester
-          .getSize(
-            find.byKey(
-              const ValueKey<String>('atendimento-action-cash'),
-              skipOffstage: false,
-            ),
-          )
-          .height;
-  final double cashWidth =
-      tester
-          .getSize(
-            find.byKey(
-              const ValueKey<String>('atendimento-action-cash'),
-              skipOffstage: false,
-            ),
-          )
-          .width;
-  final double returnHeight =
-      tester
-          .getSize(
-            find.byKey(
-              const ValueKey<String>('atendimento-action-return'),
-              skipOffstage: false,
-            ),
-          )
-          .height;
-  final double returnWidth =
-      tester
-          .getSize(
-            find.byKey(
-              const ValueKey<String>('atendimento-action-return'),
-              skipOffstage: false,
-            ),
-          )
-          .width;
+  final double saleHeight = tester
+      .getSize(
+        find.byKey(
+          const ValueKey<String>('atendimento-action-new-sale'),
+          skipOffstage: false,
+        ),
+      )
+      .height;
+  final double saleWidth = tester
+      .getSize(
+        find.byKey(
+          const ValueKey<String>('atendimento-action-new-sale'),
+          skipOffstage: false,
+        ),
+      )
+      .width;
+  final double serviceHeight = tester
+      .getSize(
+        find.byKey(
+          const ValueKey<String>('atendimento-action-new-service'),
+          skipOffstage: false,
+        ),
+      )
+      .height;
+  final double serviceWidth = tester
+      .getSize(
+        find.byKey(
+          const ValueKey<String>('atendimento-action-new-service'),
+          skipOffstage: false,
+        ),
+      )
+      .width;
+  final double receiveHeight = tester
+      .getSize(
+        find.byKey(
+          const ValueKey<String>('atendimento-action-receive'),
+          skipOffstage: false,
+        ),
+      )
+      .height;
+  final double receiveWidth = tester
+      .getSize(
+        find.byKey(
+          const ValueKey<String>('atendimento-action-receive'),
+          skipOffstage: false,
+        ),
+      )
+      .width;
+  final double cashHeight = tester
+      .getSize(
+        find.byKey(
+          const ValueKey<String>('atendimento-action-cash'),
+          skipOffstage: false,
+        ),
+      )
+      .height;
+  final double cashWidth = tester
+      .getSize(
+        find.byKey(
+          const ValueKey<String>('atendimento-action-cash'),
+          skipOffstage: false,
+        ),
+      )
+      .width;
+  final double returnHeight = tester
+      .getSize(
+        find.byKey(
+          const ValueKey<String>('atendimento-action-return'),
+          skipOffstage: false,
+        ),
+      )
+      .height;
+  final double returnWidth = tester
+      .getSize(
+        find.byKey(
+          const ValueKey<String>('atendimento-action-return'),
+          skipOffstage: false,
+        ),
+      )
+      .width;
 
   expect(serviceHeight, saleHeight, reason: 'novo serviço');
   expect(serviceWidth, saleWidth, reason: 'largura novo serviço');
@@ -490,8 +630,9 @@ Future<List<String>> _pumpAtendimento(
     MaterialApp(
       theme: ThemeData.light(useMaterial3: true),
       darkTheme: ThemeData.dark(useMaterial3: true),
-      themeMode:
-          brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
+      themeMode: brightness == Brightness.dark
+          ? ThemeMode.dark
+          : ThemeMode.light,
       home: MediaQuery(
         data: MediaQueryData(
           disableAnimations: true,
@@ -505,8 +646,8 @@ Future<List<String>> _pumpAtendimento(
           procedureCoordinator: procedureCoordinator,
           showBottomNavigationBar: false,
           enableWebSocket: false,
-          onNavigate:
-              (_, Widget page) => navigations.add(page.runtimeType.toString()),
+          onNavigate: (_, Widget page) =>
+              navigations.add(page.runtimeType.toString()),
         ),
       ),
     ),
@@ -583,8 +724,8 @@ Future<List<String>> _pumpNovaVenda(
         ),
         child: OpcoesVendaMobileScreen(
           procedureCoordinator: procedureCoordinator,
-          onNavigate:
-              (_, Widget page) => navigations.add(page.runtimeType.toString()),
+          onNavigate: (_, Widget page) =>
+              navigations.add(page.runtimeType.toString()),
         ),
       ),
     ),
@@ -618,8 +759,8 @@ Future<List<String>> _pumpReceber(
           devicePixelRatio: 1,
         ),
         child: ReceberMobileScreen(
-          onNavigate:
-              (_, Widget page) => navigations.add(page.runtimeType.toString()),
+          onNavigate: (_, Widget page) =>
+              navigations.add(page.runtimeType.toString()),
         ),
       ),
     ),
@@ -644,12 +785,11 @@ Future<void> _pumpPendentesPagamento(
 
   await tester.pumpWidget(
     ChangeNotifierProvider<LocaleSettingsProvider>(
-      create:
-          (_) => LocaleSettingsProvider(
-            regionalizacaoService: RegionalizacaoService(
-              apiClient: _FakeRegionalizacaoApiClient(),
-            ),
-          ),
+      create: (_) => LocaleSettingsProvider(
+        regionalizacaoService: RegionalizacaoService(
+          apiClient: _FakeRegionalizacaoApiClient(),
+        ),
+      ),
       child: MaterialApp(
         home: MediaQuery(
           data: MediaQueryData(

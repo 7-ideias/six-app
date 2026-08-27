@@ -104,8 +104,16 @@ flutter:
     - "assets/images/vendas mobile/vendas.webp"
     - "assets/images/vendas mobile/recebimento.webp"
     - "assets/images/vendas mobile/consultar.webp"
+    - "assets/images/vendas mobile/acao-consultar-vendas.webp"
+    - "assets/images/vendas mobile/acao-consultar-vendas-acento.webp"
     - "assets/images/servicos mobile/servico.webp"
     - "assets/images/servicos mobile/consultar.webp"
+    - "assets/images/servicos mobile/acao-servicos-em-andamento.webp"
+    - "assets/images/servicos mobile/acao-servicos-em-andamento-acento.webp"
+    - "assets/images/servicos mobile/acao-orcamentos-aprovacao.webp"
+    - "assets/images/servicos mobile/acao-orcamentos-aprovacao-acento.webp"
+    - "assets/images/receber mobile/acao-servicos-a-receber.webp"
+    - "assets/images/receber mobile/acao-servicos-a-receber-acento.webp"
     - assets/images/onboading/1-bem-vindo.webp
     - assets/images/onboading/2-cadastro-rapido.webp
     - assets/images/onboading/3-gestao-tecnica.webp

@@ -1,16 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
 import 'package:sixpos/core/services/websocket_service.dart';
 import 'package:sixpos/data/models/tela_inicial_models.dart';
+import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_imagem_canetinha.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_reorderable_card.dart';
+import 'package:sixpos/presentation/controllers/mobile_card_order_preference_controller.dart';
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
 import 'package:sixpos/presentation/screens/devolucoes_produtos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
@@ -73,6 +79,10 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
 
   late final TelaInicialWebApiClient _api;
   late final OperationalProcedureFlowCoordinator _procedureCoordinator;
+  late final MobileCardOrderPreferenceController<
+    AtendimentoMobileCardPreferencia
+  >
+  _ordemCardsController;
   final NotificacaoService _notificacoes = NotificacaoService();
 
   TelaInicialModel? _resumo;
@@ -90,6 +100,21 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     _api = widget.apiClient ?? HttpResumoDaEmpresaApiClient(canal: 'mobile');
     _procedureCoordinator =
         widget.procedureCoordinator ?? OperationalProcedureFlowCoordinator();
+    _ordemCardsController =
+        MobileCardOrderPreferenceController<AtendimentoMobileCardPreferencia>(
+            ordemPadrao: AtendimentoMobileCardPreferencia.values,
+            selecionarOrdem: (preferencias) =>
+                preferencias.ordemCardsAtendimentoMobile,
+            persistirOrdem: (ordem) =>
+                UsuarioService().atualizarPreferenciasIndividuais(
+                  ordemCardsAtendimentoMobile: ordem
+                      .map((item) => item.codigo)
+                      .toList(growable: false),
+                ),
+            nomeDaTela: 'Atendimento Mobile',
+          )
+          ..addListener(_aoAlterarOrdemDosCards)
+          ..inicializar();
     _totalNotificacoesConhecidas = _notificacoes.total;
     _notificacoes.addListener(_onNotificacoesChanged);
     _garantirWebSocketMobile();
@@ -99,7 +124,14 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   @override
   void dispose() {
     _notificacoes.removeListener(_onNotificacoesChanged);
+    _ordemCardsController
+      ..removeListener(_aoAlterarOrdemDosCards)
+      ..dispose();
     super.dispose();
+  }
+
+  void _aoAlterarOrdemDosCards() {
+    if (mounted) setState(() {});
   }
 
   String _txt(String key, String fallback) =>
@@ -112,8 +144,8 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     _totalNotificacoesConhecidas = totalAtual;
     setState(() {});
 
-    final String? mensagem =
-        _notificacoes.ultimaNotificacao?.description.trim();
+    final String? mensagem = _notificacoes.ultimaNotificacao?.description
+        .trim();
     if (!recebeuNova || mensagem == null || mensagem.isEmpty) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -164,10 +196,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         ),
       ],
       bodyBuilder: _buildContent,
-      bottomNavigationBar:
-          kIsWeb || !widget.showBottomNavigationBar
-              ? null
-              : NavBarMobile(initialIndex: 2),
+      bottomNavigationBar: kIsWeb || !widget.showBottomNavigationBar
+          ? null
+          : NavBarMobile(initialIndex: 2),
     );
   }
 
@@ -188,6 +219,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
                 topInset: topInset,
                 textScale: textScale,
               );
+          final List<_PrimaryActionData> actions = _orderedActions();
 
           return RefreshIndicator(
             edgeOffset: topInset,
@@ -213,26 +245,29 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
                     ),
                     assetContorno: _heroAssetContorno,
                     assetAcento: _heroAssetAcento,
-                    accentGradient:
-                        _AtendimentoVisualTokens.resolve(context).heroGradient,
+                    accentGradient: _AtendimentoVisualTokens.resolve(
+                      context,
+                    ).heroGradient,
                   ),
                 ),
                 SizedBox(height: 16),
                 SixStaggeredEntry(
                   delay: Duration(milliseconds: 95),
                   child: _AtendimentoActionsRow(
-                    actions: _primaryActions(),
+                    actions: actions.take(2).toList(growable: false),
                     prominence: _AtendimentoActionProminence.primary,
                     heightBoost: sizing.primaryRowExtraHeight,
+                    onReorder: _ordemCardsController.reordenar,
                   ),
                 ),
                 SizedBox(height: 12),
                 SixStaggeredEntry(
                   delay: Duration(milliseconds: 130),
                   child: _AtendimentoActionsRow(
-                    actions: _secondaryActions(),
+                    actions: actions.skip(2).toList(growable: false),
                     prominence: _AtendimentoActionProminence.compact,
                     heightBoost: sizing.compactRowExtraHeight,
+                    onReorder: _ordemCardsController.reordenar,
                   ),
                 ),
               ],
@@ -283,12 +318,15 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     );
   }
 
-  List<_PrimaryActionData> _primaryActions() {
-    final _AtendimentoVisualTokens visual =
-        _AtendimentoVisualTokens.resolve(context);
+  List<_PrimaryActionData> _orderedActions() {
+    final _AtendimentoVisualTokens visual = _AtendimentoVisualTokens.resolve(
+      context,
+    );
 
-    return <_PrimaryActionData>[
-      _PrimaryActionData(
+    final Map<AtendimentoMobileCardPreferencia, _PrimaryActionData>
+    actions = <AtendimentoMobileCardPreferencia, _PrimaryActionData>{
+      AtendimentoMobileCardPreferencia.novaVenda: _PrimaryActionData(
+        preferencia: AtendimentoMobileCardPreferencia.novaVenda,
         id: 'new-sale',
         title: _txt('atendimento.mobile.newSaleTitle', 'Nova venda'),
         subtitle: _txt('atendimento.mobile.newSaleSubtitle', 'Vender produtos'),
@@ -299,7 +337,8 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         brandEnd: SixMobilePalette.brandBlue,
         onTap: _openSalesMenu,
       ),
-      _PrimaryActionData(
+      AtendimentoMobileCardPreferencia.novoServico: _PrimaryActionData(
+        preferencia: AtendimentoMobileCardPreferencia.novoServico,
         id: 'new-service',
         title: _txt('atendimento.mobile.newServiceTitle', 'Serviços'),
         subtitle: _txt(
@@ -313,15 +352,8 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         brandEnd: SixMobilePalette.brandViolet,
         onTap: () => _go(OpcoesServicosAtendimentoMobileScreen()),
       ),
-    ];
-  }
-
-  List<_PrimaryActionData> _secondaryActions() {
-    final _AtendimentoVisualTokens visual =
-        _AtendimentoVisualTokens.resolve(context);
-
-    return <_PrimaryActionData>[
-      _PrimaryActionData(
+      AtendimentoMobileCardPreferencia.receber: _PrimaryActionData(
+        preferencia: AtendimentoMobileCardPreferencia.receber,
         id: 'receive',
         title: _txt('atendimento.mobile.receiveTitle', 'Receber'),
         subtitle: _txt(
@@ -336,7 +368,8 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         onTap: () => _go(ReceberMobileScreen()),
         badgeValue: _resumo?.totalVendasAbertas,
       ),
-      _PrimaryActionData(
+      AtendimentoMobileCardPreferencia.operacoesCaixa: _PrimaryActionData(
+        preferencia: AtendimentoMobileCardPreferencia.operacoesCaixa,
         id: 'cash',
         title: _txt(
           'atendimento.mobile.cashOperationsTitle',
@@ -353,7 +386,8 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         brandEnd: visual.cashGradientEnd,
         onTap: () => _go(OperacoesCaixaMobileScreen()),
       ),
-      _PrimaryActionData(
+      AtendimentoMobileCardPreferencia.devolucao: _PrimaryActionData(
+        preferencia: AtendimentoMobileCardPreferencia.devolucao,
         id: 'return',
         title: _txt('operacao.mobile.returnTitle', 'Devoluções'),
         subtitle: _txt('operacao.mobile.returnSubtitle', 'Registrar devolução'),
@@ -364,7 +398,11 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         brandEnd: visual.returnGradientEnd,
         onTap: () => _go(DevolucoesProdutosMobileScreen()),
       ),
-    ];
+    };
+
+    return _ordemCardsController.ordem
+        .map((preferencia) => actions[preferencia]!)
+        .toList(growable: false);
   }
 
   void _openSalesMenu() {
@@ -414,10 +452,9 @@ class _AtendimentoHeroCard extends StatelessWidget {
           final bool tightText = textScale >= 1.35;
           final double illustrationWidth =
               (width * (compact ? 0.43 : 0.49) * 1.12).clamp(132.0, 206.0);
-          final double illustrationHeight = (compact
-                  ? illustrationWidth * 0.94
-                  : illustrationWidth * 0.98)
-              .clamp(117.0, 177.0);
+          final double illustrationHeight =
+              (compact ? illustrationWidth * 0.94 : illustrationWidth * 0.98)
+                  .clamp(117.0, 177.0);
           final double illustrationRightOffset = compact ? -34 : -38;
           final double illustrationBottomOffset = compact ? -30 : -35;
           final double titleSize = tightText ? 18 : (compact ? 20 : 22);
@@ -550,26 +587,19 @@ class _AtendimentoVisualTokens {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return _AtendimentoVisualTokens(
-      saleAccent:
-          isDark
-              ? SixMobilePalette.brandCyan
-              : SixMobilePalette.brandBlue,
-      serviceAccent:
-          isDark
-              ? Color.lerp(
-                SixMobilePalette.brandViolet,
-                colors.titleText,
-                0.36,
-              )!
-              : SixMobilePalette.brandViolet,
-      receiveAccent:
-          isDark
-              ? SixMobilePalette.brandCyan
-              : Color.lerp(
-                SixMobilePalette.brandCyan,
-                SixMobilePalette.brandNavyDeep,
-                0.56,
-              )!,
+      saleAccent: isDark
+          ? SixMobilePalette.brandCyan
+          : SixMobilePalette.brandBlue,
+      serviceAccent: isDark
+          ? Color.lerp(SixMobilePalette.brandViolet, colors.titleText, 0.36)!
+          : SixMobilePalette.brandViolet,
+      receiveAccent: isDark
+          ? SixMobilePalette.brandCyan
+          : Color.lerp(
+              SixMobilePalette.brandCyan,
+              SixMobilePalette.brandNavyDeep,
+              0.56,
+            )!,
       cashAccent: isDark ? colors.accent : SixMobilePalette.brandBlue,
       returnAccent: colors.error,
       cashGradientEnd: isDark ? colors.accent : SixMobilePalette.brandCyan,
@@ -616,10 +646,9 @@ class _AtendimentoLayoutSizing {
     final double baseContentHeight =
         heroHeight + primaryHeight + compactHeight + verticalGaps;
     final double availableHeight = viewportHeight - verticalPadding;
-    final double extraHeight =
-        (availableHeight - baseContentHeight)
-            .clamp(0.0, double.infinity)
-            .toDouble();
+    final double extraHeight = (availableHeight - baseContentHeight)
+        .clamp(0.0, double.infinity)
+        .toDouble();
 
     return _AtendimentoLayoutSizing(
       primaryRowExtraHeight: extraHeight * 0.54,
@@ -632,11 +661,17 @@ class _AtendimentoActionsRow extends StatelessWidget {
   const _AtendimentoActionsRow({
     required this.actions,
     required this.prominence,
+    required this.onReorder,
     this.heightBoost = 0,
   });
 
   final List<_PrimaryActionData> actions;
   final _AtendimentoActionProminence prominence;
+  final void Function(
+    AtendimentoMobileCardPreferencia movido,
+    AtendimentoMobileCardPreferencia destino,
+  )
+  onReorder;
   final double heightBoost;
 
   @override
@@ -645,10 +680,13 @@ class _AtendimentoActionsRow extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) {
         final double width = constraints.maxWidth;
         final double textScale = MediaQuery.textScalerOf(context).scale(1);
-        final double gap =
-            prominence == _AtendimentoActionProminence.primary ? 12 : 8;
+        final double gap = prominence == _AtendimentoActionProminence.primary
+            ? 12
+            : 8;
         final double cardHeight =
             _resolveCardHeight(textScale: textScale) + heightBoost;
+        final double cardWidth =
+            (width - (gap * (actions.length - 1))) / actions.length;
 
         return SizedBox(
           height: cardHeight,
@@ -658,11 +696,22 @@ class _AtendimentoActionsRow extends StatelessWidget {
               for (int index = 0; index < actions.length; index += 1) ...[
                 if (index > 0) SizedBox(width: gap),
                 Expanded(
-                  child: _PrimaryActionCard(
-                    data: actions[index],
-                    prominence: prominence,
-                    availableRowWidth: width,
-                  ),
+                  child:
+                      SixMobileReorderableCard<
+                        AtendimentoMobileCardPreferencia
+                      >(
+                        value: actions[index].preferencia,
+                        onReorder: onReorder,
+                        feedbackWidth: cardWidth,
+                        feedbackHeight: cardHeight,
+                        handleColor: actions[index].accentColor,
+                        handleOnLeft: true,
+                        cardBuilder: () => _PrimaryActionCard(
+                          data: actions[index],
+                          prominence: prominence,
+                          availableRowWidth: width,
+                        ),
+                      ),
                 ),
               ],
             ],
@@ -700,18 +749,16 @@ class _PrimaryActionCard extends StatelessWidget {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final bool enabled = data.enabled && data.onTap != null;
     final String status = data.statusLabel ?? '';
-    final String badge =
-        data.badgeValue != null && data.badgeValue! > 0
-            ? data.badgeValue.toString()
-            : '';
+    final String badge = data.badgeValue != null && data.badgeValue! > 0
+        ? data.badgeValue.toString()
+        : '';
     final String semanticSuffix = <String>[
       if (badge.isNotEmpty) badge,
       if (status.isNotEmpty) status,
     ].join('. ');
-    final String semanticLabel =
-        semanticSuffix.isEmpty
-            ? '${data.title}. ${data.subtitle}'
-            : '${data.title}. ${data.subtitle}. $semanticSuffix';
+    final String semanticLabel = semanticSuffix.isEmpty
+        ? '${data.title}. ${data.subtitle}'
+        : '${data.title}. ${data.subtitle}. $semanticSuffix';
     final double radius = _isPrimary ? 22 : 18;
 
     return Semantics(
@@ -727,10 +774,9 @@ class _PrimaryActionCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(radius),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color:
-                    _isPrimary
-                        ? data.brandEnd.withAlpha(isDark ? 30 : 18)
-                        : colors.navigationShadow.withAlpha(18),
+                color: _isPrimary
+                    ? data.brandEnd.withAlpha(isDark ? 30 : 18)
+                    : colors.navigationShadow.withAlpha(18),
                 blurRadius: _isPrimary ? 16 : 10,
                 offset: Offset(0, _isPrimary ? 8 : 5),
               ),
@@ -759,10 +805,9 @@ class _PrimaryActionCard extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.circular(radius),
                 border: Border.all(
-                  color:
-                      enabled
-                          ? data.accentColor.withAlpha(_isPrimary ? 68 : 46)
-                          : colors.border,
+                  color: enabled
+                      ? data.accentColor.withAlpha(_isPrimary ? 68 : 46)
+                      : colors.border,
                 ),
               ),
               child: InkWell(
@@ -772,23 +817,20 @@ class _PrimaryActionCard extends StatelessWidget {
                   clipBehavior: Clip.none,
                   children: <Widget>[
                     Padding(
-                      padding:
-                          _isPrimary
-                              ? EdgeInsets.fromLTRB(10, 11, 10, 10)
-                              : EdgeInsets.fromLTRB(7, 8, 7, 8),
+                      padding: _isPrimary
+                          ? EdgeInsets.fromLTRB(10, 11, 10, 10)
+                          : EdgeInsets.fromLTRB(7, 8, 7, 8),
                       child: LayoutBuilder(
-                        builder: (
-                          BuildContext context,
-                          BoxConstraints constraints,
-                        ) {
-                          return _ActionCardContent(
-                            data: data,
-                            enabled: enabled,
-                            prominence: prominence,
-                            constraints: constraints,
-                            rowWidth: availableRowWidth,
-                          );
-                        },
+                        builder:
+                            (BuildContext context, BoxConstraints constraints) {
+                              return _ActionCardContent(
+                                data: data,
+                                enabled: enabled,
+                                prominence: prominence,
+                                constraints: constraints,
+                                rowWidth: availableRowWidth,
+                              );
+                            },
                       ),
                     ),
                     if (_isPrimary)
@@ -860,42 +902,31 @@ class _ActionCardContent extends StatelessWidget {
                 (_isPrimary ? 120 : 90))
             .clamp(0.0, 1.0)
             .toDouble();
-    final double imageCircleSize =
-        _isPrimary
-            ? ((compact ? 68 : 82) + (extraHeightFactor * 10)) * 1.4
-            : ((compact ? 45 : 54) + (extraHeightFactor * 8)) * 1.4;
-    final double imageSize =
-        _isPrimary
-            ? ((compact ? 60 : 72) + (extraHeightFactor * 9)) * 1.4
-            : ((compact ? 40 : 48) + (extraHeightFactor * 7)) * 1.4;
-    final double titleSize =
-        _isPrimary
-            ? (compact ? 13.1 : 15.0) + (extraHeightFactor * 0.8)
-            : (compact ? 10.4 : 11.4) + (extraHeightFactor * 0.7);
-    final double subtitleSize =
-        _isPrimary
-            ? (compact ? 10.5 : 11.3) + (extraHeightFactor * 0.6)
-            : (compact ? 9.0 : 9.7) + (extraHeightFactor * 0.5);
-    final Color illustrationStart =
-        isDark
-            ? Color.lerp(
-              data.brandStart,
-              colors.titleText,
-              _isPrimary ? 0.18 : 0.26,
-            )!
-            : data.brandStart;
-    final Color illustrationEnd =
-        isDark
-            ? Color.lerp(
-              data.brandEnd,
-              colors.titleText,
-              _isPrimary ? 0.46 : 0.54,
-            )!
-            : data.brandEnd;
-    final Color illustrationAccent =
-        isDark
-            ? Color.lerp(data.accentColor, colors.titleText, 0.24)!
-            : data.accentColor;
+    final double imageCircleSize = _isPrimary
+        ? ((compact ? 68 : 82) + (extraHeightFactor * 10)) * 1.4
+        : ((compact ? 45 : 54) + (extraHeightFactor * 8)) * 1.4;
+    final double imageSize = _isPrimary
+        ? ((compact ? 60 : 72) + (extraHeightFactor * 9)) * 1.4
+        : ((compact ? 40 : 48) + (extraHeightFactor * 7)) * 1.4;
+    final double titleSize = _isPrimary
+        ? (compact ? 13.1 : 15.0) + (extraHeightFactor * 0.8)
+        : (compact ? 10.4 : 11.4) + (extraHeightFactor * 0.7);
+    final double subtitleSize = _isPrimary
+        ? (compact ? 10.5 : 11.3) + (extraHeightFactor * 0.6)
+        : (compact ? 9.0 : 9.7) + (extraHeightFactor * 0.5);
+    final Color illustrationStart = isDark
+        ? Color.lerp(
+            data.brandStart,
+            colors.titleText,
+            _isPrimary ? 0.18 : 0.26,
+          )!
+        : data.brandStart;
+    final Color illustrationEnd = isDark
+        ? Color.lerp(data.brandEnd, colors.titleText, _isPrimary ? 0.46 : 0.54)!
+        : data.brandEnd;
+    final Color illustrationAccent = isDark
+        ? Color.lerp(data.accentColor, colors.titleText, 0.24)!
+        : data.accentColor;
 
     return Column(
       mainAxisSize: MainAxisSize.max,
@@ -914,15 +945,15 @@ class _ActionCardContent extends StatelessWidget {
                 data.brandStart.withAlpha(
                   enabled
                       ? isDark
-                          ? (_isPrimary ? 96 : 82)
-                          : (_isPrimary ? 60 : 52)
+                            ? (_isPrimary ? 96 : 82)
+                            : (_isPrimary ? 60 : 52)
                       : 18,
                 ),
                 data.brandEnd.withAlpha(
                   enabled
                       ? isDark
-                          ? (_isPrimary ? 64 : 54)
-                          : (_isPrimary ? 40 : 34)
+                            ? (_isPrimary ? 64 : 54)
+                            : (_isPrimary ? 40 : 34)
                       : 12,
                 ),
               ],
@@ -933,18 +964,15 @@ class _ActionCardContent extends StatelessWidget {
                 enabled ? (_isPrimary ? 104 : 88) : 26,
               ),
             ),
-            boxShadow:
-                isDark && enabled
-                    ? <BoxShadow>[
-                      BoxShadow(
-                        color: data.brandStart.withAlpha(
-                          _isPrimary ? 72 : 58,
-                        ),
-                        blurRadius: _isPrimary ? 22 : 16,
-                        spreadRadius: _isPrimary ? 0.4 : 0,
-                      ),
-                    ]
-                    : const <BoxShadow>[],
+            boxShadow: isDark && enabled
+                ? <BoxShadow>[
+                    BoxShadow(
+                      color: data.brandStart.withAlpha(_isPrimary ? 72 : 58),
+                      blurRadius: _isPrimary ? 22 : 16,
+                      spreadRadius: _isPrimary ? 0.4 : 0,
+                    ),
+                  ]
+                : const <BoxShadow>[],
           ),
           child: Center(
             child: SixImagemCanetinha(
@@ -970,12 +998,11 @@ class _ActionCardContent extends StatelessWidget {
               reforcoContorno: _isPrimary ? 0.62 : 0.82,
               reforcoAcento: _isPrimary ? 0.72 : 0.92,
               opacidadeReforco: isDark ? 0.52 : 0.44,
-              opacidadeBrilho:
-                  enabled
-                      ? isDark
-                          ? 0.62
-                          : 0.24
-                      : 0,
+              opacidadeBrilho: enabled
+                  ? isDark
+                        ? 0.62
+                        : 0.24
+                  : 0,
               desfoqueBrilho: _isPrimary ? 4.8 : 3.4,
             ),
           ),
@@ -1146,6 +1173,7 @@ class _SoonChip extends StatelessWidget {
 
 class _PrimaryActionData {
   const _PrimaryActionData({
+    required this.preferencia,
     required this.id,
     required this.title,
     required this.subtitle,
@@ -1160,6 +1188,7 @@ class _PrimaryActionData {
     this.statusLabel,
   });
 
+  final AtendimentoMobileCardPreferencia preferencia;
   final String id;
   final String title;
   final String subtitle;

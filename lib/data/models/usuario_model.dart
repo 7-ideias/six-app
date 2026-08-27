@@ -60,10 +60,9 @@ class UsuarioModel {
             json['imagemPerfil'] ??
             json['imagemDoUsuario'],
       ),
-      objEndereco:
-          json['objEndereco'] != null
-              ? EnderecoModel.fromJson(json['objEndereco'])
-              : null,
+      objEndereco: json['objEndereco'] != null
+          ? EnderecoModel.fromJson(json['objEndereco'])
+          : null,
       preferenciasIndividuaisDoUsuario:
           PreferenciasIndividuaisDoUsuarioModel.fromJson(
             json['preferenciasIndividuaisDoUsuario'],
@@ -541,6 +540,187 @@ extension GestaoMobileCardPreferenciaApi on GestaoMobileCardPreferencia {
   }
 }
 
+enum AtendimentoMobileCardPreferencia {
+  novaVenda,
+  novoServico,
+  receber,
+  operacoesCaixa,
+  devolucao,
+}
+
+extension AtendimentoMobileCardPreferenciaApi
+    on AtendimentoMobileCardPreferencia {
+  String get codigo {
+    switch (this) {
+      case AtendimentoMobileCardPreferencia.novaVenda:
+        return 'NOVA_VENDA';
+      case AtendimentoMobileCardPreferencia.novoServico:
+        return 'NOVO_SERVICO';
+      case AtendimentoMobileCardPreferencia.receber:
+        return 'RECEBER';
+      case AtendimentoMobileCardPreferencia.operacoesCaixa:
+        return 'OPERACOES_CAIXA';
+      case AtendimentoMobileCardPreferencia.devolucao:
+        return 'DEVOLUCAO';
+    }
+  }
+
+  static AtendimentoMobileCardPreferencia? tryFromCodigo(dynamic value) {
+    final String codigo = value?.toString().trim().toUpperCase() ?? '';
+    switch (codigo) {
+      case 'NOVA_VENDA':
+        return AtendimentoMobileCardPreferencia.novaVenda;
+      case 'NOVO_SERVICO':
+      case 'SERVICOS':
+        return AtendimentoMobileCardPreferencia.novoServico;
+      case 'RECEBER':
+        return AtendimentoMobileCardPreferencia.receber;
+      case 'OPERACOES_CAIXA':
+        return AtendimentoMobileCardPreferencia.operacoesCaixa;
+      case 'DEVOLUCAO':
+      case 'DEVOLUCOES':
+        return AtendimentoMobileCardPreferencia.devolucao;
+      default:
+        return null;
+    }
+  }
+
+  static List<AtendimentoMobileCardPreferencia> normalizarOrdem(
+    dynamic value,
+  ) => _normalizarOrdemDeCards<AtendimentoMobileCardPreferencia>(
+    value,
+    AtendimentoMobileCardPreferencia.values,
+    tryFromCodigo,
+  );
+}
+
+enum VendasMobileCardPreferencia { novaVenda, vendasAReceber, consultarVendas }
+
+extension VendasMobileCardPreferenciaApi on VendasMobileCardPreferencia {
+  String get codigo {
+    switch (this) {
+      case VendasMobileCardPreferencia.novaVenda:
+        return 'NOVA_VENDA';
+      case VendasMobileCardPreferencia.vendasAReceber:
+        return 'VENDAS_A_RECEBER';
+      case VendasMobileCardPreferencia.consultarVendas:
+        return 'CONSULTAR_VENDAS';
+    }
+  }
+
+  static VendasMobileCardPreferencia? tryFromCodigo(dynamic value) {
+    final String codigo = value?.toString().trim().toUpperCase() ?? '';
+    switch (codigo) {
+      case 'NOVA_VENDA':
+        return VendasMobileCardPreferencia.novaVenda;
+      case 'VENDAS_A_RECEBER':
+        return VendasMobileCardPreferencia.vendasAReceber;
+      case 'CONSULTAR_VENDAS':
+        return VendasMobileCardPreferencia.consultarVendas;
+      default:
+        return null;
+    }
+  }
+
+  static List<VendasMobileCardPreferencia> normalizarOrdem(dynamic value) =>
+      _normalizarOrdemDeCards<VendasMobileCardPreferencia>(
+        value,
+        VendasMobileCardPreferencia.values,
+        tryFromCodigo,
+      );
+}
+
+enum ServicosMobileCardPreferencia {
+  novoServico,
+  servicosEmAndamento,
+  orcamentosAguardandoAprovacao,
+}
+
+extension ServicosMobileCardPreferenciaApi on ServicosMobileCardPreferencia {
+  String get codigo {
+    switch (this) {
+      case ServicosMobileCardPreferencia.novoServico:
+        return 'NOVO_SERVICO';
+      case ServicosMobileCardPreferencia.servicosEmAndamento:
+        return 'SERVICOS_EM_ANDAMENTO';
+      case ServicosMobileCardPreferencia.orcamentosAguardandoAprovacao:
+        return 'ORCAMENTOS_AGUARDANDO_APROVACAO';
+    }
+  }
+
+  static ServicosMobileCardPreferencia? tryFromCodigo(dynamic value) {
+    final String codigo = value?.toString().trim().toUpperCase() ?? '';
+    switch (codigo) {
+      case 'NOVO_SERVICO':
+        return ServicosMobileCardPreferencia.novoServico;
+      case 'SERVICOS_EM_ANDAMENTO':
+        return ServicosMobileCardPreferencia.servicosEmAndamento;
+      case 'ORCAMENTOS_AGUARDANDO_APROVACAO':
+        return ServicosMobileCardPreferencia.orcamentosAguardandoAprovacao;
+      default:
+        return null;
+    }
+  }
+
+  static List<ServicosMobileCardPreferencia> normalizarOrdem(dynamic value) =>
+      _normalizarOrdemDeCards<ServicosMobileCardPreferencia>(
+        value,
+        ServicosMobileCardPreferencia.values,
+        tryFromCodigo,
+      );
+}
+
+enum ReceberMobileCardPreferencia { vendasAReceber, servicosAReceber }
+
+extension ReceberMobileCardPreferenciaApi on ReceberMobileCardPreferencia {
+  String get codigo {
+    switch (this) {
+      case ReceberMobileCardPreferencia.vendasAReceber:
+        return 'VENDAS_A_RECEBER';
+      case ReceberMobileCardPreferencia.servicosAReceber:
+        return 'SERVICOS_A_RECEBER';
+    }
+  }
+
+  static ReceberMobileCardPreferencia? tryFromCodigo(dynamic value) {
+    final String codigo = value?.toString().trim().toUpperCase() ?? '';
+    switch (codigo) {
+      case 'VENDAS_A_RECEBER':
+        return ReceberMobileCardPreferencia.vendasAReceber;
+      case 'SERVICOS_A_RECEBER':
+        return ReceberMobileCardPreferencia.servicosAReceber;
+      default:
+        return null;
+    }
+  }
+
+  static List<ReceberMobileCardPreferencia> normalizarOrdem(dynamic value) =>
+      _normalizarOrdemDeCards<ReceberMobileCardPreferencia>(
+        value,
+        ReceberMobileCardPreferencia.values,
+        tryFromCodigo,
+      );
+}
+
+List<T> _normalizarOrdemDeCards<T extends Object>(
+  dynamic value,
+  List<T> ordemPadrao,
+  T? Function(dynamic value) parser,
+) {
+  if (value is Iterable) {
+    final List<T> ordem = value
+        .map((dynamic item) => item is T ? item : parser(item))
+        .whereType<T>()
+        .toList(growable: false);
+    if (ordem.length == ordemPadrao.length &&
+        ordem.toSet().length == ordemPadrao.length &&
+        ordem.toSet().containsAll(ordemPadrao)) {
+      return List<T>.unmodifiable(ordem);
+    }
+  }
+  return List<T>.unmodifiable(ordemPadrao);
+}
+
 class PreferenciasIndividuaisDoUsuarioModel {
   final String idiomaDePreferencia;
   final ModoDeExibicaoUsuario modoDeExibicaoProdutosWeb;
@@ -558,6 +738,10 @@ class PreferenciasIndividuaisDoUsuarioModel {
   final AtendimentosCriadosFiltrosMobilePreferencia
   atendimentosCriadosFiltrosMobile;
   final List<GestaoMobileCardPreferencia> ordemCardsGestaoMobile;
+  final List<AtendimentoMobileCardPreferencia> ordemCardsAtendimentoMobile;
+  final List<VendasMobileCardPreferencia> ordemCardsVendasMobile;
+  final List<ServicosMobileCardPreferencia> ordemCardsServicosMobile;
+  final List<ReceberMobileCardPreferencia> ordemCardsReceberMobile;
 
   PreferenciasIndividuaisDoUsuarioModel({
     this.idiomaDePreferencia = '',
@@ -578,6 +762,10 @@ class PreferenciasIndividuaisDoUsuarioModel {
     AtendimentosCriadosFiltrosMobilePreferencia?
     atendimentosCriadosFiltrosMobile,
     List<GestaoMobileCardPreferencia>? ordemCardsGestaoMobile,
+    List<AtendimentoMobileCardPreferencia>? ordemCardsAtendimentoMobile,
+    List<VendasMobileCardPreferencia>? ordemCardsVendasMobile,
+    List<ServicosMobileCardPreferencia>? ordemCardsServicosMobile,
+    List<ReceberMobileCardPreferencia>? ordemCardsReceberMobile,
   }) : modoDeExibicaoProdutosWeb =
            modoDeExibicaoProdutosWeb ??
            modoDeExibicaoProdutos ??
@@ -619,7 +807,22 @@ class PreferenciasIndividuaisDoUsuarioModel {
            AtendimentosCriadosFiltrosMobilePreferencia.vazia(),
        ordemCardsGestaoMobile = GestaoMobileCardPreferenciaApi.normalizarOrdem(
          ordemCardsGestaoMobile,
-       );
+       ),
+       ordemCardsAtendimentoMobile =
+           AtendimentoMobileCardPreferenciaApi.normalizarOrdem(
+             ordemCardsAtendimentoMobile,
+           ),
+       ordemCardsVendasMobile = VendasMobileCardPreferenciaApi.normalizarOrdem(
+         ordemCardsVendasMobile,
+       ),
+       ordemCardsServicosMobile =
+           ServicosMobileCardPreferenciaApi.normalizarOrdem(
+             ordemCardsServicosMobile,
+           ),
+       ordemCardsReceberMobile =
+           ReceberMobileCardPreferenciaApi.normalizarOrdem(
+             ordemCardsReceberMobile,
+           );
 
   ModoDeExibicaoUsuario get modoDeExibicaoProdutos =>
       kIsWeb ? modoDeExibicaoProdutosWeb : modoDeExibicaoProdutosMobile;
@@ -647,6 +850,10 @@ class PreferenciasIndividuaisDoUsuarioModel {
       atendimentosCriadosFiltrosMobile:
           AtendimentosCriadosFiltrosMobilePreferencia.vazia(),
       ordemCardsGestaoMobile: GestaoMobileCardPreferencia.values,
+      ordemCardsAtendimentoMobile: AtendimentoMobileCardPreferencia.values,
+      ordemCardsVendasMobile: VendasMobileCardPreferencia.values,
+      ordemCardsServicosMobile: ServicosMobileCardPreferencia.values,
+      ordemCardsReceberMobile: ReceberMobileCardPreferencia.values,
     );
   }
 
@@ -726,6 +933,20 @@ class PreferenciasIndividuaisDoUsuarioModel {
       ordemCardsGestaoMobile: GestaoMobileCardPreferenciaApi.normalizarOrdem(
         json['ordemCardsGestaoMobile'],
       ),
+      ordemCardsAtendimentoMobile:
+          AtendimentoMobileCardPreferenciaApi.normalizarOrdem(
+            json['ordemCardsAtendimentoMobile'],
+          ),
+      ordemCardsVendasMobile: VendasMobileCardPreferenciaApi.normalizarOrdem(
+        json['ordemCardsVendasMobile'],
+      ),
+      ordemCardsServicosMobile:
+          ServicosMobileCardPreferenciaApi.normalizarOrdem(
+            json['ordemCardsServicosMobile'],
+          ),
+      ordemCardsReceberMobile: ReceberMobileCardPreferenciaApi.normalizarOrdem(
+        json['ordemCardsReceberMobile'],
+      ),
     );
   }
 
@@ -747,10 +968,22 @@ class PreferenciasIndividuaisDoUsuarioModel {
       'catalogoReservasFiltrosWeb': catalogoReservasFiltrosWeb.toJson(),
       'consultaVendasFiltrosWeb': consultaVendasFiltrosWeb.toJson(),
       'atendimentosCriadosFiltrosWeb': atendimentosCriadosFiltrosWeb.toJson(),
-      'atendimentosCriadosFiltrosMobile':
-          atendimentosCriadosFiltrosMobile.toJson(),
+      'atendimentosCriadosFiltrosMobile': atendimentosCriadosFiltrosMobile
+          .toJson(),
       'ordemCardsGestaoMobile': ordemCardsGestaoMobile
           .map((GestaoMobileCardPreferencia item) => item.codigo)
+          .toList(growable: false),
+      'ordemCardsAtendimentoMobile': ordemCardsAtendimentoMobile
+          .map((AtendimentoMobileCardPreferencia item) => item.codigo)
+          .toList(growable: false),
+      'ordemCardsVendasMobile': ordemCardsVendasMobile
+          .map((VendasMobileCardPreferencia item) => item.codigo)
+          .toList(growable: false),
+      'ordemCardsServicosMobile': ordemCardsServicosMobile
+          .map((ServicosMobileCardPreferencia item) => item.codigo)
+          .toList(growable: false),
+      'ordemCardsReceberMobile': ordemCardsReceberMobile
+          .map((ReceberMobileCardPreferencia item) => item.codigo)
           .toList(growable: false),
     };
   }
@@ -774,6 +1007,10 @@ class PreferenciasIndividuaisDoUsuarioModel {
     AtendimentosCriadosFiltrosMobilePreferencia?
     atendimentosCriadosFiltrosMobile,
     List<GestaoMobileCardPreferencia>? ordemCardsGestaoMobile,
+    List<AtendimentoMobileCardPreferencia>? ordemCardsAtendimentoMobile,
+    List<VendasMobileCardPreferencia>? ordemCardsVendasMobile,
+    List<ServicosMobileCardPreferencia>? ordemCardsServicosMobile,
+    List<ReceberMobileCardPreferencia>? ordemCardsReceberMobile,
   }) {
     return PreferenciasIndividuaisDoUsuarioModel(
       idiomaDePreferencia: idiomaDePreferencia ?? this.idiomaDePreferencia,
@@ -819,6 +1056,14 @@ class PreferenciasIndividuaisDoUsuarioModel {
           this.atendimentosCriadosFiltrosMobile,
       ordemCardsGestaoMobile:
           ordemCardsGestaoMobile ?? this.ordemCardsGestaoMobile,
+      ordemCardsAtendimentoMobile:
+          ordemCardsAtendimentoMobile ?? this.ordemCardsAtendimentoMobile,
+      ordemCardsVendasMobile:
+          ordemCardsVendasMobile ?? this.ordemCardsVendasMobile,
+      ordemCardsServicosMobile:
+          ordemCardsServicosMobile ?? this.ordemCardsServicosMobile,
+      ordemCardsReceberMobile:
+          ordemCardsReceberMobile ?? this.ordemCardsReceberMobile,
     );
   }
 

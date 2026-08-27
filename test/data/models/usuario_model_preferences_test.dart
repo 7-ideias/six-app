@@ -315,5 +315,83 @@ void main() {
         );
       }
     });
+
+    test('serializa as ordens independentes dos menus operacionais Mobile', () {
+      final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+        const <String, dynamic>{
+          'ordemCardsAtendimentoMobile': <String>[
+            'RECEBER',
+            'NOVA_VENDA',
+            'DEVOLUCAO',
+            'NOVO_SERVICO',
+            'OPERACOES_CAIXA',
+          ],
+          'ordemCardsVendasMobile': <String>[
+            'CONSULTAR_VENDAS',
+            'NOVA_VENDA',
+            'VENDAS_A_RECEBER',
+          ],
+          'ordemCardsServicosMobile': <String>[
+            'SERVICOS_EM_ANDAMENTO',
+            'ORCAMENTOS_AGUARDANDO_APROVACAO',
+            'NOVO_SERVICO',
+          ],
+          'ordemCardsReceberMobile': <String>[
+            'SERVICOS_A_RECEBER',
+            'VENDAS_A_RECEBER',
+          ],
+        },
+      );
+
+      expect(preferencias.toJson()['ordemCardsAtendimentoMobile'], <String>[
+        'RECEBER',
+        'NOVA_VENDA',
+        'DEVOLUCAO',
+        'NOVO_SERVICO',
+        'OPERACOES_CAIXA',
+      ]);
+      expect(preferencias.toJson()['ordemCardsVendasMobile'], <String>[
+        'CONSULTAR_VENDAS',
+        'NOVA_VENDA',
+        'VENDAS_A_RECEBER',
+      ]);
+      expect(preferencias.toJson()['ordemCardsServicosMobile'], <String>[
+        'SERVICOS_EM_ANDAMENTO',
+        'ORCAMENTOS_AGUARDANDO_APROVACAO',
+        'NOVO_SERVICO',
+      ]);
+      expect(preferencias.toJson()['ordemCardsReceberMobile'], <String>[
+        'SERVICOS_A_RECEBER',
+        'VENDAS_A_RECEBER',
+      ]);
+    });
+
+    test('rejeita ordem incompleta em cada novo menu Mobile', () {
+      final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+        const <String, dynamic>{
+          'ordemCardsAtendimentoMobile': <String>['NOVA_VENDA'],
+          'ordemCardsVendasMobile': <String>['NOVA_VENDA'],
+          'ordemCardsServicosMobile': <String>['NOVO_SERVICO'],
+          'ordemCardsReceberMobile': <String>['VENDAS_A_RECEBER'],
+        },
+      );
+
+      expect(
+        preferencias.ordemCardsAtendimentoMobile,
+        AtendimentoMobileCardPreferencia.values,
+      );
+      expect(
+        preferencias.ordemCardsVendasMobile,
+        VendasMobileCardPreferencia.values,
+      );
+      expect(
+        preferencias.ordemCardsServicosMobile,
+        ServicosMobileCardPreferencia.values,
+      );
+      expect(
+        preferencias.ordemCardsReceberMobile,
+        ReceberMobileCardPreferencia.values,
+      );
+    });
   });
 }
