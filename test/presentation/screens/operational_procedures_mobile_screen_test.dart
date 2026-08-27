@@ -289,7 +289,7 @@ Future<void> _pumpManagementSettings(
           ),
           child: GestaoMobileScreen(
             overviewProvider: overviewProvider,
-            initialSectionIndex: 3,
+            area: GestaoMobileArea.configuracoes,
             showBottomNavigationBar: false,
             onNavigate: onNavigate,
           ),
@@ -347,10 +347,9 @@ Future<void> _pumpComponent(
 
   await tester.pumpWidget(
     MaterialApp(
-      home:
-          mediaQueryData == null
-              ? body
-              : MediaQuery(data: mediaQueryData, child: body),
+      home: mediaQueryData == null
+          ? body
+          : MediaQuery(data: mediaQueryData, child: body),
     ),
   );
   await tester.pump();

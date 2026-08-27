@@ -8,10 +8,10 @@ import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_area_components.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_admin_header.dart';
-import 'package:sixpos/presentation/components/mobile/management/management_section_selector.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_settings_group.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_settings_item_data.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/components/mobile/six_imagem_canetinha.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
@@ -34,18 +34,20 @@ import 'empresa_configuracao_mobile.dart';
 typedef ManagementMobileNavigate =
     void Function(BuildContext context, Widget page);
 
+enum GestaoMobileArea { catalogo, pessoas, financeiro, configuracoes }
+
 class GestaoMobileScreen extends StatefulWidget {
   const GestaoMobileScreen({
     super.key,
     this.overviewProvider,
     this.onNavigate,
-    @visibleForTesting this.initialSectionIndex = 0,
+    this.area,
     @visibleForTesting this.showBottomNavigationBar = true,
   });
 
   final ManagementOverviewProvider? overviewProvider;
   final ManagementMobileNavigate? onNavigate;
-  final int initialSectionIndex;
+  final GestaoMobileArea? area;
   final bool showBottomNavigationBar;
 
   @override
@@ -55,9 +57,22 @@ class GestaoMobileScreen extends StatefulWidget {
 class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   static const double _horizontalPadding = 16;
   static const double _sectionContentBottomPadding = 24;
-  static const Duration _sectionTransitionDuration = Duration(
-    milliseconds: 380,
-  );
+  static const String _catalogAssetContorno =
+      'assets/images/gestao mobile/acao-catalogo.webp';
+  static const String _catalogAssetAcento =
+      'assets/images/gestao mobile/acao-catalogo-acento.webp';
+  static const String _peopleAssetContorno =
+      'assets/images/gestao mobile/acao-pessoas.webp';
+  static const String _peopleAssetAcento =
+      'assets/images/gestao mobile/acao-pessoas-acento.webp';
+  static const String _financeAssetContorno =
+      'assets/images/gestao mobile/acao-financeiro.webp';
+  static const String _financeAssetAcento =
+      'assets/images/gestao mobile/acao-financeiro-acento.webp';
+  static const String _settingsAssetContorno =
+      'assets/images/gestao mobile/acao-configuracoes.webp';
+  static const String _settingsAssetAcento =
+      'assets/images/gestao mobile/acao-configuracoes-acento.webp';
   static const Color _peopleAccent = Color(0xFF059669);
   static const Color _financeAccent = Color(0xFF0891B2);
   static const Color _attentionAccent = Color(0xFFD97706);
@@ -65,12 +80,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
   final NotificacaoService _notificacaoService = NotificacaoService();
   int _totalNotificacoesConhecidas = 0;
-  int _selectedSectionIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _selectedSectionIndex = widget.initialSectionIndex;
     _totalNotificacoesConhecidas = _notificacaoService.total;
     _notificacaoService.addListener(_onNotificacoesChanged);
     _garantirWebSocketMobile();
@@ -94,8 +107,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
     if (!recebeuNovaNotificacao) return;
 
-    final String? mensagem =
-        _notificacaoService.ultimaNotificacao?.description.trim();
+    final String? mensagem = _notificacaoService.ultimaNotificacao?.description
+        .trim();
     if (mensagem == null || mensagem.isEmpty) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -119,15 +132,19 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   @override
   Widget build(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
+    final GestaoMobileArea? area = widget.area;
+    final bool isHub = area == null;
 
     final Widget shell = SixMobilePageShell(
-      title: context.t('gestao.title', fallback: 'Gestão'),
+      title: isHub
+          ? context.t('gestao.title', fallback: 'Gestão')
+          : _areaTitle(context, area),
       backgroundColor: colors.background,
       primaryColor: colors.primary,
       secondaryColor: colors.secondary,
       accentColor: colors.accent,
-      automaticallyImplyLeading: false,
-      leading: SixMobileAppBarProfileAction(),
+      automaticallyImplyLeading: !isHub,
+      leading: isHub ? SixMobileAppBarProfileAction() : null,
       actions: <Widget>[
         IconButton(
           tooltip: context.t(
@@ -138,14 +155,17 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
           onPressed: () => _openNotifications(context),
         ),
       ],
-      bodyBuilder: _buildContent,
-      bottomNavigationBar:
-          kIsWeb || !widget.showBottomNavigationBar
-              ? null
-              : NavBarMobile(
-                initialIndex: MobileNavigationController.managementIndex,
-              ),
+      bodyBuilder: isHub ? _buildHubContent : _buildAreaContent,
+      bottomNavigationBar: !isHub || kIsWeb || !widget.showBottomNavigationBar
+          ? null
+          : NavBarMobile(
+              initialIndex: MobileNavigationController.managementIndex,
+            ),
     );
+
+    if (isHub || area == GestaoMobileArea.configuracoes) {
+      return shell;
+    }
 
     final ManagementOverviewProvider? injectedProvider =
         widget.overviewProvider;
@@ -160,6 +180,27 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       create: (_) => ManagementOverviewProvider()..load(),
       child: shell,
     );
+  }
+
+  String _areaTitle(BuildContext context, GestaoMobileArea area) {
+    return switch (area) {
+      GestaoMobileArea.catalogo => context.t(
+        'gestao.catalog.title',
+        fallback: 'Catálogo',
+      ),
+      GestaoMobileArea.pessoas => context.t(
+        'gestao.people.title',
+        fallback: 'Pessoas',
+      ),
+      GestaoMobileArea.financeiro => context.t(
+        'gestao.finance.title',
+        fallback: 'Financeiro',
+      ),
+      GestaoMobileArea.configuracoes => context.t(
+        'gestao.settings.title',
+        fallback: 'Configurações',
+      ),
+    };
   }
 
   Widget _buildNotificationIcon() {
@@ -204,16 +245,162 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     );
   }
 
-  Widget _buildContent(
+  Widget _buildHubContent(
+    BuildContext context,
+    ScrollController scrollController,
+    double topInset,
+  ) {
+    final List<_GestaoHubActionData> actions = _hubActions(context);
+    final double textScale = MediaQuery.textScalerOf(context).scale(1);
+    final double cardHeight = 204 + ((textScale - 1).clamp(0.0, 0.8) * 72);
+
+    return SafeArea(
+      top: false,
+      left: false,
+      right: false,
+      child: ListView(
+        controller: scrollController,
+        physics: AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(
+          _horizontalPadding,
+          topInset + 10,
+          _horizontalPadding,
+          _sectionContentBottomPadding,
+        ),
+        children: <Widget>[
+          SixStaggeredEntry(
+            delay: Duration(milliseconds: 40),
+            child: _GestaoHubIntroCard(
+              title: context.t(
+                'gestao.hub.title',
+                fallback: 'O que você quer gerenciar?',
+              ),
+              subtitle: context.t(
+                'gestao.hub.subtitle',
+                fallback:
+                    'Acesse cadastros, pessoas, financeiro e preferências.',
+              ),
+            ),
+          ),
+          SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints gridConstraints) {
+              const double gap = 12;
+              final double itemWidth = (gridConstraints.maxWidth - gap) / 2;
+
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: <Widget>[
+                  for (int index = 0; index < actions.length; index += 1)
+                    SizedBox(
+                      width: itemWidth,
+                      height: cardHeight,
+                      child: SixStaggeredEntry(
+                        delay: Duration(milliseconds: 90 + (index * 45)),
+                        child: _GestaoHubActionCard(data: actions[index]),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<_GestaoHubActionData> _hubActions(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color catalogAccent = isDark
+        ? SixMobilePalette.brandCyan
+        : SixMobilePalette.brandBlue;
+    final Color peopleAccent = isDark
+        ? Color.lerp(SixMobilePalette.brandViolet, colors.titleText, 0.34)!
+        : SixMobilePalette.brandViolet;
+    final Color financeAccent = isDark
+        ? SixMobilePalette.brandCyan
+        : Color.lerp(
+            SixMobilePalette.brandCyan,
+            SixMobilePalette.brandNavyDeep,
+            0.48,
+          )!;
+    final Color settingsAccent = isDark ? colors.accent : colors.primary;
+
+    return <_GestaoHubActionData>[
+      _GestaoHubActionData(
+        id: 'catalog',
+        title: _areaTitle(context, GestaoMobileArea.catalogo),
+        subtitle: context.t(
+          'gestao.catalog.subtitle',
+          fallback: 'Produtos, categorias e estoque',
+        ),
+        assetContorno: _catalogAssetContorno,
+        assetAcento: _catalogAssetAcento,
+        accentColor: catalogAccent,
+        brandStart: SixMobilePalette.brandCyan,
+        brandEnd: SixMobilePalette.brandBlue,
+        onTap: () => _openArea(GestaoMobileArea.catalogo),
+      ),
+      _GestaoHubActionData(
+        id: 'people',
+        title: _areaTitle(context, GestaoMobileArea.pessoas),
+        subtitle: context.t(
+          'gestao.people.subtitle',
+          fallback: 'Clientes, equipe e parceiros',
+        ),
+        assetContorno: _peopleAssetContorno,
+        assetAcento: _peopleAssetAcento,
+        accentColor: peopleAccent,
+        brandStart: SixMobilePalette.brandBlue,
+        brandEnd: SixMobilePalette.brandViolet,
+        onTap: () => _openArea(GestaoMobileArea.pessoas),
+      ),
+      _GestaoHubActionData(
+        id: 'finance',
+        title: _areaTitle(context, GestaoMobileArea.financeiro),
+        subtitle: context.t(
+          'gestao.finance.subtitle',
+          fallback: 'Contas, agenda e recebimentos',
+        ),
+        assetContorno: _financeAssetContorno,
+        assetAcento: _financeAssetAcento,
+        accentColor: financeAccent,
+        brandStart: SixMobilePalette.brandCyan,
+        brandEnd: SixMobilePalette.brandBlue,
+        onTap: () => _openArea(GestaoMobileArea.financeiro),
+      ),
+      _GestaoHubActionData(
+        id: 'settings',
+        title: _areaTitle(context, GestaoMobileArea.configuracoes),
+        subtitle: context.t(
+          'gestao.settings.subtitle',
+          fallback: 'Empresa, idioma e integrações',
+        ),
+        assetContorno: _settingsAssetContorno,
+        assetAcento: _settingsAssetAcento,
+        accentColor: settingsAccent,
+        brandStart: SixMobilePalette.brandBlue,
+        brandEnd: SixMobilePalette.brandViolet,
+        onTap: () => _openArea(GestaoMobileArea.configuracoes),
+      ),
+    ];
+  }
+
+  Widget _buildAreaContent(
     BuildContext context,
     ScrollController scrollController,
     double topInset,
   ) {
     final List<_ManagementSection> sections = _managementSections(context);
-    final int selectedIndex =
-        _selectedSectionIndex >= sections.length
-            ? sections.length - 1
-            : _selectedSectionIndex;
+    final GestaoMobileArea area = widget.area!;
+    final int selectedIndex = switch (area) {
+      GestaoMobileArea.catalogo => 0,
+      GestaoMobileArea.pessoas => 1,
+      GestaoMobileArea.financeiro => 2,
+      GestaoMobileArea.configuracoes => 3,
+    };
     final _ManagementSection selectedSection = sections[selectedIndex];
 
     return SafeArea(
@@ -224,50 +411,17 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         controller: scrollController,
         physics: AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(
-          0,
-          topInset,
-          0,
+          _horizontalPadding,
+          topInset + 10,
+          _horizontalPadding,
           _sectionContentBottomPadding,
         ),
         children: <Widget>[
-          // Compact section selector
           SixStaggeredEntry(
             delay: Duration(milliseconds: 80),
-            child: ManagementSectionSelector(
-              sections: sections
-                  .map(
-                    (s) => ManagementSectionTab(
-                      title: s.selectorTitle,
-                      icon: s.icon,
-                    ),
-                  )
-                  .toList(growable: false),
-              selectedIndex: selectedIndex,
-              onSectionSelected: (int index) {
-                if (!mounted) return;
-                setState(() => _selectedSectionIndex = index);
-              },
-            ),
-          ),
-          SizedBox(height: 20),
-
-          // Section content
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: _horizontalPadding),
-            child: SixStaggeredEntry(
-              delay: Duration(milliseconds: 180),
-              child: _buildSmoothSectionTransition(
-                context,
-                transitionKey: 'section-${selectedSection.title}',
-                child:
-                    selectedSection.isSettingsCentral
-                        ? _buildSettingsCentral(context, selectedSection)
-                        : _buildStandardSectionDetails(
-                          context,
-                          selectedSection,
-                        ),
-              ),
-            ),
+            child: selectedSection.isSettingsCentral
+                ? _buildSettingsCentral(context, selectedSection)
+                : _buildStandardSectionDetails(context, selectedSection),
           ),
         ],
       ),
@@ -328,10 +482,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       final empresaProvider = context.watch<EmpresaProvider>();
       final empresa = empresaProvider.empresa;
       if (empresa == null) return null;
-      final String nome =
-          empresa.nomeFantasia.isNotEmpty
-              ? empresa.nomeFantasia
-              : empresa.nomeEmpresa;
+      final String nome = empresa.nomeFantasia.isNotEmpty
+          ? empresa.nomeFantasia
+          : empresa.nomeEmpresa;
       if (nome.trim().isEmpty) return null;
       return nome.trim();
     } catch (_) {
@@ -345,10 +498,12 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     BuildContext context,
     _ManagementSection section,
   ) {
-    final ManagementOverviewSnapshot snapshot =
-        context.watch<ManagementOverviewProvider>().snapshot;
-    final bool podeAcessarCatalogo =
-        context.watch<ColaboradorAutorizacoesProvider>().podeAcessarCatalogo;
+    final ManagementOverviewSnapshot snapshot = context
+        .watch<ManagementOverviewProvider>()
+        .snapshot;
+    final bool podeAcessarCatalogo = context
+        .watch<ColaboradorAutorizacoesProvider>()
+        .podeAcessarCatalogo;
     final List<ManagementMetricData> metrics = _metricsForSection(
       context,
       section,
@@ -722,8 +877,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               'gestao.finance.openSchedule',
               fallback: 'Abrir agenda',
             ),
-            onAction:
-                () => _navigateTo(context, AgendaFinanceiraMobileScreen()),
+            onAction: () =>
+                _navigateTo(context, AgendaFinanceiraMobileScreen()),
           );
         }
         return null;
@@ -754,10 +909,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             onTap: item.onTap,
             statusLabel: statusLabel,
             visualGroupId: item.visualGroupId,
-            disabledHint:
-                item.maturity == ManagementSettingsMaturity.comingSoon
-                    ? statusLabel
-                    : null,
+            disabledHint: item.maturity == ManagementSettingsMaturity.comingSoon
+                ? statusLabel
+                : null,
           );
         })
         .toList(growable: false);
@@ -780,64 +934,22 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     };
   }
 
-  // ─── Transitions ────────────────────────────────────────────────
-
-  Widget _buildSmoothSectionTransition(
-    BuildContext context, {
-    required String transitionKey,
-    required Widget child,
-  }) {
-    if (MediaQuery.disableAnimationsOf(context) ||
-        MediaQuery.accessibleNavigationOf(context)) {
-      return KeyedSubtree(key: ValueKey<String>(transitionKey), child: child);
-    }
-
-    return AnimatedSwitcher(
-      duration: _sectionTransitionDuration,
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      transitionBuilder: (Widget transitionChild, Animation<double> animation) {
-        final Animation<Offset> slideAnimation = Tween<Offset>(
-          begin: Offset(0, 0.03),
-          end: Offset.zero,
-        ).animate(
-          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-        );
-
-        return FadeTransition(
-          opacity: animation,
-          child: SlideTransition(
-            position: slideAnimation,
-            child: transitionChild,
-          ),
-        );
-      },
-      child: KeyedSubtree(key: ValueKey<String>(transitionKey), child: child),
-    );
-  }
-
   // ─── Section definitions ────────────────────────────────────────
 
   List<_ManagementSection> _managementSections(BuildContext context) {
-    final bool podeAcessarCatalogo =
-        context.watch<ColaboradorAutorizacoesProvider>().podeAcessarCatalogo;
+    final bool podeAcessarCatalogo = context
+        .watch<ColaboradorAutorizacoesProvider>()
+        .podeAcessarCatalogo;
     final SixMobileColorScheme colors = context.sixMobileColors;
 
     return <_ManagementSection>[
       _ManagementSection(
         type: _ManagementSectionType.catalog,
         title: context.t('gestao.catalog.title', fallback: 'Catálogo'),
-        selectorTitle: context.t('gestao.catalog.title', fallback: 'Catálogo'),
-        subtitle: context.t(
-          'gestao.catalog.subtitle',
-          fallback: 'Produtos, categorias e estoque',
-        ),
-        icon: Icons.inventory_2_outlined,
         accentColor: colors.accent,
-        actionGroupTitle:
-            context
-                .t('gestao.overview.mainActions', fallback: 'Ações principais')
-                .toUpperCase(),
+        actionGroupTitle: context
+            .t('gestao.overview.mainActions', fallback: 'Ações principais')
+            .toUpperCase(),
         items: <_ManagementItem>[
           if (podeAcessarCatalogo)
             _ManagementItem(
@@ -866,11 +978,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             icon: Icons.category_outlined,
             accentColor: _peopleAccent,
             emphasis: ManagementActionEmphasis.secondary,
-            onTap:
-                () => _navigateTo(
-                  context,
-                  CategoriasProdutosServicosMobileScreen(),
-                ),
+            onTap: () =>
+                _navigateTo(context, CategoriasProdutosServicosMobileScreen()),
           ),
           _ManagementItem(
             title: context.t('gestao.catalog.inventory', fallback: 'Estoque'),
@@ -906,17 +1015,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       _ManagementSection(
         type: _ManagementSectionType.people,
         title: context.t('gestao.people.title', fallback: 'Pessoas'),
-        selectorTitle: context.t('gestao.people.title', fallback: 'Pessoas'),
-        subtitle: context.t(
-          'gestao.people.subtitle',
-          fallback: 'Clientes, equipe e parceiros',
-        ),
-        icon: Icons.groups_2_outlined,
         accentColor: _peopleAccent,
-        actionGroupTitle:
-            context
-                .t('gestao.overview.mainActions', fallback: 'Ações principais')
-                .toUpperCase(),
+        actionGroupTitle: context
+            .t('gestao.overview.mainActions', fallback: 'Ações principais')
+            .toUpperCase(),
         items: <_ManagementItem>[
           _ManagementItem(
             title: context.t('gestao.people.clients', fallback: 'Clientes'),
@@ -941,8 +1043,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             icon: Icons.badge_outlined,
             accentColor: _peopleAccent,
             emphasis: ManagementActionEmphasis.secondary,
-            onTap:
-                () => _navigateTo(context, ColaboradoresUsuarioMobileScreen()),
+            onTap: () =>
+                _navigateTo(context, ColaboradoresUsuarioMobileScreen()),
           ),
           _ManagementItem(
             title: context.t(
@@ -963,20 +1065,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       _ManagementSection(
         type: _ManagementSectionType.finance,
         title: context.t('gestao.finance.title', fallback: 'Financeiro'),
-        selectorTitle: context.t(
-          'gestao.finance.title',
-          fallback: 'Financeiro',
-        ),
-        subtitle: context.t(
-          'gestao.finance.subtitle',
-          fallback: 'Contas, agenda e recebimentos',
-        ),
-        icon: Icons.account_balance_wallet_outlined,
         accentColor: _financeAccent,
-        actionGroupTitle:
-            context
-                .t('gestao.finance.actionGroup', fallback: 'Agenda e recursos')
-                .toUpperCase(),
+        actionGroupTitle: context
+            .t('gestao.finance.actionGroup', fallback: 'Agenda e recursos')
+            .toUpperCase(),
         items: <_ManagementItem>[
           _ManagementItem(
             title: context.t(
@@ -1041,15 +1133,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       _ManagementSection(
         type: _ManagementSectionType.settings,
         title: context.t('gestao.settings.title', fallback: 'Configurações'),
-        selectorTitle: context.t(
-          'gestao.settings.selectorTitle',
-          fallback: 'Geral',
-        ),
-        subtitle: context.t(
-          'gestao.settings.subtitle',
-          fallback: 'Empresa, idioma e integrações',
-        ),
-        icon: Icons.settings_outlined,
         accentColor: colors.primary,
         actionGroupTitle: '',
         isSettingsCentral: true,
@@ -1134,8 +1217,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             ),
             icon: Icons.fact_check_outlined,
             maturity: ManagementSettingsMaturity.experimental,
-            onTap:
-                () => _navigateTo(context, OperationalProceduresMobileScreen()),
+            onTap: () =>
+                _navigateTo(context, OperationalProceduresMobileScreen()),
           ),
         ],
       ),
@@ -1203,6 +1286,18 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
   String _badgeText(int count) => count > 9 ? '+9' : count.toString();
 
+  void _openArea(GestaoMobileArea area) {
+    _navigateTo(
+      context,
+      GestaoMobileScreen(
+        area: area,
+        overviewProvider: widget.overviewProvider,
+        onNavigate: widget.onNavigate,
+        showBottomNavigationBar: false,
+      ),
+    );
+  }
+
   void _openNotifications(BuildContext context) {
     _navigateTo(context, NotificacoesMobileScreen());
   }
@@ -1221,6 +1316,349 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   }
 }
 
+class _GestaoHubIntroCard extends StatelessWidget {
+  const _GestaoHubIntroCard({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Semantics(
+      container: true,
+      header: true,
+      label: '$title. $subtitle',
+      child: Container(
+        constraints: BoxConstraints(minHeight: 116),
+        padding: EdgeInsets.fromLTRB(18, 17, 14, 17),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: <Color>[
+              Color.alphaBlend(
+                SixMobilePalette.brandBlue.withAlpha(isDark ? 28 : 12),
+                colors.surface,
+              ),
+              Color.alphaBlend(
+                SixMobilePalette.brandViolet.withAlpha(isDark ? 20 : 8),
+                colors.surface,
+              ),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: SixMobilePalette.brandBlue.withAlpha(isDark ? 74 : 36),
+          ),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: colors.navigationShadow.withAlpha(isDark ? 38 : 22),
+              blurRadius: 16,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: colors.titleText,
+                      fontSize: 20,
+                      height: 1.08,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    subtitle,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: colors.mutedText,
+                      fontSize: 12.2,
+                      height: 1.28,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 14),
+            ExcludeSemantics(
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: colors.softAccentSurface,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: SixMobilePalette.brandBlue.withAlpha(
+                      isDark ? 86 : 48,
+                    ),
+                  ),
+                ),
+                child: Center(child: _GestaoHubMark()),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GestaoHubMark extends StatelessWidget {
+  const _GestaoHubMark();
+
+  @override
+  Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+
+    return SizedBox(
+      width: 36,
+      height: 36,
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: <Widget>[
+          for (int index = 0; index < 4; index += 1)
+            Container(
+              width: 15,
+              height: 15,
+              decoration: BoxDecoration(
+                color: index == 0 || index == 3
+                    ? colors.accent
+                    : colors.titleText,
+                borderRadius: BorderRadius.circular(index == 0 ? 5 : 4),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GestaoHubActionCard extends StatelessWidget {
+  const _GestaoHubActionCard({required this.data});
+
+  final _GestaoHubActionData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Semantics(
+      container: true,
+      button: true,
+      enabled: true,
+      label: '${data.title}. ${data.subtitle}',
+      child: Container(
+        key: ValueKey<String>('gestao-hub-card-${data.id}'),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: data.brandEnd.withAlpha(isDark ? 30 : 17),
+              blurRadius: 16,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
+          clipBehavior: Clip.antiAlias,
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: <Color>[
+                  Color.alphaBlend(
+                    data.brandStart.withAlpha(isDark ? 28 : 14),
+                    colors.surface,
+                  ),
+                  Color.alphaBlend(
+                    data.brandEnd.withAlpha(isDark ? 20 : 8),
+                    colors.surface,
+                  ),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: data.accentColor.withAlpha(isDark ? 82 : 54),
+              ),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(22),
+              onTap: data.onTap,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(10, 11, 10, 10),
+                child: Column(
+                  children: <Widget>[
+                    Expanded(
+                      child: Center(
+                        child: Container(
+                          width: 104,
+                          height: 104,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: <Color>[
+                                data.brandStart.withAlpha(isDark ? 92 : 54),
+                                data.brandEnd.withAlpha(isDark ? 58 : 34),
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: data.accentColor.withAlpha(
+                                isDark ? 108 : 82,
+                              ),
+                            ),
+                            boxShadow: isDark
+                                ? <BoxShadow>[
+                                    BoxShadow(
+                                      color: data.brandStart.withAlpha(64),
+                                      blurRadius: 20,
+                                    ),
+                                  ]
+                                : const <BoxShadow>[],
+                          ),
+                          child: Center(
+                            child: SixImagemCanetinha(
+                              assetContorno: data.assetContorno,
+                              assetAcento: data.assetAcento,
+                              largura: 88,
+                              altura: 88,
+                              fit: BoxFit.contain,
+                              corContorno: colors.titleText,
+                              corAcento: data.accentColor,
+                              gradienteContorno: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: <Color>[
+                                  Color.lerp(
+                                    data.brandStart,
+                                    colors.titleText,
+                                    isDark ? 0.28 : 0.08,
+                                  )!,
+                                  Color.lerp(
+                                    data.brandEnd,
+                                    colors.titleText,
+                                    isDark ? 0.48 : 0.20,
+                                  )!,
+                                ],
+                              ),
+                              gradienteAcento: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: <Color>[
+                                  data.accentColor,
+                                  data.brandEnd,
+                                ],
+                              ),
+                              reforcoContorno: 0.58,
+                              reforcoAcento: 0.72,
+                              opacidadeReforco: isDark ? 0.52 : 0.42,
+                              opacidadeBrilho: isDark ? 0.48 : 0.16,
+                              desfoqueBrilho: 4,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      data.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: data.accentColor,
+                        fontSize: 14.5,
+                        height: 1.08,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      data.subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: colors.mutedText,
+                        fontSize: 10.7,
+                        height: 1.16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    ExcludeSemantics(
+                      child: Container(
+                        width: 27,
+                        height: 27,
+                        decoration: BoxDecoration(
+                          color: data.accentColor.withAlpha(isDark ? 34 : 20),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: data.accentColor.withAlpha(isDark ? 74 : 48),
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 15,
+                          color: data.accentColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GestaoHubActionData {
+  const _GestaoHubActionData({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.assetContorno,
+    required this.assetAcento,
+    required this.accentColor,
+    required this.brandStart,
+    required this.brandEnd,
+    required this.onTap,
+  });
+
+  final String id;
+  final String title;
+  final String subtitle;
+  final String assetContorno;
+  final String assetAcento;
+  final Color accentColor;
+  final Color brandStart;
+  final Color brandEnd;
+  final VoidCallback onTap;
+}
+
 // ─── Data classes ─────────────────────────────────────────────────
 
 enum _ManagementSectionType { catalog, people, finance, settings }
@@ -1229,9 +1667,6 @@ class _ManagementSection {
   const _ManagementSection({
     required this.type,
     required this.title,
-    required this.selectorTitle,
-    required this.subtitle,
-    required this.icon,
     required this.accentColor,
     required this.actionGroupTitle,
     required this.items,
@@ -1241,9 +1676,6 @@ class _ManagementSection {
 
   final _ManagementSectionType type;
   final String title;
-  final String selectorTitle;
-  final String subtitle;
-  final IconData icon;
   final Color accentColor;
   final String actionGroupTitle;
   final List<_ManagementItem> items;
