@@ -138,6 +138,7 @@ jobs:
 
           cert_path="${RUNNER_TEMP}/ios_distribution.p12"
           profile_path="${RUNNER_TEMP}/sixoapp.mobileprovision"
+          profile_plist="${RUNNER_TEMP}/sixoapp-profile.plist"
           installed_profile_dir="${HOME}/Library/MobileDevice/Provisioning Profiles"
           keychain_path="${RUNNER_TEMP}/sixoapp-signing.keychain-db"
           keychain_password="$(openssl rand -base64 24)"
@@ -158,6 +159,25 @@ jobs:
               base64.b64decode(os.environ["IOS_PROVISIONING_PROFILE_BASE64"])
           )
           PY
+
+          security cms -D -i "${profile_path}" > "${profile_plist}"
+          profile_application_identifier="$(
+            plutil -extract Entitlements.application-identifier raw -o - "${profile_plist}"
+          )"
+          profile_aps_environment="$(
+            plutil -extract Entitlements.aps-environment raw -o - "${profile_plist}" 2>/dev/null || true
+          )"
+          expected_application_identifier="${IOS_TEAM_ID}.${IOS_BUNDLE_ID}"
+
+          if [[ "${profile_application_identifier}" != "${expected_application_identifier}" ]]; then
+            echo "::error::Provisioning profile pertence a ${profile_application_identifier}; esperado ${expected_application_identifier}"
+            exit 1
+          fi
+
+          if [[ "${profile_aps_environment}" != "production" ]]; then
+            echo "::error::Provisioning profile sem Push Notifications de producao (aps-environment)"
+            exit 1
+          fi
 
           security create-keychain -p "${keychain_password}" "${keychain_path}"
           security set-keychain-settings -lut 21600 "${keychain_path}"
@@ -223,6 +243,23 @@ jobs:
             archive
 
           echo "IOS_ARCHIVE_PATH=${archive_path}" >> "${GITHUB_ENV}"
+
+      - name: Validate signed push entitlement
+        run: |
+          set -euo pipefail
+
+          app_path="${IOS_ARCHIVE_PATH}/Products/Applications/Runner.app"
+          signed_entitlements="${RUNNER_TEMP}/runner-signed-entitlements.plist"
+
+          codesign -d --entitlements :- "${app_path}" > "${signed_entitlements}" 2>/dev/null
+          signed_aps_environment="$(
+            plutil -extract aps-environment raw -o - "${signed_entitlements}" 2>/dev/null || true
+          )"
+
+          if [[ "${signed_aps_environment}" != "production" ]]; then
+            echo "::error::Runner.app foi assinado sem aps-environment=production"
+            exit 1
+          fi
 
       - name: Export IPA
         run: |
