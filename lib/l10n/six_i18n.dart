@@ -1435,6 +1435,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.hub.title': 'O que você quer gerenciar?',
     'gestao.hub.subtitle':
         'Acesse cadastros, pessoas, financeiro e preferências.',
+    'gestao.hub.terminal.products': 'Gerencie seus produtos e colaboradores',
+    'gestao.hub.terminal.finance': 'Gerencie seu financeiro',
+    'gestao.hub.terminal.preferences':
+        'Ajuste suas preferências e configurações',
     'gestao.catalog.title': 'Catálogo',
     'gestao.catalog.subtitle': 'Produtos, categorias e estoque',
     'gestao.people.title': 'Pessoas',
@@ -3163,6 +3167,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.hub.title': 'What would you like to manage?',
     'gestao.hub.subtitle':
         'Access catalog records, people, finances, and preferences.',
+    'gestao.hub.terminal.products': 'Manage your products and collaborators',
+    'gestao.hub.terminal.finance': 'Manage your finances',
+    'gestao.hub.terminal.preferences': 'Adjust your preferences and settings',
     'gestao.catalog.title': 'Catalog',
     'gestao.catalog.subtitle': 'Products, categories and inventory',
     'gestao.people.title': 'People',
@@ -4918,6 +4925,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.hub.title': '¿Qué quieres gestionar?',
     'gestao.hub.subtitle':
         'Accede a catálogos, personas, finanzas y preferencias.',
+    'gestao.hub.terminal.products': 'Gestiona tus productos y colaboradores',
+    'gestao.hub.terminal.finance': 'Gestiona tus finanzas',
+    'gestao.hub.terminal.preferences':
+        'Ajusta tus preferencias y configuraciones',
     'gestao.catalog.title': 'Catálogo',
     'gestao.catalog.subtitle': 'Productos, categorías e inventario',
     'gestao.people.title': 'Personas',
