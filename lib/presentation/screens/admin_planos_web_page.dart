@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/services/admin_planos_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../admin/admin_navigation_shell.dart';
 import '../admin/admin_portal_components.dart';
@@ -23,7 +25,6 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
   String? _erro;
   String? _userName;
   String? _userEmail;
-  String? _profileType;
   List<AdminPlanoPublico> _planos = const <AdminPlanoPublico>[];
 
   @override
@@ -35,11 +36,9 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
 
   Future<void> _carregarUsuario() async {
     final String? email = await _authService.getUserEmail();
-    final String profileType = await _authService.getUserProfileType();
     if (!mounted) return;
     setState(() {
       _userEmail = email;
-      _profileType = profileType;
       _userName = _nomeExibicaoPorEmail(email);
     });
   }
@@ -174,6 +173,11 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
 
   @override
   Widget build(BuildContext context) {
+    final String profileType = context
+        .select<ColaboradorAutorizacoesProvider, String>(
+          (ColaboradorAutorizacoesProvider provider) =>
+              provider.tipoPerfilUnificado,
+        );
     final AdminPortalTexts portalTexts = AdminPortalTexts.of(context);
     final _PlansTexts texts = _PlansTexts.of(context);
     return AdminNavigationShell(
@@ -181,7 +185,7 @@ class _AdminPlanosWebPageState extends State<AdminPlanosWebPage> {
       userInfo: AdminPortalUserInfo(
         name: _userName,
         email: _userEmail,
-        profileType: _profileType,
+        profileType: profileType,
       ),
       currentRoute: '/admin/planos',
       pageTitle: texts.title,

@@ -11,6 +11,8 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile
 import 'package:sixpos/presentation/components/mobile/six_imagem_canetinha.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_reorderable_card.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_rotating_intro_card.dart';
+import 'package:sixpos/presentation/components/sixoapp_brand_mark.dart';
 import 'package:sixpos/presentation/controllers/mobile_card_order_preference_controller.dart';
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
 import 'package:sixpos/presentation/screens/devolucoes_produtos_mobile_screen.dart';
@@ -43,10 +45,6 @@ class AtendimentoMobileScreen extends StatefulWidget {
 }
 
 class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
-  static const String _heroAssetContorno =
-      'assets/images/atendimento mobile/atendimento-hero.webp';
-  static const String _heroAssetAcento =
-      'assets/images/atendimento mobile/atendimento-hero-acento.webp';
   static const String _saleAssetContorno =
       'assets/images/atendimento mobile/acao-nova-venda.webp';
   static const String _saleAssetAcento =
@@ -196,19 +194,26 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             children: <Widget>[
               SixStaggeredEntry(
                 delay: Duration(milliseconds: 40),
-                child: _AtendimentoHeroCard(
+                child: SixMobileRotatingIntroCard(
                   title: _txt(
-                    'atendimento.mobile.heroTitle',
-                    'O que você deseja fazer?',
+                    'atendimento.mobile.introTitle',
+                    'Atendimento ao Cliente',
                   ),
-                  subtitle: _txt(
-                    'atendimento.mobile.heroSubtitle',
-                    'Venda, serviço ou recebimento em poucos passos',
-                  ),
-                  assetContorno: _heroAssetContorno,
-                  assetAcento: _heroAssetAcento,
-                  accentGradient:
-                      _AtendimentoVisualTokens.resolve(context).heroGradient,
+                  subtitles: <String>[
+                    _txt(
+                      'atendimento.mobile.introLineSales',
+                      'vender, receber, consultar',
+                    ),
+                    _txt(
+                      'atendimento.mobile.introLineReturns',
+                      'devoluções de produtos',
+                    ),
+                    _txt(
+                      'atendimento.mobile.introLineServices',
+                      'serviços, orçamentos etc',
+                    ),
+                  ],
+                  markChild: const SixoAppBrandMark(size: 34),
                 ),
               ),
               SizedBox(height: 16),
@@ -283,81 +288,74 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
       context,
     );
 
-    final Map<AtendimentoMobileCardPreferencia, _PrimaryActionData>
-    actions = <AtendimentoMobileCardPreferencia, _PrimaryActionData>{
-      AtendimentoMobileCardPreferencia.novaVenda: _PrimaryActionData(
-        preferencia: AtendimentoMobileCardPreferencia.novaVenda,
-        id: 'new-sale',
-        title: _txt('atendimento.mobile.newSaleTitle', 'Nova venda'),
-        subtitle: _txt('atendimento.mobile.newSaleSubtitle', 'Vender produtos'),
-        assetContorno: _saleAssetContorno,
-        assetAcento: _saleAssetAcento,
-        accentColor: visual.saleAccent,
-        brandStart: SixMobilePalette.brandCyan,
-        brandEnd: SixMobilePalette.brandBlue,
-        onTap: _openSalesMenu,
-      ),
-      AtendimentoMobileCardPreferencia.novoServico: _PrimaryActionData(
-        preferencia: AtendimentoMobileCardPreferencia.novoServico,
-        id: 'new-service',
-        title: _txt('atendimento.mobile.newServiceTitle', 'Serviços'),
-        subtitle: _txt(
-          'atendimento.mobile.newServiceSubtitle',
-          'Criar ou acompanhar',
-        ),
-        assetContorno: _serviceAssetContorno,
-        assetAcento: _serviceAssetAcento,
-        accentColor: visual.serviceAccent,
-        brandStart: SixMobilePalette.brandBlue,
-        brandEnd: SixMobilePalette.brandViolet,
-        onTap: () => _go(OpcoesServicosAtendimentoMobileScreen()),
-      ),
-      AtendimentoMobileCardPreferencia.receber: _PrimaryActionData(
-        preferencia: AtendimentoMobileCardPreferencia.receber,
-        id: 'receive',
-        title: _txt('atendimento.mobile.receiveTitle', 'Receber'),
-        subtitle: _txt(
-          'atendimento.mobile.receiveSubtitle',
-          'Vendas em aberto',
-        ),
-        assetContorno: _receiveAssetContorno,
-        assetAcento: _receiveAssetAcento,
-        accentColor: visual.receiveAccent,
-        brandStart: SixMobilePalette.brandCyan,
-        brandEnd: SixMobilePalette.brandBlue,
-        onTap: () => _go(ReceberMobileScreen()),
-      ),
-      AtendimentoMobileCardPreferencia.operacoesCaixa: _PrimaryActionData(
-        preferencia: AtendimentoMobileCardPreferencia.operacoesCaixa,
-        id: 'cash',
-        title: _txt(
-          'atendimento.mobile.cashOperationsTitle',
-          'Operações de caixa',
-        ),
-        subtitle: _txt(
-          'atendimento.mobile.cashOperationsSubtitle',
-          'Abrir e movimentar',
-        ),
-        assetContorno: _cashAssetContorno,
-        assetAcento: _cashAssetAcento,
-        accentColor: visual.cashAccent,
-        brandStart: SixMobilePalette.brandBlue,
-        brandEnd: visual.cashGradientEnd,
-        onTap: () => _go(OperacoesCaixaMobileScreen()),
-      ),
-      AtendimentoMobileCardPreferencia.devolucao: _PrimaryActionData(
-        preferencia: AtendimentoMobileCardPreferencia.devolucao,
-        id: 'return',
-        title: _txt('operacao.mobile.returnTitle', 'Devoluções'),
-        subtitle: _txt('operacao.mobile.returnSubtitle', 'Registrar devolução'),
-        assetContorno: _returnAssetContorno,
-        assetAcento: _returnAssetAcento,
-        accentColor: visual.returnAccent,
-        brandStart: visual.returnAccent,
-        brandEnd: visual.returnGradientEnd,
-        onTap: () => _go(DevolucoesProdutosMobileScreen()),
-      ),
-    };
+    final Map<AtendimentoMobileCardPreferencia, _PrimaryActionData> actions =
+        <AtendimentoMobileCardPreferencia, _PrimaryActionData>{
+          AtendimentoMobileCardPreferencia.novaVenda: _PrimaryActionData(
+            preferencia: AtendimentoMobileCardPreferencia.novaVenda,
+            id: 'new-sale',
+            title: _txt('atendimento.mobile.newSaleTitle', 'Vendas'),
+            assetContorno: _saleAssetContorno,
+            assetAcento: _saleAssetAcento,
+            accentColor: visual.saleAccent,
+            brandStart: SixMobilePalette.brandCyan,
+            brandEnd: SixMobilePalette.brandBlue,
+            onTap: _openSalesMenu,
+            enabled: true,
+            statusLabel: null,
+          ),
+          AtendimentoMobileCardPreferencia.novoServico: _PrimaryActionData(
+            preferencia: AtendimentoMobileCardPreferencia.novoServico,
+            id: 'new-service',
+            title: _txt('atendimento.mobile.newServiceTitle', 'Serviços'),
+            assetContorno: _serviceAssetContorno,
+            assetAcento: _serviceAssetAcento,
+            accentColor: visual.serviceAccent,
+            brandStart: SixMobilePalette.brandBlue,
+            brandEnd: SixMobilePalette.brandViolet,
+            onTap: () => _go(OpcoesServicosAtendimentoMobileScreen()),
+            enabled: true,
+            statusLabel: null,
+          ),
+          AtendimentoMobileCardPreferencia.receber: _PrimaryActionData(
+            preferencia: AtendimentoMobileCardPreferencia.receber,
+            id: 'receive',
+            title: _txt('atendimento.mobile.receiveTitle', 'Receber'),
+            assetContorno: _receiveAssetContorno,
+            assetAcento: _receiveAssetAcento,
+            accentColor: visual.receiveAccent,
+            brandStart: SixMobilePalette.brandCyan,
+            brandEnd: SixMobilePalette.brandBlue,
+            onTap: () => _go(ReceberMobileScreen()),
+            enabled: true,
+            statusLabel: null,
+          ),
+          AtendimentoMobileCardPreferencia.operacoesCaixa: _PrimaryActionData(
+            preferencia: AtendimentoMobileCardPreferencia.operacoesCaixa,
+            id: 'cash',
+            title: _txt('atendimento.mobile.cashOperationsTitle', 'Caixa'),
+            assetContorno: _cashAssetContorno,
+            assetAcento: _cashAssetAcento,
+            accentColor: visual.cashAccent,
+            brandStart: SixMobilePalette.brandBlue,
+            brandEnd: visual.cashGradientEnd,
+            onTap: () => _go(OperacoesCaixaMobileScreen()),
+            enabled: true,
+            statusLabel: null,
+          ),
+          AtendimentoMobileCardPreferencia.devolucao: _PrimaryActionData(
+            preferencia: AtendimentoMobileCardPreferencia.devolucao,
+            id: 'return',
+            title: _txt('operacao.mobile.returnTitle', 'Devoluções e Trocas'),
+            assetContorno: _returnAssetContorno,
+            assetAcento: _returnAssetAcento,
+            accentColor: visual.returnAccent,
+            brandStart: visual.returnAccent,
+            brandEnd: visual.returnGradientEnd,
+            onTap: () => _go(DevolucoesProdutosMobileScreen()),
+            enabled: true,
+            statusLabel: null,
+          ),
+        };
 
     return _ordemCardsController.ordem
         .map((preferencia) => actions[preferencia]!)
@@ -376,140 +374,6 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     }
 
     Navigator.push(context, MaterialPageRoute(builder: (_) => page));
-  }
-}
-
-class _AtendimentoHeroCard extends StatelessWidget {
-  const _AtendimentoHeroCard({
-    required this.title,
-    required this.subtitle,
-    required this.assetContorno,
-    required this.assetAcento,
-    required this.accentGradient,
-  });
-
-  final String title;
-  final String subtitle;
-  final String assetContorno;
-  final String assetAcento;
-  final LinearGradient accentGradient;
-
-  @override
-  Widget build(BuildContext context) {
-    final double textScale = MediaQuery.textScalerOf(context).scale(1);
-
-    return Semantics(
-      container: true,
-      header: true,
-      label: '$title. $subtitle',
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final SixMobileColorScheme colors = context.sixMobileColors;
-          final bool isDark = Theme.of(context).brightness == Brightness.dark;
-          final double width = constraints.maxWidth;
-          final bool compact = width < 350 || textScale >= 1.2;
-          final bool tightText = textScale >= 1.35;
-          final double illustrationWidth =
-              (width * (compact ? 0.43 : 0.49) * 1.12).clamp(132.0, 206.0);
-          final double illustrationHeight = (compact
-                  ? illustrationWidth * 0.94
-                  : illustrationWidth * 0.98)
-              .clamp(117.0, 177.0);
-          final double illustrationRightOffset = compact ? -34 : -38;
-          final double illustrationBottomOffset = compact ? -30 : -35;
-          final double titleSize = tightText ? 18 : (compact ? 20 : 22);
-
-          return Container(
-            constraints: BoxConstraints(minHeight: compact ? 142 : 154),
-            padding: EdgeInsets.fromLTRB(
-              compact ? 16 : 18,
-              compact ? 17 : 19,
-              compact ? 16 : 18,
-              compact ? 16 : 18,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              children: <Widget>[
-                Positioned(
-                  right: illustrationRightOffset,
-                  bottom: illustrationBottomOffset,
-                  width: illustrationWidth,
-                  height: illustrationHeight,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: RadialGradient(
-                        colors: <Color>[
-                          SixMobilePalette.brandBlue.withAlpha(
-                            isDark ? 72 : 34,
-                          ),
-                          SixMobilePalette.brandViolet.withAlpha(
-                            isDark ? 24 : 12,
-                          ),
-                          Colors.transparent,
-                        ],
-                        stops: const <double>[0, 0.56, 1],
-                      ),
-                    ),
-                    child: SixImagemCanetinha(
-                      key: const ValueKey<String>('atendimento-hero-art'),
-                      assetContorno: assetContorno,
-                      assetAcento: assetAcento,
-                      largura: illustrationWidth,
-                      altura: illustrationHeight,
-                      corContorno: colors.titleText,
-                      gradienteAcento: accentGradient,
-                      opacidadeContorno: isDark ? 1 : 0.88,
-                      reforcoContorno: compact ? 0.36 : 0.42,
-                      reforcoAcento: compact ? 0.68 : 0.76,
-                      opacidadeReforco: isDark ? 0.42 : 0.34,
-                      opacidadeBrilho: isDark ? 0.18 : 0,
-                      desfoqueBrilho: 3.2,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(
-                    right: (illustrationWidth - (compact ? 24 : 34)).clamp(
-                      84.0,
-                      150.0,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        title,
-                        style: TextStyle(
-                          color: colors.titleText,
-                          fontSize: titleSize,
-                          height: 1.05,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          color: colors.mutedText,
-                          fontSize: 12.5,
-                          height: 1.28,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
   }
 }
 
@@ -715,9 +579,7 @@ class _PrimaryActionCard extends StatelessWidget {
     final String status = data.statusLabel ?? '';
     final String semanticSuffix = status;
     final String semanticLabel =
-        semanticSuffix.isEmpty
-            ? '${data.title}. ${data.subtitle}'
-            : '${data.title}. ${data.subtitle}. $semanticSuffix';
+        semanticSuffix.isEmpty ? data.title : '${data.title}. $semanticSuffix';
     final double radius = _isPrimary ? 22 : 18;
 
     return Semantics(
@@ -872,10 +734,10 @@ class _ActionCardContent extends StatelessWidget {
         _isPrimary
             ? (compact ? 13.1 : 15.0) + (extraHeightFactor * 0.8)
             : (compact ? 10.4 : 11.4) + (extraHeightFactor * 0.7);
-    final double subtitleSize =
-        _isPrimary
-            ? (compact ? 10.5 : 11.3) + (extraHeightFactor * 0.6)
-            : (compact ? 9.0 : 9.7) + (extraHeightFactor * 0.5);
+    final double contentGap = _isPrimary ? 10 : 8;
+    final EdgeInsetsGeometry titlePadding = EdgeInsets.symmetric(
+      horizontal: _isPrimary ? 10 : 8,
+    );
     final Color illustrationStart =
         isDark
             ? Color.lerp(
@@ -899,118 +761,114 @@ class _ActionCardContent extends StatelessWidget {
 
     return Column(
       mainAxisSize: MainAxisSize.max,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
-        Container(
-          key: ValueKey<String>('atendimento-action-halo-${data.id}'),
-          width: imageCircleSize,
-          height: imageCircleSize,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: <Color>[
-                data.brandStart.withAlpha(
-                  enabled
-                      ? isDark
-                          ? (_isPrimary ? 96 : 82)
-                          : (_isPrimary ? 60 : 52)
-                      : 18,
-                ),
-                data.brandEnd.withAlpha(
-                  enabled
-                      ? isDark
-                          ? (_isPrimary ? 64 : 54)
-                          : (_isPrimary ? 40 : 34)
-                      : 12,
-                ),
-              ],
-            ),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: data.accentColor.withAlpha(
-                enabled ? (_isPrimary ? 104 : 88) : 26,
-              ),
-            ),
-            boxShadow:
-                isDark && enabled
-                    ? <BoxShadow>[
-                      BoxShadow(
-                        color: data.brandStart.withAlpha(_isPrimary ? 72 : 58),
-                        blurRadius: _isPrimary ? 22 : 16,
-                        spreadRadius: _isPrimary ? 0.4 : 0,
-                      ),
-                    ]
-                    : const <BoxShadow>[],
-          ),
-          child: Center(
-            child: SixImagemCanetinha(
-              assetContorno: data.assetContorno,
-              assetAcento: data.assetAcento,
-              largura: imageSize,
-              altura: imageSize,
-              fit: BoxFit.contain,
-              corContorno: colors.titleText,
-              corAcento: data.accentColor,
-              gradienteContorno: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: <Color>[illustrationStart, illustrationEnd],
-              ),
-              gradienteAcento: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: <Color>[illustrationAccent, illustrationEnd],
-              ),
-              opacidadeContorno: enabled ? 1 : 0.46,
-              opacidadeAcento: enabled ? 1 : 0.48,
-              reforcoContorno: _isPrimary ? 0.62 : 0.82,
-              reforcoAcento: _isPrimary ? 0.72 : 0.92,
-              opacidadeReforco: isDark ? 0.52 : 0.44,
-              opacidadeBrilho:
-                  enabled
-                      ? isDark
-                          ? 0.62
-                          : 0.24
-                      : 0,
-              desfoqueBrilho: _isPrimary ? 4.8 : 3.4,
-            ),
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: _isPrimary ? 4 : 0),
+        Expanded(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              Text(
-                data.title,
-                maxLines: _isPrimary ? 1 : 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: enabled ? data.accentColor : colors.mutedText,
-                  fontSize: titleSize,
-                  height: 1.08,
-                  fontWeight: FontWeight.w900,
+              Container(
+                key: ValueKey<String>('atendimento-action-halo-${data.id}'),
+                width: imageCircleSize,
+                height: imageCircleSize,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: <Color>[
+                      data.brandStart.withAlpha(
+                        enabled
+                            ? isDark
+                                ? (_isPrimary ? 96 : 82)
+                                : (_isPrimary ? 60 : 52)
+                            : 18,
+                      ),
+                      data.brandEnd.withAlpha(
+                        enabled
+                            ? isDark
+                                ? (_isPrimary ? 64 : 54)
+                                : (_isPrimary ? 40 : 34)
+                            : 12,
+                      ),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: data.accentColor.withAlpha(
+                      enabled ? (_isPrimary ? 104 : 88) : 26,
+                    ),
+                  ),
+                  boxShadow:
+                      isDark && enabled
+                          ? <BoxShadow>[
+                            BoxShadow(
+                              color: data.brandStart.withAlpha(
+                                _isPrimary ? 72 : 58,
+                              ),
+                              blurRadius: _isPrimary ? 22 : 16,
+                              spreadRadius: _isPrimary ? 0.4 : 0,
+                            ),
+                          ]
+                          : const <BoxShadow>[],
+                ),
+                child: Center(
+                  child: SixImagemCanetinha(
+                    assetContorno: data.assetContorno,
+                    assetAcento: data.assetAcento,
+                    largura: imageSize,
+                    altura: imageSize,
+                    fit: BoxFit.contain,
+                    corContorno: colors.titleText,
+                    corAcento: data.accentColor,
+                    gradienteContorno: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: <Color>[illustrationStart, illustrationEnd],
+                    ),
+                    gradienteAcento: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: <Color>[illustrationAccent, illustrationEnd],
+                    ),
+                    opacidadeContorno: enabled ? 1 : 0.46,
+                    opacidadeAcento: enabled ? 1 : 0.48,
+                    reforcoContorno: _isPrimary ? 0.62 : 0.82,
+                    reforcoAcento: _isPrimary ? 0.72 : 0.92,
+                    opacidadeReforco: isDark ? 0.52 : 0.44,
+                    opacidadeBrilho:
+                        enabled
+                            ? isDark
+                                ? 0.62
+                                : 0.24
+                            : 0,
+                    desfoqueBrilho: _isPrimary ? 4.8 : 3.4,
+                  ),
                 ),
               ),
-              SizedBox(height: _isPrimary ? 5 : 4),
-              Text(
-                data.subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: colors.mutedText,
-                  fontSize: subtitleSize,
-                  height: 1.12,
-                  fontWeight: FontWeight.w600,
+              SizedBox(height: contentGap),
+              Padding(
+                padding: titlePadding,
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Text(
+                    data.title,
+                    maxLines: _isPrimary ? 2 : 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: enabled ? data.accentColor : colors.mutedText,
+                      fontSize: titleSize,
+                      height: 1.1,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
         ),
+        SizedBox(height: contentGap),
         _ActionIndicator(
           accentColor: data.accentColor,
           enabled: enabled,
@@ -1116,7 +974,6 @@ class _PrimaryActionData {
     required this.preferencia,
     required this.id,
     required this.title,
-    required this.subtitle,
     required this.assetContorno,
     required this.assetAcento,
     required this.accentColor,
@@ -1130,7 +987,6 @@ class _PrimaryActionData {
   final AtendimentoMobileCardPreferencia preferencia;
   final String id;
   final String title;
-  final String subtitle;
   final String assetContorno;
   final String assetAcento;
   final Color accentColor;

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/enums/tipo_usuario_enum.dart';
 import '../core/services/auth_service.dart';
 import '../data/models/colaborador_autorizacoes_model.dart';
 import '../data/models/colaborador_usuario_model.dart';
@@ -11,9 +12,9 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     AuthService? authService,
     ColaboradorUsuarioApiClient? apiClient,
     EtiquetaService? etiquetaService,
-  })  : _authService = authService ?? AuthService(),
-        _apiClient = apiClient ?? HttpColaboradorUsuarioApiClient(),
-        _etiquetaService = etiquetaService ?? EtiquetaService();
+  }) : _authService = authService ?? AuthService(),
+       _apiClient = apiClient ?? HttpColaboradorUsuarioApiClient(),
+       _etiquetaService = etiquetaService ?? EtiquetaService();
 
   final AuthService _authService;
   final ColaboradorUsuarioApiClient _apiClient;
@@ -24,7 +25,9 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   String? _erro;
   String? _idUnicoDoUsuarioCarregado;
   String _tipoPerfilUsuario = 'DESCONHECIDO';
+  TipoUsuarioEnum? _tipoUsuario;
   bool _ehAdministrador = false;
+  bool _ehSuperUsuario = false;
   bool _autorizacoesCarregadasComSucesso = false;
   bool _podeAcessarEtiquetas = false;
   bool _podeFazerDevolucao = false;
@@ -36,7 +39,25 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   String? get erro => _erro;
   String? get idUnicoDoUsuarioCarregado => _idUnicoDoUsuarioCarregado;
   String get tipoPerfilUsuario => _tipoPerfilUsuario;
+  TipoUsuarioEnum? get tipoUsuario => _tipoUsuario;
+  String get tipoPerfilUnificado {
+    switch (_tipoUsuario) {
+      case TipoUsuarioEnum.SUPER:
+        return 'SUPER';
+      case TipoUsuarioEnum.ADMINISTRADOR:
+        return 'ADMIN';
+      case TipoUsuarioEnum.COLABORADOR:
+        return 'COLABORADOR';
+      case TipoUsuarioEnum.CLIENTE:
+        return 'CLIENTE';
+      case null:
+        return _tipoPerfilUsuario;
+    }
+  }
+
   bool get ehAdministrador => _ehAdministrador;
+  bool get ehSuperUsuario => _ehSuperUsuario;
+  bool get ehColaborador => _tipoUsuario == TipoUsuarioEnum.COLABORADOR;
   bool get autorizacoesCarregadasComSucesso =>
       _autorizacoesCarregadasComSucesso;
   bool get podeAcessarEtiquetas => _ehAdministrador || _podeAcessarEtiquetas;
@@ -68,9 +89,15 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   Future<void> carregarAutorizacoesDoUsuarioLogado({bool force = false}) async {
     final String? idUnicoDoUsuario = await _authService.getUserId();
     final String tipoPerfilUsuario = await _authService.getUserProfileType();
+    final bool perfilSuperUsuario = await _authService.hasRealmRole(
+      'SUPER_USER',
+    );
     final bool perfilAdmin = tipoPerfilUsuario == 'ADMIN';
-    _tipoPerfilUsuario = tipoPerfilUsuario;
-    _ehAdministrador = perfilAdmin;
+    _atualizarPerfilDeAcesso(
+      tipoPerfilUsuario: tipoPerfilUsuario,
+      ehAdministrador: perfilAdmin,
+      ehSuperUsuario: perfilSuperUsuario,
+    );
 
     if (idUnicoDoUsuario == null || idUnicoDoUsuario.trim().isEmpty) {
       _autorizacoes = ColaboradorAutorizacoesModel.permitirTudo();
@@ -94,8 +121,8 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final ColaboradorUsuarioDetalhe detalhe =
-          await _apiClient.buscarColaborador(idUnicoDoUsuario);
+      final ColaboradorUsuarioDetalhe detalhe = await _apiClient
+          .buscarColaborador(idUnicoDoUsuario);
       final Map<String, dynamic> json = detalhe.toJson();
       final Map<String, dynamic> autorizacoesJson = _ensureMap(
         json['objAutorizacoes'],
@@ -107,14 +134,18 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
         detalhe: detalhe,
         autorizacoes: carregadas,
       );
-      _ehAdministrador = perfilAdmin || administradorSemVinculo;
+      final bool ehAdministrador = perfilAdmin || administradorSemVinculo;
+      _atualizarPerfilDeAcesso(
+        tipoPerfilUsuario: tipoPerfilUsuario,
+        ehAdministrador: ehAdministrador,
+        ehSuperUsuario: perfilSuperUsuario,
+      );
       _autorizacoes =
           _ehAdministrador
               ? ColaboradorAutorizacoesModel.permitirTudo()
               : carregadas;
       _idUnicoDoUsuarioCarregado = idUnicoDoUsuario;
-      _podeFazerDevolucao =
-          _ehAdministrador || carregadas.podeFazerDevolucao;
+      _podeFazerDevolucao = _ehAdministrador || carregadas.podeFazerDevolucao;
 
       if (!kIsWeb) {
         _podeAcessarEtiquetas = false;
@@ -145,11 +176,48 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
     _erro = null;
     _idUnicoDoUsuarioCarregado = null;
     _tipoPerfilUsuario = 'DESCONHECIDO';
+    _tipoUsuario = null;
     _ehAdministrador = false;
+    _ehSuperUsuario = false;
     _autorizacoesCarregadasComSucesso = false;
     _podeAcessarEtiquetas = false;
     _podeFazerDevolucao = false;
     notifyListeners();
+  }
+
+  void _atualizarPerfilDeAcesso({
+    required String tipoPerfilUsuario,
+    required bool ehAdministrador,
+    required bool ehSuperUsuario,
+  }) {
+    _tipoPerfilUsuario = tipoPerfilUsuario;
+    _ehAdministrador = ehAdministrador;
+    _ehSuperUsuario = ehSuperUsuario;
+    _tipoUsuario = _resolverTipoUsuario(
+      tipoPerfilUsuario: tipoPerfilUsuario,
+      ehAdministrador: ehAdministrador,
+      ehSuperUsuario: ehSuperUsuario,
+    );
+  }
+
+  TipoUsuarioEnum? _resolverTipoUsuario({
+    required String tipoPerfilUsuario,
+    required bool ehAdministrador,
+    required bool ehSuperUsuario,
+  }) {
+    if (ehSuperUsuario) {
+      return TipoUsuarioEnum.SUPER;
+    }
+    if (ehAdministrador) {
+      return TipoUsuarioEnum.ADMINISTRADOR;
+    }
+    if (tipoPerfilUsuario == 'COLABORADOR') {
+      return TipoUsuarioEnum.COLABORADOR;
+    }
+    if (tipoPerfilUsuario == 'CLIENTE') {
+      return TipoUsuarioEnum.CLIENTE;
+    }
+    return null;
   }
 
   bool _deveAssumirAdministradorSemVinculo({

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_destination_resolver.dart';
 import 'package:sixpos/presentation/navigation/web_navigation_item.dart';
@@ -9,6 +10,7 @@ import 'package:sixpos/presentation/screens/consulta_vendas_web_page.dart';
 import 'package:sixpos/presentation/screens/devolucoes_produtos_web_page.dart';
 import 'package:sixpos/presentation/screens/etiquetas_web_page.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 
 import 'web_header.dart';
 
@@ -66,14 +68,20 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
     final ThemeData theme = Theme.of(context);
     final ThemeData webTheme = WebThemeTokens.applyTo(theme);
     final WebThemeTokens tokens = WebThemeTokens.resolve(theme);
+    final bool isSuperUser = context
+        .select<ColaboradorAutorizacoesProvider, bool>(
+          (ColaboradorAutorizacoesProvider provider) => provider.ehSuperUsuario,
+        );
     final WebNavigationDestination? effectiveDestination =
         _shellManagedDestination ?? widget.activeDestination;
     final String activeTitle = _activeTitle(context, effectiveDestination);
     final Widget effectiveChild = switch (effectiveDestination) {
       WebNavigationDestination.catalogLabels => const EtiquetasWebPage(),
       WebNavigationDestination.operationsSales => ConsultaVendasWebPage(
-        onNovaVenda: () =>
-            _resolveDestination(WebNavigationDestination.operationsPointOfSale),
+        onNovaVenda:
+            () => _resolveDestination(
+              WebNavigationDestination.operationsPointOfSale,
+            ),
         onAbrirDevolucoes: _abrirDevolucoesDaVenda,
       ),
       WebNavigationDestination.operationsReturns =>
@@ -89,9 +97,10 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
           final bool forceCollapsed =
               constraints.maxWidth <= _compactSidebarBreakpoint;
           final bool expanded = _sidebarExpanded && !forceCollapsed;
-          final double sidebarWidth = expanded
-              ? WebSidebarNavigation.expandedWidth
-              : WebSidebarNavigation.collapsedWidth;
+          final double sidebarWidth =
+              expanded
+                  ? WebSidebarNavigation.expandedWidth
+                  : WebSidebarNavigation.collapsedWidth;
 
           return AnimatedContainer(
             key: const Key('web-shell-workspace'),
@@ -116,6 +125,7 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
                       onToggleGroup: _toggleGroup,
                       onDestinationSelected: _resolveDestination,
                       appVersion: widget.appVersion,
+                      isSuperUser: isSuperUser,
                     ),
                   ),
                 ),

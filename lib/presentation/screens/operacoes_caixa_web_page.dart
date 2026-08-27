@@ -5,13 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/di/caixa_module.dart';
-import '../../core/services/auth_service.dart';
 import '../../data/models/caixa_completo_movimentos_models.dart';
 import '../../data/models/caixa_models.dart';
 import '../../data/services/caixa/caixa_api_client.dart';
 import '../../domain/services/caixa/caixa_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
+import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/empresa_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
@@ -217,6 +217,8 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
   Future<void> _carregarDadosIniciais({String? idCaixaPreferencial}) async {
     setState(() => _isLoading = true);
     try {
+      final bool usuarioEhAdministrador =
+          context.read<ColaboradorAutorizacoesProvider>().ehAdministrador;
       final informacoesBasicas =
           await _caixaService.buscarInformacoesBasicasDoCaixa();
 
@@ -232,13 +234,10 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
       final List<Object?> dados = await Future.wait<Object?>(<Future<Object?>>[
         _caixaService.buscarSessaoAtual(),
         _caixaService.listarSessoesAbertas(),
-        AuthService().getUserProfileType(),
       ]);
       final CaixaSessao? sessao = dados[0] as CaixaSessao?;
       final List<CaixaSessao> sessoesAbertas = (dados[1] as List<CaixaSessao>)
           .toList(growable: false);
-      final String tipoPerfilUsuario = (dados[2] as String?)?.trim() ?? '';
-      final bool usuarioEhAdministrador = tipoPerfilUsuario == 'ADMIN';
 
       final caixas =
           informacoesBasicas.caixaOuGuiche.isNotEmpty

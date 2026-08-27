@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:sixpos/core/services/admin_portal_service.dart';
 import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/core/services/empresa_service.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
@@ -24,6 +26,7 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_selection_sheet
 import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/utils/profile_image_payload.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/dashboard_inicio_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
@@ -66,6 +69,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
   final DashboardInicioProvider _dashboardProvider = DashboardInicioProvider(
     initialPeriod: DashboardPeriod.last30Days,
   );
+  final AdminPortalService _adminPortalService = AdminPortalService();
   final EmpresaProvider _empresaProvider = EmpresaProvider();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
   final ScrollController _homeScrollController = ScrollController();
@@ -89,6 +93,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
   bool _carregandoFiltroDeColaborador = false;
   bool _podeFiltrarComercios = false;
   String? _fotoPerfilSincronizada;
+  AdminPortalResumo? _resumoInfraestrutura;
+  String? _erroInfraestrutura;
+  bool _carregandoInfraestrutura = false;
+  bool _tentouCarregarInfraestrutura = false;
   String _comercioSelecionadoNoFiltro = _allCompaniesFilterValue;
   String? _colaboradorSelecionadoNoFiltro;
   List<EmpresaVinculoWebModel> _comerciosDisponiveis =
@@ -131,6 +139,21 @@ class _HomePageMobileState extends State<HomePageMobile> {
       disconnectStomp();
     }
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final bool ehSuper =
+        context.read<ColaboradorAutorizacoesProvider>().ehSuperUsuario;
+    if (ehSuper && !_tentouCarregarInfraestrutura) {
+      _tentouCarregarInfraestrutura = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _carregarInfraestrutura();
+        }
+      });
+    }
   }
 
   void _onHomeScrollChanged() {
@@ -199,7 +222,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   Future<void> _carregarContextoDoFiltroDeComercio() async {
     try {
-      final String tipoPerfilUsuario = await _authService.getUserProfileType();
+      final bool podeFiltrarComercios =
+          context.read<ColaboradorAutorizacoesProvider>().ehAdministrador;
       final String empresaAtual =
           (await _authService.getEmpresaId())?.trim() ?? '';
       if (!mounted) {
@@ -207,7 +231,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
       }
 
       setState(() {
-        _podeFiltrarComercios = tipoPerfilUsuario == 'ADMIN';
+        _podeFiltrarComercios = podeFiltrarComercios;
         _comercioSelecionadoNoFiltro =
             empresaAtual.isEmpty ? _allCompaniesFilterValue : empresaAtual;
       });
@@ -259,10 +283,54 @@ class _HomePageMobileState extends State<HomePageMobile> {
   }
 
   Future<void> _onRefresh() async {
-    await Future.wait([
+    final bool ehSuper =
+        context.read<ColaboradorAutorizacoesProvider>().ehSuperUsuario;
+    final List<Future<void>> tasks = <Future<void>>[
       _dashboardProvider.reload(),
       _atualizarDadosPessoaisNoRefresh(),
-    ]);
+    ];
+    if (ehSuper) {
+      tasks.add(_carregarInfraestrutura());
+    }
+    await Future.wait(tasks);
+  }
+
+  Future<void> _carregarInfraestrutura() async {
+    if (_carregandoInfraestrutura) {
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _carregandoInfraestrutura = true;
+        _erroInfraestrutura = null;
+      });
+    } else {
+      _carregandoInfraestrutura = true;
+      _erroInfraestrutura = null;
+    }
+
+    try {
+      final AdminPortalResumo resumo = await _adminPortalService.buscarResumo();
+      if (!mounted) {
+        _resumoInfraestrutura = resumo;
+        return;
+      }
+      setState(() => _resumoInfraestrutura = resumo);
+    } catch (error) {
+      final String mensagem = error.toString().replaceAll('Exception: ', '');
+      if (!mounted) {
+        _erroInfraestrutura = mensagem;
+        return;
+      }
+      setState(() => _erroInfraestrutura = mensagem);
+    } finally {
+      if (mounted) {
+        setState(() => _carregandoInfraestrutura = false);
+      } else {
+        _carregandoInfraestrutura = false;
+      }
+    }
   }
 
   Future<void> _atualizarDadosPessoaisNoRefresh() async {
@@ -426,6 +494,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
   ) {
     final DashboardInicioModel data = _dashboardProvider.data;
     final bool loading = _dashboardProvider.isLoading;
+    final ColaboradorAutorizacoesProvider autorizacoes =
+        context.watch<ColaboradorAutorizacoesProvider>();
+    final bool ehSuper = autorizacoes.ehSuperUsuario;
+    final bool ehAdmin = autorizacoes.ehAdministrador;
 
     return SafeArea(
       top: false,
@@ -440,40 +512,516 @@ class _HomePageMobileState extends State<HomePageMobile> {
               delay: Duration(milliseconds: 40),
               child: _buildGreetingHeader(context),
             ),
-            SizedBox(height: 16),
-            SixStaggeredEntry(
-              delay: Duration(milliseconds: 80),
-              child: _buildPeriodFilter(),
-            ),
-            SizedBox(height: 16),
-            SixStaggeredEntry(
-              delay: Duration(milliseconds: 130),
-              child: _buildKpiGrid(data, loading),
-            ),
-            SizedBox(height: 16),
-            SixStaggeredEntry(
-              delay: Duration(milliseconds: 190),
-              child: _buildDashboardChart(data),
-            ),
-            if (data.alerts.isNotEmpty) ...[
+            if (ehSuper) ...[
               SizedBox(height: 16),
               SixStaggeredEntry(
-                delay: Duration(milliseconds: 240),
-                child: _buildAlertasSection(data, context),
+                delay: Duration(milliseconds: 80),
+                child: _buildRoleBlockHeader(
+                  context,
+                  icon: Icons.admin_panel_settings_outlined,
+                  title: context.t(
+                    'dashboardInicio.mobileSuperBlockTitle',
+                    fallback: 'Bloco SUPER',
+                  ),
+                  subtitle: context.t(
+                    'dashboardInicio.mobileSuperBlockSubtitle',
+                    fallback:
+                        'Infraestrutura monitorada e saúde atual do backend.',
+                  ),
+                ),
+              ),
+              SizedBox(height: 12),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: 110),
+                child: _buildSuperInfrastructureBlock(context),
               ),
             ],
-            SizedBox(height: 16),
-            SixStaggeredEntry(
-              delay: Duration(milliseconds: 290),
-              child: _buildUpcomingSection(data),
+            if (ehAdmin) ...[
+              SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: ehSuper ? 150 : 80),
+                child: _buildPeriodFilter(),
+              ),
+              SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: ehSuper ? 200 : 130),
+                child: _buildKpiGrid(data, loading),
+              ),
+              SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: ehSuper ? 250 : 180),
+                child: _buildDashboardChart(data),
+              ),
+              if (data.alerts.isNotEmpty) ...[
+                SizedBox(height: 16),
+                SixStaggeredEntry(
+                  delay: Duration(milliseconds: ehSuper ? 300 : 230),
+                  child: _buildAlertasSection(data, context),
+                ),
+              ],
+              SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: ehSuper ? 350 : 280),
+                child: _buildUpcomingSection(data),
+              ),
+              SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: ehSuper ? 400 : 330),
+                child: _buildOperationsSection(data),
+              ),
+            ],
+            if (!ehSuper && !ehAdmin) ...[
+              SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: 80),
+                child: _buildEmptyRoleBlock(context),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleBlockHeader(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: _surfaceColor.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: SixMobilePalette.onPrimary.withValues(alpha: 0.18),
             ),
-            SizedBox(height: 16),
-            SixStaggeredEntry(
-              delay: Duration(milliseconds: 340),
-              child: _buildOperationsSection(data),
+          ),
+          child: Icon(icon, color: SixMobilePalette.onPrimary, size: 18),
+        ),
+        SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                title,
+                style: TextStyle(
+                  color: SixMobilePalette.onPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: 3),
+              Text(
+                subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: SixMobilePalette.heroSupportingText,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuperInfrastructureBlock(BuildContext context) {
+    final AdminPortalResumo? resumo = _resumoInfraestrutura;
+
+    if (_carregandoInfraestrutura && resumo == null) {
+      return _buildInfrastructureLoadingCard(context);
+    }
+
+    if (_erroInfraestrutura != null && resumo == null) {
+      return _buildInfrastructureErrorCard(context);
+    }
+
+    if (resumo == null ||
+        (resumo.bancosDeDados.isEmpty && resumo.actuator == null)) {
+      return _buildInfrastructureEmptyCard(context);
+    }
+
+    return Column(
+      children: <Widget>[
+        if (resumo.bancosDeDados.isNotEmpty)
+          _buildInfrastructurePanel(
+            context,
+            icon: Icons.storage_rounded,
+            title: context.t(
+              'dashboardInicio.mobileInfrastructureDatabasesTitle',
+              fallback: 'Bancos monitorados',
+            ),
+            child: Column(
+              children: resumo.bancosDeDados
+                  .map((AdminBancoDadosResumo banco) {
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: banco == resumo.bancosDeDados.last ? 0 : 14,
+                      ),
+                      child: _buildDatabaseSummary(context, banco),
+                    );
+                  })
+                  .toList(growable: false),
+            ),
+          ),
+        if (resumo.bancosDeDados.isNotEmpty && resumo.actuator != null)
+          SizedBox(height: 12),
+        if (resumo.actuator != null)
+          _buildInfrastructurePanel(
+            context,
+            icon: Icons.monitor_heart_rounded,
+            title: context.t(
+              'dashboardInicio.mobileInfrastructureHealthTitle',
+              fallback: 'Saúde do backend',
+            ),
+            trailing: _buildInfrastructureStatusBadge(resumo.actuator!),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: <Widget>[
+                _buildInfrastructurePill(
+                  context,
+                  label: 'Uptime',
+                  value: _formatInfrastructureDuration(
+                    resumo.actuator!.uptimeSegundos,
+                  ),
+                ),
+                _buildInfrastructurePill(
+                  context,
+                  label: 'Heap',
+                  value:
+                      '${_formatInfrastructureBytes(resumo.actuator!.memoriaHeapUsadaBytes)} / ${_formatInfrastructureBytes(resumo.actuator!.memoriaHeapMaxBytes)}',
+                ),
+                _buildInfrastructurePill(
+                  context,
+                  label: 'Threads',
+                  value: resumo.actuator!.threadsAtivas.toString(),
+                ),
+                _buildInfrastructurePill(
+                  context,
+                  label: 'CPU',
+                  value: resumo.actuator!.processadoresDisponiveis.toString(),
+                ),
+                _buildInfrastructurePill(
+                  context,
+                  label: 'Carga',
+                  value: _formatInfrastructureLoad(
+                    resumo.actuator!.cargaSistema,
+                  ),
+                ),
+                _buildInfrastructurePill(
+                  context,
+                  label: 'Java',
+                  value: resumo.actuator!.versaoJava,
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildInfrastructurePanel(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Widget child,
+    Widget? trailing,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: _softSurface,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 17, color: _accentColor),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: _titleTextColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              if (trailing != null) trailing,
+            ],
+          ),
+          SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDatabaseSummary(
+    BuildContext context,
+    AdminBancoDadosResumo banco,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          banco.nome,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: _titleTextColor,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: <Widget>[
+            _buildInfrastructurePill(
+              context,
+              label: 'Dados',
+              value: _formatInfrastructureBytes(banco.tamanhoDadosBytes),
+            ),
+            _buildInfrastructurePill(
+              context,
+              label: 'Storage',
+              value: _formatInfrastructureBytes(banco.tamanhoArmazenadoBytes),
+            ),
+            _buildInfrastructurePill(
+              context,
+              label: 'Índices',
+              value: _formatInfrastructureBytes(banco.tamanhoIndicesBytes),
+            ),
+            _buildInfrastructurePill(
+              context,
+              label: 'Total',
+              value: _formatInfrastructureBytes(banco.tamanhoTotalBytes),
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _buildInfrastructurePill(
+    BuildContext context, {
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: _softSurface,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: _borderColor.withValues(alpha: 0.72)),
+      ),
+      child: Text(
+        '$label: $value',
+        style: TextStyle(
+          color: _titleTextColor,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfrastructureStatusBadge(AdminActuatorResumo actuator) {
+    final bool ok = actuator.status.toUpperCase() == 'UP';
+    final Color color = ok ? Color(0xFF16A34A) : SixMobilePalette.error;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        actuator.status,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfrastructureLoadingCard(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _borderColor),
+      ),
+      child: Row(
+        children: <Widget>[
+          SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.2,
+              valueColor: AlwaysStoppedAnimation<Color>(_accentColor),
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              context.t(
+                'dashboardInicio.mobileInfrastructureLoading',
+                fallback: 'Carregando infraestrutura monitorada.',
+              ),
+              style: TextStyle(
+                color: _titleTextColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfrastructureErrorCard(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: SixMobilePalette.errorBorder.withValues(alpha: 0.7),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(
+                Icons.error_outline_rounded,
+                color: SixMobilePalette.error,
+                size: 18,
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  context.t(
+                    'dashboardInicio.mobileInfrastructureErrorTitle',
+                    fallback: 'Não foi possível carregar a infraestrutura.',
+                  ),
+                  style: TextStyle(
+                    color: _titleTextColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _carregarInfraestrutura,
+            icon: Icon(Icons.refresh_rounded, size: 18),
+            label: Text(
+              context.t('common.tryAgain', fallback: 'Tentar novamente'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfrastructureEmptyCard(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _borderColor),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.info_outline_rounded, color: _mutedTextColor, size: 18),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              context.t(
+                'dashboardInicio.mobileInfrastructureEmpty',
+                fallback:
+                    'Nenhuma informação de infraestrutura está disponível agora.',
+              ),
+              style: TextStyle(
+                color: _mutedTextColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyRoleBlock(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _borderColor),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.lock_outline_rounded, color: _mutedTextColor, size: 18),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              context.t(
+                'dashboardInicio.mobileNoRoleBlock',
+                fallback:
+                    'Os blocos desta tela não estão disponíveis para o seu perfil.',
+              ),
+              style: TextStyle(
+                color: _mutedTextColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2137,6 +2685,37 @@ class _HomePageMobileState extends State<HomePageMobile> {
   String _badgeText(int count) {
     if (count > 9) return '+9';
     return count.toString();
+  }
+
+  String _formatInfrastructureBytes(int bytes) {
+    const List<String> units = <String>['B', 'KB', 'MB', 'GB', 'TB'];
+    double value = bytes.toDouble();
+    int unitIndex = 0;
+    while (value >= 1024 && unitIndex < units.length - 1) {
+      value /= 1024;
+      unitIndex++;
+    }
+    final bool roundToInt = value >= 100 || unitIndex == 0;
+    final String text =
+        roundToInt ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
+    return '$text ${units[unitIndex]}';
+  }
+
+  String _formatInfrastructureDuration(int totalSeconds) {
+    final int hours = totalSeconds ~/ 3600;
+    final int minutes = (totalSeconds % 3600) ~/ 60;
+    if (hours > 0) {
+      return '${hours}h ${minutes.toString().padLeft(2, '0')}m';
+    }
+    final int seconds = totalSeconds % 60;
+    if (minutes > 0) {
+      return '${minutes}m ${seconds.toString().padLeft(2, '0')}s';
+    }
+    return '${seconds}s';
+  }
+
+  String _formatInfrastructureLoad(double load) {
+    return load.toStringAsFixed(load >= 10 ? 1 : 2);
   }
 
   void _openNotifications(BuildContext context) {

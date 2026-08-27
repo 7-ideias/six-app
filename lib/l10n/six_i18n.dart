@@ -1572,6 +1572,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.heroTitle': 'O que você deseja fazer?',
     'atendimento.mobile.heroSubtitle':
         'Venda, serviço ou recebimento em poucos passos',
+    'atendimento.mobile.introTitle': 'Atendimento ao Cliente',
+    'atendimento.mobile.introLineSales': 'vender, receber, consultar',
+    'atendimento.mobile.introLineReturns': 'devoluções de produtos',
+    'atendimento.mobile.introLineServices': 'serviços, orçamentos etc',
     'atendimento.mobile.chooseOperation': 'Escolha a operação para iniciar.',
     'atendimento.mobile.salesMenuTitle': 'Vendas',
     'atendimento.mobile.newSaleTitle': 'Vendas',
@@ -1601,7 +1605,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.servicesInProgressSubtitle':
         'Atendimentos técnicos ativos',
     'atendimento.mobile.moreOptions': 'Mais opções',
-    'atendimento.mobile.cashOperationsTitle': 'Operações de caixa',
+    'atendimento.mobile.cashOperationsTitle': 'Caixa',
     'atendimento.mobile.cashOperationsSubtitle': 'Abrir e movimentar',
     'atendimento.mobile.counterLoadError': 'Não foi possível atualizar agora',
     'atendimento.mobile.servicesToReceiveTitle': 'Serviços a receber',
@@ -1630,7 +1634,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.totalValue': 'Valor total',
     'atendimento.mobile.dueDate': 'Vence em',
     'atendimento.mobile.noDueDate': 'Sem vencimento',
-    'operacao.mobile.returnTitle': 'Devoluções',
+    'operacao.mobile.returnTitle': 'Devoluções e Trocas',
     'operacao.mobile.returnSubtitle': 'Registrar devolução',
     'operacao.mobile.returnUnavailable': 'Em breve',
 
@@ -3294,6 +3298,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.heroTitle': 'What do you want to do?',
     'atendimento.mobile.heroSubtitle':
         'Sale, service or receipt in a few steps',
+    'atendimento.mobile.introTitle': 'Customer Service',
+    'atendimento.mobile.introLineSales': 'sell, collect, review',
+    'atendimento.mobile.introLineReturns': 'product returns',
+    'atendimento.mobile.introLineServices': 'services, estimates, and more',
     'atendimento.mobile.chooseOperation': 'Choose the operation to start.',
     'atendimento.mobile.salesMenuTitle': 'Sales',
     'atendimento.mobile.newSaleTitle': 'Sales',
@@ -3318,7 +3326,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.servicesInProgressSubtitle':
         'Active technical services',
     'atendimento.mobile.moreOptions': 'More options',
-    'atendimento.mobile.cashOperationsTitle': 'Cash operations',
+    'atendimento.mobile.cashOperationsTitle': 'Cash',
     'atendimento.mobile.cashOperationsSubtitle': 'Open and move',
     'atendimento.mobile.counterLoadError': 'Could not update right now',
     'atendimento.mobile.servicesToReceiveTitle': 'Services to receive',
@@ -3348,7 +3356,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.totalValue': 'Total amount',
     'atendimento.mobile.dueDate': 'Due on',
     'atendimento.mobile.noDueDate': 'No due date',
-    'operacao.mobile.returnTitle': 'Returns',
+    'operacao.mobile.returnTitle': 'Returns and Exchanges',
     'operacao.mobile.returnSubtitle': 'Register return',
     'operacao.mobile.returnUnavailable': 'Coming soon',
 
@@ -5057,6 +5065,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.title': 'Atención',
     'atendimento.mobile.heroTitle': '¿Qué deseas hacer?',
     'atendimento.mobile.heroSubtitle': 'Venta, servicio o cobro en pocos pasos',
+    'atendimento.mobile.introTitle': 'Atención al Cliente',
+    'atendimento.mobile.introLineSales': 'vender, cobrar, consultar',
+    'atendimento.mobile.introLineReturns': 'devoluciones de productos',
+    'atendimento.mobile.introLineServices': 'servicios, presupuestos, etc.',
     'atendimento.mobile.chooseOperation': 'Elige la operación para iniciar.',
     'atendimento.mobile.salesMenuTitle': 'Ventas',
     'atendimento.mobile.newSaleTitle': 'Ventas',
@@ -5081,7 +5093,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.servicesInProgressSubtitle':
         'Atenciones técnicas activas',
     'atendimento.mobile.moreOptions': 'Más opciones',
-    'atendimento.mobile.cashOperationsTitle': 'Operaciones de caja',
+    'atendimento.mobile.cashOperationsTitle': 'Caja',
     'atendimento.mobile.cashOperationsSubtitle': 'Abrir y mover',
     'atendimento.mobile.counterLoadError': 'No fue posible actualizar ahora',
     'atendimento.mobile.servicesToReceiveTitle': 'Servicios por cobrar',
@@ -5110,7 +5122,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.totalValue': 'Valor total',
     'atendimento.mobile.dueDate': 'Vence el',
     'atendimento.mobile.noDueDate': 'Sin vencimiento',
-    'operacao.mobile.returnTitle': 'Devoluciones',
+    'operacao.mobile.returnTitle': 'Devoluciones y Cambios',
     'operacao.mobile.returnSubtitle': 'Registrar devolución',
     'operacao.mobile.returnUnavailable': 'Próximamente',
 

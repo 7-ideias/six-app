@@ -369,7 +369,8 @@ class _AiAssistantConversationBodyState
     String perfilUsuario = 'DESCONHECIDO';
     List<String> permissoes = <String>[];
     try {
-      perfilUsuario = await _authService.getUserProfileType();
+      perfilUsuario =
+          context.read<ColaboradorAutorizacoesProvider>().tipoPerfilUnificado;
       permissoes = await _authService.getUserPermissions();
     } catch (_) {
       perfilUsuario = 'DESCONHECIDO';
