@@ -251,6 +251,42 @@ void main() {
     });
 
     await _pumpAtendimento(tester);
+    final Finder primaryRow = find.byKey(
+      const ValueKey<String>('atendimento-actions-row-primary'),
+    );
+    final Finder compactRow = find.byKey(
+      const ValueKey<String>('atendimento-actions-row-compact'),
+    );
+    final Finder returnAction = find.byKey(
+      const ValueKey<String>('atendimento-action-return'),
+    );
+    final Finder cashAction = find.byKey(
+      const ValueKey<String>('atendimento-action-cash'),
+    );
+    final Finder receiveAction = find.byKey(
+      const ValueKey<String>('atendimento-action-receive'),
+    );
+    final Finder saleAction = find.byKey(
+      const ValueKey<String>('atendimento-action-new-sale'),
+    );
+    final Finder serviceAction = find.byKey(
+      const ValueKey<String>('atendimento-action-new-service'),
+    );
+
+    final double primaryCardWidth = (tester.getSize(primaryRow).width - 12) / 2;
+    final double compactCardWidth = (tester.getSize(compactRow).width - 16) / 3;
+
+    expect(tester.getSize(returnAction).width, closeTo(primaryCardWidth, 0.01));
+    expect(tester.getSize(cashAction).width, closeTo(primaryCardWidth, 0.01));
+    expect(
+      tester.getSize(receiveAction).width,
+      closeTo(compactCardWidth, 0.01),
+    );
+    expect(tester.getSize(saleAction).width, closeTo(compactCardWidth, 0.01));
+    expect(
+      tester.getSize(serviceAction).width,
+      closeTo(compactCardWidth, 0.01),
+    );
     expect(
       tester
           .getTopLeft(

@@ -70,7 +70,7 @@ class SixMobileReorderableCard<T extends Object> extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: <Widget>[
-        cardBuilder(),
+        SizedBox(width: double.infinity, child: cardBuilder()),
         Positioned(
           top: 7,
           left: handleOnLeft ? 7 : null,

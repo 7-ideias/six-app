@@ -689,13 +689,15 @@ class _AtendimentoActionsRow extends StatelessWidget {
             (width - (gap * (actions.length - 1))) / actions.length;
 
         return SizedBox(
+          key: ValueKey<String>('atendimento-actions-row-${prominence.name}'),
           height: cardHeight,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               for (int index = 0; index < actions.length; index += 1) ...[
                 if (index > 0) SizedBox(width: gap),
-                Expanded(
+                SizedBox(
+                  width: cardWidth,
                   child:
                       SixMobileReorderableCard<
                         AtendimentoMobileCardPreferencia
