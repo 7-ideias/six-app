@@ -1,35 +1,163 @@
 import 'package:flutter/material.dart';
 
+import '../../data/models/usuario_model.dart';
+import '../../design_system/themes/six_mobile_color_scheme.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
+import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
+import '../components/mobile/six_imagem_canetinha.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
+import '../components/mobile/six_mobile_reorderable_card.dart';
 import '../components/mobile_motion.dart';
+import '../controllers/mobile_card_order_preference_controller.dart';
 import 'atendimento_tecnico_mobile_screen.dart';
 import 'atendimentos_tecnicos_mobile_screen.dart';
 
 typedef ServicosAtendimentoMobileNavigate =
     void Function(BuildContext context, Widget page);
 
-class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
+class OpcoesServicosAtendimentoMobileScreen extends StatefulWidget {
   const OpcoesServicosAtendimentoMobileScreen({super.key, this.onNavigate});
 
   final ServicosAtendimentoMobileNavigate? onNavigate;
 
+  @override
+  State<OpcoesServicosAtendimentoMobileScreen> createState() =>
+      _OpcoesServicosAtendimentoMobileScreenState();
+}
+
+class _OpcoesServicosAtendimentoMobileScreenState
+    extends State<OpcoesServicosAtendimentoMobileScreen> {
   static Color get _backgroundColor => SixMobilePalette.background;
   static Color get _primaryColor => SixMobilePalette.primary;
   static Color get _secondaryColor => SixMobilePalette.secondary;
   static const Color _accentColor = Color(0xFF7C3AED);
   static const Color _consultAccentColor = Color(0xFF0F766E);
   static Color get _approvalAccentColor => SixMobilePalette.accent;
-  static const String _serviceAsset =
-      'assets/images/servicos mobile/servico.webp';
-  static const String _consultAsset =
-      'assets/images/servicos mobile/consultar.webp';
+  static const String _serviceAssetContorno =
+      'assets/images/atendimento mobile/acao-novo-servico.webp';
+  static const String _serviceAssetAcento =
+      'assets/images/atendimento mobile/acao-novo-servico-acento.webp';
+  static const String _inProgressAssetContorno =
+      'assets/images/servicos mobile/acao-servicos-em-andamento.webp';
+  static const String _inProgressAssetAcento =
+      'assets/images/servicos mobile/acao-servicos-em-andamento-acento.webp';
+  static const String _approvalAssetContorno =
+      'assets/images/servicos mobile/acao-orcamentos-aprovacao.webp';
+  static const String _approvalAssetAcento =
+      'assets/images/servicos mobile/acao-orcamentos-aprovacao-acento.webp';
   static const double _serviceCardHeight = 136;
   static const double _serviceCardGap = 10;
 
+  late final MobileCardOrderPreferenceController<ServicosMobileCardPreferencia>
+  _ordemCardsController;
+
+  @override
+  void initState() {
+    super.initState();
+    _ordemCardsController =
+        MobileCardOrderPreferenceController<ServicosMobileCardPreferencia>(
+            ordemPadrao: ServicosMobileCardPreferencia.values,
+            selecionarOrdem: (preferencias) =>
+                preferencias.ordemCardsServicosMobile,
+            persistirOrdem: (ordem) =>
+                UsuarioService().atualizarPreferenciasIndividuais(
+                  ordemCardsServicosMobile: ordem
+                      .map((item) => item.codigo)
+                      .toList(growable: false),
+                ),
+            nomeDaTela: 'Servicos Mobile',
+          )
+          ..addListener(_aoAlterarOrdemDosCards)
+          ..inicializar();
+  }
+
+  @override
+  void dispose() {
+    _ordemCardsController
+      ..removeListener(_aoAlterarOrdemDosCards)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _aoAlterarOrdemDosCards() {
+    if (mounted) setState(() {});
+  }
+
   String _t(BuildContext context, String key, String fallback) =>
       context.t(key, fallback: fallback);
+
+  List<_ServiceActionData> _orderedActions(BuildContext context) {
+    final Map<ServicosMobileCardPreferencia, _ServiceActionData>
+    actions = <ServicosMobileCardPreferencia, _ServiceActionData>{
+      ServicosMobileCardPreferencia.novoServico: _ServiceActionData(
+        preferencia: ServicosMobileCardPreferencia.novoServico,
+        id: 'new-service',
+        title: _t(
+          context,
+          'atendimento.mobile.createServiceTitle',
+          'Novo serviço',
+        ),
+        subtitle: _t(
+          context,
+          'atendimento.mobile.createServiceSubtitle',
+          'Abrir novo atendimento técnico',
+        ),
+        assetContorno: _serviceAssetContorno,
+        assetAcento: _serviceAssetAcento,
+        accentColor: _accentColor,
+        onTap: () => _go(context, AtendimentoTecnicoMobileScreen()),
+      ),
+      ServicosMobileCardPreferencia.servicosEmAndamento: _ServiceActionData(
+        preferencia: ServicosMobileCardPreferencia.servicosEmAndamento,
+        id: 'in-progress',
+        title: _t(
+          context,
+          'atendimento.mobile.consultServicesInProgressTitle',
+          'Consultar serviços em andamento',
+        ),
+        subtitle: _t(
+          context,
+          'atendimento.mobile.consultServicesInProgressSubtitle',
+          'Ver atendimentos técnicos ativos',
+        ),
+        assetContorno: _inProgressAssetContorno,
+        assetAcento: _inProgressAssetAcento,
+        accentColor: _consultAccentColor,
+        onTap: () => _go(context, AtendimentosTecnicosMobileScreen()),
+      ),
+      ServicosMobileCardPreferencia
+          .orcamentosAguardandoAprovacao: _ServiceActionData(
+        preferencia:
+            ServicosMobileCardPreferencia.orcamentosAguardandoAprovacao,
+        id: 'waiting-approval',
+        title: _t(
+          context,
+          'atendimento.mobile.waitingApprovalBudgetsTitle',
+          'Orçamentos aguardando aprovação',
+        ),
+        subtitle: _t(
+          context,
+          'atendimento.mobile.waitingApprovalBudgetsSubtitle',
+          'Consulte serviços que ainda precisam da aprovação do cliente',
+        ),
+        assetContorno: _approvalAssetContorno,
+        assetAcento: _approvalAssetAcento,
+        accentColor: _approvalAccentColor,
+        onTap: () => _go(
+          context,
+          AtendimentosTecnicosMobileScreen(
+            listContext:
+                AtendimentosTecnicosMobileListContext.waitingCustomerApproval(),
+          ),
+        ),
+      ),
+    };
+
+    return _ordemCardsController.ordem
+        .map((preferencia) => actions[preferencia]!)
+        .toList(growable: false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,133 +176,80 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
         icon: Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
-      bodyBuilder: (
-        BuildContext context,
-        ScrollController scrollController,
-        double topInset,
-      ) {
-        return SafeArea(
-          top: false,
-          child: LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              const double horizontalPadding = 16;
-              const double topPadding = 8;
-              const double bottomPadding = 24;
-              final double cardHeight =
-                  constraints.maxWidth < 340
+      bodyBuilder:
+          (
+            BuildContext context,
+            ScrollController scrollController,
+            double topInset,
+          ) {
+            return SafeArea(
+              top: false,
+              child: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  const double horizontalPadding = 16;
+                  const double topPadding = 8;
+                  const double bottomPadding = 24;
+                  final double cardHeight = constraints.maxWidth < 340
                       ? _serviceCardHeight - 8
                       : _serviceCardHeight;
+                  final double cardWidth =
+                      constraints.maxWidth - (horizontalPadding * 2);
+                  final List<_ServiceActionData> actions = _orderedActions(
+                    context,
+                  );
 
-              return ListView(
-                controller: scrollController,
-                physics: AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(
-                  horizontalPadding,
-                  topInset + topPadding,
-                  horizontalPadding,
-                  bottomPadding,
-                ),
-                children: <Widget>[
-                  SixStaggeredEntry(
-                    delay: Duration(milliseconds: 40),
-                    child: _buildServiceActionCard(
-                      key: ValueKey<String>('servicos-action-new-service'),
-                      height: cardHeight,
-                      title: _t(
-                        context,
-                        'atendimento.mobile.createServiceTitle',
-                        'Novo serviço',
-                      ),
-                      subtitle: _t(
-                        context,
-                        'atendimento.mobile.createServiceSubtitle',
-                        'Abrir novo atendimento técnico',
-                      ),
-                      assetPath: _serviceAsset,
-                      badgeIcon: Icons.add_rounded,
-                      accentColor: _accentColor,
-                      onTap:
-                          () => _go(context, AtendimentoTecnicoMobileScreen()),
+                  return ListView(
+                    controller: scrollController,
+                    physics: AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      topInset + topPadding,
+                      horizontalPadding,
+                      bottomPadding,
                     ),
-                  ),
-                  SizedBox(height: _serviceCardGap),
-                  SixStaggeredEntry(
-                    delay: Duration(milliseconds: 95),
-                    child: _buildServiceActionCard(
-                      key: ValueKey<String>('servicos-action-in-progress'),
-                      height: cardHeight,
-                      title: _t(
-                        context,
-                        'atendimento.mobile.consultServicesInProgressTitle',
-                        'Consultar serviços em andamento',
-                      ),
-                      subtitle: _t(
-                        context,
-                        'atendimento.mobile.consultServicesInProgressSubtitle',
-                        'Ver atendimentos técnicos ativos',
-                      ),
-                      assetPath: _consultAsset,
-                      badgeIcon: Icons.fact_check_rounded,
-                      accentColor: _consultAccentColor,
-                      onTap:
-                          () =>
-                              _go(context, AtendimentosTecnicosMobileScreen()),
-                    ),
-                  ),
-                  SizedBox(height: _serviceCardGap),
-                  SixStaggeredEntry(
-                    delay: Duration(milliseconds: 150),
-                    child: _buildServiceActionCard(
-                      key: ValueKey<String>('servicos-action-waiting-approval'),
-                      height: cardHeight,
-                      title: _t(
-                        context,
-                        'atendimento.mobile.waitingApprovalBudgetsTitle',
-                        'Orçamentos aguardando aprovação',
-                      ),
-                      subtitle: _t(
-                        context,
-                        'atendimento.mobile.waitingApprovalBudgetsSubtitle',
-                        'Consulte serviços que ainda precisam da aprovação do cliente',
-                      ),
-                      assetPath: _consultAsset,
-                      badgeIcon: Icons.pending_actions_rounded,
-                      accentColor: _approvalAccentColor,
-                      onTap:
-                          () => _go(
-                            context,
-                            AtendimentosTecnicosMobileScreen(
-                              listContext:
-                                  AtendimentosTecnicosMobileListContext.waitingCustomerApproval(),
-                            ),
+                    children: <Widget>[
+                      for (int index = 0; index < actions.length; index++) ...[
+                        if (index > 0) SizedBox(height: _serviceCardGap),
+                        SixStaggeredEntry(
+                          key: ValueKey<String>(
+                            'servicos-reorder-${actions[index].id}',
                           ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      },
+                          delay: Duration(milliseconds: 40 + (index * 55)),
+                          child:
+                              SixMobileReorderableCard<
+                                ServicosMobileCardPreferencia
+                              >(
+                                value: actions[index].preferencia,
+                                onReorder: _ordemCardsController.reordenar,
+                                feedbackWidth: cardWidth,
+                                feedbackHeight: cardHeight,
+                                handleColor: actions[index].accentColor,
+                                cardBuilder: () => _buildServiceActionCard(
+                                  data: actions[index],
+                                  height: cardHeight,
+                                ),
+                              ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            );
+          },
     );
   }
 
   Widget _buildServiceActionCard({
-    required Key key,
+    required _ServiceActionData data,
     required double height,
-    required String title,
-    required String subtitle,
-    required String assetPath,
-    required IconData badgeIcon,
-    required Color accentColor,
-    required VoidCallback onTap,
   }) {
     return Semantics(
       container: true,
       button: true,
-      label: '$title. $subtitle',
+      label: '${data.title}. ${data.subtitle}',
       child: Container(
-        key: key,
+        key: ValueKey<String>('servicos-action-${data.id}'),
         height: height,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
@@ -187,16 +262,16 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
           ],
         ),
         child: Material(
-          color: SixMobilePalette.surface,
+          color: context.sixMobileColors.surface,
           borderRadius: BorderRadius.circular(20),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
-            onTap: onTap,
+            onTap: data.onTap,
             child: Container(
               constraints: BoxConstraints(minHeight: height),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: accentColor.withAlpha(58)),
+                border: Border.all(color: data.accentColor.withAlpha(58)),
               ),
               child: Stack(
                 children: <Widget>[
@@ -207,7 +282,7 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
                     child: Container(
                       width: 5,
                       decoration: BoxDecoration(
-                        color: accentColor,
+                        color: data.accentColor,
                         borderRadius: BorderRadius.horizontal(
                           left: Radius.circular(20),
                         ),
@@ -215,75 +290,72 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
                     ),
                   ),
                   LayoutBuilder(
-                    builder: (
-                      BuildContext context,
-                      BoxConstraints constraints,
-                    ) {
-                      final bool tight = constraints.maxWidth < 330;
-                      final double imageSize = (constraints.maxWidth *
-                              (tight ? 0.25 : 0.28))
-                          .clamp(76.0, 98.0);
+                    builder:
+                        (BuildContext context, BoxConstraints constraints) {
+                          final bool tight = constraints.maxWidth < 330;
+                          final double imageSize =
+                              (constraints.maxWidth * (tight ? 0.25 : 0.28))
+                                  .clamp(76.0, 98.0);
 
-                      return Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          tight ? 18 : 21,
-                          tight ? 14 : 16,
-                          tight ? 12 : 14,
-                          tight ? 14 : 16,
-                        ),
-                        child: Row(
-                          children: <Widget>[
-                            SizedBox.square(
-                              dimension: imageSize,
-                              child: _buildServiceActionImage(
-                                assetPath: assetPath,
-                                badgeIcon: badgeIcon,
-                                accentColor: accentColor,
-                              ),
+                          return Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              tight ? 18 : 21,
+                              tight ? 14 : 16,
+                              tight ? 12 : 14,
+                              tight ? 14 : 16,
                             ),
-                            SizedBox(width: tight ? 14 : 16),
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Flexible(
-                                    child: Text(
-                                      title,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: accentColor,
-                                        fontSize: tight ? 16.5 : 17.5,
-                                        height: 1.08,
-                                        fontWeight: FontWeight.w900,
+                            child: Row(
+                              children: <Widget>[
+                                SizedBox.square(
+                                  dimension: imageSize,
+                                  child: _buildServiceActionImage(data),
+                                ),
+                                SizedBox(width: tight ? 14 : 16),
+                                Expanded(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      Flexible(
+                                        child: Text(
+                                          data.title,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: data.accentColor,
+                                            fontSize: tight ? 16.5 : 17.5,
+                                            height: 1.08,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                  SizedBox(height: tight ? 7 : 8),
-                                  Flexible(
-                                    child: Text(
-                                      subtitle,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: SixMobilePalette.mutedText,
-                                        fontSize: tight ? 11.2 : 12,
-                                        height: 1.2,
-                                        fontWeight: FontWeight.w600,
+                                      SizedBox(height: tight ? 7 : 8),
+                                      Flexible(
+                                        child: Text(
+                                          data.subtitle,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: context
+                                                .sixMobileColors
+                                                .mutedText,
+                                            fontSize: tight ? 11.2 : 12,
+                                            height: 1.2,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                ),
+                                SizedBox(width: tight ? 8 : 10),
+                                _buildServiceActionArrow(data.accentColor),
+                              ],
                             ),
-                            SizedBox(width: tight ? 8 : 10),
-                            _buildServiceActionArrow(accentColor),
-                          ],
-                        ),
-                      );
-                    },
+                          );
+                        },
                   ),
                 ],
               ),
@@ -294,87 +366,47 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildServiceActionImage({
-    required String assetPath,
-    required IconData badgeIcon,
-    required Color accentColor,
-  }) {
+  Widget _buildServiceActionImage(_ServiceActionData data) {
     return ExcludeSemantics(
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final double frameSize = constraints.biggest.shortestSide.clamp(
-            76.0,
-            98.0,
-          );
-
-          return Align(
-            alignment: Alignment.centerLeft,
-            child: SizedBox(
-              width: frameSize,
-              height: frameSize,
-              child: _buildServiceImageFrame(
-                assetPath: assetPath,
-                badgeIcon: badgeIcon,
-                accentColor: accentColor,
-              ),
-            ),
-          );
-        },
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: <Color>[
+              data.accentColor.withAlpha(58),
+              data.accentColor.withAlpha(22),
+            ],
+          ),
+          shape: BoxShape.circle,
+          border: Border.all(color: data.accentColor.withAlpha(84)),
+        ),
+        padding: const EdgeInsets.all(8),
+        child: SixImagemCanetinha(
+          assetContorno: data.assetContorno,
+          assetAcento: data.assetAcento,
+          largura: 78,
+          altura: 78,
+          fit: BoxFit.contain,
+          corContorno: context.sixMobileColors.titleText,
+          corAcento: data.accentColor,
+          gradienteContorno: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: <Color>[
+              data.accentColor,
+              context.sixMobileColors.titleText,
+            ],
+          ),
+          reforcoContorno: 0.62,
+          reforcoAcento: 0.76,
+          opacidadeReforco: 0.44,
+          opacidadeBrilho: Theme.of(context).brightness == Brightness.dark
+              ? 0.44
+              : 0.16,
+          desfoqueBrilho: 3.4,
+        ),
       ),
-    );
-  }
-
-  Widget _buildServiceImageFrame({
-    required String assetPath,
-    required IconData badgeIcon,
-    required Color accentColor,
-  }) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: <Widget>[
-        Positioned.fill(
-          child: Container(
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              color: accentColor.withAlpha(18),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Transform.scale(
-              scale: 1.12,
-              child: Image.asset(
-                assetPath,
-                fit: BoxFit.cover,
-                filterQuality: FilterQuality.medium,
-                errorBuilder: (
-                  BuildContext context,
-                  Object error,
-                  StackTrace? stackTrace,
-                ) {
-                  return Icon(
-                    Icons.home_repair_service_rounded,
-                    color: accentColor,
-                    size: 42,
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          right: -3,
-          bottom: -3,
-          child: Container(
-            width: 27,
-            height: 27,
-            decoration: BoxDecoration(
-              color: SixMobilePalette.surface,
-              shape: BoxShape.circle,
-              border: Border.all(color: accentColor.withAlpha(78)),
-            ),
-            child: Icon(badgeIcon, color: accentColor, size: 16),
-          ),
-        ),
-      ],
     );
   }
 
@@ -394,7 +426,7 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
   }
 
   void _go(BuildContext context, Widget page) {
-    final ServicosAtendimentoMobileNavigate? navigate = onNavigate;
+    final ServicosAtendimentoMobileNavigate? navigate = widget.onNavigate;
     if (navigate != null) {
       navigate(context, page);
       return;
@@ -402,4 +434,26 @@ class OpcoesServicosAtendimentoMobileScreen extends StatelessWidget {
 
     Navigator.push(context, MaterialPageRoute(builder: (_) => page));
   }
+}
+
+class _ServiceActionData {
+  const _ServiceActionData({
+    required this.preferencia,
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.assetContorno,
+    required this.assetAcento,
+    required this.accentColor,
+    required this.onTap,
+  });
+
+  final ServicosMobileCardPreferencia preferencia;
+  final String id;
+  final String title;
+  final String subtitle;
+  final String assetContorno;
+  final String assetAcento;
+  final Color accentColor;
+  final VoidCallback onTap;
 }

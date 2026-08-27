@@ -83,19 +83,25 @@ class UsuarioService {
     Map<String, dynamic>? atendimentosCriadosFiltrosWeb,
     Map<String, dynamic>? atendimentosCriadosFiltrosMobile,
     List<String>? ordemCardsGestaoMobile,
+    List<String>? ordemCardsAtendimentoMobile,
+    List<String>? ordemCardsVendasMobile,
+    List<String>? ordemCardsServicosMobile,
+    List<String>? ordemCardsReceberMobile,
   }) async {
     final Map<String, dynamic> body = <String, dynamic>{};
     if (idiomaDePreferencia != null) {
       body['idiomaDePreferencia'] = idiomaDePreferencia;
     }
     if (modoDeExibicaoProdutos != null) {
-      final String campo =
-          kIsWeb ? 'modoDeExibicaoProdutosWeb' : 'modoDeExibicaoProdutosMobile';
+      final String campo = kIsWeb
+          ? 'modoDeExibicaoProdutosWeb'
+          : 'modoDeExibicaoProdutosMobile';
       body[campo] = modoDeExibicaoProdutos;
     }
     if (modoDeExibicaoServicos != null) {
-      final String campo =
-          kIsWeb ? 'modoDeExibicaoServicosWeb' : 'modoDeExibicaoServicosMobile';
+      final String campo = kIsWeb
+          ? 'modoDeExibicaoServicosWeb'
+          : 'modoDeExibicaoServicosMobile';
       body[campo] = modoDeExibicaoServicos;
     }
     if (modoDeExibicaoProdutosWeb != null) {
@@ -141,6 +147,18 @@ class UsuarioService {
     }
     if (ordemCardsGestaoMobile != null) {
       body['ordemCardsGestaoMobile'] = ordemCardsGestaoMobile;
+    }
+    if (ordemCardsAtendimentoMobile != null) {
+      body['ordemCardsAtendimentoMobile'] = ordemCardsAtendimentoMobile;
+    }
+    if (ordemCardsVendasMobile != null) {
+      body['ordemCardsVendasMobile'] = ordemCardsVendasMobile;
+    }
+    if (ordemCardsServicosMobile != null) {
+      body['ordemCardsServicosMobile'] = ordemCardsServicosMobile;
+    }
+    if (ordemCardsReceberMobile != null) {
+      body['ordemCardsReceberMobile'] = ordemCardsReceberMobile;
     }
 
     if (body.isEmpty) {

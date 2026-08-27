@@ -1,28 +1,131 @@
 import 'package:flutter/material.dart';
 
+import '../../data/models/usuario_model.dart';
+import '../../design_system/themes/six_mobile_color_scheme.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
+import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
+import '../components/mobile/six_imagem_canetinha.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
+import '../components/mobile/six_mobile_reorderable_card.dart';
 import '../components/mobile_motion.dart';
+import '../controllers/mobile_card_order_preference_controller.dart';
 import 'atendimentos_tecnicos_pendentes_pagamento_mobile_screen.dart';
 import 'vendas_nao_liquidadas_mobile_screen.dart';
 
 typedef ReceberMobileNavigate =
     void Function(BuildContext context, Widget page);
 
-class ReceberMobileScreen extends StatelessWidget {
+class ReceberMobileScreen extends StatefulWidget {
   const ReceberMobileScreen({super.key, this.onNavigate});
 
   final ReceberMobileNavigate? onNavigate;
 
+  @override
+  State<ReceberMobileScreen> createState() => _ReceberMobileScreenState();
+}
+
+class _ReceberMobileScreenState extends State<ReceberMobileScreen> {
   static Color get _backgroundColor => SixMobilePalette.background;
   static Color get _primaryColor => SixMobilePalette.primary;
   static Color get _secondaryColor => SixMobilePalette.secondary;
   static const Color _accentColor = Color(0xFF16A34A);
   static const Color _serviceAccentColor = Color(0xFF0F766E);
+  static const String _salesAssetContorno =
+      'assets/images/atendimento mobile/acao-receber.webp';
+  static const String _salesAssetAcento =
+      'assets/images/atendimento mobile/acao-receber-acento.webp';
+  static const String _servicesAssetContorno =
+      'assets/images/receber mobile/acao-servicos-a-receber.webp';
+  static const String _servicesAssetAcento =
+      'assets/images/receber mobile/acao-servicos-a-receber-acento.webp';
+
+  late final MobileCardOrderPreferenceController<ReceberMobileCardPreferencia>
+  _ordemCardsController;
+
+  @override
+  void initState() {
+    super.initState();
+    _ordemCardsController =
+        MobileCardOrderPreferenceController<ReceberMobileCardPreferencia>(
+            ordemPadrao: ReceberMobileCardPreferencia.values,
+            selecionarOrdem: (preferencias) =>
+                preferencias.ordemCardsReceberMobile,
+            persistirOrdem: (ordem) =>
+                UsuarioService().atualizarPreferenciasIndividuais(
+                  ordemCardsReceberMobile: ordem
+                      .map((item) => item.codigo)
+                      .toList(growable: false),
+                ),
+            nomeDaTela: 'Receber Mobile',
+          )
+          ..addListener(_aoAlterarOrdemDosCards)
+          ..inicializar();
+  }
+
+  @override
+  void dispose() {
+    _ordemCardsController
+      ..removeListener(_aoAlterarOrdemDosCards)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _aoAlterarOrdemDosCards() {
+    if (mounted) setState(() {});
+  }
 
   String _t(BuildContext context, String key, String fallback) =>
       context.t(key, fallback: fallback);
+
+  List<_ReceiveActionData> _orderedActions(BuildContext context) {
+    final Map<ReceberMobileCardPreferencia, _ReceiveActionData> actions =
+        <ReceberMobileCardPreferencia, _ReceiveActionData>{
+          ReceberMobileCardPreferencia.vendasAReceber: _ReceiveActionData(
+            preferencia: ReceberMobileCardPreferencia.vendasAReceber,
+            id: 'sales',
+            title: _t(
+              context,
+              'atendimento.mobile.salesToReceiveTitle',
+              'Vendas a receber',
+            ),
+            subtitle: _t(
+              context,
+              'atendimento.mobile.salesToReceiveSubtitle',
+              'Vendas não liquidadas',
+            ),
+            assetContorno: _salesAssetContorno,
+            assetAcento: _salesAssetAcento,
+            accentColor: _accentColor,
+            onTap: () => _go(context, VendasNaoLiquidadasMobileScreen()),
+          ),
+          ReceberMobileCardPreferencia.servicosAReceber: _ReceiveActionData(
+            preferencia: ReceberMobileCardPreferencia.servicosAReceber,
+            id: 'services',
+            title: _t(
+              context,
+              'atendimento.mobile.servicesToReceiveTitle',
+              'Serviços a receber',
+            ),
+            subtitle: _t(
+              context,
+              'atendimento.mobile.servicesToReceiveSubtitle',
+              'Atendimentos técnicos com financeiro aberto',
+            ),
+            assetContorno: _servicesAssetContorno,
+            assetAcento: _servicesAssetAcento,
+            accentColor: _serviceAccentColor,
+            onTap: () => _go(
+              context,
+              AtendimentosTecnicosPendentesPagamentoMobileScreen(),
+            ),
+          ),
+        };
+
+    return _ordemCardsController.ordem
+        .map((preferencia) => actions[preferencia]!)
+        .toList(growable: false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,72 +144,60 @@ class ReceberMobileScreen extends StatelessWidget {
         icon: Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
-      bodyBuilder: (
-        BuildContext context,
-        ScrollController scrollController,
-        double topInset,
-      ) {
-        return SafeArea(
-          top: false,
-          child: ListView(
-            controller: scrollController,
-            physics: AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(16, topInset + 14, 16, 24),
-            children: <Widget>[
-              SixStaggeredEntry(
-                delay: Duration(milliseconds: 40),
-                child: _ReceiveActionButton(
-                  key: ValueKey<String>('receber-action-sales'),
-                  title: _t(
-                    context,
-                    'atendimento.mobile.salesToReceiveTitle',
-                    'Vendas a receber',
-                  ),
-                  subtitle: _t(
-                    context,
-                    'atendimento.mobile.salesToReceiveSubtitle',
-                    'Vendas não liquidadas',
-                  ),
-                  icon: Icons.point_of_sale_outlined,
-                  badgeIcon: Icons.payments_rounded,
-                  accentColor: _accentColor,
-                  onTap: () => _go(context, VendasNaoLiquidadasMobileScreen()),
-                ),
-              ),
-              SizedBox(height: 12),
-              SixStaggeredEntry(
-                delay: Duration(milliseconds: 95),
-                child: _ReceiveActionButton(
-                  key: ValueKey<String>('receber-action-services'),
-                  title: _t(
-                    context,
-                    'atendimento.mobile.servicesToReceiveTitle',
-                    'Serviços a receber',
-                  ),
-                  subtitle: _t(
-                    context,
-                    'atendimento.mobile.servicesToReceiveSubtitle',
-                    'Atendimentos técnicos com financeiro aberto',
-                  ),
-                  icon: Icons.home_repair_service_outlined,
-                  badgeIcon: Icons.request_quote_rounded,
-                  accentColor: _serviceAccentColor,
-                  onTap:
-                      () => _go(
-                        context,
-                        AtendimentosTecnicosPendentesPagamentoMobileScreen(),
+      bodyBuilder:
+          (
+            BuildContext context,
+            ScrollController scrollController,
+            double topInset,
+          ) {
+            final List<_ReceiveActionData> actions = _orderedActions(context);
+            final double cardWidth = MediaQuery.sizeOf(context).width - 32;
+            return SafeArea(
+              top: false,
+              child: ListView(
+                controller: scrollController,
+                physics: AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(16, topInset + 14, 16, 24),
+                children: <Widget>[
+                  for (int index = 0; index < actions.length; index++) ...[
+                    if (index > 0) SizedBox(height: 12),
+                    SixStaggeredEntry(
+                      key: ValueKey<String>(
+                        'receber-reorder-${actions[index].id}',
                       ),
-                ),
+                      delay: Duration(milliseconds: 40 + (index * 55)),
+                      child:
+                          SixMobileReorderableCard<
+                            ReceberMobileCardPreferencia
+                          >(
+                            value: actions[index].preferencia,
+                            onReorder: _ordemCardsController.reordenar,
+                            feedbackWidth: cardWidth,
+                            feedbackHeight: 118,
+                            handleColor: actions[index].accentColor,
+                            cardBuilder: () => _ReceiveActionButton(
+                              key: ValueKey<String>(
+                                'receber-action-${actions[index].id}',
+                              ),
+                              title: actions[index].title,
+                              subtitle: actions[index].subtitle,
+                              assetContorno: actions[index].assetContorno,
+                              assetAcento: actions[index].assetAcento,
+                              accentColor: actions[index].accentColor,
+                              onTap: actions[index].onTap,
+                            ),
+                          ),
+                    ),
+                  ],
+                ],
               ),
-            ],
-          ),
-        );
-      },
+            );
+          },
     );
   }
 
   void _go(BuildContext context, Widget page) {
-    final ReceberMobileNavigate? navigate = onNavigate;
+    final ReceberMobileNavigate? navigate = widget.onNavigate;
     if (navigate != null) {
       navigate(context, page);
       return;
@@ -121,16 +212,16 @@ class _ReceiveActionButton extends StatelessWidget {
     super.key,
     required this.title,
     required this.subtitle,
-    required this.icon,
-    required this.badgeIcon,
+    required this.assetContorno,
+    required this.assetAcento,
     required this.accentColor,
     required this.onTap,
   });
 
   final String title;
   final String subtitle;
-  final IconData icon;
-  final IconData badgeIcon;
+  final String assetContorno;
+  final String assetAcento;
   final Color accentColor;
   final VoidCallback onTap;
 
@@ -167,8 +258,8 @@ class _ReceiveActionButton extends StatelessWidget {
               child: Row(
                 children: <Widget>[
                   _ReceiveActionIcon(
-                    icon: icon,
-                    badgeIcon: badgeIcon,
+                    assetContorno: assetContorno,
+                    assetAcento: assetAcento,
                     accentColor: accentColor,
                   ),
                   SizedBox(width: 14),
@@ -217,48 +308,58 @@ class _ReceiveActionButton extends StatelessWidget {
 
 class _ReceiveActionIcon extends StatelessWidget {
   const _ReceiveActionIcon({
-    required this.icon,
-    required this.badgeIcon,
+    required this.assetContorno,
+    required this.assetAcento,
     required this.accentColor,
   });
 
-  final IconData icon;
-  final IconData badgeIcon;
+  final String assetContorno;
+  final String assetAcento;
   final Color accentColor;
 
   @override
   Widget build(BuildContext context) {
     return ExcludeSemantics(
       child: SizedBox(
-        width: 64,
-        height: 64,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: <Widget>[
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: accentColor.withAlpha(20),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Icon(icon, color: accentColor, size: 34),
-              ),
+        width: 72,
+        height: 72,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: <Color>[
+                accentColor.withAlpha(58),
+                accentColor.withAlpha(22),
+              ],
             ),
-            Positioned(
-              right: -4,
-              bottom: -4,
-              child: Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: SixMobilePalette.surface,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: accentColor.withAlpha(78)),
-                ),
-                child: Icon(badgeIcon, color: accentColor, size: 17),
+            shape: BoxShape.circle,
+            border: Border.all(color: accentColor.withAlpha(84)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: SixImagemCanetinha(
+              assetContorno: assetContorno,
+              assetAcento: assetAcento,
+              largura: 58,
+              altura: 58,
+              fit: BoxFit.contain,
+              corContorno: context.sixMobileColors.titleText,
+              corAcento: accentColor,
+              gradienteContorno: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: <Color>[accentColor, context.sixMobileColors.titleText],
               ),
+              reforcoContorno: 0.64,
+              reforcoAcento: 0.78,
+              opacidadeReforco: 0.44,
+              opacidadeBrilho: Theme.of(context).brightness == Brightness.dark
+                  ? 0.44
+                  : 0.16,
+              desfoqueBrilho: 3.4,
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -285,4 +386,26 @@ class _ReceiveActionArrow extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ReceiveActionData {
+  const _ReceiveActionData({
+    required this.preferencia,
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.assetContorno,
+    required this.assetAcento,
+    required this.accentColor,
+    required this.onTap,
+  });
+
+  final ReceberMobileCardPreferencia preferencia;
+  final String id;
+  final String title;
+  final String subtitle;
+  final String assetContorno;
+  final String assetAcento;
+  final Color accentColor;
+  final VoidCallback onTap;
 }
