@@ -650,6 +650,54 @@ class AuthService {
     }
   }
 
+  Future<Set<String>> getRealmRoles() async {
+    final String accessToken = (await getAccessToken())?.trim() ?? '';
+    if (accessToken.isEmpty) {
+      return <String>{};
+    }
+
+    final List<String> parts = accessToken.split('.');
+    if (parts.length < 2) {
+      return <String>{};
+    }
+
+    try {
+      final String normalized = base64Url.normalize(parts[1]);
+      final String payload = utf8.decode(base64Url.decode(normalized));
+      final dynamic decoded = jsonDecode(payload);
+      if (decoded is! Map<String, dynamic>) {
+        return <String>{};
+      }
+
+      final dynamic realmAccess = decoded['realm_access'];
+      if (realmAccess is! Map<String, dynamic>) {
+        return <String>{};
+      }
+
+      final dynamic roles = realmAccess['roles'];
+      if (roles is! List) {
+        return <String>{};
+      }
+
+      return roles
+          .map((dynamic item) => item.toString().trim())
+          .where((String item) => item.isNotEmpty)
+          .toSet();
+    } catch (_) {
+      return <String>{};
+    }
+  }
+
+  Future<bool> hasRealmRole(String role) async {
+    final String normalizedRole = role.trim();
+    if (normalizedRole.isEmpty) {
+      return false;
+    }
+
+    final Set<String> roles = await getRealmRoles();
+    return roles.contains(normalizedRole);
+  }
+
   Future<List<String>> getUserPermissions() async {
     final prefs = await SharedPreferences.getInstance();
     final String? raw = prefs.getString(_userDataKey);

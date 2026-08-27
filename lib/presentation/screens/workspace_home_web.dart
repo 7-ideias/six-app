@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/services/admin_portal_service.dart';
 import '../../data/models/empresa_model.dart';
 import '../../data/models/usuario_model.dart';
 import '../../data/models/workspace_home_model.dart';
@@ -11,6 +12,7 @@ import '../../providers/empresa_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
 import '../../providers/workspace_home_provider.dart';
+import '../admin/admin_portal_texts.dart';
 import '../components/six_backend_loading.dart';
 import '../navigation/web_navigation_destination_resolver.dart';
 import '../navigation/web_navigation_item.dart';
@@ -33,8 +35,21 @@ class WorkspaceHomeWeb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<WorkspaceHomeProvider>(
-      create: (_) => WorkspaceHomeProvider(service: service)..load(),
+    return MultiProvider(
+      providers: <ChangeNotifierProvider<dynamic>>[
+        ChangeNotifierProvider<WorkspaceHomeProvider>(
+          create: (_) => WorkspaceHomeProvider(service: service)..load(),
+        ),
+        ChangeNotifierProvider<_WorkspaceHomeInfrastructureProvider>(
+          create:
+              (BuildContext context) => _WorkspaceHomeInfrastructureProvider(
+                loadOnStart:
+                    context
+                        .read<ColaboradorAutorizacoesProvider>()
+                        .ehSuperUsuario,
+              ),
+        ),
+      ],
       child: _WorkspaceHomeContent(
         compact: compact,
         resolver: resolver,
@@ -62,6 +77,8 @@ class _WorkspaceHomeContent extends StatelessWidget {
     final EmpresaModel? empresa = context.watch<EmpresaProvider>().empresa;
     final ColaboradorAutorizacoesProvider autorizacoes =
         context.watch<ColaboradorAutorizacoesProvider>();
+    final bool isSuperUser = autorizacoes.ehSuperUsuario;
+    final bool isAdminUser = autorizacoes.ehAdministrador;
     final ThemeData webTheme = WebThemeTokens.applyTo(Theme.of(context));
 
     return AnimatedTheme(
@@ -108,7 +125,16 @@ class _WorkspaceHomeContent extends StatelessWidget {
                             home: home,
                             regionalizacao: regionalizacao,
                             loading: provider.loading,
-                            onRefresh: provider.reload,
+                            onRefresh: () async {
+                              await provider.reload();
+                              if (isSuperUser && context.mounted) {
+                                await context
+                                    .read<
+                                      _WorkspaceHomeInfrastructureProvider
+                                    >()
+                                    .reload();
+                              }
+                            },
                           ),
                           const SizedBox(height: 18),
                           if (initialLoading)
@@ -116,82 +142,129 @@ class _WorkspaceHomeContent extends StatelessWidget {
                           else if (initialError)
                             _WorkspaceHomeError(onRetry: provider.reload)
                           else if (home != null) ...<Widget>[
-                            _WorkspaceHomeSection(
-                              id: 'today',
-                              title: _text(
-                                context,
-                                'workspaceHome.section.today',
-                                'Situação de hoje',
+                            if (isSuperUser) ...<Widget>[
+                              _WorkspaceHomeRoleHeader(
+                                icon: Icons.admin_panel_settings_outlined,
+                                title: _text(
+                                  context,
+                                  'workspaceHome.superBlock.title',
+                                  'Bloco SUPER',
+                                ),
+                                subtitle: _text(
+                                  context,
+                                  'workspaceHome.superBlock.subtitle',
+                                  'Infraestrutura monitorada e saúde do backend.',
+                                ),
                               ),
-                              icon: Icons.today_outlined,
-                              child: _TodaySituationGrid(
-                                home: home,
-                                regionalizacao: regionalizacao,
+                              const SizedBox(height: 16),
+                              _WorkspaceHomeSuperInfrastructureBlock(),
+                              const SizedBox(height: 16),
+                            ],
+                            if (isAdminUser) ...<Widget>[
+                              _WorkspaceHomeRoleHeader(
+                                icon: Icons.dashboard_customize_outlined,
+                                title: _text(
+                                  context,
+                                  'workspaceHome.adminBlock.title',
+                                  'Bloco ADMIN',
+                                ),
+                                subtitle: _text(
+                                  context,
+                                  'workspaceHome.adminBlock.subtitle',
+                                  'Resumo operacional e ações do comércio atual.',
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            _WorkspaceHomeSection(
-                              id: 'attention',
-                              title: _text(
-                                context,
-                                'workspaceHome.section.attention',
-                                'Precisa da sua atenção',
+                              const SizedBox(height: 16),
+                              _WorkspaceHomeSection(
+                                id: 'today',
+                                title: _text(
+                                  context,
+                                  'workspaceHome.section.today',
+                                  'Situação de hoje',
+                                ),
+                                icon: Icons.today_outlined,
+                                child: _TodaySituationGrid(
+                                  home: home,
+                                  regionalizacao: regionalizacao,
+                                ),
                               ),
-                              icon: Icons.priority_high_rounded,
-                              child: _AttentionList(
-                                home: home,
-                                regionalizacao: regionalizacao,
-                                onOpenTechnicalServices:
-                                    () => _resolve(
-                                      context,
-                                      WebNavigationDestination
-                                          .operationsTechnicalServices,
-                                    ),
-                                onOpenFinancial:
-                                    () => _resolve(
-                                      context,
-                                      WebNavigationDestination.financialAgenda,
-                                    ),
-                                onOpenStock:
-                                    () => _resolve(
-                                      context,
-                                      WebNavigationDestination.catalogStock,
-                                    ),
+                              const SizedBox(height: 16),
+                              _WorkspaceHomeSection(
+                                id: 'attention',
+                                title: _text(
+                                  context,
+                                  'workspaceHome.section.attention',
+                                  'Precisa da sua atenção',
+                                ),
+                                icon: Icons.priority_high_rounded,
+                                child: _AttentionList(
+                                  home: home,
+                                  regionalizacao: regionalizacao,
+                                  onOpenTechnicalServices:
+                                      () => _resolve(
+                                        context,
+                                        WebNavigationDestination
+                                            .operationsTechnicalServices,
+                                      ),
+                                  onOpenFinancial:
+                                      () => _resolve(
+                                        context,
+                                        WebNavigationDestination
+                                            .financialAgenda,
+                                      ),
+                                  onOpenStock:
+                                      () => _resolve(
+                                        context,
+                                        WebNavigationDestination.catalogStock,
+                                      ),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            _WorkspaceHomeSection(
-                              id: 'quick-actions',
-                              title: _text(
-                                context,
-                                'workspaceHome.section.quickActions',
-                                'Ações rápidas',
+                              const SizedBox(height: 16),
+                              _WorkspaceHomeSection(
+                                id: 'quick-actions',
+                                title: _text(
+                                  context,
+                                  'workspaceHome.section.quickActions',
+                                  'Ações rápidas',
+                                ),
+                                icon: Icons.flash_on_outlined,
+                                child: _QuickActions(
+                                  permissions:
+                                      WebNavigationPermissionAdapter.permissionsFor(
+                                        autorizacoes,
+                                      ),
+                                  onNewSale:
+                                      () => _resolve(
+                                        context,
+                                        WebNavigationDestination
+                                            .operationsPointOfSale,
+                                      ),
+                                  onNewTechnicalService:
+                                      onNovoAtendimentoTecnico,
+                                  onOpenCash:
+                                      () => _resolve(
+                                        context,
+                                        WebNavigationDestination.cash,
+                                      ),
+                                  onOpenFinancialAgenda:
+                                      () => _resolve(
+                                        context,
+                                        WebNavigationDestination
+                                            .financialAgenda,
+                                      ),
+                                ),
                               ),
-                              icon: Icons.flash_on_outlined,
-                              child: _QuickActions(
-                                permissions:
-                                    WebNavigationPermissionAdapter.permissionsFor(
-                                      autorizacoes,
-                                    ),
-                                onNewSale:
-                                    () => _resolve(
-                                      context,
-                                      WebNavigationDestination
-                                          .operationsPointOfSale,
-                                    ),
-                                onNewTechnicalService: onNovoAtendimentoTecnico,
-                                onOpenCash:
-                                    () => _resolve(
-                                      context,
-                                      WebNavigationDestination.cash,
-                                    ),
-                                onOpenFinancialAgenda:
-                                    () => _resolve(
-                                      context,
-                                      WebNavigationDestination.financialAgenda,
-                                    ),
+                            ],
+                            if (!isSuperUser && !isAdminUser)
+                              _WorkspaceHomeNoData(
+                                keySuffix: 'restricted-profile',
+                                height: 128,
+                                text: _text(
+                                  context,
+                                  'workspaceHome.empty.profile',
+                                  'Nenhum bloco da home está disponível para o seu perfil.',
+                                ),
                               ),
-                            ),
                           ],
                         ],
                       ),
@@ -229,6 +302,44 @@ class _WorkspaceHomeContent extends StatelessWidget {
       ),
     );
   }
+}
+
+class _WorkspaceHomeInfrastructureProvider extends ChangeNotifier {
+  _WorkspaceHomeInfrastructureProvider({
+    AdminPortalService? service,
+    required bool loadOnStart,
+  }) : _service = service ?? AdminPortalService() {
+    if (loadOnStart) {
+      load();
+    }
+  }
+
+  final AdminPortalService _service;
+
+  bool _loading = false;
+  AdminPortalResumo? _resumo;
+  String? _error;
+
+  bool get loading => _loading;
+  AdminPortalResumo? get resumo => _resumo;
+  String? get error => _error;
+  bool get hasLoaded => _resumo != null || _error != null;
+
+  Future<void> load() async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      _resumo = await _service.buscarResumo();
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> reload() => load();
 }
 
 class _WorkspaceHomeHeader extends StatelessWidget {
@@ -601,6 +712,397 @@ class _WorkspaceHomeSection extends StatelessWidget {
           const SizedBox(height: 14),
           child,
         ],
+      ),
+    );
+  }
+}
+
+class _WorkspaceHomeRoleHeader extends StatelessWidget {
+  const _WorkspaceHomeRoleHeader({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: _homeTint(
+              tokens.info,
+              tokens.surface,
+              Theme.of(context).brightness,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: tokens.info, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: tokens.primaryText,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: tokens.secondaryText,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _WorkspaceHomeSuperInfrastructureBlock extends StatelessWidget {
+  const _WorkspaceHomeSuperInfrastructureBlock();
+
+  @override
+  Widget build(BuildContext context) {
+    final AdminPortalTexts adminTexts = AdminPortalTexts.of(context);
+
+    return Consumer<_WorkspaceHomeInfrastructureProvider>(
+      builder: (
+        BuildContext context,
+        _WorkspaceHomeInfrastructureProvider provider,
+        Widget? _,
+      ) {
+        if (!provider.loading && !provider.hasLoaded) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              context.read<_WorkspaceHomeInfrastructureProvider>().load();
+            }
+          });
+        }
+
+        final AdminPortalResumo? resumo = provider.resumo;
+
+        if (provider.loading && resumo == null) {
+          final WebThemeTokens tokens = WebThemeTokens.of(context);
+          return SixBackendLoading(
+            backgroundColor: tokens.cardBackground,
+            borderColor: tokens.cardBorder,
+            presentation: SixBackendLoadingPresentation.updateBanner,
+            title: _text(
+              context,
+              'workspaceHome.superBlock.loadingTitle',
+              'Carregando infraestrutura',
+            ),
+            subtitle: _text(
+              context,
+              'workspaceHome.superBlock.loadingSubtitle',
+              'Buscando bancos monitorados e saúde do backend.',
+            ),
+            animation: SixBackendLoadingAnimation.skeletonPulse,
+            leadingIcon: Icons.monitor_heart_outlined,
+          );
+        }
+
+        if (provider.error != null && resumo == null) {
+          return _WorkspaceHomeError(
+            onRetry:
+                context.read<_WorkspaceHomeInfrastructureProvider>().reload,
+          );
+        }
+
+        if (resumo == null ||
+            (resumo.bancosDeDados.isEmpty && resumo.actuator == null)) {
+          return _WorkspaceHomeNoData(
+            keySuffix: 'super-infrastructure',
+            height: 128,
+            text: _text(
+              context,
+              'workspaceHome.superBlock.empty',
+              'Nenhum dado de infraestrutura está disponível no momento.',
+            ),
+          );
+        }
+
+        return _WorkspaceHomeSection(
+          id: 'super-infrastructure',
+          title: adminTexts.infrastructureTitle,
+          icon: Icons.settings_input_component_outlined,
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool compact = constraints.maxWidth < 920;
+              final double panelWidth =
+                  compact
+                      ? constraints.maxWidth
+                      : (constraints.maxWidth - 14) / 2;
+              return Wrap(
+                spacing: 14,
+                runSpacing: 14,
+                children: <Widget>[
+                  if (resumo.bancosDeDados.isNotEmpty)
+                    SizedBox(
+                      width: panelWidth,
+                      child: _WorkspaceHomeInfrastructurePanel(
+                        icon: Icons.storage_rounded,
+                        title: adminTexts.databasesTitle,
+                        child: Column(
+                          children: resumo.bancosDeDados
+                              .map(
+                                (AdminBancoDadosResumo banco) =>
+                                    _WorkspaceHomeDatabaseSummary(banco: banco),
+                              )
+                              .toList(growable: false),
+                        ),
+                      ),
+                    ),
+                  if (resumo.actuator != null)
+                    SizedBox(
+                      width: panelWidth,
+                      child: _WorkspaceHomeInfrastructurePanel(
+                        icon: Icons.monitor_heart_rounded,
+                        title: adminTexts.actuatorTitle,
+                        trailing: _WorkspaceHomeStatusBadge(
+                          label: resumo.actuator!.status,
+                          positive:
+                              resumo.actuator!.status.toUpperCase() == 'UP',
+                        ),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: <Widget>[
+                            _WorkspaceHomeInfoPill(
+                              label: 'Uptime',
+                              value: _formatInfrastructureDuration(
+                                resumo.actuator!.uptimeSegundos,
+                              ),
+                            ),
+                            _WorkspaceHomeInfoPill(
+                              label: 'Heap',
+                              value:
+                                  '${_formatInfrastructureBytes(resumo.actuator!.memoriaHeapUsadaBytes)} / ${_formatInfrastructureBytes(resumo.actuator!.memoriaHeapMaxBytes)}',
+                            ),
+                            _WorkspaceHomeInfoPill(
+                              label: 'Threads',
+                              value: resumo.actuator!.threadsAtivas.toString(),
+                            ),
+                            _WorkspaceHomeInfoPill(
+                              label: 'CPU',
+                              value:
+                                  resumo.actuator!.processadoresDisponiveis
+                                      .toString(),
+                            ),
+                            _WorkspaceHomeInfoPill(
+                              label: 'Carga',
+                              value: _formatInfrastructureLoad(
+                                resumo.actuator!.cargaSistema,
+                              ),
+                            ),
+                            _WorkspaceHomeInfoPill(
+                              label: 'Java',
+                              value: resumo.actuator!.versaoJava,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _WorkspaceHomeInfrastructurePanel extends StatelessWidget {
+  const _WorkspaceHomeInfrastructurePanel({
+    required this.icon,
+    required this.title,
+    required this.child,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final String title;
+  final Widget child;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    return AnimatedContainer(
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(icon, color: tokens.primaryText, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              if (trailing != null) trailing!,
+            ],
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _WorkspaceHomeDatabaseSummary extends StatelessWidget {
+  const _WorkspaceHomeDatabaseSummary({required this.banco});
+
+  final AdminBancoDadosResumo banco;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            banco.nome,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: tokens.primaryText,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              _WorkspaceHomeInfoPill(
+                label: 'Dados',
+                value: _formatInfrastructureBytes(banco.tamanhoDadosBytes),
+              ),
+              _WorkspaceHomeInfoPill(
+                label: 'Storage',
+                value: _formatInfrastructureBytes(banco.tamanhoArmazenadoBytes),
+              ),
+              _WorkspaceHomeInfoPill(
+                label: 'Índices',
+                value: _formatInfrastructureBytes(banco.tamanhoIndicesBytes),
+              ),
+              _WorkspaceHomeInfoPill(
+                label: 'Total',
+                value: _formatInfrastructureBytes(banco.tamanhoTotalBytes),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WorkspaceHomeStatusBadge extends StatelessWidget {
+  const _WorkspaceHomeStatusBadge({
+    required this.label,
+    required this.positive,
+  });
+
+  final String label;
+  final bool positive;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color color = positive ? tokens.success : tokens.danger;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w900,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _WorkspaceHomeInfoPill extends StatelessWidget {
+  const _WorkspaceHomeInfoPill({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    return AnimatedContainer(
+      duration: WebThemeTokens.transitionDuration,
+      curve: WebThemeTokens.transitionCurve,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Text(
+        '$label: $value',
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: tokens.primaryText,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }
@@ -1820,4 +2322,40 @@ String _plural(
     count == 1 ? oneFallback : otherFallback,
     <String, String>{'count': count.toString()},
   );
+}
+
+String _formatInfrastructureBytes(int bytes) {
+  const List<String> units = <String>['B', 'KB', 'MB', 'GB', 'TB'];
+  double value = bytes.toDouble();
+  int unitIndex = 0;
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex++;
+  }
+
+  final bool roundToInt = value >= 100 || unitIndex == 0;
+  final String text =
+      roundToInt ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
+  return '$text ${units[unitIndex]}';
+}
+
+String _formatInfrastructureDuration(int totalSeconds) {
+  final int hours = totalSeconds ~/ 3600;
+  final int minutes = (totalSeconds % 3600) ~/ 60;
+
+  if (hours > 0) {
+    return '${hours}h ${minutes.toString().padLeft(2, '0')}m';
+  }
+
+  final int seconds = totalSeconds % 60;
+  if (minutes > 0) {
+    return '${minutes}m ${seconds.toString().padLeft(2, '0')}s';
+  }
+
+  return '${seconds}s';
+}
+
+String _formatInfrastructureLoad(double load) {
+  return load.toStringAsFixed(load >= 10 ? 1 : 2);
 }

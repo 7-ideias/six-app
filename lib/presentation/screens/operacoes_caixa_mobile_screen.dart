@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/di/caixa_module.dart';
-import '../../core/services/auth_service.dart';
 import '../../data/models/caixa_completo_movimentos_models.dart';
 import '../../data/models/caixa_models.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
 import '../../domain/services/caixa/caixa_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
+import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
@@ -233,6 +233,8 @@ class _OperacoesCaixaMobileScreenState
     }
 
     try {
+      final bool usuarioEhAdministrador =
+          context.read<ColaboradorAutorizacoesProvider>().ehAdministrador;
       final InformacoesBasicasCaixaResponse informacoesBasicas =
           await _caixaService.buscarInformacoesBasicasDoCaixa();
 
@@ -248,14 +250,11 @@ class _OperacoesCaixaMobileScreenState
       final List<Object?> dados = await Future.wait<Object?>(<Future<Object?>>[
         _caixaService.buscarSessaoAtual(),
         _caixaService.listarSessoesAbertas(),
-        AuthService().getUserProfileType(),
       ]);
 
       final CaixaSessao? sessao = dados[0] as CaixaSessao?;
       final List<CaixaSessao> sessoesAbertas = (dados[1] as List<CaixaSessao>)
           .toList(growable: false);
-      final String tipoPerfilUsuario = (dados[2] as String?)?.trim() ?? '';
-      final bool usuarioEhAdministrador = tipoPerfilUsuario == 'ADMIN';
 
       final List<CaixaOuGuiche> caixas =
           informacoesBasicas.caixaOuGuiche.isNotEmpty

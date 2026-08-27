@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/services/admin_ideas_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../admin/admin_navigation_shell.dart';
 import '../admin/admin_portal_components.dart';
 import '../admin/admin_portal_texts.dart';
@@ -24,7 +26,6 @@ class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
   String? _erro;
   String? _userName;
   String? _userEmail;
-  String? _profileType;
   List<AdminIdeaModel> _ideias = const <AdminIdeaModel>[];
 
   @override
@@ -42,11 +43,9 @@ class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
 
   Future<void> _carregarUsuario() async {
     final String? email = await _authService.getUserEmail();
-    final String profileType = await _authService.getUserProfileType();
     if (!mounted) return;
     setState(() {
       _userEmail = email;
-      _profileType = profileType;
       _userName = _nomeExibicaoPorEmail(email);
     });
   }
@@ -140,6 +139,11 @@ class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
 
   @override
   Widget build(BuildContext context) {
+    final String profileType = context
+        .select<ColaboradorAutorizacoesProvider, String>(
+          (ColaboradorAutorizacoesProvider provider) =>
+              provider.tipoPerfilUnificado,
+        );
     final AdminPortalTexts portalTexts = AdminPortalTexts.of(context);
     final _IdeasTexts texts = _IdeasTexts.of(context);
 
@@ -148,7 +152,7 @@ class _AdminNovasIdeiasWebPageState extends State<AdminNovasIdeiasWebPage> {
       userInfo: AdminPortalUserInfo(
         name: _userName,
         email: _userEmail,
-        profileType: _profileType,
+        profileType: profileType,
       ),
       currentRoute: '/admin/novas-ideias',
       pageTitle: texts.title,

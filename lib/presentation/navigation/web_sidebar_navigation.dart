@@ -16,6 +16,7 @@ class WebSidebarNavigation extends StatelessWidget {
     required this.onToggleGroup,
     required this.onDestinationSelected,
     required this.appVersion,
+    this.isSuperUser = false,
   });
 
   final List<WebNavigationItem> items;
@@ -25,6 +26,7 @@ class WebSidebarNavigation extends StatelessWidget {
   final ValueChanged<String> onToggleGroup;
   final ValueChanged<WebNavigationDestination> onDestinationSelected;
   final String appVersion;
+  final bool isSuperUser;
 
   static const double expandedWidth = 248;
   static const double collapsedWidth = 72;
@@ -84,6 +86,7 @@ class WebSidebarNavigation extends StatelessWidget {
                 onToggleGroup: onToggleGroup,
                 onDestinationSelected: onDestinationSelected,
                 appVersion: appVersion,
+                isSuperUser: isSuperUser,
               ),
             ],
           ),
@@ -102,6 +105,7 @@ class _SidebarFooter extends StatelessWidget {
     required this.onToggleGroup,
     required this.onDestinationSelected,
     required this.appVersion,
+    required this.isSuperUser,
   });
 
   final WebNavigationItem? settingsItem;
@@ -111,6 +115,7 @@ class _SidebarFooter extends StatelessWidget {
   final ValueChanged<String> onToggleGroup;
   final ValueChanged<WebNavigationDestination> onDestinationSelected;
   final String appVersion;
+  final bool isSuperUser;
 
   @override
   Widget build(BuildContext context) {
@@ -142,7 +147,11 @@ class _SidebarFooter extends StatelessWidget {
             ),
             const SizedBox(height: 8),
           ],
-          _SidebarVersionPill(expanded: expanded, appVersion: appVersion),
+          _SidebarVersionPill(
+            expanded: expanded,
+            appVersion: appVersion,
+            isSuperUser: isSuperUser,
+          ),
         ],
       ),
     );
@@ -191,9 +200,7 @@ class _SidebarBrand extends StatelessWidget {
                 borderRadius: BorderRadius.circular(compact ? 10 : 12),
                 border: Border.all(color: badgeBorder),
               ),
-              child: SixoAppBrandMark(
-                size: compact ? 24 : 29,
-              ),
+              child: SixoAppBrandMark(size: compact ? 24 : 29),
             );
 
             if (compact) {
@@ -702,10 +709,15 @@ class _CollapsedChildMenuEntry extends StatelessWidget {
 }
 
 class _SidebarVersionPill extends StatelessWidget {
-  const _SidebarVersionPill({required this.expanded, required this.appVersion});
+  const _SidebarVersionPill({
+    required this.expanded,
+    required this.appVersion,
+    required this.isSuperUser,
+  });
 
   final bool expanded;
   final String appVersion;
+  final bool isSuperUser;
 
   @override
   Widget build(BuildContext context) {
@@ -719,11 +731,19 @@ class _SidebarVersionPill extends StatelessWidget {
       'Versão',
     );
     final String versionText = 'v$appVersion';
+    final Color foregroundColor =
+        brandedSidebar
+            ? colorScheme.onPrimary.withValues(alpha: 0.84)
+            : tokens.mutedText;
+    final Color superBackground =
+        brandedSidebar ? const Color(0xFFD14A4A) : const Color(0xFFD84D4D);
+    final Color superForeground = Colors.white;
 
     return Padding(
       padding: EdgeInsets.zero,
       child: Tooltip(
-        message: '$label $versionText',
+        message:
+            isSuperUser ? '$label $versionText · SUPER' : '$label $versionText',
         child: Container(
           width: double.infinity,
           padding: EdgeInsets.symmetric(
@@ -746,25 +766,74 @@ class _SidebarVersionPill extends StatelessWidget {
           ),
           child:
               expanded
-                  ? Text(
-                    '$label $versionText',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color:
-                          brandedSidebar
-                              ? colorScheme.onPrimary.withValues(alpha: 0.84)
-                              : tokens.mutedText,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Flexible(
+                        child: Text(
+                          '$label $versionText',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: foregroundColor,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      if (isSuperUser) ...<Widget>[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: superBackground,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'SUPER',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: superForeground,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   )
-                  : Icon(
-                    Icons.info_outline_rounded,
-                    size: 18,
-                    color:
-                        brandedSidebar
-                            ? colorScheme.onPrimary.withValues(alpha: 0.84)
-                            : tokens.mutedText,
+                  : Stack(
+                    clipBehavior: Clip.none,
+                    alignment: Alignment.center,
+                    children: <Widget>[
+                      Icon(
+                        Icons.info_outline_rounded,
+                        size: 18,
+                        color: foregroundColor,
+                      ),
+                      if (isSuperUser)
+                        Positioned(
+                          top: -2,
+                          right: 14,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: superBackground,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color:
+                                    brandedSidebar
+                                        ? colorScheme.primary
+                                        : tokens.surfaceMuted,
+                                width: 1.2,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
         ),
       ),
