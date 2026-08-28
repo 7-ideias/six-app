@@ -29,6 +29,10 @@ void main() {
           _childIds(_requiredItem(visible, WebNavigationIds.people)),
           contains(WebNavigationIds.peopleCollaborators),
         );
+        expect(
+          _childIds(_requiredItem(visible, WebNavigationIds.people)),
+          contains(WebNavigationIds.peoplePerformance),
+        );
       },
     );
 
@@ -125,23 +129,14 @@ void main() {
       );
     });
 
-    test(
-      'Desempenho usa permissao real de relatorio sem liberar colaboradores',
-      () {
-        final List<WebNavigationItem> visible = _visibleItemsFor(
-          _FakeAutorizacoesProvider(podeGerarRelatorio: true),
-        );
+    test('colaborador com relatorio nao enxerga desempenho da equipe', () {
+      final List<WebNavigationItem> visible = _visibleItemsFor(
+        _FakeAutorizacoesProvider(podeGerarRelatorio: true),
+      );
 
-        expect(_topLevelIds(visible), <String>[
-          WebNavigationIds.home,
-          WebNavigationIds.people,
-        ]);
-        expect(
-          _childIds(_requiredItem(visible, WebNavigationIds.people)),
-          <String>[WebNavigationIds.peoplePerformance],
-        );
-      },
-    );
+      expect(_topLevelIds(visible), <String>[WebNavigationIds.home]);
+      expect(_findItem(visible, WebNavigationIds.peoplePerformance), isNull);
+    });
 
     test('Caixa pode aparecer dentro de Operacoes sem liberar Financeiro', () {
       final List<WebNavigationItem> visible = _visibleItemsFor(
@@ -289,6 +284,9 @@ class _FakeAutorizacoesProvider extends ColaboradorAutorizacoesProvider {
 
   @override
   bool get ehAdministrador => admin;
+
+  @override
+  bool get ehColaborador => !admin;
 
   @override
   bool get autorizacoesCarregadasComSucesso => loaded;

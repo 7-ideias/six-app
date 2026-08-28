@@ -29,6 +29,8 @@ abstract final class WebNavigationPermissionAdapter {
         WebNavigationPermission.podeAcessarEtiquetas,
       if (provider.podeGerarRelatorio)
         WebNavigationPermission.podeGerarRelatorio,
+      if (!provider.ehColaborador && provider.ehSuperUsuario)
+        WebNavigationPermission.podeGerenciarDesempenho,
       if (provider.podeVerQuantoVendeu)
         WebNavigationPermission.podeAcessarFinanceiro,
       if (provider.podeReceberNoCaixa)

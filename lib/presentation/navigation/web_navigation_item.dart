@@ -107,6 +107,7 @@ enum WebNavigationPermission {
   podeAcessarCatalogo,
   podeAcessarEtiquetas,
   podeGerarRelatorio,
+  podeGerenciarDesempenho,
   podeAcessarFinanceiro,
   podeReceberNoCaixa,
 }

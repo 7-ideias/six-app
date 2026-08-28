@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -8,12 +10,14 @@ import '../../data/models/workspace_home_model.dart';
 import '../../domain/services/workspace_home/workspace_home_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
+import '../../providers/desempenho_colaborador_home_provider.dart';
 import '../../providers/empresa_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
 import '../../providers/workspace_home_provider.dart';
 import '../admin/admin_portal_texts.dart';
 import '../components/six_backend_loading.dart';
+import '../components/web/collaborator_performance_home_dashboard.dart';
 import '../navigation/web_navigation_destination_resolver.dart';
 import '../navigation/web_navigation_item.dart';
 import '../navigation/web_navigation_permission_adapter.dart';
@@ -26,20 +30,38 @@ class WorkspaceHomeWeb extends StatelessWidget {
     required this.resolver,
     required this.onNovoAtendimentoTecnico,
     this.service,
+    this.desempenhoProvider,
   });
 
   final bool compact;
   final WebNavigationDestinationResolver resolver;
   final VoidCallback onNovoAtendimentoTecnico;
   final WorkspaceHomeService? service;
+  final DesempenhoColaboradorHomeProvider? desempenhoProvider;
 
   @override
   Widget build(BuildContext context) {
+    final bool isCollaborator =
+        context.read<ColaboradorAutorizacoesProvider>().ehColaborador;
     return MultiProvider(
       providers: <ChangeNotifierProvider<dynamic>>[
         ChangeNotifierProvider<WorkspaceHomeProvider>(
-          create: (_) => WorkspaceHomeProvider(service: service)..load(),
+          create: (_) {
+            final WorkspaceHomeProvider provider = WorkspaceHomeProvider(
+              service: service,
+            );
+            if (!isCollaborator) provider.load();
+            return provider;
+          },
         ),
+        if (desempenhoProvider != null)
+          ChangeNotifierProvider<DesempenhoColaboradorHomeProvider>.value(
+            value: desempenhoProvider!,
+          )
+        else
+          ChangeNotifierProvider<DesempenhoColaboradorHomeProvider>(
+            create: (_) => DesempenhoColaboradorHomeProvider(),
+          ),
         ChangeNotifierProvider<_WorkspaceHomeInfrastructureProvider>(
           create:
               (BuildContext context) => _WorkspaceHomeInfrastructureProvider(
@@ -79,7 +101,20 @@ class _WorkspaceHomeContent extends StatelessWidget {
         context.watch<ColaboradorAutorizacoesProvider>();
     final bool isSuperUser = autorizacoes.ehSuperUsuario;
     final bool isAdminUser = autorizacoes.ehAdministrador;
+    final bool isCollaborator = autorizacoes.ehColaborador;
+    final DesempenhoColaboradorHomeProvider desempenho =
+        context.watch<DesempenhoColaboradorHomeProvider>();
     final ThemeData webTheme = WebThemeTokens.applyTo(Theme.of(context));
+
+    if (isCollaborator && !desempenho.hasLoaded && !desempenho.loading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted &&
+            !desempenho.hasLoaded &&
+            !desempenho.loading) {
+          unawaited(desempenho.load());
+        }
+      });
+    }
 
     return AnimatedTheme(
       data: webTheme,
@@ -122,11 +157,18 @@ class _WorkspaceHomeContent extends StatelessWidget {
                           _WorkspaceHomeHeader(
                             userName: _resolveUserName(context),
                             companyName: _resolveCompanyName(context, empresa),
-                            home: home,
+                            home: isCollaborator ? null : home,
                             regionalizacao: regionalizacao,
-                            loading: provider.loading,
+                            loading:
+                                isCollaborator
+                                    ? desempenho.loading
+                                    : provider.loading,
                             onRefresh: () async {
-                              await provider.reload();
+                              if (isCollaborator) {
+                                await desempenho.reload();
+                              } else {
+                                await provider.reload();
+                              }
                               if (isSuperUser && context.mounted) {
                                 await context
                                     .read<
@@ -137,7 +179,26 @@ class _WorkspaceHomeContent extends StatelessWidget {
                             },
                           ),
                           const SizedBox(height: 18),
-                          if (initialLoading)
+                          if (isCollaborator) ...<Widget>[
+                            _WorkspaceHomeRoleHeader(
+                              icon: Icons.track_changes_rounded,
+                              title: _text(
+                                context,
+                                'performance.home.title',
+                                'Minhas metas',
+                              ),
+                              subtitle: _text(
+                                context,
+                                'performance.home.subtitle',
+                                'Acompanhe suas metas e os resultados atualizados pelo SixoApp.',
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            CollaboratorPerformanceHomeWebDashboard(
+                              provider: desempenho,
+                              regionalizacao: regionalizacao,
+                            ),
+                          ] else if (initialLoading)
                             _WorkspaceHomeLoading(compact: narrow)
                           else if (initialError)
                             _WorkspaceHomeError(onRetry: provider.reload)

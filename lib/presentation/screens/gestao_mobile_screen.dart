@@ -1136,8 +1136,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   // ─── Section definitions ────────────────────────────────────────
 
   List<_ManagementSection> _managementSections(BuildContext context) {
-    final bool podeAcessarCatalogo =
-        context.watch<ColaboradorAutorizacoesProvider>().podeAcessarCatalogo;
+    final ColaboradorAutorizacoesProvider autorizacoes =
+        context.watch<ColaboradorAutorizacoesProvider>();
+    final bool podeAcessarCatalogo = autorizacoes.podeAcessarCatalogo;
     final SixMobileColorScheme colors = context.sixMobileColors;
 
     return <_ManagementSection>[
@@ -1263,21 +1264,22 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             emphasis: ManagementActionEmphasis.operational,
             maturity: ManagementSettingsMaturity.comingSoon,
           ),
-          _ManagementItem(
-            title: context.t(
-              'gestao.people.performance',
-              fallback: 'Desempenho do colaborador',
+          if (!autorizacoes.ehColaborador)
+            _ManagementItem(
+              title: context.t(
+                'gestao.people.performance',
+                fallback: 'Desempenho do colaborador',
+              ),
+              subtitle: context.t(
+                'gestao.people.performanceDesc',
+                fallback: 'Metas, vendas, serviços e evolução da equipe',
+              ),
+              icon: Icons.trending_up_rounded,
+              accentColor: colors.accent,
+              emphasis: ManagementActionEmphasis.secondary,
+              onTap: () =>
+                  _navigateTo(context, DesempenhoColaboradorMobileScreen()),
             ),
-            subtitle: context.t(
-              'gestao.people.performanceDesc',
-              fallback: 'Metas, vendas, serviços e evolução da equipe',
-            ),
-            icon: Icons.trending_up_rounded,
-            accentColor: colors.accent,
-            emphasis: ManagementActionEmphasis.secondary,
-            onTap: () =>
-                _navigateTo(context, DesempenhoColaboradorMobileScreen()),
-          ),
         ],
       ),
       _ManagementSection(
