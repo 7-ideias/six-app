@@ -59,6 +59,14 @@ class PaginaPrincipalWebNavigationActions
   }
 
   @override
+  WebNavigationResolutionResult openCatalogPublicPage() {
+    return _abrirModulo(
+      WebNavigationDestination.catalogPublicPage,
+      ModuloCentralPDV.catalogoPublico,
+    );
+  }
+
+  @override
   WebNavigationResolutionResult openCatalogProducts() {
     return _abrirModulo(
       WebNavigationDestination.catalogProducts,

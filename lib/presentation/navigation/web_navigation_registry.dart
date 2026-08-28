@@ -13,6 +13,7 @@ abstract final class WebNavigationIds {
   static const String operationsReservations = 'operations.reservations';
   static const String operationsReturns = 'operations.returns';
   static const String catalog = 'catalog';
+  static const String catalogPublicPage = 'catalog.public_page';
   static const String catalogProducts = 'catalog.products';
   static const String catalogServices = 'catalog.services';
   static const String catalogStock = 'catalog.stock';
@@ -102,16 +103,6 @@ abstract final class WebNavigationRegistry {
           ),
           destination: WebNavigationDestination.operationsPurchases,
         ),
-        WebNavigationItem(
-          id: WebNavigationIds.operationsReservations,
-          labelKey: 'web.navigation.operations.reservations',
-          labelFallback: 'Reservas',
-          icon: Icons.bookmarks_outlined,
-          visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[WebNavigationPermission.podeFazerVenda],
-          ),
-          destination: WebNavigationDestination.operationsReservations,
-        ),
       ],
     ),
     WebNavigationItem(
@@ -121,6 +112,28 @@ abstract final class WebNavigationRegistry {
       icon: Icons.view_module_outlined,
       visibility: WebNavigationVisibilityRule.authenticated(),
       children: <WebNavigationItem>[
+        WebNavigationItem(
+          id: WebNavigationIds.catalogPublicPage,
+          labelKey: 'web.navigation.catalog.publicPage',
+          labelFallback: 'Página pública',
+          icon: Icons.storefront_outlined,
+          visibility: WebNavigationVisibilityRule.anyOf(
+            <WebNavigationPermission>[
+              WebNavigationPermission.podeAcessarCatalogo,
+            ],
+          ),
+          destination: WebNavigationDestination.catalogPublicPage,
+        ),
+        WebNavigationItem(
+          id: WebNavigationIds.operationsReservations,
+          labelKey: 'web.navigation.catalog.reservations',
+          labelFallback: 'Reservas',
+          icon: Icons.bookmarks_outlined,
+          visibility: WebNavigationVisibilityRule.anyOf(
+            <WebNavigationPermission>[WebNavigationPermission.podeFazerVenda],
+          ),
+          destination: WebNavigationDestination.operationsReservations,
+        ),
         WebNavigationItem(
           id: WebNavigationIds.catalogProducts,
           labelKey: 'web.navigation.catalog.products',

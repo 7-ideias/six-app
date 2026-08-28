@@ -17,6 +17,8 @@ void main() {
         WebNavigationDestination.operationsPurchases: ModuloCentralPDV.compras,
         WebNavigationDestination.operationsReservations:
             ModuloCentralPDV.reservas,
+        WebNavigationDestination.catalogPublicPage:
+            ModuloCentralPDV.catalogoPublico,
         WebNavigationDestination.catalogProducts: ModuloCentralPDV.produtos,
         WebNavigationDestination.catalogServices: ModuloCentralPDV.servicos,
         WebNavigationDestination.catalogStock: ModuloCentralPDV.estoque,

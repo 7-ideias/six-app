@@ -19,35 +19,36 @@ void main() {
       );
       expect(_childIds(operations), <String>[
         WebNavigationIds.operationsPos,
+        WebNavigationIds.operationsSales,
         WebNavigationIds.cash,
         WebNavigationIds.operationsTechnicalServices,
         WebNavigationIds.operationsPurchases,
-        WebNavigationIds.operationsReservations,
       ]);
       expect(_childLabels(operations), <String>[
         'Frente de caixa',
+        'Vendas',
         'Caixa',
         'Assistências técnicas',
         'Compras',
-        'Reservas',
       ]);
       expect(
-        operations.children[3].destination,
+        operations.children[4].destination,
         WebNavigationDestination.operationsPurchases,
       );
-      expect(
-        operations.children[4].destination,
-        WebNavigationDestination.operationsReservations,
-      );
-
       final WebNavigationItem catalog = _requiredItem(WebNavigationIds.catalog);
       expect(_childIds(catalog), <String>[
+        WebNavigationIds.catalogPublicPage,
+        WebNavigationIds.operationsReservations,
         WebNavigationIds.catalogProducts,
         WebNavigationIds.catalogServices,
         WebNavigationIds.catalogStock,
         WebNavigationIds.catalogLabels,
         WebNavigationIds.catalogCategories,
       ]);
+      expect(
+        catalog.children[1].destination,
+        WebNavigationDestination.operationsReservations,
+      );
 
       final WebNavigationItem people = _requiredItem(WebNavigationIds.people);
       expect(_childIds(people), <String>[
@@ -72,10 +73,12 @@ void main() {
     test(
       'nao inclui itens preparatorios, legados ou acoes na arvore ativa',
       () {
-        final Set<String> ids =
-            _allActiveItems().map((item) => item.id).toSet();
-        final Set<String> labels =
-            _allActiveItems().map((item) => item.labelFallback).toSet();
+        final Set<String> ids = _allActiveItems()
+            .map((item) => item.id)
+            .toSet();
+        final Set<String> labels = _allActiveItems()
+            .map((item) => item.labelFallback)
+            .toSet();
 
         expect(ids, isNot(contains(WebNavigationIds.reports)));
 
@@ -109,6 +112,7 @@ void main() {
           'operations.purchases',
           'operations.reservations',
           'catalog',
+          'catalog.public_page',
           'catalog.products',
           'catalog.services',
           'catalog.stock',
@@ -164,13 +168,17 @@ void main() {
       expect(visible.map((item) => item.id), <String>[
         WebNavigationIds.home,
         WebNavigationIds.operations,
+        WebNavigationIds.catalog,
       ]);
 
       final WebNavigationItem operations = visible.singleWhere(
         (item) => item.id == WebNavigationIds.operations,
       );
-      expect(_childIds(operations), <String>[
-        WebNavigationIds.operationsPos,
+      expect(_childIds(operations), <String>[WebNavigationIds.operationsPos]);
+      final WebNavigationItem catalog = visible.singleWhere(
+        (item) => item.id == WebNavigationIds.catalog,
+      );
+      expect(_childIds(catalog), <String>[
         WebNavigationIds.operationsReservations,
       ]);
     });
@@ -192,19 +200,23 @@ void main() {
       final int purchasesIndex = childIds.indexOf(
         WebNavigationIds.operationsPurchases,
       );
-      final int reservationsIndex = childIds.indexOf(
-        WebNavigationIds.operationsReservations,
-      );
 
       expect(technicalIndex, greaterThanOrEqualTo(0));
       expect(purchasesIndex, technicalIndex + 1);
-      expect(reservationsIndex, purchasesIndex + 1);
       expect(
         operations.children[purchasesIndex].destination,
         WebNavigationDestination.operationsPurchases,
       );
+
+      final WebNavigationItem catalog = visible.singleWhere(
+        (item) => item.id == WebNavigationIds.catalog,
+      );
+      final int reservationsIndex = _childIds(
+        catalog,
+      ).indexOf(WebNavigationIds.operationsReservations);
+      expect(reservationsIndex, 1);
       expect(
-        operations.children[reservationsIndex].destination,
+        catalog.children[reservationsIndex].destination,
         WebNavigationDestination.operationsReservations,
       );
     });

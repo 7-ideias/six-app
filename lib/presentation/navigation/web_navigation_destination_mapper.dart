@@ -19,6 +19,8 @@ WebNavigationDestination? webNavigationDestinationForModuloCentralPdv(
       return WebNavigationDestination.operationsPurchases;
     case ModuloCentralPDV.reservas:
       return WebNavigationDestination.operationsReservations;
+    case ModuloCentralPDV.catalogoPublico:
+      return WebNavigationDestination.catalogPublicPage;
     case ModuloCentralPDV.produtos:
       return WebNavigationDestination.catalogProducts;
     case ModuloCentralPDV.servicos:

@@ -295,10 +295,98 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.operations.purchases': 'Compras',
     'web.navigation.operations.reservations': 'Reservas',
     'web.navigation.catalog': 'Catálogo',
+    'web.navigation.catalog.publicPage': 'Página pública',
+    'web.navigation.catalog.reservations': 'Reservas',
     'web.navigation.catalog.products': 'Produtos',
     'web.navigation.catalog.services': 'Serviços',
     'web.navigation.catalog.stock': 'Estoque',
     'web.navigation.catalog.categories': 'Categorias',
+    'catalog.publicPage.title': 'Página pública do catálogo',
+    'catalog.publicPage.subtitle':
+        'Personalize, visualize e compartilhe sua vitrine em um só lugar.',
+    'catalog.publicPage.open': 'Abrir',
+    'catalog.publicPage.copy': 'Copiar link',
+    'catalog.publicPage.share': 'Compartilhar',
+    'catalog.publicPage.published': 'Publicado',
+    'catalog.publicPage.offline': 'Fora do ar',
+    'catalog.publicPage.save': 'Salvar alterações',
+    'catalog.publicPage.discard': 'Descartar',
+    'catalog.publicPage.saveSuccessPublished':
+        'Página salva e publicada com sucesso.',
+    'catalog.publicPage.saveSuccessDraft':
+        'Personalização salva. Publique quando estiver pronta.',
+    'catalog.publicPage.saveError':
+        'Não foi possível salvar a página do catálogo.',
+    'catalog.publicPage.openError':
+        'Não foi possível abrir o catálogo em uma nova aba.',
+    'catalog.publicPage.linkCopied': 'Link público copiado.',
+    'catalog.publicPage.shareSubject': 'Catálogo de {title}',
+    'catalog.publicPage.shareFallback':
+        'O compartilhamento não está disponível. O link foi copiado.',
+    'catalog.publicPage.loadErrorTitle':
+        'Não foi possível carregar a página pública',
+    'catalog.publicPage.editor.publication': 'Catálogo publicado',
+    'catalog.publicPage.editor.publicationOn':
+        'Clientes podem acessar pelo link público.',
+    'catalog.publicPage.editor.publicationOff':
+        'O link fica preservado, mas indisponível.',
+    'catalog.publicPage.editor.content': 'Apresentação',
+    'catalog.publicPage.editor.contentHelp':
+        'Defina a mensagem que abre sua vitrine.',
+    'catalog.publicPage.editor.titleLabel': 'Título da vitrine',
+    'catalog.publicPage.editor.titleHint': 'Ex.: Encontre o que precisa',
+    'catalog.publicPage.editor.descriptionLabel': 'Descrição curta',
+    'catalog.publicPage.editor.descriptionHint':
+        'Explique em uma frase o que o cliente encontrará.',
+    'catalog.publicPage.editor.appearance': 'Aparência',
+    'catalog.publicPage.editor.appearanceHelp':
+        'Escolha o clima visual e a cor de destaque.',
+    'catalog.publicPage.editor.accentColor': 'Cor de destaque',
+    'catalog.publicPage.editor.customColor': 'Cor personalizada',
+    'catalog.publicPage.editor.invalidColor':
+        'Use uma cor hexadecimal com bom contraste, como #126BFF.',
+    'catalog.publicPage.editor.layout': 'Conteúdo e layout',
+    'catalog.publicPage.editor.layoutHelp':
+        'Controle a densidade e as informações visíveis.',
+    'catalog.publicPage.editor.comfortable': 'Confortável',
+    'catalog.publicPage.editor.compact': 'Compacto',
+    'catalog.publicPage.editor.showPrices': 'Exibir preços',
+    'catalog.publicPage.editor.showContact': 'Exibir contatos',
+    'catalog.publicPage.editor.showAddress': 'Exibir endereço',
+    'catalog.publicPage.style.classic': 'Clássico',
+    'catalog.publicPage.style.classicHelp':
+        'Profissional, equilibrado e familiar.',
+    'catalog.publicPage.style.minimal': 'Minimalista',
+    'catalog.publicPage.style.minimalHelp':
+        'Mais espaço, menos elementos visuais.',
+    'catalog.publicPage.style.expressive': 'Expressivo',
+    'catalog.publicPage.style.expressiveHelp':
+        'Cor e contraste para destacar a marca.',
+    'catalog.publicPage.preview.title': 'Prévia ao vivo',
+    'catalog.publicPage.preview.unsaved':
+        'Visualizando alterações ainda não salvas',
+    'catalog.publicPage.preview.saved': 'Aparência salva no catálogo',
+    'catalog.publicPage.preview.desktop': 'Desktop',
+    'catalog.publicPage.preview.mobile': 'Celular',
+    'catalog.publicPage.preview.storeFallback': 'Seu comércio',
+    'catalog.publicPage.preview.products': 'Produtos disponíveis',
+    'catalog.publicPage.preview.chooseItems': 'Escolha seus itens',
+    'catalog.publicPage.preview.empty':
+        'Marque produtos como disponíveis para o catálogo.',
+    'catalog.publicPage.unpublish.barrier':
+        'Confirmar despublicação do catálogo',
+    'catalog.publicPage.unpublish.title': 'Despublicar catálogo?',
+    'catalog.publicPage.unpublish.body':
+        'Clientes com o link deixarão de ver os produtos até uma nova publicação.',
+    'catalog.publicPage.unpublish.action': 'Despublicar',
+    'catalog.publicPage.unpublish.processing': 'Retirando o catálogo do ar...',
+    'catalog.publicPage.unpublish.processingBody':
+        'Aguarde enquanto atualizamos o acesso público.',
+    'catalog.publicPage.unpublish.success': 'Catálogo despublicado',
+    'catalog.publicPage.unpublish.successBody':
+        'O link foi preservado e poderá ser reativado depois.',
+    'catalog.publicPage.unpublish.error':
+        'Não foi possível despublicar. Tente novamente.',
     'produto.dashboard.importSpreadsheetSoon':
         'Importar via planilha (em breve)',
     'web.navigation.people': 'Pessoas',
@@ -2274,10 +2362,93 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.operations.purchases': 'Purchases',
     'web.navigation.operations.reservations': 'Reservations',
     'web.navigation.catalog': 'Catalog',
+    'web.navigation.catalog.publicPage': 'Public page',
+    'web.navigation.catalog.reservations': 'Reservations',
     'web.navigation.catalog.products': 'Products',
     'web.navigation.catalog.services': 'Services',
     'web.navigation.catalog.stock': 'Stock',
     'web.navigation.catalog.categories': 'Categories',
+    'catalog.publicPage.title': 'Public catalog page',
+    'catalog.publicPage.subtitle':
+        'Customize, preview, and share your storefront in one place.',
+    'catalog.publicPage.open': 'Open',
+    'catalog.publicPage.copy': 'Copy link',
+    'catalog.publicPage.share': 'Share',
+    'catalog.publicPage.published': 'Published',
+    'catalog.publicPage.offline': 'Offline',
+    'catalog.publicPage.save': 'Save changes',
+    'catalog.publicPage.discard': 'Discard',
+    'catalog.publicPage.saveSuccessPublished':
+        'Page saved and published successfully.',
+    'catalog.publicPage.saveSuccessDraft':
+        'Customization saved. Publish it when it is ready.',
+    'catalog.publicPage.saveError': 'Could not save the catalog page.',
+    'catalog.publicPage.openError': 'Could not open the catalog in a new tab.',
+    'catalog.publicPage.linkCopied': 'Public link copied.',
+    'catalog.publicPage.shareSubject': '{title} catalog',
+    'catalog.publicPage.shareFallback':
+        'Sharing is unavailable. The public link was copied.',
+    'catalog.publicPage.loadErrorTitle': 'Could not load the public page',
+    'catalog.publicPage.editor.publication': 'Published catalog',
+    'catalog.publicPage.editor.publicationOn':
+        'Customers can access it through the public link.',
+    'catalog.publicPage.editor.publicationOff':
+        'The link is preserved but unavailable.',
+    'catalog.publicPage.editor.content': 'Introduction',
+    'catalog.publicPage.editor.contentHelp':
+        'Set the message that opens your storefront.',
+    'catalog.publicPage.editor.titleLabel': 'Storefront title',
+    'catalog.publicPage.editor.titleHint': 'Example: Find what you need',
+    'catalog.publicPage.editor.descriptionLabel': 'Short description',
+    'catalog.publicPage.editor.descriptionHint':
+        'Explain in one sentence what customers will find.',
+    'catalog.publicPage.editor.appearance': 'Appearance',
+    'catalog.publicPage.editor.appearanceHelp':
+        'Choose the visual mood and accent color.',
+    'catalog.publicPage.editor.accentColor': 'Accent color',
+    'catalog.publicPage.editor.customColor': 'Custom color',
+    'catalog.publicPage.editor.invalidColor':
+        'Use a high-contrast hexadecimal color, such as #126BFF.',
+    'catalog.publicPage.editor.layout': 'Content and layout',
+    'catalog.publicPage.editor.layoutHelp':
+        'Control density and visible information.',
+    'catalog.publicPage.editor.comfortable': 'Comfortable',
+    'catalog.publicPage.editor.compact': 'Compact',
+    'catalog.publicPage.editor.showPrices': 'Show prices',
+    'catalog.publicPage.editor.showContact': 'Show contact details',
+    'catalog.publicPage.editor.showAddress': 'Show address',
+    'catalog.publicPage.style.classic': 'Classic',
+    'catalog.publicPage.style.classicHelp':
+        'Professional, balanced, and familiar.',
+    'catalog.publicPage.style.minimal': 'Minimal',
+    'catalog.publicPage.style.minimalHelp':
+        'More space and fewer visual elements.',
+    'catalog.publicPage.style.expressive': 'Expressive',
+    'catalog.publicPage.style.expressiveHelp':
+        'Color and contrast to highlight your brand.',
+    'catalog.publicPage.preview.title': 'Live preview',
+    'catalog.publicPage.preview.unsaved': 'Previewing unsaved changes',
+    'catalog.publicPage.preview.saved': 'Appearance saved to the catalog',
+    'catalog.publicPage.preview.desktop': 'Desktop',
+    'catalog.publicPage.preview.mobile': 'Mobile',
+    'catalog.publicPage.preview.storeFallback': 'Your business',
+    'catalog.publicPage.preview.products': 'Available products',
+    'catalog.publicPage.preview.chooseItems': 'Choose your items',
+    'catalog.publicPage.preview.empty':
+        'Mark products as available for the catalog.',
+    'catalog.publicPage.unpublish.barrier': 'Confirm catalog unpublishing',
+    'catalog.publicPage.unpublish.title': 'Unpublish catalog?',
+    'catalog.publicPage.unpublish.body':
+        'Customers with the link will no longer see products until it is published again.',
+    'catalog.publicPage.unpublish.action': 'Unpublish',
+    'catalog.publicPage.unpublish.processing': 'Taking the catalog offline...',
+    'catalog.publicPage.unpublish.processingBody':
+        'Please wait while we update public access.',
+    'catalog.publicPage.unpublish.success': 'Catalog unpublished',
+    'catalog.publicPage.unpublish.successBody':
+        'The link was preserved and can be reactivated later.',
+    'catalog.publicPage.unpublish.error':
+        'Could not unpublish. Please try again.',
     'produto.dashboard.importSpreadsheetSoon':
         'Import via spreadsheet (coming soon)',
     'web.navigation.people': 'People',
@@ -4053,10 +4224,98 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.operations.purchases': 'Compras',
     'web.navigation.operations.reservations': 'Reservas',
     'web.navigation.catalog': 'Catálogo',
+    'web.navigation.catalog.publicPage': 'Página pública',
+    'web.navigation.catalog.reservations': 'Reservas',
     'web.navigation.catalog.products': 'Productos',
     'web.navigation.catalog.services': 'Servicios',
     'web.navigation.catalog.stock': 'Inventario',
     'web.navigation.catalog.categories': 'Categorías',
+    'catalog.publicPage.title': 'Página pública del catálogo',
+    'catalog.publicPage.subtitle':
+        'Personaliza, visualiza y comparte tu vitrina en un solo lugar.',
+    'catalog.publicPage.open': 'Abrir',
+    'catalog.publicPage.copy': 'Copiar enlace',
+    'catalog.publicPage.share': 'Compartir',
+    'catalog.publicPage.published': 'Publicado',
+    'catalog.publicPage.offline': 'Fuera de línea',
+    'catalog.publicPage.save': 'Guardar cambios',
+    'catalog.publicPage.discard': 'Descartar',
+    'catalog.publicPage.saveSuccessPublished':
+        'Página guardada y publicada correctamente.',
+    'catalog.publicPage.saveSuccessDraft':
+        'Personalización guardada. Publícala cuando esté lista.',
+    'catalog.publicPage.saveError':
+        'No fue posible guardar la página del catálogo.',
+    'catalog.publicPage.openError':
+        'No fue posible abrir el catálogo en una nueva pestaña.',
+    'catalog.publicPage.linkCopied': 'Enlace público copiado.',
+    'catalog.publicPage.shareSubject': 'Catálogo de {title}',
+    'catalog.publicPage.shareFallback':
+        'Compartir no está disponible. Se copió el enlace público.',
+    'catalog.publicPage.loadErrorTitle':
+        'No fue posible cargar la página pública',
+    'catalog.publicPage.editor.publication': 'Catálogo publicado',
+    'catalog.publicPage.editor.publicationOn':
+        'Los clientes pueden acceder mediante el enlace público.',
+    'catalog.publicPage.editor.publicationOff':
+        'El enlace se conserva, pero no está disponible.',
+    'catalog.publicPage.editor.content': 'Presentación',
+    'catalog.publicPage.editor.contentHelp':
+        'Define el mensaje que abre tu vitrina.',
+    'catalog.publicPage.editor.titleLabel': 'Título de la vitrina',
+    'catalog.publicPage.editor.titleHint': 'Ej.: Encuentra lo que necesitas',
+    'catalog.publicPage.editor.descriptionLabel': 'Descripción breve',
+    'catalog.publicPage.editor.descriptionHint':
+        'Explica en una frase qué encontrará el cliente.',
+    'catalog.publicPage.editor.appearance': 'Apariencia',
+    'catalog.publicPage.editor.appearanceHelp':
+        'Elige el estilo visual y el color destacado.',
+    'catalog.publicPage.editor.accentColor': 'Color destacado',
+    'catalog.publicPage.editor.customColor': 'Color personalizado',
+    'catalog.publicPage.editor.invalidColor':
+        'Usa un color hexadecimal con buen contraste, como #126BFF.',
+    'catalog.publicPage.editor.layout': 'Contenido y diseño',
+    'catalog.publicPage.editor.layoutHelp':
+        'Controla la densidad y la información visible.',
+    'catalog.publicPage.editor.comfortable': 'Cómodo',
+    'catalog.publicPage.editor.compact': 'Compacto',
+    'catalog.publicPage.editor.showPrices': 'Mostrar precios',
+    'catalog.publicPage.editor.showContact': 'Mostrar contactos',
+    'catalog.publicPage.editor.showAddress': 'Mostrar dirección',
+    'catalog.publicPage.style.classic': 'Clásico',
+    'catalog.publicPage.style.classicHelp':
+        'Profesional, equilibrado y familiar.',
+    'catalog.publicPage.style.minimal': 'Minimalista',
+    'catalog.publicPage.style.minimalHelp':
+        'Más espacio y menos elementos visuales.',
+    'catalog.publicPage.style.expressive': 'Expresivo',
+    'catalog.publicPage.style.expressiveHelp':
+        'Color y contraste para destacar la marca.',
+    'catalog.publicPage.preview.title': 'Vista previa en vivo',
+    'catalog.publicPage.preview.unsaved':
+        'Visualizando cambios aún no guardados',
+    'catalog.publicPage.preview.saved': 'Apariencia guardada en el catálogo',
+    'catalog.publicPage.preview.desktop': 'Escritorio',
+    'catalog.publicPage.preview.mobile': 'Móvil',
+    'catalog.publicPage.preview.storeFallback': 'Tu comercio',
+    'catalog.publicPage.preview.products': 'Productos disponibles',
+    'catalog.publicPage.preview.chooseItems': 'Elige tus artículos',
+    'catalog.publicPage.preview.empty':
+        'Marca productos como disponibles para el catálogo.',
+    'catalog.publicPage.unpublish.barrier': 'Confirmar retirada del catálogo',
+    'catalog.publicPage.unpublish.title': '¿Retirar el catálogo?',
+    'catalog.publicPage.unpublish.body':
+        'Los clientes con el enlace dejarán de ver los productos hasta una nueva publicación.',
+    'catalog.publicPage.unpublish.action': 'Retirar',
+    'catalog.publicPage.unpublish.processing':
+        'Retirando el catálogo de línea...',
+    'catalog.publicPage.unpublish.processingBody':
+        'Espera mientras actualizamos el acceso público.',
+    'catalog.publicPage.unpublish.success': 'Catálogo retirado',
+    'catalog.publicPage.unpublish.successBody':
+        'El enlace se conservó y podrá reactivarse después.',
+    'catalog.publicPage.unpublish.error':
+        'No fue posible retirar el catálogo. Inténtalo de nuevo.',
     'produto.dashboard.importSpreadsheetSoon':
         'Importar por hoja de cálculo (próximamente)',
     'web.navigation.people': 'Personas',

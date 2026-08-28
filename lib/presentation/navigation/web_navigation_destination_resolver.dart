@@ -6,6 +6,7 @@ abstract interface class WebNavigationDestinationActions {
   WebNavigationResolutionResult openTechnicalServices();
   WebNavigationResolutionResult openPurchases();
   WebNavigationResolutionResult openReservations();
+  WebNavigationResolutionResult openCatalogPublicPage();
   WebNavigationResolutionResult openCatalogProducts();
   WebNavigationResolutionResult openCatalogServices();
   WebNavigationResolutionResult openCatalogStock();
@@ -92,6 +93,8 @@ class WebNavigationDestinationResolver {
           destination,
           reason: 'Destino gerenciado pelo shell Web.',
         );
+      case WebNavigationDestination.catalogPublicPage:
+        return actions.openCatalogPublicPage();
       case WebNavigationDestination.catalogProducts:
         return actions.openCatalogProducts();
       case WebNavigationDestination.catalogServices:

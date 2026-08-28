@@ -12,6 +12,7 @@ enum ModuloCentralPDV {
   atendimentoTecnico,
   compras,
   reservas,
+  catalogoPublico,
   produtos,
   servicos,
   estoque,

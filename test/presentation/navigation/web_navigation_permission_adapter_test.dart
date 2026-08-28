@@ -37,7 +37,7 @@ void main() {
     );
 
     test(
-      'colaborador de venda enxerga Frente de caixa e Reservas em Operacoes',
+      'colaborador de venda enxerga Frente de caixa e Reservas no Catalogo',
       () {
         final List<WebNavigationItem> visible = _visibleItemsFor(
           _FakeAutorizacoesProvider(podeFazerVenda: true),
@@ -46,13 +46,15 @@ void main() {
         expect(_topLevelIds(visible), <String>[
           WebNavigationIds.home,
           WebNavigationIds.operations,
+          WebNavigationIds.catalog,
         ]);
         expect(
           _childIds(_requiredItem(visible, WebNavigationIds.operations)),
-          <String>[
-            WebNavigationIds.operationsPos,
-            WebNavigationIds.operationsReservations,
-          ],
+          <String>[WebNavigationIds.operationsPos],
+        );
+        expect(
+          _childIds(_requiredItem(visible, WebNavigationIds.catalog)),
+          <String>[WebNavigationIds.operationsReservations],
         );
       },
     );
@@ -93,6 +95,17 @@ void main() {
       expect(
         _childIds(_requiredItem(visible, WebNavigationIds.catalog)),
         <String>[WebNavigationIds.catalogStock],
+      );
+    });
+
+    test('permissao de catalogo libera somente a pagina publica', () {
+      final List<WebNavigationItem> visible = _visibleItemsFor(
+        _FakeAutorizacoesProvider(podeAcessarCatalogo: true),
+      );
+
+      expect(
+        _childIds(_requiredItem(visible, WebNavigationIds.catalog)),
+        <String>[WebNavigationIds.catalogPublicPage],
       );
     });
 
@@ -247,6 +260,7 @@ class _FakeAutorizacoesProvider extends ColaboradorAutorizacoesProvider {
     this.podeCadastrarProduto = false,
     this.podeEditarProduto = false,
     this.podeVerEstoqueDeProduto = false,
+    this.podeAcessarCatalogo = false,
     this.podeGerarRelatorio = false,
     this.podeReceberNoCaixa = false,
     this.podeVerQuantoVendeu = false,
@@ -272,6 +286,9 @@ class _FakeAutorizacoesProvider extends ColaboradorAutorizacoesProvider {
 
   @override
   final bool podeVerEstoqueDeProduto;
+
+  @override
+  final bool podeAcessarCatalogo;
 
   @override
   final bool podeGerarRelatorio;

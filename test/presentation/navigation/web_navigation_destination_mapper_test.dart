@@ -49,6 +49,12 @@ void main() {
         WebNavigationDestination.operationsReservations,
       );
       expect(
+        webNavigationDestinationForModuloCentralPdv(
+          ModuloCentralPDV.catalogoPublico,
+        ),
+        WebNavigationDestination.catalogPublicPage,
+      );
+      expect(
         webNavigationDestinationForModuloCentralPdv(ModuloCentralPDV.produtos),
         WebNavigationDestination.catalogProducts,
       );

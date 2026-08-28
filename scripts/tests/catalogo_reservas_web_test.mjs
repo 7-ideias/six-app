@@ -64,11 +64,11 @@ test('tela permite filtrar, paginar, detalhar, atualizar e converter', () => {
   assert.match(screen, /CatalogoReservaStatus\.convertida/);
 });
 
-test('menu Operacoes oferece acesso exclusivo as reservas', () => {
+test('menu Catalogo centraliza o acesso as reservas', () => {
   assert.match(navigationRegistry, /WebNavigationIds\.operationsReservations/);
   assert.match(
     navigationRegistry,
-    /web\.navigation\.operations\.reservations/,
+    /web\.navigation\.catalog\.reservations/,
   );
   assert.match(
     navigationRegistry,
@@ -81,7 +81,7 @@ test('menu Operacoes oferece acesso exclusivo as reservas', () => {
 
 test('novas traducoes possuem paridade pt en es', () => {
   for (const key of [
-    'web.navigation.operations.reservations',
+    'web.navigation.catalog.reservations',
     'catalogReservations.title',
     'catalogReservations.status.received',
     'catalogReservations.status.analysis',
