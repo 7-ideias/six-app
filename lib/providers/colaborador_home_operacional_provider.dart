@@ -311,7 +311,9 @@ class ColaboradorHomeOperacionalProvider extends ChangeNotifier {
     }
 
     final List<ColaboradorServicoStatusResumo> result = grouped.values
-        .map(_MutableServiceStatus.toImmutable)
+        .map(
+          (_MutableServiceStatus status) => status.toImmutable(),
+        )
         .toList(growable: false);
     result.sort((
       ColaboradorServicoStatusResumo a,
