@@ -1064,7 +1064,8 @@ class _ColaboradorConviteMobileSheetState
   bool _fazVenda = true;
   bool _lancaServico = true;
   bool _editaCliente = true;
-  bool _acessaFinanceiro = false;
+  bool _podeReceberNoCaixa = false;
+  bool _podeVerQuantoVendeu = false;
   bool _geraRelatorio = false;
   bool _gerenciaPermissoes = false;
   bool _loading = false;
@@ -1136,7 +1137,8 @@ class _ColaboradorConviteMobileSheetState
       if (_fazVenda) 'VENDAS_CRIAR',
       if (_lancaServico) 'ASSISTENCIA_TECNICA_CRIAR',
       if (_editaCliente) 'CLIENTES_EDITAR',
-      if (_acessaFinanceiro) 'FINANCEIRO_ACESSAR',
+      if (_podeReceberNoCaixa) 'FINANCEIRO_ACESSAR',
+      if (_podeVerQuantoVendeu) 'VENDAS_CONSULTAR',
       if (_geraRelatorio) 'RELATORIOS_GERAR',
       if (_gerenciaPermissoes) 'PERMISSOES_GERENCIAR',
     ];
@@ -1327,11 +1329,20 @@ class _ColaboradorConviteMobileSheetState
               _switchCard(
                 _t('colaboradores.finance', 'Financeiro'),
                 _t(
-                  'colaboradores.canAccessFinance',
-                  'Pode acessar financeiro.',
+                  'colaboradores.canReceiveAtCashRegister',
+                  'Pode receber no caixa.',
                 ),
-                _acessaFinanceiro,
-                (bool value) => setState(() => _acessaFinanceiro = value),
+                _podeReceberNoCaixa,
+                (bool value) => setState(() => _podeReceberNoCaixa = value),
+              ),
+              _switchCard(
+                _t('colaboradores.salesSummary', 'Resumo das vendas'),
+                _t(
+                  'colaboradores.canViewHowMuchSold',
+                  'Pode ver quanto vendeu e consultar o resumo das vendas.',
+                ),
+                _podeVerQuantoVendeu,
+                (bool value) => setState(() => _podeVerQuantoVendeu = value),
               ),
               _switchCard(
                 _t('colaboradores.reports', 'Relatórios'),
@@ -1501,7 +1512,8 @@ class _EditarColaboradorMobileSheetState
   bool _podeServico = false;
   bool _podeEditarCliente = false;
   bool _podeRelatorio = false;
-  bool _podeFinanceiro = false;
+  bool _podeReceberNoCaixa = false;
+  bool _podeVerQuantoVendeu = false;
 
   @override
   void initState() {
@@ -1550,9 +1562,8 @@ class _EditarColaboradorMobileSheetState
     final Map<String, dynamic> financeiro = _ensureMap(
       autorizacoes['objLancamentosFinanceirosPode'],
     );
-    _podeFinanceiro =
-        financeiro['podeReceberNoCaixa'] == true ||
-        financeiro['podeVerQuantoVendeu'] == true;
+    _podeReceberNoCaixa = financeiro['podeReceberNoCaixa'] == true;
+    _podeVerQuantoVendeu = financeiro['podeVerQuantoVendeu'] == true;
   }
 
   @override
@@ -1607,8 +1618,8 @@ class _EditarColaboradorMobileSheetState
     };
     autorizacoes['objLancamentosFinanceirosPode'] = <String, dynamic>{
       ..._ensureMap(autorizacoes['objLancamentosFinanceirosPode']),
-      'podeReceberNoCaixa': _podeFinanceiro,
-      'podeVerQuantoVendeu': _podeFinanceiro,
+      'podeReceberNoCaixa': _podeReceberNoCaixa,
+      'podeVerQuantoVendeu': _podeVerQuantoVendeu,
     };
     json['objAutorizacoes'] = autorizacoes;
     return json;
@@ -1785,11 +1796,20 @@ class _EditarColaboradorMobileSheetState
               _switchCard(
                 _t('colaboradores.finance', 'Financeiro'),
                 _t(
-                  'colaboradores.canAccessReceivablesAndSalesAmounts',
-                  'Pode acessar recebimentos e valores vendidos.',
+                  'colaboradores.canReceiveAtCashRegister',
+                  'Pode receber no caixa.',
                 ),
-                _podeFinanceiro,
-                (bool value) => setState(() => _podeFinanceiro = value),
+                _podeReceberNoCaixa,
+                (bool value) => setState(() => _podeReceberNoCaixa = value),
+              ),
+              _switchCard(
+                _t('colaboradores.salesSummary', 'Resumo das vendas'),
+                _t(
+                  'colaboradores.canViewHowMuchSold',
+                  'Pode ver quanto vendeu e consultar o resumo das vendas.',
+                ),
+                _podeVerQuantoVendeu,
+                (bool value) => setState(() => _podeVerQuantoVendeu = value),
               ),
               SizedBox(height: 18),
               Row(
