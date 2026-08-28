@@ -263,6 +263,15 @@ class LocaleSettingsProvider extends ChangeNotifier {
     return '${negativo ? '-' : ''}$inteiro$decimal';
   }
 
+  String formatInteger(num value) {
+    final String normalized = value.round().toString();
+    final bool negative = normalized.startsWith('-');
+    final String integer = _aplicarSeparadorDeMilhar(
+      normalized.replaceFirst('-', ''),
+    );
+    return '${negative ? '-' : ''}$integer';
+  }
+
   String formatPercent(num value, {int decimalPlaces = 0}) {
     final int casasDecimais = decimalPlaces.clamp(0, 6).toInt();
     final NumberFormat formatter =

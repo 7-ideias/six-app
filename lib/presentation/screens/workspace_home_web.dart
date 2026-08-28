@@ -10,6 +10,7 @@ import '../../data/models/workspace_home_model.dart';
 import '../../domain/services/workspace_home/workspace_home_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
+import '../../providers/colaborador_home_operacional_provider.dart';
 import '../../providers/desempenho_colaborador_home_provider.dart';
 import '../../providers/empresa_provider.dart';
 import '../../providers/locale_settings_provider.dart';
@@ -17,6 +18,7 @@ import '../../providers/usuario_provider.dart';
 import '../../providers/workspace_home_provider.dart';
 import '../admin/admin_portal_texts.dart';
 import '../components/six_backend_loading.dart';
+import '../components/web/collaborator_operational_home_dashboard.dart';
 import '../components/web/collaborator_performance_home_dashboard.dart';
 import '../navigation/web_navigation_destination_resolver.dart';
 import '../navigation/web_navigation_item.dart';
@@ -31,6 +33,7 @@ class WorkspaceHomeWeb extends StatelessWidget {
     required this.onNovoAtendimentoTecnico,
     this.service,
     this.desempenhoProvider,
+    this.operacionalProvider,
   });
 
   final bool compact;
@@ -38,6 +41,7 @@ class WorkspaceHomeWeb extends StatelessWidget {
   final VoidCallback onNovoAtendimentoTecnico;
   final WorkspaceHomeService? service;
   final DesempenhoColaboradorHomeProvider? desempenhoProvider;
+  final ColaboradorHomeOperacionalProvider? operacionalProvider;
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +65,14 @@ class WorkspaceHomeWeb extends StatelessWidget {
         else
           ChangeNotifierProvider<DesempenhoColaboradorHomeProvider>(
             create: (_) => DesempenhoColaboradorHomeProvider(),
+          ),
+        if (operacionalProvider != null)
+          ChangeNotifierProvider<ColaboradorHomeOperacionalProvider>.value(
+            value: operacionalProvider!,
+          )
+        else
+          ChangeNotifierProvider<ColaboradorHomeOperacionalProvider>(
+            create: (_) => ColaboradorHomeOperacionalProvider(),
           ),
         ChangeNotifierProvider<_WorkspaceHomeInfrastructureProvider>(
           create:
@@ -102,8 +114,16 @@ class _WorkspaceHomeContent extends StatelessWidget {
     final bool isSuperUser = autorizacoes.ehSuperUsuario;
     final bool isAdminUser = autorizacoes.ehAdministrador;
     final bool isCollaborator = autorizacoes.ehColaborador;
+    final bool canAccessSales =
+        isCollaborator && autorizacoes.podeFazerVenda;
+    final bool canAccessServices =
+        isCollaborator && autorizacoes.podeAcompanharAssistenciaTecnica;
+    final bool canAccessReservations = canAccessSales;
+    final bool hasOperationalAccess = canAccessSales || canAccessServices;
     final DesempenhoColaboradorHomeProvider desempenho =
         context.watch<DesempenhoColaboradorHomeProvider>();
+    final ColaboradorHomeOperacionalProvider operacional =
+        context.watch<ColaboradorHomeOperacionalProvider>();
     final ThemeData webTheme = WebThemeTokens.applyTo(Theme.of(context));
 
     if (isCollaborator && !desempenho.hasLoaded && !desempenho.loading) {
@@ -113,6 +133,24 @@ class _WorkspaceHomeContent extends StatelessWidget {
             !desempenho.loading) {
           unawaited(desempenho.load());
         }
+      });
+    }
+    if (hasOperationalAccess &&
+        !operacional.loading &&
+        operacional.needsLoad(
+          canAccessSales: canAccessSales,
+          canAccessServices: canAccessServices,
+          canAccessReservations: canAccessReservations,
+        )) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted || operacional.loading) return;
+        unawaited(
+          operacional.load(
+            canAccessSales: canAccessSales,
+            canAccessServices: canAccessServices,
+            canAccessReservations: canAccessReservations,
+          ),
+        );
       });
     }
 
@@ -161,11 +199,22 @@ class _WorkspaceHomeContent extends StatelessWidget {
                             regionalizacao: regionalizacao,
                             loading:
                                 isCollaborator
-                                    ? desempenho.loading
+                                    ? desempenho.loading ||
+                                        (hasOperationalAccess &&
+                                            operacional.loading)
                                     : provider.loading,
                             onRefresh: () async {
                               if (isCollaborator) {
-                                await desempenho.reload();
+                                await Future.wait<void>(<Future<void>>[
+                                  desempenho.reload(),
+                                  if (hasOperationalAccess)
+                                    operacional.reload(
+                                      canAccessSales: canAccessSales,
+                                      canAccessServices: canAccessServices,
+                                      canAccessReservations:
+                                          canAccessReservations,
+                                    ),
+                                ]);
                               } else {
                                 await provider.reload();
                               }
@@ -184,16 +233,49 @@ class _WorkspaceHomeContent extends StatelessWidget {
                               icon: Icons.track_changes_rounded,
                               title: _text(
                                 context,
-                                'performance.home.title',
-                                'Minhas metas',
+                                'collaboratorHome.title',
+                                'Meu painel',
                               ),
                               subtitle: _text(
                                 context,
-                                'performance.home.subtitle',
-                                'Acompanhe suas metas e os resultados atualizados pelo SixoApp.',
+                                'collaboratorHome.subtitle',
+                                'Acompanhe metas, vendas, serviços e prioridades do seu trabalho.',
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            if (hasOperationalAccess) ...<Widget>[
+                              const SizedBox(height: 16),
+                              CollaboratorOperationalHomeWebDashboard(
+                                provider: operacional,
+                                regionalizacao: regionalizacao,
+                                showSales: canAccessSales,
+                                showServices: canAccessServices,
+                                showReservations: canAccessReservations,
+                                onRetry:
+                                    () => operacional.reload(
+                                      canAccessSales: canAccessSales,
+                                      canAccessServices: canAccessServices,
+                                      canAccessReservations:
+                                          canAccessReservations,
+                                    ),
+                                onOpenServices:
+                                    autorizacoes.podeLancarAssistenciaTecnica
+                                        ? () => _resolve(
+                                          context,
+                                          WebNavigationDestination
+                                              .operationsTechnicalServices,
+                                        )
+                                        : null,
+                                onOpenReservations:
+                                    canAccessReservations
+                                        ? () => _resolve(
+                                          context,
+                                          WebNavigationDestination
+                                              .operationsReservations,
+                                        )
+                                        : null,
+                              ),
+                              const SizedBox(height: 16),
+                            ],
                             CollaboratorPerformanceHomeWebDashboard(
                               provider: desempenho,
                               regionalizacao: regionalizacao,
