@@ -26,6 +26,7 @@ import 'package:sixpos/presentation/screens/catalog_health_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/desempenho_colaborador_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operational_procedures_mobile_screen.dart';
@@ -1135,8 +1136,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   // ─── Section definitions ────────────────────────────────────────
 
   List<_ManagementSection> _managementSections(BuildContext context) {
-    final bool podeAcessarCatalogo =
-        context.watch<ColaboradorAutorizacoesProvider>().podeAcessarCatalogo;
+    final ColaboradorAutorizacoesProvider autorizacoes =
+        context.watch<ColaboradorAutorizacoesProvider>();
+    final bool podeAcessarCatalogo = autorizacoes.podeAcessarCatalogo;
     final SixMobileColorScheme colors = context.sixMobileColors;
 
     return <_ManagementSection>[
@@ -1262,6 +1264,22 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             emphasis: ManagementActionEmphasis.operational,
             maturity: ManagementSettingsMaturity.comingSoon,
           ),
+          if (!autorizacoes.ehColaborador)
+            _ManagementItem(
+              title: context.t(
+                'gestao.people.performance',
+                fallback: 'Desempenho do colaborador',
+              ),
+              subtitle: context.t(
+                'gestao.people.performanceDesc',
+                fallback: 'Metas, vendas, serviços e evolução da equipe',
+              ),
+              icon: Icons.trending_up_rounded,
+              accentColor: colors.accent,
+              emphasis: ManagementActionEmphasis.secondary,
+              onTap: () =>
+                  _navigateTo(context, DesempenhoColaboradorMobileScreen()),
+            ),
         ],
       ),
       _ManagementSection(

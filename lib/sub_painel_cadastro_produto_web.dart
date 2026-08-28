@@ -51,10 +51,10 @@ class SubPainelCadastroProduto extends StatelessWidget {
     final ColorScheme modalColorScheme = theme.colorScheme.copyWith(
       primary: tokens.info,
       secondary: tokens.info,
-      surface: tokens.surfaceElevated,
-      surfaceContainer: tokens.surface,
-      surfaceContainerHigh: tokens.cardBackground,
-      surfaceContainerHighest: tokens.surfaceMuted,
+      surface: tokens.surface,
+      surfaceContainer: tokens.surfaceMuted,
+      surfaceContainerHigh: tokens.surfaceElevated,
+      surfaceContainerHighest: tokens.inputBackground,
       onSurface: tokens.primaryText,
       onSurfaceVariant: tokens.secondaryText,
       outline: tokens.cardBorder,
@@ -65,7 +65,7 @@ class SubPainelCadastroProduto extends StatelessWidget {
       colorScheme: modalColorScheme,
       scaffoldBackgroundColor: tokens.surfaceElevated,
       canvasColor: tokens.surfaceElevated,
-      cardColor: tokens.cardBackground,
+      cardColor: tokens.surface,
       dialogTheme: theme.dialogTheme.copyWith(
         backgroundColor: tokens.surfaceElevated,
         surfaceTintColor: Colors.transparent,
@@ -87,8 +87,8 @@ class SubPainelCadastroProduto extends StatelessWidget {
 
     return CallbackShortcuts(
       bindings: <ShortcutActivator, VoidCallback>{
-        const SingleActivator(LogicalKeyboardKey.escape): () =>
-            _fecharSubPainel(context),
+        const SingleActivator(LogicalKeyboardKey.escape):
+            () => _fecharSubPainel(context),
       },
       child: Focus(
         autofocus: true,
@@ -127,9 +127,8 @@ Future<bool?> showSubPainelCadastroProduto(
   bool modoEdicao = false,
 }) {
   final WebThemeTokens tokens = WebThemeTokens.of(context);
-  final double barrierAlpha = Theme.of(context).brightness == Brightness.dark
-      ? 0.70
-      : 0.42;
+  final double barrierAlpha =
+      Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42;
   return showDialog<bool>(
     context: context,
     barrierDismissible: true,
@@ -289,10 +288,11 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       .whereType<ProdutoImagemModel>()
       .toList(growable: false);
 
-  Set<int> get _sugestoesAplicadasIds => _imagemSlots
-      .map((slot) => slot.image?.sugestaoId)
-      .whereType<int>()
-      .toSet();
+  Set<int> get _sugestoesAplicadasIds =>
+      _imagemSlots
+          .map((slot) => slot.image?.sugestaoId)
+          .whereType<int>()
+          .toSet();
 
   int get _indicePrimeiroSlotLivre =>
       _imagemSlots.indexWhere((slot) => slot.image == null);
@@ -316,9 +316,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   }
 
   String _decimalInputHint({int decimalPlaces = 2}) {
-    final decimalSeparator = context
-        .read<LocaleSettingsProvider>()
-        .decimalSeparator;
+    final decimalSeparator =
+        context.read<LocaleSettingsProvider>().decimalSeparator;
     return '0$decimalSeparator${'0' * decimalPlaces}';
   }
 
@@ -410,30 +409,45 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     String? hintText,
     Widget? suffixIcon,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
 
     return InputDecoration(
       labelText: label,
       hintText: hintText,
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: colorScheme.surface,
+      fillColor: tokens.inputBackground,
+      hintStyle: theme.textTheme.bodyMedium?.copyWith(color: tokens.mutedText),
+      labelStyle: theme.textTheme.bodyMedium?.copyWith(
+        color: tokens.secondaryText,
+        fontWeight: FontWeight.w700,
+      ),
+      floatingLabelStyle: theme.textTheme.bodyMedium?.copyWith(
+        color: tokens.info,
+        fontWeight: FontWeight.w800,
+      ),
+      suffixIconColor: tokens.secondaryText,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.22)),
+        borderSide: BorderSide(color: tokens.cardBorder),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
+        borderSide: BorderSide(color: tokens.selectedBorder, width: 1.4),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.error),
+        borderSide: BorderSide(color: tokens.danger),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.error, width: 1.4),
+        borderSide: BorderSide(color: tokens.danger, width: 1.4),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: tokens.cardBorder),
       ),
     );
   }
@@ -452,14 +466,15 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       keyboardType: keyboardType,
       maxLines: maxLines,
       decoration: _inputDecoration(context, label, hintText: hintText),
-      validator: requiredField
-          ? (value) {
-              if (value == null || value.trim().isEmpty) {
-                return _t('common.required', 'Campo obrigatório');
+      validator:
+          requiredField
+              ? (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return _t('common.required', 'Campo obrigatório');
+                }
+                return null;
               }
-              return null;
-            }
-          : null,
+              : null,
     );
   }
 
@@ -507,9 +522,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       descricao: descricao,
       categoria:
           _categoriaSelecionadaNome ?? _grupoProdutoController.text.trim(),
-      tipo: _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico
-          ? 'servico'
-          : 'produto',
+      tipo:
+          _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico
+              ? 'servico'
+              : 'produto',
       quantidade: 6,
     );
   }
@@ -591,9 +607,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     }
 
     final bool slotAtivoLivre = _slotSelecionado.image == null;
-    final int slotIndex = slotAtivoLivre
-        ? _slotSelecionadoIndex
-        : _indicePrimeiroSlotLivre;
+    final int slotIndex =
+        slotAtivoLivre ? _slotSelecionadoIndex : _indicePrimeiroSlotLivre;
     setState(() {
       final slot = _imagemSlots[slotIndex];
       slot.image = ProdutoImagemModel(
@@ -623,24 +638,24 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     _grupoProdutoController.text = produto.objAgrupamento?.grupoDoProduto ?? '';
     _categoriaSelecionadaId = produto.objCategoria?.idCategoria;
     _categoriaSelecionadaNome = produto.objCategoria?.nomeCategoria;
-    _modeloProdutoController.text = produto.modeloProduto.trim().isEmpty
-        ? ProdutoCadastroFormUtils.modeloPadrao
-        : produto.modeloProduto;
+    _modeloProdutoController.text =
+        produto.modeloProduto.trim().isEmpty
+            ? ProdutoCadastroFormUtils.modeloPadrao
+            : produto.modeloProduto;
     _estoqueMaximoController.text = produto.estoqueMaximo.toString();
     _estoqueMinimoController.text = produto.estoqueMinimo.toString();
     _precoVendaController.text = produto.precoVenda.toString();
-    _valorComissaoController.text = produto
-        .objComissao
-        .valorFixoDeComissaoParaEsseProduto
-        .toString();
+    _valorComissaoController.text =
+        produto.objComissao.valorFixoDeComissaoParaEsseProduto.toString();
     _produtoTemComissaoEspecial =
         produto.objComissao.produtoTemComissaoEspecial;
     _ativo = produto.ativo;
     _favorito = produto.favorito;
     _disponivelParaCatalogo = produto.disponivelParaCatalogo;
-    _tipoCadastro = produto.tipoCadastro.toUpperCase() == 'COMPLETO'
-        ? 'COMPLETO'
-        : 'RESUMIDO';
+    _tipoCadastro =
+        produto.tipoCadastro.toUpperCase() == 'COMPLETO'
+            ? 'COMPLETO'
+            : 'RESUMIDO';
 
     if (produto.objetoServico != null) {
       _tempoGarantiaController.text = produto.objetoServico!.tempoDaGarantia;
@@ -670,8 +685,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     _permiteEstoqueNegativo = regras?.permiteEstoqueNegativo ?? false;
     _quantidadeMinimaVendaController.text =
         regras == null || regras.quantidadeMinimaVenda == 0
-        ? ''
-        : regras.quantidadeMinimaVenda.toString();
+            ? ''
+            : regras.quantidadeMinimaVenda.toString();
 
     final ProdutoDadosFiscaisModel? fiscais = produto.dadosFiscais;
     _ncmController.text = fiscais?.ncm ?? '';
@@ -706,8 +721,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     });
 
     try {
-      final CategoriaCatalogoListResponse response = await _categoriaApiClient
-          .listarCategorias();
+      final CategoriaCatalogoListResponse response =
+          await _categoriaApiClient.listarCategorias();
 
       if (!mounted) return;
 
@@ -826,9 +841,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       (CategoriaCatalogoModel categoria) =>
           categoria.id == _categoriaSelecionadaId,
     );
-    final String? valor = categoriaSelecionadaExiste
-        ? _categoriaSelecionadaId
-        : null;
+    final String? valor =
+        categoriaSelecionadaExiste ? _categoriaSelecionadaId : null;
     final String label = _t('produto.web.categoryLabel', 'Categoria');
 
     return SizedBox(
@@ -838,9 +852,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         value: valor ?? _categoriaSemCategoriaMenuId,
         icon: Icons.category_outlined,
         enabled: !_carregandoCategorias,
-        placeholder: _carregandoCategorias
-            ? _t('common.loading', 'Carregando...')
-            : _t('produto.web.categoryHint', 'Selecione uma categoria'),
+        placeholder:
+            _carregandoCategorias
+                ? _t('common.loading', 'Carregando...')
+                : _t('produto.web.categoryHint', 'Selecione uma categoria'),
         showPlaceholder: _carregandoCategorias,
         errorText: _carregandoCategorias ? null : _erroCategorias,
         tooltip: '${_t('common.select', 'Selecionar')} $label',
@@ -854,16 +869,18 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             (CategoriaCatalogoModel categoria) => _SixWebDropdownOption(
               value: categoria.id,
               label: _categoriaDisplayName(categoria),
-              icon: categoria.ativo
-                  ? Icons.label_outline_rounded
-                  : Icons.visibility_off_outlined,
+              icon:
+                  categoria.ativo
+                      ? Icons.label_outline_rounded
+                      : Icons.visibility_off_outlined,
             ),
           ),
         ],
         onSelected: (String selectedValue) {
-          final String? value = selectedValue == _categoriaSemCategoriaMenuId
-              ? null
-              : selectedValue;
+          final String? value =
+              selectedValue == _categoriaSemCategoriaMenuId
+                  ? null
+                  : selectedValue;
           setState(() {
             _categoriaSelecionadaId = value;
             final CategoriaCatalogoModel? categoria =
@@ -936,9 +953,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
     await input.onChange.first;
 
-    final html.File? file = input.files?.isNotEmpty == true
-        ? input.files!.first
-        : null;
+    final html.File? file =
+        input.files?.isNotEmpty == true ? input.files!.first : null;
     if (file == null) return;
 
     final reader = html.FileReader();
@@ -1034,13 +1050,13 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             content: Text(
               _isModoEdicao
                   ? _t(
-                      'produto.web.updateSuccess',
-                      'Produto atualizado com sucesso!',
-                    )
+                    'produto.web.updateSuccess',
+                    'Produto atualizado com sucesso!',
+                  )
                   : _t(
-                      'produto.web.createSuccess',
-                      'Produto cadastrado com sucesso!',
-                    ),
+                    'produto.web.createSuccess',
+                    'Produto cadastrado com sucesso!',
+                  ),
             ),
             actions: <Widget>[
               TextButton(
@@ -1180,9 +1196,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   void _mostrarFeedbackFavorito(bool favorito) {
     SixTopNotice.show(
       context,
-      message: favorito
-          ? _t('produto.favorite.enabledFeedback', 'Favorito ativado')
-          : _t('produto.favorite.disabledFeedback', 'Favorito desativado'),
+      message:
+          favorito
+              ? _t('produto.favorite.enabledFeedback', 'Favorito ativado')
+              : _t('produto.favorite.disabledFeedback', 'Favorito desativado'),
       icon: favorito ? Icons.favorite_rounded : Icons.favorite_border_rounded,
     );
   }
@@ -1190,18 +1207,20 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   void _mostrarFeedbackCatalogo(bool disponivelParaCatalogo) {
     SixTopNotice.show(
       context,
-      message: disponivelParaCatalogo
-          ? _t(
-              'produto.catalog.enabledFeedback',
-              'Disponível para catálogo ativado',
-            )
-          : _t(
-              'produto.catalog.disabledFeedback',
-              'Disponível para catálogo desativado',
-            ),
-      icon: disponivelParaCatalogo
-          ? Icons.storefront_rounded
-          : Icons.storefront_outlined,
+      message:
+          disponivelParaCatalogo
+              ? _t(
+                'produto.catalog.enabledFeedback',
+                'Disponível para catálogo ativado',
+              )
+              : _t(
+                'produto.catalog.disabledFeedback',
+                'Disponível para catálogo desativado',
+              ),
+      icon:
+          disponivelParaCatalogo
+              ? Icons.storefront_rounded
+              : Icons.storefront_outlined,
     );
   }
 
@@ -1220,9 +1239,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         onPressed: onPressed,
         icon: Icon(icon, size: 20),
         style: IconButton.styleFrom(
-          backgroundColor: active
-              ? tokens.info.withValues(alpha: 0.18)
-              : tokens.surface,
+          backgroundColor: active ? tokens.selectedBackground : tokens.surface,
           foregroundColor: active ? tokens.info : tokens.secondaryText,
           disabledBackgroundColor: tokens.disabledBackground,
           disabledForegroundColor: tokens.disabledForeground,
@@ -1237,34 +1254,42 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     final Widget favoritoAction = _buildHeaderToggleButton(
       context,
       active: _favorito,
-      onPressed: (_isLoading || _favoritoAtualizando)
-          ? null
-          : () {
-              _alternarFavorito();
-            },
-      tooltip: _favorito
-          ? _t('produto.favorite.removeTooltip', 'Remover dos favoritos')
-          : _t('produto.favorite.addTooltip', 'Marcar como favorito'),
+      onPressed:
+          (_isLoading || _favoritoAtualizando)
+              ? null
+              : () {
+                _alternarFavorito();
+              },
+      tooltip:
+          _favorito
+              ? _t('produto.favorite.removeTooltip', 'Remover dos favoritos')
+              : _t('produto.favorite.addTooltip', 'Marcar como favorito'),
       icon: _favorito ? Icons.favorite_rounded : Icons.favorite_border_rounded,
     );
 
     final Widget catalogoAction = _buildHeaderToggleButton(
       context,
       active: _disponivelParaCatalogo,
-      onPressed: (_isLoading || _catalogoAtualizando)
-          ? null
-          : () {
-              _alternarDisponivelParaCatalogo();
-            },
-      tooltip: _disponivelParaCatalogo
-          ? _t(
-              'produto.catalog.disableTooltip',
-              'Retirar da disponibilidade para catálogo',
-            )
-          : _t('produto.catalog.enableTooltip', 'Disponibilizar para catálogo'),
-      icon: _disponivelParaCatalogo
-          ? Icons.storefront_rounded
-          : Icons.storefront_outlined,
+      onPressed:
+          (_isLoading || _catalogoAtualizando)
+              ? null
+              : () {
+                _alternarDisponivelParaCatalogo();
+              },
+      tooltip:
+          _disponivelParaCatalogo
+              ? _t(
+                'produto.catalog.disableTooltip',
+                'Retirar da disponibilidade para catálogo',
+              )
+              : _t(
+                'produto.catalog.enableTooltip',
+                'Disponibilizar para catálogo',
+              ),
+      icon:
+          _disponivelParaCatalogo
+              ? Icons.storefront_rounded
+              : Icons.storefront_outlined,
     );
     final Widget closeButton = IconButton.filledTonal(
       onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
@@ -1322,6 +1347,18 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   }) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool dark = theme.brightness == Brightness.dark;
+    final Color cardBackground =
+        dark ? tokens.cardBackground : colorScheme.surface;
+    final Color iconSurface =
+        dark
+            ? tokens.surfaceMuted
+            : colorScheme.primary.withValues(alpha: 0.10);
+    final Color shadowColor =
+        dark
+            ? const Color(0xFF020617).withValues(alpha: 0.20)
+            : Colors.black.withValues(alpha: 0.035);
 
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: 1),
@@ -1340,13 +1377,13 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: colorScheme.surface,
+          color: cardBackground,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: colorScheme.outlineVariant),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.035),
-              blurRadius: 16,
+              color: shadowColor,
+              blurRadius: dark ? 24 : 16,
               offset: const Offset(0, 8),
             ),
           ],
@@ -1360,7 +1397,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(alpha: 0.10),
+                    color: iconSurface,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(icon, color: colorScheme.primary, size: 22),
@@ -1416,14 +1453,16 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
       curve: Curves.easeOutCubic,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: value
-            ? colorScheme.primary.withValues(alpha: 0.045)
-            : colorScheme.surface,
+        color:
+            value
+                ? colorScheme.primary.withValues(alpha: 0.045)
+                : colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: value
-              ? colorScheme.primary.withValues(alpha: 0.28)
-              : colorScheme.outlineVariant,
+          color:
+              value
+                  ? colorScheme.primary.withValues(alpha: 0.28)
+                  : colorScheme.outlineVariant,
         ),
       ),
       child: Row(
@@ -1505,23 +1544,25 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             runSpacing: 10,
             children: <Widget>[
               FilledButton.icon(
-                onPressed: _isLoading || slotAtivo.isLoading
-                    ? null
-                    : () => _selecionarFotoParaSlot(_slotSelecionadoIndex),
+                onPressed:
+                    _isLoading || slotAtivo.isLoading
+                        ? null
+                        : () => _selecionarFotoParaSlot(_slotSelecionadoIndex),
                 icon: const Icon(Icons.upload_file_outlined),
                 label: Text(
                   slotAtivo.image == null
                       ? _t(
-                          'produto.web.addActiveSlotImage',
-                          'Adicionar no slot ativo',
-                        )
+                        'produto.web.addActiveSlotImage',
+                        'Adicionar no slot ativo',
+                      )
                       : _t('produto.web.changeImage', 'Trocar imagem'),
                 ),
               ),
               OutlinedButton.icon(
-                onPressed: _isLoading || slotAtivo.image == null
-                    ? null
-                    : () => _removerImagemDoSlot(_slotSelecionadoIndex),
+                onPressed:
+                    _isLoading || slotAtivo.image == null
+                        ? null
+                        : () => _removerImagemDoSlot(_slotSelecionadoIndex),
                 icon: const Icon(Icons.delete_outline),
                 label: Text(
                   _t(
@@ -1559,13 +1600,13 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           Text(
             _temSlotLivre
                 ? _t(
-                    'produto.web.applyAiSuggestionHint',
-                    'Você pode aplicar sugestões de IA no slot ativo ou no próximo slot livre.',
-                  )
+                  'produto.web.applyAiSuggestionHint',
+                  'Você pode aplicar sugestões de IA no slot ativo ou no próximo slot livre.',
+                )
                 : _t(
-                    'produto.web.imageLimitReachedHint',
-                    'Limite de imagens atingido. Remova uma miniatura para continuar.',
-                  ),
+                  'produto.web.imageLimitReachedHint',
+                  'Limite de imagens atingido. Remova uma miniatura para continuar.',
+                ),
             style: TextStyle(
               fontSize: 12,
               color: tokens.secondaryText,
@@ -1621,36 +1662,37 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     final bool hasImage = slotAtivo.image != null;
     final bool isSugestao = slotAtivo.image?.origem == 'SUGESTAO';
 
-    final Widget imageContent = hasImage
-        ? _buildImageContent(
-            context,
-            slotAtivo,
-            fit: BoxFit.cover,
-            brokenIconSize: 34,
-          )
-        : Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Icon(
-                Icons.photo_camera_back_outlined,
-                size: 38,
-                color: tokens.info,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Nenhuma imagem no slot ${_slotSelecionadoIndex + 1}',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: tokens.primaryText,
+    final Widget imageContent =
+        hasImage
+            ? _buildImageContent(
+              context,
+              slotAtivo,
+              fit: BoxFit.cover,
+              brokenIconSize: 34,
+            )
+            : Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Icon(
+                  Icons.photo_camera_back_outlined,
+                  size: 38,
+                  color: tokens.info,
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Use o botão de upload ou escolha uma sugestão por IA.',
-                style: TextStyle(fontSize: 12, color: tokens.secondaryText),
-              ),
-            ],
-          );
+                const SizedBox(height: 8),
+                Text(
+                  'Nenhuma imagem no slot ${_slotSelecionadoIndex + 1}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: tokens.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Use o botão de upload ou escolha uma sugestão por IA.',
+                  style: TextStyle(fontSize: 12, color: tokens.secondaryText),
+                ),
+              ],
+            );
 
     return Container(
       width: double.infinity,
@@ -1713,16 +1755,17 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     final bool hasImage = slot.image != null;
     final bool isAtivo = index == _slotSelecionadoIndex;
 
-    final Widget thumb = hasImage
-        ? _buildImageContent(
-            context,
-            slot,
-            fit: BoxFit.cover,
-            brokenIconSize: 20,
-            loadingSize: 18,
-            preferThumbnail: true,
-          )
-        : Icon(Icons.add_photo_alternate_outlined, color: tokens.mutedText);
+    final Widget thumb =
+        hasImage
+            ? _buildImageContent(
+              context,
+              slot,
+              fit: BoxFit.cover,
+              brokenIconSize: 20,
+              loadingSize: 18,
+              preferThumbnail: true,
+            )
+            : Icon(Icons.add_photo_alternate_outlined, color: tokens.mutedText);
 
     return InkWell(
       onTap: () => setState(() => _slotSelecionadoIndex = index),
@@ -1748,15 +1791,16 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 color: tokens.surfaceMuted,
               ),
               clipBehavior: Clip.antiAlias,
-              child: slot.isLoading
-                  ? const Center(
-                      child: SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : Center(child: thumb),
+              child:
+                  slot.isLoading
+                      ? const Center(
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                      : Center(child: thumb),
             ),
             const SizedBox(height: 6),
             Text(
@@ -1880,13 +1924,13 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
             child: Text(
               _tipoSelecionado == ProdutoCadastroFormUtils.tipoServico
                   ? _t(
-                      'produto.web.serviceModeSummary',
-                      'Modo serviço ligado: destaque maior para garantia e alteração de valor.',
-                    )
+                    'produto.web.serviceModeSummary',
+                    'Modo serviço ligado: destaque maior para garantia e alteração de valor.',
+                  )
                   : _t(
-                      'produto.web.productModeSummary',
-                      'Modo produto ligado: foco em estoque, custo e preço de venda.',
-                    ),
+                    'produto.web.productModeSummary',
+                    'Modo produto ligado: foco em estoque, custo e preço de venda.',
+                  ),
               style: TextStyle(
                 color: colorScheme.onSurface.withOpacity(0.74),
                 fontSize: 12,
@@ -1928,13 +1972,14 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     return Container(
       padding: EdgeInsets.only(bottom: isLast ? 0 : 12, top: 12),
       decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : Border(
-                bottom: BorderSide(
-                  color: tokens.cardBorder.withValues(alpha: 0.72),
+        border:
+            isLast
+                ? null
+                : Border(
+                  bottom: BorderSide(
+                    color: tokens.cardBorder.withValues(alpha: 0.72),
+                  ),
                 ),
-              ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2076,19 +2121,20 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
 
   int get _totalEtapas => _cadastroCompleto ? 5 : 3;
 
-  List<String> get _rotulosEtapas => _cadastroCompleto
-      ? <String>[
-          _t('produto.journey.identification', 'Identificação'),
-          _t('produto.journey.commercial', 'Comercial'),
-          _t('produto.journey.operation', 'Operação'),
-          _t('produto.journey.fiscal', 'Fiscal'),
-          _t('produto.journey.review', 'Revisão'),
-        ]
-      : <String>[
-          _t('produto.journey.identification', 'Identificação'),
-          _t('produto.journey.commercial', 'Comercial'),
-          _t('produto.journey.review', 'Revisão'),
-        ];
+  List<String> get _rotulosEtapas =>
+      _cadastroCompleto
+          ? <String>[
+            _t('produto.journey.identification', 'Identificação'),
+            _t('produto.journey.commercial', 'Comercial'),
+            _t('produto.journey.operation', 'Operação'),
+            _t('produto.journey.fiscal', 'Fiscal'),
+            _t('produto.journey.review', 'Revisão'),
+          ]
+          : <String>[
+            _t('produto.journey.identification', 'Identificação'),
+            _t('produto.journey.commercial', 'Comercial'),
+            _t('produto.journey.review', 'Revisão'),
+          ];
 
   void _selecionarTipoCadastro(String tipo) {
     if (_isLoading) return;
@@ -2106,9 +2152,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     });
   }
 
-  String get _rotuloTipoCadastroSelecionado => _cadastroCompleto
-      ? _t('produto.journey.completeTitle', 'Cadastro completo')
-      : _t('produto.journey.summaryTitle', 'Cadastro resumido');
+  String get _rotuloTipoCadastroSelecionado =>
+      _cadastroCompleto
+          ? _t('produto.journey.completeTitle', 'Cadastro completo')
+          : _t('produto.journey.summaryTitle', 'Cadastro resumido');
 
   void _abrirSeletorTipoCadastro() {
     if (_isLoading || _seletorTipoCadastroExpandido) return;
@@ -2157,20 +2204,20 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           );
           return compacto
               ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    resumido,
-                    const SizedBox(height: 12),
-                    completo,
-                  ],
-                )
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  resumido,
+                  const SizedBox(height: 12),
+                  completo,
+                ],
+              )
               : Row(
-                  children: <Widget>[
-                    Expanded(child: resumido),
-                    const SizedBox(width: 14),
-                    Expanded(child: completo),
-                  ],
-                );
+                children: <Widget>[
+                  Expanded(child: resumido),
+                  const SizedBox(width: 14),
+                  Expanded(child: completo),
+                ],
+              );
         },
       ),
     );
@@ -2286,14 +2333,15 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
           ),
         );
       },
-      child: exibirSeletorCompleto
-          ? KeyedSubtree(
-              key: const ValueKey<String>(
-                'produto-tipo-cadastro-expandido-web',
-              ),
-              child: _buildTipoCadastroSelector(context),
-            )
-          : _buildTipoCadastroCompacto(context),
+      child:
+          exibirSeletorCompleto
+              ? KeyedSubtree(
+                key: const ValueKey<String>(
+                  'produto-tipo-cadastro-expandido-web',
+                ),
+                child: _buildTipoCadastroSelector(context),
+              )
+              : _buildTipoCadastroCompacto(context),
     );
   }
 
@@ -2301,20 +2349,46 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool dark = theme.brightness == Brightness.dark;
     final List<String> rotulos = _rotulosEtapas;
     final QualidadeCadastroProduto qualidade = _qualidadeCadastro;
     final List<MelhoriaQualidadeCadastroProduto> melhorias = qualidade.melhorias
         .take(2)
         .toList(growable: false);
-    final LocaleSettingsProvider locale = context
-        .watch<LocaleSettingsProvider>();
+    final LocaleSettingsProvider locale =
+        context.watch<LocaleSettingsProvider>();
+    final Color progressBackground =
+        dark
+            ? Color.alphaBlend(
+              tokens.info.withValues(alpha: 0.06),
+              tokens.surface,
+            )
+            : colorScheme.surface;
+    final Color progressBorder =
+        dark
+            ? Color.alphaBlend(
+              tokens.info.withValues(alpha: 0.12),
+              tokens.cardBorder,
+            )
+            : colorScheme.outlineVariant;
+    final Color progressShadow =
+        dark
+            ? const Color(0xFF020617).withValues(alpha: 0.16)
+            : Colors.black.withValues(alpha: 0.03);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: progressBackground,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: Border.all(color: progressBorder),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: progressShadow,
+            blurRadius: dark ? 22 : 14,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
@@ -2391,122 +2465,130 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               ],
             ),
           );
-          final Widget melhoriasWidget = melhorias.isEmpty
-              ? Text(
-                  context.t('produto.quality.completeMessage'),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: tokens.secondaryText,
-                    fontWeight: FontWeight.w600,
-                  ),
-                )
-              : Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: melhorias
-                      .map((melhoria) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: tokens.surfaceMuted,
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: tokens.cardBorder),
-                          ),
-                          child: Text(
-                            '${_rotuloMelhoria(melhoria.criterio)} '
-                            '+${locale.formatPercent(melhoria.pontos)}',
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: tokens.primaryText,
-                              fontWeight: FontWeight.w700,
+          final Widget melhoriasWidget =
+              melhorias.isEmpty
+                  ? Text(
+                    context.t('produto.quality.completeMessage'),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: tokens.secondaryText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  )
+                  : Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: melhorias
+                        .map((melhoria) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 7,
                             ),
-                          ),
-                        );
-                      })
-                      .toList(growable: false),
-                );
-          final Widget etapasWidget = compacto
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      '${_t('produto.journey.step', 'Etapa')} ${_etapaAtual + 1} '
-                      '${_t('produto.journey.of', 'de')} $_totalEtapas · ${rotulos[_etapaAtual]}',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    LinearProgressIndicator(
-                      value: (_etapaAtual + 1) / _totalEtapas,
-                      minHeight: 6,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ],
-                )
-              : Row(
-                  children: List<Widget>.generate(rotulos.length, (int index) {
-                    final bool ativa = index == _etapaAtual;
-                    final bool concluida = index < _etapaAtual;
-                    return Expanded(
-                      child: Row(
-                        children: <Widget>[
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            width: 30,
-                            height: 30,
-                            alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: ativa || concluida
-                                  ? colorScheme.primary
-                                  : colorScheme.surfaceContainerHighest,
-                              shape: BoxShape.circle,
+                              color: tokens.surfaceMuted,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(color: tokens.cardBorder),
                             ),
-                            child: concluida
-                                ? Icon(
-                                    Icons.check_rounded,
-                                    size: 17,
-                                    color: colorScheme.onPrimary,
-                                  )
-                                : Text(
-                                    '${index + 1}',
-                                    style: theme.textTheme.labelMedium
-                                        ?.copyWith(
-                                          color: ativa
-                                              ? colorScheme.onPrimary
-                                              : colorScheme.onSurfaceVariant,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                  ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
                             child: Text(
-                              rotulos[index],
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: ativa
-                                    ? colorScheme.onSurface
-                                    : colorScheme.onSurfaceVariant,
-                                fontWeight: ativa
-                                    ? FontWeight.w900
-                                    : FontWeight.w600,
+                              '${_rotuloMelhoria(melhoria.criterio)} '
+                              '+${locale.formatPercent(melhoria.pontos)}',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: tokens.primaryText,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
-                          ),
-                          if (index < rotulos.length - 1)
-                            Container(
-                              width: 22,
-                              height: 1,
-                              color: colorScheme.outlineVariant,
-                            ),
-                        ],
+                          );
+                        })
+                        .toList(growable: false),
+                  );
+          final Widget etapasWidget =
+              compacto
+                  ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        '${_t('produto.journey.step', 'Etapa')} ${_etapaAtual + 1} '
+                        '${_t('produto.journey.of', 'de')} $_totalEtapas · ${rotulos[_etapaAtual]}',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                    );
-                  }),
-                );
+                      const SizedBox(height: 10),
+                      LinearProgressIndicator(
+                        value: (_etapaAtual + 1) / _totalEtapas,
+                        minHeight: 6,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ],
+                  )
+                  : Row(
+                    children: List<Widget>.generate(rotulos.length, (
+                      int index,
+                    ) {
+                      final bool ativa = index == _etapaAtual;
+                      final bool concluida = index < _etapaAtual;
+                      return Expanded(
+                        child: Row(
+                          children: <Widget>[
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              width: 30,
+                              height: 30,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color:
+                                    ativa || concluida
+                                        ? colorScheme.primary
+                                        : colorScheme.surfaceContainerHighest,
+                                shape: BoxShape.circle,
+                              ),
+                              child:
+                                  concluida
+                                      ? Icon(
+                                        Icons.check_rounded,
+                                        size: 17,
+                                        color: colorScheme.onPrimary,
+                                      )
+                                      : Text(
+                                        '${index + 1}',
+                                        style: theme.textTheme.labelMedium
+                                            ?.copyWith(
+                                              color:
+                                                  ativa
+                                                      ? colorScheme.onPrimary
+                                                      : colorScheme
+                                                          .onSurfaceVariant,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                      ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                rotulos[index],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color:
+                                      ativa
+                                          ? colorScheme.onSurface
+                                          : colorScheme.onSurfaceVariant,
+                                  fontWeight:
+                                      ativa ? FontWeight.w900 : FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            if (index < rotulos.length - 1)
+                              Container(
+                                width: 22,
+                                height: 1,
+                                color: colorScheme.outlineVariant,
+                              ),
+                          ],
+                        ),
+                      );
+                    }),
+                  );
 
           if (compacto) {
             return Column(
@@ -2661,8 +2743,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                         ),
                       )
                       .toList(growable: false),
-                  onSelected: (String value) =>
-                      setState(() => _categoriaUnidadeMedida = value),
+                  onSelected:
+                      (String value) =>
+                          setState(() => _categoriaUnidadeMedida = value),
                 ),
               ),
               SizedBox(
@@ -2705,8 +2788,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     'Movimenta saldo nas entradas e vendas.',
                   ),
                   value: _controlaEstoque,
-                  onChanged: (bool value) =>
-                      setState(() => _controlaEstoque = value),
+                  onChanged:
+                      (bool value) => setState(() => _controlaEstoque = value),
                 ),
               ),
               SizedBox(
@@ -2722,8 +2805,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     'Aceita quantidades decimais para peso, área ou volume.',
                   ),
                   value: _permiteVendaFracionada,
-                  onChanged: (bool value) =>
-                      setState(() => _permiteVendaFracionada = value),
+                  onChanged:
+                      (bool value) =>
+                          setState(() => _permiteVendaFracionada = value),
                 ),
               ),
               SizedBox(
@@ -2739,8 +2823,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     'Mantém a venda disponível mesmo sem saldo suficiente.',
                   ),
                   value: _permiteEstoqueNegativo,
-                  onChanged: (bool value) =>
-                      setState(() => _permiteEstoqueNegativo = value),
+                  onChanged:
+                      (bool value) =>
+                          setState(() => _permiteEstoqueNegativo = value),
                 ),
               ),
             ],
@@ -2755,9 +2840,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
     required bool telaGrande,
     required bool telaMedia,
   }) {
-    final double largura = telaGrande
-        ? 240
-        : (telaMedia ? 220 : double.infinity);
+    final double largura =
+        telaGrande ? 240 : (telaMedia ? 220 : double.infinity);
     Widget campo(TextEditingController controller, String label) {
       return SizedBox(
         width: largura,
@@ -2868,41 +2952,40 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 ),
               ),
               FilledButton.icon(
-                onPressed: _isLoading
-                    ? null
-                    : (_etapaAtual == _totalEtapas - 1
-                          ? _salvarProduto
-                          : _avancarEtapa),
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(
-                        _etapaAtual == _totalEtapas - 1
-                            ? Icons.save_outlined
-                            : Icons.arrow_forward_rounded,
-                      ),
+                onPressed:
+                    _isLoading
+                        ? null
+                        : (_etapaAtual == _totalEtapas - 1
+                            ? _salvarProduto
+                            : _avancarEtapa),
+                icon:
+                    _isLoading
+                        ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : Icon(
+                          _etapaAtual == _totalEtapas - 1
+                              ? Icons.save_outlined
+                              : Icons.arrow_forward_rounded,
+                        ),
                 label: Text(
                   _isLoading
                       ? (_isModoEdicao
-                            ? _t(
-                                'produto.web.savingUpdate',
-                                'Salvando alteração...',
-                              )
-                            : _t('produto.web.saving', 'Salvando...'))
+                          ? _t(
+                            'produto.web.savingUpdate',
+                            'Salvando alteração...',
+                          )
+                          : _t('produto.web.saving', 'Salvando...'))
                       : (_etapaAtual < _totalEtapas - 1
-                            ? _t('common.continue', 'Continuar')
-                            : (_isModoEdicao
-                                  ? _t(
-                                      'produto.web.saveUpdate',
-                                      'Salvar alteração',
-                                    )
-                                  : _t(
-                                      'produto.web.saveProduct',
-                                      'Salvar produto',
-                                    ))),
+                          ? _t('common.continue', 'Continuar')
+                          : (_isModoEdicao
+                              ? _t('produto.web.saveUpdate', 'Salvar alteração')
+                              : _t(
+                                'produto.web.saveProduct',
+                                'Salvar produto',
+                              ))),
                 ),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
@@ -2922,6 +3005,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final WebThemeTokens tokens = WebThemeTokens.of(context);
         final bool telaGrande = constraints.maxWidth >= 1080;
         final bool telaMedia = constraints.maxWidth >= 760;
 
@@ -3053,9 +3137,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                 runSpacing: 16,
                 children: <Widget>[
                   SizedBox(
-                    width: telaGrande
-                        ? 250
-                        : (telaMedia ? 240 : double.infinity),
+                    width:
+                        telaGrande ? 250 : (telaMedia ? 240 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _tempoGarantiaController,
@@ -3067,9 +3150,8 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                     ),
                   ),
                   SizedBox(
-                    width: telaGrande
-                        ? 220
-                        : (telaMedia ? 220 : double.infinity),
+                    width:
+                        telaGrande ? 220 : (telaMedia ? 220 : double.infinity),
                     child: _buildTextField(
                       context: context,
                       controller: _valorComissaoController,
@@ -3119,8 +3201,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                         'Permite ajustar o valor durante o atendimento.',
                       ),
                       value: _podeAlterarValorNaHora,
-                      onChanged: (value) =>
-                          setState(() => _podeAlterarValorNaHora = value),
+                      onChanged:
+                          (value) =>
+                              setState(() => _podeAlterarValorNaHora = value),
                     ),
                   ),
                   SizedBox(
@@ -3136,8 +3219,10 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                         'Aplica comissão específica para este item.',
                       ),
                       value: _produtoTemComissaoEspecial,
-                      onChanged: (value) =>
-                          setState(() => _produtoTemComissaoEspecial = value),
+                      onChanged:
+                          (value) => setState(
+                            () => _produtoTemComissaoEspecial = value,
+                          ),
                     ),
                   ),
                 ],
@@ -3245,22 +3330,23 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               _buildSugestoesImagemCard(context),
             ],
           );
-          conteudoEtapa = telaGrande
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(flex: 7, child: imagens),
-                    const SizedBox(width: 24),
-                    Expanded(flex: 4, child: _buildResumoCard(context)),
-                  ],
-                )
-              : Column(
-                  children: <Widget>[
-                    _buildResumoCard(context),
-                    const SizedBox(height: 20),
-                    imagens,
-                  ],
-                );
+          conteudoEtapa =
+              telaGrande
+                  ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(flex: 7, child: imagens),
+                      const SizedBox(width: 24),
+                      Expanded(flex: 4, child: _buildResumoCard(context)),
+                    ],
+                  )
+                  : Column(
+                    children: <Widget>[
+                      _buildResumoCard(context),
+                      const SizedBox(height: 20),
+                      imagens,
+                    ],
+                  );
         }
 
         return Form(
@@ -3278,8 +3364,9 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
                         children: <Widget>[
                           AnimatedBuilder(
                             animation: _qualidadeListenable,
-                            builder: (BuildContext context, Widget? child) =>
-                                _buildJourneyProgress(context),
+                            builder:
+                                (BuildContext context, Widget? child) =>
+                                    _buildJourneyProgress(context),
                           ),
                           const SizedBox(height: 20),
                           _buildTipoCadastroControl(context),
@@ -3301,7 +3388,7 @@ class _CadastroProdutoWebBodyState extends State<CadastroProdutoWebBody> {
               ),
               Container(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                color: Theme.of(context).colorScheme.surface,
+                color: tokens.surfaceMuted,
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1320),
@@ -3336,14 +3423,24 @@ class _CadastroModeOptionWeb extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color backgroundColor =
+        selected ? tokens.selectedBackground : colorScheme.surface;
+    final Color borderColor =
+        selected ? tokens.selectedBorder : colorScheme.outlineVariant;
+    final Color iconSurface =
+        selected
+            ? tokens.info.withValues(alpha: 0.14)
+            : colorScheme.surfaceContainerHighest;
+    final Color iconColor =
+        selected ? tokens.info : colorScheme.onSurfaceVariant;
+
     return Semantics(
       button: true,
       selected: selected,
       label: title,
       child: Material(
-        color: selected
-            ? colorScheme.primary.withValues(alpha: 0.06)
-            : colorScheme.surface,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           onTap: onTap,
@@ -3352,13 +3449,19 @@ class _CadastroModeOptionWeb extends StatelessWidget {
             duration: const Duration(milliseconds: 180),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
+              color: backgroundColor,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: selected
-                    ? colorScheme.primary.withValues(alpha: 0.50)
-                    : colorScheme.outlineVariant,
-                width: selected ? 1.4 : 1,
-              ),
+              border: Border.all(color: borderColor, width: selected ? 1.4 : 1),
+              boxShadow:
+                  selected
+                      ? <BoxShadow>[
+                        BoxShadow(
+                          color: tokens.info.withValues(alpha: 0.10),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
+                      ]
+                      : null,
             ),
             child: Row(
               children: <Widget>[
@@ -3366,10 +3469,10 @@ class _CadastroModeOptionWeb extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(alpha: 0.10),
+                    color: iconSurface,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(icon, color: colorScheme.primary),
+                  child: Icon(icon, color: iconColor),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -3400,9 +3503,7 @@ class _CadastroModeOptionWeb extends StatelessWidget {
                 const SizedBox(width: 10),
                 Icon(
                   selected ? Icons.check_circle_rounded : Icons.circle_outlined,
-                  color: selected
-                      ? colorScheme.primary
-                      : colorScheme.onSurfaceVariant,
+                  color: selected ? tokens.info : colorScheme.onSurfaceVariant,
                 ),
               ],
             ),
@@ -3505,7 +3606,8 @@ class _SixWebDropdownFieldState extends State<_SixWebDropdownField> {
         Overlay.of(context).context.findRenderObject()! as RenderBox;
     final Offset position = box.localToGlobal(Offset.zero, ancestor: overlay);
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool dark = theme.brightness == Brightness.dark;
     final String effectiveValue = _effectiveValue;
 
     final String? selected = await showMenu<String>(
@@ -3519,28 +3621,35 @@ class _SixWebDropdownFieldState extends State<_SixWebDropdownField> {
         ),
         Offset.zero & overlay.size,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: tokens.cardBorder),
+      ),
       elevation: 12,
-      color: colorScheme.surface,
+      color: dark ? tokens.surfaceElevated : tokens.menuBackground,
       constraints: BoxConstraints(
         minWidth: box.size.width,
         maxWidth: box.size.width,
         maxHeight: 360,
       ),
-      items: widget.options
-          .map(
-            (_SixWebDropdownOption option) => PopupMenuItem<String>(
-              value: option.value,
-              height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              child: _SixWebDropdownMenuItem(
-                option: option,
-                selected: option.value == effectiveValue,
-                colorScheme: colorScheme,
-              ),
-            ),
-          )
-          .toList(),
+      items:
+          widget.options
+              .map(
+                (_SixWebDropdownOption option) => PopupMenuItem<String>(
+                  value: option.value,
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  child: _SixWebDropdownMenuItem(
+                    option: option,
+                    selected: option.value == effectiveValue,
+                    tokens: tokens,
+                  ),
+                ),
+              )
+              .toList(),
     );
 
     if (!mounted) {
@@ -3556,20 +3665,35 @@ class _SixWebDropdownFieldState extends State<_SixWebDropdownField> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool dark = theme.brightness == Brightness.dark;
     final bool active = widget.enabled && (_open || _hover);
     final bool hasError =
         widget.errorText != null && widget.errorText!.trim().isNotEmpty;
-    final Color borderColor = hasError
-        ? colorScheme.error
-        : active
-        ? colorScheme.primary.withValues(alpha: 0.42)
-        : colorScheme.outline.withValues(alpha: 0.22);
-    final Color backgroundColor = widget.enabled
-        ? (active
-              ? colorScheme.primary.withValues(alpha: 0.05)
-              : colorScheme.surface)
-        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.34);
+    final Color borderColor =
+        hasError
+            ? tokens.danger
+            : active
+            ? tokens.selectedBorder
+            : tokens.cardBorder;
+    final Color backgroundColor =
+        widget.enabled
+            ? (active
+                ? (dark ? tokens.surfaceElevated : tokens.surfaceMuted)
+                : tokens.inputBackground)
+            : tokens.disabledBackground.withValues(alpha: dark ? 0.72 : 0.55);
+    final Color labelColor =
+        widget.enabled ? tokens.secondaryText : tokens.disabledForeground;
+    final Color valueColor =
+        widget.enabled
+            ? (widget.showPlaceholder
+                ? tokens.secondaryText
+                : tokens.primaryText)
+            : tokens.disabledForeground;
+    final Color accentColor =
+        widget.enabled
+            ? (active ? tokens.info : tokens.secondaryText)
+            : tokens.disabledForeground;
 
     return Semantics(
       button: true,
@@ -3582,9 +3706,10 @@ class _SixWebDropdownFieldState extends State<_SixWebDropdownField> {
             message: widget.tooltip ?? widget.label,
             waitDuration: const Duration(milliseconds: 450),
             child: MouseRegion(
-              cursor: widget.enabled
-                  ? SystemMouseCursors.click
-                  : SystemMouseCursors.basic,
+              cursor:
+                  widget.enabled
+                      ? SystemMouseCursors.click
+                      : SystemMouseCursors.basic,
               onEnter: (_) => setState(() => _hover = true),
               onExit: (_) => setState(() => _hover = false),
               child: Material(
@@ -3605,27 +3730,22 @@ class _SixWebDropdownFieldState extends State<_SixWebDropdownField> {
                       color: backgroundColor,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: borderColor),
-                      boxShadow: active
-                          ? <BoxShadow>[
-                              BoxShadow(
-                                color: colorScheme.primary.withValues(
-                                  alpha: 0.10,
+                      boxShadow:
+                          active
+                              ? <BoxShadow>[
+                                BoxShadow(
+                                  color: tokens.info.withValues(
+                                    alpha: dark ? 0.14 : 0.10,
+                                  ),
+                                  blurRadius: dark ? 20 : 16,
+                                  offset: const Offset(0, 8),
                                 ),
-                                blurRadius: 18,
-                                offset: const Offset(0, 8),
-                              ),
-                            ]
-                          : null,
+                              ]
+                              : null,
                     ),
                     child: Row(
                       children: <Widget>[
-                        Icon(
-                          widget.icon,
-                          size: 20,
-                          color: widget.enabled
-                              ? colorScheme.primary
-                              : colorScheme.onSurfaceVariant,
-                        ),
+                        Icon(widget.icon, size: 20, color: accentColor),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
@@ -3637,7 +3757,7 @@ class _SixWebDropdownFieldState extends State<_SixWebDropdownField> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.labelSmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
+                                  color: labelColor,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -3647,9 +3767,7 @@ class _SixWebDropdownFieldState extends State<_SixWebDropdownField> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: widget.showPlaceholder
-                                      ? colorScheme.onSurfaceVariant
-                                      : colorScheme.onSurface,
+                                  color: valueColor,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
@@ -3663,9 +3781,7 @@ class _SixWebDropdownFieldState extends State<_SixWebDropdownField> {
                           curve: Curves.easeOutCubic,
                           child: Icon(
                             Icons.keyboard_arrow_down_rounded,
-                            color: active
-                                ? colorScheme.primary
-                                : colorScheme.onSurfaceVariant,
+                            color: accentColor,
                             size: 20,
                           ),
                         ),
@@ -3685,7 +3801,7 @@ class _SixWebDropdownFieldState extends State<_SixWebDropdownField> {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.error,
+                  color: tokens.danger,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -3701,12 +3817,12 @@ class _SixWebDropdownMenuItem extends StatelessWidget {
   const _SixWebDropdownMenuItem({
     required this.option,
     required this.selected,
-    required this.colorScheme,
+    required this.tokens,
   });
 
   final _SixWebDropdownOption option;
   final bool selected;
-  final ColorScheme colorScheme;
+  final WebThemeTokens tokens;
 
   @override
   Widget build(BuildContext context) {
@@ -3714,18 +3830,17 @@ class _SixWebDropdownMenuItem extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
-        color: selected
-            ? colorScheme.primary.withValues(alpha: 0.08)
-            : Colors.transparent,
+        color: selected ? tokens.selectedBackground : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: selected ? tokens.selectedBorder : Colors.transparent,
+        ),
       ),
       child: Row(
         children: <Widget>[
           Icon(
             selected ? Icons.check_circle_rounded : option.icon,
-            color: selected
-                ? colorScheme.primary
-                : colorScheme.primary.withValues(alpha: 0.78),
+            color: selected ? tokens.info : tokens.mutedText,
             size: 18,
           ),
           const SizedBox(width: 10),
@@ -3735,7 +3850,7 @@ class _SixWebDropdownMenuItem extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: colorScheme.onSurface,
+                color: tokens.primaryText,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
               ),
             ),

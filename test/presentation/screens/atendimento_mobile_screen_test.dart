@@ -7,9 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sixpos/data/datasources/operational_procedure_mock_data_source.dart';
 import 'package:sixpos/data/models/atendimento_tecnico_models.dart';
 import 'package:sixpos/data/models/regionalizacao_models.dart';
-import 'package:sixpos/data/models/tela_inicial_models.dart';
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
-import 'package:sixpos/data/services/telainicial_web/tela_inicial_api_client.dart';
 import 'package:sixpos/domain/models/regionalizacao_models.dart';
 import 'package:sixpos/domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
@@ -495,10 +493,7 @@ void main() {
   testWidgets('falha nos contadores não bloqueia ações principais', (
     WidgetTester tester,
   ) async {
-    final List<String> navigations = await _pumpAtendimento(
-      tester,
-      apiClient: _FakeResumoClient(error: StateError('offline')),
-    );
+    final List<String> navigations = await _pumpAtendimento(tester);
 
     expect(find.text('Não foi possível atualizar agora'), findsNothing);
 
@@ -548,86 +543,96 @@ void main() {
 }
 
 void _expectActionCardHierarchy(WidgetTester tester) {
-  final double saleHeight = tester
-      .getSize(
-        find.byKey(
-          const ValueKey<String>('atendimento-action-new-sale'),
-          skipOffstage: false,
-        ),
-      )
-      .height;
-  final double saleWidth = tester
-      .getSize(
-        find.byKey(
-          const ValueKey<String>('atendimento-action-new-sale'),
-          skipOffstage: false,
-        ),
-      )
-      .width;
-  final double serviceHeight = tester
-      .getSize(
-        find.byKey(
-          const ValueKey<String>('atendimento-action-new-service'),
-          skipOffstage: false,
-        ),
-      )
-      .height;
-  final double serviceWidth = tester
-      .getSize(
-        find.byKey(
-          const ValueKey<String>('atendimento-action-new-service'),
-          skipOffstage: false,
-        ),
-      )
-      .width;
-  final double receiveHeight = tester
-      .getSize(
-        find.byKey(
-          const ValueKey<String>('atendimento-action-receive'),
-          skipOffstage: false,
-        ),
-      )
-      .height;
-  final double receiveWidth = tester
-      .getSize(
-        find.byKey(
-          const ValueKey<String>('atendimento-action-receive'),
-          skipOffstage: false,
-        ),
-      )
-      .width;
-  final double cashHeight = tester
-      .getSize(
-        find.byKey(
-          const ValueKey<String>('atendimento-action-cash'),
-          skipOffstage: false,
-        ),
-      )
-      .height;
-  final double cashWidth = tester
-      .getSize(
-        find.byKey(
-          const ValueKey<String>('atendimento-action-cash'),
-          skipOffstage: false,
-        ),
-      )
-      .width;
-  final double returnHeight = tester
-      .getSize(
-        find.byKey(
-          const ValueKey<String>('atendimento-action-return'),
-          skipOffstage: false,
-        ),
-      )
-      .height;
-  final double returnWidth = tester
-      .getSize(
-        find.byKey(
-          const ValueKey<String>('atendimento-action-return'),
-          skipOffstage: false,
-        ),
-      )
-      .width;
+  final double saleHeight =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-new-sale'),
+              skipOffstage: false,
+            ),
+          )
+          .height;
+  final double saleWidth =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-new-sale'),
+              skipOffstage: false,
+            ),
+          )
+          .width;
+  final double serviceHeight =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-new-service'),
+              skipOffstage: false,
+            ),
+          )
+          .height;
+  final double serviceWidth =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-new-service'),
+              skipOffstage: false,
+            ),
+          )
+          .width;
+  final double receiveHeight =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-receive'),
+              skipOffstage: false,
+            ),
+          )
+          .height;
+  final double receiveWidth =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-receive'),
+              skipOffstage: false,
+            ),
+          )
+          .width;
+  final double cashHeight =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-cash'),
+              skipOffstage: false,
+            ),
+          )
+          .height;
+  final double cashWidth =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-cash'),
+              skipOffstage: false,
+            ),
+          )
+          .width;
+  final double returnHeight =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-return'),
+              skipOffstage: false,
+            ),
+          )
+          .height;
+  final double returnWidth =
+      tester
+          .getSize(
+            find.byKey(
+              const ValueKey<String>('atendimento-action-return'),
+              skipOffstage: false,
+            ),
+          )
+          .width;
 
   expect(serviceHeight, saleHeight, reason: 'novo serviço');
   expect(serviceWidth, saleWidth, reason: 'largura novo serviço');
@@ -643,7 +648,6 @@ Future<List<String>> _pumpAtendimento(
   Size size = const Size(390, 900),
   double textScale = 1,
   Brightness brightness = Brightness.light,
-  TelaInicialWebApiClient? apiClient,
 }) async {
   final List<String> navigations = <String>[];
 
@@ -666,9 +670,8 @@ Future<List<String>> _pumpAtendimento(
     MaterialApp(
       theme: ThemeData.light(useMaterial3: true),
       darkTheme: ThemeData.dark(useMaterial3: true),
-      themeMode: brightness == Brightness.dark
-          ? ThemeMode.dark
-          : ThemeMode.light,
+      themeMode:
+          brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
       home: MediaQuery(
         data: MediaQueryData(
           disableAnimations: true,
@@ -678,12 +681,10 @@ Future<List<String>> _pumpAtendimento(
           textScaler: TextScaler.linear(textScale),
         ),
         child: AtendimentoMobileScreen(
-          apiClient: apiClient ?? _FakeResumoClient(),
           procedureCoordinator: procedureCoordinator,
           showBottomNavigationBar: false,
-          enableWebSocket: false,
-          onNavigate: (_, Widget page) =>
-              navigations.add(page.runtimeType.toString()),
+          onNavigate:
+              (_, Widget page) => navigations.add(page.runtimeType.toString()),
         ),
       ),
     ),
@@ -760,8 +761,8 @@ Future<List<String>> _pumpNovaVenda(
         ),
         child: OpcoesVendaMobileScreen(
           procedureCoordinator: procedureCoordinator,
-          onNavigate: (_, Widget page) =>
-              navigations.add(page.runtimeType.toString()),
+          onNavigate:
+              (_, Widget page) => navigations.add(page.runtimeType.toString()),
         ),
       ),
     ),
@@ -795,8 +796,8 @@ Future<List<String>> _pumpReceber(
           devicePixelRatio: 1,
         ),
         child: ReceberMobileScreen(
-          onNavigate: (_, Widget page) =>
-              navigations.add(page.runtimeType.toString()),
+          onNavigate:
+              (_, Widget page) => navigations.add(page.runtimeType.toString()),
         ),
       ),
     ),
@@ -821,11 +822,12 @@ Future<void> _pumpPendentesPagamento(
 
   await tester.pumpWidget(
     ChangeNotifierProvider<LocaleSettingsProvider>(
-      create: (_) => LocaleSettingsProvider(
-        regionalizacaoService: RegionalizacaoService(
-          apiClient: _FakeRegionalizacaoApiClient(),
-        ),
-      ),
+      create:
+          (_) => LocaleSettingsProvider(
+            regionalizacaoService: RegionalizacaoService(
+              apiClient: _FakeRegionalizacaoApiClient(),
+            ),
+          ),
       child: MaterialApp(
         home: MediaQuery(
           data: MediaQueryData(
@@ -844,26 +846,6 @@ Future<void> _pumpPendentesPagamento(
 
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 700));
-}
-
-class _FakeResumoClient implements TelaInicialWebApiClient {
-  _FakeResumoClient({this.error});
-
-  final Object? error;
-
-  @override
-  Future<TelaInicialModel> getResumo() async {
-    final Object? currentError = error;
-    if (currentError != null) throw currentError;
-
-    return TelaInicialModel(
-      totalVendasAbertas: 7,
-      totalAtendimentoTecnicosNaoEntregues: 5,
-      totalAtendimentoTecnicoEmAndamento: 3,
-      totalAtendimentoTecnicoAguardandoAssinatura: 1,
-      totalOrdensDeServicoAbertas: 4,
-    );
-  }
 }
 
 class _FakeAtendimentoTecnicoService extends AtendimentoTecnicoService {

@@ -148,6 +148,39 @@ const Map<String, Map<String, String>> _fallbacks = {
         'O item foi recalculado e a venda já reflete a nova quantidade.',
     'pdv.quantityEditor.error':
         'Não foi possível atualizar a quantidade agora. Tente novamente em alguns instantes.',
+    'pdv.customerIdentification.title': 'Identificar cliente',
+    'pdv.customerIdentification.subtitle':
+        'Selecione um cliente cadastrado ou crie um novo sem sair desta etapa.',
+    'pdv.customerIdentification.availableCustomers': 'Clientes ativos',
+    'pdv.customerIdentification.currentCustomer': 'Cliente atual',
+    'pdv.customerIdentification.currentEmpty': 'Nenhum cliente vinculado',
+    'pdv.customerIdentification.searchLabel':
+        'Buscar cliente por nome, documento, telefone ou e-mail',
+    'pdv.customerIdentification.loading': 'Carregando clientes ativos...',
+    'pdv.customerIdentification.loadError':
+        'Não foi possível carregar os clientes.',
+    'pdv.customerIdentification.errorTitle':
+        'Não foi possível carregar os clientes',
+    'pdv.customerIdentification.newCustomer': 'Cadastrar cliente',
+    'pdv.customerIdentification.openingCreate': 'Abrindo cadastro...',
+    'pdv.customerIdentification.createError':
+        'Não foi possível abrir o cadastro de cliente agora.',
+    'pdv.customerIdentification.emptyTitle': 'Nenhum cliente ativo cadastrado',
+    'pdv.customerIdentification.emptyMessage':
+        'Cadastre o cliente agora para seguir com o atendimento sem sair desta etapa.',
+    'pdv.customerIdentification.emptySearchTitle': 'Nenhum cliente encontrado',
+    'pdv.customerIdentification.emptySearchMessage':
+        'Revise os termos da busca ou cadastre um novo cliente para continuar.',
+    'pdv.customerIdentification.removeCustomer': 'Remover cliente atual',
+    'pdv.customerIdentification.unnamedCustomer': 'Cliente sem nome',
+    'pdv.customerIdentification.personTypeFallback': 'PF',
+    'pdv.customerIdentification.noDocument': 'Sem documento',
+    'pdv.customerIdentification.creditEnabled': 'Fiado liberado',
+    'pdv.customerIdentification.creditBlocked':
+        'Fiado bloqueado para novas vendas',
+    'pdv.customerIdentification.creditDisabled': 'Cliente sem fiado liberado',
+    'pdv.customerIdentification.selected': 'Selecionado',
+    'pdv.customerIdentification.select': 'Selecionar',
     'recebimento.valorEmAberto': 'Valor em aberto',
     'recebimento.summaryType': 'Tipo',
     'recebimento.total': 'Total',
@@ -424,6 +457,25 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.loading.subtitle':
         'Buscando a situação atual desta empresa.',
     'workspaceHome.error.title': 'Não foi possível carregar o resumo do dia.',
+    'performance.home.title': 'Minhas metas',
+    'performance.home.subtitle':
+        'Acompanhe suas metas e os resultados atualizados pelo SixoApp.',
+    'performance.home.dashboardTitle': 'Meta x resultado',
+    'performance.home.period': 'Resultados de {start} a {end}',
+    'performance.home.accessibilityLabel': 'Dashboard das minhas metas',
+    'performance.home.loading': 'Carregando suas metas',
+    'performance.home.loadError': 'Não foi possível atualizar suas metas.',
+    'performance.home.emptyTitle': 'Nenhuma meta ativa neste mês',
+    'performance.home.emptySubtitle':
+        'Quando uma meta for cadastrada para você, o resultado aparecerá aqui.',
+    'performance.home.result': 'Resultado',
+    'performance.home.target': 'Meta',
+    'performance.indicator.salesValue': 'Valor vendido',
+    'performance.indicator.salesQuantity': 'Quantidade de vendas',
+    'performance.indicator.servicesValue': 'Valor em serviços',
+    'performance.indicator.serviceCalls': 'Atendimentos técnicos',
+    'performance.indicator.finishedServiceCalls': 'Atendimentos finalizados',
+    'performance.indicator.serviceCallsValue': 'Valor em atendimentos',
     'workspaceHome.section.today': 'Situação de hoje',
     'workspaceHome.section.attention': 'Precisa da sua atenção',
     'workspaceHome.section.quickActions': 'Ações rápidas',
@@ -1465,6 +1517,100 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.people.collaboratorsDesc': 'Equipe, acessos e responsabilidades',
     'gestao.people.suppliers': 'Fornecedores',
     'gestao.people.suppliersDesc': 'Parceiros e compras do comércio',
+    'gestao.people.performance': 'Desempenho do colaborador',
+    'gestao.people.performanceDesc':
+        'Metas, vendas, serviços e evolução da equipe',
+
+    // Desempenho do colaborador — mobile
+    'performance.mobile.title': 'Desempenho',
+    'performance.mobile.heroTitle': 'Desempenho da equipe',
+    'performance.mobile.heroSubtitle':
+        'Acompanhe metas, vendas, serviços e atendimentos por participante.',
+    'performance.mobile.refresh': 'Atualizar desempenho',
+    'performance.mobile.newGoal': 'Nova meta',
+    'performance.mobile.editGoal': 'Editar meta',
+    'performance.mobile.currentMonth': 'Mês atual',
+    'performance.mobile.lastThirtyDays': 'Últimos 30 dias',
+    'performance.mobile.today': 'Hoje',
+    'performance.mobile.period': 'Período',
+    'performance.mobile.participant': 'Participante',
+    'performance.mobile.selectParticipant': 'Selecionar participante',
+    'performance.mobile.searchParticipant': 'Buscar participante',
+    'performance.mobile.noParticipant': 'Nenhum participante encontrado',
+    'performance.mobile.noParticipantMessage':
+        'Ajuste o filtro ou cadastre colaboradores para continuar.',
+    'performance.mobile.allActive': 'Todos os ativos',
+    'performance.mobile.allInactive': 'Todos os não ativos',
+    'performance.mobile.allParticipants': 'Todos os participantes',
+    'performance.mobile.active': 'Ativos',
+    'performance.mobile.inactive': 'Não ativos',
+    'performance.mobile.both': 'Ambos',
+    'performance.mobile.score': 'Score médio',
+    'performance.mobile.scoreDesc': 'Média ponderada das metas',
+    'performance.mobile.goalsReached': 'Metas batidas',
+    'performance.mobile.goalsReachedDesc': 'No período selecionado',
+    'performance.mobile.sales': 'Vendas',
+    'performance.mobile.salesOperations': '{count} operações no período',
+    'performance.mobile.serviceCalls': 'Atendimentos',
+    'performance.mobile.serviceCallsDesc': 'Assistências técnicas no período',
+    'performance.mobile.resultsTab': 'Resultados',
+    'performance.mobile.goalsTab': 'Metas',
+    'performance.mobile.resultsTitle': 'Meta x realizado',
+    'performance.mobile.resultsSubtitle':
+        'Evolução calculada para o período selecionado.',
+    'performance.mobile.goalsTitle': 'Metas cadastradas',
+    'performance.mobile.goalsSubtitle':
+        'Toque em uma meta para consultar ou editar.',
+    'performance.mobile.noResults': 'Nenhuma meta ativa para exibir',
+    'performance.mobile.noResultsDesc':
+        'Ajuste os filtros ou cadastre uma nova meta.',
+    'performance.mobile.noGoals': 'Sem metas cadastradas',
+    'performance.mobile.noGoalsDesc':
+        'Crie metas para acompanhar o desempenho da equipe.',
+    'performance.mobile.loadError': 'Não foi possível carregar o desempenho.',
+    'performance.mobile.loadErrorDesc':
+        'Verifique sua conexão e tente novamente.',
+    'performance.mobile.tryAgain': 'Tentar novamente',
+    'performance.mobile.loading': 'Carregando desempenho da equipe',
+    'performance.mobile.goalSaved': 'Meta cadastrada.',
+    'performance.mobile.goalUpdated': 'Meta atualizada.',
+    'performance.mobile.goalSaveError':
+        'Não foi possível salvar a meta. Tente novamente.',
+    'performance.mobile.noFilteredParticipant':
+        'Não há participantes para o filtro selecionado.',
+    'performance.mobile.indicator': 'Indicador',
+    'performance.mobile.selectIndicator': 'Selecionar indicador',
+    'performance.mobile.targetValue': 'Valor alvo',
+    'performance.mobile.weight': 'Peso',
+    'performance.mobile.startDate': 'Data inicial',
+    'performance.mobile.endDate': 'Data final',
+    'performance.mobile.applyDate': 'Aplicar data',
+    'performance.mobile.status': 'Situação da meta',
+    'performance.mobile.goalActive': 'Ativa',
+    'performance.mobile.goalPaused': 'Pausada',
+    'performance.mobile.goalClosed': 'Encerrada',
+    'performance.mobile.createGoal': 'Cadastrar meta',
+    'performance.mobile.saveGoal': 'Salvar meta',
+    'performance.mobile.cancel': 'Cancelar',
+    'performance.mobile.invalidPositiveNumber':
+        'Informe um valor maior que zero',
+    'performance.mobile.invalidDateRange':
+        'A data final não pode ser anterior à data inicial.',
+    'performance.mobile.participantFallback': 'Participante',
+    'performance.mobile.noPeriod': 'Sem período',
+    'performance.mobile.valueOfTarget': '{value} de {target}',
+    'performance.mobile.statusAboveGoal': 'Acima da meta',
+    'performance.mobile.statusInProgress': 'Em progresso',
+    'performance.mobile.statusAtRisk': 'Em risco',
+    'performance.mobile.statusCritical': 'Crítico',
+    'performance.mobile.statusUnknown': 'Sem status',
+    'performance.mobile.indicator.salesValue': 'Valor vendido',
+    'performance.mobile.indicator.salesQuantity': 'Quantidade de vendas',
+    'performance.mobile.indicator.servicesValue': 'Valor em serviços',
+    'performance.mobile.indicator.serviceCalls': 'Atendimentos técnicos',
+    'performance.mobile.indicator.finishedServiceCalls':
+        'Atendimentos finalizados',
+    'performance.mobile.indicator.serviceCallsValue': 'Valor em atendimentos',
 
     // Gestão — itens de Financeiro
     'gestao.finance.receivable': 'Contas a receber',
@@ -1977,6 +2123,38 @@ const Map<String, Map<String, String>> _fallbacks = {
     'pdv.quantityEditor.effectHint':
         'The change updates the item subtotal and the sale total immediately.',
     'pdv.quantityEditor.confirm': 'Apply quantity',
+    'pdv.customerIdentification.title': 'Identify customer',
+    'pdv.customerIdentification.subtitle':
+        'Select a registered customer or create a new one without leaving this step.',
+    'pdv.customerIdentification.availableCustomers': 'Active customers',
+    'pdv.customerIdentification.currentCustomer': 'Current customer',
+    'pdv.customerIdentification.currentEmpty': 'No customer linked',
+    'pdv.customerIdentification.searchLabel':
+        'Search customer by name, document, phone or email',
+    'pdv.customerIdentification.loading': 'Loading active customers...',
+    'pdv.customerIdentification.loadError': 'Unable to load customers.',
+    'pdv.customerIdentification.errorTitle': 'Unable to load customers',
+    'pdv.customerIdentification.newCustomer': 'Create customer',
+    'pdv.customerIdentification.openingCreate': 'Opening registration...',
+    'pdv.customerIdentification.createError':
+        'Unable to open customer registration right now.',
+    'pdv.customerIdentification.emptyTitle': 'No active customers registered',
+    'pdv.customerIdentification.emptyMessage':
+        'Create the customer now to continue without leaving this step.',
+    'pdv.customerIdentification.emptySearchTitle': 'No customer found',
+    'pdv.customerIdentification.emptySearchMessage':
+        'Review the search terms or create a new customer to continue.',
+    'pdv.customerIdentification.removeCustomer': 'Remove current customer',
+    'pdv.customerIdentification.unnamedCustomer': 'Unnamed customer',
+    'pdv.customerIdentification.personTypeFallback': 'PF',
+    'pdv.customerIdentification.noDocument': 'No document',
+    'pdv.customerIdentification.creditEnabled': 'Store credit enabled',
+    'pdv.customerIdentification.creditBlocked':
+        'Store credit blocked for new sales',
+    'pdv.customerIdentification.creditDisabled':
+        'Customer without store credit enabled',
+    'pdv.customerIdentification.selected': 'Selected',
+    'pdv.customerIdentification.select': 'Select',
     'pdv.quantityEditor.processing': 'Applying quantity...',
     'pdv.quantityEditor.successTitle': 'Quantity updated',
     'pdv.quantityEditor.successMessage':
@@ -2258,6 +2436,25 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.loading.subtitle':
         'Fetching the current situation for this business.',
     'workspaceHome.error.title': 'Could not load the day summary.',
+    'performance.home.title': 'My goals',
+    'performance.home.subtitle':
+        'Track your goals and results updated by SixoApp.',
+    'performance.home.dashboardTitle': 'Goal vs. result',
+    'performance.home.period': 'Results from {start} to {end}',
+    'performance.home.accessibilityLabel': 'My goals dashboard',
+    'performance.home.loading': 'Loading your goals',
+    'performance.home.loadError': 'Could not update your goals.',
+    'performance.home.emptyTitle': 'No active goal this month',
+    'performance.home.emptySubtitle':
+        'When a goal is assigned to you, its result will appear here.',
+    'performance.home.result': 'Result',
+    'performance.home.target': 'Goal',
+    'performance.indicator.salesValue': 'Sales amount',
+    'performance.indicator.salesQuantity': 'Number of sales',
+    'performance.indicator.servicesValue': 'Services amount',
+    'performance.indicator.serviceCalls': 'Technical services',
+    'performance.indicator.finishedServiceCalls': 'Completed services',
+    'performance.indicator.serviceCallsValue': 'Service calls amount',
     'workspaceHome.section.today': 'Today status',
     'workspaceHome.section.attention': 'Needs your attention',
     'workspaceHome.section.quickActions': 'Quick actions',
@@ -3700,6 +3897,42 @@ const Map<String, Map<String, String>> _fallbacks = {
     'pdv.quantityEditor.effectHint':
         'El cambio actualiza de inmediato el subtotal del artículo y el total de la venta.',
     'pdv.quantityEditor.confirm': 'Aplicar cantidad',
+    'pdv.customerIdentification.title': 'Identificar cliente',
+    'pdv.customerIdentification.subtitle':
+        'Selecciona un cliente registrado o crea uno nuevo sin salir de esta etapa.',
+    'pdv.customerIdentification.availableCustomers': 'Clientes activos',
+    'pdv.customerIdentification.currentCustomer': 'Cliente actual',
+    'pdv.customerIdentification.currentEmpty': 'Ningún cliente vinculado',
+    'pdv.customerIdentification.searchLabel':
+        'Buscar cliente por nombre, documento, teléfono o correo',
+    'pdv.customerIdentification.loading': 'Cargando clientes activos...',
+    'pdv.customerIdentification.loadError':
+        'No se pudieron cargar los clientes.',
+    'pdv.customerIdentification.errorTitle':
+        'No se pudieron cargar los clientes',
+    'pdv.customerIdentification.newCustomer': 'Registrar cliente',
+    'pdv.customerIdentification.openingCreate': 'Abriendo registro...',
+    'pdv.customerIdentification.createError':
+        'No se pudo abrir el registro del cliente ahora.',
+    'pdv.customerIdentification.emptyTitle':
+        'No hay clientes activos registrados',
+    'pdv.customerIdentification.emptyMessage':
+        'Registra al cliente ahora para continuar sin salir de esta etapa.',
+    'pdv.customerIdentification.emptySearchTitle':
+        'No se encontró ningún cliente',
+    'pdv.customerIdentification.emptySearchMessage':
+        'Revisa los términos de búsqueda o registra un nuevo cliente para continuar.',
+    'pdv.customerIdentification.removeCustomer': 'Quitar cliente actual',
+    'pdv.customerIdentification.unnamedCustomer': 'Cliente sin nombre',
+    'pdv.customerIdentification.personTypeFallback': 'PF',
+    'pdv.customerIdentification.noDocument': 'Sin documento',
+    'pdv.customerIdentification.creditEnabled': 'Crédito habilitado',
+    'pdv.customerIdentification.creditBlocked':
+        'Crédito bloqueado para nuevas ventas',
+    'pdv.customerIdentification.creditDisabled':
+        'Cliente sin crédito habilitado',
+    'pdv.customerIdentification.selected': 'Seleccionado',
+    'pdv.customerIdentification.select': 'Seleccionar',
     'pdv.quantityEditor.processing': 'Aplicando cantidad...',
     'pdv.quantityEditor.successTitle': 'Cantidad actualizada',
     'pdv.quantityEditor.successMessage':
@@ -3984,6 +4217,25 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.loading.subtitle':
         'Buscando la situación actual de este comercio.',
     'workspaceHome.error.title': 'No fue posible cargar el resumen del día.',
+    'performance.home.title': 'Mis metas',
+    'performance.home.subtitle':
+        'Acompaña tus metas y los resultados actualizados por SixoApp.',
+    'performance.home.dashboardTitle': 'Meta vs. resultado',
+    'performance.home.period': 'Resultados de {start} a {end}',
+    'performance.home.accessibilityLabel': 'Dashboard de mis metas',
+    'performance.home.loading': 'Cargando tus metas',
+    'performance.home.loadError': 'No fue posible actualizar tus metas.',
+    'performance.home.emptyTitle': 'Ninguna meta activa este mes',
+    'performance.home.emptySubtitle':
+        'Cuando se te asigne una meta, su resultado aparecerá aquí.',
+    'performance.home.result': 'Resultado',
+    'performance.home.target': 'Meta',
+    'performance.indicator.salesValue': 'Valor vendido',
+    'performance.indicator.salesQuantity': 'Cantidad de ventas',
+    'performance.indicator.servicesValue': 'Valor en servicios',
+    'performance.indicator.serviceCalls': 'Atenciones técnicas',
+    'performance.indicator.finishedServiceCalls': 'Atenciones finalizadas',
+    'performance.indicator.serviceCallsValue': 'Valor en atenciones',
     'workspaceHome.section.today': 'Situación de hoy',
     'workspaceHome.section.attention': 'Necesita tu atención',
     'workspaceHome.section.quickActions': 'Acciones rápidas',

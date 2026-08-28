@@ -1,0 +1,7 @@
+interface:
+  display_name: "SixApp Web Colors"
+  short_description: "Corrige paleta e dark mode no web"
+  default_prompt: "Use $sixapp-web-colors para corrigir cores, superfícies e contraste de uma tela Flutter Web do SixApp."
+
+policy:
+  allow_implicit_invocation: true

@@ -219,7 +219,7 @@ abstract final class WebNavigationRegistry {
           icon: Icons.trending_up_rounded,
           visibility: WebNavigationVisibilityRule.anyOf(
             <WebNavigationPermission>[
-              WebNavigationPermission.podeGerarRelatorio,
+              WebNavigationPermission.podeGerenciarDesempenho,
             ],
           ),
           destination: WebNavigationDestination.peoplePerformance,

@@ -8,16 +8,17 @@ import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 typedef ClienteUsuarioSavedCallback =
     Future<void> Function(ClienteUsuario cliente);
 
-void showClienteUsuarioCadastroWebDialog(
+Future<ClienteUsuario?> showClienteUsuarioCadastroWebDialog(
   BuildContext context, {
   ClienteUsuario? cliente,
   ClienteUsuarioApiClient? apiClient,
   ClienteUsuarioSavedCallback? onSaved,
-}) {
+}) async {
   final WebThemeTokens tokens = WebThemeTokens.of(context);
   final double barrierAlpha =
       Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42;
-  showDialog<void>(
+  ClienteUsuario? savedClient;
+  await showDialog<void>(
     context: context,
     barrierDismissible: false,
     barrierColor: tokens.workspaceBackground.withValues(alpha: barrierAlpha),
@@ -28,10 +29,14 @@ void showClienteUsuarioCadastroWebDialog(
           body: _ClienteUsuarioCadastroWebBody(
             cliente: cliente,
             apiClient: apiClient,
-            onSaved: onSaved,
+            onSaved: (ClienteUsuario clienteSalvo) async {
+              savedClient = clienteSalvo;
+              await onSaved?.call(clienteSalvo);
+            },
           ),
         ),
   );
+  return savedClient;
 }
 
 class _ClienteUsuarioCadastroWebBody extends StatefulWidget {

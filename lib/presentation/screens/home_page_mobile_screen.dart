@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -20,6 +22,7 @@ import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
+import 'package:sixpos/presentation/components/mobile/collaborator_performance_home_dashboard.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_selection_sheet.dart';
@@ -28,15 +31,21 @@ import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/utils/profile_image_payload.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/dashboard_inicio_provider.dart';
+import 'package:sixpos/providers/desempenho_colaborador_home_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 
 import '../components/nav_bar_mobile.dart';
 
 class HomePageMobile extends StatefulWidget {
-  const HomePageMobile({super.key, required this.title});
+  const HomePageMobile({
+    super.key,
+    required this.title,
+    this.desempenhoProvider,
+  });
 
   final String title;
+  final DesempenhoColaboradorHomeProvider? desempenhoProvider;
 
   @override
   State<HomePageMobile> createState() => _HomePageMobileState();
@@ -69,6 +78,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
   final DashboardInicioProvider _dashboardProvider = DashboardInicioProvider(
     initialPeriod: DashboardPeriod.last30Days,
   );
+  late final DesempenhoColaboradorHomeProvider _desempenhoProvider;
+  late final bool _ownsDesempenhoProvider;
   final AdminPortalService _adminPortalService = AdminPortalService();
   final EmpresaProvider _empresaProvider = EmpresaProvider();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
@@ -97,6 +108,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
   String? _erroInfraestrutura;
   bool _carregandoInfraestrutura = false;
   bool _tentouCarregarInfraestrutura = false;
+  bool _tentouCarregarDesempenho = false;
   String _comercioSelecionadoNoFiltro = _allCompaniesFilterValue;
   String? _colaboradorSelecionadoNoFiltro;
   List<EmpresaVinculoWebModel> _comerciosDisponiveis =
@@ -107,8 +119,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
   @override
   void initState() {
     super.initState();
+    _ownsDesempenhoProvider = widget.desempenhoProvider == null;
+    _desempenhoProvider =
+        widget.desempenhoProvider ?? DesempenhoColaboradorHomeProvider();
     _notificacaoService.addListener(_onNotificacoesChanged);
     _dashboardProvider.addListener(_onDashboardChanged);
+    _desempenhoProvider.addListener(_onDesempenhoChanged);
     _empresaProvider.addListener(_onEmpresaChanged);
     _usuarioProvider.addListener(_onUsuarioChanged);
     _homeScrollController.addListener(_onHomeScrollChanged);
@@ -125,12 +141,16 @@ class _HomePageMobileState extends State<HomePageMobile> {
   void dispose() {
     _notificacaoService.removeListener(_onNotificacoesChanged);
     _dashboardProvider.removeListener(_onDashboardChanged);
+    _desempenhoProvider.removeListener(_onDesempenhoChanged);
     _empresaProvider.removeListener(_onEmpresaChanged);
     _usuarioProvider.removeListener(_onUsuarioChanged);
     _homeScrollController.removeListener(_onHomeScrollChanged);
     _homeScrollController.dispose();
     _profileAvatarScrollProgress.dispose();
     _dashboardProvider.dispose();
+    if (_ownsDesempenhoProvider) {
+      _desempenhoProvider.dispose();
+    }
     if (!kIsWeb) {
       onMensagemRecebida = null;
       onStompConectado = null;
@@ -144,13 +164,22 @@ class _HomePageMobileState extends State<HomePageMobile> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final bool ehSuper =
-        context.read<ColaboradorAutorizacoesProvider>().ehSuperUsuario;
+    final ColaboradorAutorizacoesProvider autorizacoes =
+        context.read<ColaboradorAutorizacoesProvider>();
+    final bool ehSuper = autorizacoes.ehSuperUsuario;
     if (ehSuper && !_tentouCarregarInfraestrutura) {
       _tentouCarregarInfraestrutura = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _carregarInfraestrutura();
+        }
+      });
+    }
+    if (autorizacoes.ehColaborador && !_tentouCarregarDesempenho) {
+      _tentouCarregarDesempenho = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          unawaited(_desempenhoProvider.load());
         }
       });
     }
@@ -182,6 +211,11 @@ class _HomePageMobileState extends State<HomePageMobile> {
   }
 
   void _onDashboardChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  void _onDesempenhoChanged() {
     if (!mounted) return;
     setState(() {});
   }
@@ -283,12 +317,18 @@ class _HomePageMobileState extends State<HomePageMobile> {
   }
 
   Future<void> _onRefresh() async {
-    final bool ehSuper =
-        context.read<ColaboradorAutorizacoesProvider>().ehSuperUsuario;
+    final ColaboradorAutorizacoesProvider autorizacoes =
+        context.read<ColaboradorAutorizacoesProvider>();
+    final bool ehSuper = autorizacoes.ehSuperUsuario;
     final List<Future<void>> tasks = <Future<void>>[
-      _dashboardProvider.reload(),
       _atualizarDadosPessoaisNoRefresh(),
     ];
+    if (autorizacoes.ehAdministrador) {
+      tasks.add(_dashboardProvider.reload());
+    }
+    if (autorizacoes.ehColaborador) {
+      tasks.add(_desempenhoProvider.reload());
+    }
     if (ehSuper) {
       tasks.add(_carregarInfraestrutura());
     }
@@ -498,6 +538,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
         context.watch<ColaboradorAutorizacoesProvider>();
     final bool ehSuper = autorizacoes.ehSuperUsuario;
     final bool ehAdmin = autorizacoes.ehAdministrador;
+    final bool ehColaborador = autorizacoes.ehColaborador;
 
     return SafeArea(
       top: false,
@@ -570,7 +611,33 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 child: _buildOperationsSection(data),
               ),
             ],
-            if (!ehSuper && !ehAdmin) ...[
+            if (ehColaborador) ...[
+              SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: 80),
+                child: _buildRoleBlockHeader(
+                  context,
+                  icon: Icons.track_changes_rounded,
+                  title: context.t(
+                    'performance.home.title',
+                    fallback: 'Minhas metas',
+                  ),
+                  subtitle: context.t(
+                    'performance.home.subtitle',
+                    fallback:
+                        'Acompanhe suas metas e os resultados atualizados pelo SixoApp.',
+                  ),
+                ),
+              ),
+              SizedBox(height: 12),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: 130),
+                child: CollaboratorPerformanceHomeMobileDashboard(
+                  provider: _desempenhoProvider,
+                ),
+              ),
+            ],
+            if (!ehSuper && !ehAdmin && !ehColaborador) ...[
               SizedBox(height: 16),
               SixStaggeredEntry(
                 delay: Duration(milliseconds: 80),

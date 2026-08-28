@@ -21,6 +21,10 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
+  final FocusNode _passwordFocusNode = FocusNode();
+  final FocusNode _confirmPasswordFocusNode = FocusNode();
+  final GlobalKey _confirmPasswordFieldKey = GlobalKey();
+  final GlobalKey _submitButtonKey = GlobalKey();
   final NovaEmpresaService _novaEmpresaService = NovaEmpresaService();
 
   bool _obscurePassword = true;
@@ -30,7 +34,20 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
   String? _passwordMismatchError;
 
   @override
+  void initState() {
+    super.initState();
+    _passwordFocusNode.addListener(_handlePasswordFocusChange);
+    _confirmPasswordFocusNode.addListener(_handleConfirmPasswordFocusChange);
+  }
+
+  @override
   void dispose() {
+    _passwordFocusNode
+      ..removeListener(_handlePasswordFocusChange)
+      ..dispose();
+    _confirmPasswordFocusNode
+      ..removeListener(_handleConfirmPasswordFocusChange)
+      ..dispose();
     _loginController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -46,6 +63,45 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
   void _clearPasswordMismatchError(String _) {
     if (_passwordMismatchError == null) return;
     setState(() => _passwordMismatchError = null);
+  }
+
+  void _handlePasswordFocusChange() {
+    if (!_passwordFocusNode.hasFocus) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(
+        const Duration(milliseconds: 280),
+        () => _ensureVisible(
+          targetContext: _confirmPasswordFieldKey.currentContext,
+          alignment: 0.78,
+        ),
+      );
+    });
+  }
+
+  void _handleConfirmPasswordFocusChange() {
+    if (!_confirmPasswordFocusNode.hasFocus) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(
+        const Duration(milliseconds: 280),
+        () => _ensureVisible(
+          targetContext: _submitButtonKey.currentContext,
+          alignment: 0.92,
+        ),
+      );
+    });
+  }
+
+  Future<void> _ensureVisible({
+    required BuildContext? targetContext,
+    required double alignment,
+  }) async {
+    if (!mounted || targetContext == null || !targetContext.mounted) return;
+    await Scrollable.ensureVisible(
+      targetContext,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+      alignment: alignment,
+    );
   }
 
   Future<void> _signUp() async {
@@ -106,15 +162,10 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
       _isLoading = true;
     });
     try {
-      await _novaEmpresaService.criarNovaEmpresa(
-        login: login,
-        senha: password,
-      );
+      await _novaEmpresaService.criarNovaEmpresa(login: login, senha: password);
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute<void>(
-          builder: (_) => const ContaCriadaMobile(),
-        ),
+        MaterialPageRoute<void>(builder: (_) => const ContaCriadaMobile()),
         (Route<dynamic> route) => false,
       );
     } catch (error) {
@@ -136,10 +187,7 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
     final String backLabel = context.t('common.back', fallback: 'Voltar');
 
     return SixoAppAuthMobileScaffold(
-      title: context.t(
-        'auth.mobileCreate.title',
-        fallback: 'Crie seu espaço',
-      ),
+      title: context.t('auth.mobileCreate.title', fallback: 'Crie seu espaço'),
       subtitle: context.t(
         'auth.mobileCreate.subtitle',
         fallback: 'Comece simples. O SixoApp cresce junto com seu negócio.',
@@ -229,6 +277,7 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
               delay: const Duration(milliseconds: 90),
               child: SixoAppAuthField(
                 controller: _passwordController,
+                focusNode: _passwordFocusNode,
                 label: context.t(
                   'auth.mobileCreate.passwordLabel',
                   fallback: 'Senha',
@@ -241,6 +290,7 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
                 obscure: _obscurePassword,
                 textInputAction: TextInputAction.next,
                 onChanged: _clearPasswordMismatchError,
+                onSubmitted: (_) => _confirmPasswordFocusNode.requestFocus(),
                 autofillHints: const <String>[AutofillHints.newPassword],
                 enableSuggestions: false,
                 autocorrect: false,
@@ -255,32 +305,36 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
             const SizedBox(height: 14),
             SixStaggeredEntry(
               delay: const Duration(milliseconds: 130),
-              child: SixoAppAuthField(
-                controller: _confirmPasswordController,
-                label: context.t(
-                  'auth.mobileCreate.confirmPasswordLabel',
-                  fallback: 'Confirme a senha',
-                ),
-                hint: context.t(
-                  'auth.mobileCreate.confirmPasswordHint',
-                  fallback: 'Repita sua senha',
-                ),
-                icon: Icons.verified_user_outlined,
-                obscure: _obscureConfirmPassword,
-                textInputAction: TextInputAction.done,
-                onChanged: _clearPasswordMismatchError,
-                autofillHints: const <String>[AutofillHints.newPassword],
-                enableSuggestions: false,
-                autocorrect: false,
-                onSubmitted: (_) => _signUp(),
-                suffix: _PasswordVisibilityButton(
+              child: KeyedSubtree(
+                key: _confirmPasswordFieldKey,
+                child: SixoAppAuthField(
+                  controller: _confirmPasswordController,
+                  focusNode: _confirmPasswordFocusNode,
+                  label: context.t(
+                    'auth.mobileCreate.confirmPasswordLabel',
+                    fallback: 'Confirme a senha',
+                  ),
+                  hint: context.t(
+                    'auth.mobileCreate.confirmPasswordHint',
+                    fallback: 'Repita sua senha',
+                  ),
+                  icon: Icons.verified_user_outlined,
                   obscure: _obscureConfirmPassword,
-                  onPressed: () {
-                    setState(
-                      () => _obscureConfirmPassword =
-                          !_obscureConfirmPassword,
-                    );
-                  },
+                  textInputAction: TextInputAction.done,
+                  onChanged: _clearPasswordMismatchError,
+                  autofillHints: const <String>[AutofillHints.newPassword],
+                  enableSuggestions: false,
+                  autocorrect: false,
+                  onSubmitted: (_) => _signUp(),
+                  suffix: _PasswordVisibilityButton(
+                    obscure: _obscureConfirmPassword,
+                    onPressed: () {
+                      setState(
+                        () =>
+                            _obscureConfirmPassword = !_obscureConfirmPassword,
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
@@ -354,13 +408,16 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
             const SizedBox(height: 18),
             SixStaggeredEntry(
               delay: const Duration(milliseconds: 210),
-              child: SixoAppAuthPrimaryButton(
-                label: context.t(
-                  'auth.mobileCreate.submit',
-                  fallback: 'Criar conta',
+              child: KeyedSubtree(
+                key: _submitButtonKey,
+                child: SixoAppAuthPrimaryButton(
+                  label: context.t(
+                    'auth.mobileCreate.submit',
+                    fallback: 'Criar conta',
+                  ),
+                  onPressed: _signUp,
+                  isLoading: _isLoading,
                 ),
-                onPressed: _signUp,
-                isLoading: _isLoading,
               ),
             ),
             const SizedBox(height: 16),

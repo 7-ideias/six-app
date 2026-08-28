@@ -106,6 +106,38 @@ void main() {
     expect(find.text('Em breve'), findsWidgets);
   });
 
+  testWidgets('abre desempenho do colaborador abaixo de Fornecedores', (
+    WidgetTester tester,
+  ) async {
+    final List<String> navigations = <String>[];
+    await _pumpGestao(
+      tester,
+      navigations: navigations,
+      area: GestaoMobileArea.pessoas,
+    );
+
+    final Finder performance = find.text('Desempenho do colaborador');
+    expect(performance, findsOneWidget);
+    await tester.ensureVisible(performance);
+    await tester.tap(performance);
+    await tester.pump(const Duration(milliseconds: 120));
+
+    expect(navigations, contains('DesempenhoColaboradorMobileScreen'));
+  });
+
+  testWidgets('oculta desempenho da equipe para colaborador', (
+    WidgetTester tester,
+  ) async {
+    await _pumpGestao(
+      tester,
+      area: GestaoMobileArea.pessoas,
+      colaboradorProvider: _CollaboratorProvider(),
+    );
+
+    expect(find.text('Fornecedores'), findsOneWidget);
+    expect(find.text('Desempenho do colaborador'), findsNothing);
+  });
+
   testWidgets('restaura a ordem dos cards salva no cache do usuário', (
     WidgetTester tester,
   ) async {
@@ -362,6 +394,11 @@ Future<void> _pumpGestao(
 class _NoCatalogPermissionProvider extends ColaboradorAutorizacoesProvider {
   @override
   bool get podeAcessarCatalogo => false;
+}
+
+class _CollaboratorProvider extends ColaboradorAutorizacoesProvider {
+  @override
+  bool get ehColaborador => true;
 }
 
 const ManagementOverviewSnapshot _loadedSnapshot = ManagementOverviewSnapshot(
