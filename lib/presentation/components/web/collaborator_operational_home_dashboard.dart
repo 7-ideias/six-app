@@ -38,7 +38,11 @@ class CollaboratorOperationalHomeWebDashboard extends StatelessWidget {
     }
 
     if (!provider.hasLoaded) {
-      return const _OperationalLoading();
+      return _OperationalLoading(
+        showSales: showSales,
+        showServices: showServices,
+        showReservations: showReservations,
+      );
     }
 
     if (provider.globalErrorCode != null) {
@@ -125,7 +129,15 @@ class CollaboratorOperationalHomeWebDashboard extends StatelessWidget {
 }
 
 class _OperationalLoading extends StatelessWidget {
-  const _OperationalLoading();
+  const _OperationalLoading({
+    required this.showSales,
+    required this.showServices,
+    required this.showReservations,
+  });
+
+  final bool showSales;
+  final bool showServices;
+  final bool showReservations;
 
   @override
   Widget build(BuildContext context) {
@@ -137,31 +149,663 @@ class _OperationalLoading extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final bool stack = constraints.maxWidth < 760;
-          const Widget first = SixWebLoadingBlock(height: 286);
-          const Widget second = SixWebLoadingBlock(height: 286);
+          final bool stack =
+              constraints.maxWidth < 920 || !showServices || !showReservations;
           return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              const SixWebLoadingBlock(height: 104, highlight: true),
-              const SizedBox(height: 16),
-              const SixWebLoadingBlock(height: 316),
-              const SizedBox(height: 16),
-              if (stack) ...<Widget>[
-                first,
+              const SixWebEntry(order: 0, child: _LoadingAttentionOverview()),
+              if (showSales) ...<Widget>[
                 const SizedBox(height: 16),
-                second,
-              ] else
-                const Row(
-                  children: <Widget>[
-                    Expanded(child: first),
-                    SizedBox(width: 16),
-                    Expanded(child: second),
-                  ],
-                ),
+                const SixWebEntry(order: 1, child: _LoadingSalesOverview()),
+              ],
+              if (showServices || showReservations) ...<Widget>[
+                const SizedBox(height: 16),
+                if (stack)
+                  Column(
+                    children: <Widget>[
+                      if (showServices)
+                        const SixWebEntry(
+                          order: 2,
+                          child: _LoadingServicesOverview(),
+                        ),
+                      if (showServices && showReservations)
+                        const SizedBox(height: 16),
+                      if (showReservations)
+                        const SixWebEntry(
+                          order: 3,
+                          child: _LoadingReservationsOverview(),
+                        ),
+                    ],
+                  )
+                else
+                  const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(
+                        flex: 7,
+                        child: SixWebEntry(
+                          order: 2,
+                          child: _LoadingServicesOverview(),
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      Expanded(
+                        flex: 4,
+                        child: SixWebEntry(
+                          order: 3,
+                          child: _LoadingReservationsOverview(),
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
             ],
           );
         },
       ),
+    );
+  }
+}
+
+class _LoadingAttentionOverview extends StatelessWidget {
+  const _LoadingAttentionOverview();
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Color.alphaBlend(
+          tokens.info.withValues(alpha: .05),
+          tokens.cardBackground,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: tokens.info.withValues(alpha: .18)),
+      ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool compact = constraints.maxWidth < 700;
+          final Widget title = Row(
+            children: <Widget>[
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: tokens.info.withValues(alpha: .10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  Icons.notification_important_outlined,
+                  color: tokens.info,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    _LoadingBone(height: 14, widthFactor: .42),
+                    SizedBox(height: 8),
+                    _LoadingBone(height: 11, widthFactor: .68),
+                  ],
+                ),
+              ),
+            ],
+          );
+          final Widget indicators = Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.end,
+            children: const <Widget>[
+              _LoadingAttentionPill(icon: Icons.schedule_outlined),
+              _LoadingAttentionPill(icon: Icons.build_circle_outlined),
+              _LoadingAttentionPill(icon: Icons.bookmark_added_outlined),
+            ],
+          );
+
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[title, const SizedBox(height: 14), indicators],
+            );
+          }
+          return Row(
+            children: <Widget>[
+              Expanded(child: title),
+              const SizedBox(width: 18),
+              Flexible(child: indicators),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _LoadingAttentionPill extends StatelessWidget {
+  const _LoadingAttentionPill({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+      decoration: BoxDecoration(
+        color: tokens.info.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tokens.info.withValues(alpha: .16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, color: tokens.info, size: 16),
+          const SizedBox(width: 7),
+          const SizedBox(width: 92, child: _LoadingBone(height: 11)),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingSalesOverview extends StatelessWidget {
+  const _LoadingSalesOverview();
+
+  @override
+  Widget build(BuildContext context) {
+    return SixWebSectionCard(
+      title: context.t(
+        'collaboratorHome.sales.title',
+        fallback: 'Minhas vendas',
+      ),
+      subtitle: context
+          .t(
+            'collaboratorHome.sales.period',
+            fallback: 'Resultados de {start} a {end}',
+          )
+          .replaceAll('{start}', '...')
+          .replaceAll('{end}', '...'),
+      icon: Icons.point_of_sale_outlined,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const _LoadingSalesMetricsGrid(),
+          const SizedBox(height: 18),
+          const _LoadingOpenSalesList(),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingSalesMetricsGrid extends StatelessWidget {
+  const _LoadingSalesMetricsGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final int columns = constraints.maxWidth < 620 ? 2 : 4;
+        const double spacing = 10;
+        final double width =
+            (constraints.maxWidth - (columns - 1) * spacing) / columns;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: const <Widget>[
+                _LoadingSalesMetric(
+                  icon: Icons.receipt_long_outlined,
+                  labelWidthFactor: .54,
+                ),
+                _LoadingSalesMetric(
+                  icon: Icons.trending_up_rounded,
+                  labelWidthFactor: .46,
+                ),
+                _LoadingSalesMetric(
+                  icon: Icons.check_circle_outline_rounded,
+                  labelWidthFactor: .44,
+                ),
+                _LoadingSalesMetric(
+                  icon: Icons.pending_actions_outlined,
+                  labelWidthFactor: .51,
+                ),
+              ]
+              .map((Widget child) => SizedBox(width: width, child: child))
+              .toList(growable: false),
+        );
+      },
+    );
+  }
+}
+
+class _LoadingSalesMetric extends StatelessWidget {
+  const _LoadingSalesMetric({
+    required this.icon,
+    required this.labelWidthFactor,
+  });
+
+  final IconData icon;
+  final double labelWidthFactor;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Container(
+      constraints: const BoxConstraints(minHeight: 106),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(icon, color: tokens.info, size: 18),
+              const SizedBox(width: 7),
+              Expanded(
+                child: _LoadingBone(height: 11, widthFactor: labelWidthFactor),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const _LoadingBone(height: 24, widthFactor: .62),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingOpenSalesList extends StatelessWidget {
+  const _LoadingOpenSalesList();
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _LoadingBone(height: 14, widthFactor: .34),
+                  SizedBox(height: 8),
+                  _LoadingBone(height: 11, widthFactor: .48),
+                ],
+              ),
+            ),
+            Container(
+              width: 112,
+              height: 30,
+              decoration: BoxDecoration(
+                color: tokens.warning.withValues(alpha: .08),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              alignment: Alignment.center,
+              child: const _LoadingBone(height: 11, widthFactor: .78),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        const _LoadingOpenSaleRow(),
+        const SizedBox(height: 8),
+        const _LoadingOpenSaleRow(),
+        const SizedBox(height: 8),
+        const _LoadingOpenSaleRow(),
+      ],
+    );
+  }
+}
+
+class _LoadingOpenSaleRow extends StatelessWidget {
+  const _LoadingOpenSaleRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: tokens.warning.withValues(alpha: .09),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(
+              Icons.schedule_outlined,
+              color: tokens.warning,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 11),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _LoadingBone(height: 12, widthFactor: .52),
+                SizedBox(height: 7),
+                _LoadingBone(height: 10, widthFactor: .34),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          const SizedBox(
+            width: 86,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                _LoadingBone(height: 12, widthFactor: .92, alignRight: true),
+                SizedBox(height: 7),
+                _LoadingBone(height: 10, widthFactor: .56, alignRight: true),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingServicesOverview extends StatelessWidget {
+  const _LoadingServicesOverview();
+
+  @override
+  Widget build(BuildContext context) {
+    return SixWebSectionCard(
+      title: context.t(
+        'collaboratorHome.services.title',
+        fallback: 'Meus serviços por status',
+      ),
+      subtitle: context.t(
+        'collaboratorHome.services.subtitle',
+        fallback: 'Distribuição dos atendimentos em que você é o técnico.',
+      ),
+      icon: Icons.engineering_outlined,
+      child: Column(
+        children: <Widget>[
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final int columns = constraints.maxWidth < 520 ? 2 : 4;
+              const double spacing = 8;
+              final double width =
+                  (constraints.maxWidth - (columns - 1) * spacing) / columns;
+              return Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                children: List<Widget>.generate(
+                  4,
+                  (_) => SizedBox(
+                    width: width,
+                    child: const _LoadingSmallMetric(),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 18),
+          const _LoadingStatusBars(items: 4),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingSmallMetric extends StatelessWidget {
+  const _LoadingSmallMetric();
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Container(
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _LoadingBone(height: 10, widthFactor: .54),
+          SizedBox(height: 9),
+          _LoadingBone(height: 20, widthFactor: .34),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingStatusBars extends StatelessWidget {
+  const _LoadingStatusBars({required this.items});
+
+  final int items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: List<Widget>.generate(items, (int index) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: index == items - 1 ? 0 : 10),
+          child: const _LoadingStatusBarRow(),
+        );
+      }),
+    );
+  }
+}
+
+class _LoadingStatusBarRow extends StatelessWidget {
+  const _LoadingStatusBarRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Column(
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: tokens.info.withValues(alpha: .55),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Expanded(child: _LoadingBone(height: 11, widthFactor: .42)),
+            const SizedBox(width: 10),
+            const SizedBox(width: 22, child: _LoadingBone(height: 11)),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: SizedBox(
+            width: double.infinity,
+            child: Stack(
+              children: <Widget>[
+                Container(height: 8, color: tokens.cardBorder),
+                const FractionallySizedBox(
+                  widthFactor: .58,
+                  child: _LoadingBone(
+                    height: 8,
+                    borderRadius: 999,
+                    expand: true,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LoadingReservationsOverview extends StatelessWidget {
+  const _LoadingReservationsOverview();
+
+  @override
+  Widget build(BuildContext context) {
+    return SixWebSectionCard(
+      title: context.t(
+        'collaboratorHome.reservations.title',
+        fallback: 'Fila de reservas',
+      ),
+      subtitle: context.t(
+        'collaboratorHome.reservations.subtitle',
+        fallback: 'Pedidos do catálogo que podem virar venda.',
+      ),
+      icon: Icons.bookmarks_outlined,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: const <Widget>[
+              Expanded(child: _LoadingReservationMainMetric()),
+              SizedBox(width: 10),
+              Expanded(child: _LoadingReservationMainMetric()),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const _LoadingStatusBars(items: 4),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingReservationMainMetric extends StatelessWidget {
+  const _LoadingReservationMainMetric();
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _LoadingBone(height: 11, widthFactor: .46),
+          SizedBox(height: 9),
+          _LoadingBone(height: 22, widthFactor: .24),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingBone extends StatefulWidget {
+  const _LoadingBone({
+    required this.height,
+    this.widthFactor = 1,
+    this.alignRight = false,
+    this.expand = false,
+    this.borderRadius = 999,
+  });
+
+  final double height;
+  final double widthFactor;
+  final bool alignRight;
+  final bool expand;
+  final double borderRadius;
+
+  @override
+  State<_LoadingBone> createState() => _LoadingBoneState();
+}
+
+class _LoadingBoneState extends State<_LoadingBone>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 920),
+  );
+  bool _reduceMotion = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.repeat(reverse: true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final bool shouldReduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+    if (shouldReduceMotion == _reduceMotion) {
+      return;
+    }
+    _reduceMotion = shouldReduceMotion;
+    if (_reduceMotion) {
+      _controller.stop();
+      _controller.value = 1;
+    } else {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Alignment alignment =
+        widget.alignRight ? Alignment.centerRight : Alignment.centerLeft;
+    final Widget bone = AnimatedBuilder(
+      animation: _controller,
+      builder: (BuildContext context, Widget? child) {
+        final WebThemeTokens tokens = WebThemeTokens.of(context);
+        final double t = _reduceMotion ? 1 : _controller.value;
+        return Container(
+          height: widget.height,
+          decoration: BoxDecoration(
+            color: Color.lerp(
+              tokens.cardBorder.withValues(alpha: .82),
+              tokens.surfaceElevated,
+              t,
+            ),
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+          ),
+        );
+      },
+    );
+
+    if (widget.expand) {
+      return bone;
+    }
+
+    return FractionallySizedBox(
+      widthFactor: widget.widthFactor,
+      alignment: alignment,
+      child: bone,
     );
   }
 }
@@ -287,20 +931,19 @@ class _AttentionOverview extends StatelessWidget {
                     Text(
                       allClear
                           ? context.t(
-                              'collaboratorHome.attention.clear',
-                              fallback:
-                                  'Tudo em dia nas suas frentes de trabalho.',
-                            )
+                            'collaboratorHome.attention.clear',
+                            fallback:
+                                'Tudo em dia nas suas frentes de trabalho.',
+                          )
                           : context
-                                .t(
-                                  'collaboratorHome.attention.pending',
-                                  fallback:
-                                      '{count} pontos precisam de atenção.',
-                                )
-                                .replaceAll(
-                                  '{count}',
-                                  regionalizacao.formatInteger(urgentCount),
-                                ),
+                              .t(
+                                'collaboratorHome.attention.pending',
+                                fallback: '{count} pontos precisam de atenção.',
+                              )
+                              .replaceAll(
+                                '{count}',
+                                regionalizacao.formatInteger(urgentCount),
+                              ),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: tokens.secondaryText,
                       ),
@@ -434,6 +1077,14 @@ class _SalesOverview extends StatelessWidget {
   Widget build(BuildContext context) {
     final ConsultaVendasResponse? sales = provider.vendasMes;
     final ResumoConsultaVendas? summary = sales?.resumo;
+    final bool loadingSummary =
+        provider.loading &&
+        summary == null &&
+        provider.vendasMesErrorCode == null;
+    final bool loadingOpenSales =
+        provider.loading &&
+        provider.vendasEmAberto.isEmpty &&
+        provider.vendasEmAbertoErrorCode == null;
     final String period = context
         .t(
           'collaboratorHome.sales.period',
@@ -458,7 +1109,9 @@ class _SalesOverview extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          if (summary != null)
+          if (loadingSummary)
+            const _LoadingSalesMetricsGrid()
+          else if (summary != null)
             LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
                 final int columns = constraints.maxWidth < 620 ? 2 : 4;
@@ -477,8 +1130,8 @@ class _SalesOverview extends StatelessWidget {
                         fallback: 'Vendas no mês',
                       ),
                       value: summary.quantidadeVendas.toDouble(),
-                      formatter: (double value) =>
-                          regionalizacao.formatInteger(value),
+                      formatter:
+                          (double value) => regionalizacao.formatInteger(value),
                     ),
                     _SalesMetric(
                       width: width,
@@ -488,8 +1141,9 @@ class _SalesOverview extends StatelessWidget {
                         fallback: 'Total vendido',
                       ),
                       value: summary.valorTotalVendido,
-                      formatter: (double value) =>
-                          regionalizacao.formatCurrency(value),
+                      formatter:
+                          (double value) =>
+                              regionalizacao.formatCurrency(value),
                     ),
                     _SalesMetric(
                       width: width,
@@ -499,8 +1153,9 @@ class _SalesOverview extends StatelessWidget {
                         fallback: 'Já recebido',
                       ),
                       value: summary.valorTotalRecebido,
-                      formatter: (double value) =>
-                          regionalizacao.formatCurrency(value),
+                      formatter:
+                          (double value) =>
+                              regionalizacao.formatCurrency(value),
                     ),
                     _SalesMetric(
                       width: width,
@@ -510,8 +1165,9 @@ class _SalesOverview extends StatelessWidget {
                         fallback: 'Em aberto no mês',
                       ),
                       value: summary.valorTotalEmAberto,
-                      formatter: (double value) =>
-                          regionalizacao.formatCurrency(value),
+                      formatter:
+                          (double value) =>
+                              regionalizacao.formatCurrency(value),
                       warning: summary.valorTotalEmAberto > 0,
                     ),
                   ],
@@ -531,6 +1187,7 @@ class _SalesOverview extends StatelessWidget {
             provider: provider,
             regionalizacao: regionalizacao,
             onRetry: onRetry,
+            loading: loadingOpenSales,
           ),
         ],
       ),
@@ -593,9 +1250,10 @@ class _SalesMetric extends StatelessWidget {
           TweenAnimationBuilder<double>(
             key: ValueKey<String>('sales-$label-${value.toStringAsFixed(2)}'),
             tween: Tween<double>(begin: 0, end: value),
-            duration: MediaQuery.disableAnimationsOf(context)
-                ? Duration.zero
-                : const Duration(milliseconds: 620),
+            duration:
+                MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 620),
             curve: Curves.easeOutCubic,
             builder: (BuildContext context, double current, Widget? child) {
               return Text(
@@ -620,11 +1278,13 @@ class _OpenSalesList extends StatelessWidget {
     required this.provider,
     required this.regionalizacao,
     required this.onRetry,
+    this.loading = false,
   });
 
   final ColaboradorHomeOperacionalProvider provider;
   final LocaleSettingsProvider regionalizacao;
   final Future<void> Function() onRetry;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -686,7 +1346,9 @@ class _OpenSalesList extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        if (provider.vendasEmAbertoErrorCode != null && sales.isEmpty)
+        if (loading)
+          const _LoadingOpenSalesList()
+        else if (provider.vendasEmAbertoErrorCode != null && sales.isEmpty)
           _InlineLoadError(
             message: context.t(
               'collaboratorHome.openSales.loadError',
@@ -758,20 +1420,22 @@ class _OpenSaleRow extends StatelessWidget {
           due.month,
           due.day,
         ).isBefore(DateTime(today.year, today.month, today.day));
-    final String customer = sale.nomeCliente.trim().isEmpty
-        ? context.t(
-            'collaboratorHome.openSales.customerFallback',
-            fallback: 'Cliente não informado',
-          )
-        : sale.nomeCliente.trim();
-    final String identifier = sale.descricao.trim().isNotEmpty
-        ? sale.descricao.trim()
-        : sale.idOperacaoApp.trim().isNotEmpty
-        ? sale.idOperacaoApp.trim()
-        : context.t(
-            'collaboratorHome.openSales.saleFallback',
-            fallback: 'Venda',
-          );
+    final String customer =
+        sale.nomeCliente.trim().isEmpty
+            ? context.t(
+              'collaboratorHome.openSales.customerFallback',
+              fallback: 'Cliente não informado',
+            )
+            : sale.nomeCliente.trim();
+    final String identifier =
+        sale.descricao.trim().isNotEmpty
+            ? sale.descricao.trim()
+            : sale.idOperacaoApp.trim().isNotEmpty
+            ? sale.idOperacaoApp.trim()
+            : context.t(
+              'collaboratorHome.openSales.saleFallback',
+              fallback: 'Venda',
+            );
 
     return Semantics(
       container: true,
@@ -783,9 +1447,10 @@ class _OpenSaleRow extends StatelessWidget {
           color: tokens.surfaceMuted,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: overdue
-                ? tokens.danger.withValues(alpha: .32)
-                : tokens.cardBorder,
+            color:
+                overdue
+                    ? tokens.danger.withValues(alpha: .32)
+                    : tokens.cardBorder,
           ),
         ),
         child: Row(
@@ -844,14 +1509,14 @@ class _OpenSaleRow extends StatelessWidget {
                 Text(
                   due == null
                       ? context.t(
-                          'collaboratorHome.openSales.noDueDate',
-                          fallback: 'Sem vencimento',
-                        )
+                        'collaboratorHome.openSales.noDueDate',
+                        fallback: 'Sem vencimento',
+                      )
                       : overdue
                       ? context.t(
-                          'collaboratorHome.openSales.overdue',
-                          fallback: 'Vencida',
-                        )
+                        'collaboratorHome.openSales.overdue',
+                        fallback: 'Vencida',
+                      )
                       : regionalizacao.formatDate(due),
                   style: TextStyle(
                     color: overdue ? tokens.danger : tokens.secondaryText,
@@ -895,47 +1560,49 @@ class _ServicesOverview extends StatelessWidget {
         fallback: 'Distribuição dos atendimentos em que você é o técnico.',
       ),
       icon: Icons.engineering_outlined,
-      trailing: onOpen == null
-          ? null
-          : TextButton.icon(
-              onPressed: onOpen,
-              icon: const Icon(Icons.open_in_new_rounded, size: 17),
-              label: Text(
-                context.t(
-                  'collaboratorHome.services.open',
-                  fallback: 'Abrir atendimentos',
+      trailing:
+          onOpen == null
+              ? null
+              : TextButton.icon(
+                onPressed: onOpen,
+                icon: const Icon(Icons.open_in_new_rounded, size: 17),
+                label: Text(
+                  context.t(
+                    'collaboratorHome.services.open',
+                    fallback: 'Abrir atendimentos',
+                  ),
                 ),
               ),
-            ),
-      child: provider.servicosErrorCode != null && statuses.isEmpty
-          ? _InlineLoadError(
-              message: context.t(
-                'collaboratorHome.services.loadError',
-                fallback: 'Não foi possível carregar seus serviços.',
-              ),
-              onRetry: onRetry,
-            )
-          : statuses.isEmpty
-          ? SixWebNoData(
-              height: 150,
-              text: context.t(
-                'collaboratorHome.services.empty',
-                fallback: 'Nenhum atendimento está atribuído a você.',
-              ),
-            )
-          : Column(
-              children: <Widget>[
-                _ServiceMetrics(
-                  provider: provider,
-                  regionalizacao: regionalizacao,
+      child:
+          provider.servicosErrorCode != null && statuses.isEmpty
+              ? _InlineLoadError(
+                message: context.t(
+                  'collaboratorHome.services.loadError',
+                  fallback: 'Não foi possível carregar seus serviços.',
                 ),
-                const SizedBox(height: 18),
-                _ServiceStatusChart(
-                  statuses: statuses,
-                  regionalizacao: regionalizacao,
+                onRetry: onRetry,
+              )
+              : statuses.isEmpty
+              ? SixWebNoData(
+                height: 150,
+                text: context.t(
+                  'collaboratorHome.services.empty',
+                  fallback: 'Nenhum atendimento está atribuído a você.',
                 ),
-              ],
-            ),
+              )
+              : Column(
+                children: <Widget>[
+                  _ServiceMetrics(
+                    provider: provider,
+                    regionalizacao: regionalizacao,
+                  ),
+                  const SizedBox(height: 18),
+                  _ServiceStatusChart(
+                    statuses: statuses,
+                    regionalizacao: regionalizacao,
+                  ),
+                ],
+              ),
     );
   }
 }
@@ -1023,11 +1690,12 @@ class _SmallMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Color valueColor = danger
-        ? tokens.danger
-        : warning
-        ? tokens.warning
-        : tokens.primaryText;
+    final Color valueColor =
+        danger
+            ? tokens.danger
+            : warning
+            ? tokens.warning
+            : tokens.primaryText;
     return Container(
       width: width,
       padding: const EdgeInsets.all(11),
@@ -1053,9 +1721,10 @@ class _SmallMetric extends StatelessWidget {
           TweenAnimationBuilder<double>(
             key: ValueKey<String>('small-$label-$value'),
             tween: Tween<double>(begin: 0, end: value.toDouble()),
-            duration: MediaQuery.disableAnimationsOf(context)
-                ? Duration.zero
-                : const Duration(milliseconds: 520),
+            duration:
+                MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 520),
             builder: (BuildContext context, double current, Widget? child) {
               return Text(
                 regionalizacao.formatInteger(current),
@@ -1189,9 +1858,10 @@ class _ServiceStatusBar extends StatelessWidget {
             duration: const Duration(milliseconds: 150),
             padding: EdgeInsets.all(highlighted ? 9 : 8),
             decoration: BoxDecoration(
-              color: highlighted
-                  ? color.withValues(alpha: .07)
-                  : Colors.transparent,
+              color:
+                  highlighted
+                      ? color.withValues(alpha: .07)
+                      : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -1229,19 +1899,23 @@ class _ServiceStatusBar extends StatelessWidget {
                       'service-${status.key}-${status.count}',
                     ),
                     tween: Tween<double>(begin: 0, end: progress),
-                    duration: MediaQuery.disableAnimationsOf(context)
-                        ? Duration.zero
-                        : Duration(milliseconds: 520 + index * 55),
+                    duration:
+                        MediaQuery.disableAnimationsOf(context)
+                            ? Duration.zero
+                            : Duration(milliseconds: 520 + index * 55),
                     curve: Curves.easeOutCubic,
-                    builder:
-                        (BuildContext context, double current, Widget? child) {
-                          return LinearProgressIndicator(
-                            minHeight: highlighted ? 10 : 8,
-                            value: current,
-                            backgroundColor: tokens.cardBorder,
-                            valueColor: AlwaysStoppedAnimation<Color>(color),
-                          );
-                        },
+                    builder: (
+                      BuildContext context,
+                      double current,
+                      Widget? child,
+                    ) {
+                      return LinearProgressIndicator(
+                        minHeight: highlighted ? 10 : 8,
+                        value: current,
+                        backgroundColor: tokens.cardBorder,
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -1317,73 +1991,75 @@ class _ReservationsOverview extends StatelessWidget {
         fallback: 'Pedidos do catálogo que podem virar venda.',
       ),
       icon: Icons.bookmarks_outlined,
-      trailing: onOpen == null
-          ? null
-          : IconButton(
-              onPressed: onOpen,
-              tooltip: context.t(
-                'collaboratorHome.reservations.open',
-                fallback: 'Abrir reservas',
-              ),
-              icon: const Icon(Icons.open_in_new_rounded),
-            ),
-      child: provider.reservasErrorCode != null && total == 0
-          ? _InlineLoadError(
-              message: context.t(
-                'collaboratorHome.reservations.loadError',
-                fallback: 'Não foi possível carregar as reservas.',
-              ),
-              onRetry: onRetry,
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: _ReservationMainMetric(
-                        label: context.t(
-                          'collaboratorHome.reservations.pending',
-                          fallback: 'Pendentes',
-                        ),
-                        value: provider.reservasPendentes,
-                        regionalizacao: regionalizacao,
-                        highlight: provider.reservasPendentes > 0,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _ReservationMainMetric(
-                        label: context.t(
-                          'collaboratorHome.reservations.converted',
-                          fallback: 'Convertidas',
-                        ),
-                        value: provider.reservaCount(
-                          CatalogoReservaStatus.convertida,
-                        ),
-                        regionalizacao: regionalizacao,
-                      ),
-                    ),
-                  ],
+      trailing:
+          onOpen == null
+              ? null
+              : IconButton(
+                onPressed: onOpen,
+                tooltip: context.t(
+                  'collaboratorHome.reservations.open',
+                  fallback: 'Abrir reservas',
                 ),
-                const SizedBox(height: 16),
-                for (int index = 0; index < entries.length; index++)
-                  Padding(
-                    padding: EdgeInsets.only(
-                      bottom: index == entries.length - 1 ? 0 : 10,
-                    ),
-                    child: _ReservationStatusRow(
-                      entry: entries[index],
-                      count: provider.reservaCount(entries[index].status),
-                      maxCount: entries.fold<int>(1, (int current, entry) {
-                        final int count = provider.reservaCount(entry.status);
-                        return count > current ? count : current;
-                      }),
-                      regionalizacao: regionalizacao,
-                    ),
+                icon: const Icon(Icons.open_in_new_rounded),
+              ),
+      child:
+          provider.reservasErrorCode != null && total == 0
+              ? _InlineLoadError(
+                message: context.t(
+                  'collaboratorHome.reservations.loadError',
+                  fallback: 'Não foi possível carregar as reservas.',
+                ),
+                onRetry: onRetry,
+              )
+              : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: _ReservationMainMetric(
+                          label: context.t(
+                            'collaboratorHome.reservations.pending',
+                            fallback: 'Pendentes',
+                          ),
+                          value: provider.reservasPendentes,
+                          regionalizacao: regionalizacao,
+                          highlight: provider.reservasPendentes > 0,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _ReservationMainMetric(
+                          label: context.t(
+                            'collaboratorHome.reservations.converted',
+                            fallback: 'Convertidas',
+                          ),
+                          value: provider.reservaCount(
+                            CatalogoReservaStatus.convertida,
+                          ),
+                          regionalizacao: regionalizacao,
+                        ),
+                      ),
+                    ],
                   ),
-              ],
-            ),
+                  const SizedBox(height: 16),
+                  for (int index = 0; index < entries.length; index++)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index == entries.length - 1 ? 0 : 10,
+                      ),
+                      child: _ReservationStatusRow(
+                        entry: entries[index],
+                        count: provider.reservaCount(entries[index].status),
+                        maxCount: entries.fold<int>(1, (int current, entry) {
+                          final int count = provider.reservaCount(entry.status);
+                          return count > current ? count : current;
+                        }),
+                        regionalizacao: regionalizacao,
+                      ),
+                    ),
+                ],
+              ),
     );
   }
 }
@@ -1407,14 +2083,16 @@ class _ReservationMainMetric extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: highlight
-            ? tokens.warning.withValues(alpha: .08)
-            : tokens.surfaceMuted,
+        color:
+            highlight
+                ? tokens.warning.withValues(alpha: .08)
+                : tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(15),
         border: Border.all(
-          color: highlight
-              ? tokens.warning.withValues(alpha: .25)
-              : tokens.cardBorder,
+          color:
+              highlight
+                  ? tokens.warning.withValues(alpha: .25)
+                  : tokens.cardBorder,
         ),
       ),
       child: Column(
@@ -1500,9 +2178,10 @@ class _ReservationStatusRow extends StatelessWidget {
           child: TweenAnimationBuilder<double>(
             key: ValueKey<String>('reservation-${entry.status.name}-$count'),
             tween: Tween<double>(begin: 0, end: count / maxCount),
-            duration: MediaQuery.disableAnimationsOf(context)
-                ? Duration.zero
-                : const Duration(milliseconds: 520),
+            duration:
+                MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 520),
             builder: (BuildContext context, double current, Widget? child) {
               return LinearProgressIndicator(
                 minHeight: 7,
@@ -1604,14 +2283,15 @@ String _serviceStatusLabel(
     'es' => status.nameEsEs,
     _ => status.namePtBr,
   };
-  final String safeFallback = fallback.trim().isNotEmpty
-      ? fallback.trim()
-      : status.statusCode.trim().isNotEmpty
-      ? status.statusCode.trim()
-      : context.t(
-          'collaboratorHome.services.unknownStatus',
-          fallback: 'Sem status',
-        );
+  final String safeFallback =
+      fallback.trim().isNotEmpty
+          ? fallback.trim()
+          : status.statusCode.trim().isNotEmpty
+          ? status.statusCode.trim()
+          : context.t(
+            'collaboratorHome.services.unknownStatus',
+            fallback: 'Sem status',
+          );
   return status.i18nKey.trim().isEmpty
       ? safeFallback
       : context.t(status.i18nKey.trim(), fallback: safeFallback);
