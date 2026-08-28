@@ -22,6 +22,7 @@ import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
+import 'package:sixpos/presentation/components/mobile/collaborator_operational_home_dashboard.dart';
 import 'package:sixpos/presentation/components/mobile/collaborator_performance_home_dashboard.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
@@ -30,6 +31,7 @@ import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/utils/profile_image_payload.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
+import 'package:sixpos/providers/colaborador_home_operacional_provider.dart';
 import 'package:sixpos/providers/dashboard_inicio_provider.dart';
 import 'package:sixpos/providers/desempenho_colaborador_home_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
@@ -42,10 +44,12 @@ class HomePageMobile extends StatefulWidget {
     super.key,
     required this.title,
     this.desempenhoProvider,
+    this.operacionalProvider,
   });
 
   final String title;
   final DesempenhoColaboradorHomeProvider? desempenhoProvider;
+  final ColaboradorHomeOperacionalProvider? operacionalProvider;
 
   @override
   State<HomePageMobile> createState() => _HomePageMobileState();
@@ -80,6 +84,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
   );
   late final DesempenhoColaboradorHomeProvider _desempenhoProvider;
   late final bool _ownsDesempenhoProvider;
+  late final ColaboradorHomeOperacionalProvider _operacionalProvider;
+  late final bool _ownsOperacionalProvider;
   final AdminPortalService _adminPortalService = AdminPortalService();
   final EmpresaProvider _empresaProvider = EmpresaProvider();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
@@ -122,9 +128,13 @@ class _HomePageMobileState extends State<HomePageMobile> {
     _ownsDesempenhoProvider = widget.desempenhoProvider == null;
     _desempenhoProvider =
         widget.desempenhoProvider ?? DesempenhoColaboradorHomeProvider();
+    _ownsOperacionalProvider = widget.operacionalProvider == null;
+    _operacionalProvider =
+        widget.operacionalProvider ?? ColaboradorHomeOperacionalProvider();
     _notificacaoService.addListener(_onNotificacoesChanged);
     _dashboardProvider.addListener(_onDashboardChanged);
     _desempenhoProvider.addListener(_onDesempenhoChanged);
+    _operacionalProvider.addListener(_onOperacionalChanged);
     _empresaProvider.addListener(_onEmpresaChanged);
     _usuarioProvider.addListener(_onUsuarioChanged);
     _homeScrollController.addListener(_onHomeScrollChanged);
@@ -142,6 +152,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
     _notificacaoService.removeListener(_onNotificacoesChanged);
     _dashboardProvider.removeListener(_onDashboardChanged);
     _desempenhoProvider.removeListener(_onDesempenhoChanged);
+    _operacionalProvider.removeListener(_onOperacionalChanged);
     _empresaProvider.removeListener(_onEmpresaChanged);
     _usuarioProvider.removeListener(_onUsuarioChanged);
     _homeScrollController.removeListener(_onHomeScrollChanged);
@@ -150,6 +161,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
     _dashboardProvider.dispose();
     if (_ownsDesempenhoProvider) {
       _desempenhoProvider.dispose();
+    }
+    if (_ownsOperacionalProvider) {
+      _operacionalProvider.dispose();
     }
     if (!kIsWeb) {
       onMensagemRecebida = null;
@@ -182,6 +196,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
           unawaited(_desempenhoProvider.load());
         }
       });
+    }
+    if (!kIsWeb) {
+      _scheduleOperationalLoad(autorizacoes);
     }
   }
 
@@ -218,6 +235,57 @@ class _HomePageMobileState extends State<HomePageMobile> {
   void _onDesempenhoChanged() {
     if (!mounted) return;
     setState(() {});
+  }
+
+  void _onOperacionalChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  void _scheduleOperationalLoad(
+    ColaboradorAutorizacoesProvider autorizacoes,
+  ) {
+    final bool canAccessSales =
+        autorizacoes.ehColaborador && autorizacoes.podeFazerVenda;
+    final bool canAccessServices =
+        autorizacoes.ehColaborador &&
+        autorizacoes.podeAcompanharAssistenciaTecnica;
+    final bool canAccessReservations = canAccessSales;
+    if ((!canAccessSales && !canAccessServices) ||
+        _operacionalProvider.loading ||
+        !_operacionalProvider.needsLoad(
+          canAccessSales: canAccessSales,
+          canAccessServices: canAccessServices,
+          canAccessReservations: canAccessReservations,
+        )) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _operacionalProvider.loading) return;
+      unawaited(
+        _operacionalProvider.load(
+          canAccessSales: canAccessSales,
+          canAccessServices: canAccessServices,
+          canAccessReservations: canAccessReservations,
+        ),
+      );
+    });
+  }
+
+  Future<void> _reloadOperational(
+    ColaboradorAutorizacoesProvider autorizacoes,
+  ) {
+    final bool canAccessSales =
+        autorizacoes.ehColaborador && autorizacoes.podeFazerVenda;
+    final bool canAccessServices =
+        autorizacoes.ehColaborador &&
+        autorizacoes.podeAcompanharAssistenciaTecnica;
+    return _operacionalProvider.reload(
+      canAccessSales: canAccessSales,
+      canAccessServices: canAccessServices,
+      canAccessReservations: canAccessSales,
+    );
   }
 
   void _onEmpresaChanged() {
@@ -328,6 +396,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
     }
     if (autorizacoes.ehColaborador) {
       tasks.add(_desempenhoProvider.reload());
+      if (autorizacoes.podeFazerVenda ||
+          autorizacoes.podeAcompanharAssistenciaTecnica) {
+        tasks.add(_reloadOperational(autorizacoes));
+      }
     }
     if (ehSuper) {
       tasks.add(_carregarInfraestrutura());
@@ -539,6 +611,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
     final bool ehSuper = autorizacoes.ehSuperUsuario;
     final bool ehAdmin = autorizacoes.ehAdministrador;
     final bool ehColaborador = autorizacoes.ehColaborador;
+    final bool canAccessSales =
+        ehColaborador && autorizacoes.podeFazerVenda;
+    final bool canAccessServices =
+        ehColaborador && autorizacoes.podeAcompanharAssistenciaTecnica;
+    final bool canAccessReservations = canAccessSales;
+    final bool hasOperationalAccess = canAccessSales || canAccessServices;
 
     return SafeArea(
       top: false,
@@ -617,21 +695,36 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 delay: Duration(milliseconds: 80),
                 child: _buildRoleBlockHeader(
                   context,
-                  icon: Icons.track_changes_rounded,
+                  icon: Icons.dashboard_customize_outlined,
                   title: context.t(
-                    'performance.home.title',
-                    fallback: 'Minhas metas',
+                    'collaboratorHome.title',
+                    fallback: 'Meu painel',
                   ),
                   subtitle: context.t(
-                    'performance.home.subtitle',
+                    'collaboratorHome.subtitle',
                     fallback:
-                        'Acompanhe suas metas e os resultados atualizados pelo SixoApp.',
+                        'Acompanhe metas, vendas, serviços e prioridades do seu trabalho.',
                   ),
                 ),
               ),
+              if (hasOperationalAccess) ...<Widget>[
+                SizedBox(height: 12),
+                SixStaggeredEntry(
+                  delay: Duration(milliseconds: 130),
+                  child: CollaboratorOperationalHomeMobileDashboard(
+                    provider: _operacionalProvider,
+                    showSales: canAccessSales,
+                    showServices: canAccessServices,
+                    showReservations: canAccessReservations,
+                    onRetry: () => _reloadOperational(autorizacoes),
+                  ),
+                ),
+              ],
               SizedBox(height: 12),
               SixStaggeredEntry(
-                delay: Duration(milliseconds: 130),
+                delay: Duration(
+                  milliseconds: hasOperationalAccess ? 210 : 130,
+                ),
                 child: CollaboratorPerformanceHomeMobileDashboard(
                   provider: _desempenhoProvider,
                 ),
