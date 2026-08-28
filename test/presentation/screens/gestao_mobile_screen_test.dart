@@ -106,6 +106,25 @@ void main() {
     expect(find.text('Em breve'), findsWidgets);
   });
 
+  testWidgets('abre desempenho do colaborador abaixo de Fornecedores', (
+    WidgetTester tester,
+  ) async {
+    final List<String> navigations = <String>[];
+    await _pumpGestao(
+      tester,
+      navigations: navigations,
+      area: GestaoMobileArea.pessoas,
+    );
+
+    final Finder performance = find.text('Desempenho do colaborador');
+    expect(performance, findsOneWidget);
+    await tester.ensureVisible(performance);
+    await tester.tap(performance);
+    await tester.pump(const Duration(milliseconds: 120));
+
+    expect(navigations, contains('DesempenhoColaboradorMobileScreen'));
+  });
+
   testWidgets('restaura a ordem dos cards salva no cache do usuário', (
     WidgetTester tester,
   ) async {
