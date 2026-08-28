@@ -2,8 +2,8 @@
   --catalog-ink: #102b3a;
   --catalog-muted: #607481;
   --catalog-border: #dce5ea;
-  --catalog-accent: #0f6b78;
-  --catalog-accent-dark: #0b4d58;
+  --catalog-accent: #126bff;
+  --catalog-accent-dark: #0c49ad;
   --catalog-soft: #eef5f6;
   --catalog-surface: #ffffff;
 }
@@ -12,6 +12,27 @@
   min-height: 100vh;
   background: #f4f7f8;
   color: var(--catalog-ink);
+}
+
+.catalog-page .button-primary {
+  background: var(--catalog-accent);
+  color: #ffffff;
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--catalog-accent) 26%, transparent);
+}
+
+.catalog-page .button-primary:hover {
+  background: var(--catalog-accent-dark);
+  box-shadow: 0 18px 36px color-mix(in srgb, var(--catalog-accent) 32%, transparent);
+}
+
+.catalog-page .language-switcher button[aria-pressed="true"] {
+  background: var(--catalog-accent);
+  color: #ffffff;
+}
+
+.catalog-page :focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--catalog-accent) 72%, white);
+  outline-offset: 3px;
 }
 
 .catalog-page [hidden] {
@@ -156,6 +177,13 @@
   color: var(--catalog-muted);
 }
 
+.company-description {
+  max-width: 680px;
+  margin: 9px 0 0;
+  color: var(--catalog-muted);
+  line-height: 1.5;
+}
+
 .company-contact {
   max-width: 390px;
   text-align: right;
@@ -252,7 +280,7 @@
 
 .catalog-search:focus-within {
   border-color: var(--catalog-accent);
-  box-shadow: 0 0 0 3px rgba(15, 107, 120, 0.1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--catalog-accent) 12%, transparent);
 }
 
 .catalog-search input {
@@ -284,13 +312,13 @@
 
 .product-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(15, 107, 120, 0.36);
+  border-color: color-mix(in srgb, var(--catalog-accent) 38%, transparent);
   box-shadow: 0 14px 32px rgba(16, 43, 58, 0.09);
 }
 
 .product-card.is-selected {
   border-color: var(--catalog-accent);
-  box-shadow: 0 0 0 2px rgba(15, 107, 120, 0.11);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--catalog-accent) 12%, transparent);
 }
 
 .product-image {
@@ -487,7 +515,89 @@
 .reservation-form textarea:focus {
   outline: 0;
   border-color: var(--catalog-accent);
-  box-shadow: 0 0 0 3px rgba(15, 107, 120, 0.1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--catalog-accent) 12%, transparent);
+}
+
+.catalog-page[data-catalog-style="MINIMALISTA"] {
+  background: #ffffff;
+}
+
+.catalog-page[data-catalog-style="MINIMALISTA"] .company-hero,
+.catalog-page[data-catalog-style="MINIMALISTA"] .product-card,
+.catalog-page[data-catalog-style="MINIMALISTA"] .selection-panel {
+  box-shadow: none;
+}
+
+.catalog-page[data-catalog-style="MINIMALISTA"] .company-hero {
+  padding-inline: 4px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.catalog-page[data-catalog-style="EXPRESSIVO"] {
+  background: color-mix(in srgb, var(--catalog-accent) 7%, #f7f9fc);
+}
+
+.catalog-page[data-catalog-style="EXPRESSIVO"] .catalog-topbar {
+  border-bottom-color: rgba(255, 255, 255, 0.16);
+  background: linear-gradient(120deg, #00163a, var(--catalog-accent-dark));
+}
+
+.catalog-page[data-catalog-style="EXPRESSIVO"] .catalog-brand,
+.catalog-page[data-catalog-style="EXPRESSIVO"] .catalog-brand-copy small {
+  color: #ffffff;
+}
+
+.catalog-page[data-catalog-style="EXPRESSIVO"] .language-switcher {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.catalog-page[data-catalog-style="EXPRESSIVO"] .language-switcher button {
+  border-color: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.catalog-page[data-catalog-style="EXPRESSIVO"] .company-hero {
+  border-color: transparent;
+  background: linear-gradient(135deg, #00163a 0%, var(--catalog-accent) 118%);
+}
+
+.catalog-page[data-catalog-style="EXPRESSIVO"] .company-hero h1,
+.catalog-page[data-catalog-style="EXPRESSIVO"] .company-description,
+.catalog-page[data-catalog-style="EXPRESSIVO"] .company-address,
+.catalog-page[data-catalog-style="EXPRESSIVO"] .company-meta-label,
+.catalog-page[data-catalog-style="EXPRESSIVO"] .catalog-eyebrow {
+  color: #ffffff;
+}
+
+.catalog-page[data-catalog-style="EXPRESSIVO"] .company-contact-links a {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.catalog-page[data-catalog-density="COMPACTA"] .products-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 11px;
+}
+
+.catalog-page[data-catalog-density="COMPACTA"] .product-card {
+  border-radius: 14px;
+}
+
+.catalog-page[data-catalog-density="COMPACTA"] .product-image {
+  aspect-ratio: 16 / 10;
+}
+
+.catalog-page[data-catalog-density="COMPACTA"] .product-body {
+  gap: 7px;
+  padding: 11px;
+}
+
+.catalog-page[data-catalog-density="COMPACTA"] .product-body h3 {
+  min-height: 2.5em;
+  font-size: 0.92rem;
 }
 
 .reservation-feedback {
@@ -536,7 +646,8 @@
 }
 
 @media (max-width: 1080px) {
-  .products-grid {
+  .products-grid,
+  .catalog-page[data-catalog-density="COMPACTA"] .products-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -604,6 +715,10 @@
   }
 
   .products-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .catalog-page[data-catalog-density="COMPACTA"] .products-grid {
     grid-template-columns: 1fr;
   }
 

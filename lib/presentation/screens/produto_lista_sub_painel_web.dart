@@ -2,9 +2,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:sixpos/core/services/catalogo_publico_service.dart';
 import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/core/utils/pdf_download.dart';
 import 'package:sixpos/core/utils/produto_helper.dart';
@@ -218,8 +216,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   final ScrollController _verticalScrollController = ScrollController();
   final ScrollController _horizontalScrollController = ScrollController();
   final ProdutoService _produtoService = ProdutoService();
-  final CatalogoPublicoService _catalogoPublicoService =
-      CatalogoPublicoService();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
 
   List<ProdutoModel> todosProdutos = <ProdutoModel>[];
@@ -231,7 +227,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   String ordenacao = 'nomeAsc';
   String tipoSelecionado = 'PRODUTO';
   bool _isGerandoRelatorio = false;
-  bool _isGerandoLinkCatalogo = false;
   bool _carregandoCatalogoEdicao = false;
   bool _salvandoPreferencia = false;
   String? _erroCatalogoEdicao;
@@ -626,58 +621,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     }
   }
 
-  Future<void> _copiarLinkCatalogoPublico() async {
-    if (_isGerandoLinkCatalogo) return;
-    setState(() => _isGerandoLinkCatalogo = true);
-
-    try {
-      final Uri currentUri = Uri.base;
-      final bool isLoopback = <String>{
-        'localhost',
-        '127.0.0.1',
-        '::1',
-      }.contains(currentUri.host.toLowerCase());
-      final String? publicBaseUrl =
-          <String>{'http', 'https'}.contains(currentUri.scheme) &&
-                  currentUri.host.isNotEmpty
-              ? currentUri
-                  .resolve(isLoopback ? '/catalogo.html' : '/catalogo')
-                  .toString()
-              : null;
-      final link = await _catalogoPublicoService.gerarOuObterLink(
-        baseUrl: publicBaseUrl,
-      );
-      await Clipboard.setData(ClipboardData(text: link.url));
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.t(
-              'produto.webList.publicCatalogCopied',
-              fallback: 'Link público do catálogo copiado.',
-            ),
-          ),
-        ),
-      );
-    } catch (error, stackTrace) {
-      _logError('Erro ao gerar link publico do catalogo', error, stackTrace);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.t(
-              'produto.webList.publicCatalogError',
-              fallback: 'Não foi possível preparar o link do catálogo.',
-            ),
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _isGerandoLinkCatalogo = false);
-    }
-  }
-
   void _logError(String context, Object error, StackTrace stackTrace) {
     debugPrint('[SubPainelWebProdutoLista][ERROR] $context');
     debugPrint('[SubPainelWebProdutoLista][ERROR] $error');
@@ -952,20 +895,6 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             _limparSelecaoMultipla,
           ),
         if (!widget.isSelecao) ...<Widget>[
-          _headerButton(
-            context,
-            Icons.link_rounded,
-            _isGerandoLinkCatalogo
-                ? context.t(
-                  'produto.webList.publicCatalogPreparing',
-                  fallback: 'Preparando...',
-                )
-                : context.t(
-                  'produto.webList.publicCatalogLink',
-                  fallback: 'Link do catálogo',
-                ),
-            _isGerandoLinkCatalogo ? null : _copiarLinkCatalogoPublico,
-          ),
           _headerButton(
             context,
             Icons.add_rounded,
