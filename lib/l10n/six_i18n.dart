@@ -457,6 +457,66 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.loading.subtitle':
         'Buscando a situação atual desta empresa.',
     'workspaceHome.error.title': 'Não foi possível carregar o resumo do dia.',
+    'collaboratorHome.title': 'Meu painel',
+    'collaboratorHome.subtitle':
+        'Acompanhe metas, vendas, serviços e prioridades do seu trabalho.',
+    'collaboratorHome.loading': 'Carregando seu painel operacional',
+    'collaboratorHome.error.user':
+        'Não foi possível identificar seu painel pessoal.',
+    'collaboratorHome.attention.title': 'Prioridades do trabalho',
+    'collaboratorHome.attention.clear':
+        'Tudo em dia nas suas frentes de trabalho.',
+    'collaboratorHome.attention.pending':
+        '{count} pontos precisam de atenção.',
+    'collaboratorHome.attention.overdueSales': 'Vendas vencidas',
+    'collaboratorHome.attention.overdueServices': 'Entregas atrasadas',
+    'collaboratorHome.attention.reservations': 'Reservas para analisar',
+    'collaboratorHome.sales.title': 'Minhas vendas',
+    'collaboratorHome.sales.period': 'Resultados de {start} a {end}',
+    'collaboratorHome.sales.count': 'Vendas no mês',
+    'collaboratorHome.sales.total': 'Total vendido',
+    'collaboratorHome.sales.received': 'Já recebido',
+    'collaboratorHome.sales.openMonth': 'Em aberto no mês',
+    'collaboratorHome.sales.loadError':
+        'Não foi possível carregar o resumo das suas vendas.',
+    'collaboratorHome.openSales.title': 'Vendas ainda não liquidadas',
+    'collaboratorHome.openSales.subtitle':
+        'Somente vendas registradas por você.',
+    'collaboratorHome.openSales.loadError':
+        'Não foi possível carregar suas vendas em aberto.',
+    'collaboratorHome.openSales.empty':
+        'Você não possui vendas aguardando liquidação.',
+    'collaboratorHome.openSales.more': 'Mais {count} vendas em aberto',
+    'collaboratorHome.openSales.customerFallback': 'Cliente não informado',
+    'collaboratorHome.openSales.saleFallback': 'Venda',
+    'collaboratorHome.openSales.noDueDate': 'Sem vencimento',
+    'collaboratorHome.openSales.overdue': 'Vencida',
+    'collaboratorHome.services.title': 'Meus serviços por status',
+    'collaboratorHome.services.subtitle':
+        'Distribuição dos atendimentos em que você é o técnico.',
+    'collaboratorHome.services.open': 'Abrir atendimentos',
+    'collaboratorHome.services.loadError':
+        'Não foi possível carregar seus serviços.',
+    'collaboratorHome.services.empty':
+        'Nenhum atendimento está atribuído a você.',
+    'collaboratorHome.services.total': 'Total atribuído',
+    'collaboratorHome.services.inProgress': 'Em andamento',
+    'collaboratorHome.services.dueToday': 'Entregas hoje',
+    'collaboratorHome.services.overdue': 'Atrasados',
+    'collaboratorHome.services.moreStatuses':
+        'Mais {count} status com movimentação',
+    'collaboratorHome.services.unknownStatus': 'Sem status',
+    'collaboratorHome.reservations.title': 'Fila de reservas',
+    'collaboratorHome.reservations.subtitle':
+        'Pedidos do catálogo que podem virar venda.',
+    'collaboratorHome.reservations.open': 'Abrir reservas',
+    'collaboratorHome.reservations.loadError':
+        'Não foi possível carregar as reservas.',
+    'collaboratorHome.reservations.pending': 'Pendentes',
+    'collaboratorHome.reservations.received': 'Recebidas',
+    'collaboratorHome.reservations.analysis': 'Em análise',
+    'collaboratorHome.reservations.confirmed': 'Confirmadas',
+    'collaboratorHome.reservations.converted': 'Convertidas',
     'performance.home.title': 'Minhas metas',
     'performance.home.subtitle':
         'Acompanhe suas metas e os resultados atualizados pelo SixoApp.',
@@ -2436,6 +2496,64 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.loading.subtitle':
         'Fetching the current situation for this business.',
     'workspaceHome.error.title': 'Could not load the day summary.',
+    'collaboratorHome.title': 'My dashboard',
+    'collaboratorHome.subtitle':
+        'Track your goals, sales, services, and work priorities.',
+    'collaboratorHome.loading': 'Loading your operational dashboard',
+    'collaboratorHome.error.user':
+        'We could not identify your personal dashboard.',
+    'collaboratorHome.attention.title': 'Work priorities',
+    'collaboratorHome.attention.clear':
+        'Everything is up to date across your work areas.',
+    'collaboratorHome.attention.pending': '{count} items need attention.',
+    'collaboratorHome.attention.overdueSales': 'Overdue sales',
+    'collaboratorHome.attention.overdueServices': 'Late deliveries',
+    'collaboratorHome.attention.reservations': 'Reservations to review',
+    'collaboratorHome.sales.title': 'My sales',
+    'collaboratorHome.sales.period': 'Results from {start} to {end}',
+    'collaboratorHome.sales.count': 'Sales this month',
+    'collaboratorHome.sales.total': 'Total sold',
+    'collaboratorHome.sales.received': 'Already received',
+    'collaboratorHome.sales.openMonth': 'Outstanding this month',
+    'collaboratorHome.sales.loadError':
+        'We could not load your sales summary.',
+    'collaboratorHome.openSales.title': 'Unsettled sales',
+    'collaboratorHome.openSales.subtitle': 'Only sales registered by you.',
+    'collaboratorHome.openSales.loadError':
+        'We could not load your outstanding sales.',
+    'collaboratorHome.openSales.empty':
+        'You have no sales awaiting settlement.',
+    'collaboratorHome.openSales.more': '{count} more outstanding sales',
+    'collaboratorHome.openSales.customerFallback': 'Customer not provided',
+    'collaboratorHome.openSales.saleFallback': 'Sale',
+    'collaboratorHome.openSales.noDueDate': 'No due date',
+    'collaboratorHome.openSales.overdue': 'Overdue',
+    'collaboratorHome.services.title': 'My services by status',
+    'collaboratorHome.services.subtitle':
+        'Distribution of service calls assigned to you.',
+    'collaboratorHome.services.open': 'Open service calls',
+    'collaboratorHome.services.loadError':
+        'We could not load your services.',
+    'collaboratorHome.services.empty':
+        'No service call is currently assigned to you.',
+    'collaboratorHome.services.total': 'Total assigned',
+    'collaboratorHome.services.inProgress': 'In progress',
+    'collaboratorHome.services.dueToday': 'Due today',
+    'collaboratorHome.services.overdue': 'Overdue',
+    'collaboratorHome.services.moreStatuses':
+        '{count} more statuses with activity',
+    'collaboratorHome.services.unknownStatus': 'No status',
+    'collaboratorHome.reservations.title': 'Reservation queue',
+    'collaboratorHome.reservations.subtitle':
+        'Catalog requests that can become sales.',
+    'collaboratorHome.reservations.open': 'Open reservations',
+    'collaboratorHome.reservations.loadError':
+        'We could not load reservations.',
+    'collaboratorHome.reservations.pending': 'Pending',
+    'collaboratorHome.reservations.received': 'Received',
+    'collaboratorHome.reservations.analysis': 'Under review',
+    'collaboratorHome.reservations.confirmed': 'Confirmed',
+    'collaboratorHome.reservations.converted': 'Converted',
     'performance.home.title': 'My goals',
     'performance.home.subtitle':
         'Track your goals and results updated by SixoApp.',
@@ -4217,6 +4335,66 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.loading.subtitle':
         'Buscando la situación actual de este comercio.',
     'workspaceHome.error.title': 'No fue posible cargar el resumen del día.',
+    'collaboratorHome.title': 'Mi panel',
+    'collaboratorHome.subtitle':
+        'Sigue tus metas, ventas, servicios y prioridades de trabajo.',
+    'collaboratorHome.loading': 'Cargando tu panel operativo',
+    'collaboratorHome.error.user':
+        'No fue posible identificar tu panel personal.',
+    'collaboratorHome.attention.title': 'Prioridades del trabajo',
+    'collaboratorHome.attention.clear':
+        'Todo está al día en tus frentes de trabajo.',
+    'collaboratorHome.attention.pending':
+        '{count} puntos necesitan atención.',
+    'collaboratorHome.attention.overdueSales': 'Ventas vencidas',
+    'collaboratorHome.attention.overdueServices': 'Entregas atrasadas',
+    'collaboratorHome.attention.reservations': 'Reservas para revisar',
+    'collaboratorHome.sales.title': 'Mis ventas',
+    'collaboratorHome.sales.period': 'Resultados de {start} a {end}',
+    'collaboratorHome.sales.count': 'Ventas del mes',
+    'collaboratorHome.sales.total': 'Total vendido',
+    'collaboratorHome.sales.received': 'Ya recibido',
+    'collaboratorHome.sales.openMonth': 'Pendiente en el mes',
+    'collaboratorHome.sales.loadError':
+        'No fue posible cargar el resumen de tus ventas.',
+    'collaboratorHome.openSales.title': 'Ventas aún no liquidadas',
+    'collaboratorHome.openSales.subtitle':
+        'Solo ventas registradas por ti.',
+    'collaboratorHome.openSales.loadError':
+        'No fue posible cargar tus ventas pendientes.',
+    'collaboratorHome.openSales.empty':
+        'No tienes ventas pendientes de liquidación.',
+    'collaboratorHome.openSales.more': 'Hay {count} ventas pendientes más',
+    'collaboratorHome.openSales.customerFallback': 'Cliente no informado',
+    'collaboratorHome.openSales.saleFallback': 'Venta',
+    'collaboratorHome.openSales.noDueDate': 'Sin vencimiento',
+    'collaboratorHome.openSales.overdue': 'Vencida',
+    'collaboratorHome.services.title': 'Mis servicios por estado',
+    'collaboratorHome.services.subtitle':
+        'Distribución de las atenciones donde eres el técnico.',
+    'collaboratorHome.services.open': 'Abrir atenciones',
+    'collaboratorHome.services.loadError':
+        'No fue posible cargar tus servicios.',
+    'collaboratorHome.services.empty':
+        'No tienes atenciones asignadas actualmente.',
+    'collaboratorHome.services.total': 'Total asignado',
+    'collaboratorHome.services.inProgress': 'En curso',
+    'collaboratorHome.services.dueToday': 'Entregas hoy',
+    'collaboratorHome.services.overdue': 'Atrasados',
+    'collaboratorHome.services.moreStatuses':
+        'Hay {count} estados más con actividad',
+    'collaboratorHome.services.unknownStatus': 'Sin estado',
+    'collaboratorHome.reservations.title': 'Cola de reservas',
+    'collaboratorHome.reservations.subtitle':
+        'Solicitudes del catálogo que pueden convertirse en ventas.',
+    'collaboratorHome.reservations.open': 'Abrir reservas',
+    'collaboratorHome.reservations.loadError':
+        'No fue posible cargar las reservas.',
+    'collaboratorHome.reservations.pending': 'Pendientes',
+    'collaboratorHome.reservations.received': 'Recibidas',
+    'collaboratorHome.reservations.analysis': 'En análisis',
+    'collaboratorHome.reservations.confirmed': 'Confirmadas',
+    'collaboratorHome.reservations.converted': 'Convertidas',
     'performance.home.title': 'Mis metas',
     'performance.home.subtitle':
         'Acompaña tus metas y los resultados actualizados por SixoApp.',

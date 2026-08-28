@@ -66,6 +66,9 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   bool get podeFazerDevolucao => _ehAdministrador || _podeFazerDevolucao;
   bool get podeLancarAssistenciaTecnica =>
       autorizacoes.objAssistenciaTecnicaPode.lancaServico;
+  bool get podeAcompanharAssistenciaTecnica =>
+      podeLancarAssistenciaTecnica ||
+      autorizacoes.objAssistenciaTecnicaPode.ehUmTecnicoEFazAssistenciaTecnica;
   bool get podeEditarCliente => autorizacoes.objClientesPode.podeEditarCliente;
   bool get podeCadastrarProduto => autorizacoes.podeCadastrarProduto;
   bool get podeEditarProduto => autorizacoes.objProdutosPode.podeEditarProduto;
