@@ -115,13 +115,13 @@ class _WorkspaceHomeContent extends StatelessWidget {
     final bool isAdminUser = autorizacoes.ehAdministrador;
     final bool isCollaborator = autorizacoes.ehColaborador;
     final bool canAccessSales =
-        isCollaborator &&
-        (autorizacoes.podeFazerVenda || autorizacoes.podeVerQuantoVendeu);
+        isCollaborator && autorizacoes.podeVerQuantoVendeu;
     final bool canAccessServices =
         isCollaborator && autorizacoes.podeAcompanharAssistenciaTecnica;
     final bool canAccessReservations =
         isCollaborator && autorizacoes.podeFazerVenda;
-    final bool hasOperationalAccess = canAccessSales || canAccessServices;
+    final bool hasOperationalAccess =
+        canAccessSales || canAccessServices || canAccessReservations;
     final DesempenhoColaboradorHomeProvider desempenho =
         context.watch<DesempenhoColaboradorHomeProvider>();
     final ColaboradorHomeOperacionalProvider operacional =
@@ -204,21 +204,52 @@ class _WorkspaceHomeContent extends StatelessWidget {
                                             operacional.loading)
                                     : provider.loading,
                             onRefresh: () async {
-                              if (isCollaborator) {
+                              final ColaboradorAutorizacoesProvider
+                              refreshedAutorizacoes =
+                                  context
+                                      .read<ColaboradorAutorizacoesProvider>();
+                              await refreshedAutorizacoes
+                                  .carregarAutorizacoesDoUsuarioLogado(
+                                    force: true,
+                                  );
+                              if (!context.mounted) {
+                                return;
+                              }
+
+                              final bool refreshedIsCollaborator =
+                                  refreshedAutorizacoes.ehColaborador;
+                              final bool refreshedCanAccessSales =
+                                  refreshedIsCollaborator &&
+                                  refreshedAutorizacoes.podeVerQuantoVendeu;
+                              final bool refreshedCanAccessServices =
+                                  refreshedIsCollaborator &&
+                                  refreshedAutorizacoes
+                                      .podeAcompanharAssistenciaTecnica;
+                              final bool refreshedCanAccessReservations =
+                                  refreshedIsCollaborator &&
+                                  refreshedAutorizacoes.podeFazerVenda;
+                              final bool refreshedHasOperationalAccess =
+                                  refreshedCanAccessSales ||
+                                  refreshedCanAccessServices ||
+                                  refreshedCanAccessReservations;
+
+                              if (refreshedIsCollaborator) {
                                 await Future.wait<void>(<Future<void>>[
                                   desempenho.reload(),
-                                  if (hasOperationalAccess)
+                                  if (refreshedHasOperationalAccess)
                                     operacional.reload(
-                                      canAccessSales: canAccessSales,
-                                      canAccessServices: canAccessServices,
+                                      canAccessSales: refreshedCanAccessSales,
+                                      canAccessServices:
+                                          refreshedCanAccessServices,
                                       canAccessReservations:
-                                          canAccessReservations,
+                                          refreshedCanAccessReservations,
                                     ),
                                 ]);
                               } else {
                                 await provider.reload();
                               }
-                              if (isSuperUser && context.mounted) {
+                              if (refreshedAutorizacoes.ehSuperUsuario &&
+                                  context.mounted) {
                                 await context
                                     .read<
                                       _WorkspaceHomeInfrastructureProvider

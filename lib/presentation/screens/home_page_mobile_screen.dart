@@ -244,14 +244,13 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   void _scheduleOperationalLoad(ColaboradorAutorizacoesProvider autorizacoes) {
     final bool canAccessSales =
-        autorizacoes.ehColaborador &&
-        (autorizacoes.podeFazerVenda || autorizacoes.podeVerQuantoVendeu);
+        autorizacoes.ehColaborador && autorizacoes.podeVerQuantoVendeu;
     final bool canAccessServices =
         autorizacoes.ehColaborador &&
         autorizacoes.podeAcompanharAssistenciaTecnica;
     final bool canAccessReservations =
         autorizacoes.ehColaborador && autorizacoes.podeFazerVenda;
-    if ((!canAccessSales && !canAccessServices) ||
+    if ((!canAccessSales && !canAccessServices && !canAccessReservations) ||
         _operacionalProvider.loading ||
         !_operacionalProvider.needsLoad(
           canAccessSales: canAccessSales,
@@ -277,8 +276,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
     ColaboradorAutorizacoesProvider autorizacoes,
   ) {
     final bool canAccessSales =
-        autorizacoes.ehColaborador &&
-        (autorizacoes.podeFazerVenda || autorizacoes.podeVerQuantoVendeu);
+        autorizacoes.ehColaborador && autorizacoes.podeVerQuantoVendeu;
     final bool canAccessServices =
         autorizacoes.ehColaborador &&
         autorizacoes.podeAcompanharAssistenciaTecnica;
@@ -389,21 +387,39 @@ class _HomePageMobileState extends State<HomePageMobile> {
   Future<void> _onRefresh() async {
     final ColaboradorAutorizacoesProvider autorizacoes =
         context.read<ColaboradorAutorizacoesProvider>();
-    final bool ehSuper = autorizacoes.ehSuperUsuario;
-    final List<Future<void>> tasks = <Future<void>>[
+
+    await Future.wait<void>(<Future<void>>[
       _atualizarDadosPessoaisNoRefresh(),
-    ];
+      autorizacoes.carregarAutorizacoesDoUsuarioLogado(force: true),
+    ]);
+
+    if (!mounted) {
+      return;
+    }
+
+    await _carregarContextoDoFiltroDeComercio();
+
+    final bool canAccessSales =
+        autorizacoes.ehColaborador && autorizacoes.podeVerQuantoVendeu;
+    final bool canAccessServices =
+        autorizacoes.ehColaborador &&
+        autorizacoes.podeAcompanharAssistenciaTecnica;
+    final bool canAccessReservations =
+        autorizacoes.ehColaborador && autorizacoes.podeFazerVenda;
+    final bool podeCarregarPainelOperacional =
+        canAccessSales || canAccessServices || canAccessReservations;
+
+    final List<Future<void>> tasks = <Future<void>>[];
     if (autorizacoes.ehAdministrador) {
       tasks.add(_dashboardProvider.reload());
     }
     if (autorizacoes.ehColaborador) {
       tasks.add(_desempenhoProvider.reload());
-      if (autorizacoes.podeFazerVenda ||
-          autorizacoes.podeAcompanharAssistenciaTecnica) {
+      if (podeCarregarPainelOperacional) {
         tasks.add(_reloadOperational(autorizacoes));
       }
     }
-    if (ehSuper) {
+    if (autorizacoes.ehSuperUsuario) {
       tasks.add(_carregarInfraestrutura());
     }
     await Future.wait(tasks);
@@ -614,13 +630,13 @@ class _HomePageMobileState extends State<HomePageMobile> {
     final bool ehAdmin = autorizacoes.ehAdministrador;
     final bool ehColaborador = autorizacoes.ehColaborador;
     final bool canAccessSales =
-        ehColaborador &&
-        (autorizacoes.podeFazerVenda || autorizacoes.podeVerQuantoVendeu);
+        ehColaborador && autorizacoes.podeVerQuantoVendeu;
     final bool canAccessServices =
         ehColaborador && autorizacoes.podeAcompanharAssistenciaTecnica;
     final bool canAccessReservations =
         ehColaborador && autorizacoes.podeFazerVenda;
-    final bool hasOperationalAccess = canAccessSales || canAccessServices;
+    final bool hasOperationalAccess =
+        canAccessSales || canAccessServices || canAccessReservations;
 
     return SafeArea(
       top: false,
