@@ -10,6 +10,8 @@ import '../../data/services/cliente_usuario/cliente_usuario_api_client.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import '../../providers/locale_settings_provider.dart';
+import '../components/web/six_web_animated_dialog.dart';
+import '../theme/web_theme_tokens.dart';
 import 'pdv_cliente_identificacao_dialog.dart';
 import 'produto_lista_sub_painel_web.dart';
 
@@ -95,19 +97,17 @@ class _AtendimentosTecnicosWebPageState
   Future<_AtendimentoTecnicoViewState> _carregar() async {
     final results = await Future.wait<dynamic>(<Future<dynamic>>[
       _service.buscarDominiosBase(),
-      _service.listar(),
       _clienteApiClient.listarClientesUsuario(),
       _colaboradorApiClient.listarTecnicosAssistenciaTecnica(),
     ]);
     final List<_ResponsavelTecnicoWeb> responsaveis = _montarResponsaveis(
-      results[3] as List<ColaboradorUsuarioResumo>,
+      results[2] as List<ColaboradorUsuarioResumo>,
     );
     _responsavelSelecionado = _resolverResponsavelSelecionado(responsaveis);
 
     return _AtendimentoTecnicoViewState(
       dominios: results[0] as AtendimentoTecnicoDominiosBaseModel,
-      atendimentos: results[1] as List<AtendimentoTecnicoModel>,
-      clientes: (results[2] as ClienteUsuarioListResponse).clientes,
+      clientes: (results[1] as ClienteUsuarioListResponse).clientes,
       responsaveis: responsaveis,
     );
   }
@@ -205,9 +205,10 @@ class _AtendimentosTecnicosWebPageState
 
   Future<void> _abrirIdentificacaoCliente(List<ClienteUsuario> clientes) async {
     final atual = _clienteSelecionado(clientes);
-    final result = await showDialog<ClienteIdentificacaoVendaResult>(
+    final result = await showSixWebCustomerIdentificationDialog(
       context: context,
-      builder: (_) => PdvClienteIdentificacaoDialog(clienteAtual: atual),
+      clienteAtual: atual,
+      apiClient: _clienteApiClient,
     );
 
     if (!mounted || result == null) return;
@@ -237,7 +238,7 @@ class _AtendimentosTecnicosWebPageState
     }
 
     final _ResponsavelTecnicoWeb? result =
-        await showDialog<_ResponsavelTecnicoWeb>(
+        await showSixWebAnimatedDialog<_ResponsavelTecnicoWeb>(
           context: context,
           builder:
               (_) => _ResponsavelTecnicoWebSelectorDialog(
@@ -476,17 +477,6 @@ class _AtendimentosTecnicosWebPageState
   int _totalClientesAtivos(List<ClienteUsuario> clientes) =>
       clientes.where((cliente) => cliente.ativo).length;
 
-  int _totalAbertos(List<AtendimentoTecnicoModel> atendimentos) =>
-      atendimentos
-          .where((atendimento) => !atendimento.operacaoLiquidada)
-          .length;
-
-  double _valorAberto(List<AtendimentoTecnicoModel> atendimentos) =>
-      atendimentos.fold<double>(
-        0,
-        (total, atendimento) => total + atendimento.valorEmAberto,
-      );
-
   void _mostrarMensagem(String mensagem) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -497,6 +487,7 @@ class _AtendimentosTecnicosWebPageState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     final content = FutureBuilder<_AtendimentoTecnicoViewState>(
       future: _future,
       builder: (context, snapshot) {
@@ -515,7 +506,7 @@ class _AtendimentosTecnicosWebPageState
             final isCompact = constraints.maxWidth < 980;
             final horizontalPadding = isCompact ? 16.0 : 28.0;
             return Container(
-              color: theme.colorScheme.surfaceVariant.withOpacity(0.16),
+              color: tokens.workspaceBackground,
               child: Column(
                 children: <Widget>[
                   _buildHeader(theme, state, isCompact),
@@ -568,28 +559,32 @@ class _AtendimentosTecnicosWebPageState
   }
 
   Widget _buildLoading(ThemeData theme) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
-      color: theme.colorScheme.surfaceVariant.withOpacity(0.16),
+      color: tokens.workspaceBackground,
       child: Center(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
+            color: tokens.surface,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.12),
-            ),
+            border: Border.all(color: tokens.cardBorder),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              SizedBox(
+              const SizedBox(
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(strokeWidth: 2.4),
               ),
-              SizedBox(width: 12),
-              Text('Carregando atendimentos técnicos...'),
+              const SizedBox(width: 12),
+              Text(
+                'Carregando atendimentos técnicos...',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: tokens.secondaryText,
+                ),
+              ),
             ],
           ),
         ),
@@ -602,19 +597,20 @@ class _AtendimentosTecnicosWebPageState
     _AtendimentoTecnicoViewState state,
     bool isCompact,
   ) {
-    final colorScheme = theme.colorScheme;
+    final tokens = WebThemeTokens.of(context);
     final titleBlock = Row(
       children: <Widget>[
         Container(
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.10),
+            color: tokens.selectedBackground,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: tokens.selectedBorder),
           ),
           child: Icon(
             Icons.build_circle_outlined,
-            color: colorScheme.primary,
+            color: tokens.info,
             size: 27,
           ),
         ),
@@ -630,7 +626,7 @@ class _AtendimentosTecnicosWebPageState
                 style: TextStyle(
                   fontSize: isCompact ? 21 : 24,
                   fontWeight: FontWeight.w900,
-                  color: colorScheme.onSurface,
+                  color: tokens.primaryText,
                 ),
               ),
               const SizedBox(height: 3),
@@ -638,9 +634,7 @@ class _AtendimentosTecnicosWebPageState
                 'Fluxo com cliente, equipamento, diagnóstico, itens e vencimento financeiro.',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: colorScheme.onSurface.withOpacity(0.66),
-                ),
+                style: TextStyle(color: tokens.secondaryText),
               ),
             ],
           ),
@@ -673,15 +667,13 @@ class _AtendimentosTecnicosWebPageState
         isCompact ? 14 : 18,
       ),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(color: colorScheme.outline.withOpacity(0.14)),
-        ),
+        color: tokens.surfaceMuted,
+        border: Border(bottom: BorderSide(color: tokens.cardBorder)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -746,14 +738,6 @@ class _AtendimentosTecnicosWebPageState
             _summaryCard(
               theme,
               width: cardWidth,
-              label: 'Em aberto',
-              value: _formatarMoeda(_valorAberto(state.atendimentos)),
-              helper: '${_totalAbertos(state.atendimentos)} pendente(s)',
-              icon: Icons.account_balance_wallet_outlined,
-            ),
-            _summaryCard(
-              theme,
-              width: cardWidth,
               label: 'Novo total',
               value: _formatarMoeda(_totalAtendimento),
               helper: 'Itens deste atendimento',
@@ -771,6 +755,7 @@ class _AtendimentosTecnicosWebPageState
     _AtendimentoTecnicoViewState state, {
     required bool isCompact,
   }) {
+    final tokens = WebThemeTokens.of(context);
     final cliente = _clienteSelecionado(state.clientes);
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -941,10 +926,10 @@ class _AtendimentosTecnicosWebPageState
 
     return Card(
       elevation: 0,
-      color: theme.colorScheme.surface,
+      color: tokens.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: theme.colorScheme.outline.withOpacity(0.13)),
+        side: BorderSide(color: tokens.cardBorder),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -959,6 +944,7 @@ class _AtendimentosTecnicosWebPageState
     ClienteUsuario? cliente,
   ) {
     final selected = cliente != null;
+    final tokens = WebThemeTokens.of(context);
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(18),
@@ -968,18 +954,10 @@ class _AtendimentosTecnicosWebPageState
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color:
-                selected
-                    ? theme.colorScheme.primary.withOpacity(0.07)
-                    : theme.colorScheme.surfaceContainerHighest.withOpacity(
-                      0.58,
-                    ),
+            color: selected ? tokens.selectedBackground : tokens.surfaceMuted,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color:
-                  selected
-                      ? theme.colorScheme.primary.withOpacity(0.24)
-                      : theme.colorScheme.outline.withOpacity(0.12),
+              color: selected ? tokens.selectedBorder : tokens.cardBorder,
             ),
           ),
           child: Row(
@@ -988,17 +966,17 @@ class _AtendimentosTecnicosWebPageState
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color:
-                      selected
-                          ? theme.colorScheme.primary.withOpacity(0.10)
-                          : theme.colorScheme.surface,
+                  color: selected ? tokens.selectedBackground : tokens.surface,
                   borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: selected ? tokens.selectedBorder : tokens.cardBorder,
+                  ),
                 ),
                 child: Icon(
                   selected
                       ? Icons.check_circle_outline_rounded
                       : Icons.person_search_outlined,
-                  color: theme.colorScheme.primary,
+                  color: selected ? tokens.info : tokens.mutedText,
                 ),
               ),
               const SizedBox(width: 12),
@@ -1021,9 +999,7 @@ class _AtendimentosTecnicosWebPageState
                           : 'Clique para buscar e selecionar um cliente cadastrado.',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                      style: TextStyle(color: tokens.secondaryText),
                     ),
                   ],
                 ),
@@ -1049,6 +1025,7 @@ class _AtendimentosTecnicosWebPageState
     _ResponsavelTecnicoWeb? responsavel,
   ) {
     final bool selected = responsavel != null;
+    final tokens = WebThemeTokens.of(context);
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(18),
@@ -1058,18 +1035,10 @@ class _AtendimentosTecnicosWebPageState
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color:
-                selected
-                    ? theme.colorScheme.primary.withOpacity(0.07)
-                    : theme.colorScheme.surfaceContainerHighest.withOpacity(
-                      0.58,
-                    ),
+            color: selected ? tokens.selectedBackground : tokens.surfaceMuted,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color:
-                  selected
-                      ? theme.colorScheme.primary.withOpacity(0.24)
-                      : theme.colorScheme.outline.withOpacity(0.12),
+              color: selected ? tokens.selectedBorder : tokens.cardBorder,
             ),
           ),
           child: Row(
@@ -1078,17 +1047,17 @@ class _AtendimentosTecnicosWebPageState
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color:
-                      selected
-                          ? theme.colorScheme.primary.withOpacity(0.10)
-                          : theme.colorScheme.surface,
+                  color: selected ? tokens.selectedBackground : tokens.surface,
                   borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: selected ? tokens.selectedBorder : tokens.cardBorder,
+                  ),
                 ),
                 child: Icon(
                   selected
                       ? Icons.engineering_rounded
                       : Icons.engineering_outlined,
-                  color: theme.colorScheme.primary,
+                  color: selected ? tokens.info : tokens.mutedText,
                 ),
               ),
               const SizedBox(width: 12),
@@ -1113,9 +1082,7 @@ class _AtendimentosTecnicosWebPageState
                           : 'Apenas ADMIN ou colaboradores com permissão técnica aparecem aqui.',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                      style: TextStyle(color: tokens.secondaryText),
                     ),
                   ],
                 ),
@@ -1138,12 +1105,13 @@ class _AtendimentosTecnicosWebPageState
   }
 
   Widget _buildItensSection(ThemeData theme, {required bool isCompact}) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.13)),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1199,14 +1167,12 @@ class _AtendimentosTecnicosWebPageState
               width: double.infinity,
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withOpacity(
-                  0.45,
-                ),
+                color: tokens.surfaceMuted,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
                 'Nenhum item adicionado. Você pode abrir o atendimento só com o diagnóstico e incluir os itens depois.',
-                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                style: TextStyle(color: tokens.secondaryText),
               ),
             )
           else
@@ -1230,9 +1196,10 @@ class _AtendimentosTecnicosWebPageState
     required bool isCompact,
   }) {
     final isServico = item.tipoCodigo == 'SERVICE';
+    final tokens = WebThemeTokens.of(context);
     final icon = Icon(
       isServico ? Icons.handyman_outlined : Icons.inventory_2_outlined,
-      color: theme.colorScheme.primary,
+      color: isServico ? tokens.info : tokens.warning,
     );
     final info = Expanded(
       child: Column(
@@ -1247,10 +1214,7 @@ class _AtendimentosTecnicosWebPageState
           const SizedBox(height: 2),
           Text(
             '${isServico ? 'Serviço' : 'Produto/peça'} • ${_formatarMoeda(item.valorUnitario)}',
-            style: TextStyle(
-              fontSize: 12,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: TextStyle(fontSize: 12, color: tokens.secondaryText),
           ),
         ],
       ),
@@ -1277,8 +1241,9 @@ class _AtendimentosTecnicosWebPageState
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.42),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child:
           isCompact
@@ -1335,6 +1300,7 @@ class _AtendimentosTecnicosWebPageState
     List<ClienteUsuario> clientes, {
     required bool isCompact,
   }) {
+    final tokens = WebThemeTokens.of(context);
     final metrics = Wrap(
       spacing: 10,
       runSpacing: 10,
@@ -1393,9 +1359,9 @@ class _AtendimentosTecnicosWebPageState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.06),
+        color: tokens.selectedBackground,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.16)),
+        border: Border.all(color: tokens.selectedBorder),
       ),
       child:
           isCompact
@@ -1423,6 +1389,7 @@ class _AtendimentosTecnicosWebPageState
     required String subtitle,
     required IconData icon,
   }) {
+    final tokens = WebThemeTokens.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -1430,10 +1397,11 @@ class _AtendimentosTecnicosWebPageState
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.10),
+            color: tokens.selectedBackground,
             borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: tokens.selectedBorder),
           ),
-          child: Icon(icon, color: theme.colorScheme.primary, size: 22),
+          child: Icon(icon, color: tokens.info, size: 22),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -1450,7 +1418,7 @@ class _AtendimentosTecnicosWebPageState
               Text(
                 subtitle,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: tokens.secondaryText,
                 ),
               ),
             ],
@@ -1502,25 +1470,23 @@ class _AtendimentosTecnicosWebPageState
     String? helper,
     bool alignLabelWithHint = false,
   }) {
+    final tokens = WebThemeTokens.of(context);
     return InputDecoration(
       labelText: label,
       hintText: hint,
       helperText: helper,
       alignLabelWithHint: alignLabelWithHint,
-      prefixIcon:
-          icon == null ? null : Icon(icon, color: theme.colorScheme.primary),
+      prefixIcon: icon == null ? null : Icon(icon, color: tokens.info),
       filled: true,
-      fillColor: theme.colorScheme.surface,
+      fillColor: tokens.inputBackground,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(
-          color: theme.colorScheme.outline.withOpacity(0.12),
-        ),
+        borderSide: BorderSide(color: tokens.cardBorder),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.4),
+        borderSide: BorderSide(color: tokens.info, width: 1.4),
       ),
     );
   }
@@ -1534,25 +1500,23 @@ class _AtendimentosTecnicosWebPageState
     required IconData icon,
     bool highlight = false,
   }) {
-    final colorScheme = theme.colorScheme;
+    final tokens = WebThemeTokens.of(context);
+    final bool emphasize = highlight;
     return SizedBox(
       width: width,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: highlight ? colorScheme.primary : colorScheme.surface,
+          color: emphasize ? tokens.selectedBackground : tokens.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color:
-                highlight
-                    ? colorScheme.primary
-                    : colorScheme.outline.withOpacity(0.12),
+            color: emphasize ? tokens.selectedBorder : tokens.cardBorder,
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -1563,16 +1527,13 @@ class _AtendimentosTecnicosWebPageState
               height: 42,
               decoration: BoxDecoration(
                 color:
-                    highlight
-                        ? Colors.white.withOpacity(0.15)
-                        : colorScheme.primary.withOpacity(0.08),
+                    emphasize ? tokens.selectedBackground : tokens.surfaceMuted,
                 borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: emphasize ? tokens.selectedBorder : tokens.cardBorder,
+                ),
               ),
-              child: Icon(
-                icon,
-                color: highlight ? Colors.white : colorScheme.primary,
-                size: 21,
-              ),
+              child: Icon(icon, color: tokens.info, size: 21),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1584,10 +1545,7 @@ class _AtendimentosTecnicosWebPageState
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color:
-                          highlight
-                              ? Colors.white.withOpacity(0.86)
-                              : colorScheme.onSurface.withOpacity(0.62),
+                      color: tokens.secondaryText,
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -1598,7 +1556,7 @@ class _AtendimentosTecnicosWebPageState
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: highlight ? Colors.white : colorScheme.onSurface,
+                      color: tokens.primaryText,
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1610,9 +1568,7 @@ class _AtendimentosTecnicosWebPageState
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color:
-                          highlight
-                              ? Colors.white.withOpacity(0.78)
-                              : colorScheme.onSurface.withOpacity(0.56),
+                          emphasize ? tokens.secondaryText : tokens.mutedText,
                       fontSize: 12,
                     ),
                   ),
@@ -1631,20 +1587,25 @@ class _AtendimentosTecnicosWebPageState
     String label,
     VoidCallback? onPressed,
   ) {
+    final tokens = WebThemeTokens.of(context);
     return OutlinedButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 18),
       label: Text(label),
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        backgroundColor: tokens.surface,
+        foregroundColor: tokens.info,
+        side: BorderSide(color: tokens.cardBorder),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }
 
   Widget _closeButton(BuildContext context) {
+    final tokens = WebThemeTokens.of(context);
     return Material(
-      color: const Color(0xFFE53935),
+      color: tokens.surface,
       borderRadius: BorderRadius.circular(999),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
@@ -1655,31 +1616,36 @@ class _AtendimentosTecnicosWebPageState
           }
           Navigator.of(context).maybePop();
         },
-        child: const SizedBox(
+        child: SizedBox(
           width: 46,
           height: 46,
-          child: Icon(Icons.close_rounded, color: Colors.white, size: 26),
+          child: Icon(Icons.close_rounded, color: tokens.danger, size: 24),
         ),
       ),
     );
   }
 
   Widget _headerBadge(ThemeData theme, String label, IconData icon) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.62),
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.10)),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 15, color: theme.colorScheme.onSurfaceVariant),
+          Icon(icon, size: 15, color: tokens.mutedText),
           const SizedBox(width: 7),
           Text(
             label,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+              color: tokens.primaryText,
+            ),
           ),
         ],
       ),
@@ -1692,24 +1658,22 @@ class _AtendimentosTecnicosWebPageState
     String label,
     IconData icon,
   ) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.72),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.08)),
+        border: Border.all(color: tokens.cardBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 16, color: theme.colorScheme.primary),
+          Icon(icon, size: 16, color: tokens.info),
           const SizedBox(width: 7),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w900)),
           const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-          ),
+          Text(label, style: TextStyle(color: tokens.secondaryText)),
         ],
       ),
     );
@@ -1728,14 +1692,17 @@ class _AtendimentoTecnicoErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = WebThemeTokens.of(context);
     return Center(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 560),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: tokens.surface,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: theme.colorScheme.error.withOpacity(0.30)),
+          border: Border.all(
+            color: theme.colorScheme.error.withValues(alpha: 0.30),
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1802,11 +1769,13 @@ class _ResponsavelTecnicoWebSelectorDialogState
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     final List<_ResponsavelTecnicoWeb> responsaveis = _responsaveisFiltrados;
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: tokens.surfaceElevated,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560, maxHeight: 680),
         child: Padding(
@@ -1821,13 +1790,11 @@ class _ResponsavelTecnicoWebSelectorDialogState
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.10),
+                      color: tokens.selectedBackground,
                       borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: tokens.selectedBorder),
                     ),
-                    child: Icon(
-                      Icons.engineering_outlined,
-                      color: theme.colorScheme.primary,
-                    ),
+                    child: Icon(Icons.engineering_outlined, color: tokens.info),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1845,9 +1812,7 @@ class _ResponsavelTecnicoWebSelectorDialogState
                           'Selecione um técnico autorizado para assistência.',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
+                          style: TextStyle(color: tokens.secondaryText),
                         ),
                       ],
                     ),
@@ -1865,7 +1830,7 @@ class _ResponsavelTecnicoWebSelectorDialogState
                 onChanged: (String value) => setState(() => _filter = value),
                 decoration: InputDecoration(
                   hintText: 'Buscar responsável',
-                  prefixIcon: const Icon(Icons.search_rounded),
+                  prefixIcon: Icon(Icons.search_rounded, color: tokens.info),
                   suffixIcon:
                       _searchController.text.isEmpty
                           ? null
@@ -1880,6 +1845,8 @@ class _ResponsavelTecnicoWebSelectorDialogState
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
+                  filled: true,
+                  fillColor: tokens.inputBackground,
                 ),
               ),
               const SizedBox(height: 14),
@@ -1910,17 +1877,18 @@ class _ResponsavelTecnicoWebSelectorDialogState
   }
 
   Widget _buildEmpty(ThemeData theme) {
+    final tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.45),
+        color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
         'Nenhum responsável encontrado.',
         textAlign: TextAlign.center,
-        style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+        style: TextStyle(color: tokens.secondaryText),
       ),
     );
   }
@@ -1930,6 +1898,7 @@ class _ResponsavelTecnicoWebSelectorDialogState
     _ResponsavelTecnicoWeb responsavel,
     bool selected,
   ) {
+    final tokens = WebThemeTokens.of(context);
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(16),
@@ -1941,27 +1910,19 @@ class _ResponsavelTecnicoWebSelectorDialogState
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color:
-                selected
-                    ? theme.colorScheme.primary.withOpacity(0.08)
-                    : theme.colorScheme.surface,
+            color: selected ? tokens.selectedBackground : tokens.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color:
-                  selected
-                      ? theme.colorScheme.primary.withOpacity(0.28)
-                      : theme.colorScheme.outline.withOpacity(0.12),
+              color: selected ? tokens.selectedBorder : tokens.cardBorder,
             ),
           ),
           child: Row(
             children: <Widget>[
               CircleAvatar(
                 radius: 21,
-                backgroundColor: theme.colorScheme.primary.withOpacity(0.09),
-                child: Icon(
-                  Icons.person_outline_rounded,
-                  color: theme.colorScheme.primary,
-                ),
+                backgroundColor:
+                    selected ? tokens.selectedBackground : tokens.surfaceMuted,
+                child: Icon(Icons.person_outline_rounded, color: tokens.info),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1980,9 +1941,7 @@ class _ResponsavelTecnicoWebSelectorDialogState
                         responsavel.subtitulo,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
+                        style: TextStyle(color: tokens.secondaryText),
                       ),
                     ],
                   ],
@@ -1992,10 +1951,7 @@ class _ResponsavelTecnicoWebSelectorDialogState
               AnimatedOpacity(
                 opacity: selected ? 1 : 0,
                 duration: const Duration(milliseconds: 140),
-                child: Icon(
-                  Icons.check_circle_rounded,
-                  color: theme.colorScheme.primary,
-                ),
+                child: Icon(Icons.check_circle_rounded, color: tokens.info),
               ),
             ],
           ),
@@ -2012,13 +1968,11 @@ class _ResponsavelTecnicoWebSelectorDialogState
 class _AtendimentoTecnicoViewState {
   const _AtendimentoTecnicoViewState({
     required this.dominios,
-    required this.atendimentos,
     required this.clientes,
     required this.responsaveis,
   });
 
   final AtendimentoTecnicoDominiosBaseModel dominios;
-  final List<AtendimentoTecnicoModel> atendimentos;
   final List<ClienteUsuario> clientes;
   final List<_ResponsavelTecnicoWeb> responsaveis;
 }

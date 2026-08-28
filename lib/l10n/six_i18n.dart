@@ -148,6 +148,39 @@ const Map<String, Map<String, String>> _fallbacks = {
         'O item foi recalculado e a venda já reflete a nova quantidade.',
     'pdv.quantityEditor.error':
         'Não foi possível atualizar a quantidade agora. Tente novamente em alguns instantes.',
+    'pdv.customerIdentification.title': 'Identificar cliente',
+    'pdv.customerIdentification.subtitle':
+        'Selecione um cliente cadastrado ou crie um novo sem sair desta etapa.',
+    'pdv.customerIdentification.availableCustomers': 'Clientes ativos',
+    'pdv.customerIdentification.currentCustomer': 'Cliente atual',
+    'pdv.customerIdentification.currentEmpty': 'Nenhum cliente vinculado',
+    'pdv.customerIdentification.searchLabel':
+        'Buscar cliente por nome, documento, telefone ou e-mail',
+    'pdv.customerIdentification.loading': 'Carregando clientes ativos...',
+    'pdv.customerIdentification.loadError':
+        'Não foi possível carregar os clientes.',
+    'pdv.customerIdentification.errorTitle':
+        'Não foi possível carregar os clientes',
+    'pdv.customerIdentification.newCustomer': 'Cadastrar cliente',
+    'pdv.customerIdentification.openingCreate': 'Abrindo cadastro...',
+    'pdv.customerIdentification.createError':
+        'Não foi possível abrir o cadastro de cliente agora.',
+    'pdv.customerIdentification.emptyTitle': 'Nenhum cliente ativo cadastrado',
+    'pdv.customerIdentification.emptyMessage':
+        'Cadastre o cliente agora para seguir com o atendimento sem sair desta etapa.',
+    'pdv.customerIdentification.emptySearchTitle': 'Nenhum cliente encontrado',
+    'pdv.customerIdentification.emptySearchMessage':
+        'Revise os termos da busca ou cadastre um novo cliente para continuar.',
+    'pdv.customerIdentification.removeCustomer': 'Remover cliente atual',
+    'pdv.customerIdentification.unnamedCustomer': 'Cliente sem nome',
+    'pdv.customerIdentification.personTypeFallback': 'PF',
+    'pdv.customerIdentification.noDocument': 'Sem documento',
+    'pdv.customerIdentification.creditEnabled': 'Fiado liberado',
+    'pdv.customerIdentification.creditBlocked':
+        'Fiado bloqueado para novas vendas',
+    'pdv.customerIdentification.creditDisabled': 'Cliente sem fiado liberado',
+    'pdv.customerIdentification.selected': 'Selecionado',
+    'pdv.customerIdentification.select': 'Selecionar',
     'recebimento.valorEmAberto': 'Valor em aberto',
     'recebimento.summaryType': 'Tipo',
     'recebimento.total': 'Total',
@@ -1977,6 +2010,38 @@ const Map<String, Map<String, String>> _fallbacks = {
     'pdv.quantityEditor.effectHint':
         'The change updates the item subtotal and the sale total immediately.',
     'pdv.quantityEditor.confirm': 'Apply quantity',
+    'pdv.customerIdentification.title': 'Identify customer',
+    'pdv.customerIdentification.subtitle':
+        'Select a registered customer or create a new one without leaving this step.',
+    'pdv.customerIdentification.availableCustomers': 'Active customers',
+    'pdv.customerIdentification.currentCustomer': 'Current customer',
+    'pdv.customerIdentification.currentEmpty': 'No customer linked',
+    'pdv.customerIdentification.searchLabel':
+        'Search customer by name, document, phone or email',
+    'pdv.customerIdentification.loading': 'Loading active customers...',
+    'pdv.customerIdentification.loadError': 'Unable to load customers.',
+    'pdv.customerIdentification.errorTitle': 'Unable to load customers',
+    'pdv.customerIdentification.newCustomer': 'Create customer',
+    'pdv.customerIdentification.openingCreate': 'Opening registration...',
+    'pdv.customerIdentification.createError':
+        'Unable to open customer registration right now.',
+    'pdv.customerIdentification.emptyTitle': 'No active customers registered',
+    'pdv.customerIdentification.emptyMessage':
+        'Create the customer now to continue without leaving this step.',
+    'pdv.customerIdentification.emptySearchTitle': 'No customer found',
+    'pdv.customerIdentification.emptySearchMessage':
+        'Review the search terms or create a new customer to continue.',
+    'pdv.customerIdentification.removeCustomer': 'Remove current customer',
+    'pdv.customerIdentification.unnamedCustomer': 'Unnamed customer',
+    'pdv.customerIdentification.personTypeFallback': 'PF',
+    'pdv.customerIdentification.noDocument': 'No document',
+    'pdv.customerIdentification.creditEnabled': 'Store credit enabled',
+    'pdv.customerIdentification.creditBlocked':
+        'Store credit blocked for new sales',
+    'pdv.customerIdentification.creditDisabled':
+        'Customer without store credit enabled',
+    'pdv.customerIdentification.selected': 'Selected',
+    'pdv.customerIdentification.select': 'Select',
     'pdv.quantityEditor.processing': 'Applying quantity...',
     'pdv.quantityEditor.successTitle': 'Quantity updated',
     'pdv.quantityEditor.successMessage':
@@ -3700,6 +3765,42 @@ const Map<String, Map<String, String>> _fallbacks = {
     'pdv.quantityEditor.effectHint':
         'El cambio actualiza de inmediato el subtotal del artículo y el total de la venta.',
     'pdv.quantityEditor.confirm': 'Aplicar cantidad',
+    'pdv.customerIdentification.title': 'Identificar cliente',
+    'pdv.customerIdentification.subtitle':
+        'Selecciona un cliente registrado o crea uno nuevo sin salir de esta etapa.',
+    'pdv.customerIdentification.availableCustomers': 'Clientes activos',
+    'pdv.customerIdentification.currentCustomer': 'Cliente actual',
+    'pdv.customerIdentification.currentEmpty': 'Ningún cliente vinculado',
+    'pdv.customerIdentification.searchLabel':
+        'Buscar cliente por nombre, documento, teléfono o correo',
+    'pdv.customerIdentification.loading': 'Cargando clientes activos...',
+    'pdv.customerIdentification.loadError':
+        'No se pudieron cargar los clientes.',
+    'pdv.customerIdentification.errorTitle':
+        'No se pudieron cargar los clientes',
+    'pdv.customerIdentification.newCustomer': 'Registrar cliente',
+    'pdv.customerIdentification.openingCreate': 'Abriendo registro...',
+    'pdv.customerIdentification.createError':
+        'No se pudo abrir el registro del cliente ahora.',
+    'pdv.customerIdentification.emptyTitle':
+        'No hay clientes activos registrados',
+    'pdv.customerIdentification.emptyMessage':
+        'Registra al cliente ahora para continuar sin salir de esta etapa.',
+    'pdv.customerIdentification.emptySearchTitle':
+        'No se encontró ningún cliente',
+    'pdv.customerIdentification.emptySearchMessage':
+        'Revisa los términos de búsqueda o registra un nuevo cliente para continuar.',
+    'pdv.customerIdentification.removeCustomer': 'Quitar cliente actual',
+    'pdv.customerIdentification.unnamedCustomer': 'Cliente sin nombre',
+    'pdv.customerIdentification.personTypeFallback': 'PF',
+    'pdv.customerIdentification.noDocument': 'Sin documento',
+    'pdv.customerIdentification.creditEnabled': 'Crédito habilitado',
+    'pdv.customerIdentification.creditBlocked':
+        'Crédito bloqueado para nuevas ventas',
+    'pdv.customerIdentification.creditDisabled':
+        'Cliente sin crédito habilitado',
+    'pdv.customerIdentification.selected': 'Seleccionado',
+    'pdv.customerIdentification.select': 'Seleccionar',
     'pdv.quantityEditor.processing': 'Aplicando cantidad...',
     'pdv.quantityEditor.successTitle': 'Cantidad actualizada',
     'pdv.quantityEditor.successMessage':
