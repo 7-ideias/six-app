@@ -50,6 +50,7 @@ import {
       companySection: document.querySelector('[data-company-section]'),
       companyName: document.querySelector('[data-company-name]'),
       companyTitle: document.querySelector('[data-company-title]'),
+      companyDescription: document.querySelector('[data-company-description]'),
       companyAddress: document.querySelector('[data-company-address]'),
       companyContact: document.querySelector('[data-company-contact]'),
       companyContactLinks: document.querySelector('[data-company-contact-links]'),
@@ -124,14 +125,57 @@ import {
     container.append(link);
   }
 
+  function accentDarkColor(value) {
+    const match = /^#([0-9A-F]{6})$/i.exec(String(value || ''));
+    if (!match) return '#0B4D58';
+    const number = Number.parseInt(match[1], 16);
+    const channels = [number >> 16, (number >> 8) & 255, number & 255]
+      .map((channel) => Math.max(0, Math.round(channel * 0.68)));
+    return `#${channels
+      .map((channel) => channel.toString(16).padStart(2, '0'))
+      .join('')}`;
+  }
+
+  function setMetaContent(selector, value) {
+    const element = document.querySelector(selector);
+    if (element && value) element.setAttribute('content', value);
+  }
+
+  function applyCatalogPersonalization() {
+    const personalization = state.catalog.personalization;
+    document.body.dataset.catalogStyle = personalization.style;
+    document.body.dataset.catalogDensity = personalization.density;
+    document.documentElement.style.setProperty(
+      '--catalog-accent',
+      personalization.accentColor,
+    );
+    document.documentElement.style.setProperty(
+      '--catalog-accent-dark',
+      accentDarkColor(personalization.accentColor),
+    );
+
+    const companyName = state.catalog.company.name ||
+      state.catalog.company.legalName || copy('title');
+    const title = personalization.title || companyName;
+    const description = personalization.description || copy('description');
+    document.title = `${title} • ${copy('title')}`;
+    setMetaContent('meta[name="description"]', description);
+    setMetaContent('meta[property="og:title"]', title);
+    setMetaContent('meta[property="og:description"]', description);
+    setMetaContent('meta[name="twitter:title"]', title);
+    setMetaContent('meta[name="twitter:description"]', description);
+  }
+
   function renderCompany(elements) {
     const company = state.catalog.company;
+    const personalization = state.catalog.personalization;
     const companyName = company.name || company.legalName || copy('title');
     elements.companyName.textContent = companyName;
-    elements.companyTitle.textContent = companyName;
-    document.title = `${companyName} • ${copy('title')}`;
+    elements.companyTitle.textContent = personalization.title || companyName;
+    elements.companyDescription.hidden = !personalization.description;
+    elements.companyDescription.textContent = personalization.description;
 
-    elements.companyAddress.hidden = !company.address;
+    elements.companyAddress.hidden = !personalization.showAddress || !company.address;
     elements.companyAddress.textContent = company.address;
     elements.companyContactLinks.textContent = '';
 
@@ -155,7 +199,8 @@ import {
       href: site,
       label: site ? new URL(site).host : '',
     });
-    elements.companyContact.hidden = elements.companyContactLinks.childElementCount === 0;
+    elements.companyContact.hidden = !personalization.showContact ||
+      elements.companyContactLinks.childElementCount === 0;
 
     const logoSource = toImageSource(company.logoBase64);
     if (logoSource) {
@@ -224,7 +269,9 @@ import {
       renderCatalog(elements);
     });
 
-    body.append(title, model, price, button);
+    body.append(title, model);
+    if (state.catalog.personalization.showPrices) body.append(price);
+    body.append(button);
     card.append(body);
     return card;
   }
@@ -267,7 +314,8 @@ import {
     const summary = calculateCatalogSelection(state.catalog, state.selection);
     elements.selectionList.textContent = '';
     elements.selectionEmpty.hidden = summary.items.length > 0;
-    elements.selectionSummary.hidden = summary.items.length === 0;
+    elements.selectionSummary.hidden = summary.items.length === 0 ||
+      !state.catalog.personalization.showPrices;
     elements.selectionCount.textContent = copy('catalog.itemsCount', { count: summary.quantity });
     elements.selectionBadge.textContent = String(summary.quantity);
     elements.selectionTotal.textContent = formatCatalogMoney(
@@ -289,7 +337,8 @@ import {
         state.catalog.currencyCode,
         state.catalog.locale,
       );
-      itemCopy.append(name, price);
+      itemCopy.append(name);
+      if (state.catalog.personalization.showPrices) itemCopy.append(price);
 
       const actions = document.createElement('div');
       actions.className = 'selection-row-actions';
@@ -327,6 +376,7 @@ import {
 
   function renderCatalog(elements) {
     if (!state.catalog) return;
+    applyCatalogPersonalization();
     renderCompany(elements);
     renderProducts(elements);
     renderSelection(elements);

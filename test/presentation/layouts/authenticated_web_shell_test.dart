@@ -836,6 +836,11 @@ class _RecordingActions implements WebNavigationDestinationActions {
   }
 
   @override
+  WebNavigationResolutionResult openCatalogPublicPage() {
+    return _record(WebNavigationDestination.catalogPublicPage);
+  }
+
+  @override
   WebNavigationResolutionResult openCatalogProducts() {
     return _record(WebNavigationDestination.catalogProducts);
   }
@@ -919,6 +924,11 @@ class _InteractiveActions implements WebNavigationDestinationActions {
   @override
   WebNavigationResolutionResult openReservations() {
     return _handle(WebNavigationDestination.operationsReservations);
+  }
+
+  @override
+  WebNavigationResolutionResult openCatalogPublicPage() {
+    return _handle(WebNavigationDestination.catalogPublicPage);
   }
 
   @override

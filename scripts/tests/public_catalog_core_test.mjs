@@ -25,6 +25,16 @@ const responseBody = {
   locale: 'pt-BR',
   currencyCode: 'BRL',
   geradoEm: '2026-08-18T18:00:00Z',
+  personalizacao: {
+    titulo: 'Peças e acessórios',
+    descricao: 'Escolha seus produtos favoritos.',
+    corPrincipal: '#7C3AED',
+    estilo: 'EXPRESSIVO',
+    densidade: 'COMPACTA',
+    exibirPrecos: false,
+    exibirContato: true,
+    exibirEndereco: false,
+  },
   empresa: {
     nomeEmpresa: 'Empresa Teste',
     nomeFantasia: 'Loja Teste',
@@ -78,6 +88,12 @@ test('catalogo normaliza empresa, regionalizacao e produtos', () => {
   assert.equal(catalog.currencyCode, 'BRL');
   assert.equal(catalog.products.length, 2);
   assert.equal(catalog.products[0].price, 280);
+  assert.equal(catalog.personalization.title, 'Peças e acessórios');
+  assert.equal(catalog.personalization.accentColor, '#7C3AED');
+  assert.equal(catalog.personalization.style, 'EXPRESSIVO');
+  assert.equal(catalog.personalization.density, 'COMPACTA');
+  assert.equal(catalog.personalization.showPrices, false);
+  assert.equal(catalog.personalization.showAddress, false);
 });
 
 test('selecao consolida quantidade e total sem alterar catalogo', () => {
@@ -209,14 +225,14 @@ test('core do catalogo nao persiste dados pessoais nem credenciais', () => {
 
 test('link gerado usa arquivo direto no localhost e rota amigavel em producao', () => {
   const source = readFileSync(
-    'lib/presentation/screens/produto_lista_sub_painel_web.dart',
+    'lib/presentation/screens/catalogo_publico_personalizacao_web.dart',
     'utf8',
   );
 
   assert.match(source, /'localhost',[\s\S]*'127\.0\.0\.1',[\s\S]*'::1'/);
   assert.match(
     source,
-    /resolve\(isLoopback \? '\/catalogo\.html' : '\/catalogo'\)/,
+    /resolve\(loopback \? '\/catalogo\.html' : '\/catalogo'\)/,
   );
 });
 

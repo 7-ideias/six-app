@@ -15,6 +15,7 @@ import 'package:sixpos/presentation/screens/agenda_financeira_web.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
 import 'package:sixpos/presentation/screens/catalogo_reservas_web.dart';
+import 'package:sixpos/presentation/screens/catalogo_publico_personalizacao_web.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_web_page.dart';
 import 'package:sixpos/presentation/screens/compras/compras_web_page.dart';
@@ -864,6 +865,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return 'compras';
       case ModuloCentralPDV.reservas:
         return 'reservas';
+      case ModuloCentralPDV.catalogoPublico:
       case ModuloCentralPDV.categorias:
       case ModuloCentralPDV.produtos:
       case ModuloCentralPDV.servicos:
@@ -904,6 +906,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return 'compras_web';
       case ModuloCentralPDV.reservas:
         return 'reservas_catalogo_web';
+      case ModuloCentralPDV.catalogoPublico:
+        return 'catalogo_publico_personalizacao_web';
       case ModuloCentralPDV.produtos:
         return 'produtos_dashboard_web';
       case ModuloCentralPDV.servicos:
@@ -2859,6 +2863,9 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
       case ModuloCentralPDV.reservas:
         return const Expanded(child: CatalogoReservasWebPage());
+
+      case ModuloCentralPDV.catalogoPublico:
+        return const Expanded(child: CatalogoPublicoPersonalizacaoWebPage());
 
       case ModuloCentralPDV.produtos:
         return Expanded(

@@ -243,6 +243,27 @@ function normalizeProduct(item) {
   });
 }
 
+function normalizeCatalogPersonalization(value) {
+  const source = value && typeof value === 'object' ? value : {};
+  const accent = String(source.corPrincipal || '').trim().toUpperCase();
+  const style = String(source.estilo || '').trim().toUpperCase();
+  const density = String(source.densidade || '').trim().toUpperCase();
+  return Object.freeze({
+    title: String(source.titulo || '').trim().slice(0, 80),
+    description: String(source.descricao || '').trim().slice(0, 240),
+    accentColor: /^#[0-9A-F]{6}$/.test(accent) ? accent : '#126BFF',
+    style: ['CLASSICO', 'MINIMALISTA', 'EXPRESSIVO'].includes(style)
+      ? style
+      : 'CLASSICO',
+    density: ['CONFORTAVEL', 'COMPACTA'].includes(density)
+      ? density
+      : 'CONFORTAVEL',
+    showPrices: source.exibirPrecos !== false,
+    showContact: source.exibirContato !== false,
+    showAddress: source.exibirEndereco !== false,
+  });
+}
+
 export function normalizeCatalogResponse(body) {
   if (!body || typeof body !== 'object' || !body.empresa || !Array.isArray(body.produtos)) {
     throw new CatalogDataError('Invalid catalog response');
@@ -251,6 +272,7 @@ export function normalizeCatalogResponse(body) {
     locale: String(body.locale || 'pt-BR'),
     currencyCode: String(body.currencyCode || 'BRL').toUpperCase(),
     generatedAt: String(body.geradoEm || ''),
+    personalization: normalizeCatalogPersonalization(body.personalizacao),
     company: Object.freeze({
       legalName: String(body.empresa.nomeEmpresa || '').trim(),
       name: String(body.empresa.nomeFantasia || body.empresa.nomeEmpresa || '').trim(),

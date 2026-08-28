@@ -81,6 +81,7 @@ enum WebNavigationDestination {
   operationsPurchases,
   operationsReservations,
   operationsReturns,
+  catalogPublicPage,
   catalogProducts,
   catalogServices,
   catalogStock,
