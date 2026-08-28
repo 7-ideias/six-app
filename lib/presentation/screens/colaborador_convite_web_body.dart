@@ -29,7 +29,8 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
   bool _fazVenda = true;
   bool _lancaServico = true;
   bool _editaCliente = true;
-  bool _acessaFinanceiro = false;
+  bool _podeReceberNoCaixa = false;
+  bool _podeVerQuantoVendeu = false;
   bool _acessaEtiquetas = false;
   bool _geraRelatorio = false;
   bool _gerenciaPermissoes = false;
@@ -49,7 +50,8 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
       if (_fazVenda) 'VENDAS_CRIAR',
       if (_lancaServico) 'ASSISTENCIA_TECNICA_CRIAR',
       if (_editaCliente) 'CLIENTES_EDITAR',
-      if (_acessaFinanceiro) 'FINANCEIRO_ACESSAR',
+      if (_podeReceberNoCaixa) 'FINANCEIRO_ACESSAR',
+      if (_podeVerQuantoVendeu) 'VENDAS_CONSULTAR',
       if (_acessaEtiquetas) 'ETIQUETAS_GERENCIAR',
       if (_geraRelatorio) 'RELATORIOS_GERAR',
       if (_gerenciaPermissoes) 'PERMISSOES_GERENCIAR',
@@ -396,10 +398,17 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
       ),
       _switchCard(
         title: 'Financeiro',
-        subtitle: 'Pode acessar financeiro.',
+        subtitle: 'Pode receber no caixa.',
         icon: Icons.account_balance_wallet_outlined,
-        value: _acessaFinanceiro,
-        onChanged: (bool v) => setState(() => _acessaFinanceiro = v),
+        value: _podeReceberNoCaixa,
+        onChanged: (bool v) => setState(() => _podeReceberNoCaixa = v),
+      ),
+      _switchCard(
+        title: 'Resumo das vendas',
+        subtitle: 'Pode ver quanto vendeu e consultar o resumo das vendas.',
+        icon: Icons.query_stats_outlined,
+        value: _podeVerQuantoVendeu,
+        onChanged: (bool v) => setState(() => _podeVerQuantoVendeu = v),
       ),
       _switchCard(
         title: 'Etiquetas',

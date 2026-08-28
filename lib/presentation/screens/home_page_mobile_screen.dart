@@ -242,15 +242,15 @@ class _HomePageMobileState extends State<HomePageMobile> {
     setState(() {});
   }
 
-  void _scheduleOperationalLoad(
-    ColaboradorAutorizacoesProvider autorizacoes,
-  ) {
+  void _scheduleOperationalLoad(ColaboradorAutorizacoesProvider autorizacoes) {
     final bool canAccessSales =
-        autorizacoes.ehColaborador && autorizacoes.podeFazerVenda;
+        autorizacoes.ehColaborador &&
+        (autorizacoes.podeFazerVenda || autorizacoes.podeVerQuantoVendeu);
     final bool canAccessServices =
         autorizacoes.ehColaborador &&
         autorizacoes.podeAcompanharAssistenciaTecnica;
-    final bool canAccessReservations = canAccessSales;
+    final bool canAccessReservations =
+        autorizacoes.ehColaborador && autorizacoes.podeFazerVenda;
     if ((!canAccessSales && !canAccessServices) ||
         _operacionalProvider.loading ||
         !_operacionalProvider.needsLoad(
@@ -277,14 +277,16 @@ class _HomePageMobileState extends State<HomePageMobile> {
     ColaboradorAutorizacoesProvider autorizacoes,
   ) {
     final bool canAccessSales =
-        autorizacoes.ehColaborador && autorizacoes.podeFazerVenda;
+        autorizacoes.ehColaborador &&
+        (autorizacoes.podeFazerVenda || autorizacoes.podeVerQuantoVendeu);
     final bool canAccessServices =
         autorizacoes.ehColaborador &&
         autorizacoes.podeAcompanharAssistenciaTecnica;
     return _operacionalProvider.reload(
       canAccessSales: canAccessSales,
       canAccessServices: canAccessServices,
-      canAccessReservations: canAccessSales,
+      canAccessReservations:
+          autorizacoes.ehColaborador && autorizacoes.podeFazerVenda,
     );
   }
 
@@ -612,10 +614,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
     final bool ehAdmin = autorizacoes.ehAdministrador;
     final bool ehColaborador = autorizacoes.ehColaborador;
     final bool canAccessSales =
-        ehColaborador && autorizacoes.podeFazerVenda;
+        ehColaborador &&
+        (autorizacoes.podeFazerVenda || autorizacoes.podeVerQuantoVendeu);
     final bool canAccessServices =
         ehColaborador && autorizacoes.podeAcompanharAssistenciaTecnica;
-    final bool canAccessReservations = canAccessSales;
+    final bool canAccessReservations =
+        ehColaborador && autorizacoes.podeFazerVenda;
     final bool hasOperationalAccess = canAccessSales || canAccessServices;
 
     return SafeArea(
@@ -722,9 +726,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
               ],
               SizedBox(height: 12),
               SixStaggeredEntry(
-                delay: Duration(
-                  milliseconds: hasOperationalAccess ? 210 : 130,
-                ),
+                delay: Duration(milliseconds: hasOperationalAccess ? 210 : 130),
                 child: CollaboratorPerformanceHomeMobileDashboard(
                   provider: _desempenhoProvider,
                 ),

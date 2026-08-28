@@ -115,10 +115,12 @@ class _WorkspaceHomeContent extends StatelessWidget {
     final bool isAdminUser = autorizacoes.ehAdministrador;
     final bool isCollaborator = autorizacoes.ehColaborador;
     final bool canAccessSales =
-        isCollaborator && autorizacoes.podeFazerVenda;
+        isCollaborator &&
+        (autorizacoes.podeFazerVenda || autorizacoes.podeVerQuantoVendeu);
     final bool canAccessServices =
         isCollaborator && autorizacoes.podeAcompanharAssistenciaTecnica;
-    final bool canAccessReservations = canAccessSales;
+    final bool canAccessReservations =
+        isCollaborator && autorizacoes.podeFazerVenda;
     final bool hasOperationalAccess = canAccessSales || canAccessServices;
     final DesempenhoColaboradorHomeProvider desempenho =
         context.watch<DesempenhoColaboradorHomeProvider>();
@@ -128,9 +130,7 @@ class _WorkspaceHomeContent extends StatelessWidget {
 
     if (isCollaborator && !desempenho.hasLoaded && !desempenho.loading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted &&
-            !desempenho.hasLoaded &&
-            !desempenho.loading) {
+        if (context.mounted && !desempenho.hasLoaded && !desempenho.loading) {
           unawaited(desempenho.load());
         }
       });

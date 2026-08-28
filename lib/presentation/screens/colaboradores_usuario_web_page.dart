@@ -1177,7 +1177,8 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
   bool _podeServico = false;
   bool _podeEditarCliente = false;
   bool _podeRelatorio = false;
-  bool _podeFinanceiro = false;
+  bool _podeReceberNoCaixa = false;
+  bool _podeVerQuantoVendeu = false;
 
   @override
   void initState() {
@@ -1226,9 +1227,8 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
     final Map<String, dynamic> financeiro = _ensureMap(
       autorizacoes['objLancamentosFinanceirosPode'],
     );
-    _podeFinanceiro =
-        financeiro['podeReceberNoCaixa'] == true ||
-        financeiro['podeVerQuantoVendeu'] == true;
+    _podeReceberNoCaixa = financeiro['podeReceberNoCaixa'] == true;
+    _podeVerQuantoVendeu = financeiro['podeVerQuantoVendeu'] == true;
   }
 
   @override
@@ -1283,8 +1283,8 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
     };
     autorizacoes['objLancamentosFinanceirosPode'] = <String, dynamic>{
       ..._ensureMap(autorizacoes['objLancamentosFinanceirosPode']),
-      'podeReceberNoCaixa': _podeFinanceiro,
-      'podeVerQuantoVendeu': _podeFinanceiro,
+      'podeReceberNoCaixa': _podeReceberNoCaixa,
+      'podeVerQuantoVendeu': _podeVerQuantoVendeu,
     };
     json['objAutorizacoes'] = autorizacoes;
     return json;
@@ -1421,11 +1421,20 @@ class _EditarColaboradorDialogState extends State<_EditarColaboradorDialog> {
                 _switchTile(
                   _t('colaboradores.finance', 'Financeiro'),
                   _t(
-                    'colaboradores.canAccessReceivablesAndSalesAmounts',
-                    'Pode acessar recebimentos e valores vendidos.',
+                    'colaboradores.canReceiveAtCashRegister',
+                    'Pode receber no caixa.',
                   ),
-                  _podeFinanceiro,
-                  (bool value) => setState(() => _podeFinanceiro = value),
+                  _podeReceberNoCaixa,
+                  (bool value) => setState(() => _podeReceberNoCaixa = value),
+                ),
+                _switchTile(
+                  _t('colaboradores.salesSummary', 'Resumo das vendas'),
+                  _t(
+                    'colaboradores.canViewHowMuchSold',
+                    'Pode ver quanto vendeu e consultar o resumo das vendas.',
+                  ),
+                  _podeVerQuantoVendeu,
+                  (bool value) => setState(() => _podeVerQuantoVendeu = value),
                 ),
               ],
             ),
