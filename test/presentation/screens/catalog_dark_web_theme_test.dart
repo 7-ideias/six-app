@@ -134,17 +134,36 @@ void main() {
       () {
         expect(produtoCadastroSource, contains('web_theme_tokens.dart'));
         expect(produtoCadastroSource, contains('WebThemeTokens.of(context)'));
+        expect(produtoCadastroSource, contains('surface: tokens.surface,'));
+        expect(
+          produtoCadastroSource,
+          contains('surfaceContainer: tokens.surfaceMuted,'),
+        );
+        expect(
+          produtoCadastroSource,
+          contains('surfaceContainerHigh: tokens.surfaceElevated,'),
+        );
+        expect(
+          produtoCadastroSource,
+          contains('surfaceContainerHighest: tokens.inputBackground,'),
+        );
         expect(produtoCadastroSource, contains('tokens.surfaceElevated'));
         expect(produtoCadastroSource, contains('tokens.inputBackground'));
         expect(produtoCadastroSource, contains('tokens.surfaceMuted'));
         expect(produtoCadastroSource, contains('tokens.selectedBackground'));
         expect(produtoCadastroSource, contains('tokens.selectedBorder'));
+        expect(produtoCadastroSource, contains('tokens.menuBackground'));
+        expect(produtoCadastroSource, contains('floatingLabelStyle'));
         expect(produtoCadastroSource, contains('tokens.workspaceBackground'));
         expect(produtoCadastroSource, contains('barrierColor'));
 
         expect(
           produtoCadastroSource,
           isNot(contains('colorScheme.surfaceVariant')),
+        );
+        expect(
+          produtoCadastroSource,
+          isNot(contains('fillColor: colorScheme.surface')),
         );
         expect(produtoCadastroSource, isNot(contains('Colors.white')));
       },
