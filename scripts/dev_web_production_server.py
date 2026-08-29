@@ -28,6 +28,7 @@ REQUIRED_BUILD_FILES = (
     "checkout.html",
     "catalogo.html",
     "collaborator-invite.html",
+    "customer-signup.html",
     "flutter.html",
 )
 
@@ -39,6 +40,7 @@ PUBLIC_HTML_ROUTES = {
     "/onboarding": "onboarding.html",
     "/checkout": "checkout.html",
     "/catalogo": "catalogo.html",
+    "/cliente/auto-cadastro": "customer-signup.html",
 }
 
 FLUTTER_EXACT_ROUTES = {
@@ -47,6 +49,7 @@ FLUTTER_EXACT_ROUTES = {
     "/forgot-password/flutter",
     "/onboarding/flutter",
     "/checkout/flutter",
+    "/cliente/auto-cadastro/flutter",
 }
 
 FLUTTER_PREFIXES = (
@@ -62,6 +65,7 @@ SENSITIVE_PUBLIC_FILES = {
     "checkout.html",
     "catalogo.html",
     "collaborator-invite.html",
+    "customer-signup.html",
 }
 
 
@@ -233,7 +237,7 @@ class DevWebProductionHandler(BaseHTTPRequestHandler):
             self.send_header(
                 "Referrer-Policy",
                 "no-referrer"
-                if file_path.name == "collaborator-invite.html"
+                if file_path.name in {"collaborator-invite.html", "customer-signup.html"}
                 else "strict-origin-when-cross-origin",
             )
             self.send_header("X-Frame-Options", "DENY")

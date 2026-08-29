@@ -45,6 +45,8 @@ class ClienteUsuarioRequest {
     required this.limiteFiado,
     required this.prazoPagamentoDias,
     required this.bloqueadoFiado,
+    this.tipoCadastro = 'SIMPLES',
+    this.percentualQualidadeCadastro = 0,
   });
 
   final bool ativo;
@@ -66,6 +68,8 @@ class ClienteUsuarioRequest {
   final double limiteFiado;
   final int prazoPagamentoDias;
   final bool bloqueadoFiado;
+  final String tipoCadastro;
+  final int percentualQualidadeCadastro;
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
@@ -88,6 +92,8 @@ class ClienteUsuarioRequest {
       'limiteFiado': limiteFiado,
       'prazoPagamentoDias': prazoPagamentoDias,
       'bloqueadoFiado': bloqueadoFiado,
+      'tipoCadastro': tipoCadastro,
+      'percentualQualidadeCadastro': percentualQualidadeCadastro,
     };
   }
 }
@@ -121,6 +127,8 @@ class ClienteUsuario {
     required this.saldoFiado,
     required this.prazoPagamentoDias,
     required this.bloqueadoFiado,
+    this.tipoCadastro = 'SIMPLES',
+    this.percentualQualidadeCadastro = 0,
   });
 
   final String id;
@@ -150,6 +158,8 @@ class ClienteUsuario {
   final double saldoFiado;
   final int prazoPagamentoDias;
   final bool bloqueadoFiado;
+  final String tipoCadastro;
+  final int percentualQualidadeCadastro;
 
   factory ClienteUsuario.fromJson(Map<String, dynamic> json) {
     return ClienteUsuario(
@@ -180,6 +190,13 @@ class ClienteUsuario {
       saldoFiado: _parseDouble(json['saldoFiado']),
       prazoPagamentoDias: _parseInt(json['prazoPagamentoDias']),
       bloqueadoFiado: _parseBool(json['bloqueadoFiado']),
+      tipoCadastro:
+          json['tipoCadastro']?.toString().trim().toUpperCase() == 'COMPLETO'
+          ? 'COMPLETO'
+          : 'SIMPLES',
+      percentualQualidadeCadastro: _parseInt(
+        json['percentualQualidadeCadastro'],
+      ).clamp(0, 100).toInt(),
     );
   }
 
@@ -204,6 +221,8 @@ class ClienteUsuario {
       limiteFiado: limiteFiado,
       prazoPagamentoDias: prazoPagamentoDias,
       bloqueadoFiado: bloqueadoFiado,
+      tipoCadastro: tipoCadastro,
+      percentualQualidadeCadastro: percentualQualidadeCadastro,
     );
   }
 
@@ -220,7 +239,10 @@ class ClienteUsuario {
     if (normalized == 'true' || normalized == '1' || normalized == 'sim') {
       return true;
     }
-    if (normalized == 'false' || normalized == '0' || normalized == 'nao' || normalized == 'não') {
+    if (normalized == 'false' ||
+        normalized == '0' ||
+        normalized == 'nao' ||
+        normalized == 'não') {
       return false;
     }
     return fallback;

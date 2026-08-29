@@ -192,7 +192,7 @@ class _CadastroClienteWebBodyState extends State<CadastroClienteWebBody> {
   final TextEditingController
   _mensagemConviteController = TextEditingController(
     text:
-        'Olá! Use este link para concluir seu auto-cadastro e liberar compras no crediário.',
+        'Olá! Use este link seguro para concluir seu cadastro de cliente.',
   );
 
   final TextEditingController _observacoesController = TextEditingController();

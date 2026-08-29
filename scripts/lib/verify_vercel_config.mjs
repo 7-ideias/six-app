@@ -92,8 +92,8 @@ requireRewrite('/admin/:path*', '/flutter.html');
 requireRewrite('/atendimento/assinatura', '/flutter.html');
 requireRewrite('/ordem-servico', '/flutter.html');
 requireRewrite('/ordem-servico/:path*', '/flutter.html');
-requireRewrite('/cliente/auto-cadastro', '/flutter.html');
-requireRewrite('/cliente/auto-cadastro/:path*', '/flutter.html');
+requireRewrite('/cliente/auto-cadastro', '/customer-signup.html');
+requireRewrite('/cliente/auto-cadastro/flutter', '/flutter.html');
 requireRewrite('/colaborador/convites/flutter/:codigo', '/flutter.html');
 requireRewrite('/colaborador/convites/:codigo', '/collaborator-invite.html');
 
@@ -127,6 +127,8 @@ const sensitiveSources = [
   '/catalogo.html',
   '/colaborador/convites/:codigo',
   '/collaborator-invite.html',
+  '/cliente/auto-cadastro',
+  '/customer-signup.html',
 ];
 
 for (const source of sensitiveSources) {
@@ -135,7 +137,10 @@ for (const source of sensitiveSources) {
   requireHeader(
     source,
     'Referrer-Policy',
-    source === '/colaborador/convites/:codigo' || source === '/collaborator-invite.html'
+    source === '/colaborador/convites/:codigo' ||
+    source === '/collaborator-invite.html' ||
+    source === '/cliente/auto-cadastro' ||
+    source === '/customer-signup.html'
       ? 'no-referrer'
       : 'strict-origin-when-cross-origin',
   );

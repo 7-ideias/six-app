@@ -263,9 +263,14 @@ class MyApp extends StatelessWidget {
         routeUri.pathSegments.isNotEmpty &&
         routeUri.pathSegments.first == 'ordem-servico';
     final bool isPublicClienteAutoCadastroRoute =
-        routeUri.pathSegments.length >= 2 &&
+        routeUri.pathSegments.length == 2 &&
         routeUri.pathSegments[0] == 'cliente' &&
         routeUri.pathSegments[1] == 'auto-cadastro';
+    final bool isFlutterClienteAutoCadastroRoute =
+        routeUri.pathSegments.length == 3 &&
+        routeUri.pathSegments[0] == 'cliente' &&
+        routeUri.pathSegments[1] == 'auto-cadastro' &&
+        routeUri.pathSegments[2] == 'flutter';
     final bool isPublicColaboradorConviteRoute =
         routeUri.pathSegments.length == 3 &&
         routeUri.pathSegments[0] == 'colaborador' &&
@@ -296,6 +301,13 @@ class MyApp extends StatelessWidget {
       );
     }
     if (isPublicClienteAutoCadastroRoute) {
+      return _browserLocationRoute(
+        settings: settings,
+        location: _formatWebLocation(routeUri),
+        fallbackRoute: '/cliente/auto-cadastro/flutter',
+      );
+    }
+    if (isFlutterClienteAutoCadastroRoute) {
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => ClienteAutoCadastroPublicoPage(initialUri: routeUri),

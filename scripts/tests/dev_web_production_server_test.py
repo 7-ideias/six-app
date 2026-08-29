@@ -46,6 +46,10 @@ class DevWebProductionServerTest(unittest.TestCase):
         self.assert_route("/checkout", "public-checkout")
         self.assert_route("/catalogo", "public-catalog")
         self.assert_route(
+            "/cliente/auto-cadastro?token=1234567890abcdef&idUnicoDaEmpresa=empresa123",
+            "public-customer-signup",
+        )
+        self.assert_route(
             "/colaborador/convites/1234567890abcdef",
             "public-collaborator-invite",
         )
@@ -53,6 +57,14 @@ class DevWebProductionServerTest(unittest.TestCase):
     def test_collaborator_invite_does_not_send_code_as_referrer(self) -> None:
         status, headers, _ = self.request(
             "/colaborador/convites/1234567890abcdef",
+        )
+
+        self.assertEqual(200, status)
+        self.assertEqual("no-referrer", headers.get("Referrer-Policy"))
+
+    def test_customer_signup_does_not_send_token_as_referrer(self) -> None:
+        status, headers, _ = self.request(
+            "/cliente/auto-cadastro?token=1234567890abcdef&idUnicoDaEmpresa=empresa123",
         )
 
         self.assertEqual(200, status)
@@ -68,6 +80,7 @@ class DevWebProductionServerTest(unittest.TestCase):
         self.assert_route("/forgot-password/flutter", "flutter-app")
         self.assert_route("/onboarding/flutter", "flutter-app")
         self.assert_route("/checkout/flutter", "flutter-app")
+        self.assert_route("/cliente/auto-cadastro/flutter", "flutter-app")
         self.assert_route(
             "/colaborador/convites/flutter/1234567890abcdef",
             "flutter-app",
@@ -143,6 +156,7 @@ class DevWebProductionServerTest(unittest.TestCase):
             "checkout.html": "public-checkout",
             "catalogo.html": "public-catalog",
             "collaborator-invite.html": "public-collaborator-invite",
+            "customer-signup.html": "public-customer-signup",
             "flutter.html": "flutter-app",
         }
 

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="sixapp-entrypoint" content="public-customer-signup">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Complete seu cadastro de cliente com segurança no SixoApp.">
+  <meta name="theme-color" content="#00163A">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SixoApp - Cadastro de cliente">
+  <meta property="og:description" content="Preencha seus dados de cliente por um link seguro e temporário.">
+  <meta property="og:image" content="/site-assets/images/sixoapp-mark.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="SixoApp - Cadastro de cliente">
+  <meta name="twitter:description" content="Preencha seus dados de cliente por um link seguro e temporário.">
+  <meta name="twitter:image" content="/site-assets/images/sixoapp-mark.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/site-assets/images/sixoapp-mark.png">
+  <link rel="stylesheet" href="/site-assets/css/public-base.css">
+  <link rel="stylesheet" href="/site-assets/css/home.css">
+  <link rel="stylesheet" href="/site-assets/css/register.css">
+  <link rel="stylesheet" href="/site-assets/css/customer-signup.css">
+  <link rel="stylesheet" href="/site-assets/css/sixoapp-public.css">
+  <title>SixoApp - Cadastro de cliente</title>
+</head>
+<body class="auth-public-page customer-signup-page">
+  <a class="skip-link" href="#customer-content" data-i18n="access.skip">Ir para o cadastro</a>
+
+  <header class="site-header auth-site-header" data-header>
+    <nav class="nav-shell auth-nav-shell" aria-label="Navegação do cadastro" data-i18n-aria="nav.aria">
+      <a class="brand" href="/" aria-label="SixoApp" data-i18n-aria="brand.aria">
+        <span class="brand-mark" aria-hidden="true">
+          <img src="/site-assets/images/sixoapp-mark.png" width="32" height="32" alt="">
+        </span>
+        <span>SixoApp</span>
+      </a>
+      <div class="auth-nav-actions">
+        <a class="button button-quiet home-link" href="/" data-i18n="nav.home">Página inicial</a>
+        <div class="language-switcher" role="group" aria-label="Selecionar idioma" data-i18n-aria="language.aria">
+          <button type="button" data-lang-option="pt" aria-pressed="true">PT</button>
+          <button type="button" data-lang-option="en" aria-pressed="false">EN</button>
+          <button type="button" data-lang-option="es" aria-pressed="false">ES</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main id="customer-content">
+    <section class="auth-hero customer-signup-hero">
+      <div class="layout auth-hero-grid customer-signup-layout">
+        <section class="auth-context customer-signup-context" aria-labelledby="customer-context-title">
+          <p class="editorial-pill auth-eyebrow" data-i18n="context.eyebrow">Cadastro seguro de cliente</p>
+          <h1 id="customer-context-title" data-i18n="context.title">Seus dados, no seu ritmo.</h1>
+          <p class="auth-context-lead" data-i18n="context.body">Escolha um cadastro simples ou completo. Você vê a qualidade melhorar enquanto preenche.</p>
+          <div class="customer-trust-note">
+            <span class="customer-trust-mark" aria-hidden="true"></span>
+            <p data-i18n="context.security">Esta página não exige login e o link pode ser usado apenas uma vez.</p>
+          </div>
+        </section>
+
+        <section class="auth-card customer-card customer-loading-card" data-customer-loading aria-live="polite">
+          <div class="customer-loading-mark" aria-hidden="true"></div>
+          <div class="customer-loading-lines" aria-hidden="true"><span></span><span></span><span></span></div>
+          <p class="sr-only" data-i18n="loading.message">Validando link...</p>
+        </section>
+
+        <section class="auth-card customer-card customer-error-card" data-customer-error hidden aria-labelledby="customer-error-title">
+          <div class="customer-state-mark customer-state-mark-error" aria-hidden="true">!</div>
+          <p class="editorial-pill customer-card-eyebrow" data-i18n="error.eyebrow">Link indisponível</p>
+          <h2 id="customer-error-title" data-i18n="error.title">Não foi possível abrir o cadastro</h2>
+          <p data-customer-error-message role="alert" aria-live="assertive"></p>
+          <button class="button button-primary customer-main-action" type="button" data-customer-retry>
+            <span data-i18n="error.retry">Tentar novamente</span>
+          </button>
+          <a class="customer-secondary-link" href="/" data-i18n="error.home">Voltar para a página inicial</a>
+        </section>
+
+        <section class="auth-card customer-card" data-customer-card hidden aria-labelledby="customer-title">
+          <div class="customer-card-header">
+            <p class="editorial-pill customer-card-eyebrow" data-i18n="form.eyebrow">Auto cadastro</p>
+            <h2 id="customer-title" data-i18n="form.title">Conte um pouco sobre você</h2>
+            <p data-i18n="form.subtitle">Os dados essenciais identificam seu cadastro. Os demais ajudam a empresa a atender melhor.</p>
+          </div>
+
+          <form class="customer-form" data-customer-form novalidate>
+            <fieldset class="journey-choice">
+              <legend data-i18n="journey.legend">Como deseja preencher?</legend>
+              <label class="journey-option is-selected" data-journey-option="SIMPLES">
+                <input type="radio" name="tipoCadastro" value="SIMPLES" checked>
+                <span class="journey-option-icon" aria-hidden="true">↗</span>
+                <span><strong data-i18n="journey.simple.title">Cadastro simples</strong><small data-i18n="journey.simple.body">Somente os dados essenciais.</small></span>
+                <span class="journey-check" aria-hidden="true">✓</span>
+              </label>
+              <label class="journey-option" data-journey-option="COMPLETO">
+                <input type="radio" name="tipoCadastro" value="COMPLETO">
+                <span class="journey-option-icon" aria-hidden="true">＋</span>
+                <span><strong data-i18n="journey.complete.title">Cadastro completo</strong><small data-i18n="journey.complete.body">Inclui endereço e mais contexto.</small></span>
+                <span class="journey-check" aria-hidden="true">✓</span>
+              </label>
+            </fieldset>
+
+            <section class="quality-card" aria-labelledby="quality-title">
+              <div class="quality-heading"><div><strong id="quality-title" data-i18n="quality.title">Qualidade do cadastro</strong><span data-quality-level>Começando agora</span></div><strong data-quality-value>0%</strong></div>
+              <div class="quality-track" role="progressbar" aria-labelledby="quality-title" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-quality-track><span data-quality-progress></span></div>
+              <p data-quality-suggestion>Preencha seu nome para começar.</p>
+            </section>
+
+            <div class="step-heading">
+              <span data-step-label>Etapa 1 de 1 · Essenciais</span>
+              <div class="step-track is-single" aria-hidden="true" data-step-track><span data-step-bar="0"></span><span data-step-bar="1" hidden></span></div>
+            </div>
+
+            <section class="customer-step" data-customer-step="0">
+              <fieldset class="person-choice">
+                <legend data-i18n="form.personType">Tipo de pessoa</legend>
+                <label><input type="radio" name="tipoPessoa" value="PF" checked><span data-i18n="form.person.pf">Pessoa física</span></label>
+                <label><input type="radio" name="tipoPessoa" value="PJ"><span data-i18n="form.person.pj">Pessoa jurídica</span></label>
+              </fieldset>
+
+              <div class="field-grid">
+                <div class="field field-wide"><label for="customer-name" data-i18n="form.name">Nome completo / Razão social</label><div class="input-shell"><input id="customer-name" name="nome" type="text" autocomplete="name" maxlength="160" required></div></div>
+                <div class="field"><label for="customer-document" data-i18n="form.document">CPF/CNPJ</label><div class="input-shell"><input id="customer-document" name="documento" type="text" inputmode="numeric" autocomplete="off" maxlength="24" required></div></div>
+                <div class="field"><label for="customer-phone" data-i18n="form.phone">Telefone</label><div class="input-shell"><input id="customer-phone" name="telefone" type="tel" inputmode="tel" autocomplete="tel" maxlength="32"></div></div>
+                <div class="field"><label for="customer-email" data-i18n="form.email">E-mail</label><div class="input-shell"><input id="customer-email" name="email" type="email" inputmode="email" autocomplete="email" maxlength="254"></div></div>
+              </div>
+
+              <label class="terms-check"><input name="consentimento" type="checkbox" required><span data-i18n="form.consent">Confirmo que os dados são meus e autorizo seu uso para atendimento e relacionamento com esta empresa.</span></label>
+              <p class="form-alert" data-customer-feedback role="alert" aria-live="polite" tabindex="-1" hidden></p>
+              <button class="button button-primary customer-main-action" type="button" data-customer-next hidden><span data-i18n="form.continue">Continuar</span></button>
+              <button class="button button-primary submit-button customer-main-action" type="submit" data-customer-submit-simple><span class="submit-spinner" aria-hidden="true"></span><span data-customer-submit-label data-i18n="form.submit">Concluir cadastro</span></button>
+            </section>
+
+            <section class="customer-step" data-customer-step="1" hidden>
+              <div class="field-grid">
+                <div class="field"><label for="customer-zip" data-i18n="form.zip">CEP / Código postal</label><div class="input-shell"><input id="customer-zip" name="cep" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="16"></div></div>
+                <div class="field field-wide"><label for="customer-street" data-i18n="form.street">Logradouro</label><div class="input-shell"><input id="customer-street" name="logradouro" type="text" autocomplete="street-address" maxlength="180"></div></div>
+                <div class="field"><label for="customer-number" data-i18n="form.number">Número</label><div class="input-shell"><input id="customer-number" name="numero" type="text" maxlength="24"></div></div>
+                <div class="field"><label for="customer-complement" data-i18n="form.complement">Complemento</label><div class="input-shell"><input id="customer-complement" name="complemento" type="text" maxlength="100"></div></div>
+                <div class="field"><label for="customer-neighborhood" data-i18n="form.neighborhood">Bairro</label><div class="input-shell"><input id="customer-neighborhood" name="bairro" type="text" maxlength="100"></div></div>
+                <div class="field"><label for="customer-city" data-i18n="form.city">Cidade</label><div class="input-shell"><input id="customer-city" name="cidade" type="text" autocomplete="address-level2" maxlength="100"></div></div>
+                <div class="field field-small"><label for="customer-state" data-i18n="form.state">UF</label><div class="input-shell"><input id="customer-state" name="uf" type="text" autocomplete="address-level1" maxlength="3"></div></div>
+                <div class="field field-full"><label for="customer-notes" data-i18n="form.notes">Observações para atendimento</label><div class="input-shell"><textarea id="customer-notes" name="observacoes" rows="3" maxlength="600"></textarea></div></div>
+              </div>
+              <p class="form-alert" data-customer-feedback-details role="alert" aria-live="polite" tabindex="-1" hidden></p>
+              <div class="customer-actions"><button class="button button-quiet" type="button" data-customer-back data-i18n="form.back">Voltar</button><button class="button button-primary submit-button" type="submit" data-customer-submit-complete><span class="submit-spinner" aria-hidden="true"></span><span data-customer-submit-label data-i18n="form.submit">Concluir cadastro</span></button></div>
+            </section>
+          </form>
+
+          <section class="customer-success" data-customer-success hidden aria-labelledby="customer-success-title">
+            <div class="customer-state-mark customer-state-mark-success" aria-hidden="true">✓</div>
+            <p class="editorial-pill customer-card-eyebrow" data-i18n="success.eyebrow">Cadastro concluído</p>
+            <h3 id="customer-success-title" data-i18n="success.title" tabindex="-1">Seus dados foram enviados</h3>
+            <p data-i18n="success.body">A empresa recebeu seu cadastro. Este link não precisa mais ser utilizado.</p>
+            <a class="button button-primary customer-main-action" href="/" data-i18n="success.home">Ir para a página inicial</a>
+          </section>
+
+          <noscript><p class="register-noscript" data-i18n="noscript.message">Ative o JavaScript para validar e enviar este cadastro.</p></noscript>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="/site-assets/js/public-config.js"></script>
+  <script type="module" src="/site-assets/js/customer-signup.js"></script>
+</body>
+</html>
