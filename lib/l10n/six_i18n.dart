@@ -554,8 +554,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'collaboratorHome.attention.title': 'Prioridades do trabalho',
     'collaboratorHome.attention.clear':
         'Tudo em dia nas suas frentes de trabalho.',
-    'collaboratorHome.attention.pending':
-        '{count} pontos precisam de atenção.',
+    'collaboratorHome.attention.pending': '{count} pontos precisam de atenção.',
     'collaboratorHome.attention.overdueSales': 'Vendas vencidas',
     'collaboratorHome.attention.overdueServices': 'Entregas atrasadas',
     'collaboratorHome.attention.reservations': 'Reservas para analisar',
@@ -675,6 +674,23 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Não foi possível carregar os colaboradores deste comércio agora.',
     'dashboardInicio.mobileCollaboratorFilterSelectedFallback':
         'Colaborador selecionado',
+    'dashboardInicio.mobileInfrastructureRequestsTitle': 'Requests do backend',
+    'dashboardInicio.mobileInfrastructureRequestsSubtitle':
+        'Respostas monitoradas na janela selecionada do backend.',
+    'dashboardInicio.mobileInfrastructureRequestsFilterTitle':
+        'Filtrar requests do backend',
+    'dashboardInicio.mobileInfrastructureRequestsFilterSubtitle':
+        'Informe a janela que entra na contagem dos status 200, 400 e 500.',
+    'dashboardInicio.mobileInfrastructureRequestsFilterValueLabel':
+        'Quantidade',
+    'dashboardInicio.mobileInfrastructureRequestsFilterUnitLabel': 'Unidade',
+    'dashboardInicio.mobileInfrastructureRequestsFilterMinutes': 'Minutos',
+    'dashboardInicio.mobileInfrastructureRequestsFilterHours': 'Horas',
+    'dashboardInicio.mobileInfrastructureRequestsFilterApply': 'Aplicar janela',
+    'dashboardInicio.mobileInfrastructureRequestsMinuteSingular': 'minuto',
+    'dashboardInicio.mobileInfrastructureRequestsMinutePlural': 'minutos',
+    'dashboardInicio.mobileInfrastructureRequestsHourSingular': 'hora',
+    'dashboardInicio.mobileInfrastructureRequestsHourPlural': 'horas',
     'workspaceHome.cash.title': 'Caixa',
     'workspaceHome.cash.open': 'Aberto',
     'workspaceHome.cash.closed': 'Fechado',
@@ -2686,8 +2702,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'collaboratorHome.sales.total': 'Total sold',
     'collaboratorHome.sales.received': 'Already received',
     'collaboratorHome.sales.openMonth': 'Outstanding this month',
-    'collaboratorHome.sales.loadError':
-        'We could not load your sales summary.',
+    'collaboratorHome.sales.loadError': 'We could not load your sales summary.',
     'collaboratorHome.openSales.title': 'Unsettled sales',
     'collaboratorHome.openSales.subtitle': 'Only sales registered by you.',
     'collaboratorHome.openSales.loadError':
@@ -2703,8 +2718,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'collaboratorHome.services.subtitle':
         'Distribution of service calls assigned to you.',
     'collaboratorHome.services.open': 'Open service calls',
-    'collaboratorHome.services.loadError':
-        'We could not load your services.',
+    'collaboratorHome.services.loadError': 'We could not load your services.',
     'collaboratorHome.services.empty':
         'No service call is currently assigned to you.',
     'collaboratorHome.services.total': 'Total assigned',
@@ -2858,6 +2872,22 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Could not load the collaborators for this business right now.',
     'dashboardInicio.mobileCollaboratorFilterSelectedFallback':
         'Selected collaborator',
+    'dashboardInicio.mobileInfrastructureRequestsTitle': 'Backend requests',
+    'dashboardInicio.mobileInfrastructureRequestsSubtitle':
+        'Responses monitored in the selected backend time window.',
+    'dashboardInicio.mobileInfrastructureRequestsFilterTitle':
+        'Filter backend requests',
+    'dashboardInicio.mobileInfrastructureRequestsFilterSubtitle':
+        'Enter the time window used to count status 200, 400 and 500 responses.',
+    'dashboardInicio.mobileInfrastructureRequestsFilterValueLabel': 'Amount',
+    'dashboardInicio.mobileInfrastructureRequestsFilterUnitLabel': 'Unit',
+    'dashboardInicio.mobileInfrastructureRequestsFilterMinutes': 'Minutes',
+    'dashboardInicio.mobileInfrastructureRequestsFilterHours': 'Hours',
+    'dashboardInicio.mobileInfrastructureRequestsFilterApply': 'Apply window',
+    'dashboardInicio.mobileInfrastructureRequestsMinuteSingular': 'minute',
+    'dashboardInicio.mobileInfrastructureRequestsMinutePlural': 'minutes',
+    'dashboardInicio.mobileInfrastructureRequestsHourSingular': 'hour',
+    'dashboardInicio.mobileInfrastructureRequestsHourPlural': 'hours',
     'mobile.nav.dash': 'dash',
     'mobile.nav.home': 'Home',
     'mobile.nav.management': 'Management',
@@ -4603,8 +4633,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'collaboratorHome.attention.title': 'Prioridades del trabajo',
     'collaboratorHome.attention.clear':
         'Todo está al día en tus frentes de trabajo.',
-    'collaboratorHome.attention.pending':
-        '{count} puntos necesitan atención.',
+    'collaboratorHome.attention.pending': '{count} puntos necesitan atención.',
     'collaboratorHome.attention.overdueSales': 'Ventas vencidas',
     'collaboratorHome.attention.overdueServices': 'Entregas atrasadas',
     'collaboratorHome.attention.reservations': 'Reservas para revisar',
@@ -4617,8 +4646,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'collaboratorHome.sales.loadError':
         'No fue posible cargar el resumen de tus ventas.',
     'collaboratorHome.openSales.title': 'Ventas aún no liquidadas',
-    'collaboratorHome.openSales.subtitle':
-        'Solo ventas registradas por ti.',
+    'collaboratorHome.openSales.subtitle': 'Solo ventas registradas por ti.',
     'collaboratorHome.openSales.loadError':
         'No fue posible cargar tus ventas pendientes.',
     'collaboratorHome.openSales.empty':
@@ -4791,6 +4819,23 @@ const Map<String, Map<String, String>> _fallbacks = {
         'No se pudieron cargar los colaboradores de este comercio ahora.',
     'dashboardInicio.mobileCollaboratorFilterSelectedFallback':
         'Colaborador seleccionado',
+    'dashboardInicio.mobileInfrastructureRequestsTitle': 'Requests del backend',
+    'dashboardInicio.mobileInfrastructureRequestsSubtitle':
+        'Respuestas monitoreadas en la ventana seleccionada del backend.',
+    'dashboardInicio.mobileInfrastructureRequestsFilterTitle':
+        'Filtrar requests del backend',
+    'dashboardInicio.mobileInfrastructureRequestsFilterSubtitle':
+        'Indica la ventana que entra en el conteo de los estados 200, 400 y 500.',
+    'dashboardInicio.mobileInfrastructureRequestsFilterValueLabel': 'Cantidad',
+    'dashboardInicio.mobileInfrastructureRequestsFilterUnitLabel': 'Unidad',
+    'dashboardInicio.mobileInfrastructureRequestsFilterMinutes': 'Minutos',
+    'dashboardInicio.mobileInfrastructureRequestsFilterHours': 'Horas',
+    'dashboardInicio.mobileInfrastructureRequestsFilterApply':
+        'Aplicar ventana',
+    'dashboardInicio.mobileInfrastructureRequestsMinuteSingular': 'minuto',
+    'dashboardInicio.mobileInfrastructureRequestsMinutePlural': 'minutos',
+    'dashboardInicio.mobileInfrastructureRequestsHourSingular': 'hora',
+    'dashboardInicio.mobileInfrastructureRequestsHourPlural': 'horas',
     'mobile.nav.dash': 'dash',
     'mobile.nav.home': 'Inicio',
     'mobile.nav.management': 'Gestión',

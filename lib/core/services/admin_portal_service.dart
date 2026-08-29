@@ -6,6 +6,25 @@ import '../config/app_config.dart';
 import 'auth_service.dart';
 import 'http_client_factory.dart';
 
+enum AdminRequestWindowUnit {
+  minutes('MINUTES'),
+  hours('HOURS');
+
+  const AdminRequestWindowUnit(this.apiValue);
+
+  final String apiValue;
+
+  static AdminRequestWindowUnit fromApiValue(String? value) {
+    switch (value?.trim().toUpperCase()) {
+      case 'HOURS':
+        return AdminRequestWindowUnit.hours;
+      case 'MINUTES':
+      default:
+        return AdminRequestWindowUnit.minutes;
+    }
+  }
+}
+
 class AdminActuatorResumo {
   const AdminActuatorResumo({
     required this.status,
@@ -93,22 +112,55 @@ class AdminBancoDadosResumo {
       value is num ? value.toInt() : int.tryParse(value?.toString() ?? '') ?? 0;
 }
 
+class AdminRequestStatusResumo {
+  const AdminRequestStatusResumo({
+    required this.status200,
+    required this.status400,
+    required this.status500,
+    required this.janelaValor,
+    required this.janelaUnidade,
+  });
+
+  final int status200;
+  final int status400;
+  final int status500;
+  final int janelaValor;
+  final AdminRequestWindowUnit janelaUnidade;
+
+  factory AdminRequestStatusResumo.fromJson(Map<String, dynamic> json) =>
+      AdminRequestStatusResumo(
+        status200: _toInt(json['status200']),
+        status400: _toInt(json['status400']),
+        status500: _toInt(json['status500']),
+        janelaValor: _toInt(json['janelaValor']),
+        janelaUnidade: AdminRequestWindowUnit.fromApiValue(
+          json['janelaUnidade']?.toString(),
+        ),
+      );
+
+  static int _toInt(dynamic value) =>
+      value is num ? value.toInt() : int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
 class AdminPortalResumo {
   const AdminPortalResumo({
     required this.totalEmpresasCadastradas,
     required this.totalEmpresasAtivas,
     this.bancosDeDados = const <AdminBancoDadosResumo>[],
     this.actuator,
+    this.requestsHttp,
   });
 
   final int totalEmpresasCadastradas;
   final int totalEmpresasAtivas;
   final List<AdminBancoDadosResumo> bancosDeDados;
   final AdminActuatorResumo? actuator;
+  final AdminRequestStatusResumo? requestsHttp;
 
   factory AdminPortalResumo.fromJson(Map<String, dynamic> json) {
     final dynamic bancosRaw = json['bancosDeDados'];
     final dynamic actuatorRaw = json['actuator'];
+    final dynamic requestsRaw = json['requestsHttp'];
     return AdminPortalResumo(
       totalEmpresasCadastradas: _toInt(json['totalEmpresasCadastradas']),
       totalEmpresasAtivas: _toInt(json['totalEmpresasAtivas']),
@@ -122,6 +174,10 @@ class AdminPortalResumo {
       actuator:
           actuatorRaw is Map<String, dynamic>
               ? AdminActuatorResumo.fromJson(actuatorRaw)
+              : null,
+      requestsHttp:
+          requestsRaw is Map<String, dynamic>
+              ? AdminRequestStatusResumo.fromJson(requestsRaw)
               : null,
     );
   }
@@ -269,13 +325,22 @@ class AdminPortalService {
     };
   }
 
-  Future<AdminPortalResumo> buscarResumo() async {
+  Future<AdminPortalResumo> buscarResumo({
+    int? janelaValor,
+    AdminRequestWindowUnit? janelaUnidade,
+  }) async {
     final String baseUrl = AppConfig.baseUrl;
     if (baseUrl.trim().isEmpty) {
       throw Exception('API_BASE_URL não configurado.');
     }
+    final Uri uri = Uri.parse('$baseUrl/private/api/admin/resumo').replace(
+      queryParameters: <String, String>{
+        if (janelaValor != null) 'janelaValor': janelaValor.toString(),
+        if (janelaUnidade != null) 'janelaUnidade': janelaUnidade.apiValue,
+      },
+    );
     final http.Response response = await _client.get(
-      Uri.parse('$baseUrl/private/api/admin/resumo'),
+      uri,
       headers: await _headers(),
     );
     if (response.statusCode == 200) {
@@ -286,9 +351,7 @@ class AdminPortalService {
       throw Exception('Resposta inválida do resumo administrativo.');
     }
     if (response.statusCode == 401) {
-      throw Exception(
-        'Sessão expirada. Faça login novamente.',
-      );
+      throw Exception('Sessão expirada. Faça login novamente.');
     }
     if (response.statusCode == 403) {
       throw Exception(
@@ -320,9 +383,7 @@ class AdminPortalService {
       throw Exception('Resposta inválida dos usuários ativos.');
     }
     if (response.statusCode == 401) {
-      throw Exception(
-        'Sessão expirada. Faça login novamente.',
-      );
+      throw Exception('Sessão expirada. Faça login novamente.');
     }
     if (response.statusCode == 403) {
       throw Exception(
@@ -351,9 +412,7 @@ class AdminPortalService {
       throw Exception('Resposta inválida das métricas de IA.');
     }
     if (response.statusCode == 401) {
-      throw Exception(
-        'Sessão expirada. Faça login novamente.',
-      );
+      throw Exception('Sessão expirada. Faça login novamente.');
     }
     if (response.statusCode == 403) {
       throw Exception(
