@@ -3,9 +3,17 @@ import { normalizeApiBaseUrl, resolvePublicApiConfig } from './login-core.mjs';
 export const CUSTOMER_SIGNUP_TIMEOUT_MS = 15000;
 
 const PT = {
-  title: 'SixoApp - Cadastro de cliente', description: 'Complete seu cadastro de cliente com segurança no SixoApp.',
-  'access.skip': 'Ir para o cadastro', 'brand.aria': 'SixoApp', 'nav.aria': 'Navegação do cadastro', 'nav.home': 'Página inicial', 'language.aria': 'Selecionar idioma',
-  'context.eyebrow': 'Cadastro seguro de cliente', 'context.title': 'Seus dados, no seu ritmo.', 'context.body': 'Escolha um cadastro simples ou completo. Você vê a qualidade melhorar enquanto preenche.', 'context.security': 'Esta página não exige login e o link pode ser usado apenas uma vez.',
+  title: 'Cadastro de cliente', description: 'Complete seu cadastro de cliente por um link seguro.',
+  'access.skip': 'Ir para o cadastro', 'brand.aria': 'Cadastro de cliente', 'nav.aria': 'Navegação do cadastro', 'language.aria': 'Selecionar idioma',
+  'topbar.eyebrow': 'Cadastro público',
+  'company.eyebrow': 'Atendimento da empresa',
+  'company.contact': 'Contato',
+  'company.security': 'Link seguro e temporário',
+  'company.description': 'Confira os dados da empresa e finalize seu cadastro com segurança.',
+  'context.eyebrow': 'Cadastro seguro de cliente', 'context.title': 'Revise seus dados com tranquilidade.', 'context.body': 'Preencha o essencial para liberar o atendimento. Se quiser, complete o endereço e deixe mais contexto para a empresa.', 'context.security': 'O link é validado antes do envio e pode ser usado apenas uma vez.',
+  'context.trust.company': 'Os dados enviados ficam vinculados ao comércio que compartilhou este link.',
+  'context.trust.quality': 'O indicador mostra quando o cadastro já está suficiente para atendimento.',
+  'context.trust.complete': 'Você pode concluir no modo simples ou seguir para o cadastro completo.',
   'loading.message': 'Validando link...', 'error.eyebrow': 'Link indisponível', 'error.title': 'Não foi possível abrir o cadastro', 'error.retry': 'Tentar novamente', 'error.home': 'Voltar para a página inicial',
   'form.eyebrow': 'Auto cadastro', 'form.title': 'Conte um pouco sobre você', 'form.subtitle': 'Os dados essenciais identificam seu cadastro. Os demais ajudam a empresa a atender melhor.',
   'journey.legend': 'Como deseja preencher?', 'journey.simple.title': 'Cadastro simples', 'journey.simple.body': 'Somente os dados essenciais.', 'journey.complete.title': 'Cadastro completo', 'journey.complete.body': 'Inclui endereço e mais contexto.',
@@ -19,9 +27,17 @@ const PT = {
 };
 
 const EN = {
-  ...PT, title: 'SixoApp - Customer registration', description: 'Complete your customer registration securely in SixoApp.',
-  'access.skip': 'Skip to registration', 'nav.aria': 'Registration navigation', 'nav.home': 'Home page', 'language.aria': 'Select language',
-  'context.eyebrow': 'Secure customer registration', 'context.title': 'Your details, at your pace.', 'context.body': 'Choose a simple or complete registration and watch its quality improve as you fill it in.', 'context.security': 'This page does not require sign-in and the link can only be used once.',
+  ...PT, title: 'Customer registration', description: 'Complete your customer registration through a secure link.',
+  'access.skip': 'Skip to registration', 'nav.aria': 'Registration navigation', 'language.aria': 'Select language',
+  'topbar.eyebrow': 'Public registration',
+  'company.eyebrow': 'Business service',
+  'company.contact': 'Contact',
+  'company.security': 'Secure temporary link',
+  'company.description': 'Review the business details and complete your registration securely.',
+  'context.eyebrow': 'Secure customer registration', 'context.title': 'Review your details with confidence.', 'context.body': 'Fill in the essentials to unlock service. If you want, add your address and extra context for the business.', 'context.security': 'The link is validated before submission and can only be used once.',
+  'context.trust.company': 'Your details stay linked to the business that shared this link.',
+  'context.trust.quality': 'The progress indicator shows when the registration is already good enough for service.',
+  'context.trust.complete': 'You can finish in simple mode or continue to the complete registration.',
   'loading.message': 'Validating link...', 'error.eyebrow': 'Link unavailable', 'error.title': 'Registration could not be opened', 'error.retry': 'Try again', 'error.home': 'Back to the home page',
   'form.eyebrow': 'Self-registration', 'form.title': 'Tell us a little about yourself', 'form.subtitle': 'Essential details identify your profile. The rest helps the business serve you better.',
   'journey.legend': 'How would you like to fill this in?', 'journey.simple.title': 'Simple registration', 'journey.simple.body': 'Essential details only.', 'journey.complete.title': 'Complete registration', 'journey.complete.body': 'Includes address and more context.',
@@ -35,9 +51,17 @@ const EN = {
 };
 
 const ES = {
-  ...PT, title: 'SixoApp - Registro de cliente', description: 'Completa tu registro de cliente de forma segura en SixoApp.',
-  'access.skip': 'Ir al registro', 'nav.aria': 'Navegación del registro', 'nav.home': 'Página inicial', 'language.aria': 'Seleccionar idioma',
-  'context.eyebrow': 'Registro seguro de cliente', 'context.title': 'Tus datos, a tu ritmo.', 'context.body': 'Elige un registro simple o completo y observa cómo mejora su calidad.', 'context.security': 'Esta página no requiere inicio de sesión y el enlace solo puede usarse una vez.',
+  ...PT, title: 'Registro de cliente', description: 'Completa tu registro de cliente mediante un enlace seguro.',
+  'access.skip': 'Ir al registro', 'nav.aria': 'Navegación del registro', 'language.aria': 'Seleccionar idioma',
+  'topbar.eyebrow': 'Registro público',
+  'company.eyebrow': 'Atención de la empresa',
+  'company.contact': 'Contacto',
+  'company.security': 'Enlace seguro y temporal',
+  'company.description': 'Revisa los datos de la empresa y completa tu registro de forma segura.',
+  'context.eyebrow': 'Registro seguro de cliente', 'context.title': 'Revisa tus datos con tranquilidad.', 'context.body': 'Completa lo esencial para habilitar la atención. Si quieres, agrega la dirección y más contexto para la empresa.', 'context.security': 'El enlace se valida antes del envío y solo puede usarse una vez.',
+  'context.trust.company': 'Los datos enviados quedan vinculados al comercio que compartió este enlace.',
+  'context.trust.quality': 'El indicador muestra cuándo el registro ya es suficiente para la atención.',
+  'context.trust.complete': 'Puedes finalizar en modo simple o continuar con el registro completo.',
   'loading.message': 'Validando enlace...', 'error.eyebrow': 'Enlace no disponible', 'error.title': 'No fue posible abrir el registro', 'error.retry': 'Intentar nuevamente', 'error.home': 'Volver a la página inicial',
   'form.eyebrow': 'Auto registro', 'form.title': 'Cuéntanos un poco sobre ti', 'form.subtitle': 'Los datos esenciales identifican tu perfil. Los demás ayudan a la empresa a atenderte mejor.',
   'journey.legend': '¿Cómo deseas completar el registro?', 'journey.simple.title': 'Registro simple', 'journey.simple.body': 'Solo los datos esenciales.', 'journey.complete.title': 'Registro completo', 'journey.complete.body': 'Incluye dirección y más contexto.',
@@ -68,6 +92,44 @@ export class CustomerSignupNetworkError extends Error {
 }
 
 export { resolvePublicApiConfig };
+
+function safeText(value, maxLength = 240) {
+  return String(value || '').trim().slice(0, maxLength);
+}
+
+function safeLogo(value) {
+  const normalized = safeText(value, 400000);
+  if (!normalized) return '';
+  return normalized.startsWith('data:') ? normalized : `data:image/jpeg;base64,${normalized}`;
+}
+
+export function normalizeCustomerSignupCompany(raw) {
+  const company = raw && typeof raw === 'object' ? raw : {};
+  const legalName = safeText(company.nomeEmpresa || company.legalName || company.name, 160);
+  const tradeName = safeText(company.nomeFantasia || company.displayName, 160);
+  const displayName = tradeName || legalName;
+  return Object.freeze({
+    legalName,
+    name: tradeName,
+    displayName,
+    phone: safeText(company.telefone || company.phone, 60),
+    whatsapp: safeText(company.whatsapp, 60),
+    email: safeText(company.email, 180),
+    site: safeText(company.site, 240),
+    address: safeText(company.endereco || company.address, 240),
+    logoBase64: safeLogo(company.logoBase64),
+  });
+}
+
+export function normalizeCustomerSignupValidationResponse(payload) {
+  const response = payload && typeof payload === 'object' ? payload : {};
+  return Object.freeze({
+    status: safeText(response.status, 32),
+    code: safeText(response.code, 80),
+    message: safeText(response.message, 280),
+    company: normalizeCustomerSignupCompany(response.empresa),
+  });
+}
 
 function normalizeIdentifier(value, code) {
   const normalized = String(value || '').trim();

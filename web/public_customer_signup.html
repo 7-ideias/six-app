@@ -7,14 +7,14 @@
   <meta name="sixapp-entrypoint" content="public-customer-signup">
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
-  <meta name="description" content="Complete seu cadastro de cliente com segurança no SixoApp.">
+  <meta name="description" content="Complete seu cadastro de cliente por um link seguro.">
   <meta name="theme-color" content="#00163A">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="SixoApp - Cadastro de cliente">
+  <meta property="og:title" content="Cadastro de cliente">
   <meta property="og:description" content="Preencha seus dados de cliente por um link seguro e temporário.">
   <meta property="og:image" content="/site-assets/images/sixoapp-mark.png">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="SixoApp - Cadastro de cliente">
+  <meta name="twitter:title" content="Cadastro de cliente">
   <meta name="twitter:description" content="Preencha seus dados de cliente por um link seguro e temporário.">
   <meta name="twitter:image" content="/site-assets/images/sixoapp-mark.png">
   <link rel="icon" type="image/png" href="/favicon.png">
@@ -22,45 +22,75 @@
   <link rel="stylesheet" href="/site-assets/css/public-base.css">
   <link rel="stylesheet" href="/site-assets/css/home.css">
   <link rel="stylesheet" href="/site-assets/css/register.css">
+  <link rel="stylesheet" href="/site-assets/css/catalog.css">
   <link rel="stylesheet" href="/site-assets/css/customer-signup.css">
   <link rel="stylesheet" href="/site-assets/css/sixoapp-public.css">
-  <title>SixoApp - Cadastro de cliente</title>
+  <title>Cadastro de cliente</title>
 </head>
-<body class="auth-public-page customer-signup-page">
+<body class="catalog-page customer-signup-page">
   <a class="skip-link" href="#customer-content" data-i18n="access.skip">Ir para o cadastro</a>
 
-  <header class="site-header auth-site-header" data-header>
-    <nav class="nav-shell auth-nav-shell" aria-label="Navegação do cadastro" data-i18n-aria="nav.aria">
-      <a class="brand" href="/" aria-label="SixoApp" data-i18n-aria="brand.aria">
-        <span class="brand-mark" aria-hidden="true">
-          <img src="/site-assets/images/sixoapp-mark.png" width="32" height="32" alt="">
+  <header class="catalog-topbar">
+    <div class="layout catalog-topbar-inner">
+      <a class="catalog-brand" href="#customer-content" data-company-brand aria-label="Cadastro de cliente" data-i18n-aria="brand.aria">
+        <span class="catalog-brand-mark" aria-hidden="true">
+          <img data-company-logo width="38" height="38" alt="" hidden>
         </span>
-        <span>SixoApp</span>
+        <span class="catalog-brand-copy">
+          <strong data-company-name>Cadastro de cliente</strong>
+          <small data-i18n="topbar.eyebrow">Cadastro público</small>
+        </span>
       </a>
-      <div class="auth-nav-actions">
-        <a class="button button-quiet home-link" href="/" data-i18n="nav.home">Página inicial</a>
-        <div class="language-switcher" role="group" aria-label="Selecionar idioma" data-i18n-aria="language.aria">
-          <button type="button" data-lang-option="pt" aria-pressed="true">PT</button>
-          <button type="button" data-lang-option="en" aria-pressed="false">EN</button>
-          <button type="button" data-lang-option="es" aria-pressed="false">ES</button>
-        </div>
+
+      <div class="language-switcher" role="group" aria-label="Selecionar idioma" data-i18n-aria="language.aria">
+        <button type="button" data-lang-option="pt" aria-pressed="true">PT</button>
+        <button type="button" data-lang-option="en" aria-pressed="false">EN</button>
+        <button type="button" data-lang-option="es" aria-pressed="false">ES</button>
       </div>
-    </nav>
+    </div>
   </header>
 
-  <main id="customer-content">
-    <section class="auth-hero customer-signup-hero">
-      <div class="layout auth-hero-grid customer-signup-layout">
-        <section class="auth-context customer-signup-context" aria-labelledby="customer-context-title">
-          <p class="editorial-pill auth-eyebrow" data-i18n="context.eyebrow">Cadastro seguro de cliente</p>
-          <h1 id="customer-context-title" data-i18n="context.title">Seus dados, no seu ritmo.</h1>
-          <p class="auth-context-lead" data-i18n="context.body">Escolha um cadastro simples ou completo. Você vê a qualidade melhorar enquanto preenche.</p>
-          <div class="customer-trust-note">
-            <span class="customer-trust-mark" aria-hidden="true"></span>
-            <p data-i18n="context.security">Esta página não exige login e o link pode ser usado apenas uma vez.</p>
-          </div>
-        </section>
+  <main class="layout customer-signup-main" id="customer-content">
+    <section class="company-hero customer-company-hero" data-company-section hidden>
+      <div class="company-identity">
+        <div class="company-logo-large" aria-hidden="true">
+          <img data-company-logo-large width="72" height="72" alt="" hidden>
+        </div>
+        <div>
+          <p class="catalog-eyebrow" data-i18n="company.eyebrow">Atendimento da empresa</p>
+          <h1 data-company-title>Cadastro de cliente</h1>
+          <p class="company-description" data-company-description hidden></p>
+          <p class="company-address" data-company-address hidden></p>
+        </div>
+      </div>
 
+      <div class="company-contact" data-company-contact hidden>
+        <span class="company-meta-label" data-i18n="company.contact">Contato</span>
+        <div class="company-contact-links" data-company-contact-links></div>
+      </div>
+    </section>
+
+    <div class="customer-signup-layout">
+      <section class="customer-context-panel" aria-labelledby="customer-context-title">
+        <p class="editorial-pill customer-context-eyebrow" data-i18n="context.eyebrow">Cadastro seguro de cliente</p>
+        <h1 id="customer-context-title" data-i18n="context.title">Revise seus dados com tranquilidade.</h1>
+        <p class="customer-context-lead" data-i18n="context.body">Preencha o essencial para liberar o atendimento. Se quiser, complete o endereço e deixe mais contexto para a empresa.</p>
+
+        <div class="customer-context-trust">
+          <div class="customer-context-security">
+            <span class="customer-trust-mark" aria-hidden="true"></span>
+            <p data-i18n="context.security">O link é validado antes do envio e pode ser usado apenas uma vez.</p>
+          </div>
+
+          <ul class="customer-trust-list">
+            <li data-i18n="context.trust.company">Os dados enviados ficam vinculados ao comércio que compartilhou este link.</li>
+            <li data-i18n="context.trust.quality">O indicador mostra quando o cadastro já está suficiente para atendimento.</li>
+            <li data-i18n="context.trust.complete">Você pode concluir no modo simples ou seguir para o cadastro completo.</li>
+          </ul>
+        </div>
+      </section>
+
+      <div class="customer-form-stack">
         <section class="auth-card customer-card customer-loading-card" data-customer-loading aria-live="polite">
           <div class="customer-loading-mark" aria-hidden="true"></div>
           <div class="customer-loading-lines" aria-hidden="true"><span></span><span></span><span></span></div>
@@ -75,11 +105,20 @@
           <button class="button button-primary customer-main-action" type="button" data-customer-retry>
             <span data-i18n="error.retry">Tentar novamente</span>
           </button>
-          <a class="customer-secondary-link" href="/" data-i18n="error.home">Voltar para a página inicial</a>
+          <a class="customer-secondary-link" href="#customer-content" data-i18n="error.home">Voltar para o início</a>
         </section>
 
         <section class="auth-card customer-card" data-customer-card hidden aria-labelledby="customer-title">
           <div class="customer-card-header">
+            <div class="customer-company-chip">
+              <span class="customer-company-chip-mark" aria-hidden="true">
+                <img data-company-logo width="24" height="24" alt="" hidden>
+              </span>
+              <span>
+                <strong data-company-context-name>Esta empresa</strong>
+                <small data-i18n="company.security">Link seguro e temporário</small>
+              </span>
+            </div>
             <p class="editorial-pill customer-card-eyebrow" data-i18n="form.eyebrow">Auto cadastro</p>
             <h2 id="customer-title" data-i18n="form.title">Conte um pouco sobre você</h2>
             <p data-i18n="form.subtitle">Os dados essenciais identificam seu cadastro. Os demais ajudam a empresa a atender melhor.</p>
@@ -154,13 +193,13 @@
             <p class="editorial-pill customer-card-eyebrow" data-i18n="success.eyebrow">Cadastro concluído</p>
             <h3 id="customer-success-title" data-i18n="success.title" tabindex="-1">Seus dados foram enviados</h3>
             <p data-i18n="success.body">A empresa recebeu seu cadastro. Este link não precisa mais ser utilizado.</p>
-            <a class="button button-primary customer-main-action" href="/" data-i18n="success.home">Ir para a página inicial</a>
+            <a class="button button-primary customer-main-action" href="#customer-content" data-i18n="success.home">Voltar ao início</a>
           </section>
 
           <noscript><p class="register-noscript" data-i18n="noscript.message">Ative o JavaScript para validar e enviar este cadastro.</p></noscript>
         </section>
       </div>
-    </section>
+    </div>
   </main>
 
   <script src="/site-assets/js/public-config.js"></script>
