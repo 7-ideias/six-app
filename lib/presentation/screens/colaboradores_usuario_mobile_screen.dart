@@ -14,6 +14,8 @@ import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/user_profile_avatar_image.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 
+import 'colaborador_cadastro_mobile_screen.dart';
+
 class ColaboradoresUsuarioMobileScreen extends StatefulWidget {
   const ColaboradoresUsuarioMobileScreen({super.key, this.apiClient});
 
@@ -175,22 +177,10 @@ class _ColaboradoresUsuarioMobileScreenState
       context.read<LocaleSettingsProvider>().formatDate(value);
 
   Future<void> _openNovoColaborador() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: true,
-      enableDrag: true,
-      useSafeArea: true,
-      barrierColor: Colors.black.withValues(alpha: 0.36),
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext bottomSheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.viewInsetsOf(bottomSheetContext).bottom,
-          ),
-          child: const _ColaboradorConviteMobileSheet(),
-        );
-      },
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => const ColaboradorCadastroMobileScreen(),
+      ),
     );
 
     if (mounted) {
