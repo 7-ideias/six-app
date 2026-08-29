@@ -60,6 +60,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
   static const String _allCollaboratorsFilterValue = '__all_collaborators__';
   static const double _profileAvatarFadeDistance = 96;
   static const double _profileAvatarFadeStart = 0.10;
+  static const int _defaultInfrastructureRequestsWindowValue = 15;
   static const Duration _profileAvatarFadeDuration = Duration(
     milliseconds: 180,
   );
@@ -114,6 +115,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
   String? _erroInfraestrutura;
   bool _carregandoInfraestrutura = false;
   bool _tentouCarregarInfraestrutura = false;
+  int _infrastructureRequestsWindowValue =
+      _defaultInfrastructureRequestsWindowValue;
+  AdminRequestWindowUnit _infrastructureRequestsWindowUnit =
+      AdminRequestWindowUnit.minutes;
   bool _tentouCarregarDesempenho = false;
   String _comercioSelecionadoNoFiltro = _allCompaniesFilterValue;
   String? _colaboradorSelecionadoNoFiltro;
@@ -441,12 +446,27 @@ class _HomePageMobileState extends State<HomePageMobile> {
     }
 
     try {
-      final AdminPortalResumo resumo = await _adminPortalService.buscarResumo();
-      if (!mounted) {
+      final AdminPortalResumo resumo = await _adminPortalService.buscarResumo(
+        janelaValor: _infrastructureRequestsWindowValue,
+        janelaUnidade: _infrastructureRequestsWindowUnit,
+      );
+      void applyResumo() {
         _resumoInfraestrutura = resumo;
+        final AdminRequestStatusResumo? requestsHttp = resumo.requestsHttp;
+        if (requestsHttp != null) {
+          _infrastructureRequestsWindowValue =
+              requestsHttp.janelaValor > 0
+                  ? requestsHttp.janelaValor
+                  : _infrastructureRequestsWindowValue;
+          _infrastructureRequestsWindowUnit = requestsHttp.janelaUnidade;
+        }
+      }
+
+      if (!mounted) {
+        applyResumo();
         return;
       }
-      setState(() => _resumoInfraestrutura = resumo);
+      setState(applyResumo);
     } catch (error) {
       final String mensagem = error.toString().replaceAll('Exception: ', '');
       if (!mounted) {
@@ -825,7 +845,9 @@ class _HomePageMobileState extends State<HomePageMobile> {
     }
 
     if (resumo == null ||
-        (resumo.bancosDeDados.isEmpty && resumo.actuator == null)) {
+        (resumo.bancosDeDados.isEmpty &&
+            resumo.actuator == null &&
+            resumo.requestsHttp == null)) {
       return _buildInfrastructureEmptyCard(context);
     }
 
@@ -852,7 +874,24 @@ class _HomePageMobileState extends State<HomePageMobile> {
                   .toList(growable: false),
             ),
           ),
-        if (resumo.bancosDeDados.isNotEmpty && resumo.actuator != null)
+        if (resumo.bancosDeDados.isNotEmpty &&
+            (resumo.requestsHttp != null || resumo.actuator != null))
+          SizedBox(height: 12),
+        if (resumo.requestsHttp != null)
+          _buildInfrastructurePanel(
+            context,
+            icon: Icons.http_rounded,
+            title: context.t(
+              'dashboardInicio.mobileInfrastructureRequestsTitle',
+              fallback: 'Requests do backend',
+            ),
+            trailing: _buildInfrastructureRequestsFilterButton(context),
+            child: _buildInfrastructureRequestsContent(
+              context,
+              resumo.requestsHttp!,
+            ),
+          ),
+        if (resumo.requestsHttp != null && resumo.actuator != null)
           SizedBox(height: 12),
         if (resumo.actuator != null)
           _buildInfrastructurePanel(
@@ -909,6 +948,68 @@ class _HomePageMobileState extends State<HomePageMobile> {
     );
   }
 
+  Widget _buildInfrastructureRequestsContent(
+    BuildContext context,
+    AdminRequestStatusResumo resumo,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          context.t(
+            'dashboardInicio.mobileInfrastructureRequestsSubtitle',
+            fallback: 'Respostas monitoradas na janela selecionada do backend.',
+          ),
+          style: TextStyle(
+            color: _mutedTextColor,
+            fontSize: 11.5,
+            height: 1.3,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final double itemWidth =
+                constraints.maxWidth < 320
+                    ? constraints.maxWidth
+                    : (constraints.maxWidth - 16) / 3;
+            return Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: <Widget>[
+                SizedBox(
+                  width: itemWidth,
+                  child: _buildInfrastructureRequestMetricCard(
+                    context,
+                    statusCode: 200,
+                    count: resumo.status200,
+                  ),
+                ),
+                SizedBox(
+                  width: itemWidth,
+                  child: _buildInfrastructureRequestMetricCard(
+                    context,
+                    statusCode: 400,
+                    count: resumo.status400,
+                  ),
+                ),
+                SizedBox(
+                  width: itemWidth,
+                  child: _buildInfrastructureRequestMetricCard(
+                    context,
+                    statusCode: 500,
+                    count: resumo.status500,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
   Widget _buildInfrastructurePanel(
     BuildContext context, {
     required IconData icon,
@@ -960,6 +1061,47 @@ class _HomePageMobileState extends State<HomePageMobile> {
           ),
           SizedBox(height: 14),
           child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfrastructureRequestMetricCard(
+    BuildContext context, {
+    required int statusCode,
+    required int count,
+  }) {
+    final Color color = _requestStatusColor(statusCode);
+    return Container(
+      padding: EdgeInsets.fromLTRB(12, 12, 12, 11),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            statusCode.toString(),
+            style: TextStyle(
+              color: color,
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 6),
+          Text(
+            count.toString(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: _titleTextColor,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              height: 1,
+            ),
+          ),
         ],
       ),
     );
@@ -1051,6 +1193,325 @@ class _HomePageMobileState extends State<HomePageMobile> {
           color: color,
           fontSize: 11,
           fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfrastructureRequestsFilterButton(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _carregandoInfraestrutura ? null : _abrirFiltroInfraestrutura,
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: _softSurface,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: _borderColor.withValues(alpha: 0.82)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.schedule_rounded, size: 14, color: _accentColor),
+              SizedBox(width: 6),
+              Text(
+                _formatInfrastructureWindowLabel(
+                  context,
+                  value: _infrastructureRequestsWindowValue,
+                  unit: _infrastructureRequestsWindowUnit,
+                ),
+                style: TextStyle(
+                  color: _titleTextColor,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _abrirFiltroInfraestrutura() async {
+    final TextEditingController controller = TextEditingController(
+      text: _infrastructureRequestsWindowValue.toString(),
+    );
+    AdminRequestWindowUnit stagedUnit = _infrastructureRequestsWindowUnit;
+
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        useSafeArea: true,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        barrierColor: Colors.black.withValues(alpha: 0.44),
+        builder: (BuildContext context) {
+          return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setModalState) {
+              final double keyboardInset =
+                  MediaQuery.of(context).viewInsets.bottom;
+              return SafeArea(
+                top: false,
+                child: AnimatedPadding(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  padding: EdgeInsets.fromLTRB(10, 0, 10, 10 + keyboardInset),
+                  child: Material(
+                    color: _surfaceColor,
+                    borderRadius: BorderRadius.circular(28),
+                    clipBehavior: Clip.antiAlias,
+                    child: SingleChildScrollView(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Center(
+                            child: Container(
+                              width: 42,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: _borderColor,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      context.t(
+                                        'dashboardInicio.mobileInfrastructureRequestsFilterTitle',
+                                        fallback: 'Filtrar requests do backend',
+                                      ),
+                                      style: TextStyle(
+                                        color: _titleTextColor,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      context.t(
+                                        'dashboardInicio.mobileInfrastructureRequestsFilterSubtitle',
+                                        fallback:
+                                            'Informe a janela que entra na contagem dos status 200, 400 e 500.',
+                                      ),
+                                      style: TextStyle(
+                                        color: _mutedTextColor,
+                                        fontSize: 13,
+                                        height: 1.3,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: context.t(
+                                  'common.close',
+                                  fallback: 'Fechar',
+                                ),
+                                onPressed: () => Navigator.of(context).pop(),
+                                icon: Icon(
+                                  Icons.close_rounded,
+                                  color: _titleTextColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 14),
+                          Text(
+                            context.t(
+                              'dashboardInicio.mobileInfrastructureRequestsFilterValueLabel',
+                              fallback: 'Quantidade',
+                            ),
+                            style: TextStyle(
+                              color: _mutedTextColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          TextField(
+                            controller: controller,
+                            keyboardType: TextInputType.number,
+                            style: TextStyle(
+                              color: _titleTextColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                            decoration: InputDecoration(
+                              hintText:
+                                  _defaultInfrastructureRequestsWindowValue
+                                      .toString(),
+                              filled: true,
+                              fillColor: _softSurface,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(color: _borderColor),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(color: _borderColor),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(color: _accentColor),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 14),
+                          Text(
+                            context.t(
+                              'dashboardInicio.mobileInfrastructureRequestsFilterUnitLabel',
+                              fallback: 'Unidade',
+                            ),
+                            style: TextStyle(
+                              color: _mutedTextColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: _buildInfrastructureUnitOption(
+                                  context,
+                                  label: context.t(
+                                    'dashboardInicio.mobileInfrastructureRequestsFilterMinutes',
+                                    fallback: 'Minutos',
+                                  ),
+                                  selected:
+                                      stagedUnit ==
+                                      AdminRequestWindowUnit.minutes,
+                                  onTap: () {
+                                    setModalState(() {
+                                      stagedUnit =
+                                          AdminRequestWindowUnit.minutes;
+                                    });
+                                  },
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: _buildInfrastructureUnitOption(
+                                  context,
+                                  label: context.t(
+                                    'dashboardInicio.mobileInfrastructureRequestsFilterHours',
+                                    fallback: 'Horas',
+                                  ),
+                                  selected:
+                                      stagedUnit ==
+                                      AdminRequestWindowUnit.hours,
+                                  onTap: () {
+                                    setModalState(() {
+                                      stagedUnit = AdminRequestWindowUnit.hours;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 18),
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: Text(
+                                    context.t(
+                                      'common.cancel',
+                                      fallback: 'Cancelar',
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: FilledButton(
+                                  onPressed: () async {
+                                    final int value =
+                                        _sanitizeInfrastructureWindowValue(
+                                          int.tryParse(controller.text.trim()),
+                                          stagedUnit,
+                                        );
+                                    Navigator.of(context).pop();
+                                    if (!mounted) {
+                                      return;
+                                    }
+                                    setState(() {
+                                      _infrastructureRequestsWindowValue =
+                                          value;
+                                      _infrastructureRequestsWindowUnit =
+                                          stagedUnit;
+                                    });
+                                    await _carregarInfraestrutura();
+                                  },
+                                  child: Text(
+                                    context.t(
+                                      'dashboardInicio.mobileInfrastructureRequestsFilterApply',
+                                      fallback: 'Aplicar janela',
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      controller.dispose();
+    }
+  }
+
+  Widget _buildInfrastructureUnitOption(
+    BuildContext context, {
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 180),
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? _accentColor : _softSurface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: selected ? _accentColor : _borderColor),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: selected ? SixMobilePalette.onPrimary : _titleTextColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -2894,6 +3355,44 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   String _formatInfrastructureLoad(double load) {
     return load.toStringAsFixed(load >= 10 ? 1 : 2);
+  }
+
+  int _sanitizeInfrastructureWindowValue(
+    int? rawValue,
+    AdminRequestWindowUnit unit,
+  ) {
+    final int value =
+        rawValue == null || rawValue < 1
+            ? _defaultInfrastructureRequestsWindowValue
+            : rawValue;
+    final int maxValue = unit == AdminRequestWindowUnit.hours ? 72 : 72 * 60;
+    return value.clamp(1, maxValue);
+  }
+
+  String _formatInfrastructureWindowLabel(
+    BuildContext context, {
+    required int value,
+    required AdminRequestWindowUnit unit,
+  }) {
+    final bool singular = value == 1;
+    switch (unit) {
+      case AdminRequestWindowUnit.hours:
+        return '$value ${context.t(singular ? 'dashboardInicio.mobileInfrastructureRequestsHourSingular' : 'dashboardInicio.mobileInfrastructureRequestsHourPlural', fallback: singular ? 'hora' : 'horas')}';
+      case AdminRequestWindowUnit.minutes:
+        return '$value ${context.t(singular ? 'dashboardInicio.mobileInfrastructureRequestsMinuteSingular' : 'dashboardInicio.mobileInfrastructureRequestsMinutePlural', fallback: singular ? 'minuto' : 'minutos')}';
+    }
+  }
+
+  Color _requestStatusColor(int statusCode) {
+    switch (statusCode) {
+      case 200:
+        return Color(0xFF16A34A);
+      case 400:
+        return Color(0xFFD97706);
+      case 500:
+      default:
+        return SixMobilePalette.error;
+    }
   }
 
   void _openNotifications(BuildContext context) {
