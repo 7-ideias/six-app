@@ -8,9 +8,11 @@ import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/user_profile_avatar_image.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 
 import 'colaborador_cadastro_mobile_screen.dart';
+import 'desempenho_colaborador_mobile_screen.dart';
 
 class ColaboradoresUsuarioMobileScreen extends StatefulWidget {
   const ColaboradoresUsuarioMobileScreen({super.key, this.apiClient});
@@ -257,6 +259,14 @@ class _ColaboradoresUsuarioMobileScreenState
     }
   }
 
+  Future<void> _openDesempenhoColaborador() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => const DesempenhoColaboradorMobileScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     context.watch<LocaleSettingsProvider>();
@@ -288,6 +298,9 @@ class _ColaboradoresUsuarioMobileScreenState
   }
 
   Widget _body(ScrollController scrollController, double topInset) {
+    final bool exibirAtalhoDesempenho =
+        !context.watch<ColaboradorAutorizacoesProvider>().ehColaborador;
+
     if (_loading && _colaboradores.isEmpty) {
       return _MobileColaboradoresLoading(topInset: topInset);
     }
@@ -306,8 +319,12 @@ class _ColaboradoresUsuarioMobileScreenState
           _entry(order: 0, child: _headerCard()),
           SizedBox(height: 14),
           _entry(order: 1, child: _summaryRow()),
+          if (exibirAtalhoDesempenho) ...<Widget>[
+            SizedBox(height: 14),
+            _entry(order: 2, child: _performanceCard()),
+          ],
           SizedBox(height: 14),
-          _entry(order: 2, child: _searchBox()),
+          _entry(order: 3, child: _searchBox()),
           if (_erro != null) ...<Widget>[
             SizedBox(height: 12),
             _inlineError(_erro!),
@@ -349,7 +366,7 @@ class _ColaboradoresUsuarioMobileScreenState
           else
             ..._items.toList().asMap().entries.map(
               (MapEntry<int, ColaboradorUsuarioResumo> entry) => _entry(
-                order: entry.key + 3,
+                order: entry.key + 4,
                 child: _colaboradorCard(entry.value),
               ),
             ),
@@ -830,6 +847,80 @@ class _ColaboradoresUsuarioMobileScreenState
           ),
           filled: true,
           fillColor: _softSurfaceColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _performanceCard() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: const ValueKey<String>('colaboradores-performance-card'),
+        borderRadius: BorderRadius.circular(22),
+        onTap: _openDesempenhoColaborador,
+        child: Ink(
+          padding: EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: _surfaceColor,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: _borderColor),
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: _softAccentColor,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Icon(
+                  Icons.trending_up_rounded,
+                  color: _accentColor,
+                  size: 22,
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      _t(
+                        'gestao.people.performance',
+                        'Desempenho do colaborador',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _titleTextColor,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      _t(
+                        'gestao.people.performanceDesc',
+                        'Metas, vendas, serviços e evolução da equipe',
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _mutedTextColor,
+                        fontSize: 12.2,
+                        height: 1.28,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8),
+              Icon(Icons.chevron_right_rounded, color: _accentColor, size: 22),
+            ],
+          ),
         ),
       ),
     );

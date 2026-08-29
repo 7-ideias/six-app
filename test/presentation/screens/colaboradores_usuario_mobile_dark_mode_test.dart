@@ -11,6 +11,7 @@ import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/domain/models/aparencia_models.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_mobile_screen.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 
 void main() {
@@ -91,6 +92,69 @@ void main() {
       isTrue,
     );
   });
+
+  testWidgets('admin sees performance shortcut below the summary cards', (
+    WidgetTester tester,
+  ) async {
+    await _pumpCollaborators(
+      tester,
+      apiClient: _FakeColaboradorUsuarioApiClient(
+        colaboradores: <ColaboradorUsuarioResumo>[
+          _colaborador(
+            id: 'colab-1',
+            nome: 'Equipe Alfa',
+            nomeDeGuerra: 'Alfa',
+            email: 'alfa@six.test',
+            celular: '+55 11 99999-0001',
+          ),
+        ],
+      ),
+      colaboradorProvider: _AdminAutorizacoesProvider(),
+    );
+
+    expect(
+      find.byKey(const ValueKey<String>('colaboradores-performance-card')),
+      findsOneWidget,
+    );
+    expect(find.text('Desempenho do colaborador'), findsOneWidget);
+    expect(
+      tester
+              .getTopLeft(
+                find.byKey(
+                  const ValueKey<String>('colaboradores-performance-card'),
+                ),
+              )
+              .dy >
+          tester.getTopLeft(find.text('Buscar colaborador...')).dy,
+      isFalse,
+    );
+  });
+
+  testWidgets('collaborator does not see performance shortcut', (
+    WidgetTester tester,
+  ) async {
+    await _pumpCollaborators(
+      tester,
+      apiClient: _FakeColaboradorUsuarioApiClient(
+        colaboradores: <ColaboradorUsuarioResumo>[
+          _colaborador(
+            id: 'colab-1',
+            nome: 'Equipe Alfa',
+            nomeDeGuerra: 'Alfa',
+            email: 'alfa@six.test',
+            celular: '+55 11 99999-0001',
+          ),
+        ],
+      ),
+      colaboradorProvider: _CollaboratorAutorizacoesProvider(),
+    );
+
+    expect(
+      find.byKey(const ValueKey<String>('colaboradores-performance-card')),
+      findsNothing,
+    );
+    expect(find.text('Desempenho do colaborador'), findsNothing);
+  });
 }
 
 const List<Locale> _testSupportedLocales = <Locale>[Locale('pt')];
@@ -106,6 +170,7 @@ Future<void> _pumpCollaborators(
   WidgetTester tester, {
   required ColaboradorUsuarioApiClient apiClient,
   Brightness brightness = Brightness.dark,
+  ColaboradorAutorizacoesProvider? colaboradorProvider,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(390, 900);
@@ -120,13 +185,20 @@ Future<void> _pumpCollaborators(
   );
 
   await tester.pumpWidget(
-    ChangeNotifierProvider<LocaleSettingsProvider>(
-      create:
-          (_) => LocaleSettingsProvider(
-            regionalizacaoService: RegionalizacaoService(
-              apiClient: _FakeRegionalizacaoApiClient(),
-            ),
-          ),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<LocaleSettingsProvider>(
+          create:
+              (_) => LocaleSettingsProvider(
+                regionalizacaoService: RegionalizacaoService(
+                  apiClient: _FakeRegionalizacaoApiClient(),
+                ),
+              ),
+        ),
+        ChangeNotifierProvider<ColaboradorAutorizacoesProvider>.value(
+          value: colaboradorProvider ?? _AdminAutorizacoesProvider(),
+        ),
+      ],
       child: MaterialApp(
         locale: const Locale('pt'),
         supportedLocales: _testSupportedLocales,
@@ -229,4 +301,15 @@ class _FakeRegionalizacaoApiClient implements RegionalizacaoApiClient {
   ) {
     throw UnimplementedError();
   }
+}
+
+class _AdminAutorizacoesProvider extends ColaboradorAutorizacoesProvider {
+  @override
+  bool get ehColaborador => false;
+}
+
+class _CollaboratorAutorizacoesProvider
+    extends ColaboradorAutorizacoesProvider {
+  @override
+  bool get ehColaborador => true;
 }
