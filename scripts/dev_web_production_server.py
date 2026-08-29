@@ -27,6 +27,8 @@ REQUIRED_BUILD_FILES = (
     "onboarding.html",
     "checkout.html",
     "catalogo.html",
+    "collaborator-invite.html",
+    "customer-signup.html",
     "flutter.html",
 )
 
@@ -38,6 +40,7 @@ PUBLIC_HTML_ROUTES = {
     "/onboarding": "onboarding.html",
     "/checkout": "checkout.html",
     "/catalogo": "catalogo.html",
+    "/cliente/auto-cadastro": "customer-signup.html",
 }
 
 FLUTTER_EXACT_ROUTES = {
@@ -46,6 +49,7 @@ FLUTTER_EXACT_ROUTES = {
     "/forgot-password/flutter",
     "/onboarding/flutter",
     "/checkout/flutter",
+    "/cliente/auto-cadastro/flutter",
 }
 
 FLUTTER_PREFIXES = (
@@ -60,7 +64,33 @@ SENSITIVE_PUBLIC_FILES = {
     "onboarding.html",
     "checkout.html",
     "catalogo.html",
+    "collaborator-invite.html",
+    "customer-signup.html",
 }
+
+
+def _path_segments(path: str) -> list[str]:
+    return [segment for segment in path.split("/") if segment]
+
+
+def _is_public_collaborator_invite_path(path: str) -> bool:
+    segments = _path_segments(path)
+    return (
+        len(segments) == 3
+        and segments[0] == "colaborador"
+        and segments[1] == "convites"
+        and segments[2] != "flutter"
+    )
+
+
+def _is_flutter_collaborator_invite_path(path: str) -> bool:
+    segments = _path_segments(path)
+    return (
+        len(segments) == 4
+        and segments[0] == "colaborador"
+        and segments[1] == "convites"
+        and segments[2] == "flutter"
+    )
 
 
 def validate_build(web_root: Path) -> None:
@@ -132,7 +162,20 @@ class DevWebProductionHandler(BaseHTTPRequestHandler):
             )
             return
 
-        if safe_path in FLUTTER_EXACT_ROUTES or _is_flutter_prefix(safe_path):
+        if _is_public_collaborator_invite_path(safe_path):
+            self._log_route(method, safe_path, "collaborator-invite.html")
+            self._send_file(
+                self.web_root / "collaborator-invite.html",
+                send_body,
+                sensitive=True,
+            )
+            return
+
+        if (
+            safe_path in FLUTTER_EXACT_ROUTES
+            or _is_flutter_prefix(safe_path)
+            or _is_flutter_collaborator_invite_path(safe_path)
+        ):
             self._log_route(method, safe_path, "flutter.html")
             self._send_file(self.web_root / "flutter.html", send_body, sensitive=False)
             return
@@ -191,7 +234,12 @@ class DevWebProductionHandler(BaseHTTPRequestHandler):
 
         if sensitive:
             self.send_header("Cache-Control", "no-store, max-age=0")
-            self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
+            self.send_header(
+                "Referrer-Policy",
+                "no-referrer"
+                if file_path.name in {"collaborator-invite.html", "customer-signup.html"}
+                else "strict-origin-when-cross-origin",
+            )
             self.send_header("X-Frame-Options", "DENY")
 
         self.end_headers()

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:sixpos/core/utils/cliente_cadastro_quality.dart';
 import 'package:sixpos/data/models/cliente_usuario_model.dart';
 import 'package:sixpos/data/services/cliente_usuario/cliente_usuario_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
@@ -64,8 +65,44 @@ class _ClienteUsuarioCadastroMobileScreenState
   bool _bloqueadoFiado = false;
   bool _saving = false;
   bool _limitInitialized = false;
+  String _tipoCadastro = ClienteCadastroQuality.tipoSimples;
+  int _etapaAtual = 0;
 
   bool get _editing => widget.cliente != null;
+  bool get _cadastroCompleto =>
+      _tipoCadastro == ClienteCadastroQuality.tipoCompleto;
+
+  List<String> get _etapas => _cadastroCompleto
+      ? <String>[
+          _t('clientes.journey.stepEssential', 'Essenciais'),
+          _t('clientes.journey.stepAddress', 'Endereço'),
+          _t('clientes.journey.stepRelationship', 'Crédito e relacionamento'),
+        ]
+      : <String>[_t('clientes.journey.stepEssential', 'Essenciais')];
+
+  QualidadeCadastroCliente get _qualidade => ClienteCadastroQuality.calcular(
+    tipoCadastro: _tipoCadastro,
+    entrada: EntradaQualidadeCadastroCliente(
+      nomeInformado: _nome.text.trim().isNotEmpty,
+      documentoInformado: _documento.text.trim().isNotEmpty,
+      telefoneInformado:
+          _telefone.text.replaceAll(RegExp(r'\D'), '').length > 2,
+      emailInformado: _email.text.trim().contains('@'),
+      cepInformado: _cep.text.trim().isNotEmpty,
+      enderecoInformado: <String>[
+        _logradouro.text,
+        _numero.text,
+        _bairro.text,
+        _cidade.text,
+        _uf.text,
+      ].every((String value) => value.trim().isNotEmpty),
+      creditoConfigurado:
+          !_permiteFiado ||
+          (_money(_limite.text) > 0 &&
+              (int.tryParse(_prazo.text.trim()) ?? 0) > 0),
+      observacoesInformadas: _observacoes.text.trim().isNotEmpty,
+    ),
+  );
 
   @override
   void initState() {
@@ -73,6 +110,9 @@ class _ClienteUsuarioCadastroMobileScreenState
     final ClienteUsuario? c = widget.cliente;
     _api = widget.apiClient ?? HttpClienteUsuarioApiClient();
     _tipoPessoa = c?.tipoPessoa == 'PJ' ? 'PJ' : 'PF';
+    _tipoCadastro = c?.tipoCadastro == ClienteCadastroQuality.tipoCompleto
+        ? ClienteCadastroQuality.tipoCompleto
+        : ClienteCadastroQuality.tipoSimples;
     _ativo = c?.ativo ?? true;
     _permiteFiado = c?.permiteCompraFiado ?? true;
     _bloqueadoFiado = c?.bloqueadoFiado ?? false;
@@ -92,6 +132,27 @@ class _ClienteUsuarioCadastroMobileScreenState
       text: '${c?.prazoPagamentoDias == 0 ? 30 : c?.prazoPagamentoDias ?? 30}',
     );
     _observacoes = TextEditingController(text: c?.observacoes ?? '');
+    for (final TextEditingController controller in <TextEditingController>[
+      _nome,
+      _documento,
+      _telefone,
+      _email,
+      _cep,
+      _logradouro,
+      _numero,
+      _bairro,
+      _cidade,
+      _uf,
+      _limite,
+      _prazo,
+      _observacoes,
+    ]) {
+      controller.addListener(_refreshJourney);
+    }
+  }
+
+  void _refreshJourney() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -138,6 +199,14 @@ class _ClienteUsuarioCadastroMobileScreenState
   String? _required(String? value) {
     if (value == null || value.trim().isEmpty) {
       return _t('common.requiredField', 'Campo obrigatório');
+    }
+    return null;
+  }
+
+  String? _emailValidator(String? value) {
+    final String normalized = value?.trim() ?? '';
+    if (normalized.isNotEmpty && !normalized.contains('@')) {
+      return _t('clientes.form.invalidEmail', 'Informe um e-mail válido');
     }
     return null;
   }
@@ -215,8 +284,8 @@ class _ClienteUsuarioCadastroMobileScreenState
   }) {
     final TextInputType effectiveKeyboardType =
         maxLines > 1 && keyboardType == TextInputType.text
-            ? TextInputType.multiline
-            : keyboardType;
+        ? TextInputType.multiline
+        : keyboardType;
 
     return TextFormField(
       controller: controller,
@@ -228,8 +297,9 @@ class _ClienteUsuarioCadastroMobileScreenState
       decoration: _dec(label, icon, hintText: hintText),
       validator: validator,
       onChanged: onChanged,
-      textInputAction:
-          maxLines > 1 ? TextInputAction.newline : TextInputAction.next,
+      textInputAction: maxLines > 1
+          ? TextInputAction.newline
+          : TextInputAction.next,
     );
   }
 
@@ -332,8 +402,9 @@ class _ClienteUsuarioCadastroMobileScreenState
         color: value ? _softAccentColor : _softSurfaceColor,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color:
-              value ? SixMobilePalette.highlightedBorder : _activeBorderColor,
+          color: value
+              ? SixMobilePalette.highlightedBorder
+              : _activeBorderColor,
         ),
       ),
       child: Row(
@@ -370,18 +441,58 @@ class _ClienteUsuarioCadastroMobileScreenState
             value: value,
             activeThumbColor: _accentColor,
             activeTrackColor: SixMobilePalette.highlightedBorder,
-            onChanged:
-                _saving
-                    ? null
-                    : (bool newValue) => setState(() => onChanged(newValue)),
+            onChanged: _saving
+                ? null
+                : (bool newValue) => setState(() => onChanged(newValue)),
           ),
         ],
       ),
     );
   }
 
+  bool _validateEssentials() {
+    if (_nome.text.trim().isNotEmpty &&
+        _documento.text.trim().isNotEmpty &&
+        _emailValidator(_email.text) == null) {
+      return true;
+    }
+    setState(() => _etapaAtual = 0);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _formKey.currentState?.validate();
+    });
+    return false;
+  }
+
+  void _selectJourney(String tipoCadastro) {
+    if (_saving || tipoCadastro == _tipoCadastro) return;
+    setState(() {
+      _tipoCadastro = tipoCadastro;
+      _etapaAtual = 0;
+    });
+  }
+
+  void _advance() {
+    if (_etapaAtual == 0 && !(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    if (_etapaAtual < _etapas.length - 1) {
+      setState(() => _etapaAtual += 1);
+      return;
+    }
+    _save();
+  }
+
+  void _goBackOrCancel() {
+    if (_etapaAtual > 0) {
+      setState(() => _etapaAtual -= 1);
+      return;
+    }
+    Navigator.of(context).pop(false);
+  }
+
   Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (!_validateEssentials()) return;
+    if (!(_formKey.currentState?.validate() ?? true)) return;
     setState(() => _saving = true);
     try {
       final ClienteUsuarioRequest request = ClienteUsuarioRequest(
@@ -402,14 +513,16 @@ class _ClienteUsuarioCadastroMobileScreenState
         foto: widget.cliente?.foto ?? '',
         permiteCompraFiado: _permiteFiado,
         limiteFiado: _permiteFiado ? _money(_limite.text) : 0,
-        prazoPagamentoDias:
-            _permiteFiado ? int.tryParse(_prazo.text.trim()) ?? 0 : 0,
+        prazoPagamentoDias: _permiteFiado
+            ? int.tryParse(_prazo.text.trim()) ?? 0
+            : 0,
         bloqueadoFiado: _permiteFiado && _bloqueadoFiado,
+        tipoCadastro: _tipoCadastro,
+        percentualQualidadeCadastro: _qualidade.percentual,
       );
-      final ClienteUsuario saved =
-          _editing
-              ? await _api.atualizarClienteUsuario(widget.cliente!.id, request)
-              : await _api.cadastrarClienteUsuario(request);
+      final ClienteUsuario saved = _editing
+          ? await _api.atualizarClienteUsuario(widget.cliente!.id, request)
+          : await _api.cadastrarClienteUsuario(request);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -533,6 +646,327 @@ class _ClienteUsuarioCadastroMobileScreenState
     );
   }
 
+  Widget _buildJourneySelector() {
+    return _section(
+      title: _t('clientes.journey.title', 'Escolha a jornada'),
+      subtitle: _t(
+        'clientes.journey.subtitle',
+        'Comece rápido ou organize um cadastro completo para a operação.',
+      ),
+      icon: Icons.route_outlined,
+      child: Column(
+        children: <Widget>[
+          _journeyOption(
+            type: ClienteCadastroQuality.tipoSimples,
+            title: _t('clientes.journey.simpleTitle', 'Cadastro simples'),
+            subtitle: _t(
+              'clientes.journey.simpleSubtitle',
+              'Nome, documento, telefone e e-mail. Ideal para cadastrar agora.',
+            ),
+            icon: Icons.bolt_rounded,
+          ),
+          SizedBox(height: 10),
+          _journeyOption(
+            type: ClienteCadastroQuality.tipoCompleto,
+            title: _t('clientes.journey.completeTitle', 'Cadastro completo'),
+            subtitle: _t(
+              'clientes.journey.completeSubtitle',
+              'Inclui endereço, crédito e informações de relacionamento.',
+            ),
+            icon: Icons.fact_check_outlined,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _journeyOption({
+    required String type,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
+    final bool selected = _tipoCadastro == type;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: title,
+      child: Material(
+        color: selected ? _softAccentColor : _softSurfaceColor,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: () => _selectJourney(type),
+          borderRadius: BorderRadius.circular(18),
+          child: AnimatedContainer(
+            duration: Duration(milliseconds: 180),
+            padding: EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: selected
+                    ? SixMobilePalette.highlightedBorder
+                    : _activeBorderColor,
+                width: selected ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: _surfaceColor,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: _accentColor, size: 21),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: _titleTextColor,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: _mutedTextColor,
+                          fontSize: 12,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 8),
+                Icon(
+                  selected
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  color: selected ? _accentColor : _mutedTextColor,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQualityCard() {
+    final QualidadeCadastroCliente quality = _qualidade;
+    final List<MelhoriaQualidadeCadastroCliente> improvements = quality
+        .melhorias
+        .take(2)
+        .toList(growable: false);
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _primaryColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: SixMobilePalette.heroShadow,
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      _t('clientes.quality.title', 'Qualidade do cadastro'),
+                      style: TextStyle(
+                        color: SixMobilePalette.onPrimary,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      _qualityLevel(quality.nivel),
+                      style: TextStyle(
+                        color: SixMobilePalette.onPrimary.withValues(
+                          alpha: 0.72,
+                        ),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '${quality.percentual}%',
+                style: TextStyle(
+                  color: SixMobilePalette.onPrimary,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(end: quality.percentual / 100),
+              duration: Duration(milliseconds: 260),
+              builder: (BuildContext context, double value, Widget? child) {
+                return LinearProgressIndicator(
+                  minHeight: 8,
+                  value: value,
+                  backgroundColor: Colors.white.withValues(alpha: 0.15),
+                  valueColor: AlwaysStoppedAnimation<Color>(_accentColor),
+                );
+              },
+            ),
+          ),
+          if (improvements.isNotEmpty) ...<Widget>[
+            SizedBox(height: 12),
+            Text(
+              improvements
+                  .map(
+                    (MelhoriaQualidadeCadastroCliente item) =>
+                        '+${item.pontos} ${_improvementLabel(item.criterio)}',
+                  )
+                  .join('  •  '),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: SixMobilePalette.onPrimary.withValues(alpha: 0.78),
+                fontSize: 12,
+                height: 1.3,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepProgress() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          '${_t('clientes.journey.step', 'Etapa')} ${_etapaAtual + 1} '
+          '${_t('clientes.journey.of', 'de')} ${_etapas.length} · ${_etapas[_etapaAtual]}',
+          style: TextStyle(
+            color: _titleTextColor,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        SizedBox(height: 8),
+        Row(
+          children: List<Widget>.generate(_etapas.length, (int index) {
+            return Expanded(
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: 180),
+                margin: EdgeInsets.only(
+                  right: index == _etapas.length - 1 ? 0 : 6,
+                ),
+                height: 5,
+                decoration: BoxDecoration(
+                  color: index <= _etapaAtual ? _accentColor : _borderColor,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  Widget _currentStepContent(String currencySymbol) {
+    if (_etapaAtual == 0) {
+      return Column(
+        children: <Widget>[
+          _buildMainDataSection(),
+          SizedBox(height: 16),
+          _buildContactSection(),
+        ],
+      );
+    }
+    if (_etapaAtual == 1) return _buildAddressSection();
+    return Column(
+      children: <Widget>[
+        _buildCreditSection(currencySymbol),
+        SizedBox(height: 16),
+        _buildNotesSection(),
+      ],
+    );
+  }
+
+  String _qualityLevel(NivelQualidadeCadastroCliente level) => switch (level) {
+    NivelQualidadeCadastroCliente.inicial => _t(
+      'clientes.quality.levelInitial',
+      'Começando agora',
+    ),
+    NivelQualidadeCadastroCliente.essencial => _t(
+      'clientes.quality.levelEssential',
+      'Base essencial pronta',
+    ),
+    NivelQualidadeCadastroCliente.bemDetalhado => _t(
+      'clientes.quality.levelDetailed',
+      'Cadastro bem detalhado',
+    ),
+    NivelQualidadeCadastroCliente.excelente => _t(
+      'clientes.quality.levelExcellent',
+      'Cadastro excelente',
+    ),
+  };
+
+  String _improvementLabel(CriterioQualidadeCadastroCliente criterio) =>
+      switch (criterio) {
+        CriterioQualidadeCadastroCliente.nome => _t(
+          'clientes.quality.actionName',
+          'informar nome',
+        ),
+        CriterioQualidadeCadastroCliente.documento => _t(
+          'clientes.quality.actionDocument',
+          'informar documento',
+        ),
+        CriterioQualidadeCadastroCliente.telefone => _t(
+          'clientes.quality.actionPhone',
+          'informar telefone',
+        ),
+        CriterioQualidadeCadastroCliente.email => _t(
+          'clientes.quality.actionEmail',
+          'informar e-mail',
+        ),
+        CriterioQualidadeCadastroCliente.cep => _t(
+          'clientes.quality.actionZip',
+          'informar CEP',
+        ),
+        CriterioQualidadeCadastroCliente.endereco => _t(
+          'clientes.quality.actionAddress',
+          'completar endereço',
+        ),
+        CriterioQualidadeCadastroCliente.credito => _t(
+          'clientes.quality.actionCredit',
+          'configurar crédito',
+        ),
+        CriterioQualidadeCadastroCliente.observacoes => _t(
+          'clientes.quality.actionNotes',
+          'adicionar contexto',
+        ),
+      };
+
   Widget _buildHeaderCard() {
     return Container(
       width: double.infinity,
@@ -610,15 +1044,16 @@ class _ClienteUsuarioCadastroMobileScreenState
         onTap: _saving ? null : _openTipoPessoaSheet,
         borderRadius: BorderRadius.circular(16),
         child: InputDecorator(
-          decoration: _dec(
-            _t('clientes.form.personType', 'Tipo de pessoa'),
-            Icons.apartment_outlined,
-          ).copyWith(
-            suffixIcon: Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: _secondaryColor,
-            ),
-          ),
+          decoration:
+              _dec(
+                _t('clientes.form.personType', 'Tipo de pessoa'),
+                Icons.apartment_outlined,
+              ).copyWith(
+                suffixIcon: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: _secondaryColor,
+                ),
+              ),
           child: Text(
             _tipoPessoaLabel(_tipoPessoa),
             maxLines: 1,
@@ -762,6 +1197,7 @@ class _ClienteUsuarioCadastroMobileScreenState
             _t('clientes.form.email', 'E-mail'),
             Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
+            validator: _emailValidator,
           ),
         ],
       ),
@@ -907,6 +1343,7 @@ class _ClienteUsuarioCadastroMobileScreenState
   }
 
   Widget _buildBottomActionBar() {
+    final bool last = _etapaAtual == _etapas.length - 1;
     return SafeArea(
       top: false,
       child: Container(
@@ -926,33 +1363,41 @@ class _ClienteUsuarioCadastroMobileScreenState
           children: <Widget>[
             Expanded(
               child: OutlinedButton(
-                onPressed:
-                    _saving ? null : () => Navigator.of(context).pop(false),
-                child: Text(_t('common.cancel', 'Cancelar')),
+                onPressed: _saving ? null : _goBackOrCancel,
+                child: Text(
+                  _etapaAtual == 0
+                      ? _t('common.cancel', 'Cancelar')
+                      : _t('common.back', 'Voltar'),
+                ),
               ),
             ),
             SizedBox(width: 12),
             Expanded(
               flex: 2,
               child: FilledButton.icon(
-                onPressed: _saving ? null : _save,
-                icon:
-                    _saving
-                        ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: SixMobilePalette.onPrimary,
-                          ),
-                        )
-                        : Icon(Icons.save_outlined),
+                onPressed: _saving ? null : _advance,
+                icon: _saving
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: SixMobilePalette.onPrimary,
+                        ),
+                      )
+                    : Icon(
+                        last
+                            ? Icons.save_outlined
+                            : Icons.arrow_forward_rounded,
+                      ),
                 label: AnimatedSwitcher(
                   duration: Duration(milliseconds: 180),
                   child: Text(
                     _saving
                         ? _t('clientes.form.saving', 'Salvando...')
-                        : _t('clientes.form.saveCustomer', 'Salvar cliente'),
+                        : last
+                        ? _t('clientes.form.saveCustomer', 'Salvar cliente')
+                        : _t('common.continue', 'Continuar'),
                     key: ValueKey<bool>(_saving),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -978,10 +1423,9 @@ class _ClienteUsuarioCadastroMobileScreenState
     );
 
     return SixMobilePageShell(
-      title:
-          _editing
-              ? _t('clientes.form.editAppBarTitle', 'Editar cliente')
-              : _t('clientes.form.createAppBarTitle', 'Cadastro de clientes'),
+      title: _editing
+          ? _t('clientes.form.editAppBarTitle', 'Editar cliente')
+          : _t('clientes.form.createAppBarTitle', 'Cadastro de clientes'),
       backgroundColor: _backgroundColor,
       primaryColor: _primaryColor,
       secondaryColor: _secondaryColor,
@@ -990,39 +1434,45 @@ class _ClienteUsuarioCadastroMobileScreenState
       initialContentSpacing: 6,
       scrollEffectOffset: 28,
       scrolledSurfaceOpacity: 0.70,
-      bodyBuilder: (
-        BuildContext context,
-        ScrollController scrollController,
-        double topInset,
-      ) {
-        return SafeArea(
-          top: false,
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              controller: scrollController,
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              physics: AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 112),
-              children: <Widget>[
-                _staggered(0, _buildHeaderCard()),
-                SizedBox(height: 16),
-                _staggered(1, _buildMainDataSection()),
-                SizedBox(height: 16),
-                _staggered(2, _buildContactSection()),
-                SizedBox(height: 16),
-                _staggered(3, _buildAddressSection()),
-                SizedBox(height: 16),
-                _staggered(4, _buildCreditSection(currencySymbol)),
-                SizedBox(height: 16),
-                _staggered(5, _buildAutoCadastroCard()),
-                SizedBox(height: 16),
-                _staggered(6, _buildNotesSection()),
-              ],
-            ),
-          ),
-        );
-      },
+      bodyBuilder:
+          (
+            BuildContext context,
+            ScrollController scrollController,
+            double topInset,
+          ) {
+            return SafeArea(
+              top: false,
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  controller: scrollController,
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  physics: AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 112),
+                  children: <Widget>[
+                    _staggered(0, _buildHeaderCard()),
+                    SizedBox(height: 16),
+                    _staggered(1, _buildJourneySelector()),
+                    SizedBox(height: 16),
+                    _staggered(2, _buildQualityCard()),
+                    SizedBox(height: 16),
+                    _staggered(3, _buildAutoCadastroCard()),
+                    SizedBox(height: 16),
+                    _staggered(4, _buildStepProgress()),
+                    SizedBox(height: 16),
+                    AnimatedSwitcher(
+                      duration: Duration(milliseconds: 220),
+                      child: KeyedSubtree(
+                        key: ValueKey<String>('$_tipoCadastro-$_etapaAtual'),
+                        child: _currentStepContent(currencySymbol),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
       bottomNavigationBar: _buildBottomActionBar(),
     );
   }
@@ -1155,10 +1605,9 @@ class _PessoaTipoOption extends StatelessWidget {
       selected: selected,
       label: title,
       child: Material(
-        color:
-            selected
-                ? SixMobilePalette.softAccentSurface
-                : SixMobilePalette.softNeutralSurface,
+        color: selected
+            ? SixMobilePalette.softAccentSurface
+            : SixMobilePalette.softNeutralSurface,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           onTap: () => Navigator.of(context).pop(value),
@@ -1170,10 +1619,9 @@ class _PessoaTipoOption extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color:
-                    selected
-                        ? SixMobilePalette.highlightedBorder
-                        : SixMobilePalette.activeBorder,
+                color: selected
+                    ? SixMobilePalette.highlightedBorder
+                    : SixMobilePalette.activeBorder,
               ),
             ),
             child: Row(
@@ -1221,10 +1669,9 @@ class _PessoaTipoOption extends StatelessWidget {
                   selected
                       ? Icons.check_circle_rounded
                       : Icons.radio_button_unchecked_rounded,
-                  color:
-                      selected
-                          ? SixMobilePalette.accent
-                          : SixMobilePalette.mutedText,
+                  color: selected
+                      ? SixMobilePalette.accent
+                      : SixMobilePalette.mutedText,
                 ),
               ],
             ),

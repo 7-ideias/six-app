@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="sixapp-entrypoint" content="public-collaborator-invite">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Confirme seu convite de colaborador para acessar uma empresa no SixoApp.">
+  <meta name="theme-color" content="#00163A">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SixoApp - Convite de colaborador">
+  <meta property="og:description" content="Confirme o convite recebido para fazer parte da equipe no SixoApp.">
+  <meta property="og:image" content="/site-assets/images/sixoapp-mark.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="SixoApp - Convite de colaborador">
+  <meta name="twitter:description" content="Confirme o convite recebido para fazer parte da equipe no SixoApp.">
+  <meta name="twitter:image" content="/site-assets/images/sixoapp-mark.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/site-assets/images/sixoapp-mark.png">
+  <link rel="stylesheet" href="/site-assets/css/public-base.css">
+  <link rel="stylesheet" href="/site-assets/css/home.css">
+  <link rel="stylesheet" href="/site-assets/css/register.css">
+  <link rel="stylesheet" href="/site-assets/css/collaborator-invite.css">
+  <link rel="stylesheet" href="/site-assets/css/sixoapp-public.css">
+  <title>SixoApp - Convite de colaborador</title>
+</head>
+<body class="auth-public-page collaborator-invite-page">
+  <a class="skip-link" href="#invite-content" data-i18n="access.skip">Ir para o convite</a>
+
+  <header class="site-header auth-site-header" data-header>
+    <nav class="nav-shell auth-nav-shell" aria-label="Navegação do convite" data-i18n-aria="nav.aria">
+      <a class="brand" href="/" aria-label="SixoApp" data-i18n-aria="brand.aria">
+        <span class="brand-mark" aria-hidden="true">
+          <img src="/site-assets/images/sixoapp-mark.png" width="32" height="32" alt="">
+        </span>
+        <span>SixoApp</span>
+      </a>
+
+      <div class="auth-nav-actions">
+        <a class="button button-quiet home-link" href="/" data-i18n="nav.home">Página inicial</a>
+        <div class="language-switcher" role="group" aria-label="Selecionar idioma" data-i18n-aria="language.aria">
+          <button type="button" data-lang-option="pt" aria-pressed="true">PT</button>
+          <button type="button" data-lang-option="en" aria-pressed="false">EN</button>
+          <button type="button" data-lang-option="es" aria-pressed="false">ES</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main id="invite-content">
+    <section class="auth-hero collaborator-invite-hero">
+      <div class="layout auth-hero-grid collaborator-invite-layout">
+        <section class="auth-context collaborator-invite-context" aria-labelledby="invite-context-title">
+          <p class="editorial-pill auth-eyebrow" data-i18n="context.eyebrow">Convite para a equipe</p>
+          <h1 id="invite-context-title" data-i18n="context.title">Seu próximo acesso começa aqui.</h1>
+          <p class="auth-context-lead" data-i18n="context.body">Confirme com segurança o e-mail que recebeu o convite para entrar na equipe de um comércio no SixoApp.</p>
+          <div class="invite-trust-note">
+            <span class="invite-trust-mark" aria-hidden="true"></span>
+            <p data-i18n="context.security">Esta página não exige login e nunca solicita sua senha.</p>
+          </div>
+        </section>
+
+        <section class="auth-card invite-card invite-loading-card" data-invite-loading aria-live="polite">
+          <div class="invite-loading-mark" aria-hidden="true"></div>
+          <div class="invite-loading-lines" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <p class="sr-only" data-i18n="loading.message">Validando convite...</p>
+        </section>
+
+        <section class="auth-card invite-card invite-error-card" data-invite-error hidden aria-labelledby="invite-error-title">
+          <div class="invite-state-mark invite-state-mark-error" aria-hidden="true">!</div>
+          <p class="editorial-pill invite-card-eyebrow" data-i18n="error.eyebrow">Convite indisponível</p>
+          <h2 id="invite-error-title" data-i18n="error.title">Não foi possível carregar o convite</h2>
+          <p data-invite-error-message role="alert" aria-live="assertive"></p>
+          <button class="button button-primary invite-main-action" type="button" data-invite-retry>
+            <span data-i18n="error.retry">Tentar novamente</span>
+          </button>
+          <a class="invite-secondary-link" href="/" data-i18n="error.home">Voltar para a página inicial</a>
+        </section>
+
+        <section class="auth-card invite-card" data-invite-card hidden aria-labelledby="invite-title">
+          <div class="invite-card-header">
+            <p class="editorial-pill invite-card-eyebrow" data-i18n="invite.eyebrow">Convite de colaborador</p>
+            <h2 id="invite-title" data-invite-title data-i18n="invite.title">Você foi convidado para uma equipe</h2>
+            <p data-i18n="invite.subtitle">Revise os dados do convite e confirme o e-mail que recebeu este link.</p>
+          </div>
+
+          <dl class="invite-summary" aria-label="Resumo do convite" data-i18n-aria="invite.summaryAria">
+            <div>
+              <dt data-i18n="invite.company">Comércio</dt>
+              <dd data-invite-company>—</dd>
+            </div>
+            <div>
+              <dt data-i18n="invite.status">Status</dt>
+              <dd><span class="invite-status" data-invite-status>—</span></dd>
+            </div>
+            <div>
+              <dt data-i18n="invite.expires">Validade</dt>
+              <dd data-invite-expires>—</dd>
+            </div>
+          </dl>
+
+          <form class="invite-form" data-invite-form novalidate>
+            <div class="field">
+              <label for="invite-email" data-i18n="form.email.label">E-mail que recebeu o convite</label>
+              <div class="input-shell">
+                <input
+                  id="invite-email"
+                  data-invite-email
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  inputmode="email"
+                  spellcheck="false"
+                  required
+                  placeholder="exemplo@email.com"
+                  data-i18n-placeholder="form.email.placeholder">
+              </div>
+              <p class="invite-field-help" data-i18n="form.email.help">Use exatamente o endereço informado pelo administrador.</p>
+            </div>
+
+            <p class="form-alert" data-invite-feedback role="alert" aria-live="polite" tabindex="-1" hidden></p>
+
+            <button class="button button-primary submit-button invite-main-action" type="submit" data-invite-submit>
+              <span class="submit-spinner" aria-hidden="true"></span>
+              <span data-invite-submit-label data-i18n="form.submit">Confirmar e-mail</span>
+            </button>
+          </form>
+
+          <section class="invite-success" data-invite-success hidden aria-labelledby="invite-success-title">
+            <div class="invite-state-mark invite-state-mark-success" aria-hidden="true">✓</div>
+            <p class="editorial-pill invite-card-eyebrow" data-i18n="success.eyebrow">E-mail confirmado</p>
+            <h3 id="invite-success-title" data-i18n="success.title" tabindex="-1">Seu acesso foi preparado</h3>
+            <p data-i18n="success.body">O convite foi confirmado. Agora você pode seguir para o login do SixoApp.</p>
+            <a class="button button-primary invite-main-action" href="/login" data-i18n="success.login">Ir para o login</a>
+          </section>
+
+          <div class="invite-card-footer">
+            <span data-i18n="invite.noPassword">O SixoApp não solicitará sua senha nesta confirmação.</span>
+          </div>
+
+          <noscript>
+            <p class="register-noscript" data-i18n="noscript.message">Ative o JavaScript para validar e confirmar este convite.</p>
+          </noscript>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="/site-assets/js/public-config.js"></script>
+  <script type="module" src="/site-assets/js/collaborator-invite.js"></script>
+</body>
+</html>

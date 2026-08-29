@@ -124,7 +124,7 @@ class _ClienteAutoCadastroLinkSectionState
   final TextEditingController _linkController = TextEditingController();
   final TextEditingController _mensagemController = TextEditingController(
     text:
-        'Olá! Use este link para concluir seu auto-cadastro e liberar compras no crediário.',
+        'Olá! Use este link seguro para concluir seu cadastro de cliente.',
   );
 
   bool _habilitado = true;

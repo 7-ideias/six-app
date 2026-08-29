@@ -92,9 +92,10 @@ requireRewrite('/admin/:path*', '/flutter.html');
 requireRewrite('/atendimento/assinatura', '/flutter.html');
 requireRewrite('/ordem-servico', '/flutter.html');
 requireRewrite('/ordem-servico/:path*', '/flutter.html');
-requireRewrite('/cliente/auto-cadastro', '/flutter.html');
-requireRewrite('/cliente/auto-cadastro/:path*', '/flutter.html');
-requireRewrite('/colaborador/convites/:path*', '/flutter.html');
+requireRewrite('/cliente/auto-cadastro', '/customer-signup.html');
+requireRewrite('/cliente/auto-cadastro/flutter', '/flutter.html');
+requireRewrite('/colaborador/convites/flutter/:codigo', '/flutter.html');
+requireRewrite('/colaborador/convites/:codigo', '/collaborator-invite.html');
 
 if (Array.isArray(config.rewrites) && config.rewrites.some((entry) => entry?.source === '/login/:path*')) {
   fail('Rewrite proibido encontrado: /login/:path*');
@@ -124,12 +125,25 @@ const sensitiveSources = [
   '/checkout.html',
   '/catalogo',
   '/catalogo.html',
+  '/colaborador/convites/:codigo',
+  '/collaborator-invite.html',
+  '/cliente/auto-cadastro',
+  '/customer-signup.html',
 ];
 
 for (const source of sensitiveSources) {
   requireHeader(source, 'Cache-Control', 'no-store, max-age=0');
   requireHeader(source, 'X-Content-Type-Options', 'nosniff');
-  requireHeader(source, 'Referrer-Policy', 'strict-origin-when-cross-origin');
+  requireHeader(
+    source,
+    'Referrer-Policy',
+    source === '/colaborador/convites/:codigo' ||
+    source === '/collaborator-invite.html' ||
+    source === '/cliente/auto-cadastro' ||
+    source === '/customer-signup.html'
+      ? 'no-referrer'
+      : 'strict-origin-when-cross-origin',
+  );
   requireHeader(source, 'X-Frame-Options', 'DENY');
 }
 

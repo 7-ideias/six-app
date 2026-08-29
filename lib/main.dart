@@ -263,25 +263,51 @@ class MyApp extends StatelessWidget {
         routeUri.pathSegments.isNotEmpty &&
         routeUri.pathSegments.first == 'ordem-servico';
     final bool isPublicClienteAutoCadastroRoute =
-        routeUri.pathSegments.length >= 2 &&
+        routeUri.pathSegments.length == 2 &&
         routeUri.pathSegments[0] == 'cliente' &&
         routeUri.pathSegments[1] == 'auto-cadastro';
+    final bool isFlutterClienteAutoCadastroRoute =
+        routeUri.pathSegments.length == 3 &&
+        routeUri.pathSegments[0] == 'cliente' &&
+        routeUri.pathSegments[1] == 'auto-cadastro' &&
+        routeUri.pathSegments[2] == 'flutter';
     final bool isPublicColaboradorConviteRoute =
-        routeUri.pathSegments.length >= 3 &&
+        routeUri.pathSegments.length == 3 &&
         routeUri.pathSegments[0] == 'colaborador' &&
-        routeUri.pathSegments[1] == 'convites';
+        routeUri.pathSegments[1] == 'convites' &&
+        routeUri.pathSegments[2] != 'flutter';
+    final bool isFlutterColaboradorConviteRoute =
+        routeUri.pathSegments.length == 4 &&
+        routeUri.pathSegments[0] == 'colaborador' &&
+        routeUri.pathSegments[1] == 'convites' &&
+        routeUri.pathSegments[2] == 'flutter';
 
     if (isPublicColaboradorConviteRoute) {
+      return _browserLocationRoute(
+        settings: settings,
+        location: _formatWebLocation(routeUri),
+        fallbackRoute:
+            '/colaborador/convites/flutter/${routeUri.pathSegments[2]}',
+      );
+    }
+    if (isFlutterColaboradorConviteRoute) {
       return MaterialPageRoute<void>(
         settings: settings,
         builder:
             (_) => ColaboradorConvitePublicoWebPage(
-              codigo: routeUri.pathSegments[2],
+              codigo: routeUri.pathSegments[3],
               initialUri: routeUri,
             ),
       );
     }
     if (isPublicClienteAutoCadastroRoute) {
+      return _browserLocationRoute(
+        settings: settings,
+        location: _formatWebLocation(routeUri),
+        fallbackRoute: '/cliente/auto-cadastro/flutter',
+      );
+    }
+    if (isFlutterClienteAutoCadastroRoute) {
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => ClienteAutoCadastroPublicoPage(initialUri: routeUri),

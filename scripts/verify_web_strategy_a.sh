@@ -83,6 +83,8 @@ require_file build/web/forgot-password.html
 require_file build/web/onboarding.html
 require_file build/web/checkout.html
 require_file build/web/catalogo.html
+require_file build/web/collaborator-invite.html
+require_file build/web/customer-signup.html
 require_file build/web/flutter.html
 require_file build/web/flutter_bootstrap.js
 require_file build/web/main.dart.js
@@ -93,6 +95,8 @@ require_file web/public_forgot_password.html
 require_file web/public_onboarding.html
 require_file web/public_checkout.html
 require_file web/public_catalog.html
+require_file web/public_collaborator_invite.html
+require_file web/public_customer_signup.html
 require_file web/catalogo.html
 require_file web/site-assets/css/public-base.css
 require_file web/site-assets/css/home.css
@@ -103,6 +107,8 @@ require_file web/site-assets/css/forgot-password.css
 require_file web/site-assets/css/onboarding.css
 require_file web/site-assets/css/checkout.css
 require_file web/site-assets/css/catalog.css
+require_file web/site-assets/css/collaborator-invite.css
+require_file web/site-assets/css/customer-signup.css
 require_file web/site-assets/js/public-locale.mjs
 require_file web/site-assets/js/login-core.mjs
 require_file web/site-assets/js/login.js
@@ -116,6 +122,10 @@ require_file web/site-assets/js/checkout-core.mjs
 require_file web/site-assets/js/checkout.js
 require_file web/site-assets/js/catalog-core.mjs
 require_file web/site-assets/js/catalog.js
+require_file web/site-assets/js/collaborator-invite-core.mjs
+require_file web/site-assets/js/collaborator-invite.js
+require_file web/site-assets/js/customer-signup-core.mjs
+require_file web/site-assets/js/customer-signup.js
 require_file web/site-assets/js/home.js
 require_file web/site-assets/images/sixoapp-mark.png
 require_file web/site-assets/images/sixoapp-symbol.png
@@ -129,6 +139,8 @@ require_file build/web/site-assets/css/forgot-password.css
 require_file build/web/site-assets/css/onboarding.css
 require_file build/web/site-assets/css/checkout.css
 require_file build/web/site-assets/css/catalog.css
+require_file build/web/site-assets/css/collaborator-invite.css
+require_file build/web/site-assets/css/customer-signup.css
 require_file build/web/site-assets/js/public-locale.mjs
 require_file build/web/site-assets/js/login-core.mjs
 require_file build/web/site-assets/js/login.js
@@ -142,6 +154,10 @@ require_file build/web/site-assets/js/checkout-core.mjs
 require_file build/web/site-assets/js/checkout.js
 require_file build/web/site-assets/js/catalog-core.mjs
 require_file build/web/site-assets/js/catalog.js
+require_file build/web/site-assets/js/collaborator-invite-core.mjs
+require_file build/web/site-assets/js/collaborator-invite.js
+require_file build/web/site-assets/js/customer-signup-core.mjs
+require_file build/web/site-assets/js/customer-signup.js
 require_file build/web/site-assets/js/home.js
 require_file build/web/site-assets/js/public-config.js
 require_file build/web/site-assets/images/sixoapp-mark.png
@@ -233,6 +249,68 @@ require_contains build/web/register.html '/register/flutter'
 require_contains build/web/register.html '<noscript>'
 require_no_public_forbidden_terms build/web/register.html
 validate_public_site_asset_references build/web/register.html
+
+section "COLLABORATOR INVITATION"
+
+require_contains build/web/collaborator-invite.html 'name="sixapp-entrypoint" content="public-collaborator-invite"'
+require_contains build/web/collaborator-invite.html 'name="robots" content="noindex, nofollow"'
+require_contains build/web/collaborator-invite.html 'name="referrer" content="no-referrer"'
+require_not_contains build/web/collaborator-invite.html 'name="sixapp-entrypoint" content="flutter-app"'
+require_not_contains build/web/collaborator-invite.html 'flutter_bootstrap.js'
+require_not_contains build/web/collaborator-invite.html 'main.dart.js'
+require_not_contains build/web/collaborator-invite.html 'flutter.js'
+require_not_contains build/web/collaborator-invite.html 'canvaskit'
+require_not_contains build/web/collaborator-invite.html 'CanvasKit'
+require_not_contains build/web/collaborator-invite.html 'accounts.google.com'
+require_not_contains build/web/collaborator-invite.html 'google-signin'
+require_not_contains build/web/collaborator-invite.html 'fonts.googleapis'
+require_not_contains build/web/collaborator-invite.html '<link rel="manifest"'
+require_not_contains build/web/collaborator-invite.html 'manifest.json'
+require_not_contains build/web/collaborator-invite.html '/assets/'
+require_not_contains build/web/collaborator-invite.html 'href="site-assets'
+require_not_contains build/web/collaborator-invite.html 'src="site-assets'
+require_not_contains build/web/collaborator-invite.html 'https://'
+require_not_contains build/web/collaborator-invite.html 'http://'
+require_contains build/web/collaborator-invite.html '/site-assets/css/public-base.css'
+require_contains build/web/collaborator-invite.html '/site-assets/css/collaborator-invite.css'
+require_contains build/web/collaborator-invite.html '/site-assets/js/public-config.js'
+require_contains build/web/collaborator-invite.html '/site-assets/js/collaborator-invite.js'
+require_contains build/web/collaborator-invite.html '/site-assets/images/sixoapp-mark.png'
+require_contains build/web/collaborator-invite.html '/site-assets/css/sixoapp-public.css'
+require_contains build/web/collaborator-invite.html '<noscript>'
+require_no_public_forbidden_terms build/web/collaborator-invite.html
+validate_public_site_asset_references build/web/collaborator-invite.html
+
+section "CUSTOMER SIGNUP"
+
+require_contains build/web/customer-signup.html 'name="sixapp-entrypoint" content="public-customer-signup"'
+require_contains build/web/customer-signup.html 'name="robots" content="noindex, nofollow"'
+require_contains build/web/customer-signup.html 'name="referrer" content="no-referrer"'
+require_not_contains build/web/customer-signup.html 'name="sixapp-entrypoint" content="flutter-app"'
+require_not_contains build/web/customer-signup.html 'flutter_bootstrap.js'
+require_not_contains build/web/customer-signup.html 'main.dart.js'
+require_not_contains build/web/customer-signup.html 'flutter.js'
+require_not_contains build/web/customer-signup.html 'canvaskit'
+require_not_contains build/web/customer-signup.html 'CanvasKit'
+require_not_contains build/web/customer-signup.html 'accounts.google.com'
+require_not_contains build/web/customer-signup.html 'google-signin'
+require_not_contains build/web/customer-signup.html 'fonts.googleapis'
+require_not_contains build/web/customer-signup.html '<link rel="manifest"'
+require_not_contains build/web/customer-signup.html 'manifest.json'
+require_not_contains build/web/customer-signup.html '/assets/'
+require_not_contains build/web/customer-signup.html 'href="site-assets'
+require_not_contains build/web/customer-signup.html 'src="site-assets'
+require_not_contains build/web/customer-signup.html 'https://'
+require_not_contains build/web/customer-signup.html 'http://'
+require_contains build/web/customer-signup.html '/site-assets/css/public-base.css'
+require_contains build/web/customer-signup.html '/site-assets/css/customer-signup.css'
+require_contains build/web/customer-signup.html '/site-assets/js/public-config.js'
+require_contains build/web/customer-signup.html '/site-assets/js/customer-signup.js'
+require_contains build/web/customer-signup.html '/site-assets/images/sixoapp-mark.png'
+require_contains build/web/customer-signup.html '/site-assets/css/sixoapp-public.css'
+require_contains build/web/customer-signup.html '<noscript>'
+require_no_public_forbidden_terms build/web/customer-signup.html
+validate_public_site_asset_references build/web/customer-signup.html
 
 section "FORGOT PASSWORD"
 
@@ -410,6 +488,12 @@ require_contains web/public_checkout.html 'name="sixapp-entrypoint" content="pub
 require_contains web/public_checkout.html 'name="robots" content="noindex, nofollow"'
 require_contains web/public_catalog.html 'name="sixapp-entrypoint" content="public-catalog"'
 require_contains web/public_catalog.html 'name="robots" content="noindex, nofollow"'
+require_contains web/public_collaborator_invite.html 'name="sixapp-entrypoint" content="public-collaborator-invite"'
+require_contains web/public_collaborator_invite.html 'name="robots" content="noindex, nofollow"'
+require_contains web/public_collaborator_invite.html 'name="referrer" content="no-referrer"'
+require_contains web/public_customer_signup.html 'name="sixapp-entrypoint" content="public-customer-signup"'
+require_contains web/public_customer_signup.html 'name="robots" content="noindex, nofollow"'
+require_contains web/public_customer_signup.html 'name="referrer" content="no-referrer"'
 require_contains web/public_home.html '/site-assets/css/public-base.css'
 require_contains web/public_home.html '/site-assets/css/home.css'
 require_contains web/public_home.html '/site-assets/js/home.js'
@@ -456,6 +540,20 @@ require_contains web/public_catalog.html '/site-assets/js/public-config.js'
 require_contains web/public_catalog.html '/site-assets/js/catalog.js'
 require_contains web/public_catalog.html '/site-assets/images/sixoapp-mark.png'
 require_contains web/public_catalog.html '<noscript>'
+require_contains web/public_collaborator_invite.html '/site-assets/css/public-base.css'
+require_contains web/public_collaborator_invite.html '/site-assets/css/collaborator-invite.css'
+require_contains web/public_collaborator_invite.html '/site-assets/js/public-config.js'
+require_contains web/public_collaborator_invite.html '/site-assets/js/collaborator-invite.js'
+require_contains web/public_collaborator_invite.html '/site-assets/images/sixoapp-mark.png'
+require_contains web/public_collaborator_invite.html '/site-assets/css/sixoapp-public.css'
+require_contains web/public_collaborator_invite.html '<noscript>'
+require_contains web/public_customer_signup.html '/site-assets/css/public-base.css'
+require_contains web/public_customer_signup.html '/site-assets/css/customer-signup.css'
+require_contains web/public_customer_signup.html '/site-assets/js/public-config.js'
+require_contains web/public_customer_signup.html '/site-assets/js/customer-signup.js'
+require_contains web/public_customer_signup.html '/site-assets/images/sixoapp-mark.png'
+require_contains web/public_customer_signup.html '/site-assets/css/sixoapp-public.css'
+require_contains web/public_customer_signup.html '<noscript>'
 require_no_public_forbidden_terms web/public_home.html
 require_no_public_forbidden_terms web/public_login.html
 require_no_public_forbidden_terms web/public_register.html
@@ -463,6 +561,8 @@ require_no_public_forbidden_terms web/public_forgot_password.html
 require_no_public_forbidden_terms web/public_onboarding.html
 require_no_public_forbidden_terms web/public_checkout.html
 require_no_public_forbidden_terms web/public_catalog.html
+require_no_public_forbidden_terms web/public_collaborator_invite.html
+require_no_public_forbidden_terms web/public_customer_signup.html
 require_no_public_forbidden_terms web/site-assets/js/home.js
 require_no_public_forbidden_terms web/site-assets/js/login.js
 require_no_public_forbidden_terms web/site-assets/js/register.js
@@ -475,6 +575,10 @@ require_no_public_forbidden_terms web/site-assets/js/checkout.js
 require_no_public_forbidden_terms web/site-assets/js/checkout-core.mjs
 require_no_public_forbidden_terms web/site-assets/js/catalog.js
 require_no_public_forbidden_terms web/site-assets/js/catalog-core.mjs
+require_no_public_forbidden_terms web/site-assets/js/collaborator-invite.js
+require_no_public_forbidden_terms web/site-assets/js/collaborator-invite-core.mjs
+require_no_public_forbidden_terms web/site-assets/js/customer-signup.js
+require_no_public_forbidden_terms web/site-assets/js/customer-signup-core.mjs
 require_no_public_forbidden_terms web/site-assets/css/public-base.css
 require_no_public_forbidden_terms web/site-assets/css/home.css
 require_no_public_forbidden_terms web/site-assets/css/login.css
@@ -483,6 +587,8 @@ require_no_public_forbidden_terms web/site-assets/css/forgot-password.css
 require_no_public_forbidden_terms web/site-assets/css/onboarding.css
 require_no_public_forbidden_terms web/site-assets/css/checkout.css
 require_no_public_forbidden_terms web/site-assets/css/catalog.css
+require_no_public_forbidden_terms web/site-assets/css/collaborator-invite.css
+require_no_public_forbidden_terms web/site-assets/css/customer-signup.css
 require_no_public_forbidden_terms build/web/site-assets/js/home.js
 require_no_public_forbidden_terms build/web/site-assets/js/login.js
 require_no_public_forbidden_terms build/web/site-assets/js/register.js
@@ -495,6 +601,10 @@ require_no_public_forbidden_terms build/web/site-assets/js/checkout.js
 require_no_public_forbidden_terms build/web/site-assets/js/checkout-core.mjs
 require_no_public_forbidden_terms build/web/site-assets/js/catalog.js
 require_no_public_forbidden_terms build/web/site-assets/js/catalog-core.mjs
+require_no_public_forbidden_terms build/web/site-assets/js/collaborator-invite.js
+require_no_public_forbidden_terms build/web/site-assets/js/collaborator-invite-core.mjs
+require_no_public_forbidden_terms build/web/site-assets/js/customer-signup.js
+require_no_public_forbidden_terms build/web/site-assets/js/customer-signup-core.mjs
 require_no_public_forbidden_terms build/web/site-assets/css/public-base.css
 require_no_public_forbidden_terms build/web/site-assets/css/home.css
 require_no_public_forbidden_terms build/web/site-assets/css/login.css
@@ -503,6 +613,8 @@ require_no_public_forbidden_terms build/web/site-assets/css/forgot-password.css
 require_no_public_forbidden_terms build/web/site-assets/css/onboarding.css
 require_no_public_forbidden_terms build/web/site-assets/css/checkout.css
 require_no_public_forbidden_terms build/web/site-assets/css/catalog.css
+require_no_public_forbidden_terms build/web/site-assets/css/collaborator-invite.css
+require_no_public_forbidden_terms build/web/site-assets/css/customer-signup.css
 require_not_contains web/public_home.html 'fonts.googleapis'
 require_not_contains web/public_home.html 'accounts.google.com'
 require_not_contains web/public_login.html 'fonts.googleapis'
@@ -541,6 +653,22 @@ require_not_contains web/public_catalog.html '<link rel="manifest"'
 require_not_contains web/public_catalog.html 'manifest.json'
 require_not_contains web/public_catalog.html 'https://'
 require_not_contains web/public_catalog.html 'http://'
+require_not_contains web/public_collaborator_invite.html 'flutter_bootstrap.js'
+require_not_contains web/public_collaborator_invite.html 'main.dart.js'
+require_not_contains web/public_collaborator_invite.html 'flutter.js'
+require_not_contains web/public_collaborator_invite.html 'canvaskit'
+require_not_contains web/public_collaborator_invite.html '<link rel="manifest"'
+require_not_contains web/public_collaborator_invite.html 'manifest.json'
+require_not_contains web/public_collaborator_invite.html 'https://'
+require_not_contains web/public_collaborator_invite.html 'http://'
+require_not_contains web/public_customer_signup.html 'flutter_bootstrap.js'
+require_not_contains web/public_customer_signup.html 'main.dart.js'
+require_not_contains web/public_customer_signup.html 'flutter.js'
+require_not_contains web/public_customer_signup.html 'canvaskit'
+require_not_contains web/public_customer_signup.html '<link rel="manifest"'
+require_not_contains web/public_customer_signup.html 'manifest.json'
+require_not_contains web/public_customer_signup.html 'https://'
+require_not_contains web/public_customer_signup.html 'http://'
 require_contains web/site-assets/js/login-core.mjs "credentials: 'include'"
 require_contains web/site-assets/js/login-core.mjs "cache: 'no-store'"
 require_contains web/site-assets/js/login-core.mjs '/auth/web/login'
@@ -552,6 +680,24 @@ require_contains web/site-assets/js/forgot-password-core.mjs "cache: 'no-store'"
 require_contains web/site-assets/js/forgot-password-core.mjs '/public/api/esqueceu-senha/enviar-codigo'
 require_contains web/site-assets/js/forgot-password-core.mjs '/public/api/esqueceu-senha/validar-codigo'
 require_contains web/site-assets/js/forgot-password-core.mjs '/public/api/esqueceu-senha/redefinir-senha'
+require_contains web/site-assets/js/collaborator-invite-core.mjs '/public/api/colaborador/convites/'
+require_contains web/site-assets/js/collaborator-invite-core.mjs "credentials: 'omit'"
+require_contains web/site-assets/js/collaborator-invite-core.mjs "cache: 'no-store'"
+require_not_contains web/site-assets/js/collaborator-invite-core.mjs 'localStorage.setItem'
+require_not_contains web/site-assets/js/collaborator-invite-core.mjs 'sessionStorage'
+require_not_contains web/site-assets/js/collaborator-invite-core.mjs 'document.cookie'
+require_not_contains web/site-assets/js/collaborator-invite.js 'innerHTML'
+require_not_contains web/site-assets/js/collaborator-invite.js 'accessToken'
+require_not_contains web/site-assets/js/collaborator-invite.js 'refreshToken'
+require_contains web/site-assets/js/customer-signup-core.mjs '/public/api/auto-customer'
+require_contains web/site-assets/js/customer-signup-core.mjs "credentials: 'omit'"
+require_contains web/site-assets/js/customer-signup-core.mjs "cache: 'no-store'"
+require_not_contains web/site-assets/js/customer-signup-core.mjs 'localStorage.setItem'
+require_not_contains web/site-assets/js/customer-signup-core.mjs 'sessionStorage'
+require_not_contains web/site-assets/js/customer-signup-core.mjs 'document.cookie'
+require_not_contains web/site-assets/js/customer-signup.js 'innerHTML'
+require_not_contains web/site-assets/js/customer-signup.js 'accessToken'
+require_not_contains web/site-assets/js/customer-signup.js 'refreshToken'
 require_not_contains web/site-assets/js/login-core.mjs 'localStorage.setItem'
 require_not_contains web/site-assets/js/login-core.mjs 'sessionStorage'
 require_not_contains web/site-assets/js/login.js 'localStorage.setItem'
@@ -669,7 +815,7 @@ require_contains web/site-assets/js/public-locale.mjs 'sixapp.public.locale'
 require_contains web/flutter_service_worker.js 'isSixAppFlutterCacheName'
 require_contains web/flutter_service_worker.js 'cacheLooksLikeSixAppFlutter'
 
-for path in web/index.html web/public_home.html web/public_login.html web/public_register.html web/public_forgot_password.html web/public_onboarding.html web/public_checkout.html web/public_catalog.html web/site-assets/js/home.js build/web/index.html build/web/login.html build/web/register.html build/web/forgot-password.html build/web/onboarding.html build/web/checkout.html build/web/catalogo.html build/web/site-assets/js/home.js build/web/flutter.html; do
+for path in web/index.html web/public_home.html web/public_login.html web/public_register.html web/public_forgot_password.html web/public_onboarding.html web/public_checkout.html web/public_catalog.html web/public_collaborator_invite.html web/public_customer_signup.html web/site-assets/js/home.js build/web/index.html build/web/login.html build/web/register.html build/web/forgot-password.html build/web/onboarding.html build/web/checkout.html build/web/catalogo.html build/web/collaborator-invite.html build/web/customer-signup.html build/web/site-assets/js/home.js build/web/flutter.html; do
   require_not_contains "$path" 'registrations.forEach(function (registration)'
 done
 
@@ -708,6 +854,14 @@ fi
 
 if [[ -f build/web/public_catalog.html ]]; then
   fail "build/web/public_catalog.html nao deve permanecer como copia solta"
+fi
+
+if [[ -f build/web/public_collaborator_invite.html ]]; then
+  fail "build/web/public_collaborator_invite.html nao deve permanecer como copia solta"
+fi
+
+if [[ -f build/web/public_customer_signup.html ]]; then
+  fail "build/web/public_customer_signup.html nao deve permanecer como copia solta"
 fi
 
 if find build/web web -maxdepth 2 \( -name '*.old' -o -name '*.bak' -o -name '*.tmp' \) | grep -q .; then

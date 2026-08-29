@@ -26,7 +26,6 @@ import 'package:sixpos/presentation/screens/catalog_health_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/desempenho_colaborador_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operational_procedures_mobile_screen.dart';
@@ -1232,7 +1231,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             ),
             icon: Icons.people_alt_outlined,
             accentColor: colors.accent,
-            emphasis: ManagementActionEmphasis.primary,
+            emphasis: ManagementActionEmphasis.secondary,
             onTap: () => _navigateTo(context, ClientesUsuarioMobileScreen()),
           ),
           _ManagementItem(
@@ -1264,22 +1263,6 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             emphasis: ManagementActionEmphasis.operational,
             maturity: ManagementSettingsMaturity.comingSoon,
           ),
-          if (!autorizacoes.ehColaborador)
-            _ManagementItem(
-              title: context.t(
-                'gestao.people.performance',
-                fallback: 'Desempenho do colaborador',
-              ),
-              subtitle: context.t(
-                'gestao.people.performanceDesc',
-                fallback: 'Metas, vendas, serviços e evolução da equipe',
-              ),
-              icon: Icons.trending_up_rounded,
-              accentColor: colors.accent,
-              emphasis: ManagementActionEmphasis.secondary,
-              onTap: () =>
-                  _navigateTo(context, DesempenhoColaboradorMobileScreen()),
-            ),
         ],
       ),
       _ManagementSection(

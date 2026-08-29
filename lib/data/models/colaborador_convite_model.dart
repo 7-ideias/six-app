@@ -4,12 +4,20 @@ class ColaboradorConviteRequest {
     required this.email,
     required this.celular,
     required this.permissoes,
+    this.tipoCadastro = 'SIMPLES',
+    this.percentualQualidadeCadastro = 0,
+    this.dadosPessoais,
+    this.dadosContratuais,
   });
 
   final String nome;
   final String email;
   final String celular;
   final List<String> permissoes;
+  final String tipoCadastro;
+  final int percentualQualidadeCadastro;
+  final ColaboradorDadosPessoaisCadastro? dadosPessoais;
+  final ColaboradorDadosContratuaisCadastro? dadosContratuais;
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
@@ -17,8 +25,123 @@ class ColaboradorConviteRequest {
       'email': email,
       'celular': celular,
       'permissoes': permissoes,
-    };
+      'tipoCadastro': tipoCadastro,
+      'percentualQualidadeCadastro': percentualQualidadeCadastro,
+      'dadosPessoais': dadosPessoais?.toJson(),
+      'dadosContratuais': dadosContratuais?.toJson(),
+    }..removeWhere((String _, dynamic value) => value == null);
   }
+}
+
+class ColaboradorDadosPessoaisCadastro {
+  const ColaboradorDadosPessoaisCadastro({
+    this.nomeSocial = '',
+    this.cpf = '',
+    this.rg = '',
+    this.dataNascimento = '',
+    this.cep = '',
+    this.logradouro = '',
+    this.numero = '',
+    this.complemento = '',
+    this.bairro = '',
+    this.cidade = '',
+    this.estado = '',
+    this.pais = '',
+  });
+
+  final String nomeSocial;
+  final String cpf;
+  final String rg;
+  final String dataNascimento;
+  final String cep;
+  final String logradouro;
+  final String numero;
+  final String complemento;
+  final String bairro;
+  final String cidade;
+  final String estado;
+  final String pais;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'nomeSocial': nomeSocial,
+    'cpf': cpf,
+    'rg': rg,
+    'dataNascimento': dataNascimento,
+    'cep': cep,
+    'logradouro': logradouro,
+    'numero': numero,
+    'complemento': complemento,
+    'bairro': bairro,
+    'cidade': cidade,
+    'estado': estado,
+    'pais': pais,
+  };
+}
+
+class ColaboradorDadosContratuaisCadastro {
+  const ColaboradorDadosContratuaisCadastro({
+    this.tipoVinculo = '',
+    this.numeroContrato = '',
+    this.cargo = '',
+    this.departamento = '',
+    this.dataInicio = '',
+    this.dataTermino = '',
+    this.cargaHorariaSemanal,
+    this.regimeTrabalho = '',
+    this.valorBase,
+    this.moeda = '',
+    this.periodicidadePagamento = '',
+    this.diaPagamento,
+    this.metodoPagamento = '',
+    this.banco = '',
+    this.agencia = '',
+    this.conta = '',
+    this.chavePix = '',
+    this.escopoPrestacaoServico = '',
+    this.observacoes = '',
+  });
+
+  final String tipoVinculo;
+  final String numeroContrato;
+  final String cargo;
+  final String departamento;
+  final String dataInicio;
+  final String dataTermino;
+  final int? cargaHorariaSemanal;
+  final String regimeTrabalho;
+  final double? valorBase;
+  final String moeda;
+  final String periodicidadePagamento;
+  final int? diaPagamento;
+  final String metodoPagamento;
+  final String banco;
+  final String agencia;
+  final String conta;
+  final String chavePix;
+  final String escopoPrestacaoServico;
+  final String observacoes;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'tipoVinculo': tipoVinculo,
+    'numeroContrato': numeroContrato,
+    'cargo': cargo,
+    'departamento': departamento,
+    'dataInicio': dataInicio,
+    'dataTermino': dataTermino,
+    'cargaHorariaSemanal': cargaHorariaSemanal,
+    'regimeTrabalho': regimeTrabalho,
+    'valorBase': valorBase,
+    'moeda': moeda,
+    'periodicidadePagamento': periodicidadePagamento,
+    'diaPagamento': diaPagamento,
+    'metodoPagamento': metodoPagamento,
+    'banco': banco,
+    'agencia': agencia,
+    'conta': conta,
+    'chavePix': chavePix,
+    'escopoPrestacaoServico': escopoPrestacaoServico,
+    'observacoes': observacoes,
+  }..removeWhere((String _, dynamic value) => value == null);
 }
 
 class ColaboradorConviteResponse {
@@ -81,7 +204,9 @@ class ColaboradorConvitePublicoResponse {
   final String status;
   final DateTime? expiraEm;
 
-  factory ColaboradorConvitePublicoResponse.fromJson(Map<String, dynamic> json) {
+  factory ColaboradorConvitePublicoResponse.fromJson(
+    Map<String, dynamic> json,
+  ) {
     return ColaboradorConvitePublicoResponse(
       emailConvidado: json['emailConvidado']?.toString() ?? '',
       nomeConvidado: json['nomeConvidado']?.toString() ?? '',

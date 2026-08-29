@@ -106,23 +106,12 @@ void main() {
     expect(find.text('Em breve'), findsWidgets);
   });
 
-  testWidgets('abre desempenho do colaborador abaixo de Fornecedores', (
+  testWidgets('não exibe desempenho do colaborador na seção de pessoas', (
     WidgetTester tester,
   ) async {
-    final List<String> navigations = <String>[];
-    await _pumpGestao(
-      tester,
-      navigations: navigations,
-      area: GestaoMobileArea.pessoas,
-    );
+    await _pumpGestao(tester, area: GestaoMobileArea.pessoas);
 
-    final Finder performance = find.text('Desempenho do colaborador');
-    expect(performance, findsOneWidget);
-    await tester.ensureVisible(performance);
-    await tester.tap(performance);
-    await tester.pump(const Duration(milliseconds: 120));
-
-    expect(navigations, contains('DesempenhoColaboradorMobileScreen'));
+    expect(find.text('Desempenho do colaborador'), findsNothing);
   });
 
   testWidgets('oculta desempenho da equipe para colaborador', (
@@ -360,28 +349,28 @@ Future<void> _pumpGestao(
       ],
       child: MaterialApp(
         home: MediaQuery(
-          data:
-              (mediaQueryData ??
-                      const MediaQueryData(
-                        disableAnimations: true,
-                        accessibleNavigation: true,
-                      ))
-                  .copyWith(size: const Size(390, 900), devicePixelRatio: 1),
+          data: (mediaQueryData ??
+                  const MediaQueryData(
+                    disableAnimations: true,
+                    accessibleNavigation: true,
+                  ))
+              .copyWith(size: const Size(390, 900), devicePixelRatio: 1),
           child: GestaoMobileScreen(
             overviewProvider: overviewProvider,
             area: area,
             showBottomNavigationBar: showBottomNavigationBar,
-            onNavigate: navigations == null
-                ? null
-                : (_, Widget page) {
-                    if (page case GestaoMobileScreen(:final area)) {
-                      navigations.add(
-                        'GestaoMobileScreen:${area?.name ?? 'hub'}',
-                      );
-                      return;
-                    }
-                    navigations.add(page.runtimeType.toString());
-                  },
+            onNavigate:
+                navigations == null
+                    ? null
+                    : (_, Widget page) {
+                      if (page case GestaoMobileScreen(:final area)) {
+                        navigations.add(
+                          'GestaoMobileScreen:${area?.name ?? 'hub'}',
+                        );
+                        return;
+                      }
+                      navigations.add(page.runtimeType.toString());
+                    },
           ),
         ),
       ),
