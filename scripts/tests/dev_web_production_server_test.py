@@ -45,6 +45,18 @@ class DevWebProductionServerTest(unittest.TestCase):
         self.assert_route("/onboarding", "public-onboarding")
         self.assert_route("/checkout", "public-checkout")
         self.assert_route("/catalogo", "public-catalog")
+        self.assert_route(
+            "/colaborador/convites/1234567890abcdef",
+            "public-collaborator-invite",
+        )
+
+    def test_collaborator_invite_does_not_send_code_as_referrer(self) -> None:
+        status, headers, _ = self.request(
+            "/colaborador/convites/1234567890abcdef",
+        )
+
+        self.assertEqual(200, status)
+        self.assertEqual("no-referrer", headers.get("Referrer-Policy"))
 
     def test_flutter_routes(self) -> None:
         self.assert_route("/app", "flutter-app")
@@ -56,6 +68,10 @@ class DevWebProductionServerTest(unittest.TestCase):
         self.assert_route("/forgot-password/flutter", "flutter-app")
         self.assert_route("/onboarding/flutter", "flutter-app")
         self.assert_route("/checkout/flutter", "flutter-app")
+        self.assert_route(
+            "/colaborador/convites/flutter/1234567890abcdef",
+            "flutter-app",
+        )
 
     def test_home_redirects_to_root(self) -> None:
         status, headers, body = self.request("/home")
@@ -126,6 +142,7 @@ class DevWebProductionServerTest(unittest.TestCase):
             "onboarding.html": "public-onboarding",
             "checkout.html": "public-checkout",
             "catalogo.html": "public-catalog",
+            "collaborator-invite.html": "public-collaborator-invite",
             "flutter.html": "flutter-app",
         }
 
