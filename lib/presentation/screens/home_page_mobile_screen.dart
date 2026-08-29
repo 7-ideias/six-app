@@ -55,6 +55,16 @@ class HomePageMobile extends StatefulWidget {
   State<HomePageMobile> createState() => _HomePageMobileState();
 }
 
+class _InfrastructureRequestsFilterSelection {
+  const _InfrastructureRequestsFilterSelection({
+    required this.value,
+    required this.unit,
+  });
+
+  final int value;
+  final AdminRequestWindowUnit unit;
+}
+
 class _HomePageMobileState extends State<HomePageMobile> {
   static const String _allCompaniesFilterValue = '__all_companies__';
   static const String _allCollaboratorsFilterValue = '__all_collaborators__';
@@ -866,7 +876,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                   .map((AdminBancoDadosResumo banco) {
                     return Padding(
                       padding: EdgeInsets.only(
-                        bottom: banco == resumo.bancosDeDados.last ? 0 : 14,
+                        bottom: banco == resumo.bancosDeDados.last ? 0 : 10,
                       ),
                       child: _buildDatabaseSummary(context, banco),
                     );
@@ -1114,44 +1124,96 @@ class _HomePageMobileState extends State<HomePageMobile> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(
-          banco.nome,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: _titleTextColor,
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-          ),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                banco.nome,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: _titleTextColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            SizedBox(width: 8),
+            _buildInfrastructureCompactMetric(
+              label: 'Total',
+              value: _formatInfrastructureBytes(banco.tamanhoTotalBytes),
+              emphasisColor: _accentColor,
+            ),
+          ],
         ),
         SizedBox(height: 8),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: 6,
+          runSpacing: 6,
           children: <Widget>[
-            _buildInfrastructurePill(
-              context,
+            _buildInfrastructureCompactMetric(
               label: 'Dados',
               value: _formatInfrastructureBytes(banco.tamanhoDadosBytes),
             ),
-            _buildInfrastructurePill(
-              context,
+            _buildInfrastructureCompactMetric(
               label: 'Storage',
               value: _formatInfrastructureBytes(banco.tamanhoArmazenadoBytes),
             ),
-            _buildInfrastructurePill(
-              context,
+            _buildInfrastructureCompactMetric(
               label: 'Índices',
               value: _formatInfrastructureBytes(banco.tamanhoIndicesBytes),
-            ),
-            _buildInfrastructurePill(
-              context,
-              label: 'Total',
-              value: _formatInfrastructureBytes(banco.tamanhoTotalBytes),
             ),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildInfrastructureCompactMetric({
+    required String label,
+    required String value,
+    Color? emphasisColor,
+  }) {
+    final Color accent = emphasisColor ?? _titleTextColor;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: _softSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: (emphasisColor ?? _borderColor).withValues(alpha: 0.68),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            label,
+            style: TextStyle(
+              color:
+                  emphasisColor == null
+                      ? _mutedTextColor
+                      : accent.withValues(alpha: 0.92),
+              fontSize: 9.5,
+              fontWeight: FontWeight.w700,
+              height: 1,
+            ),
+          ),
+          SizedBox(height: 3),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: accent,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              height: 1.05,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1242,7 +1304,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
     AdminRequestWindowUnit stagedUnit = _infrastructureRequestsWindowUnit;
 
     try {
-      await showModalBottomSheet<void>(
+      final _InfrastructureRequestsFilterSelection?
+      selection = await showModalBottomSheet<
+        _InfrastructureRequestsFilterSelection
+      >(
         context: context,
         useSafeArea: true,
         isScrollControlled: true,
@@ -1440,23 +1505,19 @@ class _HomePageMobileState extends State<HomePageMobile> {
                               SizedBox(width: 10),
                               Expanded(
                                 child: FilledButton(
-                                  onPressed: () async {
+                                  onPressed: () {
                                     final int value =
                                         _sanitizeInfrastructureWindowValue(
                                           int.tryParse(controller.text.trim()),
                                           stagedUnit,
                                         );
-                                    Navigator.of(context).pop();
-                                    if (!mounted) {
-                                      return;
-                                    }
-                                    setState(() {
-                                      _infrastructureRequestsWindowValue =
-                                          value;
-                                      _infrastructureRequestsWindowUnit =
-                                          stagedUnit;
-                                    });
-                                    await _carregarInfraestrutura();
+                                    FocusScope.of(context).unfocus();
+                                    Navigator.of(context).pop(
+                                      _InfrastructureRequestsFilterSelection(
+                                        value: value,
+                                        unit: stagedUnit,
+                                      ),
+                                    );
                                   },
                                   child: Text(
                                     context.t(
@@ -1478,6 +1539,16 @@ class _HomePageMobileState extends State<HomePageMobile> {
           );
         },
       );
+
+      if (selection == null || !mounted) {
+        return;
+      }
+
+      setState(() {
+        _infrastructureRequestsWindowValue = selection.value;
+        _infrastructureRequestsWindowUnit = selection.unit;
+      });
+      await _carregarInfraestrutura();
     } finally {
       controller.dispose();
     }
