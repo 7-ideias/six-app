@@ -41,7 +41,6 @@ class _ColaboradoresUsuarioMobileScreenState
   Color get _strongBorderColor => _colors.strongBorder;
   Color get _errorColor => _colors.error;
   Color get _errorBorderColor => _colors.errorBorder;
-  bool get _isDarkMode => Theme.of(context).brightness == Brightness.dark;
 
   late final ColaboradorUsuarioApiClient _api;
   final TextEditingController _search = TextEditingController();
@@ -282,6 +281,11 @@ class _ColaboradoresUsuarioMobileScreenState
       initialContentSpacing: 4,
       actions: <Widget>[
         IconButton(
+          tooltip: _t('performance.mobile.title', 'Metas'),
+          onPressed: _loading ? null : _openDesempenhoColaborador,
+          icon: Icon(Icons.flag_outlined),
+        ),
+        IconButton(
           tooltip: _t('colaboradores.newCollaborator', 'Novo colaborador'),
           onPressed: _loading ? null : _openNovoColaborador,
           icon: Icon(Icons.add_rounded),
@@ -316,15 +320,12 @@ class _ColaboradoresUsuarioMobileScreenState
         physics: AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
         children: <Widget>[
-          _entry(order: 0, child: _headerCard()),
+          _entry(
+            order: 0,
+            child: _headerCard(showPerformanceShortcut: exibirAtalhoDesempenho),
+          ),
           SizedBox(height: 14),
-          _entry(order: 1, child: _summaryRow()),
-          if (exibirAtalhoDesempenho) ...<Widget>[
-            SizedBox(height: 14),
-            _entry(order: 2, child: _performanceCard()),
-          ],
-          SizedBox(height: 14),
-          _entry(order: 3, child: _searchBox()),
+          _entry(order: 1, child: _searchBox()),
           if (_erro != null) ...<Widget>[
             SizedBox(height: 12),
             _inlineError(_erro!),
@@ -366,7 +367,7 @@ class _ColaboradoresUsuarioMobileScreenState
           else
             ..._items.toList().asMap().entries.map(
               (MapEntry<int, ColaboradorUsuarioResumo> entry) => _entry(
-                order: entry.key + 4,
+                order: entry.key + 2,
                 child: _colaboradorCard(entry.value),
               ),
             ),
@@ -387,8 +388,25 @@ class _ColaboradoresUsuarioMobileScreenState
     );
   }
 
-  Widget _headerCard() {
+  Widget _headerCard({required bool showPerformanceShortcut}) {
     final int total = _colaboradores.length;
+    final int comEmail =
+        _colaboradores
+            .where(
+              (ColaboradorUsuarioResumo item) => item.email.trim().isNotEmpty,
+            )
+            .length;
+    final int comCelular =
+        _colaboradores
+            .where(
+              (ColaboradorUsuarioResumo item) =>
+                  item.celularDeAcesso.trim().isNotEmpty,
+            )
+            .length;
+    final int incompletos =
+        _colaboradores
+            .where((ColaboradorUsuarioResumo item) => item.nome.trim().isEmpty)
+            .length;
     final int attentionCount =
         _colaboradores
             .where(
@@ -422,7 +440,12 @@ class _ColaboradoresUsuarioMobileScreenState
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(18),
+      padding: EdgeInsets.fromLTRB(
+        18,
+        18,
+        18,
+        showPerformanceShortcut ? 12 : 18,
+      ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: <Color>[_primaryColor, _secondaryColor],
@@ -438,205 +461,225 @@ class _ColaboradoresUsuarioMobileScreenState
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Text(
+            _t('colaboradores.registrationHealthTitle', 'Saúde do cadastro'),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.82),
+              height: 1.25,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool useStackedLayout = constraints.maxWidth < 340;
+              final Widget ring = _healthScoreRing(
+                percentage: percentage,
+                statusLabel: statusLabel,
+                accentColor: ringColor,
+                reduceMotion: reduceMotion,
+                size: useStackedLayout ? 136 : 122,
+              );
+              final Widget metrics = _healthMetrics(
+                total: total,
+                withEmail: comEmail,
+                withPhone: comCelular,
+                incomplete: incompletos,
+              );
+
+              if (useStackedLayout) {
+                return Column(
+                  children: <Widget>[
+                    Center(child: ring),
+                    SizedBox(height: 14),
+                    metrics,
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Expanded(child: metrics),
+                  SizedBox(width: 14),
+                  ring,
+                ],
+              );
+            },
+          ),
+          SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Row(
               children: <Widget>[
-                Text(
-                  _t(
-                    'colaboradores.registrationHealthTitle',
-                    'Saúde do cadastro',
-                  ),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.82),
-                    height: 1.25,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(height: 18),
-                Center(
-                  child: _healthScoreRing(
-                    percentage: percentage,
-                    statusLabel: statusLabel,
-                    accentColor: ringColor,
-                    reduceMotion: reduceMotion,
-                  ),
-                ),
-                SizedBox(height: 14),
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.07),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
+                Icon(Icons.priority_high_rounded, color: ringColor, size: 16),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    attentionLabel,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      height: 1.25,
+                      fontWeight: FontWeight.w800,
                     ),
-                  ),
-                  child: Row(
-                    children: <Widget>[
-                      Icon(
-                        Icons.priority_high_rounded,
-                        color: ringColor,
-                        size: 16,
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          attentionLabel,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            height: 1.25,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ],
             ),
           ),
+          if (showPerformanceShortcut) ...<Widget>[
+            SizedBox(height: 12),
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: Colors.white.withValues(alpha: 0.08),
+            ),
+            SizedBox(height: 4),
+            _healthPerformanceShortcut(),
+          ],
         ],
       ),
     );
   }
 
-  Widget _summaryRow() {
-    final int comEmail =
-        _colaboradores
-            .where(
-              (ColaboradorUsuarioResumo item) => item.email.trim().isNotEmpty,
-            )
-            .length;
-    final int comCelular =
-        _colaboradores
-            .where(
-              (ColaboradorUsuarioResumo item) =>
-                  item.celularDeAcesso.trim().isNotEmpty,
-            )
-            .length;
-    final int incompletos =
-        _colaboradores
-            .where((ColaboradorUsuarioResumo item) => item.nome.trim().isEmpty)
-            .length;
+  Widget _healthMetrics({
+    required int total,
+    required int withEmail,
+    required int withPhone,
+    required int incomplete,
+  }) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double itemWidth =
+            constraints.maxWidth >= 280
+                ? (constraints.maxWidth - 12) / 2
+                : constraints.maxWidth;
 
-    return Column(
-      children: <Widget>[
-        Row(
+        return Wrap(
+          spacing: 12,
+          runSpacing: 10,
           children: <Widget>[
-            Expanded(
-              child: _summaryCard(
+            SizedBox(
+              width: itemWidth,
+              child: _healthMetricItem(
                 Icons.groups_2_outlined,
                 _t('colaboradores.team', 'Equipe'),
-                _formatCount(_colaboradores.length),
+                _formatCount(total),
               ),
             ),
-            SizedBox(width: 10),
-            Expanded(
-              child: _summaryCard(
+            SizedBox(
+              width: itemWidth,
+              child: _healthMetricItem(
                 Icons.alternate_email_rounded,
                 _t('colaboradores.withEmail', 'Com e-mail'),
-                _formatCount(comEmail),
+                _formatCount(withEmail),
               ),
             ),
-          ],
-        ),
-        SizedBox(height: 10),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: _summaryCard(
+            SizedBox(
+              width: itemWidth,
+              child: _healthMetricItem(
                 Icons.phone_iphone_rounded,
                 _t('colaboradores.withPhone', 'Com celular'),
-                _formatCount(comCelular),
+                _formatCount(withPhone),
               ),
             ),
-            SizedBox(width: 10),
-            Expanded(
-              child: _summaryCard(
+            SizedBox(
+              width: itemWidth,
+              child: _healthMetricItem(
                 Icons.manage_accounts_outlined,
                 _t('colaboradores.incomplete', 'Incompleto'),
-                _formatCount(incompletos),
-                highlight: incompletos > 0,
+                _formatCount(incomplete),
+                highlight: incomplete > 0,
               ),
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
-  Widget _summaryCard(
+  Widget _healthMetricItem(
     IconData icon,
     String label,
     String value, {
     bool highlight = false,
   }) {
-    final Color iconColor = highlight ? _errorColor : _accentColor;
-    final Color bgColor =
+    final Color iconColor = highlight ? _errorColor : Colors.white;
+    final Color iconSurface =
         highlight
-            ? _errorBorderColor.withValues(alpha: _isDarkMode ? 0.34 : 0.12)
-            : _softAccentColor;
+            ? _errorColor.withValues(alpha: 0.18)
+            : Colors.white.withValues(alpha: 0.12);
 
-    return Container(
-      padding: EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _surfaceColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(13),
-            ),
-            child: Icon(icon, color: iconColor, size: 19),
-          ),
-          SizedBox(height: 10),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: _mutedTextColor,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+    return Row(
+      children: <Widget>[
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: iconSurface,
+            borderRadius: BorderRadius.circular(11),
+            border: Border.all(
+              color:
+                  highlight
+                      ? _errorBorderColor.withValues(alpha: 0.55)
+                      : Colors.white.withValues(alpha: 0.10),
             ),
           ),
-          SizedBox(height: 4),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: _titleTextColor,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
+          child: Icon(icon, color: iconColor, size: 17),
+        ),
+        SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.74),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -727,9 +770,12 @@ class _ColaboradoresUsuarioMobileScreenState
     required String statusLabel,
     required Color accentColor,
     required bool reduceMotion,
+    required double size,
   }) {
     final Duration duration =
         reduceMotion ? Duration.zero : Duration(milliseconds: 760);
+    final double progressSize = size - 24;
+    final double innerSize = size - 44;
 
     return TweenAnimationBuilder<double>(
       key: ValueKey<String>('collaborators-health-$percentage'),
@@ -742,14 +788,14 @@ class _ColaboradoresUsuarioMobileScreenState
       builder: (BuildContext context, double progress, _) {
         final int displayedPercentage = (progress * 100).round();
         return SizedBox(
-          width: 148,
-          height: 148,
+          width: size,
+          height: size,
           child: Stack(
             alignment: Alignment.center,
             children: <Widget>[
               SizedBox(
-                width: 124,
-                height: 124,
+                width: progressSize,
+                height: progressSize,
                 child: CircularProgressIndicator(
                   value: progress.clamp(0, 1),
                   strokeWidth: 10,
@@ -758,8 +804,8 @@ class _ColaboradoresUsuarioMobileScreenState
                 ),
               ),
               Container(
-                width: 104,
-                height: 104,
+                width: innerSize,
+                height: innerSize,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.black.withValues(alpha: 0.10),
@@ -774,7 +820,7 @@ class _ColaboradoresUsuarioMobileScreenState
                       '$displayedPercentage%',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 24,
+                        fontSize: size >= 136 ? 24 : 21,
                         height: 1,
                         fontWeight: FontWeight.w900,
                       ),
@@ -813,6 +859,75 @@ class _ColaboradoresUsuarioMobileScreenState
     );
   }
 
+  Widget _healthPerformanceShortcut() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: const ValueKey<String>('colaboradores-performance-card'),
+        borderRadius: BorderRadius.circular(18),
+        onTap: _openDesempenhoColaborador,
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.trending_up_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      _t(
+                        'gestao.people.performance',
+                        'Desempenho do colaborador',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      _t(
+                        'gestao.people.performanceDesc',
+                        'Metas, vendas, serviços e evolução da equipe',
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.74),
+                        fontSize: 11.5,
+                        height: 1.25,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8),
+              Icon(Icons.chevron_right_rounded, color: Colors.white, size: 21),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _searchBox() {
     return Container(
       padding: EdgeInsets.all(14),
@@ -847,80 +962,6 @@ class _ColaboradoresUsuarioMobileScreenState
           ),
           filled: true,
           fillColor: _softSurfaceColor,
-        ),
-      ),
-    );
-  }
-
-  Widget _performanceCard() {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        key: const ValueKey<String>('colaboradores-performance-card'),
-        borderRadius: BorderRadius.circular(22),
-        onTap: _openDesempenhoColaborador,
-        child: Ink(
-          padding: EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: _surfaceColor,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: _borderColor),
-          ),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: _softAccentColor,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Icon(
-                  Icons.trending_up_rounded,
-                  color: _accentColor,
-                  size: 22,
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      _t(
-                        'gestao.people.performance',
-                        'Desempenho do colaborador',
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: _titleTextColor,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      _t(
-                        'gestao.people.performanceDesc',
-                        'Metas, vendas, serviços e evolução da equipe',
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: _mutedTextColor,
-                        fontSize: 12.2,
-                        height: 1.28,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: 8),
-              Icon(Icons.chevron_right_rounded, color: _accentColor, size: 22),
-            ],
-          ),
         ),
       ),
     );

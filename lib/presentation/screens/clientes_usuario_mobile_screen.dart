@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/data/models/cliente_usuario_model.dart';
 import 'package:sixpos/data/services/cliente_usuario/cliente_usuario_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/cliente_auto_cadastro_link_section.dart';
@@ -26,7 +27,6 @@ class _ClientesUsuarioMobileScreenState
   Color get _primaryColor => _colors.primary;
   Color get _secondaryColor => _colors.secondary;
   Color get _accentColor => _colors.accent;
-  Color get _onAccentColor => _colors.onAccent;
   Color get _surfaceColor => _colors.surface;
   Color get _surfaceElevatedColor => _colors.surfaceElevated;
   Color get _softSurfaceColor => _colors.softSurface;
@@ -38,6 +38,7 @@ class _ClientesUsuarioMobileScreenState
   Color get _heroShadowColor => _colors.heroShadow;
   Color get _navigationShadowColor => _colors.navigationShadow;
   Color get _errorColor => _colors.error;
+  Color get _errorBorderColor => _colors.errorBorder;
   static const Color _successColor = Color(0xFF16A34A);
 
   late final ClienteUsuarioApiClient _api;
@@ -50,6 +51,8 @@ class _ClientesUsuarioMobileScreenState
 
   List<ClienteUsuario> get _clientes =>
       _response?.clientes ?? <ClienteUsuario>[];
+
+  String _t(String key, String fallback) => context.t(key, fallback: fallback);
 
   List<ClienteUsuario> get _items {
     final String term = _filter.toLowerCase().replaceAll(
@@ -142,6 +145,93 @@ class _ClientesUsuarioMobileScreenState
     }
   }
 
+  Future<void> _openCreateOptions() async {
+    final String? action = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Color(0x47000000),
+      builder: (BuildContext bottomSheetContext) {
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Container(
+              padding: EdgeInsets.fromLTRB(18, 12, 18, 18),
+              decoration: BoxDecoration(
+                color: _surfaceColor,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: _borderColor,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 18),
+                  Text(
+                    'Novo cliente',
+                    style: TextStyle(
+                      color: _titleTextColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Escolha como deseja iniciar o cadastro.',
+                    style: TextStyle(color: _mutedTextColor, height: 1.25),
+                  ),
+                  SizedBox(height: 18),
+                  _createOptionTile(
+                    icon: Icons.person_add_alt_1_rounded,
+                    title: 'Fazer cadastro',
+                    subtitle: 'Abrir o formulário para cadastrar agora.',
+                    onTap:
+                        () => Navigator.of(
+                          bottomSheetContext,
+                        ).pop('manual-registration'),
+                  ),
+                  SizedBox(height: 10),
+                  _createOptionTile(
+                    icon: Icons.link_outlined,
+                    title: 'Enviar ao cliente',
+                    subtitle: 'Gerar, copiar ou compartilhar o link.',
+                    onTap:
+                        () => Navigator.of(
+                          bottomSheetContext,
+                        ).pop('send-to-client'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || action == null) {
+      return;
+    }
+
+    if (action == 'manual-registration') {
+      await _openForm();
+      return;
+    }
+
+    if (action == 'send-to-client') {
+      _openAutoCadastro();
+    }
+  }
+
   void _openAutoCadastro() {
     showModalBottomSheet<void>(
       context: context,
@@ -158,7 +248,15 @@ class _ClientesUsuarioMobileScreenState
               padding: EdgeInsets.fromLTRB(18, 12, 18, 18),
               decoration: BoxDecoration(
                 color: _surfaceColor,
+                border: Border.all(color: _borderColor),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: _navigationShadowColor,
+                    blurRadius: 24,
+                    offset: Offset(0, 10),
+                  ),
+                ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -209,14 +307,55 @@ class _ClientesUsuarioMobileScreenState
                       ),
                       IconButton(
                         onPressed: () => Navigator.of(bottomSheetContext).pop(),
+                        color: _mutedTextColor,
                         icon: Icon(Icons.close_rounded),
                       ),
                     ],
                   ),
                   SizedBox(height: 18),
-                  ClienteAutoCadastroLinkSection(
-                    showAsCard: true,
-                    actionsOnly: true,
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _surfaceElevatedColor,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: _strongBorderColor),
+                    ),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        outlinedButtonTheme: OutlinedButtonThemeData(
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: _accentColor,
+                            foregroundColor: _colors.onAccent,
+                            disabledBackgroundColor: _softAccentColor,
+                            disabledForegroundColor: _mutedTextColor,
+                            side: BorderSide.none,
+                            minimumSize: Size(double.infinity, 44),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            textStyle: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        filledButtonTheme: FilledButtonThemeData(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _accentColor,
+                            foregroundColor: _colors.onAccent,
+                            disabledBackgroundColor: _softAccentColor,
+                            disabledForegroundColor: _mutedTextColor,
+                            minimumSize: Size(double.infinity, 44),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            textStyle: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ),
+                      child: ClienteAutoCadastroLinkSection(
+                        showAsCard: false,
+                        actionsOnly: true,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -246,9 +385,9 @@ class _ClientesUsuarioMobileScreenState
       scrolledSurfaceOpacity: 0.70,
       actions: <Widget>[
         IconButton(
-          tooltip: 'Auto cadastro',
-          onPressed: _loading ? null : _openAutoCadastro,
-          icon: Icon(Icons.link_outlined),
+          tooltip: 'Novo cliente',
+          onPressed: _loading ? null : _openCreateOptions,
+          icon: Icon(Icons.add_rounded),
         ),
       ],
       bodyBuilder: (
@@ -256,29 +395,7 @@ class _ClientesUsuarioMobileScreenState
         ScrollController scrollController,
         double topInset,
       ) {
-        return SafeArea(
-          top: false,
-          child: Stack(
-            children: <Widget>[
-              _body(scrollController, topInset),
-              Positioned(
-                right: 16,
-                bottom: 16,
-                child: SafeArea(
-                  minimum: EdgeInsets.only(bottom: 8),
-                  child: FloatingActionButton.extended(
-                    backgroundColor: _accentColor,
-                    foregroundColor: _onAccentColor,
-                    elevation: 5,
-                    onPressed: _loading ? null : () => _openForm(),
-                    icon: Icon(Icons.person_add_alt_1_rounded),
-                    label: Text('Novo cliente'),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
+        return SafeArea(top: false, child: _body(scrollController, topInset));
       },
     );
   }
@@ -306,11 +423,6 @@ class _ClientesUsuarioMobileScreenState
           SizedBox(height: 14),
           SixStaggeredEntry(
             delay: Duration(milliseconds: 60),
-            child: _summaryBar(),
-          ),
-          SizedBox(height: 14),
-          SixStaggeredEntry(
-            delay: Duration(milliseconds: 100),
             child: _searchBox(),
           ),
           if (_erro != null) ...<Widget>[
@@ -319,7 +431,7 @@ class _ClientesUsuarioMobileScreenState
           ],
           SizedBox(height: 16),
           SixStaggeredEntry(
-            delay: Duration(milliseconds: 140),
+            delay: Duration(milliseconds: 100),
             child: _listTitle(),
           ),
           SizedBox(height: 12),
@@ -369,6 +481,43 @@ class _ClientesUsuarioMobileScreenState
   }
 
   Widget _headerCard() {
+    final int total = _clientes.length;
+    final int comDocumento =
+        _clientes
+            .where((ClienteUsuario item) => item.documento.trim().isNotEmpty)
+            .length;
+    final int comTelefone =
+        _clientes
+            .where((ClienteUsuario item) => item.telefone.trim().isNotEmpty)
+            .length;
+    final int incompletos =
+        _clientes
+            .where((ClienteUsuario item) => _clientNeedsAttention(item))
+            .length;
+    final int percentage =
+        total == 0 ? 0 : (((total - incompletos) / total) * 100).round();
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+    final Color ringColor = _healthAccentColor(
+      percentage: percentage,
+      total: total,
+      attentionCount: incompletos,
+    );
+    final String statusLabel = _healthStatusLabel(
+      percentage: percentage,
+      total: total,
+      attentionCount: incompletos,
+    );
+    final String subtitle = _healthSubtitle(
+      total: total,
+      attentionCount: incompletos,
+    );
+    final String attentionLabel = _healthAttentionLabel(
+      total: total,
+      attentionCount: incompletos,
+    );
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(18),
@@ -387,37 +536,88 @@ class _ClientesUsuarioMobileScreenState
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+          Text(
+            _t('clientes.registrationHealthTitle', 'Saúde do cadastro'),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
             ),
-            child: Icon(Icons.groups_2_outlined, color: Colors.white),
           ),
-          SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.82),
+              height: 1.25,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool useStackedLayout = constraints.maxWidth < 340;
+              final Widget ring = _healthScoreRing(
+                percentage: percentage,
+                statusLabel: statusLabel,
+                accentColor: ringColor,
+                reduceMotion: reduceMotion,
+                size: useStackedLayout ? 136 : 122,
+              );
+              final Widget metrics = _healthMetrics(
+                total: total,
+                withDocument: comDocumento,
+                withPhone: comTelefone,
+                incomplete: incompletos,
+              );
+
+              if (useStackedLayout) {
+                return Column(
+                  children: <Widget>[
+                    Center(child: ring),
+                    SizedBox(height: 14),
+                    metrics,
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Expanded(child: metrics),
+                  SizedBox(width: 14),
+                  ring,
+                ],
+              );
+            },
+          ),
+          SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Row(
               children: <Widget>[
-                Text(
-                  'Base de clientes',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                SizedBox(height: 5),
-                Text(
-                  'Cadastre, edite e acompanhe relacionamento e fiado.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.82),
-                    height: 1.25,
+                Icon(Icons.priority_high_rounded, color: ringColor, size: 16),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    attentionLabel,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      height: 1.25,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ],
@@ -428,72 +628,298 @@ class _ClientesUsuarioMobileScreenState
     );
   }
 
-  Widget _summaryBar() {
-    final double saldo = _clientes.fold<double>(
-      0,
-      (double total, ClienteUsuario cliente) => total + cliente.saldoFiado,
-    );
+  Widget _healthMetrics({
+    required int total,
+    required int withDocument,
+    required int withPhone,
+    required int incomplete,
+  }) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double itemWidth =
+            constraints.maxWidth >= 280
+                ? (constraints.maxWidth - 12) / 2
+                : constraints.maxWidth;
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: _surfaceColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _borderColor),
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: _summaryMetric(
-              label: 'Clientes',
-              value: _formatInt(_clientes.length),
+        return Wrap(
+          spacing: 12,
+          runSpacing: 10,
+          children: <Widget>[
+            SizedBox(
+              width: itemWidth,
+              child: _healthMetricItem(
+                Icons.groups_2_outlined,
+                _t('clientes.base', 'Clientes'),
+                _formatInt(total),
+              ),
             ),
-          ),
-          Container(width: 1, height: 34, color: _borderColor),
-          Expanded(
-            child: _summaryMetric(
-              label: 'Em aberto',
-              value: _formatMoney(saldo),
-              alignEnd: true,
+            SizedBox(
+              width: itemWidth,
+              child: _healthMetricItem(
+                Icons.badge_outlined,
+                _t('clientes.withDocument', 'Com documento'),
+                _formatInt(withDocument),
+              ),
             ),
-          ),
-        ],
-      ),
+            SizedBox(
+              width: itemWidth,
+              child: _healthMetricItem(
+                Icons.phone_iphone_rounded,
+                _t('clientes.withPhone', 'Com telefone'),
+                _formatInt(withPhone),
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _healthMetricItem(
+                Icons.manage_accounts_outlined,
+                _t('clientes.incomplete', 'Incompleto'),
+                _formatInt(incomplete),
+                highlight: incomplete > 0,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _summaryMetric({
-    required String label,
-    required String value,
-    bool alignEnd = false,
+  Widget _healthMetricItem(
+    IconData icon,
+    String label,
+    String value, {
+    bool highlight = false,
   }) {
-    return Column(
-      crossAxisAlignment:
-          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+    final Color iconColor = highlight ? _errorColor : Colors.white;
+    final Color iconSurface =
+        highlight
+            ? _errorColor.withValues(alpha: 0.18)
+            : Colors.white.withValues(alpha: 0.12);
+
+    return Row(
       children: <Widget>[
-        Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: _mutedTextColor,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: iconSurface,
+            borderRadius: BorderRadius.circular(11),
+            border: Border.all(
+              color:
+                  highlight
+                      ? _errorBorderColor.withValues(alpha: 0.55)
+                      : Colors.white.withValues(alpha: 0.10),
+            ),
           ),
+          child: Icon(icon, color: iconColor, size: 17),
         ),
-        SizedBox(height: 3),
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-          style: TextStyle(
-            color: _titleTextColor,
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
+        SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.74),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
           ),
         ),
       ],
+    );
+  }
+
+  bool _clientNeedsAttention(ClienteUsuario cliente) {
+    return cliente.nome.trim().isEmpty ||
+        cliente.documento.trim().isEmpty ||
+        cliente.telefone.trim().isEmpty;
+  }
+
+  Color _healthAccentColor({
+    required int percentage,
+    required int total,
+    required int attentionCount,
+  }) {
+    if (total == 0) {
+      return _accentColor;
+    }
+    if (attentionCount == 0 || percentage >= 85) {
+      return _accentColor;
+    }
+    if (percentage >= 60) {
+      return Color.lerp(_accentColor, _errorColor, 0.42) ?? _accentColor;
+    }
+    return _errorColor;
+  }
+
+  String _healthStatusLabel({
+    required int percentage,
+    required int total,
+    required int attentionCount,
+  }) {
+    if (total == 0) {
+      return _t('clientes.registrationHealthStart', 'Comece aqui');
+    }
+    if (attentionCount == 0 || percentage >= 85) {
+      return _t('clientes.registrationHealthHealthy', 'Saudável');
+    }
+    if (percentage >= 60) {
+      return _t('clientes.registrationHealthWarning', 'Atenção');
+    }
+    return _t('clientes.registrationHealthCritical', 'Crítico');
+  }
+
+  String _healthSubtitle({required int total, required int attentionCount}) {
+    if (total == 0) {
+      return _t(
+        'clientes.registrationHealthEmptySubtitle',
+        'Cadastre clientes para acompanhar os dados essenciais de contato e identificação.',
+      );
+    }
+    if (attentionCount == 0) {
+      return _t(
+        'clientes.registrationHealthOkSubtitle',
+        'Todos os clientes têm os dados principais preenchidos.',
+      );
+    }
+    return _t(
+      'clientes.registrationHealthPendingSubtitle',
+      '{count} cadastros precisam de atenção para manter a base pronta para atendimento.',
+    ).replaceAll('{count}', _formatInt(attentionCount));
+  }
+
+  String _healthAttentionLabel({
+    required int total,
+    required int attentionCount,
+  }) {
+    if (total == 0) {
+      return _t(
+        'clientes.registrationHealthEmptyLabel',
+        'Adicione o primeiro cliente para iniciar o acompanhamento.',
+      );
+    }
+    if (attentionCount == 0) {
+      return _t(
+        'clientes.registrationHealthOkLabel',
+        'Nenhum cadastro com pendência essencial.',
+      );
+    }
+    return _t(
+      'clientes.registrationHealthPendingLabel',
+      '{count} cadastros precisam de atenção',
+    ).replaceAll('{count}', _formatInt(attentionCount));
+  }
+
+  Widget _healthScoreRing({
+    required int percentage,
+    required String statusLabel,
+    required Color accentColor,
+    required bool reduceMotion,
+    required double size,
+  }) {
+    final Duration duration =
+        reduceMotion ? Duration.zero : Duration(milliseconds: 760);
+    final double progressSize = size - 24;
+    final double innerSize = size - 44;
+
+    return TweenAnimationBuilder<double>(
+      key: ValueKey<String>('clients-health-$percentage'),
+      tween: Tween<double>(
+        begin: reduceMotion ? percentage / 100 : 0,
+        end: percentage / 100,
+      ),
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      builder: (BuildContext context, double progress, _) {
+        final int displayedPercentage = (progress * 100).round();
+        return SizedBox(
+          width: size,
+          height: size,
+          child: Stack(
+            alignment: Alignment.center,
+            children: <Widget>[
+              SizedBox(
+                width: progressSize,
+                height: progressSize,
+                child: CircularProgressIndicator(
+                  value: progress.clamp(0, 1),
+                  strokeWidth: 10,
+                  backgroundColor: Colors.white.withValues(alpha: 0.12),
+                  valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                ),
+              ),
+              Container(
+                width: innerSize,
+                height: innerSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black.withValues(alpha: 0.10),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      '$displayedPercentage%',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: size >= 136 ? 24 : 21,
+                        height: 1,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: accentColor.withValues(alpha: 0.22),
+                        ),
+                      ),
+                      child: Text(
+                        statusLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: accentColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -533,20 +959,20 @@ class _ClientesUsuarioMobileScreenState
   }
 
   Widget _clientCard(ClienteUsuario cliente) {
-    final bool fiadoOk = cliente.permiteCompraFiado && !cliente.bloqueadoFiado;
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _surfaceColor,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        onTap: () => _history(cliente),
+        child: Container(
+          margin: EdgeInsets.only(bottom: 12),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: _surfaceColor,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: _borderColor),
+          ),
+          child: Row(
             children: <Widget>[
               CircleAvatar(
                 radius: 23,
@@ -555,6 +981,7 @@ class _ClientesUsuarioMobileScreenState
                   _initials(cliente.nome),
                   style: TextStyle(
                     color: _accentColor,
+                    fontSize: 22,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -563,6 +990,7 @@ class _ClientesUsuarioMobileScreenState
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     Text(
                       cliente.nome.isEmpty ? 'Cliente sem nome' : cliente.nome,
@@ -576,145 +1004,76 @@ class _ClientesUsuarioMobileScreenState
                     ),
                     SizedBox(height: 4),
                     Text(
-                      '${cliente.tipoPessoa.isEmpty ? 'PF' : cliente.tipoPessoa} • ${cliente.documento.isEmpty ? 'Documento não informado' : cliente.documento}',
+                      _clientCardSubtitle(cliente),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: _mutedTextColor, fontSize: 12),
+                      style: TextStyle(
+                        color: _mutedTextColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
               ),
-              _status(cliente.ativo),
-            ],
-          ),
-          SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              _chip(
-                Icons.phone_outlined,
-                cliente.telefone.isEmpty ? 'Sem telefone' : cliente.telefone,
-              ),
-              _chip(
-                Icons.mail_outline,
-                cliente.email.isEmpty ? 'Sem e-mail' : cliente.email,
-              ),
-              _chip(Icons.location_on_outlined, _location(cliente)),
-            ],
-          ),
-          SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color:
-                  fiadoOk
-                      ? _successColor.withValues(alpha: 0.08)
-                      : _softSurfaceColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color:
-                    fiadoOk
-                        ? _successColor.withValues(alpha: 0.24)
-                        : _borderColor,
-              ),
-            ),
-            child: Row(
-              children: <Widget>[
-                Icon(
-                  Icons.request_quote_outlined,
-                  color: fiadoOk ? _successColor : _mutedTextColor,
-                  size: 19,
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    cliente.permiteCompraFiado
-                        ? 'Fiado: ${_formatMoney(cliente.limiteFiado)} • ${cliente.prazoPagamentoDias} dias'
-                        : 'Fiado não liberado',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: _titleTextColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 12),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _history(cliente),
-                  icon: Icon(Icons.timeline_outlined, size: 18),
-                  label: Text('Histórico'),
-                ),
-              ),
               SizedBox(width: 10),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () => _openForm(cliente: cliente),
-                  icon: Icon(Icons.edit_outlined, size: 18),
-                  label: Text('Editar'),
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  _status(cliente.ativo),
+                  SizedBox(width: 8),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: _mutedTextColor,
+                    size: 22,
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _chip(IconData icon, String label) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 7),
-      decoration: BoxDecoration(
-        color: _softSurfaceColor,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _borderColor),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 14, color: _accentColor),
-          SizedBox(width: 5),
-          ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: 190),
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: _titleTextColor,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  String _clientCardSubtitle(ClienteUsuario cliente) {
+    final String email = cliente.email.trim();
+    if (email.isNotEmpty) {
+      return email;
+    }
+
+    final String telefone = cliente.telefone.trim();
+    if (telefone.isNotEmpty) {
+      return telefone;
+    }
+
+    final String documento = cliente.documento.trim();
+    if (documento.isNotEmpty) {
+      return '${cliente.tipoPessoa.isEmpty ? 'PF' : cliente.tipoPessoa} • $documento';
+    }
+
+    return 'Cadastro sem contato principal';
   }
 
   Widget _status(bool ativo) {
     final Color color = ativo ? _successColor : _errorColor;
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
-        ativo ? 'Ativo' : 'Inativo',
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 70),
+        child: Text(
+          ativo ? 'Ativo' : 'Inativo',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+          ),
         ),
       ),
     );
@@ -811,73 +1170,335 @@ class _ClientesUsuarioMobileScreenState
   void _history(ClienteUsuario cliente) {
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       barrierColor: Color(0x47000000),
       builder: (BuildContext bottomSheetContext) {
-        return Container(
-          margin: EdgeInsets.fromLTRB(12, 0, 12, 12),
-          padding: EdgeInsets.fromLTRB(20, 12, 20, 24),
-          decoration: BoxDecoration(
-            color: _surfaceColor,
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: _navigationShadowColor,
-                blurRadius: 28,
-                offset: Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Center(
-                child: Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: _strongBorderColor,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
+        return Padding(
+          padding: EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.82,
+            minChildSize: 0.58,
+            maxChildSize: 0.94,
+            builder: (BuildContext context, ScrollController controller) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: _surfaceColor,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: _navigationShadowColor,
+                      blurRadius: 28,
+                      offset: Offset(0, 12),
+                    ),
+                  ],
                 ),
-              ),
-              SizedBox(height: 16),
-              Text(
-                cliente.nome.isEmpty ? 'Cliente' : cliente.nome,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
-              ),
-              SizedBox(height: 14),
-              _historyRow(
-                'Telefone',
-                cliente.telefone.isEmpty ? '-' : cliente.telefone,
-              ),
-              _historyRow(
-                'E-mail',
-                cliente.email.isEmpty ? '-' : cliente.email,
-              ),
-              _historyRow('Endereço', _address(cliente)),
-              _historyRow(
-                'Fiado',
-                cliente.permiteCompraFiado
-                    ? _formatMoney(cliente.limiteFiado)
-                    : 'não liberado',
-              ),
-              SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(bottomSheetContext).pop(),
-                  child: Text('Fechar'),
+                child: ListView(
+                  controller: controller,
+                  padding: EdgeInsets.fromLTRB(20, 12, 20, 24),
+                  children: <Widget>[
+                    Center(
+                      child: Container(
+                        width: 42,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: _strongBorderColor,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        CircleAvatar(
+                          radius: 25,
+                          backgroundColor: _softAccentColor,
+                          child: Text(
+                            _initials(cliente.nome),
+                            style: TextStyle(
+                              color: _accentColor,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                cliente.nome.isEmpty ? 'Cliente' : cliente.nome,
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.w900),
+                              ),
+                              SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: <Widget>[
+                                  _status(cliente.ativo),
+                                  _sheetInfoChip(
+                                    Icons.person_outline_rounded,
+                                    _personTypeLabel(cliente.tipoPessoa),
+                                  ),
+                                  _sheetInfoChip(
+                                    Icons.assignment_outlined,
+                                    _registrationTypeLabel(
+                                      cliente.tipoCadastro,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Editar cliente',
+                          onPressed: () {
+                            Navigator.of(bottomSheetContext).pop();
+                            _openForm(cliente: cliente);
+                          },
+                          icon: Icon(Icons.edit_outlined),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 18),
+                    _detailSection(
+                      title: 'Contato e identificação',
+                      children: <Widget>[
+                        _historyRow(
+                          'Documento',
+                          _valueOrDash(cliente.documento),
+                        ),
+                        _historyRow('Telefone', _valueOrDash(cliente.telefone)),
+                        _historyRow('E-mail', _valueOrDash(cliente.email)),
+                        _historyRow(
+                          'Qualidade',
+                          '${_formatInt(cliente.percentualQualidadeCadastro)}%',
+                        ),
+                        _historyRow(
+                          'Foto',
+                          cliente.foto.trim().isNotEmpty
+                              ? 'Foto cadastrada'
+                              : 'Sem foto',
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+                    _detailSection(
+                      title: 'Endereço',
+                      children: <Widget>[
+                        _historyRow('CEP', _valueOrDash(cliente.cep)),
+                        _historyRow(
+                          'Logradouro',
+                          _valueOrDash(cliente.logradouro),
+                        ),
+                        _historyRow('Número', _valueOrDash(cliente.numero)),
+                        _historyRow(
+                          'Complemento',
+                          _valueOrDash(cliente.complemento),
+                        ),
+                        _historyRow('Bairro', _valueOrDash(cliente.bairro)),
+                        _historyRow('Cidade', _valueOrDash(cliente.cidade)),
+                        _historyRow('UF', _valueOrDash(cliente.uf)),
+                        _historyRow('Completo', _address(cliente)),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+                    _detailSection(
+                      title: 'Fiado',
+                      children: <Widget>[
+                        _historyRow(
+                          'Liberado',
+                          _boolLabel(cliente.permiteCompraFiado),
+                        ),
+                        _historyRow(
+                          'Limite',
+                          _formatMoney(cliente.limiteFiado),
+                        ),
+                        _historyRow(
+                          'Em aberto',
+                          _formatMoney(cliente.saldoFiado),
+                        ),
+                        _historyRow(
+                          'Prazo',
+                          '${_formatInt(cliente.prazoPagamentoDias)} dias',
+                        ),
+                        _historyRow(
+                          'Bloqueado',
+                          _boolLabel(cliente.bloqueadoFiado),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+                    _detailSection(
+                      title: 'Cadastro',
+                      children: <Widget>[
+                        _historyRow(
+                          'Origem',
+                          _registrationOriginLabel(cliente.origemAutoCadastro),
+                        ),
+                        _historyRow(
+                          'Criado em',
+                          _formatDateTime(cliente.criadoEm),
+                        ),
+                        _historyRow(
+                          'Atualizado em',
+                          _formatDateTime(cliente.atualizadoEm),
+                        ),
+                        _historyRow(
+                          'Enviado em',
+                          _formatDateTime(cliente.enviadoEm),
+                        ),
+                        _historyRow(
+                          'Observações',
+                          _valueOrDash(cliente.observacoes),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              );
+            },
           ),
         );
       },
+    );
+  }
+
+  Widget _detailSection({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _softSurfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            title,
+            style: TextStyle(
+              color: _titleTextColor,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 14),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _createOptionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: _softSurfaceColor,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _borderColor),
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: _softAccentColor,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: _accentColor),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _titleTextColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _mutedTextColor,
+                        fontSize: 12,
+                        height: 1.25,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: _mutedTextColor,
+                size: 22,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sheetInfoChip(IconData icon, String label) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      constraints: BoxConstraints(maxWidth: 188),
+      decoration: BoxDecoration(
+        color: _softSurfaceColor,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: _borderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 14, color: _accentColor),
+          SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: _titleTextColor,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -901,7 +1522,7 @@ class _ClientesUsuarioMobileScreenState
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: TextStyle(fontWeight: FontWeight.w800),
+              style: TextStyle(fontWeight: FontWeight.w800, height: 1.3),
             ),
           ),
         ],
@@ -909,11 +1530,50 @@ class _ClientesUsuarioMobileScreenState
     );
   }
 
-  String _location(ClienteUsuario cliente) {
-    if (cliente.cidade.isEmpty && cliente.uf.isEmpty) return 'Sem cidade';
-    if (cliente.uf.isEmpty) return cliente.cidade;
-    if (cliente.cidade.isEmpty) return cliente.uf;
-    return '${cliente.cidade}/${cliente.uf}';
+  String _valueOrDash(String value) {
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? '-' : trimmed;
+  }
+
+  String _boolLabel(bool value) => value ? 'Sim' : 'Não';
+
+  String _personTypeLabel(String tipoPessoa) {
+    final String normalized = tipoPessoa.trim().toUpperCase();
+    switch (normalized) {
+      case 'PJ':
+        return 'Pessoa jurídica';
+      case 'PF':
+      default:
+        return 'Pessoa física';
+    }
+  }
+
+  String _registrationTypeLabel(String tipoCadastro) {
+    final String normalized = tipoCadastro.trim().toUpperCase();
+    if (normalized == 'COMPLETO') {
+      return 'Cadastro completo';
+    }
+    return 'Cadastro simples';
+  }
+
+  String _registrationOriginLabel(String origemAutoCadastro) {
+    final String normalized = origemAutoCadastro.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return 'Manual';
+    }
+    if (normalized == 'true' || normalized == '1' || normalized == 'sim') {
+      return 'Auto cadastro';
+    }
+    return origemAutoCadastro;
+  }
+
+  String _formatDateTime(DateTime? value) {
+    if (value == null) {
+      return '-';
+    }
+    final LocaleSettingsProvider locale =
+        context.read<LocaleSettingsProvider>();
+    return '${locale.formatDate(value)} ${locale.formatTime(value)}';
   }
 
   String _address(ClienteUsuario cliente) {
@@ -977,7 +1637,12 @@ class _MobileClientesLoading extends StatelessWidget {
       children: List<Widget>.generate(
         5,
         (int index) => Container(
-          height: index == 0 ? 118 : 132,
+          height:
+              index == 0
+                  ? 252
+                  : index == 1
+                  ? 82
+                  : 132,
           margin: EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             color: context.sixMobileColors.surface,

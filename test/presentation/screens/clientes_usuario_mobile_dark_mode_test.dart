@@ -75,7 +75,7 @@ void main() {
       isTrue,
     );
 
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Histórico').first);
+    await tester.tap(find.text('cliente cadastrado no servico').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 220));
 
@@ -111,6 +111,57 @@ void main() {
         tester,
         find.text('Nenhum cliente encontrado'),
         SixMobileColorScheme.dark.surface,
+      ),
+      isTrue,
+    );
+  });
+
+  testWidgets('auto signup sheet keeps dark themed surfaces', (
+    WidgetTester tester,
+  ) async {
+    await _pumpClients(
+      tester,
+      apiClient: _FakeClienteUsuarioApiClient(
+        response: ClienteUsuarioListResponse(
+          idUnicoDaEmpresa: 'empresa-1',
+          total: 1,
+          clientes: <ClienteUsuario>[
+            _cliente(
+              id: 'cliente-1',
+              nome: 'cliente cadastrado no servico',
+              documento: '32321321',
+              telefone: '+55',
+              cidade: '',
+              uf: '',
+              email: '',
+              permiteCompraFiado: true,
+              limiteFiado: 0,
+              prazoPagamentoDias: 30,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    await tester.tap(find.byTooltip('Novo cliente'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enviar ao cliente'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Auto cadastro'), findsOneWidget);
+    expect(
+      _hasDecoratedAncestorColor(
+        tester,
+        find.text('Auto cadastro'),
+        SixMobileColorScheme.dark.surface,
+      ),
+      isTrue,
+    );
+    expect(
+      _hasDecoratedAncestorColor(
+        tester,
+        find.text('Gerar link'),
+        SixMobileColorScheme.dark.surfaceElevated,
       ),
       isTrue,
     );

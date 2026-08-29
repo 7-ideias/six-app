@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart' as sharing;
 import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/core/services/auto_customer_token_service.dart';
+import 'package:sixpos/data/models/empresa_model.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
+import 'package:sixpos/providers/empresa_provider.dart';
 
 Future<void> showClienteAutoCadastroLinkDialog(
   BuildContext context, {
@@ -114,6 +116,9 @@ class ClienteAutoCadastroLinkSection extends StatefulWidget {
 
 class _ClienteAutoCadastroLinkSectionState
     extends State<ClienteAutoCadastroLinkSection> {
+  static const String _mensagemConviteBase =
+      'Olá! Use este link seguro para concluir seu cadastro de cliente.';
+
   final AutoCustomerTokenService _autoCustomerTokenService =
       AutoCustomerTokenService();
   final TextEditingController _empresaController = TextEditingController();
@@ -123,8 +128,7 @@ class _ClienteAutoCadastroLinkSectionState
   final TextEditingController _destinoController = TextEditingController();
   final TextEditingController _linkController = TextEditingController();
   final TextEditingController _mensagemController = TextEditingController(
-    text:
-        'Olá! Use este link seguro para concluir seu cadastro de cliente.',
+    text: _mensagemConviteBase,
   );
 
   bool _habilitado = true;
@@ -149,10 +153,81 @@ class _ClienteAutoCadastroLinkSectionState
     super.dispose();
   }
 
+  EmpresaModel? get _empresaAtual => EmpresaProvider().empresa;
+
+  String get _nomeEmpresaExibicao {
+    final EmpresaModel? empresa = _empresaAtual;
+    final String nomeFantasia = empresa?.nomeFantasia.trim() ?? '';
+    if (nomeFantasia.isNotEmpty) {
+      return nomeFantasia;
+    }
+    final String nomeEmpresa = empresa?.nomeEmpresa.trim() ?? '';
+    if (nomeEmpresa.isNotEmpty) {
+      return nomeEmpresa;
+    }
+    return '';
+  }
+
+  String _mensagemConvitePadrao() {
+    final String nomeEmpresa = _nomeEmpresaExibicao;
+    if (nomeEmpresa.isEmpty) {
+      return _mensagemConviteBase;
+    }
+    return 'Olá! Use este link seguro para concluir seu cadastro com $nomeEmpresa.';
+  }
+
+  List<String> _linhasInfoEmpresa() {
+    final EmpresaModel? empresa = _empresaAtual;
+    if (empresa == null) {
+      return const <String>[];
+    }
+
+    final List<String> linhas = <String>[];
+    final String nomeEmpresa = _nomeEmpresaExibicao;
+    if (nomeEmpresa.isNotEmpty) {
+      linhas.add(nomeEmpresa);
+    }
+
+    final String whatsapp = empresa.whatsapp?.trim() ?? '';
+    if (whatsapp.isNotEmpty) {
+      linhas.add('WhatsApp: $whatsapp');
+    }
+
+    final String telefone = empresa.telefone?.trim() ?? '';
+    if (telefone.isNotEmpty && telefone != whatsapp) {
+      linhas.add('Telefone: $telefone');
+    }
+
+    final String email = empresa.emailPrincipal?.trim() ?? '';
+    if (email.isNotEmpty) {
+      linhas.add('E-mail: $email');
+    }
+
+    return linhas;
+  }
+
+  String _mensagemCompartilhamento(String link) {
+    final String mensagemBase =
+        _mensagemController.text.trim().isEmpty
+            ? _mensagemConvitePadrao()
+            : _mensagemController.text.trim();
+    final List<String> blocos = <String>[
+      mensagemBase,
+      ..._linhasInfoEmpresa(),
+      link,
+    ];
+    return blocos.where((String item) => item.trim().isNotEmpty).join('\n\n');
+  }
+
   Future<void> _carregarEmpresa() async {
     final String empresaId = (await AuthService().getEmpresaId())?.trim() ?? '';
     if (!mounted || empresaId.isEmpty) return;
-    setState(() => _empresaController.text = empresaId);
+    setState(() {
+      _empresaController.text = empresaId;
+      if (_mensagemController.text.trim() == _mensagemConviteBase) {
+        _mensagemController.text = _mensagemConvitePadrao();
+      }
+    });
   }
 
   String _fallbackErroGeracaoLink(AutoCustomerTokenApiResponse response) {
@@ -264,14 +339,14 @@ class _ClienteAutoCadastroLinkSectionState
     if (link.isEmpty) link = (await _gerarLink(mostrarMensagem: false)) ?? '';
     if (link.isEmpty) return;
 
-    final String mensagem =
-        _mensagemController.text.trim().isEmpty
-            ? 'Use este link para concluir seu auto-cadastro.'
-            : _mensagemController.text.trim();
-    final String textoCompartilhamento = <String>[mensagem, link].join('\n\n');
+    final String textoCompartilhamento = _mensagemCompartilhamento(link);
+    final String nomeEmpresa = _nomeEmpresaExibicao;
     await sharing.Share.share(
       textoCompartilhamento,
-      subject: 'Auto-cadastro de cliente',
+      subject:
+          nomeEmpresa.isEmpty
+              ? 'Auto-cadastro de cliente'
+              : 'Auto-cadastro de cliente - $nomeEmpresa',
     );
   }
 

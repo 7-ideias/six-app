@@ -10,6 +10,7 @@ import {
   calculateCustomerSignupQuality,
   customerSignupErrorKey,
   extractCustomerSignupLink,
+  normalizeCustomerSignupValidationResponse,
   resolvePublicApiConfig,
   submitCustomerSignup,
   validateCustomerSignupLink,
@@ -18,7 +19,17 @@ import {
 (function () {
   'use strict';
 
-  const state = { apiConfig: null, link: null, language: 'pt', step: 0, submitting: false, loadErrorKey: null, feedbackKey: null, completed: false };
+  const state = {
+    apiConfig: null,
+    link: null,
+    language: 'pt',
+    step: 0,
+    submitting: false,
+    loadErrorKey: null,
+    feedbackKey: null,
+    completed: false,
+    validation: null,
+  };
   const elements = {
     loading: document.querySelector('[data-customer-loading]'),
     error: document.querySelector('[data-customer-error]'),
@@ -44,6 +55,17 @@ import {
     stepTrack: document.querySelector('[data-step-track]'),
     stepBars: [...document.querySelectorAll('[data-step-bar]')],
     journeyOptions: [...document.querySelectorAll('[data-journey-option]')],
+    companySection: document.querySelector('[data-company-section]'),
+    companyName: document.querySelector('[data-company-name]'),
+    companyTitle: document.querySelector('[data-company-title]'),
+    companyDescription: document.querySelector('[data-company-description]'),
+    companyAddress: document.querySelector('[data-company-address]'),
+    companyContact: document.querySelector('[data-company-contact]'),
+    companyContactLinks: document.querySelector('[data-company-contact-links]'),
+    companyLogos: [...document.querySelectorAll('[data-company-logo]')],
+    companyLogoLarge: document.querySelector('[data-company-logo-large]'),
+    companyBrand: document.querySelector('[data-company-brand]'),
+    companyContextName: document.querySelector('[data-company-context-name]'),
   };
 
   function copy(key) { return CUSTOMER_SIGNUP_DICTIONARY[state.language]?.[key] || CUSTOMER_SIGNUP_DICTIONARY.pt[key] || key; }
@@ -53,6 +75,107 @@ import {
   }
   function normalizedValues() { return { ...values(), consentimento: elements.form.elements.consentimento.checked }; }
   function mode() { return values().tipoCadastro === 'COMPLETO' ? 'COMPLETO' : 'SIMPLES'; }
+  function companyDisplayName() {
+    return state.validation?.company?.displayName || copy('title');
+  }
+
+  function safeExternalUrl(value) {
+    try {
+      const url = new URL(String(value || ''));
+      return ['http:', 'https:'].includes(url.protocol) ? url.toString() : '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function addContactLink(container, { href, label, ariaLabel }) {
+    if (!href || !label) return;
+    const link = document.createElement('a');
+    link.href = href;
+    link.textContent = label;
+    link.setAttribute('aria-label', ariaLabel || label);
+    if (href.startsWith('http')) {
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+    }
+    container.append(link);
+  }
+
+  function setMetaContent(selector, value) {
+    const node = document.querySelector(selector);
+    if (node && value) node.setAttribute('content', value);
+  }
+
+  function setCompanyLogo(image, logo, fallback) {
+    if (!image) return;
+    if (logo) {
+      image.hidden = false;
+      image.src = logo;
+      image.alt = fallback;
+      return;
+    }
+    image.hidden = true;
+    image.removeAttribute('src');
+    image.alt = '';
+  }
+
+  function renderCompanyIdentity() {
+    const company = state.validation?.company;
+    if (!company || !companyDisplayName()) {
+      elements.companySection.hidden = true;
+      return;
+    }
+
+    const displayName = company.displayName || copy('title');
+    const description = copy('company.description');
+    elements.companyBrand.setAttribute('aria-label', displayName);
+    elements.companyName.textContent = displayName;
+    elements.companyTitle.textContent = displayName;
+    elements.companyContextName.textContent = displayName;
+    elements.companyDescription.hidden = !description;
+    elements.companyDescription.textContent = description;
+    elements.companyAddress.hidden = !company.address;
+    elements.companyAddress.textContent = company.address;
+    elements.companyContactLinks.textContent = '';
+
+    const whatsappDigits = company.whatsapp.replace(/\D/g, '');
+    const phoneDigits = company.phone.replace(/[^\d+]/g, '');
+    addContactLink(elements.companyContactLinks, {
+      href: whatsappDigits ? `https://wa.me/${whatsappDigits}` : '',
+      label: company.whatsapp,
+      ariaLabel: `WhatsApp ${company.whatsapp}`,
+    });
+    addContactLink(elements.companyContactLinks, {
+      href: phoneDigits ? `tel:${phoneDigits}` : '',
+      label: company.phone,
+    });
+    addContactLink(elements.companyContactLinks, {
+      href: company.email ? `mailto:${company.email}` : '',
+      label: company.email,
+    });
+    const site = safeExternalUrl(company.site);
+    addContactLink(elements.companyContactLinks, {
+      href: site,
+      label: site ? new URL(site).host : '',
+    });
+    elements.companyContact.hidden =
+      elements.companyContactLinks.childElementCount === 0;
+
+    elements.companyLogos.forEach((image) => {
+      setCompanyLogo(image, company.logoBase64, displayName);
+    });
+    setCompanyLogo(elements.companyLogoLarge, company.logoBase64, displayName);
+    elements.companySection.hidden = false;
+
+    const title = `${displayName} • ${copy('title')}`;
+    const descriptionText = description || copy('description');
+    document.title = title;
+    setMetaContent('meta[name="description"]', descriptionText);
+    setMetaContent('meta[property="og:title"]', title);
+    setMetaContent('meta[property="og:description"]', descriptionText);
+    setMetaContent('meta[name="twitter:title"]', title);
+    setMetaContent('meta[name="twitter:description"]', descriptionText);
+  }
 
   function hidePrimaryStates() { elements.loading.hidden = true; elements.error.hidden = true; elements.card.hidden = true; }
   function showLoading() { hidePrimaryStates(); elements.loading.hidden = false; }
@@ -100,6 +223,7 @@ import {
     if (state.loadErrorKey && !elements.error.hidden) elements.errorMessage.textContent = copy(state.loadErrorKey);
     if (state.feedbackKey) setFeedback(state.feedbackKey, false);
     elements.submitLabels.forEach((label) => { label.textContent = copy(state.submitting ? 'form.loading' : 'form.submit'); });
+    renderCompanyIdentity();
     renderJourney();
   }
 
@@ -131,7 +255,13 @@ import {
   async function loadLink() {
     showLoading(); state.loadErrorKey = null;
     try {
-      await validateCustomerSignupLink({ apiBaseUrl: state.apiConfig.apiBaseUrl, link: state.link });
+      state.validation = normalizeCustomerSignupValidationResponse(
+        await validateCustomerSignupLink({
+          apiBaseUrl: state.apiConfig.apiBaseUrl,
+          link: state.link,
+        }),
+      );
+      renderCompanyIdentity();
       showForm();
     } catch (error) { showLoadError(customerSignupErrorKey(error)); }
   }
