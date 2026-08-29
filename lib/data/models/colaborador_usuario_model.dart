@@ -36,7 +36,7 @@ class ColaboradorUsuarioResumo {
       nomeDeGuerra: json['nomeDeGuerra']?.toString() ?? '',
       celularDeAcesso: json['celularDeAcesso']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
-      foto: json['foto']?.toString() ?? '',
+      foto: _fotoFromJson(json),
       dataCadastro: DateTime.tryParse(json['dataCadastro']?.toString() ?? ''),
       status: status,
       ativo: _toBool(json['ativo'], fallback: status.toUpperCase() == 'ATIVO'),
@@ -69,6 +69,24 @@ class ColaboradorUsuarioResumo {
       ehUmTecnicoEFazAssistenciaTecnica:
           ehUmTecnicoEFazAssistenciaTecnica ??
           this.ehUmTecnicoEFazAssistenciaTecnica,
+    );
+  }
+
+  static String _fotoFromJson(Map<String, dynamic> json) {
+    final Map<String, dynamic> objFotoRegistro = _ensureMap(
+      json['objFotoRegistro'],
+    );
+    final Map<String, dynamic> objPessoa = _ensureMap(json['objPessoa']);
+
+    return _stringFromJson(
+      json['foto'] ??
+          json['fotoDePerfil'] ??
+          json['urlFoto'] ??
+          json['imagemPerfil'] ??
+          json['imagemDoUsuario'] ??
+          objPessoa['foto'] ??
+          objFotoRegistro['urlFoto'] ??
+          objFotoRegistro['foto'],
     );
   }
 
@@ -133,6 +151,10 @@ class ColaboradorUsuarioResumo {
       return false;
     }
     return fallback;
+  }
+
+  static String _stringFromJson(dynamic value) {
+    return value?.toString() ?? '';
   }
 }
 
