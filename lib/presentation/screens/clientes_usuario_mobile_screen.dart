@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:sixpos/data/models/cliente_usuario_model.dart';
 import 'package:sixpos/data/services/cliente_usuario/cliente_usuario_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/cliente_auto_cadastro_link_section.dart';
@@ -38,6 +39,7 @@ class _ClientesUsuarioMobileScreenState
   Color get _heroShadowColor => _colors.heroShadow;
   Color get _navigationShadowColor => _colors.navigationShadow;
   Color get _errorColor => _colors.error;
+  Color get _errorBorderColor => _colors.errorBorder;
   static const Color _successColor = Color(0xFF16A34A);
 
   late final ClienteUsuarioApiClient _api;
@@ -50,6 +52,8 @@ class _ClientesUsuarioMobileScreenState
 
   List<ClienteUsuario> get _clientes =>
       _response?.clientes ?? <ClienteUsuario>[];
+
+  String _t(String key, String fallback) => context.t(key, fallback: fallback);
 
   List<ClienteUsuario> get _items {
     final String term = _filter.toLowerCase().replaceAll(
@@ -369,6 +373,43 @@ class _ClientesUsuarioMobileScreenState
   }
 
   Widget _headerCard() {
+    final int total = _clientes.length;
+    final int comDocumento =
+        _clientes
+            .where((ClienteUsuario item) => item.documento.trim().isNotEmpty)
+            .length;
+    final int comTelefone =
+        _clientes
+            .where((ClienteUsuario item) => item.telefone.trim().isNotEmpty)
+            .length;
+    final int incompletos =
+        _clientes
+            .where((ClienteUsuario item) => _clientNeedsAttention(item))
+            .length;
+    final int percentage =
+        total == 0 ? 0 : (((total - incompletos) / total) * 100).round();
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+    final Color ringColor = _healthAccentColor(
+      percentage: percentage,
+      total: total,
+      attentionCount: incompletos,
+    );
+    final String statusLabel = _healthStatusLabel(
+      percentage: percentage,
+      total: total,
+      attentionCount: incompletos,
+    );
+    final String subtitle = _healthSubtitle(
+      total: total,
+      attentionCount: incompletos,
+    );
+    final String attentionLabel = _healthAttentionLabel(
+      total: total,
+      attentionCount: incompletos,
+    );
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(18),
@@ -387,37 +428,88 @@ class _ClientesUsuarioMobileScreenState
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+          Text(
+            _t('clientes.registrationHealthTitle', 'Saúde do cadastro'),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
             ),
-            child: Icon(Icons.groups_2_outlined, color: Colors.white),
           ),
-          SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.82),
+              height: 1.25,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool useStackedLayout = constraints.maxWidth < 340;
+              final Widget ring = _healthScoreRing(
+                percentage: percentage,
+                statusLabel: statusLabel,
+                accentColor: ringColor,
+                reduceMotion: reduceMotion,
+                size: useStackedLayout ? 136 : 122,
+              );
+              final Widget metrics = _healthMetrics(
+                total: total,
+                withDocument: comDocumento,
+                withPhone: comTelefone,
+                incomplete: incompletos,
+              );
+
+              if (useStackedLayout) {
+                return Column(
+                  children: <Widget>[
+                    Center(child: ring),
+                    SizedBox(height: 14),
+                    metrics,
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Expanded(child: metrics),
+                  SizedBox(width: 14),
+                  ring,
+                ],
+              );
+            },
+          ),
+          SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Row(
               children: <Widget>[
-                Text(
-                  'Base de clientes',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                SizedBox(height: 5),
-                Text(
-                  'Cadastre, edite e acompanhe relacionamento e fiado.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.82),
-                    height: 1.25,
+                Icon(Icons.priority_high_rounded, color: ringColor, size: 16),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    attentionLabel,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      height: 1.25,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ],
@@ -425,6 +517,301 @@ class _ClientesUsuarioMobileScreenState
           ),
         ],
       ),
+    );
+  }
+
+  Widget _healthMetrics({
+    required int total,
+    required int withDocument,
+    required int withPhone,
+    required int incomplete,
+  }) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double itemWidth =
+            constraints.maxWidth >= 280
+                ? (constraints.maxWidth - 12) / 2
+                : constraints.maxWidth;
+
+        return Wrap(
+          spacing: 12,
+          runSpacing: 10,
+          children: <Widget>[
+            SizedBox(
+              width: itemWidth,
+              child: _healthMetricItem(
+                Icons.groups_2_outlined,
+                _t('clientes.base', 'Clientes'),
+                _formatInt(total),
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _healthMetricItem(
+                Icons.badge_outlined,
+                _t('clientes.withDocument', 'Com documento'),
+                _formatInt(withDocument),
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _healthMetricItem(
+                Icons.phone_iphone_rounded,
+                _t('clientes.withPhone', 'Com telefone'),
+                _formatInt(withPhone),
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _healthMetricItem(
+                Icons.manage_accounts_outlined,
+                _t('clientes.incomplete', 'Incompleto'),
+                _formatInt(incomplete),
+                highlight: incomplete > 0,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _healthMetricItem(
+    IconData icon,
+    String label,
+    String value, {
+    bool highlight = false,
+  }) {
+    final Color iconColor = highlight ? _errorColor : Colors.white;
+    final Color iconSurface =
+        highlight
+            ? _errorColor.withValues(alpha: 0.18)
+            : Colors.white.withValues(alpha: 0.12);
+
+    return Row(
+      children: <Widget>[
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: iconSurface,
+            borderRadius: BorderRadius.circular(11),
+            border: Border.all(
+              color:
+                  highlight
+                      ? _errorBorderColor.withValues(alpha: 0.55)
+                      : Colors.white.withValues(alpha: 0.10),
+            ),
+          ),
+          child: Icon(icon, color: iconColor, size: 17),
+        ),
+        SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.74),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  bool _clientNeedsAttention(ClienteUsuario cliente) {
+    return cliente.nome.trim().isEmpty ||
+        cliente.documento.trim().isEmpty ||
+        cliente.telefone.trim().isEmpty;
+  }
+
+  Color _healthAccentColor({
+    required int percentage,
+    required int total,
+    required int attentionCount,
+  }) {
+    if (total == 0) {
+      return _accentColor;
+    }
+    if (attentionCount == 0 || percentage >= 85) {
+      return _accentColor;
+    }
+    if (percentage >= 60) {
+      return Color.lerp(_accentColor, _errorColor, 0.42) ?? _accentColor;
+    }
+    return _errorColor;
+  }
+
+  String _healthStatusLabel({
+    required int percentage,
+    required int total,
+    required int attentionCount,
+  }) {
+    if (total == 0) {
+      return _t('clientes.registrationHealthStart', 'Comece aqui');
+    }
+    if (attentionCount == 0 || percentage >= 85) {
+      return _t('clientes.registrationHealthHealthy', 'Saudável');
+    }
+    if (percentage >= 60) {
+      return _t('clientes.registrationHealthWarning', 'Atenção');
+    }
+    return _t('clientes.registrationHealthCritical', 'Crítico');
+  }
+
+  String _healthSubtitle({required int total, required int attentionCount}) {
+    if (total == 0) {
+      return _t(
+        'clientes.registrationHealthEmptySubtitle',
+        'Cadastre clientes para acompanhar os dados essenciais de contato e identificação.',
+      );
+    }
+    if (attentionCount == 0) {
+      return _t(
+        'clientes.registrationHealthOkSubtitle',
+        'Todos os clientes têm os dados principais preenchidos.',
+      );
+    }
+    return _t(
+      'clientes.registrationHealthPendingSubtitle',
+      '{count} cadastros precisam de atenção para manter a base pronta para atendimento.',
+    ).replaceAll('{count}', _formatInt(attentionCount));
+  }
+
+  String _healthAttentionLabel({
+    required int total,
+    required int attentionCount,
+  }) {
+    if (total == 0) {
+      return _t(
+        'clientes.registrationHealthEmptyLabel',
+        'Adicione o primeiro cliente para iniciar o acompanhamento.',
+      );
+    }
+    if (attentionCount == 0) {
+      return _t(
+        'clientes.registrationHealthOkLabel',
+        'Nenhum cadastro com pendência essencial.',
+      );
+    }
+    return _t(
+      'clientes.registrationHealthPendingLabel',
+      '{count} cadastros precisam de atenção',
+    ).replaceAll('{count}', _formatInt(attentionCount));
+  }
+
+  Widget _healthScoreRing({
+    required int percentage,
+    required String statusLabel,
+    required Color accentColor,
+    required bool reduceMotion,
+    required double size,
+  }) {
+    final Duration duration =
+        reduceMotion ? Duration.zero : Duration(milliseconds: 760);
+    final double progressSize = size - 24;
+    final double innerSize = size - 44;
+
+    return TweenAnimationBuilder<double>(
+      key: ValueKey<String>('clients-health-$percentage'),
+      tween: Tween<double>(
+        begin: reduceMotion ? percentage / 100 : 0,
+        end: percentage / 100,
+      ),
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      builder: (BuildContext context, double progress, _) {
+        final int displayedPercentage = (progress * 100).round();
+        return SizedBox(
+          width: size,
+          height: size,
+          child: Stack(
+            alignment: Alignment.center,
+            children: <Widget>[
+              SizedBox(
+                width: progressSize,
+                height: progressSize,
+                child: CircularProgressIndicator(
+                  value: progress.clamp(0, 1),
+                  strokeWidth: 10,
+                  backgroundColor: Colors.white.withValues(alpha: 0.12),
+                  valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                ),
+              ),
+              Container(
+                width: innerSize,
+                height: innerSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black.withValues(alpha: 0.10),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      '$displayedPercentage%',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: size >= 136 ? 24 : 21,
+                        height: 1,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: accentColor.withValues(alpha: 0.22),
+                        ),
+                      ),
+                      child: Text(
+                        statusLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: accentColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -977,7 +1364,14 @@ class _MobileClientesLoading extends StatelessWidget {
       children: List<Widget>.generate(
         5,
         (int index) => Container(
-          height: index == 0 ? 118 : 132,
+          height:
+              index == 0
+                  ? 252
+                  : index == 1
+                  ? 72
+                  : index == 2
+                  ? 82
+                  : 132,
           margin: EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             color: context.sixMobileColors.surface,

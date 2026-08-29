@@ -76,17 +76,18 @@ class _ColaboradorCadastroMobileScreenState
   bool get _cadastroCompleto =>
       _tipoCadastro == ColaboradorCadastroQuality.tipoCompleto;
 
-  List<String> get _etapas => _cadastroCompleto
-      ? <String>[
-          _t('colaborador.journey.essentialStep', 'Essenciais'),
-          _t('colaborador.journey.personalStep', 'Pessoa'),
-          _t('colaborador.journey.contractStep', 'Contrato'),
-          _t('colaborador.journey.permissionsStep', 'Permissões'),
-        ]
-      : <String>[
-          _t('colaborador.journey.essentialStep', 'Essenciais'),
-          _t('colaborador.journey.permissionsStep', 'Permissões'),
-        ];
+  List<String> get _etapas =>
+      _cadastroCompleto
+          ? <String>[
+            _t('colaborador.journey.essentialStep', 'Essenciais'),
+            _t('colaborador.journey.personalStep', 'Pessoa'),
+            _t('colaborador.journey.contractStep', 'Contrato'),
+            _t('colaborador.journey.permissionsStep', 'Permissões'),
+          ]
+          : <String>[
+            _t('colaborador.journey.essentialStep', 'Essenciais'),
+            _t('colaborador.journey.permissionsStep', 'Permissões'),
+          ];
 
   @override
   void dispose() {
@@ -183,45 +184,47 @@ class _ColaboradorCadastroMobileScreenState
       permissoes: _permissoes(),
       tipoCadastro: _tipoCadastro,
       percentualQualidadeCadastro: _qualidade.percentual,
-      dadosPessoais: !_cadastroCompleto
-          ? null
-          : ColaboradorDadosPessoaisCadastro(
-              nomeSocial: _nomeSocial.text.trim(),
-              cpf: _cpf.text.trim(),
-              rg: _rg.text.trim(),
-              dataNascimento: _dataNascimento.text.trim(),
-              cep: _cep.text.trim(),
-              logradouro: _logradouro.text.trim(),
-              numero: _numero.text.trim(),
-              complemento: _complemento.text.trim(),
-              bairro: _bairro.text.trim(),
-              cidade: _cidade.text.trim(),
-              estado: _estado.text.trim(),
-              pais: _pais.text.trim().toUpperCase(),
-            ),
-      dadosContratuais: !_cadastroCompleto
-          ? null
-          : ColaboradorDadosContratuaisCadastro(
-              tipoVinculo: _tipoVinculo,
-              numeroContrato: _numeroContrato.text.trim(),
-              cargo: _cargo.text.trim(),
-              departamento: _departamento.text.trim(),
-              dataInicio: _dataInicio.text.trim(),
-              dataTermino: _dataTermino.text.trim(),
-              cargaHorariaSemanal: int.tryParse(_cargaHoraria.text.trim()),
-              regimeTrabalho: _regimeTrabalho,
-              valorBase: _parseDecimal(_valorBase.text),
-              moeda: _moeda,
-              periodicidadePagamento: _periodicidade,
-              diaPagamento: int.tryParse(_diaPagamento.text.trim()),
-              metodoPagamento: _metodoPagamento,
-              banco: _banco.text.trim(),
-              agencia: _agencia.text.trim(),
-              conta: _conta.text.trim(),
-              chavePix: _chavePix.text.trim(),
-              escopoPrestacaoServico: _escopoServico.text.trim(),
-              observacoes: _observacoes.text.trim(),
-            ),
+      dadosPessoais:
+          !_cadastroCompleto
+              ? null
+              : ColaboradorDadosPessoaisCadastro(
+                nomeSocial: _nomeSocial.text.trim(),
+                cpf: _cpf.text.trim(),
+                rg: _rg.text.trim(),
+                dataNascimento: _dataNascimento.text.trim(),
+                cep: _cep.text.trim(),
+                logradouro: _logradouro.text.trim(),
+                numero: _numero.text.trim(),
+                complemento: _complemento.text.trim(),
+                bairro: _bairro.text.trim(),
+                cidade: _cidade.text.trim(),
+                estado: _estado.text.trim(),
+                pais: _pais.text.trim().toUpperCase(),
+              ),
+      dadosContratuais:
+          !_cadastroCompleto
+              ? null
+              : ColaboradorDadosContratuaisCadastro(
+                tipoVinculo: _tipoVinculo,
+                numeroContrato: _numeroContrato.text.trim(),
+                cargo: _cargo.text.trim(),
+                departamento: _departamento.text.trim(),
+                dataInicio: _dataInicio.text.trim(),
+                dataTermino: _dataTermino.text.trim(),
+                cargaHorariaSemanal: int.tryParse(_cargaHoraria.text.trim()),
+                regimeTrabalho: _regimeTrabalho,
+                valorBase: _parseDecimal(_valorBase.text),
+                moeda: _moeda,
+                periodicidadePagamento: _periodicidade,
+                diaPagamento: int.tryParse(_diaPagamento.text.trim()),
+                metodoPagamento: _metodoPagamento,
+                banco: _banco.text.trim(),
+                agencia: _agencia.text.trim(),
+                conta: _conta.text.trim(),
+                chavePix: _chavePix.text.trim(),
+                escopoPrestacaoServico: _escopoServico.text.trim(),
+                observacoes: _observacoes.text.trim(),
+              ),
     );
   }
 
@@ -263,9 +266,10 @@ class _ColaboradorCadastroMobileScreenState
 
   String _inviteLink(ColaboradorConviteResponse convite) {
     final Uri configured = Uri.parse(AppConfig.autoCustomerBaseUrl);
-    final String origin = configured.hasScheme && configured.host.isNotEmpty
-        ? configured.origin
-        : Uri.base.origin;
+    final String origin =
+        configured.hasScheme && configured.host.isNotEmpty
+            ? configured.origin
+            : Uri.base.origin;
     return '$origin/colaborador/convites/${convite.codigo}';
   }
 
@@ -331,49 +335,47 @@ class _ColaboradorCadastroMobileScreenState
           icon: const Icon(Icons.arrow_back_rounded),
         ),
         bottomNavigationBar: _bottomActions(),
-        bodyBuilder:
-            (
-              BuildContext context,
-              ScrollController controller,
-              double topInset,
-            ) {
-              return Form(
-                key: _formKey,
-                child: ListView(
-                  controller: controller,
-                  padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
-                  children: <Widget>[
-                    _journeySelector(),
-                    const SizedBox(height: 14),
-                    _qualityCard(),
-                    const SizedBox(height: 14),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
-                      transitionBuilder:
-                          (Widget child, Animation<double> value) =>
-                              FadeTransition(
-                                opacity: value,
-                                child: SlideTransition(
-                                  position: Tween<Offset>(
-                                    begin: const Offset(0.03, 0),
-                                    end: Offset.zero,
-                                  ).animate(value),
-                                  child: child,
-                                ),
-                              ),
-                      child: KeyedSubtree(
-                        key: ValueKey<String>('$_tipoCadastro-$_etapaAtual'),
-                        child: _stepContent(),
+        bodyBuilder: (
+          BuildContext context,
+          ScrollController controller,
+          double topInset,
+        ) {
+          return Form(
+            key: _formKey,
+            child: ListView(
+              controller: controller,
+              padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
+              children: <Widget>[
+                _journeySelector(),
+                const SizedBox(height: 14),
+                _qualityCard(),
+                const SizedBox(height: 14),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  transitionBuilder:
+                      (Widget child, Animation<double> value) => FadeTransition(
+                        opacity: value,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0.03, 0),
+                            end: Offset.zero,
+                          ).animate(value),
+                          child: child,
+                        ),
                       ),
-                    ),
-                    if (_convite != null) ...<Widget>[
-                      const SizedBox(height: 14),
-                      _inviteResult(_convite!),
-                    ],
-                  ],
+                  child: KeyedSubtree(
+                    key: ValueKey<String>('$_tipoCadastro-$_etapaAtual'),
+                    child: _stepContent(),
+                  ),
                 ),
-              );
-            },
+                if (_convite != null) ...<Widget>[
+                  const SizedBox(height: 14),
+                  _inviteResult(_convite!),
+                ],
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -481,8 +483,8 @@ class _ColaboradorCadastroMobileScreenState
 
   Widget _qualityCard() {
     final QualidadeCadastroColaborador quality = _qualidade;
-    final LocaleSettingsProvider locale = context
-        .read<LocaleSettingsProvider>();
+    final LocaleSettingsProvider locale =
+        context.read<LocaleSettingsProvider>();
     final List<MelhoriaQualidadeCadastroColaborador> improvements = quality
         .melhorias
         .take(2)
@@ -502,32 +504,33 @@ class _ColaboradorCadastroMobileScreenState
               TweenAnimationBuilder<double>(
                 tween: Tween<double>(end: quality.percentual / 100),
                 duration: const Duration(milliseconds: 320),
-                builder: (_, double value, __) => SizedBox(
-                  width: 58,
-                  height: 58,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: <Widget>[
-                      SizedBox.expand(
-                        child: CircularProgressIndicator(
-                          value: value,
-                          strokeWidth: 6,
-                          strokeCap: StrokeCap.round,
-                          color: _colors.accent,
-                          backgroundColor: _colors.border,
-                        ),
+                builder:
+                    (_, double value, __) => SizedBox(
+                      width: 58,
+                      height: 58,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: <Widget>[
+                          SizedBox.expand(
+                            child: CircularProgressIndicator(
+                              value: value,
+                              strokeWidth: 6,
+                              strokeCap: StrokeCap.round,
+                              color: _colors.accent,
+                              backgroundColor: _colors.border,
+                            ),
+                          ),
+                          Text(
+                            locale.formatPercent(value * 100),
+                            style: TextStyle(
+                              color: _colors.titleText,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        locale.formatPercent(value * 100),
-                        style: TextStyle(
-                          color: _colors.titleText,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
               ),
               const SizedBox(width: 13),
               Expanded(
@@ -609,9 +612,8 @@ class _ColaboradorCadastroMobileScreenState
                     right: index == _etapas.length - 1 ? 0 : 6,
                   ),
                   decoration: BoxDecoration(
-                    color: index <= _etapaAtual
-                        ? _colors.accent
-                        : _colors.border,
+                    color:
+                        index <= _etapaAtual ? _colors.accent : _colors.border,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -654,10 +656,14 @@ class _ColaboradorCadastroMobileScreenState
             label: _t('colaboradores.loginEmail', 'E-mail de login'),
             icon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
-            validator: (String? value) =>
-                value == null || !value.trim().contains('@')
-                ? _t('colaboradores.emailRequired', 'Informe um e-mail válido.')
-                : null,
+            validator:
+                (String? value) =>
+                    value == null || !value.trim().contains('@')
+                        ? _t(
+                          'colaboradores.emailRequired',
+                          'Informe um e-mail válido.',
+                        )
+                        : null,
           ),
           _gap(),
           _field(
@@ -832,8 +838,8 @@ class _ColaboradorCadastroMobileScreenState
                 ],
                 selected: _tipoVinculo,
                 label: _contractTypeLabel,
-                onSelected: (String value) =>
-                    setState(() => _tipoVinculo = value),
+                onSelected:
+                    (String value) => setState(() => _tipoVinculo = value),
               ),
               _gap(),
               _field(
@@ -892,8 +898,8 @@ class _ColaboradorCadastroMobileScreenState
                 values: const <String>['PRESENCIAL', 'HIBRIDO', 'REMOTO'],
                 selected: _regimeTrabalho,
                 label: _workModeLabel,
-                onSelected: (String value) =>
-                    setState(() => _regimeTrabalho = value),
+                onSelected:
+                    (String value) => setState(() => _regimeTrabalho = value),
               ),
               if (_tipoVinculo == 'PRESTACAO_SERVICO') ...<Widget>[
                 _gap(),
@@ -950,8 +956,8 @@ class _ColaboradorCadastroMobileScreenState
                       value: _moeda,
                       values: const <String>['BRL', 'USD', 'EUR'],
                       labelFor: (String value) => value,
-                      onSelected: (String value) =>
-                          setState(() => _moeda = value),
+                      onSelected:
+                          (String value) => setState(() => _moeda = value),
                     ),
                   ),
                 ],
@@ -967,8 +973,8 @@ class _ColaboradorCadastroMobileScreenState
                   'POR_SERVICO',
                 ],
                 labelFor: _frequencyLabel,
-                onSelected: (String value) =>
-                    setState(() => _periodicidade = value),
+                onSelected:
+                    (String value) => setState(() => _periodicidade = value),
               ),
               _gap(),
               _field(
@@ -988,8 +994,8 @@ class _ColaboradorCadastroMobileScreenState
                   'OUTRO',
                 ],
                 labelFor: _paymentMethodLabel,
-                onSelected: (String value) =>
-                    setState(() => _metodoPagamento = value),
+                onSelected:
+                    (String value) => setState(() => _metodoPagamento = value),
               ),
               _gap(),
               _field(
@@ -1078,8 +1084,8 @@ class _ColaboradorCadastroMobileScreenState
             ),
             icon: Icons.account_balance_wallet_outlined,
             value: _podeReceberNoCaixa,
-            onChanged: (bool value) =>
-                setState(() => _podeReceberNoCaixa = value),
+            onChanged:
+                (bool value) => setState(() => _podeReceberNoCaixa = value),
           ),
           _permission(
             title: _t('colaboradores.salesSummary', 'Resumo das vendas'),
@@ -1089,8 +1095,8 @@ class _ColaboradorCadastroMobileScreenState
             ),
             icon: Icons.query_stats_outlined,
             value: _podeVerQuantoVendeu,
-            onChanged: (bool value) =>
-                setState(() => _podeVerQuantoVendeu = value),
+            onChanged:
+                (bool value) => setState(() => _podeVerQuantoVendeu = value),
           ),
           _permission(
             title: _t('colaboradores.reports', 'Relatórios'),
@@ -1110,8 +1116,8 @@ class _ColaboradorCadastroMobileScreenState
             ),
             icon: Icons.verified_user_outlined,
             value: _gerenciaPermissoes,
-            onChanged: (bool value) =>
-                setState(() => _gerenciaPermissoes = value),
+            onChanged:
+                (bool value) => setState(() => _gerenciaPermissoes = value),
             last: true,
           ),
         ],
@@ -1210,12 +1216,13 @@ class _ColaboradorCadastroMobileScreenState
       readOnly: true,
       onTap: _loading ? null : () => _pickDate(controller, label),
       decoration: _input(label, icon).copyWith(
-        suffixIcon: controller.text.isEmpty
-            ? const Icon(Icons.calendar_today_outlined)
-            : IconButton(
-                onPressed: _loading ? null : () => setState(controller.clear),
-                icon: const Icon(Icons.close_rounded),
-              ),
+        suffixIcon:
+            controller.text.isEmpty
+                ? const Icon(Icons.calendar_today_outlined)
+                : IconButton(
+                  onPressed: _loading ? null : () => setState(controller.clear),
+                  icon: const Icon(Icons.close_rounded),
+                ),
       ),
     );
   }
@@ -1246,8 +1253,8 @@ class _ColaboradorCadastroMobileScreenState
       builder: (BuildContext sheetContext) {
         DateTime draft = selected;
         return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setSheetState) =>
-              Container(
+          builder:
+              (BuildContext context, StateSetter setSheetState) => Container(
                 decoration: BoxDecoration(
                   color: _colors.surface,
                   borderRadius: const BorderRadius.vertical(
@@ -1283,8 +1290,9 @@ class _ColaboradorCadastroMobileScreenState
                       initialDate: draft,
                       firstDate: DateTime(1940),
                       lastDate: DateTime(2100),
-                      onDateChanged: (DateTime value) =>
-                          setSheetState(() => draft = value),
+                      onDateChanged:
+                          (DateTime value) =>
+                              setSheetState(() => draft = value),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -1298,8 +1306,8 @@ class _ColaboradorCadastroMobileScreenState
                         const SizedBox(width: 10),
                         Expanded(
                           child: FilledButton(
-                            onPressed: () =>
-                                Navigator.of(sheetContext).pop(draft),
+                            onPressed:
+                                () => Navigator.of(sheetContext).pop(draft),
                             child: Text(_t('common.apply', 'Aplicar')),
                           ),
                         ),
@@ -1345,11 +1353,12 @@ class _ColaboradorCadastroMobileScreenState
                 (String value) => ChoiceChip(
                   label: Text(label(value)),
                   selected: value == selected,
-                  onSelected: _loading
-                      ? null
-                      : (bool active) {
-                          if (active) onSelected(value);
-                        },
+                  onSelected:
+                      _loading
+                          ? null
+                          : (bool active) {
+                            if (active) onSelected(value);
+                          },
                 ),
               )
               .toList(growable: false),
@@ -1367,15 +1376,16 @@ class _ColaboradorCadastroMobileScreenState
   }) {
     return InkWell(
       borderRadius: BorderRadius.circular(16),
-      onTap: _loading
-          ? null
-          : () => _pickChoice(
-              title: label,
-              selected: value,
-              values: values,
-              labelFor: labelFor,
-              onSelected: onSelected,
-            ),
+      onTap:
+          _loading
+              ? null
+              : () => _pickChoice(
+                title: label,
+                selected: value,
+                values: values,
+                labelFor: labelFor,
+                onSelected: onSelected,
+              ),
       child: InputDecorator(
         decoration: _input(label, Icons.expand_more_rounded),
         child: Text(
@@ -1402,60 +1412,67 @@ class _ColaboradorCadastroMobileScreenState
       context: context,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (BuildContext sheetContext) => Container(
-        decoration: BoxDecoration(
-          color: _colors.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Center(
-              child: Container(
-                width: 42,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: _colors.strongBorder,
-                  borderRadius: BorderRadius.circular(999),
-                ),
+      builder:
+          (BuildContext sheetContext) => Container(
+            decoration: BoxDecoration(
+              color: _colors.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: TextStyle(
-                color: _colors.titleText,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 10),
-            ...values.map(
-              (String value) => ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                leading: Icon(
-                  value == selected
-                      ? Icons.check_circle_rounded
-                      : Icons.circle_outlined,
-                  color: value == selected ? _colors.accent : _colors.mutedText,
-                ),
-                title: Text(
-                  labelFor(value),
-                  style: TextStyle(
-                    color: _colors.titleText,
-                    fontWeight: value == selected
-                        ? FontWeight.w800
-                        : FontWeight.w600,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: _colors.strongBorder,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
                   ),
                 ),
-                onTap: () => Navigator.of(sheetContext).pop(value),
-              ),
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: _colors.titleText,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...values.map(
+                  (String value) => ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                    leading: Icon(
+                      value == selected
+                          ? Icons.check_circle_rounded
+                          : Icons.circle_outlined,
+                      color:
+                          value == selected
+                              ? _colors.accent
+                              : _colors.mutedText,
+                    ),
+                    title: Text(
+                      labelFor(value),
+                      style: TextStyle(
+                        color: _colors.titleText,
+                        fontWeight:
+                            value == selected
+                                ? FontWeight.w800
+                                : FontWeight.w600,
+                      ),
+                    ),
+                    onTap: () => Navigator.of(sheetContext).pop(value),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
     if (result != null && mounted) onSelected(result);
   }
@@ -1539,17 +1556,18 @@ class _ColaboradorCadastroMobileScreenState
             Expanded(
               child: FilledButton.icon(
                 onPressed: _loading ? null : _next,
-                icon: _loading
-                    ? const SizedBox(
-                        width: 17,
-                        height: 17,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(
-                        last
-                            ? Icons.send_outlined
-                            : Icons.arrow_forward_rounded,
-                      ),
+                icon:
+                    _loading
+                        ? const SizedBox(
+                          width: 17,
+                          height: 17,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : Icon(
+                          last
+                              ? Icons.send_outlined
+                              : Icons.arrow_forward_rounded,
+                        ),
                 label: Text(
                   _loading
                       ? _t('colaborador.invite.generating', 'Gerando...')
