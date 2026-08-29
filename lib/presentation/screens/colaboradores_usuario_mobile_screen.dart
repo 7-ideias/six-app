@@ -11,6 +11,7 @@ import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/components/user_profile_avatar_image.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 
 class ColaboradoresUsuarioMobileScreen extends StatefulWidget {
@@ -32,7 +33,6 @@ class _ColaboradoresUsuarioMobileScreenState
   Color get _primaryColor => _colors.primary;
   Color get _secondaryColor => _colors.secondary;
   Color get _accentColor => _colors.accent;
-  Color get _onAccentColor => _colors.onAccent;
   Color get _softSurfaceColor => _colors.softSurface;
   Color get _softAccentColor => _colors.softAccentSurface;
   Color get _mutedTextColor => _colors.mutedText;
@@ -178,6 +178,8 @@ class _ColaboradoresUsuarioMobileScreenState
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       useSafeArea: true,
       barrierColor: Colors.black.withValues(alpha: 0.36),
       backgroundColor: Colors.transparent,
@@ -284,14 +286,9 @@ class _ColaboradoresUsuarioMobileScreenState
       initialContentSpacing: 4,
       actions: <Widget>[
         IconButton(
-          tooltip: _t('common.refresh', 'Atualizar'),
-          onPressed: _loading ? null : _reload,
-          icon: Icon(Icons.refresh_rounded),
-        ),
-        IconButton(
           tooltip: _t('colaboradores.newCollaborator', 'Novo colaborador'),
           onPressed: _loading ? null : _openNovoColaborador,
-          icon: Icon(Icons.group_add_outlined),
+          icon: Icon(Icons.add_rounded),
         ),
       ],
       bodyBuilder: (
@@ -388,6 +385,38 @@ class _ColaboradoresUsuarioMobileScreenState
   }
 
   Widget _headerCard() {
+    final int total = _colaboradores.length;
+    final int attentionCount =
+        _colaboradores
+            .where(
+              (ColaboradorUsuarioResumo item) =>
+                  _collaboratorNeedsAttention(item),
+            )
+            .length;
+    final int percentage =
+        total == 0 ? 0 : (((total - attentionCount) / total) * 100).round();
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+    final Color ringColor = _healthAccentColor(
+      percentage: percentage,
+      total: total,
+      attentionCount: attentionCount,
+    );
+    final String statusLabel = _healthStatusLabel(
+      percentage: percentage,
+      total: total,
+      attentionCount: attentionCount,
+    );
+    final String subtitle = _healthSubtitle(
+      total: total,
+      attentionCount: attentionCount,
+    );
+    final String attentionLabel = _healthAttentionLabel(
+      total: total,
+      attentionCount: attentionCount,
+    );
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(18),
@@ -407,52 +436,74 @@ class _ColaboradoresUsuarioMobileScreenState
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
-            ),
-            child: Icon(Icons.badge_outlined, color: Colors.white),
-          ),
-          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  _t('colaboradores.businessTeam', 'Equipe do comércio'),
+                  _t(
+                    'colaboradores.registrationHealthTitle',
+                    'Saúde do cadastro',
+                  ),
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: 22,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                SizedBox(height: 5),
+                SizedBox(height: 6),
                 Text(
-                  _t(
-                    'colaboradores.businessTeamSubtitle',
-                    'Convide, acompanhe e ajuste permissões dos colaboradores.',
-                  ),
+                  subtitle,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.82),
                     height: 1.25,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 18),
+                Center(
+                  child: _healthScoreRing(
+                    percentage: percentage,
+                    statusLabel: statusLabel,
+                    accentColor: ringColor,
+                    reduceMotion: reduceMotion,
                   ),
                 ),
                 SizedBox(height: 14),
-                FilledButton.icon(
-                  onPressed: _loading ? null : _openNovoColaborador,
-                  icon: Icon(Icons.group_add_outlined, size: 18),
-                  label: Text(
-                    _t('colaboradores.newCollaborator', 'Novo colaborador'),
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
                   ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: _accentColor,
-                    foregroundColor: _onAccentColor,
-                    visualDensity: VisualDensity.compact,
+                  child: Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.priority_high_rounded,
+                        color: ringColor,
+                        size: 16,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          attentionLabel,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            height: 1.25,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -586,6 +637,179 @@ class _ColaboradoresUsuarioMobileScreenState
     );
   }
 
+  bool _collaboratorNeedsAttention(ColaboradorUsuarioResumo colaborador) {
+    return colaborador.nome.trim().isEmpty ||
+        colaborador.email.trim().isEmpty ||
+        colaborador.celularDeAcesso.trim().isEmpty ||
+        colaborador.foto.trim().isEmpty;
+  }
+
+  Color _healthAccentColor({
+    required int percentage,
+    required int total,
+    required int attentionCount,
+  }) {
+    if (total == 0) {
+      return _accentColor;
+    }
+    if (attentionCount == 0 || percentage >= 85) {
+      return _accentColor;
+    }
+    if (percentage >= 60) {
+      return Color.lerp(_accentColor, _errorColor, 0.42) ?? _accentColor;
+    }
+    return _errorColor;
+  }
+
+  String _healthStatusLabel({
+    required int percentage,
+    required int total,
+    required int attentionCount,
+  }) {
+    if (total == 0) {
+      return _t('colaboradores.registrationHealthStart', 'Comece aqui');
+    }
+    if (attentionCount == 0 || percentage >= 85) {
+      return _t('colaboradores.registrationHealthHealthy', 'Saudável');
+    }
+    if (percentage >= 60) {
+      return _t('colaboradores.registrationHealthWarning', 'Atenção');
+    }
+    return _t('colaboradores.registrationHealthCritical', 'Crítico');
+  }
+
+  String _healthSubtitle({required int total, required int attentionCount}) {
+    if (total == 0) {
+      return _t(
+        'colaboradores.registrationHealthEmptySubtitle',
+        'Cadastre colaboradores para acompanhar os dados essenciais de acesso.',
+      );
+    }
+    if (attentionCount == 0) {
+      return _t(
+        'colaboradores.registrationHealthOkSubtitle',
+        'Todos os cadastros estão com os dados principais preenchidos.',
+      );
+    }
+    return _t(
+      'colaboradores.registrationHealthPendingSubtitle',
+      '{count} cadastros precisam de atenção para manter a equipe pronta para acesso.',
+    ).replaceAll('{count}', _formatCount(attentionCount));
+  }
+
+  String _healthAttentionLabel({
+    required int total,
+    required int attentionCount,
+  }) {
+    if (total == 0) {
+      return _t(
+        'colaboradores.registrationHealthEmptyLabel',
+        'Adicione o primeiro colaborador para iniciar o acompanhamento.',
+      );
+    }
+    if (attentionCount == 0) {
+      return _t(
+        'colaboradores.registrationHealthOkLabel',
+        'Nenhum cadastro com pendência essencial.',
+      );
+    }
+    return _t(
+      'colaboradores.registrationHealthPendingLabel',
+      '{count} cadastros precisam de atenção',
+    ).replaceAll('{count}', _formatCount(attentionCount));
+  }
+
+  Widget _healthScoreRing({
+    required int percentage,
+    required String statusLabel,
+    required Color accentColor,
+    required bool reduceMotion,
+  }) {
+    final Duration duration =
+        reduceMotion ? Duration.zero : Duration(milliseconds: 760);
+
+    return TweenAnimationBuilder<double>(
+      key: ValueKey<String>('collaborators-health-$percentage'),
+      tween: Tween<double>(
+        begin: reduceMotion ? percentage / 100 : 0,
+        end: percentage / 100,
+      ),
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      builder: (BuildContext context, double progress, _) {
+        final int displayedPercentage = (progress * 100).round();
+        return SizedBox(
+          width: 148,
+          height: 148,
+          child: Stack(
+            alignment: Alignment.center,
+            children: <Widget>[
+              SizedBox(
+                width: 124,
+                height: 124,
+                child: CircularProgressIndicator(
+                  value: progress.clamp(0, 1),
+                  strokeWidth: 10,
+                  backgroundColor: Colors.white.withValues(alpha: 0.12),
+                  valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                ),
+              ),
+              Container(
+                width: 104,
+                height: 104,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black.withValues(alpha: 0.10),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      '$displayedPercentage%',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        height: 1,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: accentColor.withValues(alpha: 0.22),
+                        ),
+                      ),
+                      child: Text(
+                        statusLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: accentColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _searchBox() {
     return Container(
       padding: EdgeInsets.all(14),
@@ -626,150 +850,94 @@ class _ColaboradoresUsuarioMobileScreenState
   }
 
   Widget _colaboradorCard(ColaboradorUsuarioResumo colaborador) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _surfaceColor,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              CircleAvatar(
-                radius: 23,
-                backgroundColor: _softAccentColor,
-                child: Text(
-                  _initials(colaborador.nome),
-                  style: TextStyle(
-                    color: _primaryColor,
-                    fontWeight: FontWeight.w900,
+    final String nome =
+        colaborador.nome.isEmpty
+            ? _t('colaboradores.unnamedCollaborator', 'Colaborador sem nome')
+            : colaborador.nome;
+    final String email =
+        colaborador.email.isEmpty
+            ? _t('colaboradores.noEmail', 'Sem e-mail')
+            : colaborador.email;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: () => _showDetails(colaborador),
+          child: Ink(
+            padding: EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _surfaceColor,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: _borderColor),
+            ),
+            child: Row(
+              children: <Widget>[
+                _collaboratorAvatar(colaborador, radius: 23),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              nome,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: _titleTextColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          _statusBadge(colaborador),
+                        ],
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _mutedTextColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      colaborador.nome.isEmpty
-                          ? _t(
-                            'colaboradores.unnamedCollaborator',
-                            'Colaborador sem nome',
-                          )
-                          : colaborador.nome,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: _titleTextColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      colaborador.nomeDeGuerra.isEmpty
-                          ? _t('colaboradores.noNickname', 'Sem nome de guerra')
-                          : colaborador.nomeDeGuerra,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: _mutedTextColor, fontSize: 12),
-                    ),
-                  ],
+                SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: _mutedTextColor,
+                  size: 22,
                 ),
-              ),
-              _status(_t('common.active', 'Ativo')),
-            ],
-          ),
-          SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              _chip(
-                Icons.mail_outline,
-                colaborador.email.isEmpty
-                    ? _t('colaboradores.noEmail', 'Sem e-mail')
-                    : colaborador.email,
-              ),
-              _chip(
-                Icons.phone_outlined,
-                colaborador.celularDeAcesso.isEmpty
-                    ? _t('colaboradores.noPhone', 'Sem celular')
-                    : colaborador.celularDeAcesso,
-              ),
-              _chip(Icons.badge_outlined, colaborador.idUnicoPessoal),
-            ],
-          ),
-          SizedBox(height: 12),
-          _accessHint(colaborador),
-          SizedBox(height: 12),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _showDetails(colaborador),
-                  icon: Icon(Icons.info_outline_rounded, size: 18),
-                  label: Text(_t('colaboradores.summary', 'Resumo')),
-                ),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () => _openEditar(colaborador),
-                  icon: Icon(Icons.edit_outlined, size: 18),
-                  label: Text(_t('common.edit', 'Editar')),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _chip(IconData icon, String label) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 7),
-      decoration: BoxDecoration(
-        color: _softSurfaceColor,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _borderColor),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 14, color: _accentColor),
-          SizedBox(width: 5),
-          ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: 190),
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: _titleTextColor,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _status(String label) {
-    final Color color = Colors.green.shade700;
+  Widget _statusBadge(ColaboradorUsuarioResumo colaborador) {
+    final bool ativo = colaborador.ativo;
+    final Color color = ativo ? Colors.green.shade700 : _mutedTextColor;
+    final String label =
+        ativo
+            ? _t('common.active', 'Ativo')
+            : _colaboradorStatusLabel(colaborador.status);
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
+        color: color.withValues(alpha: ativo ? 0.10 : 0.14),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -783,55 +951,42 @@ class _ColaboradoresUsuarioMobileScreenState
     );
   }
 
-  Widget _accessHint(ColaboradorUsuarioResumo colaborador) {
-    final bool semEmail = colaborador.email.trim().isEmpty;
-    final Color backgroundColor =
-        semEmail
-            ? _errorBorderColor.withValues(alpha: _isDarkMode ? 0.34 : 0.12)
-            : _softAccentColor;
-    final Color borderColor = semEmail ? _errorBorderColor : _strongBorderColor;
-    final Color iconColor = semEmail ? _errorColor : _accentColor;
+  Widget _collaboratorAvatar(
+    ColaboradorUsuarioResumo colaborador, {
+    double radius = 23,
+  }) {
+    final double size = radius * 2;
+    final String foto = colaborador.foto.trim();
 
     return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(12),
+      width: size,
+      height: size,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor),
+        color: _softAccentColor,
+        shape: BoxShape.circle,
+        border: Border.all(color: _strongBorderColor.withValues(alpha: 0.58)),
       ),
-      child: Row(
-        children: <Widget>[
-          Icon(
-            semEmail
-                ? Icons.warning_amber_rounded
-                : Icons.admin_panel_settings_outlined,
-            color: iconColor,
-            size: 19,
-          ),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              semEmail
-                  ? _t(
-                    'colaboradores.emailRequiredForAccess',
-                    'Informe um e-mail para liberar vínculo de acesso.',
-                  )
-                  : _t(
-                    'colaboradores.accessControlledByInvite',
-                    'Acesso controlado por convite e permissões.',
+      child:
+          foto.isEmpty
+              ? Center(
+                child: Text(
+                  _initials(colaborador.nome),
+                  style: TextStyle(
+                    color: _primaryColor,
+                    fontSize: radius * 0.72,
+                    fontWeight: FontWeight.w900,
                   ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: _titleTextColor,
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
+                ),
+              )
+              : UserProfileAvatarImage(
+                imageValue: foto,
+                fallbackIcon: Icons.person_outline_rounded,
+                fallbackColor: _primaryColor,
+                size: size,
+                fallbackIconSize: radius,
+                circle: true,
               ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -878,7 +1033,7 @@ class _ColaboradoresUsuarioMobileScreenState
           SizedBox(height: 14),
           FilledButton.icon(
             onPressed: _openNovoColaborador,
-            icon: Icon(Icons.group_add_outlined),
+            icon: Icon(Icons.add_rounded),
             label: Text(
               _t('colaboradores.newCollaborator', 'Novo colaborador'),
             ),
@@ -931,66 +1086,84 @@ class _ColaboradoresUsuarioMobileScreenState
     );
   }
 
-  void _showDetails(ColaboradorUsuarioResumo colaborador) {
-    showModalBottomSheet<void>(
-      context: context,
-      useSafeArea: true,
-      showDragHandle: true,
-      builder: (BuildContext bottomSheetContext) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(20, 4, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                colaborador.nome.isEmpty
-                    ? _t('colaboradores.collaborator', 'Colaborador')
-                    : colaborador.nome,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+  Future<void> _showDetails(ColaboradorUsuarioResumo colaborador) async {
+    final _ColaboradorCardAction? action =
+        await showModalBottomSheet<_ColaboradorCardAction>(
+          context: context,
+          useSafeArea: true,
+          showDragHandle: true,
+          builder: (BuildContext bottomSheetContext) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(20, 4, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      _collaboratorAvatar(colaborador, radius: 28),
+                      SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          colaborador.nome.isEmpty
+                              ? _t('colaboradores.collaborator', 'Colaborador')
+                              : colaborador.nome,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      _statusBadge(colaborador),
+                      SizedBox(width: 4),
+                      IconButton(
+                        tooltip: _t('common.edit', 'Editar'),
+                        onPressed:
+                            () => Navigator.of(
+                              bottomSheetContext,
+                            ).pop(_ColaboradorCardAction.edit),
+                        icon: Icon(Icons.edit_outlined),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 14),
+                  _detailRow(
+                    _t('colaboradores.nickname', 'Nome de guerra'),
+                    colaborador.nomeDeGuerra.isEmpty
+                        ? '-'
+                        : colaborador.nomeDeGuerra,
+                  ),
+                  _detailRow(
+                    _t('colaboradores.phone', 'Celular'),
+                    colaborador.celularDeAcesso.isEmpty
+                        ? '-'
+                        : colaborador.celularDeAcesso,
+                  ),
+                  _detailRow(
+                    _t('colaboradores.email', 'E-mail'),
+                    colaborador.email.isEmpty ? '-' : colaborador.email,
+                  ),
+                  _detailRow(
+                    _t('colaboradores.createdAt', 'Cadastro'),
+                    colaborador.dataCadastro == null
+                        ? '-'
+                        : _formatDate(colaborador.dataCadastro!),
+                  ),
+                  _detailRow(
+                    _t('colaboradores.identifier', 'Identificador'),
+                    colaborador.idUnicoPessoal,
+                  ),
+                ],
               ),
-              SizedBox(height: 14),
-              _detailRow(
-                _t('colaboradores.nickname', 'Nome de guerra'),
-                colaborador.nomeDeGuerra.isEmpty
-                    ? '-'
-                    : colaborador.nomeDeGuerra,
-              ),
-              _detailRow(
-                _t('colaboradores.phone', 'Celular'),
-                colaborador.celularDeAcesso.isEmpty
-                    ? '-'
-                    : colaborador.celularDeAcesso,
-              ),
-              _detailRow(
-                _t('colaboradores.email', 'E-mail'),
-                colaborador.email.isEmpty ? '-' : colaborador.email,
-              ),
-              _detailRow(
-                _t('colaboradores.createdAt', 'Cadastro'),
-                colaborador.dataCadastro == null
-                    ? '-'
-                    : _formatDate(colaborador.dataCadastro!),
-              ),
-              _detailRow(
-                _t('colaboradores.identifier', 'Identificador'),
-                colaborador.idUnicoPessoal,
-              ),
-              SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(bottomSheetContext).pop(),
-                  child: Text(_t('common.close', 'Fechar')),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
-      },
-    );
+
+    if (!mounted || action != _ColaboradorCardAction.edit) {
+      return;
+    }
+
+    await _openEditar(colaborador);
   }
 
   Widget _detailRow(String label, String value) {
@@ -1032,7 +1205,26 @@ class _ColaboradoresUsuarioMobileScreenState
     }
     return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
   }
+
+  String _colaboradorStatusLabel(String status) {
+    switch (status.trim().toUpperCase()) {
+      case 'INATIVO':
+        return _t('common.inactive', 'Inativo');
+      case 'BLOQUEADO':
+        return _t('colaboradores.blocked', 'Bloqueado');
+      case 'PENDENTE':
+        return _t('colaboradores.pending', 'Pendente');
+      case 'ATIVO':
+        return _t('common.active', 'Ativo');
+      default:
+        return status.trim().isEmpty
+            ? _t('colaboradores.notActive', 'Não ativo')
+            : status;
+    }
+  }
 }
+
+enum _ColaboradorCardAction { edit }
 
 class _ColaboradorConviteMobileSheet extends StatefulWidget {
   const _ColaboradorConviteMobileSheet();
@@ -1247,11 +1439,6 @@ class _ColaboradorConviteMobileSheetState
                         ),
                       ],
                     ),
-                  ),
-                  IconButton(
-                    tooltip: _t('common.close', 'Fechar'),
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close_rounded),
                   ),
                 ],
               ),
