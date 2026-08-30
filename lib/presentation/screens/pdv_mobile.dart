@@ -1654,6 +1654,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Widget _buildItemTile(_VendaItemMobile item) {
+    final bool podeEditarItem = !_enviando && _caixaAbertoParaVenda;
+
     return Container(
       margin: EdgeInsets.only(bottom: 10),
       padding: EdgeInsets.all(12),
@@ -1671,14 +1673,28 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  item.nome,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: SixMobilePalette.titleText,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        item.nome,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          color: SixMobilePalette.titleText,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    _buildItemRemoveButton(
+                      onTap:
+                          podeEditarItem
+                              ? () => _definirQuantidade(item, 0)
+                              : null,
+                    ),
+                  ],
                 ),
                 SizedBox(height: 4),
                 Wrap(
@@ -1721,9 +1737,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                       icon: Icons.remove_rounded,
                       label: 'Diminuir quantidade',
                       onTap:
-                          _enviando || !_caixaAbertoParaVenda
-                              ? null
-                              : () => _alterarQuantidade(item, -1),
+                          podeEditarItem
+                              ? () => _alterarQuantidade(item, -1)
+                              : null,
                     ),
                     AnimatedSwitcher(
                       duration: Duration(milliseconds: 180),
@@ -1749,18 +1765,18 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                           'Editar quantidade',
                         ),
                         onTap:
-                            _enviando || !_caixaAbertoParaVenda
-                                ? null
-                                : () => _editarQuantidade(item),
+                            podeEditarItem
+                                ? () => _editarQuantidade(item)
+                                : null,
                       ),
                     ),
                     _buildQuantityButton(
                       icon: Icons.add_rounded,
                       label: 'Aumentar quantidade',
                       onTap:
-                          _enviando || !_caixaAbertoParaVenda
-                              ? null
-                              : () => _alterarQuantidade(item, 1),
+                          podeEditarItem
+                              ? () => _alterarQuantidade(item, 1)
+                              : null,
                     ),
                   ],
                 ),
@@ -1768,6 +1784,38 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildItemRemoveButton({required VoidCallback? onTap}) {
+    return Semantics(
+      button: true,
+      label: _txt('pdv.mobile.removeItem', 'Remover item'),
+      enabled: onTap != null,
+      child: Material(
+        color: SixMobilePalette.surface,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: SixMobilePalette.border),
+            ),
+            child: Icon(
+              Icons.delete_outline_rounded,
+              size: 18,
+              color:
+                  onTap == null
+                      ? SixMobilePalette.mutedText
+                      : SixMobilePalette.error,
+            ),
+          ),
+        ),
       ),
     );
   }

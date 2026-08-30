@@ -178,6 +178,24 @@ const Map<String, Map<String, String>> _fallbacks = {
         'O item foi recalculado e a venda já reflete a nova quantidade.',
     'pdv.quantityEditor.error':
         'Não foi possível atualizar a quantidade agora. Tente novamente em alguns instantes.',
+    'pdv.clearSale.dialogBarrier': 'Confirmar limpeza da venda atual',
+    'pdv.clearSale.dialogTitle': 'Limpar venda atual?',
+    'pdv.clearSale.dialogSubtitle':
+        'Revise o resumo antes de limpar. O atendimento atual será reiniciado para abrir uma nova venda.',
+    'pdv.clearSale.summaryItems': 'Itens',
+    'pdv.clearSale.summaryTotal': 'Total',
+    'pdv.clearSale.summaryCustomer': 'Cliente',
+    'pdv.clearSale.confirmAction': 'Limpar venda',
+    'pdv.clearSale.impactHint':
+        'Itens, cliente identificado e recebimentos temporários serão removidos deste PDV.',
+    'pdv.clearSale.processingTitle': 'Limpando venda...',
+    'pdv.clearSale.processingMessage':
+        'Aguarde enquanto os dados temporários desta venda são removidos.',
+    'pdv.clearSale.successTitle': 'Venda limpa com sucesso',
+    'pdv.clearSale.successMessage':
+        'O PDV está pronto para iniciar uma nova venda.',
+    'pdv.clearSale.error':
+        'Não foi possível limpar a venda agora. Tente novamente em instantes.',
     'pdv.customerIdentification.title': 'Identificar cliente',
     'pdv.customerIdentification.subtitle':
         'Selecione um cliente cadastrado ou crie um novo sem sair desta etapa.',
@@ -1681,8 +1699,18 @@ const Map<String, Map<String, String>> _fallbacks = {
         'As respostas e o horário serão salvos ao concluir.',
     'procedimentos.completeAndContinue': 'Concluir e continuar',
     'procedimentos.continueOperation': 'Continuar operação',
+    'procedimentos.processingSkip': 'Continuando...',
+    'procedimentos.processingCancel': 'Cancelando...',
     'procedimentos.executionSaveError':
         'Não foi possível salvar as respostas. Tente novamente.',
+    'procedimentos.skipSuccessTitle': 'Procedimento ignorado',
+    'procedimentos.cancelSuccessTitle': 'Operação cancelada',
+    'procedimentos.completeSuccessMessage':
+        'As respostas foram registradas e a operação pode continuar.',
+    'procedimentos.skipSuccessMessage':
+        'O procedimento foi ignorado e a operação seguirá conforme a configuração.',
+    'procedimentos.cancelSuccessMessage':
+        'A operação foi encerrada antes de seguir para a próxima etapa.',
     'procedimentos.persistedConfiguration': 'Configuração sincronizada',
     'procedimentos.editorPersistenceNotice':
         'As alterações são salvas para a empresa e respeitam o idioma atual.',
@@ -2414,6 +2442,23 @@ const Map<String, Map<String, String>> _fallbacks = {
         'The item was recalculated and the sale already reflects the new quantity.',
     'pdv.quantityEditor.error':
         'Could not update the quantity right now. Try again in a moment.',
+    'pdv.clearSale.dialogBarrier': 'Confirm clearing the current sale',
+    'pdv.clearSale.dialogTitle': 'Clear current sale?',
+    'pdv.clearSale.dialogSubtitle':
+        'Review the summary before clearing. The current service will be reset so you can start a new sale.',
+    'pdv.clearSale.summaryItems': 'Items',
+    'pdv.clearSale.summaryTotal': 'Total',
+    'pdv.clearSale.summaryCustomer': 'Customer',
+    'pdv.clearSale.confirmAction': 'Clear sale',
+    'pdv.clearSale.impactHint':
+        'Items, identified customer and temporary receipts will be removed from this POS.',
+    'pdv.clearSale.processingTitle': 'Clearing sale...',
+    'pdv.clearSale.processingMessage':
+        'Please wait while the temporary data from this sale is removed.',
+    'pdv.clearSale.successTitle': 'Sale cleared successfully',
+    'pdv.clearSale.successMessage': 'The POS is ready to start a new sale.',
+    'pdv.clearSale.error':
+        'Unable to clear the sale right now. Please try again shortly.',
     'recebimento.valorEmAberto': 'Outstanding amount',
     'recebimento.summaryType': 'Type',
     'recebimento.total': 'Full',
@@ -3607,8 +3652,18 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Answers and timestamps will be saved when you finish.',
     'procedimentos.completeAndContinue': 'Complete and continue',
     'procedimentos.continueOperation': 'Continue operation',
+    'procedimentos.processingSkip': 'Continuing...',
+    'procedimentos.processingCancel': 'Cancelling...',
     'procedimentos.executionSaveError':
         'Could not save the answers. Please try again.',
+    'procedimentos.skipSuccessTitle': 'Procedure skipped',
+    'procedimentos.cancelSuccessTitle': 'Operation cancelled',
+    'procedimentos.completeSuccessMessage':
+        'The answers were saved and the operation can continue.',
+    'procedimentos.skipSuccessMessage':
+        'The procedure was skipped and the operation will continue under the current configuration.',
+    'procedimentos.cancelSuccessMessage':
+        'The operation was closed before moving to the next step.',
     'procedimentos.persistedConfiguration': 'Synced configuration',
     'procedimentos.editorPersistenceNotice':
         'Changes are saved for the company in the current language.',
@@ -4407,6 +4462,24 @@ const Map<String, Map<String, String>> _fallbacks = {
         'El artículo fue recalculado y la venta ya refleja la nueva cantidad.',
     'pdv.quantityEditor.error':
         'No fue posible actualizar la cantidad ahora. Inténtalo de nuevo en unos instantes.',
+    'pdv.clearSale.dialogBarrier': 'Confirmar limpieza de la venta actual',
+    'pdv.clearSale.dialogTitle': '¿Limpiar venta actual?',
+    'pdv.clearSale.dialogSubtitle':
+        'Revise el resumen antes de limpiar. La atención actual se reiniciará para abrir una nueva venta.',
+    'pdv.clearSale.summaryItems': 'Artículos',
+    'pdv.clearSale.summaryTotal': 'Total',
+    'pdv.clearSale.summaryCustomer': 'Cliente',
+    'pdv.clearSale.confirmAction': 'Limpiar venta',
+    'pdv.clearSale.impactHint':
+        'Los artículos, el cliente identificado y los cobros temporales se eliminarán de este TPV.',
+    'pdv.clearSale.processingTitle': 'Limpiando venta...',
+    'pdv.clearSale.processingMessage':
+        'Espera mientras se eliminan los datos temporales de esta venta.',
+    'pdv.clearSale.successTitle': 'Venta limpiada correctamente',
+    'pdv.clearSale.successMessage':
+        'El TPV está listo para iniciar una nueva venta.',
+    'pdv.clearSale.error':
+        'No fue posible limpiar la venta ahora. Inténtalo de nuevo en unos instantes.',
     'recebimento.valorEmAberto': 'Valor pendiente',
     'recebimento.summaryType': 'Tipo',
     'recebimento.total': 'Total',
@@ -5816,8 +5889,18 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Las respuestas y los horarios se guardarán al finalizar.',
     'procedimentos.completeAndContinue': 'Concluir y continuar',
     'procedimentos.continueOperation': 'Continuar operación',
+    'procedimentos.processingSkip': 'Continuando...',
+    'procedimentos.processingCancel': 'Cancelando...',
     'procedimentos.executionSaveError':
         'No fue posible guardar las respuestas. Inténtalo de nuevo.',
+    'procedimentos.skipSuccessTitle': 'Procedimiento omitido',
+    'procedimentos.cancelSuccessTitle': 'Operación cancelada',
+    'procedimentos.completeSuccessMessage':
+        'Las respuestas fueron guardadas y la operación puede continuar.',
+    'procedimentos.skipSuccessMessage':
+        'El procedimiento fue omitido y la operación continuará según la configuración actual.',
+    'procedimentos.cancelSuccessMessage':
+        'La operación se cerró antes de avanzar al siguiente paso.',
     'procedimentos.persistedConfiguration': 'Configuración sincronizada',
     'procedimentos.editorPersistenceNotice':
         'Los cambios se guardan para la empresa en el idioma actual.',

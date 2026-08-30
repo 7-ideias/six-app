@@ -10,6 +10,7 @@ import 'package:sixpos/data/models/produto_imagem_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/presentation/components/produto_web_image.dart';
 import 'package:sixpos/presentation/components/web/six_web_animated_dialog.dart';
+import 'package:sixpos/presentation/components/web/six_web_pdv_quantity_dialog.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
@@ -536,6 +537,27 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         quantidade: novaQuantidade,
       );
     });
+  }
+
+  Future<void> _abrirEditorQuantidadeSelecionada(ProdutoModel produto) async {
+    final String chave = _chaveProduto(produto);
+    final _ProdutoSelecionadoWeb? selecionado = _produtosSelecionados[chave];
+    if (selecionado == null) return;
+
+    await showSixWebPdvQuantityDialog(
+      context: context,
+      productName: produto.nomeProduto.trim(),
+      productCode: produto.codigoDeBarras.trim(),
+      currentQuantity: selecionado.quantidade,
+      onConfirm: (int novaQuantidade) async {
+        if (!mounted) return;
+        setState(() {
+          _produtosSelecionados[chave] = selecionado.copyWith(
+            quantidade: novaQuantidade,
+          );
+        });
+      },
+    );
   }
 
   void _confirmarSelecaoMultipla() {
@@ -3511,6 +3533,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     final _ProdutoSelecionadoWeb? itemSelecionado =
         _produtosSelecionados[_chaveProduto(produto)];
     final int quantidade = itemSelecionado?.quantidade ?? 0;
+    final String editarQuantidadeTooltip = context.t(
+      'pdv.quantityEditor.tooltip',
+      fallback: 'Editar quantidade',
+    );
 
     Widget quantidadeButton({
       required IconData icon,
@@ -3637,13 +3663,43 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                   onTap: () => _alterarQuantidadeSelecionada(produto, -1),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 13),
-                  child: Text(
-                    '$quantidade',
-                    style: TextStyle(
-                      color: tokens.primaryText,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Tooltip(
+                    message: editarQuantidadeTooltip,
+                    child: Semantics(
+                      button: true,
+                      label: '$editarQuantidadeTooltip: $quantidade',
+                      child: Material(
+                        color: tokens.surfaceElevated,
+                        borderRadius: BorderRadius.circular(11),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(11),
+                          onTap:
+                              () => _abrirEditorQuantidadeSelecionada(produto),
+                          child: Container(
+                            constraints: const BoxConstraints(minWidth: 54),
+                            height: 34,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(11),
+                              border: Border.all(
+                                color: tokens.selectedBorder.withValues(
+                                  alpha: 0.92,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              '$quantidade',
+                              style: TextStyle(
+                                color: tokens.primaryText,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),

@@ -744,97 +744,105 @@ class _SidebarVersionPill extends StatelessWidget {
       child: Tooltip(
         message:
             isSuperUser ? '$label $versionText · SUPER' : '$label $versionText',
-        child: Container(
-          width: double.infinity,
-          padding: EdgeInsets.symmetric(
-            horizontal: expanded ? 12 : 0,
-            vertical: 7,
-          ),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color:
-                brandedSidebar
-                    ? colorScheme.onPrimary.withValues(alpha: 0.10)
-                    : tokens.surfaceMuted,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color:
-                  brandedSidebar
-                      ? colorScheme.onPrimary.withValues(alpha: 0.14)
-                      : tokens.cardBorder,
-            ),
-          ),
-          child:
-              expanded
-                  ? Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Flexible(
-                        child: Text(
-                          '$label $versionText',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: foregroundColor,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                      if (isSuperUser) ...<Widget>[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: superBackground,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            'SUPER',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: superForeground,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  )
-                  : Stack(
-                    clipBehavior: Clip.none,
-                    alignment: Alignment.center,
-                    children: <Widget>[
-                      Icon(
-                        Icons.info_outline_rounded,
-                        size: 18,
-                        color: foregroundColor,
-                      ),
-                      if (isSuperUser)
-                        Positioned(
-                          top: -2,
-                          right: 14,
-                          child: Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: superBackground,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color:
-                                    brandedSidebar
-                                        ? colorScheme.primary
-                                        : tokens.surfaceMuted,
-                                width: 1.2,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final double minExpandedWidth = isSuperUser ? 150 : 96;
+            final bool showExpandedContent =
+                expanded && constraints.maxWidth >= minExpandedWidth;
+
+            return Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: showExpandedContent ? 12 : 0,
+                vertical: 7,
+              ),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color:
+                    brandedSidebar
+                        ? colorScheme.onPrimary.withValues(alpha: 0.10)
+                        : tokens.surfaceMuted,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color:
+                      brandedSidebar
+                          ? colorScheme.onPrimary.withValues(alpha: 0.14)
+                          : tokens.cardBorder,
+                ),
+              ),
+              child:
+                  showExpandedContent
+                      ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Flexible(
+                            child: Text(
+                              '$label $versionText',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: foregroundColor,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ),
-                        ),
-                    ],
-                  ),
+                          if (isSuperUser) ...<Widget>[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: superBackground,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                'SUPER',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: superForeground,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      )
+                      : Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.center,
+                        children: <Widget>[
+                          Icon(
+                            Icons.info_outline_rounded,
+                            size: 18,
+                            color: foregroundColor,
+                          ),
+                          if (isSuperUser)
+                            Positioned(
+                              top: -2,
+                              right: 14,
+                              child: Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: superBackground,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color:
+                                        brandedSidebar
+                                            ? colorScheme.primary
+                                            : tokens.surfaceMuted,
+                                    width: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+            );
+          },
         ),
       ),
     );

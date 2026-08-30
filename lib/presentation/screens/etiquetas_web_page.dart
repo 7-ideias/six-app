@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sixpos/data/models/etiqueta_models.dart';
 import 'package:sixpos/domain/services/etiqueta/etiqueta_service.dart';
+import 'package:sixpos/presentation/components/web/six_web_animated_dialog.dart';
 import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
@@ -551,9 +552,16 @@ class _EtiquetasWebPageState extends State<EtiquetasWebPage> {
   Future<void> _openPrint([String? templateId]) async {
     if (_models.isEmpty) return;
     final Size size = MediaQuery.sizeOf(context);
-    await showDialog<void>(
+    await showSixWebAnimatedDialog<void>(
       context: context,
       barrierDismissible: false,
+      barrierLabel: _tr(
+        'labels.print.barrier',
+        'Fechar impressão de etiquetas',
+        'Close label printing',
+        'Cerrar impresión de etiquetas',
+      ),
+      padding: const EdgeInsets.all(18),
       builder:
           (BuildContext dialogContext) => Dialog(
             insetPadding: const EdgeInsets.all(18),
