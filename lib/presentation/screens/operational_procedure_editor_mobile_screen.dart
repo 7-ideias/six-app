@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_item_editor.dart';
@@ -16,6 +17,144 @@ import 'package:sixpos/presentation/components/mobile/operational_procedures/ope
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/screens/operational_procedure_preview_mobile_screen.dart';
 import 'package:sixpos/providers/operational_procedure_provider.dart';
+
+InputDecoration _operationalProcedureFieldDecoration(
+  BuildContext context, {
+  required String labelText,
+}) {
+  final SixMobileColorScheme colors = context.sixMobileColors;
+  final OutlineInputBorder enabledBorder = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(14),
+    borderSide: BorderSide(color: colors.border),
+  );
+
+  return InputDecoration(
+    labelText: labelText,
+    filled: true,
+    fillColor: colors.softSurface,
+    labelStyle: TextStyle(color: colors.mutedText, fontWeight: FontWeight.w700),
+    contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    border: enabledBorder,
+    enabledBorder: enabledBorder,
+    disabledBorder: enabledBorder,
+    focusedBorder: enabledBorder.copyWith(
+      borderSide: BorderSide(color: colors.accent, width: 1.4),
+    ),
+    errorBorder: enabledBorder.copyWith(
+      borderSide: BorderSide(color: colors.errorBorder),
+    ),
+    focusedErrorBorder: enabledBorder.copyWith(
+      borderSide: BorderSide(color: colors.error, width: 1.4),
+    ),
+  );
+}
+
+ThemeData _operationalProcedureEditorTheme(BuildContext context) {
+  final ThemeData baseTheme = Theme.of(context);
+  final SixMobileColorScheme colors = context.sixMobileColors;
+
+  return baseTheme.copyWith(
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((Set<WidgetState> states) {
+        if (states.contains(WidgetState.selected)) {
+          return colors.onAccent;
+        }
+        return colors.titleText;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((Set<WidgetState> states) {
+        if (states.contains(WidgetState.selected)) {
+          return colors.accent.withValues(alpha: 0.48);
+        }
+        return colors.softSurface;
+      }),
+      trackOutlineColor: WidgetStateProperty.resolveWith((
+        Set<WidgetState> states,
+      ) {
+        if (states.contains(WidgetState.selected)) {
+          return colors.accent;
+        }
+        return colors.strongBorder;
+      }),
+      trackOutlineWidth: const WidgetStatePropertyAll<double>(1.2),
+      overlayColor: WidgetStatePropertyAll<Color>(
+        colors.accent.withValues(alpha: 0.12),
+      ),
+    ),
+    dividerColor: colors.border,
+  );
+}
+
+ButtonStyle _mobileSheetSecondaryButtonStyle(BuildContext context) {
+  final SixMobileColorScheme colors = context.sixMobileColors;
+
+  return OutlinedButton.styleFrom(
+    backgroundColor: colors.softAccentSurface,
+    foregroundColor: colors.accent,
+    disabledBackgroundColor: colors.softSurface.withValues(alpha: 0.72),
+    disabledForegroundColor: colors.mutedText,
+    side: BorderSide(color: colors.accent.withValues(alpha: 0.28)),
+    minimumSize: const Size(0, 46),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    visualDensity: const VisualDensity(horizontal: -1, vertical: -1),
+    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  );
+}
+
+ButtonStyle _mobileSheetPrimaryButtonStyle(BuildContext context) {
+  final SixMobileColorScheme colors = context.sixMobileColors;
+
+  return FilledButton.styleFrom(
+    backgroundColor: colors.accent,
+    foregroundColor: colors.onAccent,
+    disabledBackgroundColor: colors.softSurface,
+    disabledForegroundColor: colors.mutedText,
+    elevation: 0,
+    minimumSize: const Size(0, 46),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    visualDensity: const VisualDensity(horizontal: -1, vertical: -1),
+    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  );
+}
+
+ButtonStyle _mobileSheetDestructiveButtonStyle(BuildContext context) {
+  final SixMobileColorScheme colors = context.sixMobileColors;
+
+  return OutlinedButton.styleFrom(
+    backgroundColor: colors.softSurface,
+    foregroundColor: colors.error,
+    disabledBackgroundColor: colors.softSurface.withValues(alpha: 0.72),
+    disabledForegroundColor: colors.mutedText,
+    side: BorderSide(color: colors.error.withValues(alpha: 0.28)),
+    minimumSize: const Size(0, 46),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    visualDensity: const VisualDensity(horizontal: -1, vertical: -1),
+    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  );
+}
+
+ButtonStyle _mobileInlineTonalButtonStyle(BuildContext context) {
+  final SixMobileColorScheme colors = context.sixMobileColors;
+
+  return OutlinedButton.styleFrom(
+    foregroundColor: colors.accent,
+    backgroundColor: colors.softAccentSurface,
+    disabledForegroundColor: colors.mutedText,
+    disabledBackgroundColor: colors.softSurface.withValues(alpha: 0.72),
+    side: BorderSide(color: colors.accent.withValues(alpha: 0.26)),
+    minimumSize: const Size(0, 38),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    visualDensity: const VisualDensity(horizontal: -1, vertical: -1),
+    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  );
+}
 
 class OperationalProcedureEditorMobileScreen extends StatefulWidget {
   const OperationalProcedureEditorMobileScreen({
@@ -44,6 +183,7 @@ class _OperationalProcedureEditorMobileScreenState
   late final TextEditingController _descriptionController;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _dirty = false;
+  bool _saving = false;
   String? _structureError;
 
   @override
@@ -63,6 +203,7 @@ class _OperationalProcedureEditorMobileScreenState
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     final bool reduceMotion =
         MediaQuery.disableAnimationsOf(context) ||
         MediaQuery.accessibleNavigationOf(context);
@@ -101,11 +242,11 @@ class _OperationalProcedureEditorMobileScreenState
             icon: Icon(Icons.play_circle_outline_rounded),
           ),
           TextButton(
-            onPressed: _save,
+            onPressed: _saving ? null : _save,
             child: Text(
               context.t('common.save', fallback: 'Salvar'),
               style: TextStyle(
-                color: SixMobilePalette.onPrimary,
+                color: colors.onPrimary,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -118,213 +259,264 @@ class _OperationalProcedureEditorMobileScreenState
         ) {
           return SafeArea(
             top: false,
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                controller: scrollController,
-                physics: AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
-                children: <Widget>[
-                  _DemoNotice(),
-                  SizedBox(height: 14),
-                  _SectionCard(
-                    title: context.t(
-                      'procedimentos.generalInfo',
-                      fallback: 'Informações gerais',
-                    ),
-                    child: Column(
-                      children: <Widget>[
-                        TextFormField(
-                          controller: _nameController,
-                          textInputAction: TextInputAction.next,
-                          decoration: InputDecoration(
-                            labelText: context.t(
-                              'procedimentos.nameField',
-                              fallback: 'Nome',
+            child: Theme(
+              data: _operationalProcedureEditorTheme(context),
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  controller: scrollController,
+                  physics: AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
+                  children: <Widget>[
+                    _DemoNotice(),
+                    SizedBox(height: 14),
+                    _SectionCard(
+                      title: context.t(
+                        'procedimentos.generalInfo',
+                        fallback: 'Informações gerais',
+                      ),
+                      child: Column(
+                        children: <Widget>[
+                          TextFormField(
+                            controller: _nameController,
+                            textInputAction: TextInputAction.next,
+                            cursorColor: colors.accent,
+                            style: TextStyle(
+                              color: colors.titleText,
+                              fontWeight: FontWeight.w700,
                             ),
+                            decoration: _operationalProcedureFieldDecoration(
+                              context,
+                              labelText: context.t(
+                                'procedimentos.nameField',
+                                fallback: 'Nome',
+                              ),
+                            ),
+                            validator: (String? value) {
+                              if ((value ?? '').trim().isEmpty) {
+                                return context.t(
+                                  'procedimentos.validationName',
+                                  fallback: 'Informe o nome do procedimento.',
+                                );
+                              }
+                              return null;
+                            },
+                            onChanged: (String value) {
+                              _updateDraft(_draft.copyWith(name: value.trim()));
+                            },
                           ),
-                          validator: (String? value) {
-                            if ((value ?? '').trim().isEmpty) {
-                              return context.t(
-                                'procedimentos.validationName',
-                                fallback: 'Informe o nome do procedimento.',
+                          SizedBox(height: 12),
+                          TextFormField(
+                            controller: _descriptionController,
+                            minLines: 2,
+                            maxLines: 4,
+                            cursorColor: colors.accent,
+                            style: TextStyle(
+                              color: colors.titleText,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            decoration: _operationalProcedureFieldDecoration(
+                              context,
+                              labelText: context.t(
+                                'procedimentos.descriptionField',
+                                fallback: 'Descrição',
+                              ),
+                            ),
+                            onChanged: (String value) {
+                              _updateDraft(
+                                _draft.copyWith(description: value.trim()),
                               );
-                            }
-                            return null;
-                          },
-                          onChanged: (String value) {
-                            _updateDraft(_draft.copyWith(name: value.trim()));
-                          },
-                        ),
-                        SizedBox(height: 12),
-                        TextFormField(
-                          controller: _descriptionController,
-                          minLines: 2,
-                          maxLines: 4,
-                          decoration: InputDecoration(
-                            labelText: context.t(
-                              'procedimentos.descriptionField',
-                              fallback: 'Descrição',
+                            },
+                          ),
+                          SizedBox(height: 12),
+                          _SelectorTile(
+                            label: context.t(
+                              'procedimentos.operationContext',
+                              fallback: 'Contexto operacional',
                             ),
+                            value: operationTypeLabel(
+                              context,
+                              _draft.operationType,
+                            ),
+                            icon: Icons.storefront_outlined,
+                            onTap: _selectOperationType,
                           ),
-                          onChanged: (String value) {
-                            _updateDraft(
-                              _draft.copyWith(description: value.trim()),
-                            );
-                          },
-                        ),
-                        SizedBox(height: 12),
-                        _SelectorTile(
-                          label: context.t(
-                            'procedimentos.operationContext',
-                            fallback: 'Contexto operacional',
+                          SizedBox(height: 10),
+                          _SelectorTile(
+                            label: context.t(
+                              'procedimentos.momentField',
+                              fallback: 'Momento',
+                            ),
+                            value: momentLabel(context, _draft.moment),
+                            icon: Icons.schedule_outlined,
+                            onTap: _selectMoment,
                           ),
-                          value: operationTypeLabel(
-                            context,
-                            _draft.operationType,
+                          SizedBox(height: 8),
+                          _buildSwitchTile(
+                            title: context.t(
+                              'common.active',
+                              fallback: 'Ativo',
+                            ),
+                            value: _draft.isActive,
+                            onChanged: (bool value) {
+                              _updateDraft(
+                                context
+                                    .read<OperationalProcedureProvider>()
+                                    .setProcedureActive(_draft, value),
+                              );
+                            },
                           ),
-                          icon: Icons.storefront_outlined,
-                          onTap: _selectOperationType,
-                        ),
-                        SizedBox(height: 10),
-                        _SelectorTile(
-                          label: context.t(
-                            'procedimentos.momentField',
-                            fallback: 'Momento',
-                          ),
-                          value: momentLabel(context, _draft.moment),
-                          icon: Icons.schedule_outlined,
-                          onTap: _selectMoment,
-                        ),
-                        SizedBox(height: 8),
-                        SwitchListTile.adaptive(
-                          value: _draft.isActive,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            context.t('common.active', fallback: 'Ativo'),
-                          ),
-                          onChanged: (bool value) {
-                            _updateDraft(
-                              context
-                                  .read<OperationalProcedureProvider>()
-                                  .setProcedureActive(_draft, value),
-                            );
-                          },
-                        ),
-                        SwitchListTile.adaptive(
-                          value: _draft.required,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            context.t(
+                          _buildSwitchTile(
+                            title: context.t(
                               'procedimentos.requireCompletion',
                               fallback: 'Exigir conclusão deste procedimento',
                             ),
-                          ),
-                          subtitle: Text(
-                            context.t(
+                            subtitle: context.t(
                               'procedimentos.requireCompletionHelp',
                               fallback:
                                   'Na integração futura, esse procedimento poderá exigir conclusão antes de continuar a operação.',
                             ),
+                            value: _draft.required,
+                            onChanged: (bool value) {
+                              _updateDraft(_draft.copyWith(required: value));
+                            },
                           ),
-                          onChanged: (bool value) {
-                            _updateDraft(_draft.copyWith(required: value));
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 14),
-                  _SectionCard(
-                    title: context.t(
-                      'procedimentos.whenExecute',
-                      fallback: 'Quando executar',
-                    ),
-                    trailing: TextButton.icon(
-                      onPressed: _addTrigger,
-                      icon: Icon(Icons.add_rounded),
-                      label: Text(
-                        context.t(
-                          'procedimentos.addTrigger',
-                          fallback: 'Adicionar gatilho',
-                        ),
+                          const Divider(height: 24),
+                          _buildSwitchTile(
+                            title: context.t(
+                              'procedimentos.notifyAdmin',
+                              fallback: 'Notificar ADMIN por push',
+                            ),
+                            subtitle: context.t(
+                              'procedimentos.notifyAdminHelp',
+                              fallback:
+                                  'Avisa os administradores ativos quando a condição ocorrer.',
+                            ),
+                            value: _draft.adminNotification.enabled,
+                            onChanged: (bool value) {
+                              _updateDraft(
+                                _draft.copyWith(
+                                  adminNotification: _draft.adminNotification
+                                      .copyWith(enabled: value),
+                                ),
+                              );
+                            },
+                          ),
+                          if (_draft.adminNotification.enabled)
+                            _SelectorTile(
+                              label: context.t(
+                                'procedimentos.notificationCondition',
+                                fallback: 'Quando notificar',
+                              ),
+                              value: _notificationConditionLabel(
+                                _draft.adminNotification.condition,
+                              ),
+                              icon: Icons.notifications_active_outlined,
+                              onTap: _selectNotificationCondition,
+                            ),
+                        ],
                       ),
                     ),
-                    child: _buildTriggersSection(reduceMotion),
-                  ),
-                  SizedBox(height: 14),
-                  _SectionCard(
-                    title: context.t(
-                      'procedimentos.stages',
-                      fallback: 'Etapas',
-                    ),
-                    trailing: TextButton.icon(
-                      onPressed: _addStage,
-                      icon: Icon(Icons.add_rounded),
-                      label: Text(
-                        context.t(
-                          'procedimentos.addStage',
-                          fallback: 'Adicionar etapa',
+                    SizedBox(height: 14),
+                    _SectionCard(
+                      title: context.t(
+                        'procedimentos.whenExecute',
+                        fallback: 'Quando executar',
+                      ),
+                      trailing: OutlinedButton.icon(
+                        onPressed: _addTrigger,
+                        style: _mobileInlineTonalButtonStyle(context),
+                        icon: Icon(Icons.add_rounded, size: 18),
+                        label: Text(
+                          context.t(
+                            'procedimentos.addTrigger',
+                            fallback: 'Adicionar gatilho',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      child: _buildTriggersSection(reduceMotion),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        if (_structureError != null) ...<Widget>[
-                          Semantics(
-                            liveRegion: true,
-                            child: Text(
-                              _structureError!,
-                              style: TextStyle(
-                                color: SixMobilePalette.error,
-                                fontWeight: FontWeight.w800,
+                    SizedBox(height: 14),
+                    _SectionCard(
+                      title: context.t(
+                        'procedimentos.stages',
+                        fallback: 'Etapas',
+                      ),
+                      trailing: OutlinedButton.icon(
+                        onPressed: _addStage,
+                        style: _mobileInlineTonalButtonStyle(context),
+                        icon: Icon(Icons.add_rounded, size: 18),
+                        label: Text(
+                          context.t(
+                            'procedimentos.addStage',
+                            fallback: 'Adicionar etapa',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          if (_structureError != null) ...<Widget>[
+                            Semantics(
+                              liveRegion: true,
+                              child: Text(
+                                _structureError!,
+                                style: TextStyle(
+                                  color: colors.error,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ),
-                          ),
-                          SizedBox(height: 10),
-                        ],
-                        AnimatedSwitcher(
-                          duration:
-                              reduceMotion
-                                  ? Duration.zero
-                                  : Duration(milliseconds: 180),
-                          child:
-                              _draft.stages.isEmpty
-                                  ? _EmptyInline(
-                                    message: context.t(
-                                      'procedimentos.noStages',
-                                      fallback:
-                                          'Adicione pelo menos uma etapa.',
+                            SizedBox(height: 10),
+                          ],
+                          AnimatedSwitcher(
+                            duration:
+                                reduceMotion
+                                    ? Duration.zero
+                                    : Duration(milliseconds: 180),
+                            child:
+                                _draft.stages.isEmpty
+                                    ? _EmptyInline(
+                                      message: context.t(
+                                        'procedimentos.noStages',
+                                        fallback:
+                                            'Adicione pelo menos uma etapa.',
+                                      ),
+                                    )
+                                    : Column(
+                                      key: ValueKey<int>(_draft.stages.length),
+                                      children:
+                                          _draft.stages
+                                              .map(_buildStage)
+                                              .toList(),
                                     ),
-                                  )
-                                  : Column(
-                                    key: ValueKey<int>(_draft.stages.length),
-                                    children:
-                                        _draft.stages.map(_buildStage).toList(),
-                                  ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 14),
-                  OperationalProcedureNewAction(
-                    onTap: _save,
-                    label: context.t('common.save', fallback: 'Salvar'),
-                    icon: Icons.check_rounded,
-                  ),
-                  SizedBox(height: 10),
-                  OutlinedButton.icon(
-                    onPressed: _openPreview,
-                    icon: Icon(Icons.play_circle_outline_rounded),
-                    label: Text(
-                      context.t(
-                        'procedimentos.previewAction',
-                        fallback: 'Pré-visualizar',
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                    SizedBox(height: 14),
+                    OperationalProcedureNewAction(
+                      onTap: _save,
+                      label: context.t('common.save', fallback: 'Salvar'),
+                      icon: Icons.check_rounded,
+                    ),
+                    SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: _openPreview,
+                      icon: Icon(Icons.play_circle_outline_rounded),
+                      label: Text(
+                        context.t(
+                          'procedimentos.previewAction',
+                          fallback: 'Pré-visualizar',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -333,7 +525,38 @@ class _OperationalProcedureEditorMobileScreenState
     );
   }
 
+  Widget _buildSwitchTile({
+    required String title,
+    String? subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+
+    return SwitchListTile.adaptive(
+      value: value,
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        title,
+        style: TextStyle(color: colors.titleText, fontWeight: FontWeight.w800),
+      ),
+      subtitle:
+          subtitle == null
+              ? null
+              : Text(
+                subtitle,
+                style: TextStyle(
+                  color: colors.mutedText,
+                  height: 1.3,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+      onChanged: onChanged,
+    );
+  }
+
   Widget _buildStage(ProcedureStage stage) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     final int itemCount = stage.items.length;
     return Semantics(
       container: true,
@@ -347,9 +570,9 @@ class _OperationalProcedureEditorMobileScreenState
         margin: EdgeInsets.only(bottom: 12),
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: SixMobilePalette.softNeutralSurface,
+          color: colors.softSurface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: SixMobilePalette.border),
+          border: Border.all(color: colors.border),
         ),
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -361,11 +584,14 @@ class _OperationalProcedureEditorMobileScreenState
               '${stage.order}. ${stage.title}',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontWeight: FontWeight.w900),
+              style: TextStyle(
+                color: colors.titleText,
+                fontWeight: FontWeight.w900,
+              ),
             ),
             subtitle: Text(
               OperationalProcedureI18n.itemCount(context, itemCount),
-              style: TextStyle(color: SixMobilePalette.mutedText),
+              style: TextStyle(color: colors.mutedText),
             ),
             trailing: Wrap(
               spacing: 2,
@@ -394,10 +620,7 @@ class _OperationalProcedureEditorMobileScreenState
                   alignment: Alignment.centerLeft,
                   child: Text(
                     stage.description,
-                    style: TextStyle(
-                      color: SixMobilePalette.mutedText,
-                      height: 1.3,
-                    ),
+                    style: TextStyle(color: colors.mutedText, height: 1.3),
                   ),
                 ),
               SizedBox(height: 8),
@@ -410,14 +633,17 @@ class _OperationalProcedureEditorMobileScreenState
               }),
               Align(
                 alignment: Alignment.centerLeft,
-                child: TextButton.icon(
+                child: OutlinedButton.icon(
                   onPressed: () => _addItem(stage),
-                  icon: Icon(Icons.add_rounded),
+                  style: _mobileInlineTonalButtonStyle(context),
+                  icon: Icon(Icons.add_rounded, size: 18),
                   label: Text(
                     context.t(
                       'procedimentos.addItem',
                       fallback: 'Adicionar item',
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
@@ -456,7 +682,7 @@ class _OperationalProcedureEditorMobileScreenState
                           '${_draft.triggers.length} gatilho(s) configurado(s)',
                     ),
                     style: TextStyle(
-                      color: SixMobilePalette.mutedText,
+                      color: context.sixMobileColors.mutedText,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -496,7 +722,11 @@ class _OperationalProcedureEditorMobileScreenState
             'procedimentos.operationContext',
             fallback: 'Contexto operacional',
           ),
-          options: ProcedureOperationType.values,
+          options: const <ProcedureOperationType>[
+            ProcedureOperationType.sale,
+            ProcedureOperationType.technicalService,
+            ProcedureOperationType.cashRegister,
+          ],
           selected: _draft.operationType,
           labelBuilder:
               (ProcedureOperationType value) =>
@@ -504,8 +734,68 @@ class _OperationalProcedureEditorMobileScreenState
           iconBuilder: (_) => Icons.storefront_outlined,
         );
     if (selected != null) {
-      _updateDraft(_draft.copyWith(operationType: selected));
+      final ProcedureOperationPoint point = switch (selected) {
+        ProcedureOperationType.technicalService =>
+          ProcedureOperationPoint.technicalServiceStartBefore,
+        ProcedureOperationType.cashRegister =>
+          ProcedureOperationPoint.cashRegisterStartBefore,
+        _ => ProcedureOperationPoint.saleStartBefore,
+      };
+      _updateDraft(
+        _draft.copyWith(
+          operationType: selected,
+          triggers: _draft.triggers
+              .map(
+                (ProcedureTrigger trigger) => trigger.copyWith(
+                  operationType: selected,
+                  operationPoint: point,
+                ),
+              )
+              .toList(growable: false),
+        ),
+      );
     }
+  }
+
+  Future<void> _selectNotificationCondition() async {
+    final ProcedureAdminNotificationCondition? selected =
+        await _showOptionSheet<ProcedureAdminNotificationCondition>(
+          title: context.t(
+            'procedimentos.notificationCondition',
+            fallback: 'Quando notificar',
+          ),
+          options: ProcedureAdminNotificationCondition.values,
+          selected: _draft.adminNotification.condition,
+          labelBuilder: _notificationConditionLabel,
+          iconBuilder: (_) => Icons.notifications_active_outlined,
+        );
+    if (selected == null) return;
+    _updateDraft(
+      _draft.copyWith(
+        adminNotification: _draft.adminNotification.copyWith(
+          condition: selected,
+        ),
+      ),
+    );
+  }
+
+  String _notificationConditionLabel(
+    ProcedureAdminNotificationCondition condition,
+  ) {
+    return switch (condition) {
+      ProcedureAdminNotificationCondition.always => context.t(
+        'procedimentos.notificationAlways',
+        fallback: 'Em toda execução',
+      ),
+      ProcedureAdminNotificationCondition.negativeResponse => context.t(
+        'procedimentos.notificationNegative',
+        fallback: 'Ao registrar resposta negativa',
+      ),
+      ProcedureAdminNotificationCondition.procedureSkipped => context.t(
+        'procedimentos.notificationSkipped',
+        fallback: 'Ao ignorar o procedimento',
+      ),
+    };
   }
 
   Future<void> _selectMoment() async {
@@ -748,7 +1038,7 @@ class _OperationalProcedureEditorMobileScreenState
     );
   }
 
-  void _save() {
+  Future<void> _save() async {
     FocusScope.of(context).unfocus();
     final bool validForm = _formKey.currentState?.validate() ?? false;
     final String? structureError = _validateStructure();
@@ -769,12 +1059,31 @@ class _OperationalProcedureEditorMobileScreenState
       return;
     }
 
-    context.read<OperationalProcedureProvider>().saveProcedure(
-      _draft.copyWith(
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim(),
-      ),
-    );
+    setState(() => _saving = true);
+    final OperationalProcedure? persisted = await context
+        .read<OperationalProcedureProvider>()
+        .saveProcedure(
+          _draft.copyWith(
+            name: _nameController.text.trim(),
+            description: _descriptionController.text.trim(),
+          ),
+        );
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (persisted == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'procedimentos.saveError',
+              fallback: 'Não foi possível salvar o procedimento.',
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     _dirty = false;
     Navigator.of(context).pop(true);
   }
@@ -825,25 +1134,27 @@ class _OperationalProcedureEditorMobileScreenState
 class _DemoNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         OperationalProcedureDemoBadge(
           label: context.t(
-            'procedimentos.demoData',
-            fallback: 'Dados demonstrativos',
+            'procedimentos.persistedConfiguration',
+            fallback: 'Configuração sincronizada',
           ),
         ),
         SizedBox(width: 10),
         Expanded(
           child: Text(
             context.t(
-              'procedimentos.editorDemoNotice',
+              'procedimentos.editorPersistenceNotice',
               fallback:
-                  'As alterações serão mantidas apenas durante esta sessão.',
+                  'As alterações são salvas para a empresa e respeitam o idioma atual.',
             ),
             style: TextStyle(
-              color: SixMobilePalette.heroSupportingText,
+              color: colors.heroSupportingText,
               fontWeight: FontWeight.w700,
               height: 1.25,
             ),
@@ -863,6 +1174,8 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+
     return Semantics(
       container: true,
       label: title,
@@ -870,12 +1183,12 @@ class _SectionCard extends StatelessWidget {
         width: double.infinity,
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: SixMobilePalette.surface,
+          color: colors.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: SixMobilePalette.border),
+          border: Border.all(color: colors.border),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: SixMobilePalette.navigationShadow,
+              color: colors.navigationShadow,
               blurRadius: 10,
               offset: Offset(0, 5),
             ),
@@ -890,7 +1203,7 @@ class _SectionCard extends StatelessWidget {
                   child: Text(
                     title,
                     style: TextStyle(
-                      color: SixMobilePalette.titleText,
+                      color: colors.titleText,
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
                     ),
@@ -923,11 +1236,14 @@ class _SelectorTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Semantics(
       button: true,
       label: '$label: $value',
       child: Material(
-        color: SixMobilePalette.softNeutralSurface,
+        color: colors.surfaceElevated,
         borderRadius: BorderRadius.circular(15),
         child: InkWell(
           borderRadius: BorderRadius.circular(15),
@@ -937,11 +1253,16 @@ class _SelectorTile extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: SixMobilePalette.border),
+              border: Border.all(color: colors.border),
             ),
             child: Row(
               children: <Widget>[
-                Icon(icon, color: SixMobilePalette.secondary, size: 20),
+                Icon(
+                  icon,
+                  color:
+                      isDark ? colors.accent : SixMobilePalette.secondaryLight,
+                  size: 20,
+                ),
                 SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -950,7 +1271,7 @@ class _SelectorTile extends StatelessWidget {
                       Text(
                         label,
                         style: TextStyle(
-                          color: SixMobilePalette.mutedText,
+                          color: colors.mutedText,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
@@ -961,7 +1282,7 @@ class _SelectorTile extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: SixMobilePalette.titleText,
+                          color: colors.titleText,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -970,7 +1291,7 @@ class _SelectorTile extends StatelessWidget {
                 ),
                 Icon(
                   Icons.keyboard_arrow_down_rounded,
-                  color: SixMobilePalette.mutedText,
+                  color: colors.mutedText,
                 ),
               ],
             ),
@@ -1000,6 +1321,8 @@ class _OptionSheet<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+
     return _SheetSurface(
       title: title,
       child: Column(
@@ -1008,16 +1331,53 @@ class _OptionSheet<T> extends StatelessWidget {
             options.map((T value) {
               final bool isSelected = value == selected;
               final String label = labelBuilder(value);
-              return ListTile(
-                leading: Icon(iconBuilder(value)),
-                title: Text(label),
-                subtitle:
-                    descriptionBuilder == null
-                        ? null
-                        : Text(descriptionBuilder!(value)),
-                trailing: isSelected ? Icon(Icons.check_rounded) : null,
-                selected: isSelected,
-                onTap: () => Navigator.of(context).pop(value),
+              return Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Material(
+                  color:
+                      isSelected
+                          ? colors.softAccentSurface
+                          : colors.softSurface,
+                  borderRadius: BorderRadius.circular(16),
+                  child: ListTile(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(
+                        color:
+                            isSelected
+                                ? colors.accent.withValues(alpha: 0.42)
+                                : colors.border,
+                      ),
+                    ),
+                    leading: Icon(
+                      iconBuilder(value),
+                      color: isSelected ? colors.accent : colors.mutedText,
+                    ),
+                    title: Text(
+                      label,
+                      style: TextStyle(
+                        color: colors.titleText,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    subtitle:
+                        descriptionBuilder == null
+                            ? null
+                            : Text(
+                              descriptionBuilder!(value),
+                              style: TextStyle(
+                                color: colors.mutedText,
+                                height: 1.25,
+                              ),
+                            ),
+                    trailing:
+                        isSelected
+                            ? Icon(Icons.check_rounded, color: colors.accent)
+                            : null,
+                    selected: isSelected,
+                    onTap: () => Navigator.of(context).pop(value),
+                  ),
+                ),
               );
             }).toList(),
       ),
@@ -1057,6 +1417,8 @@ class _StageEditorSheetState extends State<_StageEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+
     return _SheetSurface(
       title:
           widget.stage == null
@@ -1069,7 +1431,13 @@ class _StageEditorSheetState extends State<_StageEditorSheet> {
           children: <Widget>[
             TextFormField(
               controller: _titleController,
-              decoration: InputDecoration(
+              cursorColor: colors.accent,
+              style: TextStyle(
+                color: colors.titleText,
+                fontWeight: FontWeight.w700,
+              ),
+              decoration: _operationalProcedureFieldDecoration(
+                context,
                 labelText: context.t(
                   'procedimentos.stageTitleField',
                   fallback: 'Título da etapa',
@@ -1090,7 +1458,13 @@ class _StageEditorSheetState extends State<_StageEditorSheet> {
               controller: _descriptionController,
               minLines: 2,
               maxLines: 4,
-              decoration: InputDecoration(
+              cursorColor: colors.accent,
+              style: TextStyle(
+                color: colors.titleText,
+                fontWeight: FontWeight.w700,
+              ),
+              decoration: _operationalProcedureFieldDecoration(
+                context,
                 labelText: context.t(
                   'procedimentos.descriptionField',
                   fallback: 'Descrição',
@@ -1136,6 +1510,8 @@ class _ItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final String type = responseTypeLabel(context, item.responseType);
     final String requiredLabel = requiredStateLabel(context, item.required);
     return Semantics(
@@ -1148,7 +1524,7 @@ class _ItemRow extends StatelessWidget {
           children: <Widget>[
             Icon(
               responseTypeIcon(item.responseType),
-              color: SixMobilePalette.secondary,
+              color: isDark ? colors.accent : SixMobilePalette.secondaryLight,
               size: 20,
             ),
             SizedBox(width: 8),
@@ -1160,16 +1536,16 @@ class _ItemRow extends StatelessWidget {
                     item.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      color: colors.titleText,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   Text(
                     '$type • $requiredLabel',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: SixMobilePalette.mutedText,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: colors.mutedText, fontSize: 12),
                   ),
                 ],
               ),
@@ -1205,13 +1581,15 @@ class _EmptyInline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
           message,
           style: TextStyle(
-            color: SixMobilePalette.mutedText,
+            color: colors.mutedText,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -1219,7 +1597,7 @@ class _EmptyInline extends StatelessWidget {
           SizedBox(height: 4),
           Text(
             description!,
-            style: TextStyle(color: SixMobilePalette.mutedText, height: 1.35),
+            style: TextStyle(color: colors.mutedText, height: 1.35),
           ),
         ],
       ],
@@ -1235,10 +1613,20 @@ class _SheetSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+
     return Container(
       decoration: BoxDecoration(
-        color: SixMobilePalette.surface,
+        color: colors.surfaceElevated,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(top: BorderSide(color: colors.border)),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: colors.navigationShadow,
+            blurRadius: 18,
+            offset: Offset(0, -4),
+          ),
+        ],
       ),
       padding: EdgeInsets.fromLTRB(
         16,
@@ -1256,7 +1644,7 @@ class _SheetSurface extends StatelessWidget {
                 width: 44,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: SixMobilePalette.border,
+                  color: colors.strongBorder,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
@@ -1265,7 +1653,7 @@ class _SheetSurface extends StatelessWidget {
             Text(
               title,
               style: TextStyle(
-                color: SixMobilePalette.titleText,
+                color: colors.titleText,
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
               ),
@@ -1292,12 +1680,17 @@ class _SheetActions extends StatelessWidget {
         Expanded(
           child: OutlinedButton(
             onPressed: () => Navigator.of(context).pop(),
+            style: _mobileSheetSecondaryButtonStyle(context),
             child: Text(context.t('common.cancel', fallback: 'Cancelar')),
           ),
         ),
         SizedBox(width: 10),
         Expanded(
-          child: FilledButton(onPressed: onSave, child: Text(saveLabel)),
+          child: FilledButton(
+            onPressed: onSave,
+            style: _mobileSheetPrimaryButtonStyle(context),
+            child: Text(saveLabel),
+          ),
         ),
       ],
     );
@@ -1312,6 +1705,8 @@ class _ConfirmSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+
     return _SheetSurface(
       title: title,
       child: Column(
@@ -1320,7 +1715,7 @@ class _ConfirmSheet extends StatelessWidget {
         children: <Widget>[
           Text(
             message,
-            style: TextStyle(color: SixMobilePalette.mutedText, height: 1.35),
+            style: TextStyle(color: colors.mutedText, height: 1.35),
           ),
           SizedBox(height: 16),
           Row(
@@ -1328,6 +1723,7 @@ class _ConfirmSheet extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => Navigator.of(context).pop(false),
+                  style: _mobileSheetSecondaryButtonStyle(context),
                   child: Text(
                     context.t(
                       'procedimentos.keepEditing',
@@ -1338,8 +1734,9 @@ class _ConfirmSheet extends StatelessWidget {
               ),
               SizedBox(width: 10),
               Expanded(
-                child: FilledButton(
+                child: OutlinedButton(
                   onPressed: () => Navigator.of(context).pop(true),
+                  style: _mobileSheetDestructiveButtonStyle(context),
                   child: Text(
                     context.t('procedimentos.discard', fallback: 'Descartar'),
                   ),

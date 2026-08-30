@@ -7,6 +7,8 @@ description: Use ao criar, reformular ou revisar interfaces Flutter mobile do Si
 
 Use esta Skill para manter a experiência mobile Flutter do SixApp consistente, profissional e separada do Flutter Web.
 
+Sempre garanta também a Skill `sixapp-mobile-colors` ao usar esta skill, mesmo quando o pedido parecer centrado em layout, composição, navegação ou componentes. Contraste, tokens semânticos, CTA em dark mode, superfícies e legibilidade fazem parte obrigatória da revisão de UI mobile.
+
 Quando a tarefa visual mobile também envolver endpoint, contrato, parsing, autenticação, tenant, service ou ApiClient compartilhado, use também a Skill `sixapp-shared-backend-integration`. Esta Skill cuida da UI; a Skill de backend cuida da integração.
 
 Regra arquitetural obrigatória: telas mobile não devem ser implementadas como wrapper de telas, formulários grandes, dashboards, modais ou conteúdos principais Web. É permitido reaproveitar chamadas ao backend, ApiClient, DTOs, mappers, services, models, providers/controladores sem responsabilidade visual e helpers de formatação. Não use `embedded`, `isMobile`, `isWeb`, `LayoutBuilder` ou condicionais equivalentes para transformar a mesma árvore visual em Web e Mobile.
@@ -20,6 +22,7 @@ Quando a tarefa envolver textos visíveis, moeda, data, hora, número, percentua
 Para tarefa visual mobile, leia:
 
 - `AGENTS.md`;
+- `../sixapp-mobile-colors/SKILL.md`;
 - `docs/ui/mobile-first-patterns.md`;
 - `lib/design_system/themes/six_mobile_palette.dart`;
 - `lib/presentation/components/mobile/six_mobile_page_shell.dart`;
@@ -31,16 +34,17 @@ Leia `references/mobile-design-system.md` quando precisar consultar tokens, shel
 ## Fluxo obrigatório
 
 1. Classifique o escopo: mobile, web, compartilhado, visual, funcional ou visual com backend.
-2. Se o pedido for somente mobile, preserve arquivos web e evite tema global.
-3. Localize componentes, controllers/providers, services e implementações mobile semelhantes. Não use telas Web como base de composição; use-as apenas para entender regra de negócio, dados e cobertura funcional.
-4. Antes de editar, valide se os arquivos-alvo importam, renderizam ou embrulham tela/conteúdo principal Web; se sim, separe a composição mobile em arquivo próprio e mantenha apenas integração/domínio compartilhados.
-5. Mapeie textos e dados regionalizáveis afetados; use `sixapp-regionalization` para classificar conteúdos em estáticos, configuráveis por tenant, dinâmicos de domínio ou dados regionalizáveis.
-6. Antes de editar, informe os arquivos que pretende alterar e por que são seguros para mobile.
-7. Reutilize `SixMobilePalette`, `SixMobilePageShell`, `NavBarMobile` e componentes mobile existentes antes de criar padrões novos.
-8. Em telas legadas migradas para o padrão mobile, revise também textos visíveis, moeda, números e datas para respeitar idioma e regionalização globais.
-9. Implemente com escopo mínimo, sem alterar regras de negócio, contratos de API, autenticação, permissões ou fluxos web.
-10. Valide com `dart format <arquivos>`, `git diff --check`, `git diff` e, quando aplicável, `flutter analyze` e testes relacionados.
-11. No relato final, informe arquivos alterados, tokens usados, motion aplicado, acessibilidade, impacto de regionalização, validações e confirmação de ausência de impacto web e de wrapper UI Web/Mobile.
+2. Garanta a aplicação de `sixapp-mobile-colors` junto da revisão de UI, auditando contraste, superfícies, estados, botões e CTAs inline no dark mode.
+3. Se o pedido for somente mobile, preserve arquivos web e evite tema global.
+4. Localize componentes, controllers/providers, services e implementações mobile semelhantes. Não use telas Web como base de composição; use-as apenas para entender regra de negócio, dados e cobertura funcional.
+5. Antes de editar, valide se os arquivos-alvo importam, renderizam ou embrulham tela/conteúdo principal Web; se sim, separe a composição mobile em arquivo próprio e mantenha apenas integração/domínio compartilhados.
+6. Mapeie textos e dados regionalizáveis afetados; use `sixapp-regionalization` para classificar conteúdos em estáticos, configuráveis por tenant, dinâmicos de domínio ou dados regionalizáveis.
+7. Antes de editar, informe os arquivos que pretende alterar e por que são seguros para mobile.
+8. Reutilize `SixMobilePalette`, `SixMobilePageShell`, `NavBarMobile` e componentes mobile existentes antes de criar padrões novos.
+9. Em telas legadas migradas para o padrão mobile, revise também textos visíveis, moeda, números e datas para respeitar idioma e regionalização globais.
+10. Implemente com escopo mínimo, sem alterar regras de negócio, contratos de API, autenticação, permissões ou fluxos web.
+11. Valide com `dart format <arquivos>`, `git diff --check`, `git diff` e, quando aplicável, `flutter analyze` e testes relacionados.
+12. No relato final, informe arquivos alterados, tokens usados, motion aplicado, acessibilidade, impacto de regionalização, validações e confirmação de ausência de impacto web e de wrapper UI Web/Mobile.
 
 ## Escopo mobile
 

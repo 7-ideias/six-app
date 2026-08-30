@@ -17,20 +17,27 @@ class ProcedurePresentationResult {
     required this.outcome,
     this.completedProcedureId,
     this.skippedProcedureId,
+    this.executionId,
     this.error,
   });
 
-  const ProcedurePresentationResult.completed(String procedureId)
-    : this(
-        outcome: ProcedurePresentationOutcome.completed,
-        completedProcedureId: procedureId,
-      );
+  const ProcedurePresentationResult.completed(
+    String procedureId, {
+    String? executionId,
+  }) : this(
+         outcome: ProcedurePresentationOutcome.completed,
+         completedProcedureId: procedureId,
+         executionId: executionId,
+       );
 
-  const ProcedurePresentationResult.skipped(String procedureId)
-    : this(
-        outcome: ProcedurePresentationOutcome.skipped,
-        skippedProcedureId: procedureId,
-      );
+  const ProcedurePresentationResult.skipped(
+    String procedureId, {
+    String? executionId,
+  }) : this(
+         outcome: ProcedurePresentationOutcome.skipped,
+         skippedProcedureId: procedureId,
+         executionId: executionId,
+       );
 
   const ProcedurePresentationResult.cancelled()
     : this(outcome: ProcedurePresentationOutcome.cancelled);
@@ -41,5 +48,6 @@ class ProcedurePresentationResult {
   final ProcedurePresentationOutcome outcome;
   final String? completedProcedureId;
   final String? skippedProcedureId;
+  final String? executionId;
   final Object? error;
 }

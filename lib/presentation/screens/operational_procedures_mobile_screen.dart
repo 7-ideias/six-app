@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sixpos/data/datasources/operational_procedure_mock_data_source.dart';
+import 'package:sixpos/data/datasources/operational_procedure_data_source.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
@@ -10,21 +10,21 @@ import 'package:sixpos/presentation/components/mobile/operational_procedures/ope
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/operational_procedure_editor_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/operational_procedure_analytics_mobile_screen.dart';
 import 'package:sixpos/providers/operational_procedure_provider.dart';
 
 class OperationalProceduresMobileScreen extends StatelessWidget {
-  const OperationalProceduresMobileScreen({
-    super.key,
-    this.dataSource = const OperationalProcedureMockDataSource(),
-  });
+  const OperationalProceduresMobileScreen({super.key, this.dataSource});
 
-  final OperationalProcedureMockDataSource dataSource;
+  final OperationalProcedureDataSource? dataSource;
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<OperationalProcedureProvider>(
-      create:
-          (_) => OperationalProcedureProvider(dataSource: dataSource)..load(),
+      create: (_) => OperationalProcedureProvider(
+        dataSource: dataSource,
+        localeTag: Localizations.localeOf(context).toLanguageTag(),
+      )..load(),
       child: const _OperationalProceduresMobileView(),
     );
   }
@@ -46,50 +46,73 @@ class _OperationalProceduresMobileView extends StatelessWidget {
       primaryColor: _primaryColor,
       secondaryColor: _secondaryColor,
       accentColor: _accentColor,
-      bodyBuilder: (
-        BuildContext context,
-        ScrollController scrollController,
-        double topInset,
-      ) {
-        return SafeArea(
-          top: false,
-          child: Consumer<OperationalProcedureProvider>(
-            builder: (
-              BuildContext context,
-              OperationalProcedureProvider provider,
-              _,
-            ) {
-              final bool reduceMotion =
-                  MediaQuery.disableAnimationsOf(context) ||
-                  MediaQuery.accessibleNavigationOf(context);
-
-              return RefreshIndicator(
-                onRefresh: provider.reload,
-                child: ListView(
-                  controller: scrollController,
-                  physics: AlwaysScrollableScrollPhysics(),
-                  padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
-                  children: <Widget>[
-                    AnimatedSwitcher(
-                      duration:
-                          reduceMotion
-                              ? Duration.zero
-                              : Duration(milliseconds: 220),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      child: _buildState(
-                        context,
-                        provider,
-                        reduceMotion: reduceMotion,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+      actions: <Widget>[
+        IconButton(
+          tooltip: context.t(
+            'procedimentos.analyticsTitle',
+            fallback: 'Análise de resultados',
           ),
-        );
-      },
+          onPressed: () {
+            Navigator.of(context).push<void>(
+              MaterialPageRoute<void>(
+                builder: (_) =>
+                    const OperationalProcedureAnalyticsMobileScreen(),
+              ),
+            );
+          },
+          icon: const Icon(Icons.insights_rounded),
+        ),
+      ],
+      bodyBuilder:
+          (
+            BuildContext context,
+            ScrollController scrollController,
+            double topInset,
+          ) {
+            return SafeArea(
+              top: false,
+              child: Consumer<OperationalProcedureProvider>(
+                builder:
+                    (
+                      BuildContext context,
+                      OperationalProcedureProvider provider,
+                      _,
+                    ) {
+                      final bool reduceMotion =
+                          MediaQuery.disableAnimationsOf(context) ||
+                          MediaQuery.accessibleNavigationOf(context);
+
+                      return RefreshIndicator(
+                        onRefresh: provider.reload,
+                        child: ListView(
+                          controller: scrollController,
+                          physics: AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.fromLTRB(
+                            16,
+                            topInset + 10,
+                            16,
+                            28,
+                          ),
+                          children: <Widget>[
+                            AnimatedSwitcher(
+                              duration: reduceMotion
+                                  ? Duration.zero
+                                  : Duration(milliseconds: 220),
+                              switchInCurve: Curves.easeOutCubic,
+                              switchOutCurve: Curves.easeInCubic,
+                              child: _buildState(
+                                context,
+                                provider,
+                                reduceMotion: reduceMotion,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+              ),
+            );
+          },
     );
   }
 
@@ -123,9 +146,8 @@ class _OperationalProceduresMobileView extends StatelessWidget {
       provider: provider,
       reduceMotion: reduceMotion,
       onCreate: () => _openCreate(context, provider),
-      onOpen:
-          (OperationalProcedure procedure) =>
-              _openEdit(context, provider, procedure),
+      onOpen: (OperationalProcedure procedure) =>
+          _openEdit(context, provider, procedure),
     );
   }
 
@@ -135,8 +157,8 @@ class _OperationalProceduresMobileView extends StatelessWidget {
   ) async {
     final bool? saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
-        builder:
-            (_) => ChangeNotifierProvider<OperationalProcedureProvider>.value(
+        builder: (_) =>
+            ChangeNotifierProvider<OperationalProcedureProvider>.value(
               value: provider,
               child: OperationalProcedureEditorMobileScreen(
                 initialProcedure: provider.createEmptyProcedure(),
@@ -159,8 +181,8 @@ class _OperationalProceduresMobileView extends StatelessWidget {
     if (current == null) return;
     final bool? saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
-        builder:
-            (_) => ChangeNotifierProvider<OperationalProcedureProvider>.value(
+        builder: (_) =>
+            ChangeNotifierProvider<OperationalProcedureProvider>.value(
               value: provider,
               child: OperationalProcedureEditorMobileScreen(
                 initialProcedure: current,
@@ -180,13 +202,13 @@ class _OperationalProceduresMobileView extends StatelessWidget {
         content: Text(
           created
               ? context.t(
-                'procedimentos.createdSuccess',
-                fallback: 'Procedimento criado.',
-              )
+                  'procedimentos.createdSuccess',
+                  fallback: 'Procedimento criado.',
+                )
               : context.t(
-                'procedimentos.updatedSuccess',
-                fallback: 'Procedimento atualizado.',
-              ),
+                  'procedimentos.updatedSuccess',
+                  fallback: 'Procedimento atualizado.',
+                ),
         ),
         behavior: SnackBarBehavior.floating,
       ),

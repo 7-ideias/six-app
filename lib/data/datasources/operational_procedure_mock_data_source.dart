@@ -1,4 +1,5 @@
 import 'package:sixpos/data/models/operational_procedure_models.dart';
+import 'package:sixpos/data/datasources/operational_procedure_data_source.dart';
 
 enum OperationalProcedureMockScenario { success, empty, error }
 
@@ -10,7 +11,8 @@ enum OperationalProcedureRuntimeMockScenario {
   multiple,
 }
 
-class OperationalProcedureMockDataSource {
+class OperationalProcedureMockDataSource
+    implements OperationalProcedureDataSource {
   const OperationalProcedureMockDataSource({
     this.scenario = OperationalProcedureMockScenario.success,
     this.runtimeScenario = OperationalProcedureRuntimeMockScenario.none,
@@ -21,7 +23,11 @@ class OperationalProcedureMockDataSource {
   final OperationalProcedureRuntimeMockScenario runtimeScenario;
   final Duration delay;
 
-  Future<OperationalProcedureSummary> fetchProcedures() async {
+  @override
+  Future<OperationalProcedureSummary> fetchProcedures({
+    String idioma = 'pt-BR',
+    bool somenteAtivos = false,
+  }) async {
     await Future<void>.delayed(delay);
 
     switch (scenario) {
@@ -491,6 +497,19 @@ class OperationalProcedureMockDataSource {
           ],
         );
     }
+  }
+
+  @override
+  Future<OperationalProcedure> saveProcedure({
+    required OperationalProcedure procedure,
+    required String idioma,
+    required bool isCreating,
+  }) async {
+    await Future<void>.delayed(delay);
+    if (scenario == OperationalProcedureMockScenario.error) {
+      throw const OperationalProcedureMockException();
+    }
+    return procedure;
   }
 }
 
