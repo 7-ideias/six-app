@@ -395,6 +395,38 @@ class AdminPortalService {
     );
   }
 
+  Future<List<AdminUsuarioEmpresaAtiva>> listarUsuariosSixo() async {
+    final String baseUrl = AppConfig.baseUrl;
+    if (baseUrl.trim().isEmpty) {
+      throw Exception('API_BASE_URL não configurado.');
+    }
+    final http.Response response = await _client.get(
+      Uri.parse('$baseUrl/private/api/admin/usuarios-sixo'),
+      headers: await _headers(),
+    );
+    if (response.statusCode == 200) {
+      final dynamic decoded = jsonDecode(response.body);
+      if (decoded is List) {
+        return decoded
+            .whereType<Map<String, dynamic>>()
+            .map(AdminUsuarioEmpresaAtiva.fromJson)
+            .toList(growable: false);
+      }
+      throw Exception('Resposta inválida dos usuários do Sixo.');
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Sessão expirada. Faça login novamente.');
+    }
+    if (response.statusCode == 403) {
+      throw Exception(
+        'Seu usuário não possui autorização para acessar os usuários do Sixo.',
+      );
+    }
+    throw Exception(
+      'Falha ao carregar usuários do Sixo (${response.statusCode}).',
+    );
+  }
+
   Future<AdminAiFeedbackResumo> buscarResumoFeedbackIa() async {
     final String baseUrl = AppConfig.baseUrl;
     if (baseUrl.trim().isEmpty) {

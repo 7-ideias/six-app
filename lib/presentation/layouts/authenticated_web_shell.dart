@@ -9,6 +9,7 @@ import 'package:sixpos/presentation/navigation/web_sidebar_navigation.dart';
 import 'package:sixpos/presentation/screens/consulta_vendas_web_page.dart';
 import 'package:sixpos/presentation/screens/devolucoes_produtos_web_page.dart';
 import 'package:sixpos/presentation/screens/etiquetas_web_page.dart';
+import 'package:sixpos/presentation/screens/usuarios_sixo_web_page.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 
@@ -86,6 +87,8 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
       ),
       WebNavigationDestination.operationsReturns =>
         const DevolucoesProdutosWebPage(),
+      WebNavigationDestination.peopleSixoUsers =>
+        const UsuariosSixoWebPage(),
       _ => widget.child,
     };
 
@@ -171,9 +174,13 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
       setState(() {
         _shellManagedDestination = destination;
         _expandedGroupIds.add(
-          destination == WebNavigationDestination.catalogLabels
-              ? WebNavigationIds.catalog
-              : WebNavigationIds.operations,
+          switch (destination) {
+            WebNavigationDestination.catalogLabels =>
+              WebNavigationIds.catalog,
+            WebNavigationDestination.peopleSixoUsers =>
+              WebNavigationIds.people,
+            _ => WebNavigationIds.operations,
+          },
         );
       });
       return;
@@ -208,7 +215,8 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
   bool _isShellManaged(WebNavigationDestination destination) {
     return destination == WebNavigationDestination.catalogLabels ||
         destination == WebNavigationDestination.operationsSales ||
-        destination == WebNavigationDestination.operationsReturns;
+        destination == WebNavigationDestination.operationsReturns ||
+        destination == WebNavigationDestination.peopleSixoUsers;
   }
 
   Future<void> _abrirDevolucoesDaVenda(String identificador) async {

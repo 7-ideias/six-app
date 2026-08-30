@@ -440,6 +440,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.people': 'Pessoas',
     'web.navigation.people.customers': 'Clientes',
     'web.navigation.people.collaborators': 'Colaboradores',
+    'web.navigation.people.sixoUsers': 'Usuários do Sixo',
     'web.navigation.people.performance': 'Desempenho',
     'web.navigation.cash': 'Caixa',
     'web.navigation.financial': 'Financeiro',
@@ -447,6 +448,37 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.settings': 'Configurações',
     'web.navigation.reports': 'Relatórios',
     'web.navigation.unavailable': 'Destino indisponível nesta versão.',
+    'usuariosSixo.title': 'Usuários do Sixo',
+    'usuariosSixo.subtitle':
+        'Consulte os usuários cadastrados com acesso exclusivo para o perfil SUPER.',
+    'usuariosSixo.summarySemantics':
+        'Resumo dos usuários cadastrados no Sixo',
+    'usuariosSixo.summaryTitle': 'Base global de usuários',
+    'usuariosSixo.summarySubtitle':
+        'Consulta protegida pelo perfil SUPER do token.',
+    'usuariosSixo.totalLabel': 'usuários',
+    'usuariosSixo.totalRegistered': 'Usuários cadastrados',
+    'usuariosSixo.searchHint':
+        'Buscar por nome, e-mail, celular ou perfil',
+    'usuariosSixo.resultsLabel': 'encontrados',
+    'usuariosSixo.forbiddenTitle': 'Acesso exclusivo para SUPER',
+    'usuariosSixo.forbiddenMessage':
+        'Seu perfil não possui permissão para consultar os usuários do Sixo.',
+    'usuariosSixo.loading': 'Carregando usuários do Sixo',
+    'usuariosSixo.loadErrorTitle':
+        'Não foi possível carregar os usuários',
+    'usuariosSixo.loadError': 'Verifique sua conexão e tente novamente.',
+    'usuariosSixo.emptyTitle': 'Nenhum usuário encontrado',
+    'usuariosSixo.emptyMessage':
+        'Ajuste a busca para consultar outros usuários.',
+    'usuariosSixo.userFallback': 'Usuário do Sixo',
+    'usuariosSixo.noEmail': 'E-mail não informado',
+    'usuariosSixo.noPhone': 'Celular não informado',
+    'usuariosSixo.role.super': 'SUPER',
+    'usuariosSixo.role.admin': 'Administrador',
+    'usuariosSixo.role.collaborator': 'Colaborador',
+    'usuariosSixo.role.customer': 'Cliente',
+    'usuariosSixo.role.unknown': 'Não informado',
     'caixa.operacoes.openConfirmTitle': 'Confirmar abertura de caixa?',
     'caixa.operacoes.openConfirmMessage':
         'Deseja abrir {cashDesk} com troco inicial de {amount}?',
@@ -1766,6 +1798,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.people.clientsDesc': 'Base de atendimento e relacionamento',
     'gestao.people.collaborators': 'Colaboradores',
     'gestao.people.collaboratorsDesc': 'Equipe, acessos e responsabilidades',
+    'gestao.people.sixoUsers': 'Usuários do Sixo',
+    'gestao.people.sixoUsersDesc':
+        'Base global protegida pelo perfil SUPER',
     'gestao.people.suppliers': 'Fornecedores',
     'gestao.people.suppliersDesc': 'Parceiros e compras do comércio',
     'gestao.people.performance': 'Desempenho do colaborador',
@@ -2664,6 +2699,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.people': 'People',
     'web.navigation.people.customers': 'Customers',
     'web.navigation.people.collaborators': 'Team members',
+    'web.navigation.people.sixoUsers': 'Sixo users',
     'web.navigation.people.performance': 'Performance',
     'web.navigation.cash': 'Cash register',
     'web.navigation.financial': 'Financial',
@@ -2671,6 +2707,34 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.settings': 'Settings',
     'web.navigation.reports': 'Reports',
     'web.navigation.unavailable': 'Destination unavailable in this version.',
+    'usuariosSixo.title': 'Sixo users',
+    'usuariosSixo.subtitle':
+        'View all registered users with access restricted to the SUPER role.',
+    'usuariosSixo.summarySemantics': 'Registered Sixo users summary',
+    'usuariosSixo.summaryTitle': 'Global user base',
+    'usuariosSixo.summarySubtitle':
+        'Query protected by the SUPER role in the token.',
+    'usuariosSixo.totalLabel': 'users',
+    'usuariosSixo.totalRegistered': 'Registered users',
+    'usuariosSixo.searchHint': 'Search by name, email, phone, or role',
+    'usuariosSixo.resultsLabel': 'found',
+    'usuariosSixo.forbiddenTitle': 'SUPER-only access',
+    'usuariosSixo.forbiddenMessage':
+        'Your profile is not allowed to view Sixo users.',
+    'usuariosSixo.loading': 'Loading Sixo users',
+    'usuariosSixo.loadErrorTitle': 'Unable to load users',
+    'usuariosSixo.loadError': 'Check your connection and try again.',
+    'usuariosSixo.emptyTitle': 'No users found',
+    'usuariosSixo.emptyMessage':
+        'Adjust the search to find other users.',
+    'usuariosSixo.userFallback': 'Sixo user',
+    'usuariosSixo.noEmail': 'Email not provided',
+    'usuariosSixo.noPhone': 'Phone not provided',
+    'usuariosSixo.role.super': 'SUPER',
+    'usuariosSixo.role.admin': 'Administrator',
+    'usuariosSixo.role.collaborator': 'Collaborator',
+    'usuariosSixo.role.customer': 'Customer',
+    'usuariosSixo.role.unknown': 'Not provided',
     'caixa.operacoes.openConfirmTitle': 'Confirm cash opening?',
     'caixa.operacoes.openConfirmMessage':
         'Do you want to open {cashDesk} with an initial cash amount of {amount}?',
@@ -3887,6 +3951,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.people.clientsDesc': 'Service and relationship base',
     'gestao.people.collaborators': 'Collaborators',
     'gestao.people.collaboratorsDesc': 'Team, access and responsibilities',
+    'gestao.people.sixoUsers': 'Sixo users',
+    'gestao.people.sixoUsersDesc':
+        'Global base protected by the SUPER role',
     'gestao.people.suppliers': 'Suppliers',
     'gestao.people.suppliersDesc': 'Partners and business purchases',
 
@@ -4691,6 +4758,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.people': 'Personas',
     'web.navigation.people.customers': 'Clientes',
     'web.navigation.people.collaborators': 'Colaboradores',
+    'web.navigation.people.sixoUsers': 'Usuarios de Sixo',
     'web.navigation.people.performance': 'Desempeño',
     'web.navigation.cash': 'Caja',
     'web.navigation.financial': 'Financiero',
@@ -4698,6 +4766,38 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.settings': 'Configuración',
     'web.navigation.reports': 'Informes',
     'web.navigation.unavailable': 'Destino no disponible en esta versión.',
+    'usuariosSixo.title': 'Usuarios de Sixo',
+    'usuariosSixo.subtitle':
+        'Consulta todos los usuarios registrados con acceso exclusivo para el perfil SUPER.',
+    'usuariosSixo.summarySemantics':
+        'Resumen de usuarios registrados en Sixo',
+    'usuariosSixo.summaryTitle': 'Base global de usuarios',
+    'usuariosSixo.summarySubtitle':
+        'Consulta protegida por el perfil SUPER del token.',
+    'usuariosSixo.totalLabel': 'usuarios',
+    'usuariosSixo.totalRegistered': 'Usuarios registrados',
+    'usuariosSixo.searchHint':
+        'Buscar por nombre, correo, celular o perfil',
+    'usuariosSixo.resultsLabel': 'encontrados',
+    'usuariosSixo.forbiddenTitle': 'Acceso exclusivo para SUPER',
+    'usuariosSixo.forbiddenMessage':
+        'Tu perfil no tiene permiso para consultar los usuarios de Sixo.',
+    'usuariosSixo.loading': 'Cargando usuarios de Sixo',
+    'usuariosSixo.loadErrorTitle':
+        'No fue posible cargar los usuarios',
+    'usuariosSixo.loadError':
+        'Verifica tu conexión e inténtalo de nuevo.',
+    'usuariosSixo.emptyTitle': 'No se encontraron usuarios',
+    'usuariosSixo.emptyMessage':
+        'Ajusta la búsqueda para consultar otros usuarios.',
+    'usuariosSixo.userFallback': 'Usuario de Sixo',
+    'usuariosSixo.noEmail': 'Correo no informado',
+    'usuariosSixo.noPhone': 'Celular no informado',
+    'usuariosSixo.role.super': 'SUPER',
+    'usuariosSixo.role.admin': 'Administrador',
+    'usuariosSixo.role.collaborator': 'Colaborador',
+    'usuariosSixo.role.customer': 'Cliente',
+    'usuariosSixo.role.unknown': 'No informado',
     'caixa.operacoes.openConfirmTitle': '¿Confirmar apertura de caja?',
     'caixa.operacoes.openConfirmMessage':
         '¿Deseas abrir {cashDesk} con fondo inicial de {amount}?',
@@ -5956,6 +6056,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.people.clientsDesc': 'Base de atención y relación',
     'gestao.people.collaborators': 'Colaboradores',
     'gestao.people.collaboratorsDesc': 'Equipo, accesos y responsabilidades',
+    'gestao.people.sixoUsers': 'Usuarios de Sixo',
+    'gestao.people.sixoUsersDesc':
+        'Base global protegida por el perfil SUPER',
     'gestao.people.suppliers': 'Proveedores',
     'gestao.people.suppliersDesc': 'Socios y compras del comercio',
 

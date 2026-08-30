@@ -22,6 +22,7 @@ abstract final class WebNavigationIds {
   static const String people = 'people';
   static const String peopleCustomers = 'people.customers';
   static const String peopleCollaborators = 'people.collaborators';
+  static const String peopleSixoUsers = 'people.sixo_users';
   static const String peoplePerformance = 'people.performance';
   static const String cash = 'cash';
   static const String financial = 'financial';
@@ -224,6 +225,18 @@ abstract final class WebNavigationRegistry {
             'Nao existe getter especifico para gerenciar colaboradores.',
           ),
           destination: WebNavigationDestination.peopleCollaborators,
+        ),
+        WebNavigationItem(
+          id: WebNavigationIds.peopleSixoUsers,
+          labelKey: 'web.navigation.people.sixoUsers',
+          labelFallback: 'Usuários do Sixo',
+          icon: Icons.hub_outlined,
+          visibility: WebNavigationVisibilityRule.anyOf(
+            <WebNavigationPermission>[
+              WebNavigationPermission.podeAcessarUsuariosSixo,
+            ],
+          ),
+          destination: WebNavigationDestination.peopleSixoUsers,
         ),
         WebNavigationItem(
           id: WebNavigationIds.peoplePerformance,

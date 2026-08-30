@@ -122,9 +122,31 @@ void main() {
       area: GestaoMobileArea.pessoas,
       colaboradorProvider: _CollaboratorProvider(),
     );
-
     expect(find.text('Fornecedores'), findsOneWidget);
     expect(find.text('Desempenho do colaborador'), findsNothing);
+  });
+
+  testWidgets('exibe Usuarios do Sixo apenas para SUPER', (
+    WidgetTester tester,
+  ) async {
+    final List<String> navigations = <String>[];
+    await _pumpGestao(
+      tester,
+      navigations: navigations,
+      area: GestaoMobileArea.pessoas,
+      colaboradorProvider: _SuperProvider(),
+    );
+
+    final Finder sixoUsers = find.text('Usuários do Sixo');
+    expect(sixoUsers, findsOneWidget);
+    await tester.ensureVisible(sixoUsers);
+    await tester.tap(sixoUsers);
+    await tester.pump(const Duration(milliseconds: 120));
+
+    expect(navigations, contains('UsuariosSixoMobileScreen'));
+
+    await _pumpGestao(tester, area: GestaoMobileArea.pessoas);
+    expect(find.text('Usuários do Sixo'), findsNothing);
   });
 
   testWidgets('restaura a ordem dos cards salva no cache do usuário', (
@@ -388,6 +410,11 @@ class _NoCatalogPermissionProvider extends ColaboradorAutorizacoesProvider {
 class _CollaboratorProvider extends ColaboradorAutorizacoesProvider {
   @override
   bool get ehColaborador => true;
+}
+
+class _SuperProvider extends ColaboradorAutorizacoesProvider {
+  @override
+  bool get ehSuperUsuario => true;
 }
 
 const ManagementOverviewSnapshot _loadedSnapshot = ManagementOverviewSnapshot(
