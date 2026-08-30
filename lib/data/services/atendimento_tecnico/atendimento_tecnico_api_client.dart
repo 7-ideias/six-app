@@ -83,14 +83,12 @@ class AtendimentoTecnicoApiClient {
 
   Future<List<AtendimentoTecnicoModel>> listar({String? status}) async {
     final String? normalizedStatus = _blankAsNull(status);
-    final Uri uri = Uri.parse(
-      '${AppConfig.baseUrl}/atendimentos-tecnicos',
-    ).replace(
-      queryParameters:
-          normalizedStatus == null
+    final Uri uri = Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos')
+        .replace(
+          queryParameters: normalizedStatus == null
               ? null
               : <String, String>{'status': normalizedStatus},
-    );
+        );
     final response = await _httpClient.get(uri, headers: await _headers());
     if (response.statusCode == 204) return <AtendimentoTecnicoModel>[];
     if (response.statusCode != 200) {
@@ -127,11 +125,10 @@ class AtendimentoTecnicoApiClient {
     AtendimentoTecnicoCreateInput input, {
     DateTime? dataVencimentoEm,
   }) async {
-    final body =
-        input.toJson()
-          ..['dataVencimentoEm'] = _dateOnly(
-            dataVencimentoEm ?? input.validadeOrcamentoEm,
-          );
+    final body = input.toJson()
+      ..['dataVencimentoEm'] = _dateOnly(
+        dataVencimentoEm ?? input.validadeOrcamentoEm,
+      );
     final response = await _httpClient.post(
       Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos'),
       headers: await _headers(),
@@ -153,11 +150,10 @@ class AtendimentoTecnicoApiClient {
     required AtendimentoTecnicoUpdateInput input,
     DateTime? dataVencimentoEm,
   }) async {
-    final body =
-        input.toJson()
-          ..['dataVencimentoEm'] = _dateOnly(
-            dataVencimentoEm ?? input.validadeOrcamentoEm,
-          );
+    final body = input.toJson()
+      ..['dataVencimentoEm'] = _dateOnly(
+        dataVencimentoEm ?? input.validadeOrcamentoEm,
+      );
     final response = await _httpClient.put(
       Uri.parse('${AppConfig.baseUrl}/atendimentos-tecnicos/$id'),
       headers: await _headers(),
@@ -312,7 +308,7 @@ class AtendimentoTecnicoApiClient {
       ),
       headers: await _headers(),
       body: jsonEncode(<String, dynamic>{
-        'baseUrl': baseUrl,
+        'baseUrl': '${AppConfig.baseUrl}/atendimento/assinatura',
         'validadeMinutos': 1440,
       }),
     );
@@ -335,7 +331,7 @@ class AtendimentoTecnicoApiClient {
       ),
       headers: await _headers(),
       body: jsonEncode(<String, dynamic>{
-        'baseUrl': baseUrl,
+        'baseUrl': '${AppConfig.baseUrl}/atendimento/status',
         'validadeMinutos': 129600,
       }),
     );
@@ -354,14 +350,15 @@ class AtendimentoTecnicoApiClient {
     required String idUnicoDaEmpresa,
     required String token,
   }) async {
-    final uri = Uri.parse(
-      '${AppConfig.baseUrl}/public/api/atendimentos-tecnicos/status',
-    ).replace(
-      queryParameters: <String, String>{
-        'idUnicoDaEmpresa': idUnicoDaEmpresa,
-        'token': token,
-      },
-    );
+    final uri =
+        Uri.parse(
+          '${AppConfig.baseUrl}/public/api/atendimentos-tecnicos/status',
+        ).replace(
+          queryParameters: <String, String>{
+            'idUnicoDaEmpresa': idUnicoDaEmpresa,
+            'token': token,
+          },
+        );
     final response = await _httpClient.get(uri, headers: _publicHeaders());
     if (response.statusCode != 200) {
       throw AtendimentoTecnicoApiException(
@@ -388,7 +385,7 @@ class AtendimentoTecnicoApiClient {
       body: jsonEncode(<String, dynamic>{
         'idUnicoDaEmpresa': idUnicoDaEmpresa,
         'token': token,
-        'baseUrl': baseUrl,
+        'baseUrl': '${AppConfig.baseUrl}/atendimento/assinatura',
         'validadeMinutos': 1440,
       }),
     );
@@ -407,14 +404,15 @@ class AtendimentoTecnicoApiClient {
     required String idUnicoDaEmpresa,
     required String token,
   }) async {
-    final uri = Uri.parse(
-      '${AppConfig.baseUrl}/public/api/atendimentos-tecnicos/assinatura',
-    ).replace(
-      queryParameters: <String, String>{
-        'idUnicoDaEmpresa': idUnicoDaEmpresa,
-        'token': token,
-      },
-    );
+    final uri =
+        Uri.parse(
+          '${AppConfig.baseUrl}/public/api/atendimentos-tecnicos/assinatura',
+        ).replace(
+          queryParameters: <String, String>{
+            'idUnicoDaEmpresa': idUnicoDaEmpresa,
+            'token': token,
+          },
+        );
     final response = await _httpClient.get(uri, headers: _publicHeaders());
     if (response.statusCode != 200) {
       throw AtendimentoTecnicoApiException(

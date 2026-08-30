@@ -477,14 +477,13 @@ void main() {
         expect(find.textContaining('OS-PAGAMENTO'), findsOneWidget);
         expect(find.text('Financeiro aberto'), findsWidgets);
 
-        final Finder detailsButton =
-            find
-                .byWidgetPredicate(
-                  (Widget widget) =>
-                      widget is IconButton &&
-                      widget.tooltip == 'Ver detalhes do atendimento',
-                )
-                .last;
+        final Finder detailsButton = find
+            .byWidgetPredicate(
+              (Widget widget) =>
+                  widget is IconButton &&
+                  widget.tooltip == 'Ver detalhes do atendimento',
+            )
+            .last;
         await Scrollable.ensureVisible(
           tester.element(detailsButton),
           alignment: 0.65,
@@ -1205,8 +1204,9 @@ void main() {
         expect(find.byType(Signature), findsOneWidget);
         await tester.ensureVisible(find.byType(Signature));
         await tester.pumpAndSettle();
-        final SignatureController signatureController =
-            tester.widget<Signature>(find.byType(Signature)).controller;
+        final SignatureController signatureController = tester
+            .widget<Signature>(find.byType(Signature))
+            .controller;
         signatureController.addPoint(
           Point(const Offset(24, 42), PointType.tap, 1),
         );
@@ -1224,8 +1224,9 @@ void main() {
         );
         await tester.ensureVisible(registerSignatureButton);
         await tester.pumpAndSettle();
-        final VoidCallback? registerSignature =
-            tester.widget<FilledButton>(registerSignatureButton).onPressed;
+        final VoidCallback? registerSignature = tester
+            .widget<FilledButton>(registerSignatureButton)
+            .onPressed;
         expect(registerSignature, isNotNull);
         registerSignature?.call();
         await tester.pump(const Duration(milliseconds: 500));
@@ -1335,14 +1336,13 @@ void main() {
 
         await _dragUntilTextVisible(tester, 'OS-PAGAMENTO');
         await tester.pump();
-        final Finder detailsButton =
-            find
-                .byWidgetPredicate(
-                  (Widget widget) =>
-                      widget is IconButton &&
-                      widget.tooltip == 'Ver detalhes do atendimento',
-                )
-                .last;
+        final Finder detailsButton = find
+            .byWidgetPredicate(
+              (Widget widget) =>
+                  widget is IconButton &&
+                  widget.tooltip == 'Ver detalhes do atendimento',
+            )
+            .last;
         await tester.tap(detailsButton);
         await tester.pumpAndSettle();
         await _dragUntilTextVisible(
@@ -1419,20 +1419,15 @@ void main() {
           themeCase.colors.softSurface,
         );
         expect(service.createCalls, 0);
-        final FilledButton initialCreateButton = tester.widget<FilledButton>(
-          find.widgetWithText(FilledButton, 'Iniciar atendimento técnico'),
+        final FilledButton initialContinueButton = tester.widget<FilledButton>(
+          find.widgetWithText(FilledButton, 'Continuar'),
         );
-        expect(initialCreateButton.onPressed, isNotNull);
+        expect(initialContinueButton.onPressed, isNotNull);
 
-        await tester.scrollUntilVisible(
-          find.text('Iniciar atendimento técnico'),
-          420,
-          scrollable: _verticalScrollable(),
-        );
-        await _pressFilledButton(tester, 'Iniciar atendimento técnico');
+        await _pressFilledButton(tester, 'Continuar');
         await tester.pump();
         expect(
-          find.text('Selecione um cliente antes de iniciar o atendimento.'),
+          find.text('Selecione um cliente para continuar.'),
           findsOneWidget,
         );
         expect(service.createCalls, 0);
@@ -1468,6 +1463,20 @@ void main() {
         await tester.tap(find.text('Técnica').last);
         await tester.pumpAndSettle();
 
+        await _pressFilledButton(tester, 'Continuar');
+        await tester.pumpAndSettle();
+        expect(find.text('Equipamento'), findsWidgets);
+        await _pressFilledButton(tester, 'Continuar');
+        await tester.pumpAndSettle();
+        expect(find.text('Fotos do serviço'), findsOneWidget);
+
+        await tester.enterText(
+          find.widgetWithText(TextField, 'Defeito relatado pelo cliente'),
+          'Tela apaga durante o atendimento.',
+        );
+        await _pressFilledButton(tester, 'Continuar');
+        await tester.pumpAndSettle();
+
         await tester.scrollUntilVisible(
           find.text('Entrega prevista'),
           420,
@@ -1491,16 +1500,8 @@ void main() {
         await tester.tap(find.widgetWithText(FilledButton, 'Aplicar entrega'));
         await tester.pumpAndSettle();
 
-        await tester.scrollUntilVisible(
-          find.text('Defeito relatado pelo cliente'),
-          -420,
-          scrollable: _verticalScrollable(),
-        );
-        await tester.pump();
-        await tester.enterText(
-          find.widgetWithText(TextField, 'Defeito relatado pelo cliente'),
-          'Tela apaga durante o atendimento.',
-        );
+        await _pressFilledButton(tester, 'Continuar');
+        await tester.pumpAndSettle();
         final FilledButton validCreateButton = tester.widget<FilledButton>(
           find.widgetWithText(FilledButton, 'Iniciar atendimento técnico'),
         );
@@ -1736,14 +1737,13 @@ void main() {
         );
         expect(find.textContaining('Smartphone Six Pro Max'), findsWidgets);
         expect(find.text('Financeiro aberto'), findsWidgets);
-        final Finder detailsButton =
-            find
-                .byWidgetPredicate(
-                  (Widget widget) =>
-                      widget is IconButton &&
-                      widget.tooltip == 'Ver detalhes do atendimento',
-                )
-                .last;
+        final Finder detailsButton = find
+            .byWidgetPredicate(
+              (Widget widget) =>
+                  widget is IconButton &&
+                  widget.tooltip == 'Ver detalhes do atendimento',
+            )
+            .last;
         await Scrollable.ensureVisible(
           tester.element(detailsButton),
           alignment: 0.65,
@@ -1793,13 +1793,7 @@ void main() {
 
         expect(tester.takeException(), isNull);
         expect(find.text('Iniciar assistência'), findsOneWidget);
-        await tester.scrollUntilVisible(
-          find.text('Defeito relatado pelo cliente'),
-          420,
-          scrollable: _verticalScrollable(),
-        );
-        await tester.pump();
-        expect(find.text('Defeito relatado pelo cliente'), findsOneWidget);
+        await _fillCreateRequiredFields(tester);
         await tester.scrollUntilVisible(
           find.text('Iniciar atendimento técnico'),
           420,
@@ -1833,6 +1827,7 @@ void main() {
       ),
     );
 
+    await _advanceCreateToTechnicalRecord(tester);
     await tester.scrollUntilVisible(
       find.text('Defeito relatado pelo cliente'),
       420,
@@ -1863,6 +1858,12 @@ void main() {
       findsOneWidget,
     );
 
+    tester.testTextInput.hide();
+    await tester.pumpAndSettle();
+    await _pressFilledButton(tester, 'Continuar');
+    await tester.pumpAndSettle();
+    await _pressFilledButton(tester, 'Continuar');
+    await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.text('Iniciar atendimento técnico'),
       420,
@@ -2008,12 +2009,11 @@ Future<void> _pumpMobile(
 
   await tester.pumpWidget(
     ChangeNotifierProvider<LocaleSettingsProvider>(
-      create:
-          (_) => LocaleSettingsProvider(
-            regionalizacaoService: RegionalizacaoService(
-              apiClient: _FakeRegionalizacaoApiClient(),
-            ),
-          ),
+      create: (_) => LocaleSettingsProvider(
+        regionalizacaoService: RegionalizacaoService(
+          apiClient: _FakeRegionalizacaoApiClient(),
+        ),
+      ),
       child: MaterialApp(
         locale: const Locale('pt'),
         supportedLocales: _testSupportedLocales,
@@ -2135,8 +2135,26 @@ Future<void> _pressFilledButton(WidgetTester tester, String label) async {
 }
 
 Future<void> _fillCreateRequiredFields(WidgetTester tester) async {
+  await _advanceCreateToTechnicalRecord(tester);
+  await tester.enterText(
+    find.widgetWithText(TextField, 'Defeito relatado pelo cliente'),
+    'Tela apaga durante o atendimento.',
+  );
+  await _pressFilledButton(tester, 'Continuar');
+  await tester.pumpAndSettle();
+  await _pressFilledButton(tester, 'Continuar');
+  await tester.pumpAndSettle();
+  await tester.scrollUntilVisible(
+    find.text('Iniciar atendimento técnico'),
+    420,
+    scrollable: _verticalScrollable(),
+  );
+  await tester.pump();
+}
+
+Future<void> _advanceCreateToTechnicalRecord(WidgetTester tester) async {
   await _openCustomerSelector(tester);
-  await tester.tap(find.text('Cliente Six').last);
+  await tester.tap(find.textContaining('Cliente Six').last);
   await tester.pumpAndSettle();
 
   final Finder responsibleText = find.text('Selecione o responsável');
@@ -2152,22 +2170,10 @@ Future<void> _fillCreateRequiredFields(WidgetTester tester) async {
   await tester.tap(find.text('Técnica').last);
   await tester.pumpAndSettle();
 
-  await tester.scrollUntilVisible(
-    find.text('Defeito relatado pelo cliente'),
-    420,
-    scrollable: _verticalScrollable(),
-  );
-  await tester.pump();
-  await tester.enterText(
-    find.widgetWithText(TextField, 'Defeito relatado pelo cliente'),
-    'Tela apaga durante o atendimento.',
-  );
-  await tester.scrollUntilVisible(
-    find.text('Iniciar atendimento técnico'),
-    420,
-    scrollable: _verticalScrollable(),
-  );
-  await tester.pump();
+  await _pressFilledButton(tester, 'Continuar');
+  await tester.pumpAndSettle();
+  await _pressFilledButton(tester, 'Continuar');
+  await tester.pumpAndSettle();
 }
 
 Finder _verticalScrollable({bool last = false}) {
@@ -2305,13 +2311,12 @@ AtendimentoTecnicoModel _atendimento({
   DateTime? dataAtualizacao,
   DateTime? dataEntregaPrevista,
 }) {
-  final int statusId =
-      _dominios.statusAtendimentoTecnico
-          .firstWhere(
-            (DominioOpcaoModel status) => status.codigo == statusCodigo,
-            orElse: () => _dominios.statusAtendimentoTecnico.first,
-          )
-          .id;
+  final int statusId = _dominios.statusAtendimentoTecnico
+      .firstWhere(
+        (DominioOpcaoModel status) => status.codigo == statusCodigo,
+        orElse: () => _dominios.statusAtendimentoTecnico.first,
+      )
+      .id;
   final double valorTotal = 300;
   return AtendimentoTecnicoModel(
     id: numero.toLowerCase(),
@@ -2329,8 +2334,9 @@ AtendimentoTecnicoModel _atendimento({
     assinaturaAprovada: assinaturaAprovada,
     requerNovaAssinatura: requerNovaAssinatura,
     assinaturaNomeAssinante: assinaturaAprovada ? 'Cliente Six' : null,
-    assinaturaDataHora:
-        assinaturaAprovada ? DateTime(2026, 8, 6, 16, 15) : null,
+    assinaturaDataHora: assinaturaAprovada
+        ? DateTime(2026, 8, 6, 16, 15)
+        : null,
     validadeOrcamentoEm: DateTime(2026, 8, 20),
     dataVencimentoEm: DateTime(2026, 8, 18),
     dataEntregaPrevista: dataEntregaPrevista ?? DateTime(2026, 8, 16),
@@ -2414,17 +2420,16 @@ AtendimentoTecnicoModel _atendimento({
         observacao: 'Orçamento revisado.',
       ),
     ],
-    recebimentos:
-        liquidada
-            ? const <AtendimentoTecnicoRecebimentoModel>[
-              AtendimentoTecnicoRecebimentoModel(
-                id: 'rec-1',
-                codigoFormaRecebimento: 'PIX',
-                nomeFormaRecebimento: 'Pix',
-                valor: 300,
-              ),
-            ]
-            : const <AtendimentoTecnicoRecebimentoModel>[],
+    recebimentos: liquidada
+        ? const <AtendimentoTecnicoRecebimentoModel>[
+            AtendimentoTecnicoRecebimentoModel(
+              id: 'rec-1',
+              codigoFormaRecebimento: 'PIX',
+              nomeFormaRecebimento: 'Pix',
+              valor: 300,
+            ),
+          ]
+        : const <AtendimentoTecnicoRecebimentoModel>[],
     dataAtualizacao: dataAtualizacao ?? DateTime(2026, 8, 8, 12),
   );
 }
@@ -2596,12 +2601,11 @@ class _FakeAtendimentoTecnicoService extends AtendimentoTecnicoService {
     detailCalls++;
     return atendimentos.firstWhere(
       (AtendimentoTecnicoModel atendimento) => atendimento.id == id,
-      orElse:
-          () => _atendimento(
-            numero: id.toUpperCase(),
-            statusCodigo: 'EM_ANDAMENTO',
-            statusNome: 'Em andamento',
-          ),
+      orElse: () => _atendimento(
+        numero: id.toUpperCase(),
+        statusCodigo: 'EM_ANDAMENTO',
+        statusNome: 'Em andamento',
+      ),
     );
   }
 
