@@ -252,7 +252,7 @@ class _KpiCard extends StatelessWidget {
           Text(
             label,
             maxLines: 2,
-            style: const TextStyle(
+            style: TextStyle(
               color: SixMobilePalette.mutedText,
               fontWeight: FontWeight.w700,
             ),
