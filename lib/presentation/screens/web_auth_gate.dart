@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../l10n/six_i18n.dart';
 import '../../core/utils/browser_location.dart';
