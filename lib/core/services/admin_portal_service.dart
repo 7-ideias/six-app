@@ -360,10 +360,8 @@ class AdminUsuarioDetalhe {
   static Map<String, dynamic> _jsonMap(dynamic value) {
     if (value is! Map<dynamic, dynamic>) return const <String, dynamic>{};
     return value.map<String, dynamic>(
-      (dynamic key, dynamic item) => MapEntry<String, dynamic>(
-        key.toString(),
-        item,
-      ),
+      (dynamic key, dynamic item) =>
+          MapEntry<String, dynamic>(key.toString(), item),
     );
   }
 
@@ -560,6 +558,37 @@ class AdminPortalService {
       }),
     );
     return _parseUsuarioDetalhe(response, 'alterar o onboarding do usuário');
+  }
+
+  Future<void> resetarSenhaUsuarioSixo({required String idUsuario}) async {
+    final String baseUrl = AppConfig.baseUrl;
+    if (baseUrl.trim().isEmpty) {
+      throw Exception('API_BASE_URL não configurado.');
+    }
+    final String id = Uri.encodeComponent(idUsuario.trim());
+    final http.Response response = await _client.put(
+      Uri.parse('$baseUrl/private/api/admin/usuarios-sixo/$id/resetar-senha'),
+      headers: await _headers(),
+    );
+    if (response.statusCode == 200 ||
+        response.statusCode == 202 ||
+        response.statusCode == 204) {
+      return;
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Sessão expirada. Faça login novamente.');
+    }
+    if (response.statusCode == 403) {
+      throw Exception(
+        'Seu usuário não possui autorização para resetar a senha de usuários do Sixo.',
+      );
+    }
+    if (response.statusCode == 404) {
+      throw Exception('Usuário não encontrado.');
+    }
+    throw Exception(
+      'Falha ao resetar a senha do usuário (${response.statusCode}).',
+    );
   }
 
   AdminUsuarioDetalhe _parseUsuarioDetalhe(
