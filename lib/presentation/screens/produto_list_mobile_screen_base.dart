@@ -90,9 +90,16 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   static Color get _borderColor => SixMobilePalette.border;
   static Color get _mutedTextColor => SixMobilePalette.mutedText;
   static Color get _titleTextColor => SixMobilePalette.titleText;
+  static const double _selecaoHeaderCollapseOffset = 72;
+  static const double _selecaoBuscaCollapseStartOffset = 56;
+  static const double _selecaoBuscaCollapseDistance = 72;
 
   final TextEditingController _controllerBusca = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final ValueNotifier<double> _selecaoHeaderCollapseProgress =
+      ValueNotifier<double>(0);
+  final ValueNotifier<double> _selecaoBuscaCollapseProgress =
+      ValueNotifier<double>(0);
   final FocusNode _focusBusca = FocusNode();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
   late final ProdutoService _produtoService =
@@ -182,6 +189,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   @override
   void initState() {
     super.initState();
+    _exibirCampoBusca = widget.isSelecao;
     tipoSelecionado = _normalizarTipoProduto(widget.tipoInicial);
     _scrollController.addListener(_atualizarHeaderListaFixo);
     Future.microtask(_carregarPreferenciasDoUsuario);
@@ -193,6 +201,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     _timerOcultarBusca?.cancel();
     _scrollController.dispose();
     _horizontalProdutosController.dispose();
+    _selecaoHeaderCollapseProgress.dispose();
+    _selecaoBuscaCollapseProgress.dispose();
     _focusBusca.dispose();
     _controllerBusca.dispose();
     super.dispose();
@@ -267,8 +277,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     if (termoNormalizado.isNotEmpty) {
       resultado = resultado.where(
         (ProdutoModel produto) =>
-            produto.nomeProduto.toLowerCase().contains(termoNormalizado) ||
-            produto.codigoDeBarras.toLowerCase().contains(termoNormalizado),
+            _produtoCorrespondeBusca(produto, termoNormalizado),
       );
     }
 
@@ -319,6 +328,38 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     }
 
     return resultado.toList(growable: false);
+  }
+
+  bool _produtoCorrespondeBusca(ProdutoModel produto, String termoNormalizado) {
+    final String termoCompactado = termoNormalizado.replaceAll(' ', '');
+    final ProdutoDetalhesModel? detalhes = produto.detalhes;
+    final List<String> camposPesquisaveis = <String>[
+      produto.nomeProduto,
+      produto.codigoDeBarras,
+      produto.modeloProduto,
+      produto.objCategoria?.nomeCategoria ?? '',
+      produto.objAgrupamento?.grupoDoProduto ?? '',
+      detalhes?.codigoInterno ?? '',
+      detalhes?.descricao ?? '',
+      detalhes?.marca ?? '',
+      detalhes?.fabricante ?? '',
+      _formatCurrency(produto.precoVenda),
+      produto.precoVenda.toStringAsFixed(2),
+      produto.precoVenda.toString(),
+    ];
+
+    for (final String campo in camposPesquisaveis) {
+      final String normalizado = campo.trim().toLowerCase();
+      if (normalizado.isEmpty) continue;
+      if (normalizado.contains(termoNormalizado)) return true;
+
+      final String compactado = normalizado.replaceAll(' ', '');
+      if (termoCompactado.isNotEmpty && compactado.contains(termoCompactado)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   List<ProdutoModel> _ordenarProdutos(List<ProdutoModel> itens) {
@@ -504,8 +545,18 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           scrollEffectOffset: 24,
           scrolledSurfaceOpacity: 0.66,
           actions:
-              !isSelecao
+              isSelecao
                   ? <Widget>[
+                    Padding(
+                      padding: EdgeInsets.only(right: 2),
+                      child: _buildRestaurarBuscaAction(),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(right: 6),
+                      child: _buildVoltarAoTopoAction(),
+                    ),
+                  ]
+                  : <Widget>[
                     Padding(
                       padding: EdgeInsets.only(right: 2),
                       child: IconButton(
@@ -605,8 +656,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         icon: Icon(Icons.add_rounded, size: 22),
                       ),
                     ),
-                  ]
-                  : <Widget>[],
+                  ],
           bodyBuilder: (
             BuildContext context,
             ScrollController scrollController,
@@ -631,14 +681,17 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         if (isSelecao)
                           SixStaggeredEntry(
                             delay: Duration(milliseconds: 70),
-                            child: _buildTabs(compact: isSelecao),
+                            child: _buildAnimatedSelectionTabs(),
                           ),
                         if (_exibirCampoBusca &&
                             !_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
                           SizedBox(height: 12),
                           SixStaggeredEntry(
                             delay: Duration(milliseconds: 120),
-                            child: _buildSearchField(),
+                            child:
+                                isSelecao
+                                    ? _buildAnimatedSelectionSearchField()
+                                    : _buildSearchField(),
                           ),
                         ],
                         SizedBox(
@@ -674,10 +727,34 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   void _atualizarHeaderListaFixo() {
     const double offsetParaFixarHeader = 180;
+    final double offset =
+        _scrollController.hasClients ? _scrollController.offset : 0;
+    final double headerCollapseProgress =
+        widget.isSelecao
+            ? (offset / _selecaoHeaderCollapseOffset).clamp(0.0, 1.0)
+            : 0.0;
+    final double buscaCollapseProgress =
+        widget.isSelecao
+            ? ((offset - _selecaoBuscaCollapseStartOffset) /
+                    _selecaoBuscaCollapseDistance)
+                .clamp(0.0, 1.0)
+            : 0.0;
 
-    final bool deveFixar =
-        _scrollController.hasClients &&
-        _scrollController.offset >= offsetParaFixarHeader;
+    if ((_selecaoHeaderCollapseProgress.value - headerCollapseProgress).abs() >
+            0.01 ||
+        headerCollapseProgress == 0 ||
+        headerCollapseProgress == 1) {
+      _selecaoHeaderCollapseProgress.value = headerCollapseProgress;
+    }
+
+    if ((_selecaoBuscaCollapseProgress.value - buscaCollapseProgress).abs() >
+            0.01 ||
+        buscaCollapseProgress == 0 ||
+        buscaCollapseProgress == 1) {
+      _selecaoBuscaCollapseProgress.value = buscaCollapseProgress;
+    }
+
+    final bool deveFixar = offset >= offsetParaFixarHeader;
 
     if (deveFixar == _fixarHeaderLista) return;
 
@@ -818,9 +895,12 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
               _isProdutoSelecionado
                   ? _t(
                     'produto.mobile.searchProductHint',
-                    'Buscar produto ou código',
+                    'Buscar por nome, código ou preço',
                   )
-                  : _t('produto.mobile.searchServiceHint', 'Buscar serviço'),
+                  : _t(
+                    'produto.mobile.searchServiceHint',
+                    'Buscar por nome, código ou preço',
+                  ),
           hintStyle: TextStyle(color: _mutedTextColor),
           prefixIcon: Icon(Icons.search_rounded, color: _accentColor),
           suffixIcon:
@@ -839,6 +919,162 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         ),
       ),
+    );
+  }
+
+  Widget _buildVoltarAoTopoAction() {
+    return ValueListenableBuilder<double>(
+      valueListenable: _selecaoHeaderCollapseProgress,
+      builder: (BuildContext context, double progress, Widget? child) {
+        final bool reduceMotion =
+            MediaQuery.disableAnimationsOf(context) ||
+            MediaQuery.accessibleNavigationOf(context);
+        final double opacity =
+            reduceMotion ? (progress > 0.08 ? 1 : 0) : progress;
+        final double scale = reduceMotion ? 1 : 0.82 + (0.18 * progress);
+
+        return IgnorePointer(
+          ignoring: progress <= 0.08,
+          child: Opacity(
+            opacity: opacity.clamp(0.0, 1.0),
+            child: Transform.scale(
+              scale: scale,
+              child: Semantics(
+                button: true,
+                label: _t(
+                  'produto.mobile.backToTop',
+                  'Voltar ao topo da lista',
+                ),
+                child: IconButton(
+                  tooltip: _t(
+                    'produto.mobile.backToTop',
+                    'Voltar ao topo da lista',
+                  ),
+                  onPressed: _voltarAoTopoDaLista,
+                  icon: Icon(Icons.vertical_align_top_rounded, size: 21),
+                  style: IconButton.styleFrom(
+                    backgroundColor: _accentColor.withValues(
+                      alpha: 0.14 + (0.16 * progress.clamp(0.0, 1.0)),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRestaurarBuscaAction() {
+    return ValueListenableBuilder<double>(
+      valueListenable: _selecaoBuscaCollapseProgress,
+      builder: (BuildContext context, double progress, Widget? child) {
+        final bool reduceMotion =
+            MediaQuery.disableAnimationsOf(context) ||
+            MediaQuery.accessibleNavigationOf(context);
+        final double opacity =
+            reduceMotion ? (progress > 0.08 ? 1 : 0) : progress;
+        final double scale = reduceMotion ? 1 : 0.82 + (0.18 * progress);
+
+        return IgnorePointer(
+          ignoring: progress <= 0.08,
+          child: Opacity(
+            opacity: opacity.clamp(0.0, 1.0),
+            child: Transform.scale(
+              scale: scale,
+              child: Semantics(
+                button: true,
+                label: _t(
+                  'produto.mobile.restoreSearch',
+                  'Mostrar campo de busca',
+                ),
+                child: IconButton(
+                  tooltip: _t(
+                    'produto.mobile.restoreSearch',
+                    'Mostrar campo de busca',
+                  ),
+                  onPressed: _restaurarBuscaDaSelecao,
+                  icon: Icon(Icons.search_rounded, size: 21),
+                  style: IconButton.styleFrom(
+                    backgroundColor: _accentColor.withValues(
+                      alpha: 0.14 + (0.16 * progress.clamp(0.0, 1.0)),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAnimatedSelectionTabs() {
+    return ValueListenableBuilder<double>(
+      valueListenable: _selecaoHeaderCollapseProgress,
+      child: _buildTabs(compact: true),
+      builder: (BuildContext context, double progress, Widget? child) {
+        final bool reduceMotion =
+            MediaQuery.disableAnimationsOf(context) ||
+            MediaQuery.accessibleNavigationOf(context);
+        final double clampedProgress = progress.clamp(0.0, 1.0);
+        final double visibleFactor =
+            reduceMotion
+                ? (clampedProgress >= 1 ? 0 : 1)
+                : (1 - clampedProgress);
+
+        return IgnorePointer(
+          ignoring: clampedProgress >= 0.95,
+          child: ClipRect(
+            child: Align(
+              alignment: Alignment.topCenter,
+              heightFactor: visibleFactor.clamp(0.0, 1.0),
+              child: Opacity(
+                opacity: visibleFactor.clamp(0.0, 1.0),
+                child: Transform.translate(
+                  offset: Offset(0, reduceMotion ? 0 : -(18 * clampedProgress)),
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAnimatedSelectionSearchField() {
+    return ValueListenableBuilder<double>(
+      valueListenable: _selecaoBuscaCollapseProgress,
+      child: _buildSearchField(),
+      builder: (BuildContext context, double progress, Widget? child) {
+        final bool reduceMotion =
+            MediaQuery.disableAnimationsOf(context) ||
+            MediaQuery.accessibleNavigationOf(context);
+        final double clampedProgress = progress.clamp(0.0, 1.0);
+        final double visibleFactor =
+            reduceMotion
+                ? (clampedProgress >= 1 ? 0 : 1)
+                : (1 - clampedProgress);
+
+        return IgnorePointer(
+          ignoring: clampedProgress >= 0.95,
+          child: ClipRect(
+            child: Align(
+              alignment: Alignment.topCenter,
+              heightFactor: visibleFactor.clamp(0.0, 1.0),
+              child: Opacity(
+                opacity: visibleFactor.clamp(0.0, 1.0),
+                child: Transform.translate(
+                  offset: Offset(0, reduceMotion ? 0 : -(14 * clampedProgress)),
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -867,6 +1103,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   void _ocultarCampoBuscaPorInatividade() {
     if (!mounted) return;
+    if (widget.isSelecao) return;
 
     final bool temBusca =
         termoBusca.trim().isNotEmpty || _controllerBusca.text.trim().isNotEmpty;
@@ -876,6 +1113,67 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     if (temBusca) return;
 
     setState(() => _exibirCampoBusca = false);
+  }
+
+  Future<void> _voltarAoTopoDaLista() async {
+    if (!_scrollController.hasClients) return;
+
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+
+    if (reduceMotion) {
+      _scrollController.jumpTo(0);
+      return;
+    }
+
+    await _scrollController.animateTo(
+      0,
+      duration: Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Future<void> _restaurarBuscaDaSelecao() async {
+    if (!widget.isSelecao) {
+      _abrirCampoBusca();
+      return;
+    }
+
+    if (!_scrollController.hasClients) {
+      _abrirCampoBusca();
+      return;
+    }
+
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+
+    final double targetOffset =
+        _selecaoBuscaCollapseStartOffset > 12
+            ? _selecaoBuscaCollapseStartOffset - 12
+            : 0;
+
+    if (reduceMotion) {
+      _scrollController.jumpTo(targetOffset);
+    } else {
+      await _scrollController.animateTo(
+        targetOffset,
+        duration: Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+    }
+
+    if (!mounted) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _focusBusca.requestFocus();
+    });
   }
 
   bool _produtoFavoritoVisual(ProdutoModel produto) {

@@ -536,18 +536,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     ),
                   ),
                 ),
-                SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: () => Navigator.of(bottomSheetContext).pop(false),
-                  icon: Icon(Icons.close_rounded),
-                  label: Text('Voltar'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: Size.fromHeight(46),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -751,7 +739,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   @override
   Widget build(BuildContext context) {
     final temItens = _itens.isNotEmpty;
-    final bottomPadding = temItens ? 178.0 : 28.0;
+    final bottomPadding = temItens ? 16.0 : 28.0;
 
     return SixMobilePageShell(
       title:
