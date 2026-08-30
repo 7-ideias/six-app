@@ -9,6 +9,8 @@ class EmpresaModel {
   final String? endereco;
   final String? logoBase64;
   final List<HorarioAtendimentoModel> horariosAtendimento;
+  final bool? realizaVendas;
+  final bool? prestaServicosTecnicos;
 
   const EmpresaModel({
     required this.nomeEmpresa,
@@ -21,6 +23,8 @@ class EmpresaModel {
     this.endereco,
     this.logoBase64,
     this.horariosAtendimento = const <HorarioAtendimentoModel>[],
+    this.realizaVendas,
+    this.prestaServicosTecnicos,
   });
 
   factory EmpresaModel.fromJson(Map<String, dynamic> json) {
@@ -37,6 +41,8 @@ class EmpresaModel {
       horariosAtendimento: _parseHorariosAtendimento(
         json['horariosAtendimento'],
       ),
+      realizaVendas: json['realizaVendas'] as bool?,
+      prestaServicosTecnicos: json['prestaServicosTecnicos'] as bool?,
     );
   }
 
@@ -46,6 +52,13 @@ class EmpresaModel {
       'nomeFantasia': nomeFantasia,
       'documentoNoBrasilCNPJ': documentoNoBrasilCNPJ,
     };
+
+    if (realizaVendas != null) {
+      json['realizaVendas'] = realizaVendas;
+    }
+    if (prestaServicosTecnicos != null) {
+      json['prestaServicosTecnicos'] = prestaServicosTecnicos;
+    }
 
     if (telefone != null) {
       json['telefone'] = telefone;

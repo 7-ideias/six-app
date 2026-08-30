@@ -242,6 +242,7 @@ class AdminUsuarioEmpresaAtiva {
     required this.papel,
     required this.status,
     required this.dataCadastro,
+    required this.fezOnboardingInicial,
   });
 
   final String idUnicoDoUsuario;
@@ -253,6 +254,7 @@ class AdminUsuarioEmpresaAtiva {
   final String papel;
   final String status;
   final DateTime? dataCadastro;
+  final bool fezOnboardingInicial;
 
   String get nomeExibicao {
     if (nome.trim().isNotEmpty) return nome.trim();
@@ -273,7 +275,104 @@ class AdminUsuarioEmpresaAtiva {
       papel: json['papel']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
       dataCadastro: _parseDate(json['dataCadastro']),
+      fezOnboardingInicial: json['fezOnboardingInicial'] == true,
     );
+  }
+}
+
+class AdminUsuarioDetalhe {
+  const AdminUsuarioDetalhe({
+    required this.idUnicoDoUsuario,
+    required this.keycloakId,
+    required this.tipoDoAssinante,
+    required this.fezOnboardingInicial,
+    required this.idsUnicosDasEmpresas,
+    required this.permissoes,
+    required this.smsFoiValidado,
+    required this.testeExpiraEm,
+    required this.dataCadastro,
+    required this.quantidadeDeLogs,
+    required this.dadosPessoais,
+    required this.preferenciasGlobais,
+    required this.preferenciasIndividuais,
+    required this.vinculos,
+    required this.empresas,
+  });
+
+  final String idUnicoDoUsuario;
+  final String keycloakId;
+  final String tipoDoAssinante;
+  final bool fezOnboardingInicial;
+  final List<String> idsUnicosDasEmpresas;
+  final List<String> permissoes;
+  final bool smsFoiValidado;
+  final DateTime? testeExpiraEm;
+  final DateTime? dataCadastro;
+  final int quantidadeDeLogs;
+  final Map<String, dynamic> dadosPessoais;
+  final Map<String, dynamic> preferenciasGlobais;
+  final Map<String, dynamic> preferenciasIndividuais;
+  final List<Map<String, dynamic>> vinculos;
+  final List<Map<String, dynamic>> empresas;
+
+  String get nomeExibicao {
+    for (final String key in <String>['nome', 'nomeDeGuerra', 'email']) {
+      final String value = dadosPessoais[key]?.toString().trim() ?? '';
+      if (value.isNotEmpty) return value;
+    }
+    if (idUnicoDoUsuario.trim().isNotEmpty) return idUnicoDoUsuario.trim();
+    return keycloakId.trim();
+  }
+
+  String get identificador {
+    if (idUnicoDoUsuario.trim().isNotEmpty) return idUnicoDoUsuario.trim();
+    return keycloakId.trim();
+  }
+
+  factory AdminUsuarioDetalhe.fromJson(Map<String, dynamic> json) {
+    return AdminUsuarioDetalhe(
+      idUnicoDoUsuario: json['idUnicoDoUsuario']?.toString() ?? '',
+      keycloakId: json['keycloakId']?.toString() ?? '',
+      tipoDoAssinante: json['tipoDoAssinante']?.toString() ?? '',
+      fezOnboardingInicial: json['fezOnboardingInicial'] == true,
+      idsUnicosDasEmpresas: _stringList(json['idsUnicosDasEmpresas']),
+      permissoes: _stringList(json['permissoes']),
+      smsFoiValidado: json['smsFoiValidado'] == true,
+      testeExpiraEm: _parseDate(json['testeExpiraEm']),
+      dataCadastro: _parseDate(json['dataCadastro']),
+      quantidadeDeLogs: _toInt(json['quantidadeDeLogs']),
+      dadosPessoais: _jsonMap(json['dadosPessoais']),
+      preferenciasGlobais: _jsonMap(json['preferenciasGlobais']),
+      preferenciasIndividuais: _jsonMap(json['preferenciasIndividuais']),
+      vinculos: _jsonMapList(json['vinculos']),
+      empresas: _jsonMapList(json['empresas']),
+    );
+  }
+
+  static int _toInt(dynamic value) =>
+      value is num ? value.toInt() : int.tryParse(value?.toString() ?? '') ?? 0;
+
+  static List<String> _stringList(dynamic value) {
+    if (value is! List) return const <String>[];
+    return value.map((dynamic item) => item.toString()).toList(growable: false);
+  }
+
+  static Map<String, dynamic> _jsonMap(dynamic value) {
+    if (value is! Map<dynamic, dynamic>) return const <String, dynamic>{};
+    return value.map<String, dynamic>(
+      (dynamic key, dynamic item) => MapEntry<String, dynamic>(
+        key.toString(),
+        item,
+      ),
+    );
+  }
+
+  static List<Map<String, dynamic>> _jsonMapList(dynamic value) {
+    if (value is! List) return const <Map<String, dynamic>>[];
+    return value
+        .whereType<Map<dynamic, dynamic>>()
+        .map((Map<dynamic, dynamic> item) => _jsonMap(item))
+        .toList(growable: false);
   }
 }
 
@@ -425,6 +524,67 @@ class AdminPortalService {
     throw Exception(
       'Falha ao carregar usuários do Sixo (${response.statusCode}).',
     );
+  }
+
+  Future<AdminUsuarioDetalhe> buscarUsuarioSixo(String idUsuario) async {
+    final String baseUrl = AppConfig.baseUrl;
+    if (baseUrl.trim().isEmpty) {
+      throw Exception('API_BASE_URL não configurado.');
+    }
+    final String id = Uri.encodeComponent(idUsuario.trim());
+    final http.Response response = await _client.get(
+      Uri.parse('$baseUrl/private/api/admin/usuarios-sixo/$id'),
+      headers: await _headers(),
+    );
+    return _parseUsuarioDetalhe(response, 'carregar os detalhes do usuário');
+  }
+
+  Future<AdminUsuarioDetalhe> atualizarOnboardingInicial({
+    required String idUsuario,
+    required bool fezOnboardingInicial,
+  }) async {
+    final String baseUrl = AppConfig.baseUrl;
+    if (baseUrl.trim().isEmpty) {
+      throw Exception('API_BASE_URL não configurado.');
+    }
+    final String id = Uri.encodeComponent(idUsuario.trim());
+    final Map<String, String> headers = await _headers();
+    headers['content-type'] = 'application/json';
+    final http.Response response = await _client.put(
+      Uri.parse(
+        '$baseUrl/private/api/admin/usuarios-sixo/$id/onboarding-inicial',
+      ),
+      headers: headers,
+      body: jsonEncode(<String, bool>{
+        'fezOnboardingInicial': fezOnboardingInicial,
+      }),
+    );
+    return _parseUsuarioDetalhe(response, 'alterar o onboarding do usuário');
+  }
+
+  AdminUsuarioDetalhe _parseUsuarioDetalhe(
+    http.Response response,
+    String action,
+  ) {
+    if (response.statusCode == 200) {
+      final dynamic decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return AdminUsuarioDetalhe.fromJson(decoded);
+      }
+      throw Exception('Resposta inválida dos detalhes do usuário.');
+    }
+    if (response.statusCode == 401) {
+      throw Exception('Sessão expirada. Faça login novamente.');
+    }
+    if (response.statusCode == 403) {
+      throw Exception(
+        'Seu usuário não possui autorização para acessar os usuários do Sixo.',
+      );
+    }
+    if (response.statusCode == 404) {
+      throw Exception('Usuário não encontrado.');
+    }
+    throw Exception('Falha ao $action (${response.statusCode}).');
   }
 
   Future<AdminAiFeedbackResumo> buscarResumoFeedbackIa() async {

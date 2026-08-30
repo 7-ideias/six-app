@@ -12,6 +12,7 @@ import '../../domain/services/usuario/usuario_service.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/empresa_provider.dart';
 import '../../providers/locale_settings_provider.dart';
+import '../../providers/onboarding_inicial_provider.dart';
 import '../../providers/telainicial_web_provider.dart';
 import '../../providers/usuario_provider.dart';
 
@@ -44,6 +45,8 @@ class WebAuthenticatedBootstrapService {
         context.read<ColaboradorAutorizacoesProvider>();
     final LocaleSettingsProvider localeProvider =
         context.read<LocaleSettingsProvider>();
+    final OnboardingInicialProvider onboardingProvider =
+        context.read<OnboardingInicialProvider>();
 
     await _bootstrapSession(
       force: force,
@@ -51,6 +54,7 @@ class WebAuthenticatedBootstrapService {
           () => _bootstrapInternal(
             autorizacoesProvider: autorizacoesProvider,
             localeProvider: localeProvider,
+            onboardingProvider: onboardingProvider,
           ),
     );
   }
@@ -106,6 +110,7 @@ class WebAuthenticatedBootstrapService {
     reset();
     if (context != null) {
       context.read<ColaboradorAutorizacoesProvider>().limpar();
+      context.read<OnboardingInicialProvider>().limpar();
     }
     UsuarioProvider().clear();
     EmpresaProvider().clear();
@@ -115,11 +120,13 @@ class WebAuthenticatedBootstrapService {
   Future<void> _bootstrapInternal({
     required ColaboradorAutorizacoesProvider autorizacoesProvider,
     required LocaleSettingsProvider localeProvider,
+    required OnboardingInicialProvider onboardingProvider,
   }) async {
     final String? idiomaDePreferencia =
         await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
 
     await autorizacoesProvider.carregarAutorizacoesDoUsuarioLogado(force: true);
+    await onboardingProvider.carregar(force: true);
 
     try {
       final RegionalizacaoService regionalizacaoService = RegionalizacaoService(
