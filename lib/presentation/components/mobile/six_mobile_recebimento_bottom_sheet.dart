@@ -90,6 +90,9 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
     return showModalBottomSheet<SixMobileRecebimentoResultado>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: Colors.transparent,
       builder:
           (_) => SixMobileRecebimentoBottomSheet(
@@ -117,6 +120,8 @@ class _SixMobileRecebimentoBottomSheetState
   static const Duration _numberMotionDuration = Duration(milliseconds: 680);
 
   late final CaixaApiClient _caixaApiClient;
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _confirmActionKey = GlobalKey();
   final TextEditingController _observacaoController = TextEditingController();
   final List<_RecebimentoFormaDraft> _formas = <_RecebimentoFormaDraft>[];
 
@@ -181,8 +186,10 @@ class _SixMobileRecebimentoBottomSheetState
         controller: TextEditingController(
           text: _formatarValorDigitavel(widget.valorAberto),
         ),
+        focusNode: FocusNode(),
       ),
     );
+    _registrarListenersDeFoco();
     _observacaoController.text = widget.observacaoInicial ?? '';
     _carregarTipos();
   }
@@ -190,10 +197,48 @@ class _SixMobileRecebimentoBottomSheetState
   @override
   void dispose() {
     for (final _RecebimentoFormaDraft forma in _formas) {
+      forma.focusNode.dispose();
       forma.controller.dispose();
     }
+    _scrollController.dispose();
     _observacaoController.dispose();
     super.dispose();
+  }
+
+  void _registrarListenersDeFoco() {
+    for (final _RecebimentoFormaDraft forma in _formas) {
+      forma.focusNode.removeListener(forma.onFocusChanged);
+      forma.onFocusChanged = () {
+        if (forma.focusNode.hasFocus) {
+          _revelarBotaoReceber();
+        }
+      };
+      forma.focusNode.addListener(forma.onFocusChanged);
+    }
+  }
+
+  Future<void> _revelarBotaoReceber() async {
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    if (!mounted) return;
+
+    final BuildContext? confirmContext = _confirmActionKey.currentContext;
+    if (confirmContext != null && confirmContext.mounted) {
+      await Scrollable.ensureVisible(
+        confirmContext,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+        alignment: 0.92,
+      );
+      return;
+    }
+
+    if (_scrollController.hasClients) {
+      await _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   Future<void> _carregarTipos() async {
@@ -306,11 +351,12 @@ class _SixMobileRecebimentoBottomSheetState
     for (final _RecebimentoFormaDraft forma in _formas) {
       if (!codigos.add(forma.opcao.codigoTipo)) {
         setState(
-          () => _erroValor = context.t(
-            'recebimento.erroFormaDuplicada',
-            fallback:
-                'Cada forma de recebimento pode ser usada apenas uma vez.',
-          ),
+          () =>
+              _erroValor = context.t(
+                'recebimento.erroFormaDuplicada',
+                fallback:
+                    'Cada forma de recebimento pode ser usada apenas uma vez.',
+              ),
         );
         return;
       }
@@ -407,6 +453,7 @@ class _SixMobileRecebimentoBottomSheetState
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: SingleChildScrollView(
+            controller: _scrollController,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -485,36 +532,27 @@ class _SixMobileRecebimentoBottomSheetState
                   ),
                 ),
                 const SizedBox(height: 18),
-                FilledButton.icon(
-                  onPressed: _carregandoTipos ? null : _confirmar,
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: Text(
-                    _tipo == SixMobileRecebimentoTipo.total
-                        ? context.t(
-                          'recebimento.receberTotal',
-                          fallback: 'Receber total',
-                        )
-                        : context.t(
-                          'recebimento.receberParcial',
-                          fallback: 'Receber parcial',
-                        ),
-                  ),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
+                KeyedSubtree(
+                  key: _confirmActionKey,
+                  child: FilledButton.icon(
+                    onPressed: _carregandoTipos ? null : _confirmar,
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: Text(
+                      _tipo == SixMobileRecebimentoTipo.total
+                          ? context.t(
+                            'recebimento.receberTotal',
+                            fallback: 'Receber total',
+                          )
+                          : context.t(
+                            'recebimento.receberParcial',
+                            fallback: 'Receber parcial',
+                          ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close_rounded),
-                  label: Text(context.t('common.back', fallback: 'Voltar')),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(46),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
                     ),
                   ),
                 ),
@@ -890,15 +928,33 @@ class _SixMobileRecebimentoBottomSheetState
               Expanded(
                 child: TextField(
                   controller: forma.controller,
+                  focusNode: forma.focusNode,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  onTap: _revelarBotaoReceber,
                   onChanged: (_) => setState(() => _erroValor = null),
                   decoration: InputDecoration(
                     labelText:
                         '${context.t('recebimento.valorForma', fallback: 'Valor da forma')} ${index + 1}',
                     filled: true,
                     fillColor: colors.surface,
+                    suffixIcon:
+                        forma.controller.text.trim().isEmpty
+                            ? null
+                            : IconButton(
+                              tooltip: context.t(
+                                'common.clear',
+                                fallback: 'Limpar',
+                              ),
+                              icon: const Icon(Icons.close_rounded),
+                              onPressed: () {
+                                setState(() {
+                                  forma.controller.clear();
+                                  _erroValor = null;
+                                });
+                              },
+                            ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -935,11 +991,12 @@ class _SixMobileRecebimentoBottomSheetState
                       );
                       if (usadaEmOutraForma) {
                         setState(
-                          () => _erroValor = context.t(
-                            'recebimento.erroFormaDuplicada',
-                            fallback:
-                                'Cada forma de recebimento pode ser usada apenas uma vez.',
-                          ),
+                          () =>
+                              _erroValor = context.t(
+                                'recebimento.erroFormaDuplicada',
+                                fallback:
+                                    'Cada forma de recebimento pode ser usada apenas uma vez.',
+                              ),
                         );
                         return;
                       }
@@ -1001,9 +1058,10 @@ class _SixMobileRecebimentoBottomSheetState
   }
 
   void _adicionarForma() {
-    final Set<String> usados = _formas
-        .map((_RecebimentoFormaDraft forma) => forma.opcao.codigoTipo)
-        .toSet();
+    final Set<String> usados =
+        _formas
+            .map((_RecebimentoFormaDraft forma) => forma.opcao.codigoTipo)
+            .toSet();
     SixMobileTipoRecebimentoOpcao? novaOpcao;
     for (final SixMobileTipoRecebimentoOpcao opcao in _opcoes) {
       if (!usados.contains(opcao.codigoTipo)) {
@@ -1026,8 +1084,10 @@ class _SixMobileRecebimentoBottomSheetState
           controller: TextEditingController(
             text: _formatarValorDigitavel(restante > 0 ? restante : 0),
           ),
+          focusNode: FocusNode(),
         ),
       );
+      _registrarListenersDeFoco();
       _erroValor = null;
     });
   }
@@ -1035,6 +1095,7 @@ class _SixMobileRecebimentoBottomSheetState
   void _removerForma(int index) {
     setState(() {
       final _RecebimentoFormaDraft forma = _formas.removeAt(index);
+      forma.focusNode.dispose();
       forma.controller.dispose();
       _erroValor = null;
     });
@@ -1147,8 +1208,16 @@ class _SixMobileRecebimentoBottomSheetState
 }
 
 class _RecebimentoFormaDraft {
-  _RecebimentoFormaDraft({required this.opcao, required this.controller});
+  _RecebimentoFormaDraft({
+    required this.opcao,
+    required this.controller,
+    required this.focusNode,
+  });
 
   SixMobileTipoRecebimentoOpcao opcao;
   final TextEditingController controller;
+  final FocusNode focusNode;
+  VoidCallback onFocusChanged = _noop;
+
+  static void _noop() {}
 }
