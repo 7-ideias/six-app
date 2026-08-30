@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/data/datasources/operational_procedure_mock_data_source.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_card.dart';
+import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_demo_badge.dart';
 import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_filters.dart';
 import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_state_views.dart';
 import 'package:sixpos/presentation/screens/gestao_mobile_screen.dart';
@@ -207,6 +209,24 @@ void main() {
     expect(find.text('Novo procedimento'), findsOneWidget);
   });
 
+  testWidgets('demo badge keeps readable colors in dark mode', (tester) async {
+    await _pumpComponent(
+      tester,
+      const OperationalProcedureDemoBadge(label: 'Dados demonstrativos'),
+      brightness: Brightness.dark,
+    );
+
+    final Text badgeText = tester.widget<Text>(
+      find.text('Dados demonstrativos'),
+    );
+    final Icon badgeIcon = tester.widget<Icon>(
+      find.byIcon(Icons.science_outlined),
+    );
+
+    expect(badgeText.style?.color, SixMobileColorScheme.dark.mutedText);
+    expect(badgeIcon.color, SixMobileColorScheme.dark.accent);
+  });
+
   testWidgets('opens creation editor from list CTA', (tester) async {
     await _pumpProcedures(tester);
 
@@ -342,14 +362,20 @@ Future<void> _pumpComponent(
   WidgetTester tester,
   Widget child, {
   MediaQueryData? mediaQueryData,
+  Brightness brightness = Brightness.light,
 }) async {
   final Widget body = Scaffold(body: Center(child: child));
 
   await tester.pumpWidget(
     MaterialApp(
-      home: mediaQueryData == null
-          ? body
-          : MediaQuery(data: mediaQueryData, child: body),
+      theme: ThemeData.light(),
+      darkTheme: ThemeData.dark(),
+      themeMode:
+          brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
+      home:
+          mediaQueryData == null
+              ? body
+              : MediaQuery(data: mediaQueryData, child: body),
     ),
   );
   await tester.pump();

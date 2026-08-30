@@ -19,6 +19,7 @@ Use esta skill para corrigir inconsistências de cor na experiência mobile do S
 - fundo dark que não aplica direito;
 - cards, inputs, chips ou badges claros demais no modo escuro;
 - AppBar, título, ícones ou ações com contraste ruim;
+- CTAs inline, `TextButton.icon`, ações secundárias/terciárias ou ações destrutivas com contraste fraco no dark mode;
 - bottom sheet mobile com superfície errada;
 - tela mobile misturando `Colors.white`, hex claros fixos ou gradientes locais fora do padrão;
 - revisão de paleta, contraste e superfícies em `*_mobile_screen.dart` ou `lib/presentation/components/mobile/`.
@@ -45,6 +46,10 @@ Use também `sixapp-mobile-ui` quando a correção afetar composição visual, n
 - Não mantenha `Colors.white`, `Color(0xFFF...)`, `Color(0xFFE...)` e similares em cards, inputs, chips, empty states, handles, contadores ou sheets mobile se houver equivalente semântico.
 - Preserve branco apenas quando ele for intencional sobre hero/gradiente escuro e com contraste claro.
 - Não use `foregroundColor: Colors.white` em botão com `accent` dark quando `onAccent` existir.
+- Em dark mode, não mantenha CTA secundário/terciário como `TextButton`, `TextButton.icon` ou texto+ícone “nu” sobre `surface`, `softSurface`, `surfaceElevated` ou card escuro quando o contraste ficar fraco.
+- Esse cuidado inclui ações de cabeçalho/trailing dentro de `SectionCard`, blocos expansíveis e linhas de "Adicionar ...", que costumam parecer corretas no light e apagadas no dark.
+- Para esse tipo de CTA, prefira ação compacta tonal/outlined com fundo semântico (`softAccentSurface`, `surfaceElevated` ou equivalente), borda semântica e foreground coerente (`accent`, `error`, `titleText` ou `mutedText` conforme hierarquia).
+- Em ações destrutivas, prefira `error` no foreground e borda/realce compatíveis; não dependa do azul padrão do Material em superfícies dark.
 - Para bottom sheets, prefira raiz em `surface` e campos internos em `softSurface` ou `surfaceElevated`, conforme hierarquia.
 
 ## Mapeamento rápido de tokens
@@ -58,6 +63,8 @@ Use também `sixapp-mobile-ui` quando a correção afetar composição visual, n
 - borda padrão: `colors.border`
 - borda mais forte/handle: `colors.strongBorder`
 - destaque: `colors.accent`
+- CTA tonal secundário: `colors.softAccentSurface` + `colors.accent`
+- CTA destrutivo sutil: `colors.surfaceElevated` ou `colors.softSurface` + `colors.error`
 - texto forte: `colors.titleText`
 - texto secundário: `colors.mutedText`
 - texto sobre accent: `colors.onAccent`
@@ -69,9 +76,11 @@ Use também `sixapp-mobile-ui` quando a correção afetar composição visual, n
 2. Verifique se a tela já usa `SixMobilePageShell`; se usar, mantenha shell, gradiente e status bar.
 3. Substitua superfícies por tokens semânticos.
 4. Revise contraste de textos, ícones, chips, botões e AppBar.
-5. Revise bottom sheets, campos, handles e estados vazios da mesma jornada se compartilharem o problema.
-6. Adicione ou atualize teste de widget dark mode para scaffold e superfícies principais.
-7. Execute `dart format`, `git diff --check` e ao menos o teste relacionado alterado.
+5. Audite CTAs inline, ações em cards, linhas de ação e botões texto+ícone; se estiverem “apagados” no dark, converta para CTA tonal/outlined compatível com a hierarquia.
+   Inclua explicitamente CTAs de adicionar/criar em cabeçalhos de seção e em rodapés de blocos internos.
+6. Revise bottom sheets, campos, handles e estados vazios da mesma jornada se compartilharem o problema.
+7. Adicione ou atualize teste de widget dark mode para scaffold, superfícies principais e CTAs alterados.
+8. Execute `dart format`, `git diff --check` e ao menos o teste relacionado alterado.
 
 ## Sinais de implementação correta
 
@@ -79,5 +88,6 @@ Use também `sixapp-mobile-ui` quando a correção afetar composição visual, n
 - cards e containers de conteúdo não ficam brancos no dark mode;
 - inputs e busca usam `softSurface` ou `surfaceElevated` coerentes;
 - contadores, chips e badges não usam fundo claro fixo;
+- CTAs secundários/destrutivos continuam legíveis em card ou sheet dark e não dependem do azul padrão do Material;
 - hero pode continuar com branco apenas dentro do gradiente escuro;
 - a versão web permanece intacta.
