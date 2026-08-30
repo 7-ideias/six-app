@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/core/utils/produto_helper.dart';
@@ -90,9 +90,16 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   static Color get _borderColor => SixMobilePalette.border;
   static Color get _mutedTextColor => SixMobilePalette.mutedText;
   static Color get _titleTextColor => SixMobilePalette.titleText;
+  static const double _selecaoHeaderCollapseOffset = 72;
+  static const double _selecaoBuscaCollapseStartOffset = 56;
+  static const double _selecaoBuscaCollapseDistance = 72;
 
   final TextEditingController _controllerBusca = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final ValueNotifier<double> _selecaoHeaderCollapseProgress =
+      ValueNotifier<double>(0);
+  final ValueNotifier<double> _selecaoBuscaCollapseProgress =
+      ValueNotifier<double>(0);
   final FocusNode _focusBusca = FocusNode();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
   late final ProdutoService _produtoService =
@@ -182,6 +189,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   @override
   void initState() {
     super.initState();
+    _exibirCampoBusca = widget.isSelecao;
     tipoSelecionado = _normalizarTipoProduto(widget.tipoInicial);
     _scrollController.addListener(_atualizarHeaderListaFixo);
     Future.microtask(_carregarPreferenciasDoUsuario);
@@ -193,6 +201,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     _timerOcultarBusca?.cancel();
     _scrollController.dispose();
     _horizontalProdutosController.dispose();
+    _selecaoHeaderCollapseProgress.dispose();
+    _selecaoBuscaCollapseProgress.dispose();
     _focusBusca.dispose();
     _controllerBusca.dispose();
     super.dispose();
@@ -267,8 +277,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     if (termoNormalizado.isNotEmpty) {
       resultado = resultado.where(
         (ProdutoModel produto) =>
-            produto.nomeProduto.toLowerCase().contains(termoNormalizado) ||
-            produto.codigoDeBarras.toLowerCase().contains(termoNormalizado),
+            _produtoCorrespondeBusca(produto, termoNormalizado),
       );
     }
 
@@ -319,6 +328,38 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     }
 
     return resultado.toList(growable: false);
+  }
+
+  bool _produtoCorrespondeBusca(ProdutoModel produto, String termoNormalizado) {
+    final String termoCompactado = termoNormalizado.replaceAll(' ', '');
+    final ProdutoDetalhesModel? detalhes = produto.detalhes;
+    final List<String> camposPesquisaveis = <String>[
+      produto.nomeProduto,
+      produto.codigoDeBarras,
+      produto.modeloProduto,
+      produto.objCategoria?.nomeCategoria ?? '',
+      produto.objAgrupamento?.grupoDoProduto ?? '',
+      detalhes?.codigoInterno ?? '',
+      detalhes?.descricao ?? '',
+      detalhes?.marca ?? '',
+      detalhes?.fabricante ?? '',
+      _formatCurrency(produto.precoVenda),
+      produto.precoVenda.toStringAsFixed(2),
+      produto.precoVenda.toString(),
+    ];
+
+    for (final String campo in camposPesquisaveis) {
+      final String normalizado = campo.trim().toLowerCase();
+      if (normalizado.isEmpty) continue;
+      if (normalizado.contains(termoNormalizado)) return true;
+
+      final String compactado = normalizado.replaceAll(' ', '');
+      if (termoCompactado.isNotEmpty && compactado.contains(termoCompactado)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   List<ProdutoModel> _ordenarProdutos(List<ProdutoModel> itens) {
@@ -504,8 +545,18 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           scrollEffectOffset: 24,
           scrolledSurfaceOpacity: 0.66,
           actions:
-              !isSelecao
+              isSelecao
                   ? <Widget>[
+                    Padding(
+                      padding: EdgeInsets.only(right: 2),
+                      child: _buildRestaurarBuscaAction(),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(right: 6),
+                      child: _buildVoltarAoTopoAction(),
+                    ),
+                  ]
+                  : <Widget>[
                     Padding(
                       padding: EdgeInsets.only(right: 2),
                       child: IconButton(
@@ -605,8 +656,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         icon: Icon(Icons.add_rounded, size: 22),
                       ),
                     ),
-                  ]
-                  : <Widget>[],
+                  ],
           bodyBuilder: (
             BuildContext context,
             ScrollController scrollController,
@@ -631,14 +681,17 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         if (isSelecao)
                           SixStaggeredEntry(
                             delay: Duration(milliseconds: 70),
-                            child: _buildTabs(compact: isSelecao),
+                            child: _buildAnimatedSelectionTabs(),
                           ),
                         if (_exibirCampoBusca &&
                             !_deveExibirHeaderListaFixo(isSelecao)) ...<Widget>[
                           SizedBox(height: 12),
                           SixStaggeredEntry(
                             delay: Duration(milliseconds: 120),
-                            child: _buildSearchField(),
+                            child:
+                                isSelecao
+                                    ? _buildAnimatedSelectionSearchField()
+                                    : _buildSearchField(),
                           ),
                         ],
                         SizedBox(
@@ -674,10 +727,34 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   void _atualizarHeaderListaFixo() {
     const double offsetParaFixarHeader = 180;
+    final double offset =
+        _scrollController.hasClients ? _scrollController.offset : 0;
+    final double headerCollapseProgress =
+        widget.isSelecao
+            ? (offset / _selecaoHeaderCollapseOffset).clamp(0.0, 1.0)
+            : 0.0;
+    final double buscaCollapseProgress =
+        widget.isSelecao
+            ? ((offset - _selecaoBuscaCollapseStartOffset) /
+                    _selecaoBuscaCollapseDistance)
+                .clamp(0.0, 1.0)
+            : 0.0;
 
-    final bool deveFixar =
-        _scrollController.hasClients &&
-        _scrollController.offset >= offsetParaFixarHeader;
+    if ((_selecaoHeaderCollapseProgress.value - headerCollapseProgress).abs() >
+            0.01 ||
+        headerCollapseProgress == 0 ||
+        headerCollapseProgress == 1) {
+      _selecaoHeaderCollapseProgress.value = headerCollapseProgress;
+    }
+
+    if ((_selecaoBuscaCollapseProgress.value - buscaCollapseProgress).abs() >
+            0.01 ||
+        buscaCollapseProgress == 0 ||
+        buscaCollapseProgress == 1) {
+      _selecaoBuscaCollapseProgress.value = buscaCollapseProgress;
+    }
+
+    final bool deveFixar = offset >= offsetParaFixarHeader;
 
     if (deveFixar == _fixarHeaderLista) return;
 
@@ -818,9 +895,12 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
               _isProdutoSelecionado
                   ? _t(
                     'produto.mobile.searchProductHint',
-                    'Buscar produto ou código',
+                    'Buscar por nome, código ou preço',
                   )
-                  : _t('produto.mobile.searchServiceHint', 'Buscar serviço'),
+                  : _t(
+                    'produto.mobile.searchServiceHint',
+                    'Buscar por nome, código ou preço',
+                  ),
           hintStyle: TextStyle(color: _mutedTextColor),
           prefixIcon: Icon(Icons.search_rounded, color: _accentColor),
           suffixIcon:
@@ -839,6 +919,162 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         ),
       ),
+    );
+  }
+
+  Widget _buildVoltarAoTopoAction() {
+    return ValueListenableBuilder<double>(
+      valueListenable: _selecaoHeaderCollapseProgress,
+      builder: (BuildContext context, double progress, Widget? child) {
+        final bool reduceMotion =
+            MediaQuery.disableAnimationsOf(context) ||
+            MediaQuery.accessibleNavigationOf(context);
+        final double opacity =
+            reduceMotion ? (progress > 0.08 ? 1 : 0) : progress;
+        final double scale = reduceMotion ? 1 : 0.82 + (0.18 * progress);
+
+        return IgnorePointer(
+          ignoring: progress <= 0.08,
+          child: Opacity(
+            opacity: opacity.clamp(0.0, 1.0),
+            child: Transform.scale(
+              scale: scale,
+              child: Semantics(
+                button: true,
+                label: _t(
+                  'produto.mobile.backToTop',
+                  'Voltar ao topo da lista',
+                ),
+                child: IconButton(
+                  tooltip: _t(
+                    'produto.mobile.backToTop',
+                    'Voltar ao topo da lista',
+                  ),
+                  onPressed: _voltarAoTopoDaLista,
+                  icon: Icon(Icons.vertical_align_top_rounded, size: 21),
+                  style: IconButton.styleFrom(
+                    backgroundColor: _accentColor.withValues(
+                      alpha: 0.14 + (0.16 * progress.clamp(0.0, 1.0)),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRestaurarBuscaAction() {
+    return ValueListenableBuilder<double>(
+      valueListenable: _selecaoBuscaCollapseProgress,
+      builder: (BuildContext context, double progress, Widget? child) {
+        final bool reduceMotion =
+            MediaQuery.disableAnimationsOf(context) ||
+            MediaQuery.accessibleNavigationOf(context);
+        final double opacity =
+            reduceMotion ? (progress > 0.08 ? 1 : 0) : progress;
+        final double scale = reduceMotion ? 1 : 0.82 + (0.18 * progress);
+
+        return IgnorePointer(
+          ignoring: progress <= 0.08,
+          child: Opacity(
+            opacity: opacity.clamp(0.0, 1.0),
+            child: Transform.scale(
+              scale: scale,
+              child: Semantics(
+                button: true,
+                label: _t(
+                  'produto.mobile.restoreSearch',
+                  'Mostrar campo de busca',
+                ),
+                child: IconButton(
+                  tooltip: _t(
+                    'produto.mobile.restoreSearch',
+                    'Mostrar campo de busca',
+                  ),
+                  onPressed: _restaurarBuscaDaSelecao,
+                  icon: Icon(Icons.search_rounded, size: 21),
+                  style: IconButton.styleFrom(
+                    backgroundColor: _accentColor.withValues(
+                      alpha: 0.14 + (0.16 * progress.clamp(0.0, 1.0)),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAnimatedSelectionTabs() {
+    return ValueListenableBuilder<double>(
+      valueListenable: _selecaoHeaderCollapseProgress,
+      child: _buildTabs(compact: true),
+      builder: (BuildContext context, double progress, Widget? child) {
+        final bool reduceMotion =
+            MediaQuery.disableAnimationsOf(context) ||
+            MediaQuery.accessibleNavigationOf(context);
+        final double clampedProgress = progress.clamp(0.0, 1.0);
+        final double visibleFactor =
+            reduceMotion
+                ? (clampedProgress >= 1 ? 0 : 1)
+                : (1 - clampedProgress);
+
+        return IgnorePointer(
+          ignoring: clampedProgress >= 0.95,
+          child: ClipRect(
+            child: Align(
+              alignment: Alignment.topCenter,
+              heightFactor: visibleFactor.clamp(0.0, 1.0),
+              child: Opacity(
+                opacity: visibleFactor.clamp(0.0, 1.0),
+                child: Transform.translate(
+                  offset: Offset(0, reduceMotion ? 0 : -(18 * clampedProgress)),
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAnimatedSelectionSearchField() {
+    return ValueListenableBuilder<double>(
+      valueListenable: _selecaoBuscaCollapseProgress,
+      child: _buildSearchField(),
+      builder: (BuildContext context, double progress, Widget? child) {
+        final bool reduceMotion =
+            MediaQuery.disableAnimationsOf(context) ||
+            MediaQuery.accessibleNavigationOf(context);
+        final double clampedProgress = progress.clamp(0.0, 1.0);
+        final double visibleFactor =
+            reduceMotion
+                ? (clampedProgress >= 1 ? 0 : 1)
+                : (1 - clampedProgress);
+
+        return IgnorePointer(
+          ignoring: clampedProgress >= 0.95,
+          child: ClipRect(
+            child: Align(
+              alignment: Alignment.topCenter,
+              heightFactor: visibleFactor.clamp(0.0, 1.0),
+              child: Opacity(
+                opacity: visibleFactor.clamp(0.0, 1.0),
+                child: Transform.translate(
+                  offset: Offset(0, reduceMotion ? 0 : -(14 * clampedProgress)),
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -867,6 +1103,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
 
   void _ocultarCampoBuscaPorInatividade() {
     if (!mounted) return;
+    if (widget.isSelecao) return;
 
     final bool temBusca =
         termoBusca.trim().isNotEmpty || _controllerBusca.text.trim().isNotEmpty;
@@ -876,6 +1113,67 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     if (temBusca) return;
 
     setState(() => _exibirCampoBusca = false);
+  }
+
+  Future<void> _voltarAoTopoDaLista() async {
+    if (!_scrollController.hasClients) return;
+
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+
+    if (reduceMotion) {
+      _scrollController.jumpTo(0);
+      return;
+    }
+
+    await _scrollController.animateTo(
+      0,
+      duration: Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Future<void> _restaurarBuscaDaSelecao() async {
+    if (!widget.isSelecao) {
+      _abrirCampoBusca();
+      return;
+    }
+
+    if (!_scrollController.hasClients) {
+      _abrirCampoBusca();
+      return;
+    }
+
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+
+    final double targetOffset =
+        _selecaoBuscaCollapseStartOffset > 12
+            ? _selecaoBuscaCollapseStartOffset - 12
+            : 0;
+
+    if (reduceMotion) {
+      _scrollController.jumpTo(targetOffset);
+    } else {
+      await _scrollController.animateTo(
+        targetOffset,
+        duration: Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+    }
+
+    if (!mounted) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _focusBusca.requestFocus();
+    });
   }
 
   bool _produtoFavoritoVisual(ProdutoModel produto) {
@@ -1968,14 +2266,14 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       onTap: () => _alterarQuantidadeSelecionada(produto, -1),
                     ),
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        '$quantidade',
-                        style: TextStyle(
-                          color: _titleTextColor,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      child: _QuantidadeValorButton(
+                        quantidade: quantidade,
+                        semanticLabel: _t(
+                          'produto.mobile.editSelectedQuantity',
+                          'Editar quantidade selecionada',
                         ),
+                        onTap: () => _editarQuantidadeSelecionada(produto),
                       ),
                     ),
                     _QuantidadeButton(
@@ -2217,14 +2515,14 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                               () => _alterarQuantidadeSelecionada(produto, -1),
                         ),
                         Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 14),
-                          child: Text(
-                            '$quantidade',
-                            style: TextStyle(
-                              color: _titleTextColor,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w900,
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          child: _QuantidadeValorButton(
+                            quantidade: quantidade,
+                            semanticLabel: _t(
+                              'produto.mobile.editSelectedQuantity',
+                              'Editar quantidade selecionada',
                             ),
+                            onTap: () => _editarQuantidadeSelecionada(produto),
                           ),
                         ),
                         _QuantidadeButton(
@@ -2406,15 +2704,290 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     final _ProdutoSelecionadoMobile? selecionado = _selecionados[chave];
     if (selecionado == null) return;
 
+    _definirQuantidadeSelecionada(produto, selecionado.quantidade + delta);
+  }
+
+  void _definirQuantidadeSelecionada(ProdutoModel produto, int quantidade) {
+    final String chave = _chaveProduto(produto);
+    final _ProdutoSelecionadoMobile? selecionado = _selecionados[chave];
+    if (selecionado == null) return;
+
     setState(() {
-      final int novaQuantidade = selecionado.quantidade + delta;
-      if (novaQuantidade <= 0) {
+      if (quantidade <= 0) {
         _selecionados.remove(chave);
         return;
       }
 
-      _selecionados[chave] = selecionado.copyWith(quantidade: novaQuantidade);
+      _selecionados[chave] = selecionado.copyWith(quantidade: quantidade);
     });
+  }
+
+  Future<void> _editarQuantidadeSelecionada(ProdutoModel produto) async {
+    final String chave = _chaveProduto(produto);
+    final _ProdutoSelecionadoMobile? selecionado = _selecionados[chave];
+    if (selecionado == null) return;
+
+    final TextEditingController controller = TextEditingController(
+      text: selecionado.quantidade.toString(),
+    );
+    final FocusNode focusNode = FocusNode();
+
+    try {
+      final int? novaQuantidade = await showModalBottomSheet<int>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        useSafeArea: true,
+        builder: (BuildContext modalContext) {
+          String? validationError;
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!focusNode.canRequestFocus) return;
+            focusNode.requestFocus();
+            controller.selection = TextSelection(
+              baseOffset: 0,
+              extentOffset: controller.text.length,
+            );
+          });
+
+          int? parseQuantity() {
+            final int? parsed = int.tryParse(controller.text.trim());
+            if (parsed == null || parsed <= 0) {
+              return null;
+            }
+            return parsed;
+          }
+
+          return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setModalState) {
+              void confirmar() {
+                final int? quantidade = parseQuantity();
+                if (quantidade == null) {
+                  setModalState(() {
+                    validationError = _t(
+                      'produto.mobile.quantityInvalid',
+                      'Informe uma quantidade inteira maior que zero.',
+                    );
+                  });
+                  return;
+                }
+
+                Navigator.of(context).pop<int>(quantidade);
+              }
+
+              return Padding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  12,
+                  16,
+                  16 + MediaQuery.viewInsetsOf(context).bottom,
+                ),
+                child: Material(
+                  color: _surfaceColor,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
+                    decoration: BoxDecoration(
+                      color: _surfaceColor,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: _borderColor),
+                      boxShadow: <BoxShadow>[
+                        BoxShadow(
+                          color: SixMobilePalette.navigationShadow,
+                          blurRadius: 22,
+                          offset: Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Center(
+                          child: Container(
+                            width: 42,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: _borderColor,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 18),
+                        Text(
+                          _t(
+                            'produto.mobile.quantityEditorTitle',
+                            'Editar quantidade',
+                          ),
+                          style: TextStyle(
+                            color: _titleTextColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          produto.nomeProduto.isEmpty
+                              ? _t(
+                                'produto.webList.itemWithoutName',
+                                'Item sem nome',
+                              )
+                              : produto.nomeProduto,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: _mutedTextColor,
+                            fontSize: 13,
+                            height: 1.35,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        TextField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          autofocus: true,
+                          keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.done,
+                          inputFormatters: <TextInputFormatter>[
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          onChanged: (_) {
+                            if (validationError == null) return;
+                            setModalState(() => validationError = null);
+                          },
+                          onSubmitted: (_) => confirmar(),
+                          style: TextStyle(
+                            color: _titleTextColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: _t(
+                              'produto.mobile.quantityFieldLabel',
+                              'Quantidade',
+                            ),
+                            hintText: _t(
+                              'produto.mobile.quantityFieldHint',
+                              'Digite a quantidade desejada',
+                            ),
+                            errorText: validationError,
+                            prefixIcon: Icon(
+                              Icons.tag_rounded,
+                              color: _accentColor,
+                            ),
+                            filled: true,
+                            fillColor: _surfaceElevatedColor,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(color: _borderColor),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: _accentColor,
+                                width: 1.4,
+                              ),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: SixMobilePalette.error,
+                              ),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: SixMobilePalette.error,
+                                width: 1.4,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _softAccentColor,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: _borderColor),
+                          ),
+                          child: Text(
+                            _t(
+                              'produto.mobile.quantityEditorHint',
+                              'Use os botões laterais para ajuste fino e a digitação para volumes maiores.',
+                            ),
+                            style: TextStyle(
+                              color: _mutedTextColor,
+                              fontSize: 12,
+                              height: 1.35,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: Size.fromHeight(48),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  side: BorderSide(color: _borderColor),
+                                ),
+                                child: Text(
+                                  _t('common.cancel', 'Cancelar'),
+                                  style: TextStyle(fontWeight: FontWeight.w800),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: confirmar,
+                                style: FilledButton.styleFrom(
+                                  minimumSize: Size.fromHeight(48),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                child: Text(
+                                  _t(
+                                    'produto.mobile.applyQuantity',
+                                    'Aplicar quantidade',
+                                  ),
+                                  style: TextStyle(fontWeight: FontWeight.w800),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+
+      if (!mounted || novaQuantidade == null) return;
+      _definirQuantidadeSelecionada(produto, novaQuantidade);
+    } finally {
+      focusNode.dispose();
+      controller.dispose();
+    }
   }
 
   void _confirmarSelecaoMultipla() {
@@ -4075,6 +4648,66 @@ class _QuantidadeButton extends StatelessWidget {
             border: Border.all(color: SixMobilePalette.border),
           ),
           child: Icon(icon, color: SixMobilePalette.accent, size: 18),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuantidadeValorButton extends StatelessWidget {
+  const _QuantidadeValorButton({
+    required this.quantidade,
+    required this.semanticLabel,
+    required this.onTap,
+  });
+
+  final int quantidade;
+  final String semanticLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      value: quantidade.toString(),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            constraints: BoxConstraints(minWidth: 54),
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: SixMobilePalette.surfaceElevated,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: SixMobilePalette.border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Flexible(
+                  child: Text(
+                    '$quantidade',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: SixMobilePalette.titleText,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 6),
+                Icon(
+                  Icons.edit_outlined,
+                  size: 15,
+                  color: SixMobilePalette.accent,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

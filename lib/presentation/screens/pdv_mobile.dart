@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
@@ -8,6 +11,7 @@ import '../../core/services/auth_service.dart';
 import '../../core/utils/produto_helper.dart';
 import '../../data/models/caixa_models.dart';
 import '../../data/models/operacao_models.dart';
+import '../../data/models/produto_imagem_model.dart';
 import '../../data/models/produto_model.dart';
 import '../../data/models/recebimento_forma_input.dart';
 import '../../data/models/venda_nao_liquidada_models.dart';
@@ -20,6 +24,7 @@ import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
+import '../components/mobile/six_mobile_recebimento_bottom_sheet.dart';
 import '../components/mobile_motion.dart';
 import 'operacoes_caixa_mobile_screen.dart';
 import 'produto_list_mobile_screen.dart';
@@ -76,43 +81,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   static const Duration _stateTransitionDuration = Duration(milliseconds: 340);
   static const Duration _pressDuration = Duration(milliseconds: 100);
 
-  static const List<_FormaPagamentoMobile>
-  _formasPagamentoFallback = <_FormaPagamentoMobile>[
-    _FormaPagamentoMobile('TIPO1', 'Dinheiro', Icons.payments_outlined),
-    _FormaPagamentoMobile('TIPO2', 'Pix', Icons.qr_code_2_outlined),
-    _FormaPagamentoMobile(
-      'TIPO3',
-      'Cartão crédito',
-      Icons.credit_card_outlined,
-    ),
-    _FormaPagamentoMobile(
-      'TIPO4',
-      'Cartão débito',
-      Icons.point_of_sale_outlined,
-    ),
-    _FormaPagamentoMobile('TIPO5', 'Boleto', Icons.receipt_long_outlined),
-    _FormaPagamentoMobile('TIPO6', 'Fiado', Icons.history_toggle_off_outlined),
-    _FormaPagamentoMobile('TIPO7', 'Crediário', Icons.event_note_outlined),
-    _FormaPagamentoMobile('TIPO8', 'Convênio', Icons.people_outline),
-    _FormaPagamentoMobile('TIPO9', 'Vale', Icons.confirmation_number_outlined),
-    _FormaPagamentoMobile('TIPO10', 'Outros', Icons.more_horiz_outlined),
-  ];
-
   late final OperacaoService _operacaoService;
   late final CaixaService _caixaService;
   late final VendaNaoLiquidadaApiClient _vendaNaoLiquidadaApiClient;
   final List<_VendaItemMobile> _itens = <_VendaItemMobile>[];
-  final Set<String> _formasSelecionadas = <String>{};
-  final Map<String, TextEditingController> _valorPorForma =
-      <String, TextEditingController>{};
-  final GlobalKey _pagamentoKey = GlobalKey();
-
-  List<_FormaPagamentoMobile> _formasPagamento =
-      List<_FormaPagamentoMobile>.from(_formasPagamentoFallback);
 
   bool _enviando = false;
   bool _buscandoCodigo = false;
-  bool _destacarPagamento = false;
   bool _carregandoSessaoCaixa = false;
   bool _erroSessaoCaixa = false;
   CaixaSessao? _sessaoCaixa;
@@ -152,31 +127,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       );
     }
     _carregarSessaoCaixa();
-    _carregarTiposPagamentoConfigurados();
-  }
-
-  @override
-  void dispose() {
-    for (final controller in _valorPorForma.values) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
-
-  Future<void> _carregarTiposPagamentoConfigurados() async {
-    try {
-      final InformacoesBasicasCaixaResponse informacoes =
-          await _caixaService.buscarInformacoesBasicasDoCaixa();
-      final List<_FormaPagamentoMobile> formas =
-          _montarFormasPagamentoConfiguradas(informacoes.tiposRecebimento);
-      if (!mounted || formas.isEmpty) return;
-      setState(() {
-        _formasPagamento = formas;
-        _removerFormasSelecionadasInativas();
-      });
-    } catch (_) {
-      // Mantém o fallback local para não bloquear o PDV se o backend falhar.
-    }
   }
 
   Future<void> _carregarSessaoCaixa() async {
@@ -261,101 +211,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
     if (!mounted) return;
     await _carregarSessaoCaixa();
-    await _carregarTiposPagamentoConfigurados();
-  }
-
-  List<_FormaPagamentoMobile> _montarFormasPagamentoConfiguradas(
-    List<TiposRecebimento> tipos,
-  ) {
-    final List<TiposRecebimento> ativos =
-        tipos.where((TiposRecebimento tipo) => tipo.ativo).toList()..sort(
-          (TiposRecebimento a, TiposRecebimento b) =>
-              a.ordemExibicao.compareTo(b.ordemExibicao),
-        );
-
-    final Set<String> codigosAdicionados = <String>{};
-    final List<_FormaPagamentoMobile> formas = <_FormaPagamentoMobile>[];
-    for (final TiposRecebimento tipo in ativos) {
-      final String codigo = tipo.codigoTipo.trim().toUpperCase();
-      if (!_codigoTipoValido(codigo) || codigosAdicionados.contains(codigo)) {
-        continue;
-      }
-      final String descricao =
-          tipo.descricaoExibicao.trim().isNotEmpty
-              ? tipo.descricaoExibicao.trim()
-              : _descricaoPadraoPorCodigoTipo(codigo);
-      formas.add(
-        _FormaPagamentoMobile(codigo, descricao, _iconePorCodigoTipo(codigo)),
-      );
-      codigosAdicionados.add(codigo);
-    }
-    return formas;
-  }
-
-  bool _codigoTipoValido(String codigo) {
-    return RegExp(r'^TIPO(10|[1-9])$').hasMatch(codigo);
-  }
-
-  void _removerFormasSelecionadasInativas() {
-    final Set<String> codigosAtivos =
-        _formasPagamento.map((forma) => forma.codigo).toSet();
-    for (final String codigo in List<String>.from(_formasSelecionadas)) {
-      if (codigosAtivos.contains(codigo)) continue;
-      _formasSelecionadas.remove(codigo);
-      _valorPorForma[codigo]?.clear();
-    }
-  }
-
-  String _descricaoPadraoPorCodigoTipo(String codigo) {
-    switch (codigo) {
-      case 'TIPO1':
-        return 'Dinheiro';
-      case 'TIPO2':
-        return 'Pix';
-      case 'TIPO3':
-        return 'Cartão crédito';
-      case 'TIPO4':
-        return 'Cartão débito';
-      case 'TIPO5':
-        return 'Boleto';
-      case 'TIPO6':
-        return 'Fiado';
-      case 'TIPO7':
-        return 'Crediário';
-      case 'TIPO8':
-        return 'Convênio';
-      case 'TIPO9':
-        return 'Vale';
-      case 'TIPO10':
-        return 'Outros';
-      default:
-        return codigo;
-    }
-  }
-
-  IconData _iconePorCodigoTipo(String codigo) {
-    switch (codigo) {
-      case 'TIPO1':
-        return Icons.payments_outlined;
-      case 'TIPO2':
-        return Icons.qr_code_2_outlined;
-      case 'TIPO3':
-        return Icons.credit_card_outlined;
-      case 'TIPO4':
-        return Icons.point_of_sale_outlined;
-      case 'TIPO5':
-        return Icons.receipt_long_outlined;
-      case 'TIPO6':
-        return Icons.history_toggle_off_outlined;
-      case 'TIPO7':
-        return Icons.event_note_outlined;
-      case 'TIPO8':
-        return Icons.people_outline;
-      case 'TIPO9':
-        return Icons.confirmation_number_outlined;
-      default:
-        return Icons.more_horiz_outlined;
-    }
   }
 
   Future<void> _abrirSelecaoProduto() async {
@@ -492,11 +347,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     final tipoNormalizado = produto.tipoProduto.toUpperCase();
     final ehServico =
         tipoNormalizado == 'SERVICO' || tipoNormalizado == 'SERVIÇO';
+    final String? imagemProduto = _resolverImagemPrincipal(produto.imagens);
     final index = _itens.indexWhere((item) => item.idProduto == idProduto);
 
     if (index >= 0) {
       _itens[index] = _itens[index].copyWith(
         quantidade: _itens[index].quantidade + 1,
+        imagemProduto: _itens[index].imagemProduto ?? imagemProduto,
       );
       return;
     }
@@ -508,8 +365,20 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         valorUnitario: produto.precoVenda,
         quantidade: 1,
         ehServico: ehServico,
+        imagemProduto: imagemProduto,
       ),
     );
+  }
+
+  String? _resolverImagemPrincipal(List<ProdutoImagemModel>? imagens) {
+    if (imagens == null || imagens.isEmpty) return null;
+    for (final ProdutoImagemModel imagem in imagens) {
+      final String miniatura = (imagem.urlMiniatura ?? '').trim();
+      if (miniatura.isNotEmpty) return miniatura;
+      final String url = (imagem.url ?? '').trim();
+      if (url.isNotEmpty) return url;
+    }
+    return null;
   }
 
   Future<void> _finalizarVenda() async {
@@ -521,43 +390,64 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       _mostrarSnack('Inclua pelo menos um item para finalizar.');
       return;
     }
-    if (_formasSelecionadas.isEmpty) {
-      await _avisarPagamentoObrigatorio();
-      return;
-    }
-    final formas = _montarFormasPagamento();
-    final totalPago = formas.fold<double>(
-      0,
-      (soma, forma) => soma + forma.valor,
-    );
-    if ((totalPago - _total).abs() > 0.009) {
-      _mostrarSnack('A soma dos pagamentos precisa fechar o total da venda.');
+
+    final SixMobileRecebimentoResultado? resultado =
+        await _abrirRecebimentoBottomSheet();
+    if (resultado == null) {
       return;
     }
 
-    await _enviarVenda(receberDepois: false, formasPagamento: formas);
+    if (_editandoVendaNaoLiquidada) {
+      await _liquidarVendaNaoLiquidada(resultado);
+      return;
+    }
+
+    await _enviarVenda(
+      receberDepois: resultado.parcial,
+      formasPagamento: _mapearFormasPagamento(resultado.recebimentos),
+      mensagemSucesso:
+          resultado.parcial
+              ? 'Venda registrada com recebimento parcial.'
+              : 'Venda finalizada com sucesso.',
+    );
   }
 
-  Future<void> _avisarPagamentoObrigatorio() async {
-    ScaffoldMessenger.of(context).clearSnackBars();
-    if (!_destacarPagamento && mounted) {
-      setState(() => _destacarPagamento = true);
-    }
-
-    await Future<void>.delayed(Duration(milliseconds: 40));
-    final pagamentoContext = _pagamentoKey.currentContext;
-    if (pagamentoContext != null && pagamentoContext.mounted) {
-      await Scrollable.ensureVisible(
-        pagamentoContext,
-        duration: Duration(milliseconds: 520),
-        curve: Curves.easeOutCubic,
-        alignment: 0.10,
-      );
-    }
-
-    // _mostrarSnack('Selecione uma forma de pagamento ou use Receber depois.');
-    await Future<void>.delayed(Duration(milliseconds: 1100));
-    if (mounted) setState(() => _destacarPagamento = false);
+  Future<SixMobileRecebimentoResultado?> _abrirRecebimentoBottomSheet() {
+    final VendaNaoLiquidadaModel? venda = widget.vendaNaoLiquidada;
+    return SixMobileRecebimentoBottomSheet.show(
+      context,
+      titulo:
+          _editandoVendaNaoLiquidada
+              ? _txt(
+                'vendasNaoLiquidadas.receberTitulo',
+                'Receber venda em aberto',
+              )
+              : _txt('pdv.mobile.receiveSaleTitle', 'Receber venda'),
+      descricao:
+          _editandoVendaNaoLiquidada &&
+                  venda != null &&
+                  venda.descricao.trim().isNotEmpty
+              ? venda.descricao
+              : _txt(
+                'pdv.mobile.counterSaleReceiptDescription',
+                'Venda do balcão pronta para recebimento',
+              ),
+      contato:
+          _editandoVendaNaoLiquidada &&
+                  venda != null &&
+                  venda.nomeCliente.trim().isNotEmpty
+              ? venda.nomeCliente.trim()
+              : null,
+      valorOriginal: _total,
+      valorJaRecebido: 0,
+      valorAberto: _total,
+      codigoTipoInicial: venda?.codigoTipoRecebimento,
+      permitirParcial: true,
+      observacaoInicial:
+          _editandoVendaNaoLiquidada
+              ? 'Recebimento realizado pelo PDV mobile.'
+              : 'Recebimento realizado no balcão de venda.',
+    );
   }
 
   Future<void> _receberDepois() async {
@@ -646,18 +536,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                     ),
                   ),
                 ),
-                SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: () => Navigator.of(bottomSheetContext).pop(false),
-                  icon: Icon(Icons.close_rounded),
-                  label: Text('Voltar'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: Size.fromHeight(46),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -669,6 +547,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       await _enviarVenda(
         receberDepois: true,
         formasPagamento: <FormaPagamentoSelecionada>[],
+        mensagemSucesso: 'Venda registrada para receber depois.',
       );
     }
   }
@@ -676,6 +555,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   Future<void> _enviarVenda({
     required bool receberDepois,
     required List<FormaPagamentoSelecionada> formasPagamento,
+    required String mensagemSucesso,
   }) async {
     if (!await _garantirCaixaAbertoParaVenda()) {
       return;
@@ -683,11 +563,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
     setState(() => _enviando = true);
     try {
-      if (_editandoVendaNaoLiquidada && !receberDepois) {
-        await _liquidarVendaNaoLiquidada(formasPagamento);
-        return;
-      }
-
       final PdvMobileCurrentUserIdProvider? currentUserIdProvider =
           widget.currentUserIdProvider;
       final PdvMobileCurrentUserNameProvider? currentUserNameProvider =
@@ -702,7 +577,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       final input = OperacaoVendaInput(
         descricao:
             receberDepois
-                ? 'Venda mobile para receber depois ${dataOperacao.toIso8601String()}'
+                ? (formasPagamento.isEmpty
+                    ? 'Venda mobile para receber depois ${dataOperacao.toIso8601String()}'
+                    : 'Venda mobile com recebimento parcial ${dataOperacao.toIso8601String()}')
                 : 'Venda mobile ${dataOperacao.toIso8601String()}',
         idColaborador: idColaborador,
         nomeColaborador: nomeColaborador,
@@ -715,11 +592,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       await _operacaoService.finalizarVenda(input);
       if (!mounted) return;
       _limparVenda();
-      _mostrarSnack(
-        receberDepois
-            ? 'Venda registrada para receber depois.'
-            : 'Venda finalizada com sucesso.',
-      );
+      _mostrarSnack(mensagemSucesso);
     } catch (e) {
       if (mounted) _mostrarSnack(e.toString().replaceAll('Exception: ', ''));
     } finally {
@@ -728,47 +601,50 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   Future<void> _liquidarVendaNaoLiquidada(
-    List<FormaPagamentoSelecionada> formasPagamento,
+    SixMobileRecebimentoResultado resultado,
   ) async {
     final venda = widget.vendaNaoLiquidada!;
-    final FormaPagamentoSelecionada primeiraForma = formasPagamento.first;
-    final List<RecebimentoFormaInput> recebimentos = formasPagamento
+    setState(() => _enviando = true);
+    try {
+      await _vendaNaoLiquidadaApiClient.liquidar(
+        idRecebimento: venda.idRecebimento,
+        input: LiquidarVendaNaoLiquidadaInput(
+          codigoTipoRecebimento: resultado.codigoTipoRecebimento,
+          valorRecebido: resultado.valor,
+          recebimentos: resultado.recebimentos,
+          itens: _itens
+              .map((item) => item.toVendaNaoLiquidadaItem())
+              .toList(growable: false),
+          observacao: resultado.observacao ?? 'Recebido pelo PDV mobile',
+          idSessaoCaixa: _idSessaoCaixaAtual,
+        ),
+      );
+
+      if (!mounted) return;
+      _mostrarSnack(
+        resultado.parcial
+            ? 'Recebimento parcial registrado com sucesso.'
+            : 'Venda recebida com sucesso.',
+      );
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) _mostrarSnack(e.toString().replaceAll('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _enviando = false);
+    }
+  }
+
+  List<FormaPagamentoSelecionada> _mapearFormasPagamento(
+    List<RecebimentoFormaInput> recebimentos,
+  ) {
+    return recebimentos
         .map(
-          (FormaPagamentoSelecionada forma) => RecebimentoFormaInput(
-            codigo: forma.codigo.toLowerCase(),
-            descricao: _descricaoFormaPagamentoSelecionada(forma.codigo),
-            valor: forma.valor,
+          (RecebimentoFormaInput recebimento) => FormaPagamentoSelecionada(
+            codigo: recebimento.codigo.trim().toUpperCase(),
+            valor: recebimento.valor,
           ),
         )
         .toList(growable: false);
-    final double valorRecebido = recebimentos.fold<double>(
-      0,
-      (double total, RecebimentoFormaInput forma) => total + forma.valor,
-    );
-    await _vendaNaoLiquidadaApiClient.liquidar(
-      idRecebimento: venda.idRecebimento,
-      input: LiquidarVendaNaoLiquidadaInput(
-        codigoTipoRecebimento: primeiraForma.codigo.toLowerCase(),
-        valorRecebido: valorRecebido,
-        recebimentos: recebimentos,
-        itens: _itens
-            .map((item) => item.toVendaNaoLiquidadaItem())
-            .toList(growable: false),
-        observacao: 'Recebido pelo PDV mobile',
-        idSessaoCaixa: _idSessaoCaixaAtual,
-      ),
-    );
-
-    if (!mounted) return;
-    _mostrarSnack('Venda recebida com sucesso.');
-    Navigator.of(context).pop(true);
-  }
-
-  String _descricaoFormaPagamentoSelecionada(String codigo) {
-    for (final _FormaPagamentoMobile forma in _formasPagamento) {
-      if (forma.codigo == codigo) return forma.titulo;
-    }
-    return _descricaoPadraoPorCodigoTipo(codigo);
   }
 
   String? get _idSessaoCaixaAtual {
@@ -781,11 +657,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   void _limparVenda() {
     setState(() {
       _itens.clear();
-      _formasSelecionadas.clear();
-      _destacarPagamento = false;
-      for (final controller in _valorPorForma.values) {
-        controller.clear();
-      }
     });
   }
 
@@ -842,62 +713,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     );
   }
 
-  List<FormaPagamentoSelecionada> _montarFormasPagamento() {
-    if (_formasSelecionadas.length == 1) {
-      final codigo = _formasSelecionadas.first;
-      final valorDigitado = _valorDigitadoForma(codigo);
-      return <FormaPagamentoSelecionada>[
-        FormaPagamentoSelecionada(
-          codigo: codigo,
-          valor: valorDigitado > 0 ? valorDigitado : _total,
-        ),
-      ];
-    }
-    return _formasSelecionadas
-        .map(
-          (codigo) => FormaPagamentoSelecionada(
-            codigo: codigo,
-            valor: _valorDigitadoForma(codigo),
-          ),
-        )
-        .toList(growable: false);
-  }
-
-  double _valorDigitadoForma(String codigoForma) {
-    final raw = _valorPorForma[codigoForma]?.text ?? '';
-    final localeSettings = context.read<LocaleSettingsProvider>();
-    final normalizado =
-        localeSettings.stripCurrencyMarkers(raw).replaceAll(',', '.').trim();
-    return double.tryParse(normalizado) ?? 0.0;
-  }
-
-  double _valorSelecionadoTotal() {
-    if (_formasSelecionadas.isEmpty) return 0.0;
-    return _montarFormasPagamento().fold<double>(
-      0.0,
-      (soma, forma) => soma + forma.valor,
-    );
-  }
-
-  double _valorRestante() => _total - _valorSelecionadoTotal();
-
-  void _preencherValorRestante(String codigoForma) {
-    _valorPorForma.putIfAbsent(codigoForma, () => TextEditingController());
-    final controller = _valorPorForma[codigoForma]!;
-    final atual = _valorDigitadoForma(codigoForma);
-    final restante = _valorRestante();
-    final novoValor = (atual + restante).clamp(0.0, _total).toDouble();
-
-    setState(() {
-      controller.text = novoValor.toStringAsFixed(2);
-      controller.selection = TextSelection.collapsed(
-        offset: controller.text.length,
-      );
-      _formasSelecionadas.add(codigoForma);
-      _destacarPagamento = false;
-    });
-  }
-
   String _nomeColaboradorAtual() {
     final usuario = UsuarioProvider().usuario;
     if (usuario == null) return 'Colaborador';
@@ -924,7 +739,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   @override
   Widget build(BuildContext context) {
     final temItens = _itens.isNotEmpty;
-    final bottomPadding = temItens ? 178.0 : 28.0;
+    final bottomPadding = temItens ? 16.0 : 28.0;
 
     return SixMobilePageShell(
       title:
@@ -941,6 +756,12 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       scrollEffectOffset: 24,
       scrolledSurfaceOpacity: 0.66,
       actions: <Widget>[
+        IconButton(
+          tooltip: 'Adicionar produto',
+          onPressed:
+              _enviando || !_caixaAbertoParaVenda ? null : _abrirSelecaoProduto,
+          icon: Icon(Icons.add_rounded),
+        ),
         IconButton(
           tooltip: 'Ler código',
           onPressed:
@@ -1015,13 +836,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                         duration: _entryDuration,
                         beginOffset: Offset(0, 0.035),
                         child: _buildItensCard(),
-                      ),
-                      SizedBox(height: 12),
-                      SixStaggeredEntry(
-                        delay: Duration(milliseconds: 170),
-                        duration: _entryDuration,
-                        beginOffset: Offset(0, 0.035),
-                        child: _buildPagamentoCard(),
                       ),
                     ],
                   ),
@@ -1376,7 +1190,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                           )
                           : (_itens.isEmpty
                               ? 'Pronta para incluir itens'
-                              : 'Revise itens e pagamento'),
+                              : 'Revise os itens e finalize'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -1766,221 +1580,6 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     );
   }
 
-  Widget _buildPagamentoCard() {
-    return _buildSectionCard(
-      sectionKey: _pagamentoKey,
-      destacar: _destacarPagamento,
-      titulo: 'Pagamento',
-      icone: Icons.account_balance_wallet_outlined,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _buildFormasPagamentoAdaptativas(),
-          if (_formasSelecionadas.isEmpty) ...<Widget>[
-            SizedBox(height: 14),
-            _buildPagamentoHint(),
-          ] else ...<Widget>[
-            SizedBox(height: 12),
-            ..._formasSelecionadas.map(_buildValorFormaField),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFormasPagamentoAdaptativas() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final linhas = _montarLinhasPagamento(constraints.maxWidth);
-        return Column(
-          children: linhas
-              .map((linha) {
-                return Padding(
-                  padding: EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: linha
-                        .asMap()
-                        .entries
-                        .map((entry) {
-                          final forma = entry.value;
-                          return Expanded(
-                            flex: _flexFormaPagamento(forma),
-                            child: Padding(
-                              padding: EdgeInsets.only(
-                                left: entry.key == 0 ? 0 : 8,
-                              ),
-                              child: _buildPillPagamento(forma),
-                            ),
-                          );
-                        })
-                        .toList(growable: false),
-                  ),
-                );
-              })
-              .toList(growable: false),
-        );
-      },
-    );
-  }
-
-  List<List<_FormaPagamentoMobile>> _montarLinhasPagamento(double largura) {
-    final int itensPorLinha = largura < 340 ? 2 : (largura < 430 ? 3 : 4);
-    final List<List<_FormaPagamentoMobile>> linhas =
-        <List<_FormaPagamentoMobile>>[];
-    for (
-      int index = 0;
-      index < _formasPagamento.length;
-      index += itensPorLinha
-    ) {
-      final int proximo = index + itensPorLinha;
-      final int fim =
-          proximo > _formasPagamento.length ? _formasPagamento.length : proximo;
-      linhas.add(_formasPagamento.sublist(index, fim));
-    }
-    return linhas;
-  }
-
-  int _flexFormaPagamento(_FormaPagamentoMobile forma) {
-    final tamanho = forma.titulo.length;
-    if (tamanho >= 17) return 18;
-    if (tamanho >= 12) return 14;
-    if (tamanho <= 4) return 8;
-    return 10;
-  }
-
-  Widget _buildPillPagamento(_FormaPagamentoMobile forma) {
-    final selecionado = _formasSelecionadas.contains(forma.codigo);
-    return AnimatedScale(
-      duration: Duration(milliseconds: 160),
-      curve: Curves.easeOutCubic,
-      scale: selecionado ? 1.025 : 1,
-      child: AnimatedContainer(
-        duration: Duration(milliseconds: 180),
-        constraints: BoxConstraints(minHeight: 40),
-        decoration: BoxDecoration(
-          color:
-              selecionado
-                  ? SixMobilePalette.accent
-                  : SixMobilePalette.softNeutralSurface,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color:
-                selecionado
-                    ? SixMobilePalette.accent
-                    : SixMobilePalette.activeBorder,
-          ),
-          boxShadow:
-              selecionado
-                  ? <BoxShadow>[
-                    BoxShadow(
-                      color: _withAlpha(SixMobilePalette.accent, 0.18),
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    ),
-                  ]
-                  : <BoxShadow>[],
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(999),
-          onTap:
-              _enviando || !_caixaAbertoParaVenda
-                  ? null
-                  : () => _alternarFormaPagamento(forma),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Icon(
-                  forma.icone,
-                  size: 14,
-                  color:
-                      selecionado
-                          ? SixMobilePalette.onPrimary
-                          : SixMobilePalette.accent,
-                ),
-                SizedBox(width: 5),
-                Flexible(
-                  child: Text(
-                    forma.titulo,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      height: 1,
-                      fontWeight: FontWeight.w900,
-                      color:
-                          selecionado
-                              ? SixMobilePalette.onPrimary
-                              : SixMobilePalette.titleText,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _alternarFormaPagamento(_FormaPagamentoMobile forma) {
-    final selecionado = _formasSelecionadas.contains(forma.codigo);
-    setState(() {
-      if (selecionado) {
-        _formasSelecionadas.remove(forma.codigo);
-        _valorPorForma[forma.codigo]?.clear();
-        return;
-      }
-      _formasSelecionadas.add(forma.codigo);
-      _valorPorForma.putIfAbsent(forma.codigo, () => TextEditingController());
-      _destacarPagamento = false;
-    });
-
-    if (_editandoVendaNaoLiquidada && !selecionado) {
-      _preencherValorRestante(forma.codigo);
-    }
-  }
-
-  Widget _buildPagamentoHint() {
-    return AnimatedContainer(
-      duration: Duration(milliseconds: 220),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color:
-            _destacarPagamento
-                ? SixMobilePalette.softAccentSurface
-                : SixMobilePalette.softNeutralSurface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color:
-              _destacarPagamento
-                  ? SixMobilePalette.highlightedBorder
-                  : SixMobilePalette.border,
-        ),
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(Icons.touch_app_outlined, color: SixMobilePalette.accent),
-          SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              _editandoVendaNaoLiquidada
-                  ? 'Revise itens, quantidades e escolha uma ou mais formas para receber esta venda.'
-                  : 'Toque em uma forma para receber agora ou use Receber depois para deixar a venda em aberto.',
-              style: TextStyle(
-                color: SixMobilePalette.mutedText,
-                height: 1.35,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSectionCard({
     Key? sectionKey,
     required String titulo,
@@ -2066,21 +1665,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: SixMobilePalette.softAccentSurface,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              item.ehServico
-                  ? Icons.handyman_outlined
-                  : Icons.shopping_bag_outlined,
-              color: SixMobilePalette.accent,
-              size: 21,
-            ),
-          ),
+          _buildItemLeading(item),
           SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -2154,19 +1739,19 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                           ),
                         );
                       },
-                      child: SizedBox(
+                      child: _QuantidadeValorButton(
                         key: ValueKey<String>(
                           '${item.idProduto}-${item.quantidade}',
                         ),
-                        width: 34,
-                        child: Text(
-                          '${item.quantidade}',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: SixMobilePalette.titleText,
-                            fontWeight: FontWeight.w900,
-                          ),
+                        quantidade: item.quantidade,
+                        label: _txt(
+                          'pdv.mobile.editQuantity',
+                          'Editar quantidade',
                         ),
+                        onTap:
+                            _enviando || !_caixaAbertoParaVenda
+                                ? null
+                                : () => _editarQuantidade(item),
                       ),
                     ),
                     _buildQuantityButton(
@@ -2185,6 +1770,87 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildItemLeading(_VendaItemMobile item) {
+    final BoxDecoration decoration = BoxDecoration(
+      color: SixMobilePalette.softAccentSurface,
+      borderRadius: BorderRadius.circular(14),
+    );
+    final String? imagemProduto = item.imagemProduto?.trim();
+    if (imagemProduto == null || imagemProduto.isEmpty) {
+      return Container(
+        width: 42,
+        height: 42,
+        decoration: decoration,
+        child: Icon(
+          item.ehServico
+              ? Icons.handyman_outlined
+              : Icons.shopping_bag_outlined,
+          color: SixMobilePalette.accent,
+          size: 21,
+        ),
+      );
+    }
+
+    final Uint8List? imageBytes = _decodeDataUrl(imagemProduto);
+    return Container(
+      width: 42,
+      height: 42,
+      clipBehavior: Clip.antiAlias,
+      decoration: decoration,
+      child:
+          imageBytes != null
+              ? Image.memory(
+                imageBytes,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildItemLeadingFallback(item),
+              )
+              : Image.network(
+                imagemProduto,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildItemLeadingFallback(item),
+                loadingBuilder: (
+                  BuildContext context,
+                  Widget child,
+                  ImageChunkEvent? loadingProgress,
+                ) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: SixMobilePalette.accent,
+                      ),
+                    ),
+                  );
+                },
+              ),
+    );
+  }
+
+  Widget _buildItemLeadingFallback(_VendaItemMobile item) {
+    return Center(
+      child: Icon(
+        item.ehServico ? Icons.handyman_outlined : Icons.shopping_bag_outlined,
+        color: SixMobilePalette.accent,
+        size: 21,
+      ),
+    );
+  }
+
+  Uint8List? _decodeDataUrl(String value) {
+    final String trimmed = value.trim();
+    if (!trimmed.startsWith('data:image')) return null;
+    final int commaIndex = trimmed.indexOf(',');
+    if (commaIndex <= 0 || commaIndex >= trimmed.length - 1) return null;
+    try {
+      return base64Decode(trimmed.substring(commaIndex + 1));
+    } catch (_) {
+      return null;
+    }
   }
 
   Widget _buildItemMetaChip(String label, IconData icon) {
@@ -2246,96 +1912,288 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   void _alterarQuantidade(_VendaItemMobile item, int delta) {
+    final index = _itens.indexWhere(
+      (element) => element.idProduto == item.idProduto,
+    );
+    if (index < 0) return;
+    _definirQuantidade(_itens[index], _itens[index].quantidade + delta);
+  }
+
+  void _definirQuantidade(_VendaItemMobile item, int quantidade) {
     setState(() {
       final index = _itens.indexWhere(
         (element) => element.idProduto == item.idProduto,
       );
       if (index < 0) return;
-      final novaQuantidade = _itens[index].quantidade + delta;
-      if (novaQuantidade <= 0) {
+      if (quantidade <= 0) {
         _itens.removeAt(index);
       } else {
-        _itens[index] = _itens[index].copyWith(quantidade: novaQuantidade);
+        _itens[index] = _itens[index].copyWith(quantidade: quantidade);
       }
     });
-
-    if (_editandoVendaNaoLiquidada && _formasSelecionadas.length == 1) {
-      _preencherValorRestante(_formasSelecionadas.first);
-    }
   }
 
-  Widget _buildValorFormaField(String codigo) {
-    final String currencySymbol =
-        context.read<LocaleSettingsProvider>().currencySymbol;
-    final forma = _formasPagamento.firstWhere(
-      (item) => item.codigo == codigo,
-      orElse:
-          () => _FormaPagamentoMobile(
-            codigo,
-            _descricaoPadraoPorCodigoTipo(codigo),
-            _iconePorCodigoTipo(codigo),
-          ),
+  Future<void> _editarQuantidade(_VendaItemMobile item) async {
+    final TextEditingController controller = TextEditingController(
+      text: item.quantidade.toString(),
     );
-    _valorPorForma.putIfAbsent(codigo, () => TextEditingController());
-    return Padding(
-      padding: EdgeInsets.only(bottom: 10),
-      child: Container(
-        padding: EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: SixMobilePalette.softNeutralSurface,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: SixMobilePalette.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Icon(forma.icone, size: 19, color: SixMobilePalette.accent),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    forma.titulo,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: SixMobilePalette.titleText,
-                      fontWeight: FontWeight.w900,
+    final FocusNode focusNode = FocusNode();
+
+    try {
+      final int? novaQuantidade = await showModalBottomSheet<int>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        useSafeArea: true,
+        builder: (BuildContext modalContext) {
+          String? validationError;
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!focusNode.canRequestFocus) return;
+            focusNode.requestFocus();
+            controller.selection = TextSelection(
+              baseOffset: 0,
+              extentOffset: controller.text.length,
+            );
+          });
+
+          int? parseQuantity() {
+            final int? parsed = int.tryParse(controller.text.trim());
+            if (parsed == null || parsed <= 0) {
+              return null;
+            }
+            return parsed;
+          }
+
+          return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setModalState) {
+              void confirmar() {
+                final int? quantidade = parseQuantity();
+                if (quantidade == null) {
+                  setModalState(() {
+                    validationError = _txt(
+                      'pdv.mobile.invalidQuantity',
+                      'Informe uma quantidade inteira maior que zero.',
+                    );
+                  });
+                  return;
+                }
+
+                Navigator.of(context).pop<int>(quantidade);
+              }
+
+              return Padding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  12,
+                  16,
+                  16 + MediaQuery.viewInsetsOf(context).bottom,
+                ),
+                child: Material(
+                  color: SixMobilePalette.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
+                    decoration: BoxDecoration(
+                      color: SixMobilePalette.surface,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: SixMobilePalette.border),
+                      boxShadow: <BoxShadow>[
+                        BoxShadow(
+                          color: SixMobilePalette.navigationShadow,
+                          blurRadius: 22,
+                          offset: Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Center(
+                          child: Container(
+                            width: 42,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: SixMobilePalette.border,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 18),
+                        Text(
+                          _txt(
+                            'pdv.mobile.editQuantityTitle',
+                            'Editar quantidade',
+                          ),
+                          style: TextStyle(
+                            color: SixMobilePalette.titleText,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          item.nome,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: SixMobilePalette.mutedText,
+                            fontSize: 13,
+                            height: 1.35,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        TextField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          autofocus: true,
+                          keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.done,
+                          inputFormatters: <TextInputFormatter>[
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          onChanged: (_) {
+                            if (validationError == null) return;
+                            setModalState(() => validationError = null);
+                          },
+                          onSubmitted: (_) => confirmar(),
+                          style: TextStyle(
+                            color: SixMobilePalette.titleText,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: _txt(
+                              'pdv.mobile.quantityFieldLabel',
+                              'Quantidade',
+                            ),
+                            hintText: _txt(
+                              'pdv.mobile.quantityFieldHint',
+                              'Digite a quantidade desejada',
+                            ),
+                            errorText: validationError,
+                            prefixIcon: Icon(
+                              Icons.tag_rounded,
+                              color: SixMobilePalette.accent,
+                            ),
+                            filled: true,
+                            fillColor: SixMobilePalette.surfaceElevated,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: SixMobilePalette.border,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: SixMobilePalette.accent,
+                                width: 1.4,
+                              ),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: SixMobilePalette.error,
+                              ),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: SixMobilePalette.error,
+                                width: 1.4,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: SixMobilePalette.softAccentSurface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: SixMobilePalette.border),
+                          ),
+                          child: Text(
+                            _txt(
+                              'pdv.mobile.quantityEditorHint',
+                              'Use os botões laterais para ajuste fino e a digitação para volumes maiores.',
+                            ),
+                            style: TextStyle(
+                              color: SixMobilePalette.mutedText,
+                              fontSize: 12,
+                              height: 1.35,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: Size.fromHeight(48),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  side: BorderSide(
+                                    color: SixMobilePalette.border,
+                                  ),
+                                ),
+                                child: Text(
+                                  _txt('common.cancel', 'Cancelar'),
+                                  style: TextStyle(fontWeight: FontWeight.w800),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: confirmar,
+                                style: FilledButton.styleFrom(
+                                  minimumSize: Size.fromHeight(48),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                child: Text(
+                                  _txt(
+                                    'pdv.mobile.applyQuantity',
+                                    'Aplicar quantidade',
+                                  ),
+                                  style: TextStyle(fontWeight: FontWeight.w800),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                TextButton(
-                  onPressed:
-                      _enviando || !_caixaAbertoParaVenda
-                          ? null
-                          : () => _preencherValorRestante(codigo),
-                  child: Text('Completar'),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            TextField(
-              controller: _valorPorForma[codigo],
-              enabled: !_enviando && _caixaAbertoParaVenda,
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                labelText: 'Valor recebido',
-                prefixText: '$currencySymbol ',
-                helperText:
-                    _formasSelecionadas.length == 1
-                        ? 'Se ficar vazio, o total da venda será usado.'
-                        : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                isDense: true,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+              );
+            },
+          );
+        },
+      );
+
+      if (!mounted || novaQuantidade == null) return;
+      _definirQuantidade(item, novaQuantidade);
+    } finally {
+      focusNode.dispose();
+      controller.dispose();
+    }
   }
 
   Widget _buildBottomActions() {
@@ -2660,6 +2518,71 @@ class _PdvActionButtonState extends State<_PdvActionButton> {
   }
 }
 
+class _QuantidadeValorButton extends StatelessWidget {
+  const _QuantidadeValorButton({
+    super.key,
+    required this.quantidade,
+    required this.label,
+    required this.onTap,
+  });
+
+  final int quantidade;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      value: quantidade.toString(),
+      enabled: onTap != null,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            constraints: BoxConstraints(minWidth: 58),
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: SixMobilePalette.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: SixMobilePalette.border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Flexible(
+                  child: Text(
+                    '$quantidade',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: SixMobilePalette.titleText,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 6),
+                Icon(
+                  Icons.edit_outlined,
+                  size: 15,
+                  color:
+                      onTap == null
+                          ? SixMobilePalette.mutedText
+                          : SixMobilePalette.accent,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _VendaItemMobile {
   const _VendaItemMobile({
     required this.idProduto,
@@ -2667,6 +2590,7 @@ class _VendaItemMobile {
     required this.valorUnitario,
     required this.quantidade,
     required this.ehServico,
+    this.imagemProduto,
   });
 
   factory _VendaItemMobile.fromVendaNaoLiquidadaItem(
@@ -2678,6 +2602,7 @@ class _VendaItemMobile {
       valorUnitario: item.valorUnitario,
       quantidade: item.quantidade,
       ehServico: item.ehServico,
+      imagemProduto: null,
     );
   }
 
@@ -2686,16 +2611,18 @@ class _VendaItemMobile {
   final double valorUnitario;
   final int quantidade;
   final bool ehServico;
+  final String? imagemProduto;
 
   double get subtotal => valorUnitario * quantidade;
 
-  _VendaItemMobile copyWith({int? quantidade}) {
+  _VendaItemMobile copyWith({int? quantidade, String? imagemProduto}) {
     return _VendaItemMobile(
       idProduto: idProduto,
       nome: nome,
       valorUnitario: valorUnitario,
       quantidade: quantidade ?? this.quantidade,
       ehServico: ehServico,
+      imagemProduto: imagemProduto ?? this.imagemProduto,
     );
   }
 
@@ -2718,14 +2645,6 @@ class _VendaItemMobile {
       ehServico: ehServico,
     );
   }
-}
-
-class _FormaPagamentoMobile {
-  const _FormaPagamentoMobile(this.codigo, this.titulo, this.icone);
-
-  final String codigo;
-  final String titulo;
-  final IconData icone;
 }
 
 class _SessaoCaixaMobileView {
