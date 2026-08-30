@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/atendimento_tecnico_models.dart';
@@ -14,8 +15,15 @@ import '../../providers/locale_settings_provider.dart';
 import '../components/date_selector_mobile_bottom_sheet.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
 import '../components/mobile_motion.dart';
+import '../utils/atendimento_tecnico_foto_payload.dart';
 import 'cliente_usuario_cadastro_mobile_screen.dart';
 import 'produto_list_mobile_screen.dart';
+
+class AtendimentoTecnicoCreateFlowResult {
+  const AtendimentoTecnicoCreateFlowResult({required this.feedbackMessage});
+
+  final String feedbackMessage;
+}
 
 class AtendimentoTecnicoMobileScreen extends StatefulWidget {
   const AtendimentoTecnicoMobileScreen({
@@ -57,8 +65,12 @@ class _AtendimentoTecnicoMobileScreenState
   late final ClienteUsuarioApiClient _clienteApiClient;
   late final ColaboradorUsuarioApiClient _colaboradorApiClient;
   final List<_AtendimentoItemMobile> _itens = <_AtendimentoItemMobile>[];
+  final List<AtendimentoTecnicoFotoInput> _fotos =
+      <AtendimentoTecnicoFotoInput>[];
+  final ImagePicker _imagePicker = ImagePicker();
 
   final TextEditingController _descricaoController = TextEditingController();
+  final FocusNode _descricaoFocusNode = FocusNode();
   final TextEditingController _tipoEquipamentoController =
       TextEditingController(text: 'SMARTPHONE');
   final TextEditingController _marcaController = TextEditingController();
@@ -68,6 +80,8 @@ class _AtendimentoTecnicoMobileScreenState
   final TextEditingController _acessoriosController = TextEditingController();
   final TextEditingController _defeitoController = TextEditingController();
   final TextEditingController _diagnosticoController = TextEditingController();
+  final GlobalKey _continuarCtaKey = GlobalKey();
+  ScrollController? _pageScrollController;
 
   List<ClienteUsuario> _clientes = <ClienteUsuario>[];
   List<_ResponsavelTecnicoMobile> _responsaveis = <_ResponsavelTecnicoMobile>[];
@@ -76,6 +90,7 @@ class _AtendimentoTecnicoMobileScreenState
   bool _carregando = true;
   bool _salvando = false;
   String? _erro;
+  int _etapaAtual = 0;
   DateTime _validadeOrcamentoEm = _defaultDate();
   DateTime _vencimentoFinanceiroEm = _defaultDate();
   DateTime _dataEntregaPrevista = _defaultDate();
@@ -105,12 +120,16 @@ class _AtendimentoTecnicoMobileScreenState
         widget.clienteApiClient ?? HttpClienteUsuarioApiClient();
     _colaboradorApiClient =
         widget.colaboradorApiClient ?? HttpColaboradorUsuarioApiClient();
+    _descricaoFocusNode.addListener(_onDescricaoFocusChanged);
     _carregarDados();
   }
 
   @override
   void dispose() {
     _descricaoController.dispose();
+    _descricaoFocusNode
+      ..removeListener(_onDescricaoFocusChanged)
+      ..dispose();
     _tipoEquipamentoController.dispose();
     _marcaController.dispose();
     _modeloController.dispose();
@@ -473,6 +492,7 @@ class _AtendimentoTecnicoMobileScreenState
           ),
           defeitoRelatado: _textoOuNulo(_defeitoController.text),
           diagnosticoTecnico: _textoOuNulo(_diagnosticoController.text),
+          fotos: List<AtendimentoTecnicoFotoInput>.unmodifiable(_fotos),
           itens: _itens
               .map((item) => item.toInput(responsavel: responsavel))
               .toList(growable: false),
@@ -481,11 +501,11 @@ class _AtendimentoTecnicoMobileScreenState
       );
 
       if (!mounted) return;
-      _limparFormulario();
-      _mostrarMensagem(
-        atendimento.numero.trim().isEmpty
-            ? 'Atendimento técnico iniciado.'
-            : 'Atendimento ${atendimento.numero} iniciado.',
+      FocusScope.of(context).unfocus();
+      Navigator.of(context).pop(
+        AtendimentoTecnicoCreateFlowResult(
+          feedbackMessage: _sucessoAoCriarMensagem(atendimento),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
@@ -495,24 +515,18 @@ class _AtendimentoTecnicoMobileScreenState
     }
   }
 
-  void _limparFormulario() {
-    setState(() {
-      _clienteSelecionado = null;
-      _responsavelSelecionado = null;
-      _descricaoController.clear();
-      _tipoEquipamentoController.text = 'SMARTPHONE';
-      _marcaController.clear();
-      _modeloController.clear();
-      _numeroSerieController.clear();
-      _imeiController.clear();
-      _acessoriosController.clear();
-      _defeitoController.clear();
-      _diagnosticoController.clear();
-      _itens.clear();
-      _validadeOrcamentoEm = _defaultDate();
-      _vencimentoFinanceiroEm = _defaultDate();
-      _dataEntregaPrevista = _defaultDate();
-    });
+  String _sucessoAoCriarMensagem(AtendimentoTecnicoModel atendimento) {
+    final String numero = atendimento.numero.trim();
+    if (numero.isEmpty) {
+      return _t(
+        'atendimentoTecnico.mobile.startedSuccess',
+        'Atendimento técnico iniciado.',
+      );
+    }
+    return _t(
+      'atendimentoTecnico.mobile.startedSuccessWithNumber',
+      'Atendimento {number} iniciado.',
+    ).replaceAll('{number}', numero);
   }
 
   String? _textoOuNulo(String value) {
@@ -544,6 +558,41 @@ class _AtendimentoTecnicoMobileScreenState
     );
   }
 
+  void _onDescricaoFocusChanged() {
+    if (!_descricaoFocusNode.hasFocus) return;
+    _agendarScrollParaContinuar();
+  }
+
+  void _agendarScrollParaContinuar() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(milliseconds: 260), () {
+        if (!mounted || !_descricaoFocusNode.hasFocus || _etapaAtual != 0) {
+          return;
+        }
+        final ScrollController? scrollController = _pageScrollController;
+        if (scrollController != null && scrollController.hasClients) {
+          final double targetOffset = scrollController.position.maxScrollExtent;
+          if (targetOffset > scrollController.offset) {
+            scrollController.animateTo(
+              targetOffset,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+            );
+          }
+        }
+        final BuildContext? ctaContext = _continuarCtaKey.currentContext;
+        if (ctaContext == null) return;
+        if (!ctaContext.mounted) return;
+        Scrollable.ensureVisible(
+          ctaContext,
+          alignment: 1,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+        );
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     context.select<LocaleSettingsProvider, String>(
@@ -570,7 +619,10 @@ class _AtendimentoTecnicoMobileScreenState
       leading: IconButton(
         tooltip: _t('common.back', 'Voltar'),
         icon: Icon(Icons.arrow_back_rounded),
-        onPressed: () => Navigator.of(context).maybePop(),
+        onPressed:
+            _etapaAtual > 0
+                ? () => setState(() => _etapaAtual--)
+                : () => Navigator.of(context).maybePop(),
       ),
       bodyBuilder: _buildContent,
     );
@@ -581,6 +633,8 @@ class _AtendimentoTecnicoMobileScreenState
     ScrollController scrollController,
     double topInset,
   ) {
+    _pageScrollController = scrollController;
+    final double bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     return SafeArea(
       top: false,
       child: RefreshIndicator(
@@ -588,7 +642,7 @@ class _AtendimentoTecnicoMobileScreenState
         child: ListView(
           controller: scrollController,
           physics: AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
+          padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24 + bottomInset),
           children: <Widget>[
             _buildHeader(),
             SizedBox(height: 16),
@@ -611,12 +665,7 @@ class _AtendimentoTecnicoMobileScreenState
     final String subtitle =
         responsavel != null && responsavel.trim().isNotEmpty
             ? '${_t('atendimentoTecnico.mobile.responsible', 'Responsável')}: $responsavel'
-            : _itens.isEmpty
-            ? _t(
-              'atendimentoTecnico.mobile.createHeaderSubtitle',
-              'Cliente, equipamento e defeito em uma tela rápida para balcão.',
-            )
-            : '${_itemsCountLabel(_quantidadeItens)} • ${_formatarMoeda(_totalItens)}';
+            : '${_t('atendimentoTecnico.journey.step', 'Etapa')} ${_etapaAtual + 1}/5 • ${_journeyStepTitle(_etapaAtual)}';
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -722,199 +771,703 @@ class _AtendimentoTecnicoMobileScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        SixStaggeredEntry(
-          delay: Duration(milliseconds: 50),
-          child: _contextChipsCard(),
-        ),
+        _journeyProgressCard(),
         SizedBox(height: 14),
-        SixStaggeredEntry(
-          delay: Duration(milliseconds: 90),
-          child: _sectionCard(
-            title: _t(
-              'atendimentoTecnico.mobile.mainDataSection',
-              'Dados principais',
-            ),
-            icon: Icons.assignment_outlined,
-            children: <Widget>[
-              _clienteSelectorField(),
-              SizedBox(height: 12),
-              _responsavelSelectorField(),
-              SizedBox(height: 12),
-              TextField(
-                controller: _descricaoController,
-                decoration: _inputDecoration(
-                  label: _t(
-                    'atendimentoTecnico.mobile.internalDescription',
-                    'Descrição interna',
-                  ),
-                  hint: _t(
-                    'atendimentoTecnico.mobile.internalDescriptionHint',
-                    'Ex.: Troca de tela iPhone 11',
-                  ),
-                  icon: Icons.notes_outlined,
-                ),
-              ),
-            ],
+        if (_etapaAtual == 4)
+          SixStaggeredEntry(
+            delay: Duration(milliseconds: 50),
+            child: _contextChipsCard(),
           ),
-        ),
-        SizedBox(height: 14),
-        SixStaggeredEntry(
-          delay: Duration(milliseconds: 130),
-          child: _sectionCard(
-            title: _t('atendimentoTecnico.equipment', 'Equipamento'),
-            icon: Icons.devices_other_outlined,
-            children: <Widget>[
-              TextField(
-                controller: _tipoEquipamentoController,
-                decoration: _inputDecoration(
-                  label: _t(
-                    'atendimentoTecnico.mobile.equipmentType',
-                    'Tipo de equipamento',
+        if (_etapaAtual == 4) SizedBox(height: 14),
+        if (_etapaAtual == 0)
+          SixStaggeredEntry(
+            delay: Duration(milliseconds: 90),
+            child: _sectionCard(
+              title: _t(
+                'atendimentoTecnico.mobile.mainDataSection',
+                'Dados principais',
+              ),
+              icon: Icons.assignment_outlined,
+              children: <Widget>[
+                _clienteSelectorField(),
+                SizedBox(height: 12),
+                _responsavelSelectorField(),
+                SizedBox(height: 12),
+                TextField(
+                  controller: _descricaoController,
+                  focusNode: _descricaoFocusNode,
+                  onTap: _agendarScrollParaContinuar,
+                  decoration: _inputDecoration(
+                    label: _t(
+                      'atendimentoTecnico.mobile.internalDescription',
+                      'Descrição interna',
+                    ),
+                    hint: _t(
+                      'atendimentoTecnico.mobile.internalDescriptionHint',
+                      'Ex.: Troca de tela iPhone 11',
+                    ),
+                    icon: Icons.notes_outlined,
                   ),
-                  icon: Icons.devices_other_outlined,
                 ),
-              ),
-              SizedBox(height: 12),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: TextField(
-                      controller: _marcaController,
-                      decoration: _inputDecoration(
-                        label: _t('atendimentoTecnico.mobile.brand', 'Marca'),
-                        icon: Icons.business_outlined,
-                      ),
+              ],
+            ),
+          ),
+        if (_etapaAtual == 0) SizedBox(height: 14),
+        if (_etapaAtual == 1)
+          SixStaggeredEntry(
+            delay: Duration(milliseconds: 130),
+            child: _sectionCard(
+              title: _t('atendimentoTecnico.equipment', 'Equipamento'),
+              icon: Icons.devices_other_outlined,
+              children: <Widget>[
+                TextField(
+                  controller: _tipoEquipamentoController,
+                  decoration: _inputDecoration(
+                    label: _t(
+                      'atendimentoTecnico.mobile.equipmentType',
+                      'Tipo de equipamento',
                     ),
+                    icon: Icons.devices_other_outlined,
                   ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      controller: _modeloController,
-                      decoration: _inputDecoration(
-                        label: _t('atendimentoTecnico.mobile.model', 'Modelo'),
-                        icon: Icons.category_outlined,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 12),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: TextField(
-                      controller: _numeroSerieController,
-                      decoration: _inputDecoration(
-                        label: _t(
-                          'atendimentoTecnico.mobile.serialNumber',
-                          'Nº série',
+                ),
+                SizedBox(height: 12),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: TextField(
+                        controller: _marcaController,
+                        decoration: _inputDecoration(
+                          label: _t('atendimentoTecnico.mobile.brand', 'Marca'),
+                          icon: Icons.business_outlined,
                         ),
-                        icon: Icons.confirmation_number_outlined,
                       ),
                     ),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      controller: _imeiController,
-                      decoration: _inputDecoration(
-                        label: _t('atendimentoTecnico.mobile.imei', 'IMEI'),
-                        icon: Icons.qr_code_2_outlined,
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        controller: _modeloController,
+                        decoration: _inputDecoration(
+                          label: _t(
+                            'atendimentoTecnico.mobile.model',
+                            'Modelo',
+                          ),
+                          icon: Icons.category_outlined,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 12),
-              TextField(
-                controller: _acessoriosController,
-                minLines: 2,
-                maxLines: 3,
-                decoration: _inputDecoration(
-                  label: _t(
-                    'atendimentoTecnico.mobile.accessoriesNotes',
-                    'Acessórios / observações',
-                  ),
-                  hint: _t(
-                    'atendimentoTecnico.mobile.accessoriesNotesHint',
-                    'Ex.: sem carregador, com capa, tela trincada...',
-                  ),
-                  icon: Icons.cable_outlined,
-                  alignLabelWithHint: true,
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 14),
-        SixStaggeredEntry(
-          delay: Duration(milliseconds: 170),
-          child: _sectionCard(
-            title: _t(
-              'atendimentoTecnico.mobile.technicalReportSection',
-              'Relato técnico',
+                SizedBox(height: 12),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: TextField(
+                        controller: _numeroSerieController,
+                        decoration: _inputDecoration(
+                          label: _t(
+                            'atendimentoTecnico.mobile.serialNumber',
+                            'Nº série',
+                          ),
+                          icon: Icons.confirmation_number_outlined,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        controller: _imeiController,
+                        decoration: _inputDecoration(
+                          label: _t('atendimentoTecnico.mobile.imei', 'IMEI'),
+                          icon: Icons.qr_code_2_outlined,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12),
+                TextField(
+                  controller: _acessoriosController,
+                  minLines: 2,
+                  maxLines: 3,
+                  decoration: _inputDecoration(
+                    label: _t(
+                      'atendimentoTecnico.mobile.accessoriesNotes',
+                      'Acessórios / observações',
+                    ),
+                    hint: _t(
+                      'atendimentoTecnico.mobile.accessoriesNotesHint',
+                      'Ex.: sem carregador, com capa, tela trincada...',
+                    ),
+                    icon: Icons.cable_outlined,
+                    alignLabelWithHint: true,
+                  ),
+                ),
+              ],
             ),
-            icon: Icons.report_problem_outlined,
-            children: <Widget>[
-              TextField(
-                controller: _defeitoController,
-                minLines: 3,
-                maxLines: 5,
-                decoration: _inputDecoration(
-                  label: _t(
-                    'atendimentoTecnico.mobile.customerIssue',
-                    'Defeito relatado pelo cliente',
-                  ),
-                  hint: _t(
-                    'atendimentoTecnico.mobile.customerIssueHint',
-                    'Descreva o problema informado no balcão.',
-                  ),
-                  icon: Icons.report_problem_outlined,
-                  alignLabelWithHint: true,
-                ),
-              ),
-              SizedBox(height: 12),
-              TextField(
-                controller: _diagnosticoController,
-                minLines: 2,
-                maxLines: 4,
-                decoration: _inputDecoration(
-                  label: _t(
-                    'atendimentoTecnico.mobile.initialDiagnosis',
-                    'Diagnóstico técnico inicial',
-                  ),
-                  hint: _t(
-                    'atendimentoTecnico.mobile.initialDiagnosisHint',
-                    'Opcional neste primeiro momento.',
-                  ),
-                  icon: Icons.engineering_outlined,
-                  alignLabelWithHint: true,
-                ),
-              ),
-            ],
           ),
-        ),
-        SizedBox(height: 14),
-        SixStaggeredEntry(
-          delay: Duration(milliseconds: 210),
-          child: _datesCard(),
-        ),
-        SizedBox(height: 14),
-        SixStaggeredEntry(
-          delay: Duration(milliseconds: 250),
-          child: _financialPreviewCard(),
-        ),
-        SizedBox(height: 14),
-        SixStaggeredEntry(
-          delay: Duration(milliseconds: 290),
-          child: _itensSection(),
-        ),
+        if (_etapaAtual == 1) SizedBox(height: 14),
+        if (_etapaAtual == 2)
+          SixStaggeredEntry(
+            delay: Duration(milliseconds: 170),
+            child: _sectionCard(
+              title: _t(
+                'atendimentoTecnico.mobile.technicalReportSection',
+                'Relato técnico',
+              ),
+              icon: Icons.report_problem_outlined,
+              children: <Widget>[
+                TextField(
+                  controller: _defeitoController,
+                  minLines: 3,
+                  maxLines: 5,
+                  decoration: _inputDecoration(
+                    label: _t(
+                      'atendimentoTecnico.mobile.customerIssue',
+                      'Defeito relatado pelo cliente',
+                    ),
+                    hint: _t(
+                      'atendimentoTecnico.mobile.customerIssueHint',
+                      'Descreva o problema informado no balcão.',
+                    ),
+                    icon: Icons.report_problem_outlined,
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                SizedBox(height: 12),
+                TextField(
+                  controller: _diagnosticoController,
+                  minLines: 2,
+                  maxLines: 4,
+                  decoration: _inputDecoration(
+                    label: _t(
+                      'atendimentoTecnico.mobile.initialDiagnosis',
+                      'Diagnóstico técnico inicial',
+                    ),
+                    hint: _t(
+                      'atendimentoTecnico.mobile.initialDiagnosisHint',
+                      'Opcional neste primeiro momento.',
+                    ),
+                    icon: Icons.engineering_outlined,
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                SizedBox(height: 14),
+                _photosSectionMobile(),
+              ],
+            ),
+          ),
+        if (_etapaAtual == 2) SizedBox(height: 14),
+        if (_etapaAtual == 3)
+          SixStaggeredEntry(
+            delay: Duration(milliseconds: 210),
+            child: _datesCard(),
+          ),
+        if (_etapaAtual == 3) SizedBox(height: 14),
+        if (_etapaAtual == 3)
+          SixStaggeredEntry(
+            delay: Duration(milliseconds: 250),
+            child: _financialPreviewCard(),
+          ),
+        if (_etapaAtual == 3) SizedBox(height: 14),
+        if (_etapaAtual == 3)
+          SixStaggeredEntry(
+            delay: Duration(milliseconds: 290),
+            child: _itensSection(),
+          ),
+        if (_etapaAtual == 4) _reviewCardMobile(),
         SizedBox(height: 18),
-        SixStaggeredEntry(
-          delay: Duration(milliseconds: 330),
-          child: _saveButton(),
+        if (_etapaAtual == 4)
+          SixStaggeredEntry(
+            delay: Duration(milliseconds: 330),
+            child: _saveButton(),
+          ),
+        if (_etapaAtual < 4) _journeyNavigation(),
+      ],
+    );
+  }
+
+  String _journeyStepTitle(int index) {
+    const List<String> fallbacks = <String>[
+      'Cliente',
+      'Equipamento',
+      'Registro',
+      'Orçamento',
+      'Revisão',
+    ];
+    return _t('atendimentoTecnico.journey.step.$index', fallbacks[index]);
+  }
+
+  String _journeyStepDescription(int index) {
+    const List<String> fallbacks = <String>[
+      'Identifique o cliente e quem será responsável.',
+      'Registre os dados do equipamento recebido.',
+      'Descreva o problema e adicione até 10 fotos.',
+      'Monte os itens, valores e datas do serviço.',
+      'Confira tudo antes de iniciar o atendimento.',
+    ];
+    return _t(
+      'atendimentoTecnico.journey.step.$index.description',
+      fallbacks[index],
+    );
+  }
+
+  Widget _journeyProgressCard() {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            _journeyStepTitle(_etapaAtual),
+            style: TextStyle(
+              color: _titleTextColor,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 5),
+          Text(
+            _journeyStepDescription(_etapaAtual),
+            style: TextStyle(color: _mutedTextColor, height: 1.35),
+          ),
+          SizedBox(height: 16),
+          Row(
+            children: List<Widget>.generate(5, (int index) {
+              final bool done = index < _etapaAtual;
+              final bool active = index == _etapaAtual;
+              return Expanded(
+                child: Row(
+                  children: <Widget>[
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      width: active ? 28 : 22,
+                      height: active ? 28 : 22,
+                      decoration: BoxDecoration(
+                        color:
+                            done || active ? _primaryColor : _softSurfaceColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: done || active ? _primaryColor : _borderColor,
+                        ),
+                      ),
+                      child: Icon(
+                        done ? Icons.check_rounded : _journeyStepIcon(index),
+                        size: active ? 15 : 12,
+                        color:
+                            done || active ? _onPrimaryColor : _mutedTextColor,
+                      ),
+                    ),
+                    if (index < 4)
+                      Expanded(
+                        child: Container(
+                          height: 2,
+                          color:
+                              index < _etapaAtual
+                                  ? _primaryColor
+                                  : _borderColor,
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _journeyStepIcon(int index) {
+    return switch (index) {
+      0 => Icons.person_outline_rounded,
+      1 => Icons.devices_other_outlined,
+      2 => Icons.photo_camera_outlined,
+      3 => Icons.request_quote_outlined,
+      _ => Icons.task_alt_rounded,
+    };
+  }
+
+  Widget _journeyNavigation() {
+    return Row(
+      children: <Widget>[
+        if (_etapaAtual > 0)
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => setState(() => _etapaAtual--),
+              icon: const Icon(Icons.arrow_back_rounded),
+              label: Text(_t('common.back', 'Voltar')),
+            ),
+          ),
+        if (_etapaAtual > 0) const SizedBox(width: 12),
+        Expanded(
+          flex: 2,
+          child: FilledButton.icon(
+            key: _continuarCtaKey,
+            onPressed: _avancarEtapa,
+            icon: const Icon(Icons.arrow_forward_rounded),
+            label: Text(_t('common.continue', 'Continuar')),
+          ),
         ),
       ],
+    );
+  }
+
+  void _avancarEtapa() {
+    if (_etapaAtual == 0 && _clienteSelecionado == null) {
+      _mostrarMensagem(
+        _t(
+          'atendimentoTecnico.validation.customerRequired',
+          'Selecione um cliente para continuar.',
+        ),
+      );
+      return;
+    }
+    if (_etapaAtual == 2 && _defeitoController.text.trim().isEmpty) {
+      _mostrarMensagem(
+        _t(
+          'atendimentoTecnico.validation.issueRequired',
+          'Informe o defeito relatado para continuar.',
+        ),
+      );
+      return;
+    }
+    if (_etapaAtual == 3) {
+      final DateTime hoje = _inicioHoje();
+      if (_validadeOrcamentoEm.isBefore(hoje) ||
+          _vencimentoFinanceiroEm.isBefore(hoje)) {
+        _mostrarMensagem(
+          _t(
+            'atendimentoTecnico.validation.datesInvalid',
+            'Revise as datas: validade e vencimento não podem estar no passado.',
+          ),
+        );
+        return;
+      }
+    }
+    if (_etapaAtual < 4) {
+      setState(() => _etapaAtual++);
+    }
+  }
+
+  Widget _photosSectionMobile() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    _t('atendimentoTecnico.photos.title', 'Fotos do serviço'),
+                    style: TextStyle(
+                      color: _titleTextColor,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    _t(
+                      'atendimentoTecnico.photos.hint',
+                      'Registre o estado do equipamento. Máximo de 10 fotos.',
+                    ),
+                    style: TextStyle(
+                      color: _mutedTextColor,
+                      fontSize: 12,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color: _softAccentSurfaceColor,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '${_fotos.length}/${AtendimentoTecnicoFotoPayload.maxFotos}',
+                style: TextStyle(
+                  color: _accentColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 12),
+        SizedBox(
+          height: 116,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: <Widget>[
+              if (_fotos.length < AtendimentoTecnicoFotoPayload.maxFotos)
+                _addPhotoTileMobile(),
+              ..._fotos.asMap().entries.map(
+                (MapEntry<int, AtendimentoTecnicoFotoInput> entry) =>
+                    _photoTileMobile(entry.key, entry.value),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _addPhotoTileMobile() {
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: InkWell(
+        onTap: _selecionarFotosMobile,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: 104,
+          decoration: BoxDecoration(
+            color: _softSurfaceColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _borderColor),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Icon(Icons.add_a_photo_outlined, color: _accentColor),
+              const SizedBox(height: 7),
+              Text(
+                _t('atendimentoTecnico.photos.add', 'Adicionar'),
+                style: TextStyle(
+                  color: _titleTextColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _photoTileMobile(int index, AtendimentoTecnicoFotoInput foto) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: Stack(
+        children: <Widget>[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.memory(
+              AtendimentoTecnicoFotoPayload.previewBytes(foto),
+              width: 104,
+              height: 116,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned(
+            right: 5,
+            top: 5,
+            child: Material(
+              color: Colors.black.withValues(alpha: 0.62),
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => setState(() => _fotos.removeAt(index)),
+                child: const Padding(
+                  padding: EdgeInsets.all(6),
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _selecionarFotosMobile() async {
+    if (_fotos.length >= AtendimentoTecnicoFotoPayload.maxFotos) {
+      _mostrarMensagem(
+        _t(
+          'atendimentoTecnico.photos.limit',
+          'O limite é de 10 fotos por atendimento.',
+        ),
+      );
+      return;
+    }
+    final ImageSource? source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder:
+          (BuildContext context) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: Text(_t('atendimentoTecnico.photos.camera', 'Câmera')),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: Text(_t('atendimentoTecnico.photos.gallery', 'Galeria')),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+    );
+    if (source == null || !mounted) return;
+
+    try {
+      final List<XFile> arquivos;
+      if (source == ImageSource.camera) {
+        final XFile? arquivo = await _imagePicker.pickImage(
+          source: source,
+          maxWidth: 1600,
+          maxHeight: 1600,
+          imageQuality: 72,
+        );
+        arquivos = arquivo == null ? <XFile>[] : <XFile>[arquivo];
+      } else {
+        arquivos = await _imagePicker.pickMultiImage(
+          maxWidth: 1600,
+          maxHeight: 1600,
+          imageQuality: 72,
+        );
+      }
+      final int restantes =
+          AtendimentoTecnicoFotoPayload.maxFotos - _fotos.length;
+      final List<AtendimentoTecnicoFotoInput> adicionadas =
+          <AtendimentoTecnicoFotoInput>[];
+      for (final XFile arquivo in arquivos.take(restantes)) {
+        adicionadas.add(await AtendimentoTecnicoFotoPayload.fromXFile(arquivo));
+      }
+      if (!mounted || adicionadas.isEmpty) return;
+      setState(() => _fotos.addAll(adicionadas));
+    } on AtendimentoTecnicoFotoException catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem(_photoErrorMessage(error.code));
+    } catch (_) {
+      if (!mounted) return;
+      _mostrarMensagem(
+        _t(
+          'atendimentoTecnico.photos.readError',
+          'Não foi possível carregar a foto selecionada.',
+        ),
+      );
+    }
+  }
+
+  String _photoErrorMessage(String code) {
+    return switch (code) {
+      'PHOTO_TOO_LARGE' => _t(
+        'atendimentoTecnico.photos.tooLarge',
+        'A foto ficou muito grande. Tente outra imagem ou reduza a resolução.',
+      ),
+      'PHOTO_FORMAT_UNSUPPORTED' => _t(
+        'atendimentoTecnico.photos.formatUnsupported',
+        'Use fotos nos formatos JPG ou PNG.',
+      ),
+      _ => _t(
+        'atendimentoTecnico.photos.invalid',
+        'A foto selecionada não é válida.',
+      ),
+    };
+  }
+
+  Widget _reviewCardMobile() {
+    return _sectionCard(
+      title: _t('atendimentoTecnico.journey.reviewTitle', 'Revisão final'),
+      icon: Icons.fact_check_outlined,
+      children: <Widget>[
+        _reviewLineMobile(
+          Icons.person_outline_rounded,
+          _t('atendimentoTecnico.customer', 'Cliente'),
+          _clienteSelecionado?.nome ?? '-',
+        ),
+        _reviewLineMobile(
+          Icons.devices_other_outlined,
+          _t('atendimentoTecnico.equipment', 'Equipamento'),
+          <String>[
+            _tipoEquipamentoController.text,
+            _marcaController.text,
+            _modeloController.text,
+          ].where((String value) => value.trim().isNotEmpty).join(' • '),
+        ),
+        _reviewLineMobile(
+          Icons.report_problem_outlined,
+          _t('atendimentoTecnico.mobile.customerIssue', 'Defeito'),
+          _defeitoController.text.trim(),
+        ),
+        _reviewLineMobile(
+          Icons.photo_camera_outlined,
+          _t('atendimentoTecnico.photos.title', 'Fotos do serviço'),
+          _t(
+            'atendimentoTecnico.photos.count',
+            '${_fotos.length} de 10 adicionadas',
+          ),
+        ),
+        _reviewLineMobile(
+          Icons.request_quote_outlined,
+          _t('atendimentoTecnico.mobile.quoteChip', 'Orçamento'),
+          '${_itemsCountLabel(_quantidadeItens)} • ${_formatarMoeda(_totalItens)}',
+          showDivider: false,
+        ),
+      ],
+    );
+  }
+
+  Widget _reviewLineMobile(
+    IconData icon,
+    String label,
+    String value, {
+    bool showDivider = true,
+  }) {
+    final String normalized = value.trim().isEmpty ? '-' : value.trim();
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        border:
+            showDivider
+                ? Border(bottom: BorderSide(color: _borderColor))
+                : null,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(icon, size: 19, color: _accentColor),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: _mutedTextColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  normalized,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: _titleTextColor,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -268,6 +268,61 @@ class AtendimentoTecnicoRecebimentoModel {
   }
 }
 
+class AtendimentoTecnicoFotoModel {
+  const AtendimentoTecnicoFotoModel({
+    required this.id,
+    required this.nomeArquivo,
+    required this.mimeType,
+    required this.conteudoDataUrl,
+    required this.tamanhoBytes,
+    this.legenda,
+    this.criadaEm,
+  });
+
+  final String id;
+  final String nomeArquivo;
+  final String mimeType;
+  final String conteudoDataUrl;
+  final String? legenda;
+  final int tamanhoBytes;
+  final DateTime? criadaEm;
+
+  factory AtendimentoTecnicoFotoModel.fromJson(Map<String, dynamic> json) {
+    return AtendimentoTecnicoFotoModel(
+      id: json['id']?.toString() ?? '',
+      nomeArquivo: json['nomeArquivo']?.toString() ?? '',
+      mimeType: json['mimeType']?.toString() ?? '',
+      conteudoDataUrl: json['conteudoDataUrl']?.toString() ?? '',
+      legenda: json['legenda']?.toString(),
+      tamanhoBytes: (json['tamanhoBytes'] as num?)?.toInt() ?? 0,
+      criadaEm: DateTime.tryParse(json['criadaEm']?.toString() ?? ''),
+    );
+  }
+}
+
+class AtendimentoTecnicoFotoInput {
+  const AtendimentoTecnicoFotoInput({
+    required this.nomeArquivo,
+    required this.mimeType,
+    required this.conteudoBase64,
+    required this.tamanhoBytes,
+    this.legenda,
+  });
+
+  final String nomeArquivo;
+  final String mimeType;
+  final String conteudoBase64;
+  final int tamanhoBytes;
+  final String? legenda;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'nomeArquivo': nomeArquivo,
+    'mimeType': mimeType,
+    'conteudoBase64': conteudoBase64,
+    'legenda': legenda,
+  };
+}
+
 class AtendimentoTecnicoModel {
   const AtendimentoTecnicoModel({
     required this.id,
@@ -286,6 +341,8 @@ class AtendimentoTecnicoModel {
     required this.historicoStatus,
     required this.historicoAuditoria,
     required this.recebimentos,
+    this.quantidadeFotos = 0,
+    this.fotos = const <AtendimentoTecnicoFotoModel>[],
     this.idOperacaoFinanceira,
     this.statusNomePtBr,
     this.statusNomeEnUs,
@@ -336,6 +393,8 @@ class AtendimentoTecnicoModel {
   final AtendimentoTecnicoEquipamentoModel? equipamento;
   final String? defeitoRelatado;
   final String? diagnosticoTecnico;
+  final int quantidadeFotos;
+  final List<AtendimentoTecnicoFotoModel> fotos;
   final double valorTotalProdutos;
   final double valorTotalServicos;
   final double valorTotalAtendimento;
@@ -358,8 +417,8 @@ class AtendimentoTecnicoModel {
       idCliente: json['idCliente']?.toString(),
       nomeClienteSnapshot: json['nomeClienteSnapshot']?.toString(),
       idTecnicoResponsavel: json['idTecnicoResponsavel']?.toString(),
-      nomeTecnicoResponsavelSnapshot:
-          json['nomeTecnicoResponsavelSnapshot']?.toString(),
+      nomeTecnicoResponsavelSnapshot: json['nomeTecnicoResponsavelSnapshot']
+          ?.toString(),
       statusId: (json['statusId'] as num?)?.toInt() ?? 0,
       statusCodigo: json['statusCodigo']?.toString() ?? '',
       statusI18nKey: json['statusI18nKey']?.toString() ?? '',
@@ -392,6 +451,8 @@ class AtendimentoTecnicoModel {
       ),
       defeitoRelatado: json['defeitoRelatado']?.toString(),
       diagnosticoTecnico: json['diagnosticoTecnico']?.toString(),
+      quantidadeFotos: (json['quantidadeFotos'] as num?)?.toInt() ?? 0,
+      fotos: _parseFotos(json['fotos']),
       valorTotalProdutos: (json['valorTotalProdutos'] as num?)?.toDouble() ?? 0,
       valorTotalServicos: (json['valorTotalServicos'] as num?)?.toDouble() ?? 0,
       valorTotalAtendimento:
@@ -446,6 +507,14 @@ class AtendimentoTecnicoModel {
     return value
         .whereType<Map<String, dynamic>>()
         .map(AtendimentoTecnicoRecebimentoModel.fromJson)
+        .toList(growable: false);
+  }
+
+  static List<AtendimentoTecnicoFotoModel> _parseFotos(dynamic value) {
+    if (value is! List) return <AtendimentoTecnicoFotoModel>[];
+    return value
+        .whereType<Map<String, dynamic>>()
+        .map(AtendimentoTecnicoFotoModel.fromJson)
         .toList(growable: false);
   }
 }
@@ -810,6 +879,7 @@ class AtendimentoTecnicoCreateInput {
     this.defeitoRelatado,
     this.diagnosticoTecnico,
     this.itens = const <AtendimentoTecnicoItemInput>[],
+    this.fotos = const <AtendimentoTecnicoFotoInput>[],
   });
 
   final DateTime validadeOrcamentoEm;
@@ -826,6 +896,7 @@ class AtendimentoTecnicoCreateInput {
   final String? defeitoRelatado;
   final String? diagnosticoTecnico;
   final List<AtendimentoTecnicoItemInput> itens;
+  final List<AtendimentoTecnicoFotoInput> fotos;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'descricao': descricao,
@@ -837,12 +908,14 @@ class AtendimentoTecnicoCreateInput {
     'prioridadeCodigo': prioridadeCodigo,
     'origemCodigo': origemCodigo,
     'validadeOrcamentoEm': _dateOnly(validadeOrcamentoEm),
-    'dataEntregaPrevista':
-        dataEntregaPrevista == null ? null : _dateOnly(dataEntregaPrevista!),
+    'dataEntregaPrevista': dataEntregaPrevista == null
+        ? null
+        : _dateOnly(dataEntregaPrevista!),
     'equipamento': equipamento?.toJson(),
     'defeitoRelatado': defeitoRelatado,
     'diagnosticoTecnico': diagnosticoTecnico,
     'itens': itens.map((item) => item.toJson()).toList(),
+    'fotos': fotos.map((foto) => foto.toJson()).toList(),
   };
 
   static String _dateOnly(DateTime value) {
@@ -866,6 +939,7 @@ class AtendimentoTecnicoUpdateInput {
     this.defeitoRelatado,
     this.diagnosticoTecnico,
     this.itens = const <AtendimentoTecnicoItemInput>[],
+    this.fotos,
     this.observacaoAuditoria,
   });
 
@@ -880,6 +954,7 @@ class AtendimentoTecnicoUpdateInput {
   final String? defeitoRelatado;
   final String? diagnosticoTecnico;
   final List<AtendimentoTecnicoItemInput> itens;
+  final List<AtendimentoTecnicoFotoInput>? fotos;
   final String? observacaoAuditoria;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -891,14 +966,14 @@ class AtendimentoTecnicoUpdateInput {
     'validadeOrcamentoEm': AtendimentoTecnicoCreateInput._dateOnly(
       validadeOrcamentoEm,
     ),
-    'dataEntregaPrevista':
-        dataEntregaPrevista == null
-            ? null
-            : AtendimentoTecnicoCreateInput._dateOnly(dataEntregaPrevista!),
+    'dataEntregaPrevista': dataEntregaPrevista == null
+        ? null
+        : AtendimentoTecnicoCreateInput._dateOnly(dataEntregaPrevista!),
     'equipamento': equipamento?.toJson(),
     'defeitoRelatado': defeitoRelatado,
     'diagnosticoTecnico': diagnosticoTecnico,
     'itens': itens.map((item) => item.toJson()).toList(),
+    if (fotos != null) 'fotos': fotos!.map((foto) => foto.toJson()).toList(),
     'observacaoAuditoria': observacaoAuditoria,
   };
 }

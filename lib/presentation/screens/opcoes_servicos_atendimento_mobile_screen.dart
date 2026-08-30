@@ -58,10 +58,10 @@ class _OpcoesServicosAtendimentoMobileScreenState
     _ordemCardsController =
         MobileCardOrderPreferenceController<ServicosMobileCardPreferencia>(
             ordemPadrao: ServicosMobileCardPreferencia.values,
-            selecionarOrdem: (preferencias) =>
-                preferencias.ordemCardsServicosMobile,
-            persistirOrdem: (ordem) =>
-                UsuarioService().atualizarPreferenciasIndividuais(
+            selecionarOrdem:
+                (preferencias) => preferencias.ordemCardsServicosMobile,
+            persistirOrdem:
+                (ordem) => UsuarioService().atualizarPreferenciasIndividuais(
                   ordemCardsServicosMobile: ordem
                       .map((item) => item.codigo)
                       .toList(growable: false),
@@ -106,7 +106,7 @@ class _OpcoesServicosAtendimentoMobileScreenState
         assetContorno: _serviceAssetContorno,
         assetAcento: _serviceAssetAcento,
         accentColor: _accentColor,
-        onTap: () => _go(context, AtendimentoTecnicoMobileScreen()),
+        onTap: _abrirNovoServico,
       ),
       ServicosMobileCardPreferencia.servicosEmAndamento: _ServiceActionData(
         preferencia: ServicosMobileCardPreferencia.servicosEmAndamento,
@@ -144,13 +144,14 @@ class _OpcoesServicosAtendimentoMobileScreenState
         assetContorno: _approvalAssetContorno,
         assetAcento: _approvalAssetAcento,
         accentColor: _approvalAccentColor,
-        onTap: () => _go(
-          context,
-          AtendimentosTecnicosMobileScreen(
-            listContext:
-                AtendimentosTecnicosMobileListContext.waitingCustomerApproval(),
-          ),
-        ),
+        onTap:
+            () => _go(
+              context,
+              AtendimentosTecnicosMobileScreen(
+                listContext:
+                    AtendimentosTecnicosMobileListContext.waitingCustomerApproval(),
+              ),
+            ),
       ),
     };
 
@@ -176,67 +177,65 @@ class _OpcoesServicosAtendimentoMobileScreenState
         icon: Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
-      bodyBuilder:
-          (
-            BuildContext context,
-            ScrollController scrollController,
-            double topInset,
-          ) {
-            return SafeArea(
-              top: false,
-              child: LayoutBuilder(
-                builder: (BuildContext context, BoxConstraints constraints) {
-                  const double horizontalPadding = 16;
-                  const double topPadding = 8;
-                  const double bottomPadding = 24;
-                  final double cardHeight = constraints.maxWidth < 340
+      bodyBuilder: (
+        BuildContext context,
+        ScrollController scrollController,
+        double topInset,
+      ) {
+        return SafeArea(
+          top: false,
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              const double horizontalPadding = 16;
+              const double topPadding = 8;
+              const double bottomPadding = 24;
+              final double cardHeight =
+                  constraints.maxWidth < 340
                       ? _serviceCardHeight - 8
                       : _serviceCardHeight;
-                  final double cardWidth =
-                      constraints.maxWidth - (horizontalPadding * 2);
-                  final List<_ServiceActionData> actions = _orderedActions(
-                    context,
-                  );
+              final double cardWidth =
+                  constraints.maxWidth - (horizontalPadding * 2);
+              final List<_ServiceActionData> actions = _orderedActions(context);
 
-                  return ListView(
-                    controller: scrollController,
-                    physics: AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      topInset + topPadding,
-                      horizontalPadding,
-                      bottomPadding,
+              return ListView(
+                controller: scrollController,
+                physics: AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  topInset + topPadding,
+                  horizontalPadding,
+                  bottomPadding,
+                ),
+                children: <Widget>[
+                  for (int index = 0; index < actions.length; index++) ...[
+                    if (index > 0) SizedBox(height: _serviceCardGap),
+                    SixStaggeredEntry(
+                      key: ValueKey<String>(
+                        'servicos-reorder-${actions[index].id}',
+                      ),
+                      delay: Duration(milliseconds: 40 + (index * 55)),
+                      child: SixMobileReorderableCard<
+                        ServicosMobileCardPreferencia
+                      >(
+                        value: actions[index].preferencia,
+                        onReorder: _ordemCardsController.reordenar,
+                        feedbackWidth: cardWidth,
+                        feedbackHeight: cardHeight,
+                        handleColor: actions[index].accentColor,
+                        cardBuilder:
+                            () => _buildServiceActionCard(
+                              data: actions[index],
+                              height: cardHeight,
+                            ),
+                      ),
                     ),
-                    children: <Widget>[
-                      for (int index = 0; index < actions.length; index++) ...[
-                        if (index > 0) SizedBox(height: _serviceCardGap),
-                        SixStaggeredEntry(
-                          key: ValueKey<String>(
-                            'servicos-reorder-${actions[index].id}',
-                          ),
-                          delay: Duration(milliseconds: 40 + (index * 55)),
-                          child:
-                              SixMobileReorderableCard<
-                                ServicosMobileCardPreferencia
-                              >(
-                                value: actions[index].preferencia,
-                                onReorder: _ordemCardsController.reordenar,
-                                feedbackWidth: cardWidth,
-                                feedbackHeight: cardHeight,
-                                handleColor: actions[index].accentColor,
-                                cardBuilder: () => _buildServiceActionCard(
-                                  data: actions[index],
-                                  height: cardHeight,
-                                ),
-                              ),
-                        ),
-                      ],
-                    ],
-                  );
-                },
-              ),
-            );
-          },
+                  ],
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -290,72 +289,72 @@ class _OpcoesServicosAtendimentoMobileScreenState
                     ),
                   ),
                   LayoutBuilder(
-                    builder:
-                        (BuildContext context, BoxConstraints constraints) {
-                          final bool tight = constraints.maxWidth < 330;
-                          final double imageSize =
-                              (constraints.maxWidth * (tight ? 0.25 : 0.28))
-                                  .clamp(76.0, 98.0);
+                    builder: (
+                      BuildContext context,
+                      BoxConstraints constraints,
+                    ) {
+                      final bool tight = constraints.maxWidth < 330;
+                      final double imageSize = (constraints.maxWidth *
+                              (tight ? 0.25 : 0.28))
+                          .clamp(76.0, 98.0);
 
-                          return Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              tight ? 18 : 21,
-                              tight ? 14 : 16,
-                              tight ? 12 : 14,
-                              tight ? 14 : 16,
+                      return Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          tight ? 18 : 21,
+                          tight ? 14 : 16,
+                          tight ? 12 : 14,
+                          tight ? 14 : 16,
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            SizedBox.square(
+                              dimension: imageSize,
+                              child: _buildServiceActionImage(data),
                             ),
-                            child: Row(
-                              children: <Widget>[
-                                SizedBox.square(
-                                  dimension: imageSize,
-                                  child: _buildServiceActionImage(data),
-                                ),
-                                SizedBox(width: tight ? 14 : 16),
-                                Expanded(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: <Widget>[
-                                      Flexible(
-                                        child: Text(
-                                          data.title,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            color: data.accentColor,
-                                            fontSize: tight ? 16.5 : 17.5,
-                                            height: 1.08,
-                                            fontWeight: FontWeight.w900,
-                                          ),
-                                        ),
+                            SizedBox(width: tight ? 14 : 16),
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Flexible(
+                                    child: Text(
+                                      data.title,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: data.accentColor,
+                                        fontSize: tight ? 16.5 : 17.5,
+                                        height: 1.08,
+                                        fontWeight: FontWeight.w900,
                                       ),
-                                      SizedBox(height: tight ? 7 : 8),
-                                      Flexible(
-                                        child: Text(
-                                          data.subtitle,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            color: context
-                                                .sixMobileColors
-                                                .mutedText,
-                                            fontSize: tight ? 11.2 : 12,
-                                            height: 1.2,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                                SizedBox(width: tight ? 8 : 10),
-                                _buildServiceActionArrow(data.accentColor),
-                              ],
+                                  SizedBox(height: tight ? 7 : 8),
+                                  Flexible(
+                                    child: Text(
+                                      data.subtitle,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color:
+                                            context.sixMobileColors.mutedText,
+                                        fontSize: tight ? 11.2 : 12,
+                                        height: 1.2,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          );
-                        },
+                            SizedBox(width: tight ? 8 : 10),
+                            _buildServiceActionArrow(data.accentColor),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -401,9 +400,8 @@ class _OpcoesServicosAtendimentoMobileScreenState
           reforcoContorno: 0.62,
           reforcoAcento: 0.76,
           opacidadeReforco: 0.44,
-          opacidadeBrilho: Theme.of(context).brightness == Brightness.dark
-              ? 0.44
-              : 0.16,
+          opacidadeBrilho:
+              Theme.of(context).brightness == Brightness.dark ? 0.44 : 0.16,
           desfoqueBrilho: 3.4,
         ),
       ),
@@ -433,6 +431,30 @@ class _OpcoesServicosAtendimentoMobileScreenState
     }
 
     Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+  }
+
+  Future<void> _abrirNovoServico() async {
+    final AtendimentoTecnicoCreateFlowResult? result = await Navigator.of(
+      context,
+    ).push<AtendimentoTecnicoCreateFlowResult>(
+      MaterialPageRoute<AtendimentoTecnicoCreateFlowResult>(
+        builder: (_) => AtendimentoTecnicoMobileScreen(),
+      ),
+    );
+
+    if (!mounted || result == null) return;
+    final Widget page = AtendimentosTecnicosMobileScreen(
+      initialFeedbackMessage: result.feedbackMessage,
+    );
+    final ServicosAtendimentoMobileNavigate? navigate = widget.onNavigate;
+    if (navigate != null) {
+      navigate(context, page);
+      return;
+    }
+
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute<void>(builder: (_) => page));
   }
 }
 
