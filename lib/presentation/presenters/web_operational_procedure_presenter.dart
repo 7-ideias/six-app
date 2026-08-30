@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:sixpos/data/models/operational_procedure_flow_models.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
 import 'package:sixpos/domain/services/operational_procedures/operational_procedure_presenter.dart';
-import 'package:sixpos/presentation/screens/operational_procedure_preview_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/operational_procedure_execution_web_dialog.dart';
 
-class MobileOperationalProcedurePresenter
+class WebOperationalProcedurePresenter
     implements OperationalProcedurePresenter {
-  const MobileOperationalProcedurePresenter({required this.context});
+  const WebOperationalProcedurePresenter({required this.context});
 
   final BuildContext context;
 
@@ -20,41 +20,31 @@ class MobileOperationalProcedurePresenter
     if (!context.mounted) {
       return const ProcedurePresentationResult.cancelled();
     }
-
     final ProcedureFlowResult result =
-        await Navigator.of(context).push<ProcedureFlowResult>(
-          MaterialPageRoute<ProcedureFlowResult>(
-            builder: (_) => OperationalProcedurePreviewMobileScreen(
-              procedure: procedure,
-              configuration: configuration.copyWith(
-                procedureIndex: currentIndex,
-                totalProcedures: total,
-              ),
+        await showDialog<ProcedureFlowResult>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => OperationalProcedureExecutionWebDialog(
+            procedure: procedure,
+            configuration: configuration.copyWith(
+              procedureIndex: currentIndex,
+              totalProcedures: total,
             ),
           ),
         ) ??
         const ProcedureFlowResult.cancelled();
-
-    return _mapResult(procedure.id, result);
-  }
-
-  ProcedurePresentationResult _mapResult(
-    String procedureId,
-    ProcedureFlowResult result,
-  ) {
+    final String? executionId = result.executionIds.isEmpty
+        ? null
+        : result.executionIds.first;
     return switch (result.outcome) {
       ProcedureFlowOutcome.continueOperation =>
         ProcedurePresentationResult.completed(
-          procedureId,
-          executionId: result.executionIds.isEmpty
-              ? null
-              : result.executionIds.first,
+          procedure.id,
+          executionId: executionId,
         ),
       ProcedureFlowOutcome.skipped => ProcedurePresentationResult.skipped(
-        procedureId,
-        executionId: result.executionIds.isEmpty
-            ? null
-            : result.executionIds.first,
+        procedure.id,
+        executionId: executionId,
       ),
       ProcedureFlowOutcome.cancelled =>
         const ProcedurePresentationResult.cancelled(),

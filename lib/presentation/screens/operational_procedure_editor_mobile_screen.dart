@@ -44,6 +44,7 @@ class _OperationalProcedureEditorMobileScreenState
   late final TextEditingController _descriptionController;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _dirty = false;
+  bool _saving = false;
   String? _structureError;
 
   @override
@@ -76,16 +77,15 @@ class _OperationalProcedureEditorMobileScreenState
         }
       },
       child: SixMobilePageShell(
-        title:
-            widget.isCreating
-                ? context.t(
-                  'procedimentos.editorNewTitle',
-                  fallback: 'Novo procedimento',
-                )
-                : context.t(
-                  'procedimentos.editorEditTitle',
-                  fallback: 'Editar procedimento',
-                ),
+        title: widget.isCreating
+            ? context.t(
+                'procedimentos.editorNewTitle',
+                fallback: 'Novo procedimento',
+              )
+            : context.t(
+                'procedimentos.editorEditTitle',
+                fallback: 'Editar procedimento',
+              ),
         backgroundColor: _backgroundColor,
         primaryColor: _primaryColor,
         secondaryColor: _secondaryColor,
@@ -101,7 +101,7 @@ class _OperationalProcedureEditorMobileScreenState
             icon: Icon(Icons.play_circle_outline_rounded),
           ),
           TextButton(
-            onPressed: _save,
+            onPressed: _saving ? null : _save,
             child: Text(
               context.t('common.save', fallback: 'Salvar'),
               style: TextStyle(
@@ -111,224 +111,265 @@ class _OperationalProcedureEditorMobileScreenState
             ),
           ),
         ],
-        bodyBuilder: (
-          BuildContext context,
-          ScrollController scrollController,
-          double topInset,
-        ) {
-          return SafeArea(
-            top: false,
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                controller: scrollController,
-                physics: AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
-                children: <Widget>[
-                  _DemoNotice(),
-                  SizedBox(height: 14),
-                  _SectionCard(
-                    title: context.t(
-                      'procedimentos.generalInfo',
-                      fallback: 'Informações gerais',
-                    ),
-                    child: Column(
-                      children: <Widget>[
-                        TextFormField(
-                          controller: _nameController,
-                          textInputAction: TextInputAction.next,
-                          decoration: InputDecoration(
-                            labelText: context.t(
-                              'procedimentos.nameField',
-                              fallback: 'Nome',
-                            ),
-                          ),
-                          validator: (String? value) {
-                            if ((value ?? '').trim().isEmpty) {
-                              return context.t(
-                                'procedimentos.validationName',
-                                fallback: 'Informe o nome do procedimento.',
-                              );
-                            }
-                            return null;
-                          },
-                          onChanged: (String value) {
-                            _updateDraft(_draft.copyWith(name: value.trim()));
-                          },
+        bodyBuilder:
+            (
+              BuildContext context,
+              ScrollController scrollController,
+              double topInset,
+            ) {
+              return SafeArea(
+                top: false,
+                child: Form(
+                  key: _formKey,
+                  child: ListView(
+                    controller: scrollController,
+                    physics: AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
+                    children: <Widget>[
+                      _DemoNotice(),
+                      SizedBox(height: 14),
+                      _SectionCard(
+                        title: context.t(
+                          'procedimentos.generalInfo',
+                          fallback: 'Informações gerais',
                         ),
-                        SizedBox(height: 12),
-                        TextFormField(
-                          controller: _descriptionController,
-                          minLines: 2,
-                          maxLines: 4,
-                          decoration: InputDecoration(
-                            labelText: context.t(
-                              'procedimentos.descriptionField',
-                              fallback: 'Descrição',
-                            ),
-                          ),
-                          onChanged: (String value) {
-                            _updateDraft(
-                              _draft.copyWith(description: value.trim()),
-                            );
-                          },
-                        ),
-                        SizedBox(height: 12),
-                        _SelectorTile(
-                          label: context.t(
-                            'procedimentos.operationContext',
-                            fallback: 'Contexto operacional',
-                          ),
-                          value: operationTypeLabel(
-                            context,
-                            _draft.operationType,
-                          ),
-                          icon: Icons.storefront_outlined,
-                          onTap: _selectOperationType,
-                        ),
-                        SizedBox(height: 10),
-                        _SelectorTile(
-                          label: context.t(
-                            'procedimentos.momentField',
-                            fallback: 'Momento',
-                          ),
-                          value: momentLabel(context, _draft.moment),
-                          icon: Icons.schedule_outlined,
-                          onTap: _selectMoment,
-                        ),
-                        SizedBox(height: 8),
-                        SwitchListTile.adaptive(
-                          value: _draft.isActive,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            context.t('common.active', fallback: 'Ativo'),
-                          ),
-                          onChanged: (bool value) {
-                            _updateDraft(
-                              context
-                                  .read<OperationalProcedureProvider>()
-                                  .setProcedureActive(_draft, value),
-                            );
-                          },
-                        ),
-                        SwitchListTile.adaptive(
-                          value: _draft.required,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            context.t(
-                              'procedimentos.requireCompletion',
-                              fallback: 'Exigir conclusão deste procedimento',
-                            ),
-                          ),
-                          subtitle: Text(
-                            context.t(
-                              'procedimentos.requireCompletionHelp',
-                              fallback:
-                                  'Na integração futura, esse procedimento poderá exigir conclusão antes de continuar a operação.',
-                            ),
-                          ),
-                          onChanged: (bool value) {
-                            _updateDraft(_draft.copyWith(required: value));
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 14),
-                  _SectionCard(
-                    title: context.t(
-                      'procedimentos.whenExecute',
-                      fallback: 'Quando executar',
-                    ),
-                    trailing: TextButton.icon(
-                      onPressed: _addTrigger,
-                      icon: Icon(Icons.add_rounded),
-                      label: Text(
-                        context.t(
-                          'procedimentos.addTrigger',
-                          fallback: 'Adicionar gatilho',
-                        ),
-                      ),
-                    ),
-                    child: _buildTriggersSection(reduceMotion),
-                  ),
-                  SizedBox(height: 14),
-                  _SectionCard(
-                    title: context.t(
-                      'procedimentos.stages',
-                      fallback: 'Etapas',
-                    ),
-                    trailing: TextButton.icon(
-                      onPressed: _addStage,
-                      icon: Icon(Icons.add_rounded),
-                      label: Text(
-                        context.t(
-                          'procedimentos.addStage',
-                          fallback: 'Adicionar etapa',
-                        ),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        if (_structureError != null) ...<Widget>[
-                          Semantics(
-                            liveRegion: true,
-                            child: Text(
-                              _structureError!,
-                              style: TextStyle(
-                                color: SixMobilePalette.error,
-                                fontWeight: FontWeight.w800,
+                        child: Column(
+                          children: <Widget>[
+                            TextFormField(
+                              controller: _nameController,
+                              textInputAction: TextInputAction.next,
+                              decoration: InputDecoration(
+                                labelText: context.t(
+                                  'procedimentos.nameField',
+                                  fallback: 'Nome',
+                                ),
                               ),
+                              validator: (String? value) {
+                                if ((value ?? '').trim().isEmpty) {
+                                  return context.t(
+                                    'procedimentos.validationName',
+                                    fallback: 'Informe o nome do procedimento.',
+                                  );
+                                }
+                                return null;
+                              },
+                              onChanged: (String value) {
+                                _updateDraft(
+                                  _draft.copyWith(name: value.trim()),
+                                );
+                              },
+                            ),
+                            SizedBox(height: 12),
+                            TextFormField(
+                              controller: _descriptionController,
+                              minLines: 2,
+                              maxLines: 4,
+                              decoration: InputDecoration(
+                                labelText: context.t(
+                                  'procedimentos.descriptionField',
+                                  fallback: 'Descrição',
+                                ),
+                              ),
+                              onChanged: (String value) {
+                                _updateDraft(
+                                  _draft.copyWith(description: value.trim()),
+                                );
+                              },
+                            ),
+                            SizedBox(height: 12),
+                            _SelectorTile(
+                              label: context.t(
+                                'procedimentos.operationContext',
+                                fallback: 'Contexto operacional',
+                              ),
+                              value: operationTypeLabel(
+                                context,
+                                _draft.operationType,
+                              ),
+                              icon: Icons.storefront_outlined,
+                              onTap: _selectOperationType,
+                            ),
+                            SizedBox(height: 10),
+                            _SelectorTile(
+                              label: context.t(
+                                'procedimentos.momentField',
+                                fallback: 'Momento',
+                              ),
+                              value: momentLabel(context, _draft.moment),
+                              icon: Icons.schedule_outlined,
+                              onTap: _selectMoment,
+                            ),
+                            SizedBox(height: 8),
+                            SwitchListTile.adaptive(
+                              value: _draft.isActive,
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                context.t('common.active', fallback: 'Ativo'),
+                              ),
+                              onChanged: (bool value) {
+                                _updateDraft(
+                                  context
+                                      .read<OperationalProcedureProvider>()
+                                      .setProcedureActive(_draft, value),
+                                );
+                              },
+                            ),
+                            SwitchListTile.adaptive(
+                              value: _draft.required,
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                context.t(
+                                  'procedimentos.requireCompletion',
+                                  fallback:
+                                      'Exigir conclusão deste procedimento',
+                                ),
+                              ),
+                              subtitle: Text(
+                                context.t(
+                                  'procedimentos.requireCompletionHelp',
+                                  fallback:
+                                      'Na integração futura, esse procedimento poderá exigir conclusão antes de continuar a operação.',
+                                ),
+                              ),
+                              onChanged: (bool value) {
+                                _updateDraft(_draft.copyWith(required: value));
+                              },
+                            ),
+                            const Divider(height: 24),
+                            SwitchListTile.adaptive(
+                              value: _draft.adminNotification.enabled,
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                context.t(
+                                  'procedimentos.notifyAdmin',
+                                  fallback: 'Notificar ADMIN por push',
+                                ),
+                              ),
+                              subtitle: Text(
+                                context.t(
+                                  'procedimentos.notifyAdminHelp',
+                                  fallback:
+                                      'Avisa os administradores ativos quando a condição ocorrer.',
+                                ),
+                              ),
+                              onChanged: (bool value) {
+                                _updateDraft(
+                                  _draft.copyWith(
+                                    adminNotification: _draft.adminNotification
+                                        .copyWith(enabled: value),
+                                  ),
+                                );
+                              },
+                            ),
+                            if (_draft.adminNotification.enabled)
+                              _SelectorTile(
+                                label: context.t(
+                                  'procedimentos.notificationCondition',
+                                  fallback: 'Quando notificar',
+                                ),
+                                value: _notificationConditionLabel(
+                                  _draft.adminNotification.condition,
+                                ),
+                                icon: Icons.notifications_active_outlined,
+                                onTap: _selectNotificationCondition,
+                              ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 14),
+                      _SectionCard(
+                        title: context.t(
+                          'procedimentos.whenExecute',
+                          fallback: 'Quando executar',
+                        ),
+                        trailing: TextButton.icon(
+                          onPressed: _addTrigger,
+                          icon: Icon(Icons.add_rounded),
+                          label: Text(
+                            context.t(
+                              'procedimentos.addTrigger',
+                              fallback: 'Adicionar gatilho',
                             ),
                           ),
-                          SizedBox(height: 10),
-                        ],
-                        AnimatedSwitcher(
-                          duration:
-                              reduceMotion
+                        ),
+                        child: _buildTriggersSection(reduceMotion),
+                      ),
+                      SizedBox(height: 14),
+                      _SectionCard(
+                        title: context.t(
+                          'procedimentos.stages',
+                          fallback: 'Etapas',
+                        ),
+                        trailing: TextButton.icon(
+                          onPressed: _addStage,
+                          icon: Icon(Icons.add_rounded),
+                          label: Text(
+                            context.t(
+                              'procedimentos.addStage',
+                              fallback: 'Adicionar etapa',
+                            ),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            if (_structureError != null) ...<Widget>[
+                              Semantics(
+                                liveRegion: true,
+                                child: Text(
+                                  _structureError!,
+                                  style: TextStyle(
+                                    color: SixMobilePalette.error,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 10),
+                            ],
+                            AnimatedSwitcher(
+                              duration: reduceMotion
                                   ? Duration.zero
                                   : Duration(milliseconds: 180),
-                          child:
-                              _draft.stages.isEmpty
+                              child: _draft.stages.isEmpty
                                   ? _EmptyInline(
-                                    message: context.t(
-                                      'procedimentos.noStages',
-                                      fallback:
-                                          'Adicione pelo menos uma etapa.',
-                                    ),
-                                  )
+                                      message: context.t(
+                                        'procedimentos.noStages',
+                                        fallback:
+                                            'Adicione pelo menos uma etapa.',
+                                      ),
+                                    )
                                   : Column(
-                                    key: ValueKey<int>(_draft.stages.length),
-                                    children:
-                                        _draft.stages.map(_buildStage).toList(),
-                                  ),
+                                      key: ValueKey<int>(_draft.stages.length),
+                                      children: _draft.stages
+                                          .map(_buildStage)
+                                          .toList(),
+                                    ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 14),
-                  OperationalProcedureNewAction(
-                    onTap: _save,
-                    label: context.t('common.save', fallback: 'Salvar'),
-                    icon: Icons.check_rounded,
-                  ),
-                  SizedBox(height: 10),
-                  OutlinedButton.icon(
-                    onPressed: _openPreview,
-                    icon: Icon(Icons.play_circle_outline_rounded),
-                    label: Text(
-                      context.t(
-                        'procedimentos.previewAction',
-                        fallback: 'Pré-visualizar',
                       ),
-                    ),
+                      SizedBox(height: 14),
+                      OperationalProcedureNewAction(
+                        onTap: _save,
+                        label: context.t('common.save', fallback: 'Salvar'),
+                        icon: Icons.check_rounded,
+                      ),
+                      SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        onPressed: _openPreview,
+                        icon: Icon(Icons.play_circle_outline_rounded),
+                        label: Text(
+                          context.t(
+                            'procedimentos.previewAction',
+                            fallback: 'Pré-visualizar',
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          );
-        },
+                ),
+              );
+            },
       ),
     );
   }
@@ -431,53 +472,52 @@ class _OperationalProcedureEditorMobileScreenState
   Widget _buildTriggersSection(bool reduceMotion) {
     return AnimatedSwitcher(
       duration: reduceMotion ? Duration.zero : Duration(milliseconds: 180),
-      child:
-          _draft.triggers.isEmpty
-              ? _EmptyInline(
-                key: ValueKey<String>('triggers-empty'),
-                message: context.t(
-                  'procedimentos.noTriggers',
-                  fallback: 'Nenhum gatilho configurado.',
-                ),
-                description: context.t(
-                  'procedimentos.noTriggersDescription',
-                  fallback:
-                      'Sem gatilhos, o procedimento ficará disponível apenas para uso e pré-visualização dentro deste módulo.',
-                ),
-              )
-              : Column(
-                key: ValueKey<int>(_draft.triggers.length),
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    context.t(
-                      'procedimentos.triggerCount',
-                      fallback:
-                          '${_draft.triggers.length} gatilho(s) configurado(s)',
-                    ),
-                    style: TextStyle(
-                      color: SixMobilePalette.mutedText,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  ..._draft.triggers.map((ProcedureTrigger trigger) {
-                    return OperationalProcedureTriggerCard(
-                      trigger: trigger,
-                      onTap: () => _editTrigger(trigger),
-                      onEdit: () => _editTrigger(trigger),
-                      onDelete: () => _deleteTrigger(trigger),
-                      onEnabledChanged: (bool enabled) {
-                        _updateDraft(
-                          context
-                              .read<OperationalProcedureProvider>()
-                              .setTriggerEnabled(_draft, trigger, enabled),
-                        );
-                      },
-                    );
-                  }),
-                ],
+      child: _draft.triggers.isEmpty
+          ? _EmptyInline(
+              key: ValueKey<String>('triggers-empty'),
+              message: context.t(
+                'procedimentos.noTriggers',
+                fallback: 'Nenhum gatilho configurado.',
               ),
+              description: context.t(
+                'procedimentos.noTriggersDescription',
+                fallback:
+                    'Sem gatilhos, o procedimento ficará disponível apenas para uso e pré-visualização dentro deste módulo.',
+              ),
+            )
+          : Column(
+              key: ValueKey<int>(_draft.triggers.length),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  context.t(
+                    'procedimentos.triggerCount',
+                    fallback:
+                        '${_draft.triggers.length} gatilho(s) configurado(s)',
+                  ),
+                  style: TextStyle(
+                    color: SixMobilePalette.mutedText,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 10),
+                ..._draft.triggers.map((ProcedureTrigger trigger) {
+                  return OperationalProcedureTriggerCard(
+                    trigger: trigger,
+                    onTap: () => _editTrigger(trigger),
+                    onEdit: () => _editTrigger(trigger),
+                    onDelete: () => _deleteTrigger(trigger),
+                    onEnabledChanged: (bool enabled) {
+                      _updateDraft(
+                        context
+                            .read<OperationalProcedureProvider>()
+                            .setTriggerEnabled(_draft, trigger, enabled),
+                      );
+                    },
+                  );
+                }),
+              ],
+            ),
     );
   }
 
@@ -496,16 +536,79 @@ class _OperationalProcedureEditorMobileScreenState
             'procedimentos.operationContext',
             fallback: 'Contexto operacional',
           ),
-          options: ProcedureOperationType.values,
+          options: const <ProcedureOperationType>[
+            ProcedureOperationType.sale,
+            ProcedureOperationType.technicalService,
+            ProcedureOperationType.cashRegister,
+          ],
           selected: _draft.operationType,
-          labelBuilder:
-              (ProcedureOperationType value) =>
-                  operationTypeLabel(context, value),
+          labelBuilder: (ProcedureOperationType value) =>
+              operationTypeLabel(context, value),
           iconBuilder: (_) => Icons.storefront_outlined,
         );
     if (selected != null) {
-      _updateDraft(_draft.copyWith(operationType: selected));
+      final ProcedureOperationPoint point = switch (selected) {
+        ProcedureOperationType.technicalService =>
+          ProcedureOperationPoint.technicalServiceStartBefore,
+        ProcedureOperationType.cashRegister =>
+          ProcedureOperationPoint.cashRegisterStartBefore,
+        _ => ProcedureOperationPoint.saleStartBefore,
+      };
+      _updateDraft(
+        _draft.copyWith(
+          operationType: selected,
+          triggers: _draft.triggers
+              .map(
+                (ProcedureTrigger trigger) => trigger.copyWith(
+                  operationType: selected,
+                  operationPoint: point,
+                ),
+              )
+              .toList(growable: false),
+        ),
+      );
     }
+  }
+
+  Future<void> _selectNotificationCondition() async {
+    final ProcedureAdminNotificationCondition? selected =
+        await _showOptionSheet<ProcedureAdminNotificationCondition>(
+          title: context.t(
+            'procedimentos.notificationCondition',
+            fallback: 'Quando notificar',
+          ),
+          options: ProcedureAdminNotificationCondition.values,
+          selected: _draft.adminNotification.condition,
+          labelBuilder: _notificationConditionLabel,
+          iconBuilder: (_) => Icons.notifications_active_outlined,
+        );
+    if (selected == null) return;
+    _updateDraft(
+      _draft.copyWith(
+        adminNotification: _draft.adminNotification.copyWith(
+          condition: selected,
+        ),
+      ),
+    );
+  }
+
+  String _notificationConditionLabel(
+    ProcedureAdminNotificationCondition condition,
+  ) {
+    return switch (condition) {
+      ProcedureAdminNotificationCondition.always => context.t(
+        'procedimentos.notificationAlways',
+        fallback: 'Em toda execução',
+      ),
+      ProcedureAdminNotificationCondition.negativeResponse => context.t(
+        'procedimentos.notificationNegative',
+        fallback: 'Ao registrar resposta negativa',
+      ),
+      ProcedureAdminNotificationCondition.procedureSkipped => context.t(
+        'procedimentos.notificationSkipped',
+        fallback: 'Ao ignorar o procedimento',
+      ),
+    };
   }
 
   Future<void> _selectMoment() async {
@@ -573,11 +676,10 @@ class _OperationalProcedureEditorMobileScreenState
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder:
-          (_) => OperationalProcedureTriggerEditorSheet(
-            trigger: trigger,
-            existingTriggers: _draft.triggers,
-          ),
+      builder: (_) => OperationalProcedureTriggerEditorSheet(
+        trigger: trigger,
+        existingTriggers: _draft.triggers,
+      ),
     );
   }
 
@@ -737,18 +839,17 @@ class _OperationalProcedureEditorMobileScreenState
     FocusScope.of(context).unfocus();
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder:
-            (_) => OperationalProcedurePreviewMobileScreen(
-              procedure: _draft.copyWith(
-                name: _nameController.text.trim(),
-                description: _descriptionController.text.trim(),
-              ),
-            ),
+        builder: (_) => OperationalProcedurePreviewMobileScreen(
+          procedure: _draft.copyWith(
+            name: _nameController.text.trim(),
+            description: _descriptionController.text.trim(),
+          ),
+        ),
       ),
     );
   }
 
-  void _save() {
+  Future<void> _save() async {
     FocusScope.of(context).unfocus();
     final bool validForm = _formKey.currentState?.validate() ?? false;
     final String? structureError = _validateStructure();
@@ -769,12 +870,31 @@ class _OperationalProcedureEditorMobileScreenState
       return;
     }
 
-    context.read<OperationalProcedureProvider>().saveProcedure(
-      _draft.copyWith(
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim(),
-      ),
-    );
+    setState(() => _saving = true);
+    final OperationalProcedure? persisted = await context
+        .read<OperationalProcedureProvider>()
+        .saveProcedure(
+          _draft.copyWith(
+            name: _nameController.text.trim(),
+            description: _descriptionController.text.trim(),
+          ),
+        );
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (persisted == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'procedimentos.saveError',
+              fallback: 'Não foi possível salvar o procedimento.',
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     _dirty = false;
     Navigator.of(context).pop(true);
   }
@@ -830,17 +950,17 @@ class _DemoNotice extends StatelessWidget {
       children: <Widget>[
         OperationalProcedureDemoBadge(
           label: context.t(
-            'procedimentos.demoData',
-            fallback: 'Dados demonstrativos',
+            'procedimentos.persistedConfiguration',
+            fallback: 'Configuração sincronizada',
           ),
         ),
         SizedBox(width: 10),
         Expanded(
           child: Text(
             context.t(
-              'procedimentos.editorDemoNotice',
+              'procedimentos.editorPersistenceNotice',
               fallback:
-                  'As alterações serão mantidas apenas durante esta sessão.',
+                  'As alterações são salvas para a empresa e respeitam o idioma atual.',
             ),
             style: TextStyle(
               color: SixMobilePalette.heroSupportingText,
@@ -1004,22 +1124,20 @@ class _OptionSheet<T> extends StatelessWidget {
       title: title,
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children:
-            options.map((T value) {
-              final bool isSelected = value == selected;
-              final String label = labelBuilder(value);
-              return ListTile(
-                leading: Icon(iconBuilder(value)),
-                title: Text(label),
-                subtitle:
-                    descriptionBuilder == null
-                        ? null
-                        : Text(descriptionBuilder!(value)),
-                trailing: isSelected ? Icon(Icons.check_rounded) : null,
-                selected: isSelected,
-                onTap: () => Navigator.of(context).pop(value),
-              );
-            }).toList(),
+        children: options.map((T value) {
+          final bool isSelected = value == selected;
+          final String label = labelBuilder(value);
+          return ListTile(
+            leading: Icon(iconBuilder(value)),
+            title: Text(label),
+            subtitle: descriptionBuilder == null
+                ? null
+                : Text(descriptionBuilder!(value)),
+            trailing: isSelected ? Icon(Icons.check_rounded) : null,
+            selected: isSelected,
+            onTap: () => Navigator.of(context).pop(value),
+          );
+        }).toList(),
       ),
     );
   }
@@ -1058,10 +1176,9 @@ class _StageEditorSheetState extends State<_StageEditorSheet> {
   @override
   Widget build(BuildContext context) {
     return _SheetSurface(
-      title:
-          widget.stage == null
-              ? context.t('procedimentos.addStage', fallback: 'Adicionar etapa')
-              : context.t('procedimentos.editStage', fallback: 'Editar etapa'),
+      title: widget.stage == null
+          ? context.t('procedimentos.addStage', fallback: 'Adicionar etapa')
+          : context.t('procedimentos.editStage', fallback: 'Editar etapa'),
       child: Form(
         key: _formKey,
         child: Column(

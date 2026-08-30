@@ -1,23 +1,28 @@
 import 'package:flutter/foundation.dart';
-import 'package:sixpos/data/datasources/operational_procedure_mock_data_source.dart';
+import 'package:sixpos/data/datasources/operational_procedure_data_source.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
+import 'package:sixpos/data/services/operational_procedures/operational_procedure_api_client.dart';
 
 class OperationalProcedureProvider extends ChangeNotifier {
   OperationalProcedureProvider({
-    required OperationalProcedureMockDataSource dataSource,
-  }) : _dataSource = dataSource;
+    OperationalProcedureDataSource? dataSource,
+    this.localeTag = 'pt-BR',
+  }) : _dataSource = dataSource ?? HttpOperationalProcedureApiClient();
 
-  final OperationalProcedureMockDataSource _dataSource;
+  final OperationalProcedureDataSource _dataSource;
+  final String localeTag;
 
   OperationalProcedureSummary? _summary;
   OperationalProcedureFilter _filter = OperationalProcedureFilter.all;
   bool _isLoading = false;
+  bool _isSaving = false;
   String? _errorMessage;
   int _localIdSeed = 0;
 
   OperationalProcedureSummary? get summary => _summary;
   OperationalProcedureFilter get filter => _filter;
   bool get isLoading => _isLoading;
+  bool get isSaving => _isSaving;
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
   bool get isEmpty =>
@@ -45,7 +50,7 @@ class OperationalProcedureProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _summary = await _dataSource.fetchProcedures();
+      _summary = await _dataSource.fetchProcedures(idioma: localeTag);
     } catch (_) {
       _summary = null;
       _errorMessage = 'Não foi possível carregar os procedimentos.';
@@ -87,8 +92,11 @@ class OperationalProcedureProvider extends ChangeNotifier {
     );
   }
 
-  void saveProcedure(OperationalProcedure procedure) {
+  Future<OperationalProcedure?> saveProcedure(
+    OperationalProcedure procedure,
+  ) async {
     final DateTime now = DateTime.now();
+    final OperationalProcedureSummary? previousSummary = _summary;
     final List<OperationalProcedure> current = List<OperationalProcedure>.of(
       procedures,
     );
@@ -98,6 +106,7 @@ class OperationalProcedureProvider extends ChangeNotifier {
     final OperationalProcedure normalized = _normalizeProcedure(
       procedure.copyWith(updatedAt: now),
     );
+    final bool isCreating = index < 0;
 
     if (index >= 0) {
       current[index] = normalized;
@@ -110,11 +119,41 @@ class OperationalProcedureProvider extends ChangeNotifier {
       isDemonstrationData: isDemonstrationData,
     );
     _errorMessage = null;
+    _isSaving = true;
     notifyListeners();
+
+    try {
+      final OperationalProcedure persisted = await _dataSource.saveProcedure(
+        procedure: normalized,
+        idioma: localeTag,
+        isCreating: isCreating,
+      );
+      final List<OperationalProcedure> persistedList =
+          List<OperationalProcedure>.of(procedures);
+      final int optimisticIndex = persistedList.indexWhere(
+        (OperationalProcedure item) => item.id == normalized.id,
+      );
+      if (optimisticIndex >= 0) {
+        persistedList[optimisticIndex] = _normalizeProcedure(persisted);
+      }
+      _summary = OperationalProcedureSummary(
+        procedures: persistedList,
+        isDemonstrationData: isDemonstrationData,
+      );
+      return persisted;
+    } catch (_) {
+      _summary = previousSummary;
+      _errorMessage = 'Não foi possível salvar o procedimento.';
+      return null;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
   }
 
-  void updateProcedure(OperationalProcedure procedure) =>
-      saveProcedure(procedure);
+  Future<OperationalProcedure?> updateProcedure(
+    OperationalProcedure procedure,
+  ) => saveProcedure(procedure);
 
   OperationalProcedure addStage(
     OperationalProcedure procedure,

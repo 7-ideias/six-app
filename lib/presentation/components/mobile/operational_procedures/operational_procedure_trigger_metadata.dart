@@ -50,12 +50,11 @@ List<ProcedureTriggerMoment> triggerMomentsForOperation(
 List<ProcedureOperationType> publishedMobileOperationTypes({
   ProcedureOperationType? current,
 }) {
-  final List<ProcedureOperationType> values =
-      procedureOperationPointCatalog
-          .publishedFor(ProcedurePlatform.mobile)
-          .map((ProcedureOperationPoint point) => point.operationType)
-          .toSet()
-          .toList();
+  final List<ProcedureOperationType> values = procedureOperationPointCatalog
+      .publishedFor(ProcedurePlatform.mobile)
+      .map((ProcedureOperationPoint point) => point.operationType)
+      .toSet()
+      .toList();
   if (current != null && !values.contains(current)) values.add(current);
   return values;
 }
@@ -64,16 +63,14 @@ List<ProcedureTriggerMoment> publishedMobileMomentsForOperation(
   ProcedureOperationType operationType, {
   ProcedureTriggerMoment? current,
 }) {
-  final List<ProcedureTriggerMoment> values =
-      procedureOperationPointCatalog
-          .publishedFor(ProcedurePlatform.mobile)
-          .where(
-            (ProcedureOperationPoint point) =>
-                point.operationType == operationType,
-          )
-          .map((ProcedureOperationPoint point) => point.triggerMoment)
-          .toSet()
-          .toList();
+  final List<ProcedureTriggerMoment> values = procedureOperationPointCatalog
+      .publishedFor(ProcedurePlatform.mobile)
+      .where(
+        (ProcedureOperationPoint point) => point.operationType == operationType,
+      )
+      .map((ProcedureOperationPoint point) => point.triggerMoment)
+      .toSet()
+      .toList();
   if (current != null && !values.contains(current)) values.add(current);
   return values;
 }
@@ -169,6 +166,14 @@ String operationPointLabel(
       'procedimentos.operationPointSaleStartBefore',
       fallback: 'Antes de iniciar uma venda',
     ),
+    ProcedureOperationPoint.technicalServiceStartBefore => context.t(
+      'procedimentos.operationPointTechnicalServiceStartBefore',
+      fallback: 'Antes de iniciar um atendimento técnico',
+    ),
+    ProcedureOperationPoint.cashRegisterStartBefore => context.t(
+      'procedimentos.operationPointCashRegisterStartBefore',
+      fallback: 'Antes de acessar as operações de caixa',
+    ),
   };
 }
 
@@ -180,6 +185,14 @@ String operationPointDescription(
     ProcedureOperationPoint.saleStartBefore => context.t(
       'procedimentos.operationPointSaleStartBeforeDescription',
       fallback: 'Executado antes de abrir o fluxo de uma nova venda.',
+    ),
+    ProcedureOperationPoint.technicalServiceStartBefore => context.t(
+      'procedimentos.operationPointTechnicalServiceStartBeforeDescription',
+      fallback: 'Executado antes de abrir o fluxo de atendimento técnico.',
+    ),
+    ProcedureOperationPoint.cashRegisterStartBefore => context.t(
+      'procedimentos.operationPointCashRegisterStartBeforeDescription',
+      fallback: 'Executado antes de abrir as operações de caixa.',
     ),
   };
 }
@@ -212,8 +225,7 @@ String activationModeDescription(
     ),
     ProcedureTriggerActivationMode.automatic => context.t(
       'procedimentos.activationAutomaticDescription',
-      fallback:
-          'Na integração futura, o procedimento será apresentado no momento configurado.',
+      fallback: 'O procedimento será apresentado no momento configurado.',
     ),
   };
 }
@@ -253,7 +265,7 @@ String enforcementModeDescription(
     ),
     ProcedureEnforcementMode.required => context.t(
       'procedimentos.enforcementRequiredDescription',
-      fallback: 'Na integração futura, exigirá conclusão antes de continuar.',
+      fallback: 'Exige conclusão antes de continuar.',
     ),
   };
 }

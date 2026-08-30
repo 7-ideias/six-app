@@ -7,6 +7,8 @@ void main() {
     test('returns operation types and moments published for mobile', () {
       expect(publishedMobileOperationTypes(), <ProcedureOperationType>[
         ProcedureOperationType.sale,
+        ProcedureOperationType.technicalService,
+        ProcedureOperationType.cashRegister,
       ]);
       expect(
         publishedMobileMomentsForOperation(ProcedureOperationType.sale),

@@ -1675,6 +1675,35 @@ const Map<String, Map<String, String>> _fallbacks = {
     'procedimentos.previewNegativeTextHint': 'Digite o que faltou',
     'procedimentos.operationalLoadError':
         'Não foi possível carregar os procedimentos.',
+    'procedimentos.operationalBadge': 'Procedimento operacional',
+    'procedimentos.operationalExecutionTitleReal': 'Procedimento operacional',
+    'procedimentos.executionWillBeSaved':
+        'As respostas e o horário serão salvos ao concluir.',
+    'procedimentos.completeAndContinue': 'Concluir e continuar',
+    'procedimentos.continueOperation': 'Continuar operação',
+    'procedimentos.executionSaveError':
+        'Não foi possível salvar as respostas. Tente novamente.',
+    'procedimentos.persistedConfiguration': 'Configuração sincronizada',
+    'procedimentos.editorPersistenceNotice':
+        'As alterações são salvas para a empresa e respeitam o idioma atual.',
+    'procedimentos.notifyAdmin': 'Notificar ADMIN por push',
+    'procedimentos.notifyAdminHelp':
+        'Avisa os administradores ativos quando a condição ocorrer.',
+    'procedimentos.notificationCondition': 'Quando notificar',
+    'procedimentos.notificationAlways': 'Em toda execução',
+    'procedimentos.notificationNegative': 'Ao registrar resposta negativa',
+    'procedimentos.notificationSkipped': 'Ao ignorar o procedimento',
+    'procedimentos.analyticsTitle': 'Análise de resultados',
+    'procedimentos.analyticsExecutions': 'Execuções',
+    'procedimentos.analyticsCompletion': 'Taxa de conclusão',
+    'procedimentos.analyticsNegative': 'Respostas negativas',
+    'procedimentos.analyticsAverageTime': 'Tempo médio',
+    'procedimentos.analyticsByQuestion': 'Resultados por pergunta',
+    'procedimentos.analyticsRecent': 'Execuções recentes',
+    'procedimentos.analyticsEmpty': 'Ainda não há execuções neste período.',
+    'procedimentos.contextSale': 'Venda',
+    'procedimentos.contextTechnicalService': 'Atendimento técnico',
+    'procedimentos.contextCashRegister': 'Caixa',
 
     // Gestão — seções
     'gestao.title': 'Gestão',
@@ -3572,6 +3601,36 @@ const Map<String, Map<String, String>> _fallbacks = {
     'procedimentos.previewNegativeTextLabel': 'What was missing?',
     'procedimentos.previewNegativeTextHint': 'Describe what was missing',
     'procedimentos.operationalLoadError': 'Could not load procedures.',
+    'procedimentos.operationalBadge': 'Operational procedure',
+    'procedimentos.operationalExecutionTitleReal': 'Operational procedure',
+    'procedimentos.executionWillBeSaved':
+        'Answers and timestamps will be saved when you finish.',
+    'procedimentos.completeAndContinue': 'Complete and continue',
+    'procedimentos.continueOperation': 'Continue operation',
+    'procedimentos.executionSaveError':
+        'Could not save the answers. Please try again.',
+    'procedimentos.persistedConfiguration': 'Synced configuration',
+    'procedimentos.editorPersistenceNotice':
+        'Changes are saved for the company in the current language.',
+    'procedimentos.notifyAdmin': 'Send push notification to ADMIN',
+    'procedimentos.notifyAdminHelp':
+        'Notifies active administrators when the condition occurs.',
+    'procedimentos.notificationCondition': 'When to notify',
+    'procedimentos.notificationAlways': 'On every execution',
+    'procedimentos.notificationNegative': 'When an answer is negative',
+    'procedimentos.notificationSkipped': 'When the procedure is skipped',
+    'procedimentos.analyticsTitle': 'Results analysis',
+    'procedimentos.analyticsExecutions': 'Executions',
+    'procedimentos.analyticsCompletion': 'Completion rate',
+    'procedimentos.analyticsNegative': 'Negative answers',
+    'procedimentos.analyticsAverageTime': 'Average time',
+    'procedimentos.analyticsByQuestion': 'Results by question',
+    'procedimentos.analyticsRecent': 'Recent executions',
+    'procedimentos.analyticsEmpty':
+        'There are no executions in this period yet.',
+    'procedimentos.contextSale': 'Sale',
+    'procedimentos.contextTechnicalService': 'Technical service',
+    'procedimentos.contextCashRegister': 'Cash register',
     'auth.loginRequiredFields': 'Please fill in email and password',
     'auth.loginTitleMobile': 'Sign in',
     'auth.loginSubtitleMobile':
@@ -5751,6 +5810,35 @@ const Map<String, Map<String, String>> _fallbacks = {
     'procedimentos.previewNegativeTextHint': 'Describe qué faltó',
     'procedimentos.operationalLoadError':
         'No fue posible cargar los procedimientos.',
+    'procedimentos.operationalBadge': 'Procedimiento operativo',
+    'procedimentos.operationalExecutionTitleReal': 'Procedimiento operativo',
+    'procedimentos.executionWillBeSaved':
+        'Las respuestas y los horarios se guardarán al finalizar.',
+    'procedimentos.completeAndContinue': 'Concluir y continuar',
+    'procedimentos.continueOperation': 'Continuar operación',
+    'procedimentos.executionSaveError':
+        'No fue posible guardar las respuestas. Inténtalo de nuevo.',
+    'procedimentos.persistedConfiguration': 'Configuración sincronizada',
+    'procedimentos.editorPersistenceNotice':
+        'Los cambios se guardan para la empresa en el idioma actual.',
+    'procedimentos.notifyAdmin': 'Notificar al ADMIN por push',
+    'procedimentos.notifyAdminHelp':
+        'Notifica a los administradores activos cuando ocurre la condición.',
+    'procedimentos.notificationCondition': 'Cuándo notificar',
+    'procedimentos.notificationAlways': 'En cada ejecución',
+    'procedimentos.notificationNegative': 'Al registrar una respuesta negativa',
+    'procedimentos.notificationSkipped': 'Al omitir el procedimiento',
+    'procedimentos.analyticsTitle': 'Análisis de resultados',
+    'procedimentos.analyticsExecutions': 'Ejecuciones',
+    'procedimentos.analyticsCompletion': 'Tasa de conclusión',
+    'procedimentos.analyticsNegative': 'Respuestas negativas',
+    'procedimentos.analyticsAverageTime': 'Tiempo medio',
+    'procedimentos.analyticsByQuestion': 'Resultados por pregunta',
+    'procedimentos.analyticsRecent': 'Ejecuciones recientes',
+    'procedimentos.analyticsEmpty': 'Aún no hay ejecuciones en este período.',
+    'procedimentos.contextSale': 'Venta',
+    'procedimentos.contextTechnicalService': 'Atención técnica',
+    'procedimentos.contextCashRegister': 'Caja',
 
     // Gestión — secciones
     'gestao.title': 'Gestión',

@@ -16,6 +16,7 @@ class OperationalProcedureExecutionSummary extends StatelessWidget {
     this.message,
     this.closeLabel,
     this.badgeLabel,
+    this.closing = false,
   });
 
   final int completed;
@@ -27,6 +28,7 @@ class OperationalProcedureExecutionSummary extends StatelessWidget {
   final String? message;
   final String? closeLabel;
   final String? badgeLabel;
+  final bool closing;
 
   @override
   Widget build(BuildContext context) {
@@ -120,14 +122,19 @@ class OperationalProcedureExecutionSummary extends StatelessWidget {
                 SizedBox(width: 10),
                 Expanded(
                   child: FilledButton(
-                    onPressed: onClose,
-                    child: Text(
-                      closeLabel ??
-                          context.t(
-                            'procedimentos.previewFinishDemo',
-                            fallback: 'Encerrar preview',
+                    onPressed: closing ? null : onClose,
+                    child: closing
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            closeLabel ??
+                                context.t(
+                                  'procedimentos.previewFinishDemo',
+                                  fallback: 'Encerrar preview',
+                                ),
                           ),
-                    ),
                   ),
                 ),
               ],

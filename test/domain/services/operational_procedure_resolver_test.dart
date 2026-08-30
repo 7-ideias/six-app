@@ -15,14 +15,22 @@ void main() {
         ProcedureTriggerMoment.beforeStart,
       );
       expect(ProcedureOperationPoint.saleStartBefore.mobileAvailable, true);
-      expect(ProcedureOperationPoint.saleStartBefore.webAvailable, false);
+      expect(ProcedureOperationPoint.saleStartBefore.webAvailable, true);
       expect(
         procedureOperationPointCatalog.publishedFor(ProcedurePlatform.mobile),
-        <ProcedureOperationPoint>[ProcedureOperationPoint.saleStartBefore],
+        <ProcedureOperationPoint>[
+          ProcedureOperationPoint.saleStartBefore,
+          ProcedureOperationPoint.technicalServiceStartBefore,
+          ProcedureOperationPoint.cashRegisterStartBefore,
+        ],
       );
       expect(
         procedureOperationPointCatalog.publishedFor(ProcedurePlatform.web),
-        isEmpty,
+        <ProcedureOperationPoint>[
+          ProcedureOperationPoint.saleStartBefore,
+          ProcedureOperationPoint.technicalServiceStartBefore,
+          ProcedureOperationPoint.cashRegisterStartBefore,
+        ],
       );
       expect(
         procedureOperationPointCatalog.isPublishedFor(

@@ -45,14 +45,17 @@ class ProcedureFlowResult {
     required this.outcome,
     this.completedProcedureIds = const <String>[],
     this.skippedProcedureIds = const <String>[],
+    this.executionIds = const <String>[],
     this.errorMessage,
   });
 
   const ProcedureFlowResult.continueOperation({
     List<String> completedProcedureIds = const <String>[],
+    List<String> executionIds = const <String>[],
   }) : this(
          outcome: ProcedureFlowOutcome.continueOperation,
          completedProcedureIds: completedProcedureIds,
+         executionIds: executionIds,
        );
 
   const ProcedureFlowResult.cancelled()
@@ -61,10 +64,12 @@ class ProcedureFlowResult {
   const ProcedureFlowResult.skipped({
     List<String> completedProcedureIds = const <String>[],
     List<String> skippedProcedureIds = const <String>[],
+    List<String> executionIds = const <String>[],
   }) : this(
          outcome: ProcedureFlowOutcome.skipped,
          completedProcedureIds: completedProcedureIds,
          skippedProcedureIds: skippedProcedureIds,
+         executionIds: executionIds,
        );
 
   const ProcedureFlowResult.error(String message)
@@ -73,6 +78,7 @@ class ProcedureFlowResult {
   final ProcedureFlowOutcome outcome;
   final List<String> completedProcedureIds;
   final List<String> skippedProcedureIds;
+  final List<String> executionIds;
   final String? errorMessage;
 
   bool get shouldContinue =>

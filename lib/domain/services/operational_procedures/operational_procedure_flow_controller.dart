@@ -25,8 +25,8 @@ class OperationalProcedureFlowController {
     required ProcedureOperationPoint operationPoint,
   }) async {
     try {
-      final List<OperationalProcedure> procedures =
-          await _repository.fetchProcedures();
+      final List<OperationalProcedure> procedures = await _repository
+          .fetchProcedures();
       final ProcedureResolution resolution = _resolver.resolve(
         operationPoint: operationPoint,
         procedures: procedures,
@@ -38,6 +38,7 @@ class OperationalProcedureFlowController {
 
       final List<String> completed = <String>[];
       final List<String> skipped = <String>[];
+      final List<String> executionIds = <String>[];
       final int total = resolution.matchingProcedures.length;
 
       for (int index = 0; index < total; index++) {
@@ -66,9 +67,17 @@ class OperationalProcedureFlowController {
           case ProcedurePresentationOutcome.completed:
             final String? id = presentation.completedProcedureId;
             if (id != null) completed.add(id);
+            final String? completedExecutionId = presentation.executionId;
+            if (completedExecutionId != null) {
+              executionIds.add(completedExecutionId);
+            }
           case ProcedurePresentationOutcome.skipped:
             final String? id = presentation.skippedProcedureId;
             if (id != null) skipped.add(id);
+            final String? skippedExecutionId = presentation.executionId;
+            if (skippedExecutionId != null) {
+              executionIds.add(skippedExecutionId);
+            }
           case ProcedurePresentationOutcome.cancelled:
             return const ProcedureFlowResult.cancelled();
           case ProcedurePresentationOutcome.failed:
@@ -82,11 +91,13 @@ class OperationalProcedureFlowController {
         return ProcedureFlowResult.skipped(
           completedProcedureIds: completed,
           skippedProcedureIds: skipped,
+          executionIds: executionIds,
         );
       }
 
       return ProcedureFlowResult.continueOperation(
         completedProcedureIds: completed,
+        executionIds: executionIds,
       );
     } catch (error) {
       return ProcedureFlowResult.error(error.toString());

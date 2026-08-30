@@ -27,6 +27,7 @@ import '../components/web/six_web_select_field.dart';
 import '../components/web/six_web_settings_dialog.dart';
 import '../theme/web_theme_tokens.dart';
 import 'documentos_personalizados_web_content.dart';
+import 'operational_procedures_web_content.dart';
 
 void showConfiguracoesSixWebDialog(BuildContext context) {
   showSixWebSettingsDialog(
@@ -65,6 +66,7 @@ enum SecaoConfiguracaoSix {
   aparencia,
   comunicacao,
   documentos,
+  procedimentos,
   operacao,
   seguranca,
   preferenciasUsuario,
@@ -292,12 +294,11 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
     try {
       final informacoes = await _caixaService.buscarInformacoesBasicasDoCaixa();
-      final caixas =
-          informacoes.caixaOuGuiche.isNotEmpty
-              ? informacoes.caixaOuGuiche
-              : informacoes.caixas
-                  .map((nome) => CaixaOuGuiche(id: nome, nome: nome))
-                  .toList(growable: false);
+      final caixas = informacoes.caixaOuGuiche.isNotEmpty
+          ? informacoes.caixaOuGuiche
+          : informacoes.caixas
+                .map((nome) => CaixaOuGuiche(id: nome, nome: nome))
+                .toList(growable: false);
 
       if (!mounted) return;
       setState(() {
@@ -531,14 +532,17 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   ) {
     for (final DominioStatusAtendimentoCustomizacaoModel item in status) {
       _statusPtControllers
-          .putIfAbsent(item.statusCodigo, () => TextEditingController())
-          .text = item.nomeAtualPtBr;
+              .putIfAbsent(item.statusCodigo, () => TextEditingController())
+              .text =
+          item.nomeAtualPtBr;
       _statusEnControllers
-          .putIfAbsent(item.statusCodigo, () => TextEditingController())
-          .text = item.nomeAtualEnUs;
+              .putIfAbsent(item.statusCodigo, () => TextEditingController())
+              .text =
+          item.nomeAtualEnUs;
       _statusEsControllers
-          .putIfAbsent(item.statusCodigo, () => TextEditingController())
-          .text = item.nomeAtualEsEs;
+              .putIfAbsent(item.statusCodigo, () => TextEditingController())
+              .text =
+          item.nomeAtualEsEs;
     }
   }
 
@@ -591,9 +595,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       logoBase64: _logoBase64,
       horariosAtendimento:
           _horariosAtendimentoConfiguradosNoBackend ||
-                  _horariosAtendimentoEditados
-              ? _horariosAtendimento
-              : const <HorarioAtendimentoModel>[],
+              _horariosAtendimentoEditados
+          ? _horariosAtendimento
+          : const <HorarioAtendimentoModel>[],
     );
 
     final EmpresaModel atualizada = await _empresaService
@@ -732,9 +736,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         e is FormatException
             ? e.message
             : _i18n(
-              'empresa.configuracao.logoLoadError',
-              'Não foi possível carregar o logo.',
-            ),
+                'empresa.configuracao.logoLoadError',
+                'Não foi possível carregar o logo.',
+              ),
         erro: true,
       );
     }
@@ -849,13 +853,12 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   void _copiarSegundaParaDiasUteis() {
     final HorarioAtendimentoModel segunda = _horariosAtendimento.firstWhere(
       (horario) => horario.diaSemana == 'MONDAY',
-      orElse:
-          () => const HorarioAtendimentoModel(
-            diaSemana: 'MONDAY',
-            fechado: false,
-            inicio: '08:00',
-            fim: '18:00',
-          ),
+      orElse: () => const HorarioAtendimentoModel(
+        diaSemana: 'MONDAY',
+        fechado: false,
+        inicio: '08:00',
+        fim: '18:00',
+      ),
     );
 
     setState(() {
@@ -1310,13 +1313,16 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           timeZone: _fusoSelecionado,
           dateFormat: _formatoDataSelecionado,
           timeFormat: _formatoHoraSelecionado == '24 horas' ? '24h' : '12h',
-          decimalSeparator:
-              _separadorDecimalSelecionado == 'Vírgula' ? ',' : '.',
+          decimalSeparator: _separadorDecimalSelecionado == 'Vírgula'
+              ? ','
+              : '.',
           thousandSeparator: _mapSeparadorMilhar(_separadorMilharSelecionado),
-          firstDayOfWeek:
-              _primeiroDiaSemanaSelecionado == 'Domingo' ? 'SUNDAY' : 'MONDAY',
-          numberPattern:
-              _formatoNumeroSelecionado == '1,234.56' ? '#,##0.00' : '#.##0,00',
+          firstDayOfWeek: _primeiroDiaSemanaSelecionado == 'Domingo'
+              ? 'SUNDAY'
+              : 'MONDAY',
+          numberPattern: _formatoNumeroSelecionado == '1,234.56'
+              ? '#,##0.00'
+              : '#.##0,00',
           decimalPlaces: int.tryParse(_casasDecimaisSelecionadas) ?? 2,
           allowMultipleCurrencies: _permitirMultiplasMoedas,
           applyFinancialRounding: _aplicarArredondamentoFinanceiro,
@@ -1410,6 +1416,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         return 'Comunicação';
       case SecaoConfiguracaoSix.documentos:
         return 'Documentos';
+      case SecaoConfiguracaoSix.procedimentos:
+        return 'Procedimentos';
       case SecaoConfiguracaoSix.operacao:
         return 'Regras operacionais';
       case SecaoConfiguracaoSix.seguranca:
@@ -1431,6 +1439,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         return 'Mensagens automáticas, canais de notificação e preferências de contato com clientes.';
       case SecaoConfiguracaoSix.documentos:
         return 'Templates, rodapés, termos e componentes visuais de PDFs e comprovantes.';
+      case SecaoConfiguracaoSix.procedimentos:
+        return 'Configurações operacionais, notificações aos administradores e análise das respostas.';
       case SecaoConfiguracaoSix.operacao:
         return 'Catálogo por link, grade de produtos, mesas, clientes, fiado, estoque, caixa, desconto, comissão e unidades de medida.';
       case SecaoConfiguracaoSix.seguranca:
@@ -1449,10 +1459,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   Widget _buildPaletteExperiencePreview() {
     final theme = Theme.of(context);
     final tokens = WebThemeTokens.of(context);
-    final String brandName =
-        _nomeFantasiaController.text.trim().isEmpty
-            ? 'Sua marca aqui'
-            : _nomeFantasiaController.text.trim();
+    final String brandName = _nomeFantasiaController.text.trim().isEmpty
+        ? 'Sua marca aqui'
+        : _nomeFantasiaController.text.trim();
     final Color primaryFg = _paletteForeground(_corPrimaria);
     final Color secondaryFg = _paletteForeground(_corSecundaria);
     final Color successFg = _paletteForeground(_corDestaque);
@@ -1551,23 +1560,22 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               ),
               Padding(
                 padding: const EdgeInsets.all(18),
-                child:
-                    compact
-                        ? Column(
-                          children: [
-                            _buildPaletteDashboardPreview(),
-                            const SizedBox(height: 16),
-                            _buildPaletteOrderPreview(),
-                          ],
-                        )
-                        : Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: _buildPaletteDashboardPreview()),
-                            const SizedBox(width: 16),
-                            Expanded(child: _buildPaletteOrderPreview()),
-                          ],
-                        ),
+                child: compact
+                    ? Column(
+                        children: [
+                          _buildPaletteDashboardPreview(),
+                          const SizedBox(height: 16),
+                          _buildPaletteOrderPreview(),
+                        ],
+                      )
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: _buildPaletteDashboardPreview()),
+                          const SizedBox(width: 16),
+                          Expanded(child: _buildPaletteOrderPreview()),
+                        ],
+                      ),
               ),
               Container(
                 padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
@@ -1755,13 +1763,12 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
       decoration: BoxDecoration(
-        color:
-            selected
-                ? color
-                : Color.alphaBlend(
-                  foreground.withValues(alpha: 0.12),
-                  Colors.transparent,
-                ),
+        color: selected
+            ? color
+            : Color.alphaBlend(
+                foreground.withValues(alpha: 0.12),
+                Colors.transparent,
+              ),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: foreground.withValues(alpha: 0.22)),
       ),
@@ -2072,6 +2079,11 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         icone: Icons.picture_as_pdf_rounded,
       ),
       (
+        secao: SecaoConfiguracaoSix.procedimentos,
+        titulo: 'Procedimentos',
+        icone: Icons.fact_check_outlined,
+      ),
+      (
         secao: SecaoConfiguracaoSix.operacao,
         titulo: 'Regras operacionais',
         icone: Icons.settings_suggest_rounded,
@@ -2149,71 +2161,66 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           Wrap(
             spacing: 10,
             runSpacing: 10,
-            children:
-                itens.map((item) {
-                  final bool selecionado = _secaoAtual == item.secao;
+            children: itens.map((item) {
+              final bool selecionado = _secaoAtual == item.secao;
 
-                  return Semantics(
-                    button: true,
-                    selected: selecionado,
-                    label: 'Abrir ${item.titulo}',
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
+              return Semantics(
+                button: true,
+                selected: selecionado,
+                label: 'Abrir ${item.titulo}',
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () => _selecionarSecao(item.secao),
+                    child: AnimatedContainer(
+                      duration: WebThemeTokens.transitionDuration,
+                      curve: WebThemeTokens.transitionCurve,
+                      constraints: const BoxConstraints(minHeight: 48),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selecionado
+                            ? tokens.selectedBackground
+                            : tokens.cardBackground,
                         borderRadius: BorderRadius.circular(18),
-                        onTap: () => _selecionarSecao(item.secao),
-                        child: AnimatedContainer(
-                          duration: WebThemeTokens.transitionDuration,
-                          curve: WebThemeTokens.transitionCurve,
-                          constraints: const BoxConstraints(minHeight: 48),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                selecionado
-                                    ? tokens.selectedBackground
-                                    : tokens.cardBackground,
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color:
-                                  selecionado
-                                      ? tokens.selectedBorder
-                                      : tokens.cardBorder,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                item.icone,
-                                size: 19,
-                                color:
-                                    selecionado
-                                        ? tokens.info
-                                        : tokens.secondaryText,
-                              ),
-                              const SizedBox(width: 9),
-                              Text(
-                                item.titulo,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color:
-                                      selecionado
-                                          ? tokens.primaryText
-                                          : tokens.secondaryText,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
-                          ),
+                        border: Border.all(
+                          color: selecionado
+                              ? tokens.selectedBorder
+                              : tokens.cardBorder,
                         ),
                       ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            item.icone,
+                            size: 19,
+                            color: selecionado
+                                ? tokens.info
+                                : tokens.secondaryText,
+                          ),
+                          const SizedBox(width: 9),
+                          Text(
+                            item.titulo,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: selecionado
+                                  ? tokens.primaryText
+                                  : tokens.secondaryText,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  );
-                }).toList(),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -2469,13 +2476,12 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               activeTrackColor: tokens.success.withValues(alpha: 0.28),
               inactiveThumbColor: tokens.disabledForeground,
               inactiveTrackColor: tokens.disabledBackground,
-              onChanged:
-                  enabled
-                      ? (novo) {
-                        onChanged(novo);
-                        _marcarAlteracao();
-                      }
-                      : null,
+              onChanged: enabled
+                  ? (novo) {
+                      onChanged(novo);
+                      _marcarAlteracao();
+                    }
+                  : null,
             ),
           ],
         ),
@@ -2521,39 +2527,33 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           Wrap(
             spacing: 10,
             runSpacing: 10,
-            children:
-                opcoes.map((opcao) {
-                  final selecionado = opcao.toARGB32() == color.toARGB32();
-                  return InkWell(
+            children: opcoes.map((opcao) {
+              final selecionado = opcao.toARGB32() == color.toARGB32();
+              return InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: () {
+                  onColorSelected(opcao);
+                  _marcarAlteracao();
+                },
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: opcao,
                     borderRadius: BorderRadius.circular(999),
-                    onTap: () {
-                      onColorSelected(opcao);
-                      _marcarAlteracao();
-                    },
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: opcao,
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color:
-                              selecionado
-                                  ? tokens.selectedBorder
-                                  : tokens.cardBorder,
-                          width: 3,
-                        ),
-                      ),
-                      child:
-                          selecionado
-                              ? const Icon(
-                                Icons.check_rounded,
-                                color: Colors.white,
-                              )
-                              : null,
+                    border: Border.all(
+                      color: selecionado
+                          ? tokens.selectedBorder
+                          : tokens.cardBorder,
+                      width: 3,
                     ),
-                  );
-                }).toList(),
+                  ),
+                  child: selecionado
+                      ? const Icon(Icons.check_rounded, color: Colors.white)
+                      : null,
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -2647,14 +2647,14 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color:
-                        selected
-                            ? tokens.surfaceElevated
-                            : tokens.inputBackground,
+                    color: selected
+                        ? tokens.surfaceElevated
+                        : tokens.inputBackground,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color:
-                          selected ? tokens.selectedBorder : tokens.cardBorder,
+                      color: selected
+                          ? tokens.selectedBorder
+                          : tokens.cardBorder,
                     ),
                   ),
                   child: Icon(
@@ -2683,20 +2683,19 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                           const SizedBox(width: 8),
                           AnimatedSwitcher(
                             duration: WebThemeTokens.transitionDuration,
-                            child:
-                                selected
-                                    ? Icon(
-                                      Icons.check_circle_rounded,
-                                      key: const ValueKey('selected'),
-                                      color: tokens.info,
-                                      size: 20,
-                                    )
-                                    : Icon(
-                                      Icons.radio_button_unchecked_rounded,
-                                      key: const ValueKey('not-selected'),
-                                      color: tokens.mutedText,
-                                      size: 20,
-                                    ),
+                            child: selected
+                                ? Icon(
+                                    Icons.check_circle_rounded,
+                                    key: const ValueKey('selected'),
+                                    color: tokens.info,
+                                    size: 20,
+                                  )
+                                : Icon(
+                                    Icons.radio_button_unchecked_rounded,
+                                    key: const ValueKey('not-selected'),
+                                    color: tokens.mutedText,
+                                    size: 20,
+                                  ),
                           ),
                         ],
                       ),
@@ -2879,17 +2878,16 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               const SizedBox(width: 8),
               FilledButton.icon(
                 onPressed: salvando ? null : _salvarConfiguracoes,
-                icon:
-                    salvando
-                        ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: theme.colorScheme.onPrimary,
-                          ),
-                        )
-                        : const Icon(Icons.save_outlined, size: 18),
+                icon: salvando
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: theme.colorScheme.onPrimary,
+                        ),
+                      )
+                    : const Icon(Icons.save_outlined, size: 18),
                 label: Text(salvando ? 'Salvando...' : 'Salvar'),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
@@ -2921,6 +2919,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         return _buildSecaoComunicacao();
       case SecaoConfiguracaoSix.documentos:
         return _buildSecaoDocumentos();
+      case SecaoConfiguracaoSix.procedimentos:
+        return const OperationalProceduresWebContent();
       case SecaoConfiguracaoSix.operacao:
         return _buildSecaoOperacao();
       case SecaoConfiguracaoSix.seguranca:
@@ -2953,8 +2953,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     return LayoutBuilder(
       key: const ValueKey('dados-empresa-form'),
       builder: (context, constraints) {
-        final double available =
-            constraints.maxWidth.isFinite ? constraints.maxWidth : 656;
+        final double available = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : 656;
         final bool compacto = available < 700;
         final double fieldWidth = compacto ? available : 320;
         final double wideFieldWidth = compacto ? available : 656;
@@ -3160,16 +3161,15 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
 
     return Semantics(
       container: true,
-      label:
-          hasLogo
-              ? _i18n(
-                'empresa.configuracao.logoSemantics',
-                'Logo cadastrado da empresa.',
-              )
-              : _i18n(
-                'empresa.configuracao.logoEmptySemantics',
-                'Nenhum logo cadastrado.',
-              ),
+      label: hasLogo
+          ? _i18n(
+              'empresa.configuracao.logoSemantics',
+              'Logo cadastrado da empresa.',
+            )
+          : _i18n(
+              'empresa.configuracao.logoEmptySemantics',
+              'Nenhum logo cadastrado.',
+            ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final bool compacto = constraints.maxWidth < 460;
@@ -3190,13 +3190,13 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               Text(
                 hasLogo
                     ? _i18n(
-                      'empresa.configuracao.logoRegistered',
-                      'Imagem pronta para salvar no cadastro do comércio.',
-                    )
+                        'empresa.configuracao.logoRegistered',
+                        'Imagem pronta para salvar no cadastro do comércio.',
+                      )
                     : _i18n(
-                      'empresa.configuracao.logoSubtitle',
-                      'Adicione uma imagem nítida, de preferência quadrada.',
-                    ),
+                        'empresa.configuracao.logoSubtitle',
+                        'Adicione uma imagem nítida, de preferência quadrada.',
+                      ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -3221,13 +3221,13 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     label: Text(
                       hasLogo
                           ? _i18n(
-                            'empresa.configuracao.logoChange',
-                            'Trocar logo',
-                          )
+                              'empresa.configuracao.logoChange',
+                              'Trocar logo',
+                            )
                           : _i18n(
-                            'empresa.configuracao.logoSelect',
-                            'Selecionar logo',
-                          ),
+                              'empresa.configuracao.logoSelect',
+                              'Selecionar logo',
+                            ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -3252,20 +3252,19 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: tokens.cardBorder),
             ),
-            child:
-                compacto
-                    ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [preview, const SizedBox(height: 14), info],
-                    )
-                    : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        preview,
-                        const SizedBox(width: 14),
-                        Expanded(child: info),
-                      ],
-                    ),
+            child: compacto
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [preview, const SizedBox(height: 14), info],
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      preview,
+                      const SizedBox(width: 14),
+                      Expanded(child: info),
+                    ],
+                  ),
           );
         },
       ),
@@ -3388,8 +3387,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 OutlinedButton.icon(
-                  onPressed:
-                      _carregandoDadosEmpresa ? null : _aplicarHorarioDiasUteis,
+                  onPressed: _carregandoDadosEmpresa
+                      ? null
+                      : _aplicarHorarioDiasUteis,
                   icon: const Icon(Icons.work_history_outlined, size: 18),
                   label: Text(
                     _i18n(
@@ -3399,10 +3399,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                   ),
                 ),
                 TextButton.icon(
-                  onPressed:
-                      _carregandoDadosEmpresa
-                          ? null
-                          : _copiarSegundaParaDiasUteis,
+                  onPressed: _carregandoDadosEmpresa
+                      ? null
+                      : _copiarSegundaParaDiasUteis,
                   icon: const Icon(Icons.content_copy_rounded, size: 18),
                   label: Text(
                     _i18n(
@@ -3452,10 +3451,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     final theme = Theme.of(context);
     final tokens = WebThemeTokens.of(context);
     final bool aberto = !horario.fechado;
-    final String statusLabel =
-        aberto
-            ? _i18n('configuracoes.businessHoursOpen', 'Aberto')
-            : _i18n('configuracoes.businessHoursClosed', 'Fechado');
+    final String statusLabel = aberto
+        ? _i18n('configuracoes.businessHoursOpen', 'Aberto')
+        : _i18n('configuracoes.businessHoursClosed', 'Fechado');
     final Widget day = SizedBox(
       width: compacto ? double.infinity : 180,
       child: Row(
@@ -3464,10 +3462,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color:
-                  aberto
-                      ? tokens.selectedBackground
-                      : tokens.disabledBackground,
+              color: aberto
+                  ? tokens.selectedBackground
+                  : tokens.disabledBackground,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: aberto ? tokens.selectedBorder : tokens.cardBorder,
@@ -3503,10 +3500,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           activeTrackColor: tokens.success.withValues(alpha: 0.28),
           inactiveThumbColor: tokens.disabledForeground,
           inactiveTrackColor: tokens.disabledBackground,
-          onChanged:
-              _carregandoDadosEmpresa
-                  ? null
-                  : (valor) => _alterarDiaAberto(horario, valor),
+          onChanged: _carregandoDadosEmpresa
+              ? null
+              : (valor) => _alterarDiaAberto(horario, valor),
         ),
         const SizedBox(width: 6),
         Text(
@@ -3518,42 +3514,41 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         ),
       ],
     );
-    final Widget times =
-        aberto
-            ? Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                _buildHorarioTimeButton(
-                  label: _i18n('configuracoes.businessHoursStart', 'Início'),
-                  value: horario.inicio ?? '08:00',
-                  onTap: () => _selecionarHorario(horario, true),
-                ),
-                Text(
-                  _i18n('configuracoes.businessHoursTo', 'às'),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: tokens.secondaryText,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                _buildHorarioTimeButton(
-                  label: _i18n('configuracoes.businessHoursEnd', 'Fim'),
-                  value: horario.fim ?? '18:00',
-                  onTap: () => _selecionarHorario(horario, false),
-                ),
-              ],
-            )
-            : Text(
-              _i18n(
-                'configuracoes.businessHoursClosedDescription',
-                'Sem atendimento neste dia.',
+    final Widget times = aberto
+        ? Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _buildHorarioTimeButton(
+                label: _i18n('configuracoes.businessHoursStart', 'Início'),
+                value: horario.inicio ?? '08:00',
+                onTap: () => _selecionarHorario(horario, true),
               ),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: tokens.secondaryText,
-                fontWeight: FontWeight.w600,
+              Text(
+                _i18n('configuracoes.businessHoursTo', 'às'),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: tokens.secondaryText,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            );
+              _buildHorarioTimeButton(
+                label: _i18n('configuracoes.businessHoursEnd', 'Fim'),
+                value: horario.fim ?? '18:00',
+                onTap: () => _selecionarHorario(horario, false),
+              ),
+            ],
+          )
+        : Text(
+            _i18n(
+              'configuracoes.businessHoursClosedDescription',
+              'Sem atendimento neste dia.',
+            ),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: tokens.secondaryText,
+              fontWeight: FontWeight.w600,
+            ),
+          );
 
     return AnimatedContainer(
       duration: WebThemeTokens.transitionDuration,
@@ -3566,30 +3561,29 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           color: aberto ? tokens.selectedBorder : tokens.cardBorder,
         ),
       ),
-      child:
-          compacto
-              ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  day,
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 14,
-                    runSpacing: 10,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [toggle, times],
-                  ),
-                ],
-              )
-              : Row(
-                children: [
-                  day,
-                  const SizedBox(width: 12),
-                  SizedBox(width: 142, child: toggle),
-                  const SizedBox(width: 12),
-                  Expanded(child: times),
-                ],
-              ),
+      child: compacto
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                day,
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 14,
+                  runSpacing: 10,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [toggle, times],
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                day,
+                const SizedBox(width: 12),
+                SizedBox(width: 142, child: toggle),
+                const SizedBox(width: 12),
+                Expanded(child: times),
+              ],
+            ),
     );
   }
 
@@ -4265,10 +4259,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   Widget _buildStatusAtendimentoOperacionalCard() {
     final theme = Theme.of(context);
     final tokens = WebThemeTokens.of(context);
-    final int totalFinalizadores =
-        _statusAtendimentoCustomizacoes
-            .where((item) => item.finalizador)
-            .length;
+    final int totalFinalizadores = _statusAtendimentoCustomizacoes
+        .where((item) => item.finalizador)
+        .length;
 
     return _buildBigCard(
       title: 'Fluxo do atendimento técnico',
@@ -4318,19 +4311,18 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                   ),
                 ),
                 OutlinedButton.icon(
-                  onPressed:
-                      _carregandoStatusAtendimento
-                          ? null
-                          : _carregarStatusAtendimentoCustomizacoes,
+                  onPressed: _carregandoStatusAtendimento
+                      ? null
+                      : _carregarStatusAtendimentoCustomizacoes,
                   icon: const Icon(Icons.refresh_rounded, size: 18),
                   label: const Text('Atualizar nomes'),
                 ),
                 TextButton.icon(
                   onPressed:
                       _carregandoStatusAtendimento ||
-                              _statusAtendimentoCustomizacoes.isEmpty
-                          ? null
-                          : _restaurarStatusAtendimentoPadrao,
+                          _statusAtendimentoCustomizacoes.isEmpty
+                      ? null
+                      : _restaurarStatusAtendimentoPadrao,
                   icon: const Icon(Icons.restart_alt_rounded, size: 18),
                   label: const Text('Restaurar padrões'),
                 ),
@@ -4413,8 +4405,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
     final bool compacto = MediaQuery.of(context).size.width < 1180;
     final String titulo =
         (_statusPtControllers[item.statusCodigo]?.text ?? '').trim().isNotEmpty
-            ? _statusPtControllers[item.statusCodigo]!.text.trim()
-            : item.nomeAtualPtBr;
+        ? _statusPtControllers[item.statusCodigo]!.text.trim()
+        : item.nomeAtualPtBr;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -4584,13 +4576,12 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
         suffixIcon: IconButton(
           tooltip: 'Restaurar nome padrão',
-          onPressed:
-              _salvandoStatusAtendimento
-                  ? null
-                  : () {
-                    controller.text = defaultValue;
-                    _marcarAlteracaoStatusAtendimento();
-                  },
+          onPressed: _salvandoStatusAtendimento
+              ? null
+              : () {
+                  controller.text = defaultValue;
+                  _marcarAlteracaoStatusAtendimento();
+                },
           icon: const Icon(Icons.restart_alt_rounded, size: 18),
         ),
       ),
@@ -4630,23 +4621,22 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
   Widget _buildRegrasOperacionaisResumo() {
     final theme = Theme.of(context);
     final tokens = WebThemeTokens.of(context);
-    final int regrasAtivas =
-        <bool>[
-          _permitirVendaCatalogoPorLink,
-          _cadastroGradeProdutos,
-          _controlarEstoquePorVariacao,
-          _vendaPorMesa,
-          _mesaObrigatoria,
-          _exigirClienteNaVenda,
-          _validarDocumentoCliente,
-          _exigirTelefoneCliente,
-          _permitirVendasFiado,
-          _controlarEstoque,
-          _abrirCaixaObrigatorio,
-          _descontoManualPermitido,
-          _gerarComissaoColaborador,
-          _produtoApenasComUnidadeMedida,
-        ].where((bool value) => value).length;
+    final int regrasAtivas = <bool>[
+      _permitirVendaCatalogoPorLink,
+      _cadastroGradeProdutos,
+      _controlarEstoquePorVariacao,
+      _vendaPorMesa,
+      _mesaObrigatoria,
+      _exigirClienteNaVenda,
+      _validarDocumentoCliente,
+      _exigirTelefoneCliente,
+      _permitirVendasFiado,
+      _controlarEstoque,
+      _abrirCaixaObrigatorio,
+      _descontoManualPermitido,
+      _gerarComissaoColaborador,
+      _produtoApenasComUnidadeMedida,
+    ].where((bool value) => value).length;
 
     return Container(
       width: double.infinity,
@@ -5401,10 +5391,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
       subtitle:
           'Cadastre e renomeie os pontos de operação que aparecem na abertura de caixa do atendimento.',
       trailing: FilledButton.icon(
-        onPressed:
-            _carregandoCaixasOuGuiches || _salvandoCaixaOuGuiche
-                ? null
-                : () => _abrirDialogoCaixaOuGuiche(),
+        onPressed: _carregandoCaixasOuGuiches || _salvandoCaixaOuGuiche
+            ? null
+            : () => _abrirDialogoCaixaOuGuiche(),
         icon: const Icon(Icons.add_rounded, size: 18),
         label: const Text('Novo caixa'),
       ),
@@ -5448,8 +5437,8 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     OutlinedButton.icon(
                       onPressed:
                           _carregandoCaixasOuGuiches || _salvandoCaixaOuGuiche
-                              ? null
-                              : _carregarCaixasOuGuiches,
+                          ? null
+                          : _carregarCaixasOuGuiches,
                       icon: const Icon(Icons.refresh_rounded, size: 18),
                       label: const Text('Atualizar lista'),
                     ),
@@ -5501,10 +5490,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     ),
                   ),
                   FilledButton.icon(
-                    onPressed:
-                        _salvandoCaixaOuGuiche
-                            ? null
-                            : _carregarCaixasOuGuiches,
+                    onPressed: _salvandoCaixaOuGuiche
+                        ? null
+                        : _carregarCaixasOuGuiches,
                     icon: const Icon(Icons.refresh_rounded, size: 18),
                     label: const Text('Tentar novamente'),
                   ),
@@ -5537,10 +5525,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                     ),
                   ),
                   FilledButton.icon(
-                    onPressed:
-                        _salvandoCaixaOuGuiche
-                            ? null
-                            : () => _abrirDialogoCaixaOuGuiche(),
+                    onPressed: _salvandoCaixaOuGuiche
+                        ? null
+                        : () => _abrirDialogoCaixaOuGuiche(),
                     icon: const Icon(Icons.add_rounded, size: 18),
                     label: const Text('Cadastrar primeiro caixa'),
                   ),
@@ -5601,10 +5588,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           Tooltip(
             message: 'Editar caixa',
             child: IconButton(
-              onPressed:
-                  _salvandoCaixaOuGuiche
-                      ? null
-                      : () => _abrirDialogoCaixaOuGuiche(caixa: caixa),
+              onPressed: _salvandoCaixaOuGuiche
+                  ? null
+                  : () => _abrirDialogoCaixaOuGuiche(caixa: caixa),
               icon: const Icon(Icons.edit_outlined, size: 20),
               color: tokens.info,
               style: IconButton.styleFrom(
@@ -5899,24 +5885,23 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children:
-                options.map((_ConfiguracaoChoiceOption option) {
-                  final bool selected = selectedValues.contains(option.label);
-                  return _buildOperationalChoiceCard(
-                    option: option,
-                    selected: selected,
-                    enabled: enabled,
-                    onTap: () {
-                      setState(() {
-                        if (selected) {
-                          selectedValues.remove(option.label);
-                        } else {
-                          selectedValues.add(option.label);
-                        }
-                      });
-                    },
-                  );
-                }).toList(),
+            children: options.map((_ConfiguracaoChoiceOption option) {
+              final bool selected = selectedValues.contains(option.label);
+              return _buildOperationalChoiceCard(
+                option: option,
+                selected: selected,
+                enabled: enabled,
+                onTap: () {
+                  setState(() {
+                    if (selected) {
+                      selectedValues.remove(option.label);
+                    } else {
+                      selectedValues.add(option.label);
+                    }
+                  });
+                },
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -5941,13 +5926,12 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap:
-              enabled
-                  ? () {
-                    onTap();
-                    _marcarAlteracao();
-                  }
-                  : null,
+          onTap: enabled
+              ? () {
+                  onTap();
+                  _marcarAlteracao();
+                }
+              : null,
           child: AnimatedContainer(
             duration: WebThemeTokens.transitionDuration,
             curve: WebThemeTokens.transitionCurve,
@@ -5967,10 +5951,9 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color:
-                        selected
-                            ? tokens.surfaceElevated
-                            : tokens.inputBackground,
+                    color: selected
+                        ? tokens.surfaceElevated
+                        : tokens.inputBackground,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: tokens.cardBorder),
                   ),
@@ -6126,13 +6109,12 @@ class _ConfiguracoesSixWebPageState extends State<ConfiguracoesSixWebPage> {
               max: max,
               divisions: divisions,
               label: '${value.toStringAsFixed(0)}$valueSuffix',
-              onChanged:
-                  enabled
-                      ? (double novo) {
-                        onChanged(novo);
-                        _marcarAlteracao();
-                      }
-                      : null,
+              onChanged: enabled
+                  ? (double novo) {
+                      onChanged(novo);
+                      _marcarAlteracao();
+                    }
+                  : null,
             ),
           ],
         ),

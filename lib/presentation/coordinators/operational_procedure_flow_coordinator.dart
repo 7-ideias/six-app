@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:sixpos/data/datasources/operational_procedure_mock_data_source.dart';
+import 'package:flutter/foundation.dart';
+import 'package:sixpos/data/datasources/operational_procedure_data_source.dart';
 import 'package:sixpos/data/models/operational_procedure_flow_models.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
 import 'package:sixpos/domain/services/operational_procedures/operational_procedure_flow_controller.dart';
 import 'package:sixpos/domain/services/operational_procedures/operational_procedure_presenter.dart';
 import 'package:sixpos/domain/services/operational_procedures/operational_procedure_resolver.dart';
+import 'package:sixpos/domain/services/operational_procedures/operational_procedure_pending_execution_store.dart';
+import 'package:sixpos/domain/services/operational_procedures/operational_procedure_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/presenters/mobile_operational_procedure_presenter.dart';
+import 'package:sixpos/presentation/presenters/web_operational_procedure_presenter.dart';
 
 typedef OperationalProcedureRunner =
     Future<ProcedureFlowResult> Function(
@@ -15,42 +19,45 @@ typedef OperationalProcedureRunner =
       ProcedureExecutionConfiguration configuration,
     );
 
-const OperationalProcedureRuntimeMockScenario
-defaultSaleStartRuntimeMockScenario =
-    OperationalProcedureRuntimeMockScenario.required;
-
 class OperationalProcedureFlowCoordinator {
   OperationalProcedureFlowCoordinator({
     OperationalProcedureResolver resolver =
         const OperationalProcedureResolver(),
-    OperationalProcedureMockDataSource dataSource =
-        const OperationalProcedureMockDataSource(
-          delay: Duration.zero,
-          runtimeScenario: defaultSaleStartRuntimeMockScenario,
-        ),
+    OperationalProcedureDataSource? dataSource,
     OperationalProcedureRunner? runner,
   }) : _resolver = resolver,
        _dataSource = dataSource,
        _runner = runner;
 
   final OperationalProcedureResolver _resolver;
-  final OperationalProcedureMockDataSource _dataSource;
+  final OperationalProcedureDataSource? _dataSource;
   final OperationalProcedureRunner? _runner;
 
   Future<ProcedureFlowResult> execute({
     required BuildContext context,
     required ProcedureOperationPoint operationPoint,
   }) async {
-    final OperationalProcedurePresenter presenter =
-        _runner == null
-            ? MobileOperationalProcedurePresenter(context: context)
-            : _RunnerOperationalProcedurePresenter(
-              context: context,
-              runner: _runner,
-            );
+    if (operationPoint.operationType == ProcedureOperationType.sale) {
+      OperationalProcedurePendingExecutionStore.instance.beginSaleFlow();
+    }
+    final OperationalProcedurePresenter presenter = _runner == null
+        ? (kIsWeb
+              ? WebOperationalProcedurePresenter(context: context)
+              : MobileOperationalProcedurePresenter(context: context))
+        : _RunnerOperationalProcedurePresenter(
+            context: context,
+            runner: _runner,
+          );
     final OperationalProcedureFlowController controller =
         OperationalProcedureFlowController(
-          repository: _MockRuntimeRepository(_dataSource),
+          repository: _dataSource == null
+              ? OperationalProcedureService(
+                  localeTag: Localizations.localeOf(context).toLanguageTag(),
+                )
+              : _DataSourceRuntimeRepository(
+                  _dataSource,
+                  Localizations.localeOf(context).toLanguageTag(),
+                ),
           presenter: presenter,
           resolver: _resolver,
         );
@@ -58,6 +65,13 @@ class OperationalProcedureFlowCoordinator {
     final ProcedureFlowResult result = await controller.execute(
       operationPoint: operationPoint,
     );
+
+    if (operationPoint.operationType == ProcedureOperationType.sale &&
+        result.executionIds.isNotEmpty) {
+      OperationalProcedurePendingExecutionStore.instance.addSaleExecutions(
+        result.executionIds,
+      );
+    }
 
     if (result.outcome == ProcedureFlowOutcome.error && context.mounted) {
       debugPrint(
@@ -80,15 +94,17 @@ class OperationalProcedureFlowCoordinator {
   }
 }
 
-class _MockRuntimeRepository implements OperationalProcedureRuntimeRepository {
-  const _MockRuntimeRepository(this._dataSource);
+class _DataSourceRuntimeRepository
+    implements OperationalProcedureRuntimeRepository {
+  const _DataSourceRuntimeRepository(this._dataSource, this._localeTag);
 
-  final OperationalProcedureMockDataSource _dataSource;
+  final OperationalProcedureDataSource _dataSource;
+  final String _localeTag;
 
   @override
   Future<List<OperationalProcedure>> fetchProcedures() async {
-    final OperationalProcedureSummary summary =
-        await _dataSource.fetchProcedures();
+    final OperationalProcedureSummary summary = await _dataSource
+        .fetchProcedures(idioma: _localeTag, somenteAtivos: true);
     return summary.procedures;
   }
 }
@@ -120,9 +136,17 @@ class _RunnerOperationalProcedurePresenter
     );
     return switch (result.outcome) {
       ProcedureFlowOutcome.continueOperation =>
-        ProcedurePresentationResult.completed(procedure.id),
+        ProcedurePresentationResult.completed(
+          procedure.id,
+          executionId: result.executionIds.isEmpty
+              ? null
+              : result.executionIds.first,
+        ),
       ProcedureFlowOutcome.skipped => ProcedurePresentationResult.skipped(
         procedure.id,
+        executionId: result.executionIds.isEmpty
+            ? null
+            : result.executionIds.first,
       ),
       ProcedureFlowOutcome.cancelled =>
         const ProcedurePresentationResult.cancelled(),

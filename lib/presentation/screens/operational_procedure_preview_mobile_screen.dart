@@ -3,6 +3,7 @@ import 'package:sixpos/data/models/operational_procedure_flow_models.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/domain/services/operational_procedures/procedure_execution_rules.dart';
+import 'package:sixpos/domain/services/operational_procedures/operational_procedure_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_demo_badge.dart';
 import 'package:sixpos/presentation/components/mobile/operational_procedures/operational_procedure_execution_item.dart';
@@ -33,6 +34,7 @@ class _OperationalProcedurePreviewMobileScreenState
   final ProcedureExecutionRules _executionRules = ProcedureExecutionRules();
   final Set<String> _pendingItemIds = <String>{};
   bool _showSummary = false;
+  bool _persisting = false;
   ProcedureTrigger? _selectedTrigger;
 
   @override
@@ -44,10 +46,9 @@ class _OperationalProcedurePreviewMobileScreenState
       responses: const <String, ProcedureItemResponse>{},
       startedAt: DateTime.now(),
     );
-    final List<ProcedureTrigger> enabledTriggers =
-        widget.procedure.triggers
-            .where((ProcedureTrigger trigger) => trigger.enabled)
-            .toList();
+    final List<ProcedureTrigger> enabledTriggers = widget.procedure.triggers
+        .where((ProcedureTrigger trigger) => trigger.enabled)
+        .toList();
     _selectedTrigger = enabledTriggers.isEmpty ? null : enabledTriggers.first;
   }
 
@@ -57,8 +58,9 @@ class _OperationalProcedurePreviewMobileScreenState
         MediaQuery.disableAnimationsOf(context) ||
         MediaQuery.accessibleNavigationOf(context);
     final bool hasResponses = _execution.responses.isNotEmpty;
-    final bool canPop =
-        widget.configuration.isOperational ? false : !hasResponses;
+    final bool canPop = widget.configuration.isOperational
+        ? false
+        : !hasResponses;
 
     return PopScope(
       canPop: canPop,
@@ -76,95 +78,90 @@ class _OperationalProcedurePreviewMobileScreenState
       child: SixMobilePageShell(
         title: context.t(
           widget.configuration.isOperational
-              ? 'procedimentos.operationalExecutionTitle'
+              ? 'procedimentos.operationalExecutionTitleReal'
               : 'procedimentos.previewTitle',
-          fallback:
-              widget.configuration.isOperational
-                  ? 'Antes de iniciar a venda'
-                  : 'Pré-visualização',
+          fallback: widget.configuration.isOperational
+              ? 'Procedimento operacional'
+              : 'Pré-visualização',
         ),
         backgroundColor: SixMobilePalette.background,
         primaryColor: SixMobilePalette.primary,
         secondaryColor: SixMobilePalette.secondary,
         accentColor: SixMobilePalette.accent,
         enableAnimatedBackground: !reduceMotion,
-        bodyBuilder: (
-          BuildContext context,
-          ScrollController scrollController,
-          double topInset,
-        ) {
-          return SafeArea(
-            top: false,
-            child: ListView(
-              controller: scrollController,
-              physics: AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
-              children: <Widget>[
-                _PreviewHeader(
-                  procedure: widget.procedure,
-                  configuration: widget.configuration,
-                ),
-                SizedBox(height: 14),
-                _TriggerSimulationPanel(
-                  triggers: widget.procedure.triggers,
-                  selectedTrigger: _selectedTrigger,
-                  onSelected: (ProcedureTrigger trigger) {
-                    setState(() => _selectedTrigger = trigger);
-                  },
-                ),
-                SizedBox(height: 14),
-                AnimatedSwitcher(
-                  duration:
-                      reduceMotion
+        bodyBuilder:
+            (
+              BuildContext context,
+              ScrollController scrollController,
+              double topInset,
+            ) {
+              return SafeArea(
+                top: false,
+                child: ListView(
+                  controller: scrollController,
+                  physics: AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
+                  children: <Widget>[
+                    _PreviewHeader(
+                      procedure: widget.procedure,
+                      configuration: widget.configuration,
+                    ),
+                    SizedBox(height: 14),
+                    _TriggerSimulationPanel(
+                      triggers: widget.procedure.triggers,
+                      selectedTrigger: _selectedTrigger,
+                      onSelected: (ProcedureTrigger trigger) {
+                        setState(() => _selectedTrigger = trigger);
+                      },
+                    ),
+                    SizedBox(height: 14),
+                    AnimatedSwitcher(
+                      duration: reduceMotion
                           ? Duration.zero
                           : Duration(milliseconds: 220),
-                  child:
-                      _showSummary
+                      child: _showSummary
                           ? OperationalProcedureExecutionSummary(
-                            key: ValueKey<String>('summary'),
-                            completed: _completedCount,
-                            total: _totalItems,
-                            optionalPending: _optionalPendingCount,
-                            onReview: () {
-                              setState(() => _showSummary = false);
-                            },
-                            onClose: _closeCompleted,
-                            title:
-                                widget.configuration.isOperational
-                                    ? context.t(
+                              key: ValueKey<String>('summary'),
+                              completed: _completedCount,
+                              total: _totalItems,
+                              optionalPending: _optionalPendingCount,
+                              onReview: () {
+                                setState(() => _showSummary = false);
+                              },
+                              onClose: _closeCompleted,
+                              title: widget.configuration.isOperational
+                                  ? context.t(
                                       'procedimentos.operationalSummaryTitle',
                                       fallback: 'Procedimento concluído',
                                     )
-                                    : null,
-                            message:
-                                widget.configuration.isOperational
-                                    ? context.t(
-                                      'procedimentos.operationalNoDataSaved',
+                                  : null,
+                              message: widget.configuration.isOperational
+                                  ? context.t(
+                                      'procedimentos.executionWillBeSaved',
                                       fallback:
-                                          'Nenhuma resposta foi salva nesta integração local experimental.',
+                                          'As respostas e o horário serão salvos ao concluir.',
                                     )
-                                    : null,
-                            closeLabel:
-                                widget.configuration.isOperational
-                                    ? context.t(
-                                      'procedimentos.completeAndStartSale',
-                                      fallback: 'Concluir e iniciar venda',
+                                  : null,
+                              closeLabel: widget.configuration.isOperational
+                                  ? context.t(
+                                      'procedimentos.completeAndContinue',
+                                      fallback: 'Concluir e continuar',
                                     )
-                                    : null,
-                            badgeLabel:
-                                widget.configuration.isOperational
-                                    ? context.t(
-                                      'procedimentos.experimentalIntegration',
-                                      fallback: 'Integração experimental',
+                                  : null,
+                              badgeLabel: widget.configuration.isOperational
+                                  ? context.t(
+                                      'procedimentos.operationalBadge',
+                                      fallback: 'Procedimento operacional',
                                     )
-                                    : null,
-                          )
+                                  : null,
+                              closing: _persisting,
+                            )
                           : _buildExecution(),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          );
-        },
+              );
+            },
       ),
     );
   }
@@ -259,16 +256,14 @@ class _OperationalProcedurePreviewMobileScreenState
             children: <Widget>[
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed:
-                      _execution.currentStageIndex == 0
-                          ? null
-                          : () => setState(() {
-                            _pendingItemIds.clear();
-                            _execution = _execution.copyWith(
-                              currentStageIndex:
-                                  _execution.currentStageIndex - 1,
-                            );
-                          }),
+                  onPressed: _execution.currentStageIndex == 0
+                      ? null
+                      : () => setState(() {
+                          _pendingItemIds.clear();
+                          _execution = _execution.copyWith(
+                            currentStageIndex: _execution.currentStageIndex - 1,
+                          );
+                        }),
                   icon: Icon(Icons.arrow_back_rounded),
                   label: Text(context.t('common.back', fallback: 'Voltar')),
                 ),
@@ -285,13 +280,13 @@ class _OperationalProcedurePreviewMobileScreenState
                   label: Text(
                     _isLastStage
                         ? context.t(
-                          'procedimentos.previewFinishDemo',
-                          fallback: 'Finalizar',
-                        )
+                            'procedimentos.previewFinishDemo',
+                            fallback: 'Finalizar',
+                          )
                         : context.t(
-                          'procedimentos.previewNextStage',
-                          fallback: 'Próxima etapa',
-                        ),
+                            'procedimentos.previewNextStage',
+                            fallback: 'Próxima etapa',
+                          ),
                   ),
                 ),
               ),
@@ -336,10 +331,9 @@ class _OperationalProcedurePreviewMobileScreenState
         );
     if (!validation.canComplete) {
       setState(
-        () =>
-            _pendingItemIds
-              ..clear()
-              ..addAll(validation.pendingItemIds),
+        () => _pendingItemIds
+          ..clear()
+          ..addAll(validation.pendingItemIds),
       );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -367,15 +361,18 @@ class _OperationalProcedurePreviewMobileScreenState
     });
   }
 
-  void _closeCompleted() {
+  Future<void> _closeCompleted() async {
     if (!widget.configuration.isOperational) {
       Navigator.of(context).pop();
       return;
     }
-    Navigator.of(context).pop(
-      ProcedureFlowResult.continueOperation(
-        completedProcedureIds: <String>[widget.procedure.id],
-      ),
+    await _persistAndPop(
+      status: 'CONCLUIDO',
+      resultBuilder: (String executionId) =>
+          ProcedureFlowResult.continueOperation(
+            completedProcedureIds: <String>[widget.procedure.id],
+            executionIds: <String>[executionId],
+          ),
     );
   }
 
@@ -383,8 +380,8 @@ class _OperationalProcedurePreviewMobileScreenState
     if (widget.configuration.enforcementMode ==
         ProcedureEnforcementMode.informative) {
       return context.t(
-        'procedimentos.continueToStartSale',
-        fallback: 'Continuar para a venda',
+        'procedimentos.continueOperation',
+        fallback: 'Continuar operação',
       );
     }
     return context.t(
@@ -398,17 +395,21 @@ class _OperationalProcedurePreviewMobileScreenState
         ProcedureEnforcementMode.recommended) {
       final bool confirmed = await _confirmRecommendedSkip();
       if (!confirmed || !mounted) return;
-      Navigator.of(context).pop(
-        ProcedureFlowResult.skipped(
+      await _persistAndPop(
+        status: 'IGNORADO',
+        resultBuilder: (String executionId) => ProcedureFlowResult.skipped(
           skippedProcedureIds: <String>[widget.procedure.id],
+          executionIds: <String>[executionId],
         ),
       );
       return;
     }
 
-    Navigator.of(context).pop(
-      ProcedureFlowResult.continueOperation(
-        completedProcedureIds: <String>[widget.procedure.id],
+    await _persistAndPop(
+      status: 'IGNORADO',
+      resultBuilder: (String executionId) => ProcedureFlowResult.skipped(
+        skippedProcedureIds: <String>[widget.procedure.id],
+        executionIds: <String>[executionId],
       ),
     );
   }
@@ -418,7 +419,10 @@ class _OperationalProcedurePreviewMobileScreenState
         ProcedureEnforcementMode.required) {
       final bool cancelSale = await _confirmRequiredCancellation();
       if (!cancelSale || !mounted) return;
-      Navigator.of(context).pop(ProcedureFlowResult.cancelled());
+      await _persistAndPop(
+        status: 'CANCELADO',
+        resultBuilder: (_) => const ProcedureFlowResult.cancelled(),
+      );
       return;
     }
 
@@ -426,15 +430,62 @@ class _OperationalProcedurePreviewMobileScreenState
         ProcedureEnforcementMode.recommended) {
       final bool confirmed = await _confirmRecommendedSkip();
       if (!confirmed || !mounted) return;
-      Navigator.of(context).pop(
-        ProcedureFlowResult.skipped(
+      await _persistAndPop(
+        status: 'IGNORADO',
+        resultBuilder: (String executionId) => ProcedureFlowResult.skipped(
           skippedProcedureIds: <String>[widget.procedure.id],
+          executionIds: <String>[executionId],
         ),
       );
       return;
     }
 
-    Navigator.of(context).pop(ProcedureFlowResult.continueOperation());
+    await _persistAndPop(
+      status: 'IGNORADO',
+      resultBuilder: (String executionId) => ProcedureFlowResult.skipped(
+        skippedProcedureIds: <String>[widget.procedure.id],
+        executionIds: <String>[executionId],
+      ),
+    );
+  }
+
+  Future<void> _persistAndPop({
+    required String status,
+    required ProcedureFlowResult Function(String executionId) resultBuilder,
+  }) async {
+    if (_persisting) return;
+    setState(() => _persisting = true);
+    try {
+      final result =
+          await OperationalProcedureService(
+            localeTag: Localizations.localeOf(context).toLanguageTag(),
+          ).persistExecution(
+            procedure: widget.procedure,
+            execution: _execution.copyWith(
+              completedAt: _execution.completedAt ?? DateTime.now(),
+            ),
+            configuration: widget.configuration,
+            status: status,
+            platform: ProcedurePlatform.mobile,
+          );
+      if (mounted) Navigator.of(context).pop(resultBuilder(result.id));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'procedimentos.executionSaveError',
+              fallback:
+                  'Não foi possível salvar as respostas. Tente novamente.',
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _persisting = false);
+    }
   }
 
   Future<bool> _confirmRecommendedSkip() async {
@@ -442,26 +493,25 @@ class _OperationalProcedurePreviewMobileScreenState
           context: context,
           useSafeArea: true,
           backgroundColor: Colors.transparent,
-          builder:
-              (_) => _DiscardPreviewSheet(
-                title: context.t(
-                  'procedimentos.continueWithoutCompletingTitle',
-                  fallback: 'Continuar sem concluir?',
-                ),
-                message: context.t(
-                  'procedimentos.continueWithoutCompletingMessage',
-                  fallback:
-                      'Este procedimento é recomendado antes de iniciar a venda.',
-                ),
-                confirmLabel: context.t(
-                  'procedimentos.continueAnyway',
-                  fallback: 'Continuar mesmo assim',
-                ),
-                cancelLabel: context.t(
-                  'procedimentos.returnToProcedure',
-                  fallback: 'Voltar ao procedimento',
-                ),
-              ),
+          builder: (_) => _DiscardPreviewSheet(
+            title: context.t(
+              'procedimentos.continueWithoutCompletingTitle',
+              fallback: 'Continuar sem concluir?',
+            ),
+            message: context.t(
+              'procedimentos.continueWithoutCompletingOperationalMessage',
+              fallback:
+                  'Este procedimento é recomendado antes de continuar a operação.',
+            ),
+            confirmLabel: context.t(
+              'procedimentos.continueAnyway',
+              fallback: 'Continuar mesmo assim',
+            ),
+            cancelLabel: context.t(
+              'procedimentos.returnToProcedure',
+              fallback: 'Voltar ao procedimento',
+            ),
+          ),
         ) ??
         false;
   }
@@ -471,26 +521,25 @@ class _OperationalProcedurePreviewMobileScreenState
           context: context,
           useSafeArea: true,
           backgroundColor: Colors.transparent,
-          builder:
-              (_) => _DiscardPreviewSheet(
-                title: context.t(
-                  'procedimentos.cancelSaleStartTitle',
-                  fallback: 'Cancelar início da venda?',
-                ),
-                message: context.t(
-                  'procedimentos.cancelSaleStartMessage',
-                  fallback:
-                      'Este procedimento é obrigatório. Ao sair, a nova venda não será iniciada.',
-                ),
-                confirmLabel: context.t(
-                  'procedimentos.cancelSale',
-                  fallback: 'Cancelar venda',
-                ),
-                cancelLabel: context.t(
-                  'procedimentos.returnToProcedure',
-                  fallback: 'Continuar procedimento',
-                ),
-              ),
+          builder: (_) => _DiscardPreviewSheet(
+            title: context.t(
+              'procedimentos.cancelOperationStartTitle',
+              fallback: 'Cancelar início da operação?',
+            ),
+            message: context.t(
+              'procedimentos.cancelOperationStartMessage',
+              fallback:
+                  'Este procedimento é obrigatório. Ao sair, a operação não será iniciada.',
+            ),
+            confirmLabel: context.t(
+              'procedimentos.cancelOperation',
+              fallback: 'Cancelar operação',
+            ),
+            cancelLabel: context.t(
+              'procedimentos.returnToProcedure',
+              fallback: 'Continuar procedimento',
+            ),
+          ),
         ) ??
         false;
   }
@@ -532,18 +581,17 @@ class _OperationalProcedurePreviewMobileScreenState
           context: context,
           useSafeArea: true,
           backgroundColor: Colors.transparent,
-          builder:
-              (_) => _DiscardPreviewSheet(
-                title: context.t(
-                  'procedimentos.previewDiscardTitle',
-                  fallback: 'Descartar respostas?',
-                ),
-                message: context.t(
-                  'procedimentos.previewDiscardMessage',
-                  fallback:
-                      'As respostas desta demonstração serão descartadas ao sair.',
-                ),
-              ),
+          builder: (_) => _DiscardPreviewSheet(
+            title: context.t(
+              'procedimentos.previewDiscardTitle',
+              fallback: 'Descartar respostas?',
+            ),
+            message: context.t(
+              'procedimentos.previewDiscardMessage',
+              fallback:
+                  'As respostas desta demonstração serão descartadas ao sair.',
+            ),
+          ),
         ) ??
         false;
   }
@@ -562,8 +610,9 @@ class _TriggerSimulationPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<ProcedureTrigger> enabled =
-        triggers.where((ProcedureTrigger trigger) => trigger.enabled).toList();
+    final List<ProcedureTrigger> enabled = triggers
+        .where((ProcedureTrigger trigger) => trigger.enabled)
+        .toList();
     final ProcedureTrigger? current =
         selectedTrigger ?? (enabled.isNotEmpty ? enabled.first : null);
 
@@ -607,18 +656,17 @@ class _TriggerSimulationPanel extends StatelessWidget {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children:
-                      enabled.map((ProcedureTrigger trigger) {
-                        final bool selected = trigger.id == current.id;
-                        return ChoiceChip(
-                          label: Text(
-                            '${operationTypeLabel(context, trigger.operationType)} • '
-                            '${triggerMomentLabel(context, trigger.triggerMoment)}',
-                          ),
-                          selected: selected,
-                          onSelected: (_) => onSelected(trigger),
-                        );
-                      }).toList(),
+                  children: enabled.map((ProcedureTrigger trigger) {
+                    final bool selected = trigger.id == current.id;
+                    return ChoiceChip(
+                      label: Text(
+                        '${operationTypeLabel(context, trigger.operationType)} • '
+                        '${triggerMomentLabel(context, trigger.triggerMoment)}',
+                      ),
+                      selected: selected,
+                      onSelected: (_) => onSelected(trigger),
+                    );
+                  }).toList(),
                 ),
               ],
             ],
@@ -689,12 +737,11 @@ class _PreviewHeader extends StatelessWidget {
           OperationalProcedureDemoBadge(
             label: context.t(
               configuration.isOperational
-                  ? 'procedimentos.experimentalIntegration'
+                  ? 'procedimentos.operationalBadge'
                   : 'procedimentos.demoData',
-              fallback:
-                  configuration.isOperational
-                      ? 'Integração experimental'
-                      : 'Dados demonstrativos',
+              fallback: configuration.isOperational
+                  ? 'Procedimento operacional'
+                  : 'Dados demonstrativos',
             ),
           ),
           if (configuration.isOperational) ...<Widget>[
@@ -715,9 +762,9 @@ class _PreviewHeader extends StatelessWidget {
           Text(
             procedure.name.trim().isEmpty
                 ? context.t(
-                  'procedimentos.previewUntitledProcedure',
-                  fallback: 'Procedimento sem nome',
-                )
+                    'procedimentos.previewUntitledProcedure',
+                    fallback: 'Procedimento sem nome',
+                  )
                 : procedure.name,
             style: TextStyle(
               color: SixMobilePalette.onPrimary,
