@@ -165,9 +165,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     final List<GestaoMobileCardPreferencia> novaOrdem =
         List<GestaoMobileCardPreferencia>.of(_ordemCardsGestaoMobile);
     novaOrdem.removeAt(indiceOrigem);
-    final int indiceInsercao = indiceDestino > novaOrdem.length
-        ? novaOrdem.length
-        : indiceDestino;
+    final int indiceInsercao =
+        indiceDestino > novaOrdem.length ? novaOrdem.length : indiceDestino;
     novaOrdem.insert(indiceInsercao, movido);
 
     setState(() {
@@ -205,8 +204,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
     if (!recebeuNovaNotificacao) return;
 
-    final String? mensagem = _notificacaoService.ultimaNotificacao?.description
-        .trim();
+    final String? mensagem =
+        _notificacaoService.ultimaNotificacao?.description.trim();
     if (mensagem == null || mensagem.isEmpty) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -234,9 +233,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     final bool isHub = area == null;
 
     final Widget shell = SixMobilePageShell(
-      title: isHub
-          ? context.t('gestao.title', fallback: 'Gestão')
-          : _areaTitle(context, area),
+      title:
+          isHub
+              ? context.t('gestao.title', fallback: 'Gestão')
+              : _areaTitle(context, area),
       backgroundColor: colors.background,
       primaryColor: colors.primary,
       secondaryColor: colors.secondary,
@@ -254,11 +254,12 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         ),
       ],
       bodyBuilder: isHub ? _buildHubContent : _buildAreaContent,
-      bottomNavigationBar: !isHub || kIsWeb || !widget.showBottomNavigationBar
-          ? null
-          : NavBarMobile(
-              initialIndex: MobileNavigationController.managementIndex,
-            ),
+      bottomNavigationBar:
+          !isHub || kIsWeb || !widget.showBottomNavigationBar
+              ? null
+              : NavBarMobile(
+                initialIndex: MobileNavigationController.managementIndex,
+              ),
     );
 
     if (isHub || area == GestaoMobileArea.configuracoes) {
@@ -456,63 +457,64 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       onWillAcceptWithDetails:
           (DragTargetDetails<GestaoMobileCardPreferencia> details) =>
               details.data != action.preferencia,
-      onAcceptWithDetails:
-          (DragTargetDetails<GestaoMobileCardPreferencia> details) {
-            _reordenarCardsGestaoMobile(details.data, action.preferencia);
-          },
-      builder:
-          (
-            BuildContext context,
-            List<GestaoMobileCardPreferencia?> candidateData,
-            List<dynamic> rejectedData,
-          ) {
-            final bool isDestino = candidateData.isNotEmpty;
-            return AnimatedScale(
-              scale: isDestino ? 1.025 : 1,
-              duration: const Duration(milliseconds: 140),
-              curve: Curves.easeOutCubic,
-              child: LongPressDraggable<GestaoMobileCardPreferencia>(
-                data: action.preferencia,
-                dragAnchorStrategy: pointerDragAnchorStrategy,
-                maxSimultaneousDrags: 1,
-                feedback: Material(
-                  color: Colors.transparent,
-                  child: Transform.scale(
-                    scale: 1.025,
-                    child: SizedBox(
-                      width: itemWidth,
-                      height: cardHeight,
-                      child: buildCard(),
-                    ),
-                  ),
-                ),
-                childWhenDragging: Opacity(opacity: 0.28, child: card),
-                child: SixStaggeredEntry(
-                  delay: Duration(milliseconds: 90 + (index * 45)),
-                  child: card,
+      onAcceptWithDetails: (
+        DragTargetDetails<GestaoMobileCardPreferencia> details,
+      ) {
+        _reordenarCardsGestaoMobile(details.data, action.preferencia);
+      },
+      builder: (
+        BuildContext context,
+        List<GestaoMobileCardPreferencia?> candidateData,
+        List<dynamic> rejectedData,
+      ) {
+        final bool isDestino = candidateData.isNotEmpty;
+        return AnimatedScale(
+          scale: isDestino ? 1.025 : 1,
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
+          child: LongPressDraggable<GestaoMobileCardPreferencia>(
+            data: action.preferencia,
+            dragAnchorStrategy: pointerDragAnchorStrategy,
+            maxSimultaneousDrags: 1,
+            feedback: Material(
+              color: Colors.transparent,
+              child: Transform.scale(
+                scale: 1.025,
+                child: SizedBox(
+                  width: itemWidth,
+                  height: cardHeight,
+                  child: buildCard(),
                 ),
               ),
-            );
-          },
+            ),
+            childWhenDragging: Opacity(opacity: 0.28, child: card),
+            child: SixStaggeredEntry(
+              delay: Duration(milliseconds: 90 + (index * 45)),
+              child: card,
+            ),
+          ),
+        );
+      },
     );
   }
 
   List<_GestaoHubActionData> _hubActions(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color catalogAccent = isDark
-        ? SixMobilePalette.brandCyan
-        : SixMobilePalette.brandBlue;
-    final Color peopleAccent = isDark
-        ? Color.lerp(SixMobilePalette.brandViolet, colors.titleText, 0.34)!
-        : SixMobilePalette.brandViolet;
-    final Color financeAccent = isDark
-        ? SixMobilePalette.brandCyan
-        : Color.lerp(
-            SixMobilePalette.brandCyan,
-            SixMobilePalette.brandNavyDeep,
-            0.48,
-          )!;
+    final Color catalogAccent =
+        isDark ? SixMobilePalette.brandCyan : SixMobilePalette.brandBlue;
+    final Color peopleAccent =
+        isDark
+            ? Color.lerp(SixMobilePalette.brandViolet, colors.titleText, 0.34)!
+            : SixMobilePalette.brandViolet;
+    final Color financeAccent =
+        isDark
+            ? SixMobilePalette.brandCyan
+            : Color.lerp(
+              SixMobilePalette.brandCyan,
+              SixMobilePalette.brandNavyDeep,
+              0.48,
+            )!;
     final Color settingsAccent = isDark ? colors.accent : colors.primary;
 
     final Map<GestaoMobileCardPreferencia, _GestaoHubActionData> actions =
@@ -614,9 +616,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         children: <Widget>[
           SixStaggeredEntry(
             delay: Duration(milliseconds: 80),
-            child: selectedSection.isSettingsCentral
-                ? _buildSettingsCentral(context, selectedSection)
-                : _buildStandardSectionDetails(context, selectedSection),
+            child:
+                selectedSection.isSettingsCentral
+                    ? _buildSettingsCentral(context, selectedSection)
+                    : _buildStandardSectionDetails(context, selectedSection),
           ),
         ],
       ),
@@ -677,9 +680,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
       final empresaProvider = context.watch<EmpresaProvider>();
       final empresa = empresaProvider.empresa;
       if (empresa == null) return null;
-      final String nome = empresa.nomeFantasia.isNotEmpty
-          ? empresa.nomeFantasia
-          : empresa.nomeEmpresa;
+      final String nome =
+          empresa.nomeFantasia.isNotEmpty
+              ? empresa.nomeFantasia
+              : empresa.nomeEmpresa;
       if (nome.trim().isEmpty) return null;
       return nome.trim();
     } catch (_) {
@@ -693,12 +697,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     BuildContext context,
     _ManagementSection section,
   ) {
-    final ManagementOverviewSnapshot snapshot = context
-        .watch<ManagementOverviewProvider>()
-        .snapshot;
-    final bool podeAcessarCatalogo = context
-        .watch<ColaboradorAutorizacoesProvider>()
-        .podeAcessarCatalogo;
+    final ManagementOverviewSnapshot snapshot =
+        context.watch<ManagementOverviewProvider>().snapshot;
+    final bool podeAcessarCatalogo =
+        context.watch<ColaboradorAutorizacoesProvider>().podeAcessarCatalogo;
     final List<ManagementMetricData> metrics = _metricsForSection(
       context,
       section,
@@ -1072,8 +1074,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               'gestao.finance.openSchedule',
               fallback: 'Abrir agenda',
             ),
-            onAction: () =>
-                _navigateTo(context, AgendaFinanceiraMobileScreen()),
+            onAction:
+                () => _navigateTo(context, AgendaFinanceiraMobileScreen()),
           );
         }
         return null;
@@ -1104,9 +1106,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             onTap: item.onTap,
             statusLabel: statusLabel,
             visualGroupId: item.visualGroupId,
-            disabledHint: item.maturity == ManagementSettingsMaturity.comingSoon
-                ? statusLabel
-                : null,
+            disabledHint:
+                item.maturity == ManagementSettingsMaturity.comingSoon
+                    ? statusLabel
+                    : null,
           );
         })
         .toList(growable: false);
@@ -1132,8 +1135,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   // ─── Section definitions ────────────────────────────────────────
 
   List<_ManagementSection> _managementSections(BuildContext context) {
-    final ColaboradorAutorizacoesProvider autorizacoes = context
-        .watch<ColaboradorAutorizacoesProvider>();
+    final ColaboradorAutorizacoesProvider autorizacoes =
+        context.watch<ColaboradorAutorizacoesProvider>();
     final bool podeAcessarCatalogo = autorizacoes.podeAcessarCatalogo;
     final SixMobileColorScheme colors = context.sixMobileColors;
 
@@ -1142,9 +1145,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         type: _ManagementSectionType.catalog,
         title: context.t('gestao.catalog.title', fallback: 'Catálogo'),
         accentColor: colors.accent,
-        actionGroupTitle: context
-            .t('gestao.overview.mainActions', fallback: 'Ações principais')
-            .toUpperCase(),
+        actionGroupTitle:
+            context
+                .t('gestao.overview.mainActions', fallback: 'Ações principais')
+                .toUpperCase(),
         items: <_ManagementItem>[
           if (podeAcessarCatalogo)
             _ManagementItem(
@@ -1158,7 +1162,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               ),
               icon: Icons.shopping_bag_outlined,
               accentColor: colors.accent,
-              emphasis: ManagementActionEmphasis.primary,
+              emphasis: ManagementActionEmphasis.secondary,
               onTap: () => _navigateTo(context, CatalogHealthMobileScreen()),
             ),
           _ManagementItem(
@@ -1173,8 +1177,11 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             icon: Icons.category_outlined,
             accentColor: _peopleAccent,
             emphasis: ManagementActionEmphasis.secondary,
-            onTap: () =>
-                _navigateTo(context, CategoriasProdutosServicosMobileScreen()),
+            onTap:
+                () => _navigateTo(
+                  context,
+                  CategoriasProdutosServicosMobileScreen(),
+                ),
           ),
           _ManagementItem(
             title: context.t('gestao.catalog.inventory', fallback: 'Estoque'),
@@ -1211,9 +1218,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         type: _ManagementSectionType.people,
         title: context.t('gestao.people.title', fallback: 'Pessoas'),
         accentColor: _peopleAccent,
-        actionGroupTitle: context
-            .t('gestao.overview.mainActions', fallback: 'Ações principais')
-            .toUpperCase(),
+        actionGroupTitle:
+            context
+                .t('gestao.overview.mainActions', fallback: 'Ações principais')
+                .toUpperCase(),
         items: <_ManagementItem>[
           _ManagementItem(
             title: context.t('gestao.people.clients', fallback: 'Clientes'),
@@ -1238,8 +1246,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             icon: Icons.badge_outlined,
             accentColor: _peopleAccent,
             emphasis: ManagementActionEmphasis.secondary,
-            onTap: () =>
-                _navigateTo(context, ColaboradoresUsuarioMobileScreen()),
+            onTap:
+                () => _navigateTo(context, ColaboradoresUsuarioMobileScreen()),
           ),
           _ManagementItem(
             title: context.t(
@@ -1261,9 +1269,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
         type: _ManagementSectionType.finance,
         title: context.t('gestao.finance.title', fallback: 'Financeiro'),
         accentColor: _financeAccent,
-        actionGroupTitle: context
-            .t('gestao.finance.actionGroup', fallback: 'Agenda e recursos')
-            .toUpperCase(),
+        actionGroupTitle:
+            context
+                .t('gestao.finance.actionGroup', fallback: 'Agenda e recursos')
+                .toUpperCase(),
         items: <_ManagementItem>[
           _ManagementItem(
             title: context.t(
@@ -1412,8 +1421,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             ),
             icon: Icons.fact_check_outlined,
             maturity: ManagementSettingsMaturity.functional,
-            onTap: () =>
-                _navigateTo(context, OperationalProceduresMobileScreen()),
+            onTap:
+                () => _navigateTo(context, OperationalProceduresMobileScreen()),
           ),
         ],
       ),
@@ -1546,9 +1555,8 @@ class _GestaoHubMark extends StatelessWidget {
               width: 15,
               height: 15,
               decoration: BoxDecoration(
-                color: index == 0 || index == 3
-                    ? colors.accent
-                    : colors.titleText,
+                color:
+                    index == 0 || index == 3 ? colors.accent : colors.titleText,
                 borderRadius: BorderRadius.circular(index == 0 ? 5 : 4),
               ),
             ),
@@ -1637,14 +1645,15 @@ class _GestaoHubActionCard extends StatelessWidget {
                                 isDark ? 108 : 82,
                               ),
                             ),
-                            boxShadow: isDark
-                                ? <BoxShadow>[
-                                    BoxShadow(
-                                      color: data.brandStart.withAlpha(64),
-                                      blurRadius: 20,
-                                    ),
-                                  ]
-                                : const <BoxShadow>[],
+                            boxShadow:
+                                isDark
+                                    ? <BoxShadow>[
+                                      BoxShadow(
+                                        color: data.brandStart.withAlpha(64),
+                                        blurRadius: 20,
+                                      ),
+                                    ]
+                                    : const <BoxShadow>[],
                           ),
                           child: Center(
                             child: SixImagemCanetinha(
