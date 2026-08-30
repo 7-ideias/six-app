@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/atendimento_tecnico_models.dart';
@@ -16,6 +17,7 @@ import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/web/six_web_animated_dialog.dart';
 import '../theme/web_theme_tokens.dart';
+import '../utils/atendimento_tecnico_foto_payload.dart';
 import 'produto_lista_sub_painel_web.dart';
 
 Future<bool> showAtendimentoTecnicoEditarDialog({
@@ -94,6 +96,9 @@ class _AtendimentoTecnicoEditarDialogState
   late DateTime _dataVencimentoEm;
   late DateTime _dataEntregaPrevista;
   final List<_AtendimentoItemEditavel> _itens = <_AtendimentoItemEditavel>[];
+  final List<AtendimentoTecnicoFotoInput> _fotos =
+      <AtendimentoTecnicoFotoInput>[];
+  final ImagePicker _imagePicker = ImagePicker();
   List<_ClienteAtendimentoWeb> _clientes = const <_ClienteAtendimentoWeb>[];
   List<_ResponsavelTecnicoWeb> _responsaveis = const <_ResponsavelTecnicoWeb>[];
   _ClienteAtendimentoWeb? _clienteSelecionado;
@@ -139,6 +144,9 @@ class _AtendimentoTecnicoEditarDialogState
           DateTime.now().add(const Duration(days: 7)),
     );
     _itens.addAll(atendimento.itens.map(_AtendimentoItemEditavel.fromModel));
+    _fotos.addAll(
+      atendimento.fotos.map(AtendimentoTecnicoFotoPayload.fromModel),
+    );
     _carregarClientes();
     _carregarResponsaveis();
   }
@@ -536,6 +544,7 @@ class _AtendimentoTecnicoEditarDialogState
           ),
           defeitoRelatado: _textoOuNulo(_defeitoController.text),
           diagnosticoTecnico: _textoOuNulo(_diagnosticoController.text),
+          fotos: List<AtendimentoTecnicoFotoInput>.unmodifiable(_fotos),
           itens: _itens
               .map((item) => item.toInput(responsavel: responsavel))
               .toList(growable: false),
@@ -1288,6 +1297,8 @@ class _AtendimentoTecnicoEditarDialogState
                                         ),
                                       ),
                                     ),
+                                    const SizedBox(height: 18),
+                                    _buildPhotosSection(theme, tokens),
                                     const SizedBox(height: 12),
                                     TextField(
                                       controller:
@@ -1713,6 +1724,254 @@ class _AtendimentoTecnicoEditarDialogState
           (_ResponsavelTecnicoWeb value) =>
               setState(() => _responsavelSelecionado = value),
     );
+  }
+
+  Widget _buildPhotosSection(ThemeData theme, WebThemeTokens tokens) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: tokens.selectedBackground,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(Icons.photo_camera_outlined, color: tokens.info),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      _t('atendimentoTecnico.photos.title', 'Fotos do serviço'),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: tokens.primaryText,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      _t(
+                        'atendimentoTecnico.photos.hint',
+                        'JPG ou PNG. As fotos também serão exibidas no PDF do atendimento.',
+                      ),
+                      style: TextStyle(color: tokens.secondaryText),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: tokens.surface,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: tokens.cardBorder),
+                ),
+                child: Text(
+                  '${_fotos.length}/${AtendimentoTecnicoFotoPayload.maxFotos}',
+                  style: TextStyle(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final double tileWidth =
+                  constraints.maxWidth < 560
+                      ? constraints.maxWidth
+                      : (constraints.maxWidth - 36) / 4;
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: <Widget>[
+                  if (_fotos.length < AtendimentoTecnicoFotoPayload.maxFotos)
+                    SizedBox(
+                      width: tileWidth,
+                      height: 132,
+                      child: _addPhotoTileWeb(tokens),
+                    ),
+                  ..._fotos.asMap().entries.map(
+                    (MapEntry<int, AtendimentoTecnicoFotoInput> entry) =>
+                        SizedBox(
+                          width: tileWidth,
+                          height: 132,
+                          child: _photoTileWeb(tokens, entry.key, entry.value),
+                        ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _addPhotoTileWeb(WebThemeTokens tokens) {
+    return InkWell(
+      onTap: _salvando ? null : _selecionarFotosWeb,
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        decoration: BoxDecoration(
+          color: tokens.surface,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: tokens.selectedBorder),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(Icons.add_photo_alternate_outlined, color: tokens.info),
+            const SizedBox(height: 8),
+            Text(
+              _t('atendimentoTecnico.photos.select', 'Selecionar fotos'),
+              style: TextStyle(
+                color: tokens.primaryText,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              _t('atendimentoTecnico.photos.remaining', 'até 10 imagens'),
+              style: TextStyle(color: tokens.secondaryText, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _photoTileWeb(
+    WebThemeTokens tokens,
+    int index,
+    AtendimentoTecnicoFotoInput foto,
+  ) {
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        ClipRRect(
+          borderRadius: BorderRadius.circular(15),
+          child: Image.memory(
+            AtendimentoTecnicoFotoPayload.previewBytes(foto),
+            fit: BoxFit.cover,
+          ),
+        ),
+        Positioned(
+          left: 7,
+          right: 42,
+          bottom: 7,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.66),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              child: Text(
+                foto.nomeArquivo,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          right: 7,
+          top: 7,
+          child: IconButton.filled(
+            tooltip: _t('common.remove', 'Remover'),
+            onPressed:
+                _salvando ? null : () => setState(() => _fotos.removeAt(index)),
+            icon: const Icon(Icons.close_rounded, size: 17),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.black.withValues(alpha: 0.66),
+              foregroundColor: Colors.white,
+              minimumSize: const Size(32, 32),
+              padding: EdgeInsets.zero,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _selecionarFotosWeb() async {
+    if (_fotos.length >= AtendimentoTecnicoFotoPayload.maxFotos) {
+      _mostrarMensagem(
+        _t(
+          'atendimentoTecnico.photos.limit',
+          'O limite é de 10 fotos por atendimento.',
+        ),
+      );
+      return;
+    }
+    try {
+      final List<XFile> arquivos = await _imagePicker.pickMultiImage(
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 72,
+      );
+      final int restantes =
+          AtendimentoTecnicoFotoPayload.maxFotos - _fotos.length;
+      final List<AtendimentoTecnicoFotoInput> adicionadas =
+          <AtendimentoTecnicoFotoInput>[];
+      for (final XFile arquivo in arquivos.take(restantes)) {
+        adicionadas.add(await AtendimentoTecnicoFotoPayload.fromXFile(arquivo));
+      }
+      if (!mounted || adicionadas.isEmpty) return;
+      setState(() => _fotos.addAll(adicionadas));
+    } on AtendimentoTecnicoFotoException catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem(_photoErrorMessageWeb(error.code));
+    } catch (_) {
+      if (!mounted) return;
+      _mostrarMensagem(
+        _t(
+          'atendimentoTecnico.photos.readError',
+          'Não foi possível carregar as fotos selecionadas.',
+        ),
+      );
+    }
+  }
+
+  String _photoErrorMessageWeb(String code) {
+    return switch (code) {
+      'PHOTO_TOO_LARGE' => _t(
+        'atendimentoTecnico.photos.tooLarge',
+        'Uma foto ficou muito grande. Reduza a resolução e tente novamente.',
+      ),
+      'PHOTO_FORMAT_UNSUPPORTED' => _t(
+        'atendimentoTecnico.photos.formatUnsupported',
+        'Use fotos nos formatos JPG ou PNG.',
+      ),
+      _ => _t(
+        'atendimentoTecnico.photos.invalid',
+        'Uma das fotos selecionadas não é válida.',
+      ),
+    };
   }
 
   Widget _itemRow(

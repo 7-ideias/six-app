@@ -25,12 +25,30 @@ class AtendimentoTecnicoFotoPayload {
       throw const AtendimentoTecnicoFotoException('PHOTO_FORMAT_UNSUPPORTED');
     }
     return AtendimentoTecnicoFotoInput(
-      nomeArquivo: file.name.trim().isEmpty
-          ? 'foto-servico.${mimeType == 'image/png' ? 'png' : 'jpg'}'
-          : file.name.trim(),
+      nomeArquivo:
+          file.name.trim().isEmpty
+              ? 'foto-servico.${mimeType == 'image/png' ? 'png' : 'jpg'}'
+              : file.name.trim(),
       mimeType: mimeType,
       conteudoBase64: 'data:$mimeType;base64,${base64Encode(bytes)}',
       tamanhoBytes: bytes.length,
+    );
+  }
+
+  static AtendimentoTecnicoFotoInput fromModel(
+    AtendimentoTecnicoFotoModel foto,
+  ) {
+    final String mimeType =
+        _mimeFromDataUrl(foto.conteudoDataUrl) ?? foto.mimeType;
+    return AtendimentoTecnicoFotoInput(
+      nomeArquivo:
+          foto.nomeArquivo.trim().isEmpty
+              ? 'foto-servico.${mimeType == 'image/png' ? 'png' : 'jpg'}'
+              : foto.nomeArquivo.trim(),
+      mimeType: mimeType,
+      conteudoBase64: foto.conteudoDataUrl.trim(),
+      tamanhoBytes: foto.tamanhoBytes,
+      legenda: foto.legenda,
     );
   }
 
@@ -52,6 +70,16 @@ class AtendimentoTecnicoFotoPayload {
     if (_isJpeg(bytes)) return 'image/jpeg';
     if (_isPng(bytes)) return 'image/png';
     return null;
+  }
+
+  static String? _mimeFromDataUrl(String value) {
+    final String normalized = value.trim();
+    if (!normalized.startsWith('data:')) return null;
+    final int separator = normalized.indexOf(',');
+    final String header =
+        separator >= 0 ? normalized.substring(0, separator) : normalized;
+    final String mimeType = header.substring(5).split(';').first.trim();
+    return mimeType.isEmpty ? null : mimeType.toLowerCase();
   }
 
   static bool _isJpeg(Uint8List bytes) {

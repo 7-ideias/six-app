@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/atendimento_tecnico_models.dart';
@@ -13,6 +14,7 @@ import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/date_selector_mobile_bottom_sheet.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
+import '../utils/atendimento_tecnico_foto_payload.dart';
 import 'cliente_usuario_cadastro_mobile_screen.dart';
 import 'produto_list_mobile_screen.dart';
 
@@ -59,6 +61,9 @@ class _AtendimentoTecnicoEditarMobileScreenState
   late final ColaboradorUsuarioApiClient _colaboradorApiClient;
   final List<_AtendimentoItemEditavelMobile> _itens =
       <_AtendimentoItemEditavelMobile>[];
+  final List<AtendimentoTecnicoFotoInput> _fotos =
+      <AtendimentoTecnicoFotoInput>[];
+  final ImagePicker _imagePicker = ImagePicker();
 
   late final TextEditingController _descricaoController;
   late final TextEditingController _tipoController;
@@ -138,6 +143,9 @@ class _AtendimentoTecnicoEditarMobileScreenState
     );
     _itens.addAll(
       atendimento.itens.map(_AtendimentoItemEditavelMobile.fromModel),
+    );
+    _fotos.addAll(
+      atendimento.fotos.map(AtendimentoTecnicoFotoPayload.fromModel),
     );
     _carregarCadastros();
   }
@@ -538,6 +546,8 @@ class _AtendimentoTecnicoEditarMobileScreenState
             ),
           ),
           SizedBox(height: 16),
+          _photosSectionMobile(),
+          SizedBox(height: 16),
           _sectionTitle('Datas'),
           SizedBox(height: 12),
           _dateTile(
@@ -740,6 +750,240 @@ class _AtendimentoTecnicoEditarMobileScreenState
 
     if (responsavel == null || !mounted) return;
     setState(() => _responsavelSelecionado = responsavel);
+  }
+
+  Widget _photosSectionMobile() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    _t('atendimentoTecnico.photos.title', 'Fotos do serviço'),
+                    style: TextStyle(
+                      color: _titleTextColor,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    _t(
+                      'atendimentoTecnico.photos.hint',
+                      'Registre o estado do equipamento. Máximo de 10 fotos.',
+                    ),
+                    style: TextStyle(
+                      color: _mutedTextColor,
+                      fontSize: 12,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color: _softAccentSurfaceColor,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '${_fotos.length}/${AtendimentoTecnicoFotoPayload.maxFotos}',
+                style: TextStyle(
+                  color: _accentColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 12),
+        SizedBox(
+          height: 116,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: <Widget>[
+              if (_fotos.length < AtendimentoTecnicoFotoPayload.maxFotos)
+                _addPhotoTileMobile(),
+              ..._fotos.asMap().entries.map(
+                (MapEntry<int, AtendimentoTecnicoFotoInput> entry) =>
+                    _photoTileMobile(entry.key, entry.value),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _addPhotoTileMobile() {
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: InkWell(
+        onTap: _salvando ? null : _selecionarFotosMobile,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: 104,
+          decoration: BoxDecoration(
+            color: _softSurfaceColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _borderColor),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Icon(Icons.add_a_photo_outlined, color: _accentColor),
+              const SizedBox(height: 7),
+              Text(
+                _t('atendimentoTecnico.photos.add', 'Adicionar'),
+                style: TextStyle(
+                  color: _titleTextColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _photoTileMobile(int index, AtendimentoTecnicoFotoInput foto) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: Stack(
+        children: <Widget>[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.memory(
+              AtendimentoTecnicoFotoPayload.previewBytes(foto),
+              width: 104,
+              height: 116,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned(
+            right: 5,
+            top: 5,
+            child: Material(
+              color: Colors.black.withValues(alpha: 0.62),
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap:
+                    _salvando
+                        ? null
+                        : () => setState(() => _fotos.removeAt(index)),
+                child: const Padding(
+                  padding: EdgeInsets.all(6),
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _selecionarFotosMobile() async {
+    if (_fotos.length >= AtendimentoTecnicoFotoPayload.maxFotos) {
+      _mostrarMensagem(
+        _t(
+          'atendimentoTecnico.photos.limit',
+          'O limite é de 10 fotos por atendimento.',
+        ),
+      );
+      return;
+    }
+    final ImageSource? source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder:
+          (BuildContext context) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: Text(_t('atendimentoTecnico.photos.camera', 'Câmera')),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: Text(_t('atendimentoTecnico.photos.gallery', 'Galeria')),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+    );
+    if (source == null || !mounted) return;
+
+    try {
+      final List<XFile> arquivos;
+      if (source == ImageSource.camera) {
+        final XFile? arquivo = await _imagePicker.pickImage(
+          source: source,
+          maxWidth: 1600,
+          maxHeight: 1600,
+          imageQuality: 72,
+        );
+        arquivos = arquivo == null ? <XFile>[] : <XFile>[arquivo];
+      } else {
+        arquivos = await _imagePicker.pickMultiImage(
+          maxWidth: 1600,
+          maxHeight: 1600,
+          imageQuality: 72,
+        );
+      }
+      final int restantes =
+          AtendimentoTecnicoFotoPayload.maxFotos - _fotos.length;
+      final List<AtendimentoTecnicoFotoInput> adicionadas =
+          <AtendimentoTecnicoFotoInput>[];
+      for (final XFile arquivo in arquivos.take(restantes)) {
+        adicionadas.add(await AtendimentoTecnicoFotoPayload.fromXFile(arquivo));
+      }
+      if (!mounted || adicionadas.isEmpty) return;
+      setState(() => _fotos.addAll(adicionadas));
+    } on AtendimentoTecnicoFotoException catch (error) {
+      if (!mounted) return;
+      _mostrarMensagem(_photoErrorMessage(error.code));
+    } catch (_) {
+      if (!mounted) return;
+      _mostrarMensagem(
+        _t(
+          'atendimentoTecnico.photos.readError',
+          'Não foi possível carregar a foto selecionada.',
+        ),
+      );
+    }
+  }
+
+  String _photoErrorMessage(String code) {
+    return switch (code) {
+      'PHOTO_TOO_LARGE' => _t(
+        'atendimentoTecnico.photos.tooLarge',
+        'A foto ficou muito grande. Tente outra imagem ou reduza a resolução.',
+      ),
+      'PHOTO_FORMAT_UNSUPPORTED' => _t(
+        'atendimentoTecnico.photos.formatUnsupported',
+        'Use fotos nos formatos JPG ou PNG.',
+      ),
+      _ => _t(
+        'atendimentoTecnico.photos.invalid',
+        'A foto selecionada não é válida.',
+      ),
+    };
   }
 
   Widget _itensSection() {
@@ -1104,6 +1348,7 @@ class _AtendimentoTecnicoEditarMobileScreenState
           ),
           defeitoRelatado: _textoOuNulo(_defeitoController.text),
           diagnosticoTecnico: _textoOuNulo(_diagnosticoController.text),
+          fotos: List<AtendimentoTecnicoFotoInput>.unmodifiable(_fotos),
           itens: _itens
               .map((item) => item.toInput(responsavel: responsavel))
               .toList(growable: false),
