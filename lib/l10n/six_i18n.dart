@@ -451,22 +451,19 @@ const Map<String, Map<String, String>> _fallbacks = {
     'usuariosSixo.title': 'Usuários do Sixo',
     'usuariosSixo.subtitle':
         'Consulte os usuários cadastrados com acesso exclusivo para o perfil SUPER.',
-    'usuariosSixo.summarySemantics':
-        'Resumo dos usuários cadastrados no Sixo',
+    'usuariosSixo.summarySemantics': 'Resumo dos usuários cadastrados no Sixo',
     'usuariosSixo.summaryTitle': 'Base global de usuários',
     'usuariosSixo.summarySubtitle':
         'Consulta protegida pelo perfil SUPER do token.',
     'usuariosSixo.totalLabel': 'usuários',
     'usuariosSixo.totalRegistered': 'Usuários cadastrados',
-    'usuariosSixo.searchHint':
-        'Buscar por nome, e-mail, celular ou perfil',
+    'usuariosSixo.searchHint': 'Buscar por nome, e-mail, celular ou perfil',
     'usuariosSixo.resultsLabel': 'encontrados',
     'usuariosSixo.forbiddenTitle': 'Acesso exclusivo para SUPER',
     'usuariosSixo.forbiddenMessage':
         'Seu perfil não possui permissão para consultar os usuários do Sixo.',
     'usuariosSixo.loading': 'Carregando usuários do Sixo',
-    'usuariosSixo.loadErrorTitle':
-        'Não foi possível carregar os usuários',
+    'usuariosSixo.loadErrorTitle': 'Não foi possível carregar os usuários',
     'usuariosSixo.loadError': 'Verifique sua conexão e tente novamente.',
     'usuariosSixo.emptyTitle': 'Nenhum usuário encontrado',
     'usuariosSixo.emptyMessage':
@@ -482,8 +479,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'usuariosSixo.detail.title': 'Detalhes do usuário',
     'usuariosSixo.detail.subtitle':
         'Cadastro, preferências, empresas e vínculos salvos no Sixo.',
-    'usuariosSixo.detail.loadError':
-        'Não foi possível carregar os detalhes.',
+    'usuariosSixo.detail.loadError': 'Não foi possível carregar os detalhes.',
     'usuariosSixo.detail.personal': 'Dados pessoais',
     'usuariosSixo.detail.account': 'Conta e permissões',
     'usuariosSixo.detail.preferences': 'Preferências individuais',
@@ -515,6 +511,17 @@ const Map<String, Map<String, String>> _fallbacks = {
     'usuariosSixo.onboarding.errorTitle': 'Não foi possível atualizar',
     'usuariosSixo.onboarding.errorMessage':
         'Tente novamente. Nenhuma outra informação foi alterada.',
+    'usuariosSixo.passwordReset.title': 'Resetar senha',
+    'usuariosSixo.passwordReset.subtitle':
+        'Use esta ação quando o usuário precisar redefinir a senha de acesso.',
+    'usuariosSixo.passwordReset.dialogTitle': 'Resetar a senha deste usuário?',
+    'usuariosSixo.passwordReset.dialogMessage':
+        'A ação será aplicada imediatamente ao usuário selecionado.',
+    'usuariosSixo.passwordReset.action': 'Resetar senha',
+    'usuariosSixo.passwordReset.successMessage':
+        'O reset de senha foi concluído com sucesso.',
+    'usuariosSixo.passwordReset.errorMessage':
+        'Não foi possível resetar a senha agora. Tente novamente.',
     'initialOnboarding.eyebrow': 'Configuração inicial',
     'initialOnboarding.step': 'Etapa',
     'initialOnboarding.of': 'de',
@@ -524,8 +531,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'initialOnboarding.businessTitle': 'O que seu negócio faz?',
     'initialOnboarding.businessSubtitle':
         'Isso apenas organiza módulos e atalhos. Você poderá alterar depois.',
-    'initialOnboarding.languageQuestion':
-        'Em qual idioma deseja continuar?',
+    'initialOnboarding.languageQuestion': 'Em qual idioma deseja continuar?',
     'initialOnboarding.userName': 'Como podemos chamar você?',
     'initialOnboarding.companyName': 'Nome do seu negócio',
     'initialOnboarding.salesTitle': 'Vende produtos',
@@ -1865,8 +1871,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.people.collaborators': 'Colaboradores',
     'gestao.people.collaboratorsDesc': 'Equipe, acessos e responsabilidades',
     'gestao.people.sixoUsers': 'Usuários do Sixo',
-    'gestao.people.sixoUsersDesc':
-        'Base global protegida pelo perfil SUPER',
+    'gestao.people.sixoUsersDesc': 'Base global protegida pelo perfil SUPER',
     'gestao.people.suppliers': 'Fornecedores',
     'gestao.people.suppliersDesc': 'Parceiros e compras do comércio',
     'gestao.people.performance': 'Desempenho do colaborador',
@@ -2791,8 +2796,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'usuariosSixo.loadErrorTitle': 'Unable to load users',
     'usuariosSixo.loadError': 'Check your connection and try again.',
     'usuariosSixo.emptyTitle': 'No users found',
-    'usuariosSixo.emptyMessage':
-        'Adjust the search to find other users.',
+    'usuariosSixo.emptyMessage': 'Adjust the search to find other users.',
     'usuariosSixo.userFallback': 'Sixo user',
     'usuariosSixo.noEmail': 'Email not provided',
     'usuariosSixo.noPhone': 'Phone not provided',
@@ -2816,14 +2820,12 @@ const Map<String, Map<String, String>> _fallbacks = {
     'usuariosSixo.detail.imageStored': 'Stored image',
     'usuariosSixo.onboarding.completed': 'Onboarding completed',
     'usuariosSixo.onboarding.pending': 'Onboarding pending',
-    'usuariosSixo.onboarding.dialogBarrier':
-        'Change initial onboarding status',
+    'usuariosSixo.onboarding.dialogBarrier': 'Change initial onboarding status',
     'usuariosSixo.onboarding.resetTitle': 'Request onboarding again?',
     'usuariosSixo.onboarding.resetMessage':
         'On the next access, the user will need to confirm their initial data again before entering the system.',
     'usuariosSixo.onboarding.resetAction': 'Redo onboarding',
-    'usuariosSixo.onboarding.completeTitle':
-        'Mark onboarding as completed?',
+    'usuariosSixo.onboarding.completeTitle': 'Mark onboarding as completed?',
     'usuariosSixo.onboarding.completeMessage':
         'The user will no longer see initial onboarding on future access.',
     'usuariosSixo.onboarding.completeAction': 'Mark as completed',
@@ -2836,6 +2838,17 @@ const Map<String, Map<String, String>> _fallbacks = {
     'usuariosSixo.onboarding.errorTitle': 'Unable to update',
     'usuariosSixo.onboarding.errorMessage':
         'Try again. No other information was changed.',
+    'usuariosSixo.passwordReset.title': 'Reset password',
+    'usuariosSixo.passwordReset.subtitle':
+        'Use this action when the user needs to redefine their sign-in password.',
+    'usuariosSixo.passwordReset.dialogTitle': 'Reset this user password?',
+    'usuariosSixo.passwordReset.dialogMessage':
+        'The action will be applied immediately to the selected user.',
+    'usuariosSixo.passwordReset.action': 'Reset password',
+    'usuariosSixo.passwordReset.successMessage':
+        'The password reset was completed successfully.',
+    'usuariosSixo.passwordReset.errorMessage':
+        'Could not reset the password right now. Try again.',
     'initialOnboarding.eyebrow': 'Initial setup',
     'initialOnboarding.step': 'Step',
     'initialOnboarding.of': 'of',
@@ -2858,8 +2871,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'initialOnboarding.start': 'Start using SixoApp',
     'initialOnboarding.activityRequired':
         'Select sales, technical services, or both.',
-    'initialOnboarding.userNameRequired':
-        'Enter your name to continue.',
+    'initialOnboarding.userNameRequired': 'Enter your name to continue.',
     'initialOnboarding.companyNameRequired':
         'Enter the company name to continue.',
     'initialOnboarding.saveError': 'Unable to save now. Please try again.',
@@ -4083,8 +4095,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.people.collaborators': 'Collaborators',
     'gestao.people.collaboratorsDesc': 'Team, access and responsibilities',
     'gestao.people.sixoUsers': 'Sixo users',
-    'gestao.people.sixoUsersDesc':
-        'Global base protected by the SUPER role',
+    'gestao.people.sixoUsersDesc': 'Global base protected by the SUPER role',
     'gestao.people.suppliers': 'Suppliers',
     'gestao.people.suppliersDesc': 'Partners and business purchases',
 
@@ -4900,24 +4911,20 @@ const Map<String, Map<String, String>> _fallbacks = {
     'usuariosSixo.title': 'Usuarios de Sixo',
     'usuariosSixo.subtitle':
         'Consulta todos los usuarios registrados con acceso exclusivo para el perfil SUPER.',
-    'usuariosSixo.summarySemantics':
-        'Resumen de usuarios registrados en Sixo',
+    'usuariosSixo.summarySemantics': 'Resumen de usuarios registrados en Sixo',
     'usuariosSixo.summaryTitle': 'Base global de usuarios',
     'usuariosSixo.summarySubtitle':
         'Consulta protegida por el perfil SUPER del token.',
     'usuariosSixo.totalLabel': 'usuarios',
     'usuariosSixo.totalRegistered': 'Usuarios registrados',
-    'usuariosSixo.searchHint':
-        'Buscar por nombre, correo, celular o perfil',
+    'usuariosSixo.searchHint': 'Buscar por nombre, correo, celular o perfil',
     'usuariosSixo.resultsLabel': 'encontrados',
     'usuariosSixo.forbiddenTitle': 'Acceso exclusivo para SUPER',
     'usuariosSixo.forbiddenMessage':
         'Tu perfil no tiene permiso para consultar los usuarios de Sixo.',
     'usuariosSixo.loading': 'Cargando usuarios de Sixo',
-    'usuariosSixo.loadErrorTitle':
-        'No fue posible cargar los usuarios',
-    'usuariosSixo.loadError':
-        'Verifica tu conexión e inténtalo de nuevo.',
+    'usuariosSixo.loadErrorTitle': 'No fue posible cargar los usuarios',
+    'usuariosSixo.loadError': 'Verifica tu conexión e inténtalo de nuevo.',
     'usuariosSixo.emptyTitle': 'No se encontraron usuarios',
     'usuariosSixo.emptyMessage':
         'Ajusta la búsqueda para consultar otros usuarios.',
@@ -4932,8 +4939,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'usuariosSixo.detail.title': 'Detalles del usuario',
     'usuariosSixo.detail.subtitle':
         'Registro, preferencias, empresas y vínculos guardados en Sixo.',
-    'usuariosSixo.detail.loadError':
-        'No fue posible cargar los detalles.',
+    'usuariosSixo.detail.loadError': 'No fue posible cargar los detalles.',
     'usuariosSixo.detail.personal': 'Datos personales',
     'usuariosSixo.detail.account': 'Cuenta y permisos',
     'usuariosSixo.detail.preferences': 'Preferencias individuales',
@@ -4947,7 +4953,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'usuariosSixo.onboarding.pending': 'Onboarding pendiente',
     'usuariosSixo.onboarding.dialogBarrier':
         'Cambiar estado del onboarding inicial',
-    'usuariosSixo.onboarding.resetTitle': '¿Solicitar nuevamente el onboarding?',
+    'usuariosSixo.onboarding.resetTitle':
+        '¿Solicitar nuevamente el onboarding?',
     'usuariosSixo.onboarding.resetMessage':
         'En el próximo acceso, el usuario deberá confirmar nuevamente sus datos iniciales antes de entrar al sistema.',
     'usuariosSixo.onboarding.resetAction': 'Repetir onboarding',
@@ -4965,6 +4972,18 @@ const Map<String, Map<String, String>> _fallbacks = {
     'usuariosSixo.onboarding.errorTitle': 'No fue posible actualizar',
     'usuariosSixo.onboarding.errorMessage':
         'Inténtalo de nuevo. No se modificó ninguna otra información.',
+    'usuariosSixo.passwordReset.title': 'Restablecer contraseña',
+    'usuariosSixo.passwordReset.subtitle':
+        'Usa esta acción cuando el usuario necesite redefinir su contraseña de acceso.',
+    'usuariosSixo.passwordReset.dialogTitle':
+        '¿Restablecer la contraseña de este usuario?',
+    'usuariosSixo.passwordReset.dialogMessage':
+        'La acción se aplicará inmediatamente al usuario seleccionado.',
+    'usuariosSixo.passwordReset.action': 'Restablecer contraseña',
+    'usuariosSixo.passwordReset.successMessage':
+        'El restablecimiento de contraseña se completó correctamente.',
+    'usuariosSixo.passwordReset.errorMessage':
+        'No fue posible restablecer la contraseña ahora. Inténtalo de nuevo.',
     'initialOnboarding.eyebrow': 'Configuración inicial',
     'initialOnboarding.step': 'Paso',
     'initialOnboarding.of': 'de',
@@ -4974,8 +4993,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'initialOnboarding.businessTitle': '¿Qué hace tu negocio?',
     'initialOnboarding.businessSubtitle':
         'Esto solo organiza módulos y accesos. Podrás cambiarlo después.',
-    'initialOnboarding.languageQuestion':
-        '¿En qué idioma deseas continuar?',
+    'initialOnboarding.languageQuestion': '¿En qué idioma deseas continuar?',
     'initialOnboarding.userName': '¿Cómo podemos llamarte?',
     'initialOnboarding.companyName': 'Nombre de tu negocio',
     'initialOnboarding.salesTitle': 'Vende productos',
@@ -4987,8 +5005,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'initialOnboarding.start': 'Comenzar a usar SixoApp',
     'initialOnboarding.activityRequired':
         'Selecciona ventas, servicios técnicos o ambos.',
-    'initialOnboarding.userNameRequired':
-        'Ingresa tu nombre para continuar.',
+    'initialOnboarding.userNameRequired': 'Ingresa tu nombre para continuar.',
     'initialOnboarding.companyNameRequired':
         'Ingresa el nombre de la empresa para continuar.',
     'initialOnboarding.saveError':
@@ -6256,8 +6273,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'gestao.people.collaborators': 'Colaboradores',
     'gestao.people.collaboratorsDesc': 'Equipo, accesos y responsabilidades',
     'gestao.people.sixoUsers': 'Usuarios de Sixo',
-    'gestao.people.sixoUsersDesc':
-        'Base global protegida por el perfil SUPER',
+    'gestao.people.sixoUsersDesc': 'Base global protegida por el perfil SUPER',
     'gestao.people.suppliers': 'Proveedores',
     'gestao.people.suppliersDesc': 'Socios y compras del comercio',
 

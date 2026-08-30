@@ -30,10 +30,12 @@ class _UsuarioSixoDetalheMobileScreenState
   bool _loading = true;
   bool _loadFailed = false;
   bool _updatingOnboarding = false;
+  bool _resettingPassword = false;
 
-  String get _idUsuario => widget.usuario.idUnicoDoUsuario.trim().isNotEmpty
-      ? widget.usuario.idUnicoDoUsuario.trim()
-      : widget.usuario.keycloakId.trim();
+  String get _idUsuario =>
+      widget.usuario.idUnicoDoUsuario.trim().isNotEmpty
+          ? widget.usuario.idUnicoDoUsuario.trim()
+          : widget.usuario.keycloakId.trim();
 
   @override
   void initState() {
@@ -78,26 +80,26 @@ class _UsuarioSixoDetalheMobileScreenState
           title: Text(
             novoValor
                 ? context.t(
-                    'usuariosSixo.onboarding.completeTitle',
-                    fallback: 'Marcar onboarding como concluído?',
-                  )
+                  'usuariosSixo.onboarding.completeTitle',
+                  fallback: 'Marcar onboarding como concluído?',
+                )
                 : context.t(
-                    'usuariosSixo.onboarding.resetTitle',
-                    fallback: 'Solicitar novo onboarding?',
-                  ),
+                  'usuariosSixo.onboarding.resetTitle',
+                  fallback: 'Solicitar novo onboarding?',
+                ),
           ),
           content: Text(
             novoValor
                 ? context.t(
-                    'usuariosSixo.onboarding.completeMessage',
-                    fallback:
-                        'O usuário deixará de ver o onboarding inicial nos próximos acessos.',
-                  )
+                  'usuariosSixo.onboarding.completeMessage',
+                  fallback:
+                      'O usuário deixará de ver o onboarding inicial nos próximos acessos.',
+                )
                 : context.t(
-                    'usuariosSixo.onboarding.resetMessage',
-                    fallback:
-                        'No próximo acesso, o usuário deverá confirmar novamente seus dados iniciais antes de entrar no sistema.',
-                  ),
+                  'usuariosSixo.onboarding.resetMessage',
+                  fallback:
+                      'No próximo acesso, o usuário deverá confirmar novamente seus dados iniciais antes de entrar no sistema.',
+                ),
           ),
           actions: <Widget>[
             TextButton(
@@ -109,13 +111,13 @@ class _UsuarioSixoDetalheMobileScreenState
               child: Text(
                 novoValor
                     ? context.t(
-                        'usuariosSixo.onboarding.completeAction',
-                        fallback: 'Marcar como concluído',
-                      )
+                      'usuariosSixo.onboarding.completeAction',
+                      fallback: 'Marcar como concluído',
+                    )
                     : context.t(
-                        'usuariosSixo.onboarding.resetAction',
-                        fallback: 'Refazer onboarding',
-                      ),
+                      'usuariosSixo.onboarding.resetAction',
+                      fallback: 'Refazer onboarding',
+                    ),
               ),
             ),
           ],
@@ -126,8 +128,8 @@ class _UsuarioSixoDetalheMobileScreenState
 
     setState(() => _updatingOnboarding = true);
     try {
-      final AdminUsuarioDetalhe updated =
-          await _service.atualizarOnboardingInicial(
+      final AdminUsuarioDetalhe updated = await _service
+          .atualizarOnboardingInicial(
             idUsuario: detail.identificador,
             fezOnboardingInicial: novoValor,
           );
@@ -159,6 +161,81 @@ class _UsuarioSixoDetalheMobileScreenState
           ),
         ),
       );
+    }
+  }
+
+  Future<void> _resetPassword() async {
+    final AdminUsuarioDetalhe? detail = _detail;
+    if (detail == null || _resettingPassword) return;
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          icon: const Icon(Icons.lock_reset_rounded),
+          title: Text(
+            context.t(
+              'usuariosSixo.passwordReset.dialogTitle',
+              fallback: 'Resetar a senha deste usuário?',
+            ),
+          ),
+          content: Text(
+            context.t(
+              'usuariosSixo.passwordReset.dialogMessage',
+              fallback:
+                  'A ação será aplicada imediatamente ao usuário selecionado.',
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(context.t('common.cancel', fallback: 'Cancelar')),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              icon: const Icon(Icons.lock_reset_rounded),
+              label: Text(
+                context.t(
+                  'usuariosSixo.passwordReset.action',
+                  fallback: 'Resetar senha',
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _resettingPassword = true);
+    try {
+      await _service.resetarSenhaUsuarioSixo(idUsuario: detail.identificador);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'usuariosSixo.passwordReset.successMessage',
+              fallback: 'O reset de senha foi concluído com sucesso.',
+            ),
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'usuariosSixo.passwordReset.errorMessage',
+              fallback:
+                  'Não foi possível resetar a senha agora. Tente novamente.',
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _resettingPassword = false);
     }
   }
 
@@ -235,6 +312,11 @@ class _UsuarioSixoDetalheMobileScreenState
           complete: detail.fezOnboardingInicial,
           loading: _updatingOnboarding,
           onPressed: _changeOnboarding,
+        ),
+        const SizedBox(height: 12),
+        _MobilePasswordResetCard(
+          loading: _resettingPassword,
+          onPressed: _resetPassword,
         ),
         const SizedBox(height: 12),
         _MobileDetailSection(
@@ -413,13 +495,13 @@ class _MobileOnboardingCard extends StatelessWidget {
                 child: Text(
                   complete
                       ? context.t(
-                          'usuariosSixo.onboarding.completed',
-                          fallback: 'Onboarding concluído',
-                        )
+                        'usuariosSixo.onboarding.completed',
+                        fallback: 'Onboarding concluído',
+                      )
                       : context.t(
-                          'usuariosSixo.onboarding.pending',
-                          fallback: 'Onboarding pendente',
-                        ),
+                        'usuariosSixo.onboarding.pending',
+                        fallback: 'Onboarding pendente',
+                      ),
                   style: TextStyle(
                     color: colors.titleText,
                     fontWeight: FontWeight.w900,
@@ -433,26 +515,133 @@ class _MobileOnboardingCard extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: loading ? null : onPressed,
-              icon: loading
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Icon(
-                      complete
-                          ? Icons.restart_alt_rounded
-                          : Icons.task_alt_rounded,
-                    ),
+              icon:
+                  loading
+                      ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : Icon(
+                        complete
+                            ? Icons.restart_alt_rounded
+                            : Icons.task_alt_rounded,
+                      ),
               label: Text(
                 complete
                     ? context.t(
-                        'usuariosSixo.onboarding.resetAction',
-                        fallback: 'Refazer onboarding',
-                      )
+                      'usuariosSixo.onboarding.resetAction',
+                      fallback: 'Refazer onboarding',
+                    )
                     : context.t(
-                        'usuariosSixo.onboarding.completeAction',
-                        fallback: 'Marcar como concluído',
+                      'usuariosSixo.onboarding.completeAction',
+                      fallback: 'Marcar como concluído',
+                    ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MobilePasswordResetCard extends StatelessWidget {
+  const _MobilePasswordResetCard({
+    required this.loading,
+    required this.onPressed,
+  });
+
+  final bool loading;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: colors.softSurface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colors.errorBorder),
+                ),
+                child: Icon(
+                  Icons.lock_reset_rounded,
+                  color: colors.error,
+                  size: 19,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      context.t(
+                        'usuariosSixo.passwordReset.title',
+                        fallback: 'Resetar senha',
                       ),
+                      style: TextStyle(
+                        color: colors.titleText,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      context.t(
+                        'usuariosSixo.passwordReset.subtitle',
+                        fallback:
+                            'Use esta ação quando o usuário precisar redefinir a senha de acesso.',
+                      ),
+                      style: TextStyle(
+                        color: colors.mutedText,
+                        fontSize: 12,
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: loading ? null : onPressed,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colors.error,
+                side: BorderSide(color: colors.errorBorder),
+                backgroundColor: colors.softSurface,
+              ),
+              icon:
+                  loading
+                      ? SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colors.error,
+                        ),
+                      )
+                      : Icon(Icons.lock_reset_rounded, color: colors.error),
+              label: Text(
+                context.t(
+                  'usuariosSixo.passwordReset.action',
+                  fallback: 'Resetar senha',
+                ),
               ),
             ),
           ),

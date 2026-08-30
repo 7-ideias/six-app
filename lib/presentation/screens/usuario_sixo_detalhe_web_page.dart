@@ -25,18 +25,19 @@ class UsuarioSixoDetalheWebPage extends StatefulWidget {
       _UsuarioSixoDetalheWebPageState();
 }
 
-class _UsuarioSixoDetalheWebPageState
-    extends State<UsuarioSixoDetalheWebPage> {
+class _UsuarioSixoDetalheWebPageState extends State<UsuarioSixoDetalheWebPage> {
   late final AdminPortalService _service =
       widget.service ?? AdminPortalService();
 
   AdminUsuarioDetalhe? _detail;
   bool _loading = true;
   bool _loadFailed = false;
+  bool _resettingPassword = false;
 
-  String get _idUsuario => widget.usuario.idUnicoDoUsuario.trim().isNotEmpty
-      ? widget.usuario.idUnicoDoUsuario.trim()
-      : widget.usuario.keycloakId.trim();
+  String get _idUsuario =>
+      widget.usuario.idUnicoDoUsuario.trim().isNotEmpty
+          ? widget.usuario.idUnicoDoUsuario.trim()
+          : widget.usuario.keycloakId.trim();
 
   @override
   void initState() {
@@ -75,8 +76,8 @@ class _UsuarioSixoDetalheWebPageState
       nomeUsuario: detail.nomeExibicao,
       valorAtual: detail.fezOnboardingInicial,
       onConfirm: (bool novoValor) async {
-        final AdminUsuarioDetalhe updated =
-            await _service.atualizarOnboardingInicial(
+        final AdminUsuarioDetalhe updated = await _service
+            .atualizarOnboardingInicial(
               idUsuario: detail.identificador,
               fezOnboardingInicial: novoValor,
             );
@@ -87,6 +88,81 @@ class _UsuarioSixoDetalheWebPageState
     );
     if (changed && mounted) {
       setState(() {});
+    }
+  }
+
+  Future<void> _resetPassword() async {
+    final AdminUsuarioDetalhe? detail = _detail;
+    if (detail == null || _resettingPassword) return;
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          icon: const Icon(Icons.lock_reset_rounded),
+          title: Text(
+            context.t(
+              'usuariosSixo.passwordReset.dialogTitle',
+              fallback: 'Resetar a senha deste usuário?',
+            ),
+          ),
+          content: Text(
+            context.t(
+              'usuariosSixo.passwordReset.dialogMessage',
+              fallback:
+                  'A ação será aplicada imediatamente ao usuário selecionado.',
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(context.t('common.cancel', fallback: 'Cancelar')),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              icon: const Icon(Icons.lock_reset_rounded),
+              label: Text(
+                context.t(
+                  'usuariosSixo.passwordReset.action',
+                  fallback: 'Resetar senha',
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _resettingPassword = true);
+    try {
+      await _service.resetarSenhaUsuarioSixo(idUsuario: detail.identificador);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'usuariosSixo.passwordReset.successMessage',
+              fallback: 'O reset de senha foi concluído com sucesso.',
+            ),
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'usuariosSixo.passwordReset.errorMessage',
+              fallback:
+                  'Não foi possível resetar a senha agora. Tente novamente.',
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _resettingPassword = false);
     }
   }
 
@@ -163,13 +239,19 @@ class _UsuarioSixoDetalheWebPageState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              _WebUserHero(detail: detail, onChangeOnboarding: _changeOnboarding),
+              _WebUserHero(
+                detail: detail,
+                onChangeOnboarding: _changeOnboarding,
+                onResetPassword: _resetPassword,
+                resettingPassword: _resettingPassword,
+              ),
               const SizedBox(height: 16),
               LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
-                  final double width = constraints.maxWidth >= 900
-                      ? (constraints.maxWidth - 16) / 2
-                      : constraints.maxWidth;
+                  final double width =
+                      constraints.maxWidth >= 900
+                          ? (constraints.maxWidth - 16) / 2
+                          : constraints.maxWidth;
                   return Wrap(
                     spacing: 16,
                     runSpacing: 16,
@@ -276,10 +358,14 @@ class _WebUserHero extends StatelessWidget {
   const _WebUserHero({
     required this.detail,
     required this.onChangeOnboarding,
+    required this.onResetPassword,
+    required this.resettingPassword,
   });
 
   final AdminUsuarioDetalhe detail;
   final VoidCallback onChangeOnboarding;
+  final VoidCallback onResetPassword;
+  final bool resettingPassword;
 
   @override
   Widget build(BuildContext context) {
@@ -292,88 +378,130 @@ class _WebUserHero extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: tokens.cardBorder),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: tokens.selectedBackground,
-            foregroundColor: tokens.info,
-            child: const Icon(Icons.person_rounded, size: 31),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  detail.nomeExibicao,
-                  style: TextStyle(
-                    color: tokens.primaryText,
-                    fontSize: 21,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  detail.identificador,
-                  style: TextStyle(color: tokens.mutedText, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: (complete ? tokens.success : tokens.warning).withValues(
-                alpha: 0.10,
+          Row(
+            children: <Widget>[
+              CircleAvatar(
+                radius: 30,
+                backgroundColor: tokens.selectedBackground,
+                foregroundColor: tokens.info,
+                child: const Icon(Icons.person_rounded, size: 31),
               ),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(
-                  complete ? Icons.check_circle_rounded : Icons.pending_rounded,
-                  size: 17,
-                  color: complete ? tokens.success : tokens.warning,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      detail.nomeExibicao,
+                      style: TextStyle(
+                        color: tokens.primaryText,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      detail.identificador,
+                      style: TextStyle(color: tokens.mutedText, fontSize: 12),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 6),
-                Text(
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: (complete ? tokens.success : tokens.warning)
+                      .withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(
+                      complete
+                          ? Icons.check_circle_rounded
+                          : Icons.pending_rounded,
+                      size: 17,
+                      color: complete ? tokens.success : tokens.warning,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      complete
+                          ? context.t(
+                            'usuariosSixo.onboarding.completed',
+                            fallback: 'Onboarding concluído',
+                          )
+                          : context.t(
+                            'usuariosSixo.onboarding.pending',
+                            fallback: 'Onboarding pendente',
+                          ),
+                      style: TextStyle(
+                        color: complete ? tokens.success : tokens.warning,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: onChangeOnboarding,
+                icon: Icon(
+                  complete ? Icons.restart_alt_rounded : Icons.task_alt_rounded,
+                ),
+                label: Text(
                   complete
                       ? context.t(
-                          'usuariosSixo.onboarding.completed',
-                          fallback: 'Onboarding concluído',
-                        )
+                        'usuariosSixo.onboarding.resetAction',
+                        fallback: 'Refazer onboarding',
+                      )
                       : context.t(
-                          'usuariosSixo.onboarding.pending',
-                          fallback: 'Onboarding pendente',
-                        ),
-                  style: TextStyle(
-                    color: complete ? tokens.success : tokens.warning,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
+                        'usuariosSixo.onboarding.completeAction',
+                        fallback: 'Marcar como concluído',
+                      ),
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: resettingPassword ? null : onResetPassword,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: tokens.danger,
+                  side: BorderSide(
+                    color: tokens.danger.withValues(alpha: 0.32),
+                  ),
+                  backgroundColor: tokens.surfaceMuted,
+                ),
+                icon:
+                    resettingPassword
+                        ? SizedBox.square(
+                          dimension: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: tokens.danger,
+                          ),
+                        )
+                        : Icon(Icons.lock_reset_rounded, color: tokens.danger),
+                label: Text(
+                  context.t(
+                    'usuariosSixo.passwordReset.action',
+                    fallback: 'Resetar senha',
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          OutlinedButton.icon(
-            onPressed: onChangeOnboarding,
-            icon: Icon(
-              complete ? Icons.restart_alt_rounded : Icons.task_alt_rounded,
-            ),
-            label: Text(
-              complete
-                  ? context.t(
-                      'usuariosSixo.onboarding.resetAction',
-                      fallback: 'Refazer onboarding',
-                    )
-                  : context.t(
-                      'usuariosSixo.onboarding.completeAction',
-                      fallback: 'Marcar como concluído',
-                    ),
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -453,12 +581,13 @@ class _WebCollectionSection extends StatelessWidget {
     return _WebDetailSection(
       icon: icon,
       title: title,
-      values: items.isEmpty
-          ? <String, dynamic>{'situacao': emptyLabel}
-          : <String, dynamic>{
-              for (int i = 0; i < items.length; i++)
-                ..._flatten(items[i], prefix: '${i + 1}'),
-            },
+      values:
+          items.isEmpty
+              ? <String, dynamic>{'situacao': emptyLabel}
+              : <String, dynamic>{
+                for (int i = 0; i < items.length; i++)
+                  ..._flatten(items[i], prefix: '${i + 1}'),
+              },
     );
   }
 }
