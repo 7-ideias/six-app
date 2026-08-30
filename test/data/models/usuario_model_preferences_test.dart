@@ -334,6 +334,7 @@ void main() {
           'ordemCardsServicosMobile': <String>[
             'SERVICOS_EM_ANDAMENTO',
             'ORCAMENTOS_AGUARDANDO_APROVACAO',
+            'SERVICOS_JA_ENCERRADOS',
             'NOVO_SERVICO',
           ],
           'ordemCardsReceberMobile': <String>[
@@ -358,6 +359,7 @@ void main() {
       expect(preferencias.toJson()['ordemCardsServicosMobile'], <String>[
         'SERVICOS_EM_ANDAMENTO',
         'ORCAMENTOS_AGUARDANDO_APROVACAO',
+        'SERVICOS_JA_ENCERRADOS',
         'NOVO_SERVICO',
       ]);
       expect(preferencias.toJson()['ordemCardsReceberMobile'], <String>[

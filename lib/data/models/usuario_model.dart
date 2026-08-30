@@ -62,9 +62,10 @@ class UsuarioModel {
             json['imagemPerfil'] ??
             json['imagemDoUsuario'],
       ),
-      objEndereco: json['objEndereco'] != null
-          ? EnderecoModel.fromJson(json['objEndereco'])
-          : null,
+      objEndereco:
+          json['objEndereco'] != null
+              ? EnderecoModel.fromJson(json['objEndereco'])
+              : null,
       preferenciasIndividuaisDoUsuario:
           PreferenciasIndividuaisDoUsuarioModel.fromJson(
             json['preferenciasIndividuaisDoUsuario'],
@@ -137,8 +138,7 @@ class UsuarioModel {
       enviarPreferenciasIndividuaisDoUsuario:
           enviarPreferenciasIndividuaisDoUsuario ??
           this.enviarPreferenciasIndividuaisDoUsuario,
-      fezOnboardingInicial:
-          fezOnboardingInicial ?? this.fezOnboardingInicial,
+      fezOnboardingInicial: fezOnboardingInicial ?? this.fezOnboardingInicial,
     );
   }
 
@@ -529,9 +529,10 @@ extension GestaoMobileCardPreferenciaApi on GestaoMobileCardPreferencia {
     if (value is Iterable) {
       final List<GestaoMobileCardPreferencia> ordem = value
           .map(
-            (dynamic item) => item is GestaoMobileCardPreferencia
-                ? item
-                : tryFromCodigo(item),
+            (dynamic item) =>
+                item is GestaoMobileCardPreferencia
+                    ? item
+                    : tryFromCodigo(item),
           )
           .whereType<GestaoMobileCardPreferencia>()
           .toList(growable: false);
@@ -640,6 +641,7 @@ enum ServicosMobileCardPreferencia {
   novoServico,
   servicosEmAndamento,
   orcamentosAguardandoAprovacao,
+  servicosJaEncerrados,
 }
 
 extension ServicosMobileCardPreferenciaApi on ServicosMobileCardPreferencia {
@@ -651,6 +653,8 @@ extension ServicosMobileCardPreferenciaApi on ServicosMobileCardPreferencia {
         return 'SERVICOS_EM_ANDAMENTO';
       case ServicosMobileCardPreferencia.orcamentosAguardandoAprovacao:
         return 'ORCAMENTOS_AGUARDANDO_APROVACAO';
+      case ServicosMobileCardPreferencia.servicosJaEncerrados:
+        return 'SERVICOS_JA_ENCERRADOS';
     }
   }
 
@@ -663,6 +667,8 @@ extension ServicosMobileCardPreferenciaApi on ServicosMobileCardPreferencia {
         return ServicosMobileCardPreferencia.servicosEmAndamento;
       case 'ORCAMENTOS_AGUARDANDO_APROVACAO':
         return ServicosMobileCardPreferencia.orcamentosAguardandoAprovacao;
+      case 'SERVICOS_JA_ENCERRADOS':
+        return ServicosMobileCardPreferencia.servicosJaEncerrados;
       default:
         return null;
     }
@@ -974,8 +980,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
       'catalogoReservasFiltrosWeb': catalogoReservasFiltrosWeb.toJson(),
       'consultaVendasFiltrosWeb': consultaVendasFiltrosWeb.toJson(),
       'atendimentosCriadosFiltrosWeb': atendimentosCriadosFiltrosWeb.toJson(),
-      'atendimentosCriadosFiltrosMobile': atendimentosCriadosFiltrosMobile
-          .toJson(),
+      'atendimentosCriadosFiltrosMobile':
+          atendimentosCriadosFiltrosMobile.toJson(),
       'ordemCardsGestaoMobile': ordemCardsGestaoMobile
           .map((GestaoMobileCardPreferencia item) => item.codigo)
           .toList(growable: false),
