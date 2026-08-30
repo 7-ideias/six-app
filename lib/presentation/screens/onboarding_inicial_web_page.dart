@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -11,9 +9,9 @@ import '../../providers/locale_settings_provider.dart';
 import '../../providers/onboarding_inicial_provider.dart';
 import '../theme/web_theme_tokens.dart';
 
-const Color _brandNavy = Color(0xFF061D4B);
-const Color _brandBlue = Color(0xFF1647D8);
-const Color _brandCyan = Color(0xFF12D5E8);
+const Color _navy = Color(0xFF061D4B);
+const Color _blue = Color(0xFF145BFF);
+const Color _cyan = Color(0xFF10D9F0);
 
 class OnboardingInicialWebPage extends StatefulWidget {
   const OnboardingInicialWebPage({super.key, required this.onCompleted});
@@ -35,10 +33,6 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
   bool _realizaVendas = false;
   bool _prestaServicos = false;
   String? _errorKey;
-
-  Duration get _transitionDuration => MediaQuery.disableAnimationsOf(context)
-      ? Duration.zero
-      : const Duration(milliseconds: 260);
 
   @override
   void didChangeDependencies() {
@@ -79,225 +73,332 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
 
     return Scaffold(
       backgroundColor: tokens.workspaceBackground,
-      body: Stack(
-        children: <Widget>[
-          Positioned.fill(child: _OnboardingWebBackdrop(tokens: tokens)),
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final bool compact = constraints.maxWidth < 900;
-                final double horizontalPadding = compact ? 18 : 32;
-                final double targetHeight = (constraints.maxHeight - 64)
-                    .clamp(610.0, 720.0)
-                    .toDouble();
-
-                return SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: horizontalPadding,
-                    vertical: compact ? 18 : 32,
-                  ),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1140),
-                      child: Container(
-                        constraints: BoxConstraints(
-                          minHeight: compact ? 0 : targetHeight,
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        decoration: BoxDecoration(
-                          color: tokens.surfaceElevated,
-                          borderRadius: BorderRadius.circular(compact ? 26 : 32),
-                          border: Border.all(
-                            color: tokens.cardBorder.withValues(alpha: 0.82),
-                          ),
-                          boxShadow: <BoxShadow>[
-                            BoxShadow(
-                              color: _brandNavy.withValues(alpha: 0.15),
-                              blurRadius: 54,
-                              offset: const Offset(0, 24),
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: <Color>[
+              _blue.withValues(alpha: 0.10),
+              tokens.workspaceBackground,
+              _cyan.withValues(alpha: 0.08),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool wide = constraints.maxWidth >= 900;
+              final Widget card = Container(
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: tokens.surfaceElevated,
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: tokens.cardBorder),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: _navy.withValues(alpha: 0.15),
+                      blurRadius: 48,
+                      offset: const Offset(0, 22),
+                    ),
+                  ],
+                ),
+                child: wide
+                    ? SizedBox(
+                        height: 650,
+                        child: Row(
+                          children: <Widget>[
+                            SizedBox(
+                              width: 370,
+                              child: _buildBrandPanel(context),
+                            ),
+                            Expanded(
+                              child: _buildForm(
+                                context,
+                                estado,
+                                totalSteps,
+                                finalStep,
+                                provider.salvando,
+                                wide: true,
+                              ),
                             ),
                           ],
                         ),
-                        child: compact
-                            ? Column(
-                                children: <Widget>[
-                                  const _OnboardingWebCompactBrand(),
-                                  _buildFormPanel(
-                                    context,
-                                    estado,
-                                    totalSteps,
-                                    finalStep,
-                                    provider.salvando,
-                                    compact: true,
-                                  ),
-                                ],
-                              )
-                            : IntrinsicHeight(
-                                child: Row(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: <Widget>[
-                                    SizedBox(
-                                      width: math.min(
-                                        410.0,
-                                        constraints.maxWidth * 0.38,
-                                      ),
-                                      child: _OnboardingWebBrandPanel(
-                                        step: _step,
-                                        realizaVendas: _realizaVendas,
-                                        prestaServicos: _prestaServicos,
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: _buildFormPanel(
-                                        context,
-                                        estado,
-                                        totalSteps,
-                                        finalStep,
-                                        provider.salvando,
-                                        compact: false,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                      )
+                    : Column(
+                        children: <Widget>[
+                          _buildCompactHeader(context),
+                          _buildForm(
+                            context,
+                            estado,
+                            totalSteps,
+                            finalStep,
+                            provider.salvando,
+                            wide: false,
+                          ),
+                        ],
                       ),
-                    ),
+              );
+
+              return SingleChildScrollView(
+                padding: EdgeInsets.all(wide ? 30 : 18),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1100),
+                    child: card,
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildFormPanel(
-    BuildContext context,
-    OnboardingInicialModel estado,
-    int totalSteps,
-    bool finalStep,
-    bool saving, {
-    required bool compact,
-  }) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
+  Widget _buildBrandPanel(BuildContext context) {
     return Container(
-      color: tokens.surfaceElevated,
-      padding: EdgeInsets.fromLTRB(
-        compact ? 22 : 48,
-        compact ? 24 : 38,
-        compact ? 22 : 48,
-        compact ? 22 : 34,
+      padding: const EdgeInsets.all(36),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[_navy, Color(0xFF0A327D), _blue],
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _OnboardingWebProgress(
-            currentStep: _step,
-            totalSteps: totalSteps,
+          _brandLockup(context),
+          const Spacer(),
+          Container(
+            width: 74,
+            height: 74,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(23),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+            ),
+            child: Icon(
+              _step == 0
+                  ? Icons.auto_awesome_rounded
+                  : Icons.dashboard_customize_rounded,
+              color: _cyan,
+              size: 35,
+            ),
           ),
-          SizedBox(height: compact ? 28 : 40),
-          AnimatedSwitcher(
-            duration: _transitionDuration,
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.025, 0),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
+          const SizedBox(height: 24),
+          Text(
+            _step == 0
+                ? context.t(
+                    'initialOnboarding.identityTitle',
+                    fallback: 'Vamos começar pelo essencial',
+                  )
+                : context.t(
+                    'initialOnboarding.businessTitle',
+                    fallback: 'O que seu negócio faz?',
+                  ),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 29,
+              height: 1.12,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 13),
+          Text(
+            _step == 0
+                ? context.t(
+                    'initialOnboarding.identitySubtitle',
+                    fallback:
+                        'Confirme seus dados para personalizarmos sua experiência.',
+                  )
+                : context.t(
+                    'initialOnboarding.businessSubtitle',
+                    fallback:
+                        'Isso organiza módulos e atalhos. Você poderá alterar depois.',
+                  ),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.72),
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+          const Spacer(),
+          Row(
+            children: <Widget>[
+              const Icon(Icons.schedule_rounded, color: _cyan, size: 17),
+              const SizedBox(width: 8),
+              Text(
+                context.t(
+                  'initialOnboarding.eyebrow',
+                  fallback: 'Configuração inicial',
                 ),
-              );
-            },
-            child: Column(
-              key: ValueKey<int>(_step),
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                _buildStepHeading(context),
-                SizedBox(height: compact ? 26 : 32),
-                if (_step == 0)
-                  _buildIdentityStep(context, estado)
-                else
-                  _buildBusinessStep(context, compact: compact),
-              ],
-            ),
-          ),
-          if (_errorKey != null) ...<Widget>[
-            const SizedBox(height: 18),
-            _OnboardingWebError(
-              message: context.t(
-                _errorKey!,
-                fallback: 'Revise as informações e tente novamente.',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.76),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-          ],
-          SizedBox(height: compact ? 26 : 34),
-          Divider(height: 1, color: tokens.divider),
-          const SizedBox(height: 22),
-          _buildActions(
-            context,
-            estado,
-            finalStep,
-            saving,
-            compact: compact,
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStepHeading(BuildContext context) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildCompactHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 17),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(colors: <Color>[_navy, _blue]),
+      ),
+      child: _brandLockup(context),
+    );
+  }
+
+  Widget _brandLockup(BuildContext context) {
+    return Row(
       children: <Widget>[
-        Text(
-          _step == 0
-              ? context.t(
-                  'initialOnboarding.identityTitle',
-                  fallback: 'Vamos começar pelo essencial',
-                )
-              : context.t(
-                  'initialOnboarding.businessTitle',
-                  fallback: 'O que seu negócio faz?',
-                ),
-          style: TextStyle(
-            color: tokens.primaryText,
-            fontSize: 30,
-            height: 1.12,
-            letterSpacing: -0.7,
-            fontWeight: FontWeight.w900,
+        Container(
+          width: 45,
+          height: 45,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
           ),
+          child: Image.asset('assets/images/sixoapp_splash_symbol.png'),
         ),
-        const SizedBox(height: 9),
-        Text(
-          _step == 0
-              ? context.t(
-                  'initialOnboarding.identitySubtitle',
-                  fallback:
-                      'Confirme seus dados para personalizarmos sua experiência.',
-                )
-              : context.t(
-                  'initialOnboarding.businessSubtitle',
-                  fallback:
-                      'Isso organiza seus módulos e atalhos. Você poderá alterar depois.',
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              const Text(
+                'SixoApp',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
                 ),
-          style: TextStyle(
-            color: tokens.secondaryText,
-            fontSize: 15,
-            height: 1.5,
+              ),
+              Text(
+                context.t(
+                  'initialOnboarding.eyebrow',
+                  fallback: 'Configuração inicial',
+                ),
+                style: const TextStyle(
+                  color: Color(0xFFA8C6EE),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildIdentityStep(
+  Widget _buildForm(
+    BuildContext context,
+    OnboardingInicialModel estado,
+    int totalSteps,
+    bool finalStep,
+    bool saving, {
+    required bool wide,
+  }) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Widget content = _step == 0
+        ? _identityStep(context, estado)
+        : _businessStep(context, wide);
+
+    return Container(
+      color: tokens.surfaceElevated,
+      padding: EdgeInsets.all(wide ? 42 : 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Text(
+                '${context.t('initialOnboarding.step', fallback: 'Etapa')} '
+                '${_step + 1} ${context.t('initialOnboarding.of', fallback: 'de')} '
+                '$totalSteps',
+                style: TextStyle(
+                  color: _blue,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(99),
+                  child: LinearProgressIndicator(
+                    minHeight: 5,
+                    value: (_step + 1) / totalSteps,
+                    backgroundColor: tokens.surfaceMuted,
+                    valueColor: const AlwaysStoppedAnimation<Color>(_blue),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 31),
+          Text(
+            _step == 0
+                ? context.t(
+                    'initialOnboarding.identityTitle',
+                    fallback: 'Vamos começar pelo essencial',
+                  )
+                : context.t(
+                    'initialOnboarding.businessTitle',
+                    fallback: 'O que seu negócio faz?',
+                  ),
+            style: TextStyle(
+              color: tokens.primaryText,
+              fontSize: 29,
+              height: 1.12,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _step == 0
+                ? context.t(
+                    'initialOnboarding.identitySubtitle',
+                    fallback:
+                        'Confirme seus dados para personalizarmos sua experiência.',
+                  )
+                : context.t(
+                    'initialOnboarding.businessSubtitle',
+                    fallback:
+                        'Isso organiza módulos e atalhos. Você poderá alterar depois.',
+                  ),
+            style: TextStyle(
+              color: tokens.secondaryText,
+              fontSize: 14,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 28),
+          content,
+          if (_errorKey != null) ...<Widget>[
+            const SizedBox(height: 16),
+            _error(context),
+          ],
+          if (wide) const Spacer() else const SizedBox(height: 28),
+          Divider(color: tokens.divider),
+          const SizedBox(height: 16),
+          _actions(context, estado, finalStep, saving),
+        ],
+      ),
+    );
+  }
+
+  Widget _identityStep(
     BuildContext context,
     OnboardingInicialModel estado,
   ) {
@@ -305,200 +406,98 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        _OnboardingSectionLabel(
-          icon: Icons.translate_rounded,
-          title: context.t(
+        Text(
+          context.t(
             'initialOnboarding.languageQuestion',
             fallback: 'Em qual idioma deseja continuar?',
           ),
-        ),
-        const SizedBox(height: 12),
-        LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final bool stack = constraints.maxWidth < 510;
-            final List<Widget> choices = <Widget>[
-              _WebLanguageChoice(
-                code: 'PT',
-                label: 'Português',
-                selected: _idioma == 'pt-BR',
-                onTap: () => _changeLanguage('pt-BR'),
-              ),
-              _WebLanguageChoice(
-                code: 'EN',
-                label: 'English',
-                selected: _idioma == 'en-US',
-                onTap: () => _changeLanguage('en-US'),
-              ),
-              _WebLanguageChoice(
-                code: 'ES',
-                label: 'Español',
-                selected: _idioma == 'es-ES',
-                onTap: () => _changeLanguage('es-ES'),
-              ),
-            ];
-            if (stack) {
-              return Column(
-                children: <Widget>[
-                  choices[0],
-                  const SizedBox(height: 8),
-                  choices[1],
-                  const SizedBox(height: 8),
-                  choices[2],
-                ],
-              );
-            }
-            return Row(
-              children: <Widget>[
-                Expanded(child: choices[0]),
-                const SizedBox(width: 9),
-                Expanded(child: choices[1]),
-                const SizedBox(width: 9),
-                Expanded(child: choices[2]),
-              ],
-            );
-          },
-        ),
-        const SizedBox(height: 27),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: _OnboardingSectionLabel(
-                icon: Icons.badge_outlined,
-                title: context.t(
-                  'initialOnboarding.yourDetails',
-                  fallback: 'Seus dados',
-                ),
-              ),
-            ),
-            Text(
-              context.t(
-                'initialOnboarding.requiredHint',
-                fallback: 'Campos obrigatórios',
-              ),
-              style: TextStyle(
-                color: tokens.mutedText,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final bool stack = !estado.podeConfigurarEmpresa ||
-                constraints.maxWidth < 620;
-            final Widget nameField = _buildTextField(
-              context,
-              controller: _nomeController,
-              label: context.t(
-                'initialOnboarding.userName',
-                fallback: 'Como podemos chamar você?',
-              ),
-              icon: Icons.person_outline_rounded,
-              action: estado.podeConfigurarEmpresa
-                  ? TextInputAction.next
-                  : TextInputAction.done,
-              autofillHints: const <String>[AutofillHints.name],
-            );
-            if (!estado.podeConfigurarEmpresa) return nameField;
-
-            final Widget companyField = _buildTextField(
-              context,
-              controller: _empresaController,
-              label: context.t(
-                'initialOnboarding.companyName',
-                fallback: 'Nome do seu negócio',
-              ),
-              icon: Icons.storefront_outlined,
-              action: TextInputAction.done,
-              autofillHints: const <String>[AutofillHints.organizationName],
-            );
-            if (stack) {
-              return Column(
-                children: <Widget>[
-                  nameField,
-                  const SizedBox(height: 13),
-                  companyField,
-                ],
-              );
-            }
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(child: nameField),
-                const SizedBox(width: 13),
-                Expanded(child: companyField),
-              ],
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTextField(
-    BuildContext context, {
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    required TextInputAction action,
-    required Iterable<String> autofillHints,
-  }) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          label,
           style: TextStyle(
             color: tokens.primaryText,
             fontSize: 13,
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          autofillHints: autofillHints,
-          textInputAction: action,
-          style: TextStyle(
-            color: tokens.primaryText,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: tokens.inputBackground,
-            prefixIcon: Icon(icon, color: _brandBlue, size: 21),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 18,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: tokens.cardBorder),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: _brandBlue, width: 1.6),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: tokens.danger),
-            ),
-          ),
+        const SizedBox(height: 11),
+        Wrap(
+          spacing: 9,
+          runSpacing: 9,
+          children: <Widget>[
+            _language('PT', 'Português', 'pt-BR'),
+            _language('EN', 'English', 'en-US'),
+            _language('ES', 'Español', 'es-ES'),
+          ],
         ),
+        const SizedBox(height: 24),
+        _field(
+          context,
+          controller: _nomeController,
+          label: context.t(
+            'initialOnboarding.userName',
+            fallback: 'Como podemos chamar você?',
+          ),
+          icon: Icons.person_outline_rounded,
+          action: estado.podeConfigurarEmpresa
+              ? TextInputAction.next
+              : TextInputAction.done,
+        ),
+        if (estado.podeConfigurarEmpresa) ...<Widget>[
+          const SizedBox(height: 14),
+          _field(
+            context,
+            controller: _empresaController,
+            label: context.t(
+              'initialOnboarding.companyName',
+              fallback: 'Nome do seu negócio',
+            ),
+            icon: Icons.storefront_outlined,
+            action: TextInputAction.done,
+          ),
+        ],
       ],
     );
   }
 
-  Widget _buildBusinessStep(
+  Widget _language(String code, String label, String value) {
+    return _WebLanguageTile(
+      code: code,
+      label: label,
+      selected: _idioma == value,
+      onTap: () => _changeLanguage(value),
+    );
+  }
+
+  Widget _field(
     BuildContext context, {
-    required bool compact,
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required TextInputAction action,
   }) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Widget sales = _BusinessChoiceWeb(
+    return TextField(
+      controller: controller,
+      textInputAction: action,
+      style: TextStyle(color: tokens.primaryText, fontWeight: FontWeight.w600),
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: tokens.inputBackground,
+        prefixIcon: Icon(icon, color: _blue),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: BorderSide(color: tokens.cardBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: const BorderSide(color: _blue, width: 1.6),
+        ),
+      ),
+    );
+  }
+
+  Widget _businessStep(BuildContext context, bool wide) {
+    final Widget sales = _WebActivityTile(
       icon: Icons.point_of_sale_rounded,
       accent: const Color(0xFF2563EB),
       title: context.t(
@@ -515,7 +514,7 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
         _errorKey = null;
       }),
     );
-    final Widget services = _BusinessChoiceWeb(
+    final Widget services = _WebActivityTile(
       icon: Icons.home_repair_service_rounded,
       accent: const Color(0xFF7C3AED),
       title: context.t(
@@ -532,158 +531,114 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
         _errorKey = null;
       }),
     );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    if (!wide) {
+      return Column(
+        children: <Widget>[
+          sales,
+          const SizedBox(height: 12),
+          services,
+        ],
+      );
+    }
+    return Row(
       children: <Widget>[
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-          decoration: BoxDecoration(
-            color: tokens.info.withValues(alpha: 0.07),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: <Widget>[
-              Icon(Icons.touch_app_rounded, color: tokens.info, size: 19),
-              const SizedBox(width: 9),
-              Expanded(
-                child: Text(
-                  context.t(
-                    'initialOnboarding.chooseHint',
-                    fallback: 'Escolha uma opção ou as duas.',
-                  ),
-                  style: TextStyle(
-                    color: tokens.secondaryText,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-        LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            if (compact || constraints.maxWidth < 650) {
-              return Column(
-                children: <Widget>[
-                  sales,
-                  const SizedBox(height: 12),
-                  services,
-                ],
-              );
-            }
-            return IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Expanded(child: sales),
-                  const SizedBox(width: 14),
-                  Expanded(child: services),
-                ],
-              ),
-            );
-          },
-        ),
+        Expanded(child: sales),
+        const SizedBox(width: 13),
+        Expanded(child: services),
       ],
     );
   }
 
-  Widget _buildActions(
+  Widget _error(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: tokens.danger.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: tokens.danger.withValues(alpha: 0.28)),
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.error_outline_rounded, color: tokens.danger, size: 19),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                context.t(
+                  _errorKey!,
+                  fallback: 'Revise as informações e tente novamente.',
+                ),
+                style: TextStyle(color: tokens.primaryText, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _actions(
     BuildContext context,
     OnboardingInicialModel estado,
     bool finalStep,
-    bool saving, {
-    required bool compact,
-  }) {
+    bool saving,
+  ) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Widget action = _OnboardingWebPrimaryAction(
-      saving: saving,
-      label: finalStep
-          ? context.t(
-              'initialOnboarding.start',
-              fallback: 'Começar a usar o SixoApp',
-            )
-          : context.t('common.continue', fallback: 'Continuar'),
-      icon: finalStep
-          ? Icons.auto_awesome_rounded
-          : Icons.arrow_forward_rounded,
-      onTap: finalStep ? () => _finish(estado) : () => _next(estado),
-    );
-
-    if (compact) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            context.t(
-              'initialOnboarding.privacyNote',
-              fallback: 'Você poderá alterar essas informações depois.',
-            ),
-            style: TextStyle(
-              color: tokens.mutedText,
-              fontSize: 12,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 15),
-          Row(
-            children: <Widget>[
-              if (_step > 0) ...<Widget>[
-                IconButton.outlined(
-                  onPressed: saving
-                      ? null
-                      : () => setState(() {
-                          _step -= 1;
-                          _errorKey = null;
-                        }),
-                  tooltip: context.t('common.back', fallback: 'Voltar'),
-                  icon: const Icon(Icons.arrow_back_rounded),
-                ),
-                const SizedBox(width: 10),
-              ],
-              Expanded(child: action),
-            ],
-          ),
-        ],
-      );
-    }
-
     return Row(
       children: <Widget>[
-        if (_step > 0)
-          TextButton.icon(
+        if (_step > 0) ...<Widget>[
+          IconButton.outlined(
             onPressed: saving
                 ? null
                 : () => setState(() {
-                    _step -= 1;
+                    _step = 0;
                     _errorKey = null;
                   }),
-            icon: const Icon(Icons.arrow_back_rounded, size: 19),
-            label: Text(context.t('common.back', fallback: 'Voltar')),
-            style: TextButton.styleFrom(
-              foregroundColor: tokens.secondaryText,
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
-            ),
-          )
-        else
-          Expanded(
-            child: Text(
-              context.t(
-                'initialOnboarding.privacyNote',
-                fallback: 'Você poderá alterar essas informações depois.',
-              ),
-              style: TextStyle(
-                color: tokens.mutedText,
-                fontSize: 12,
-                height: 1.35,
-              ),
+            tooltip: context.t('common.back', fallback: 'Voltar'),
+            icon: const Icon(Icons.arrow_back_rounded),
+          ),
+          const SizedBox(width: 10),
+        ] else
+          Icon(Icons.lock_outline_rounded, color: tokens.mutedText, size: 18),
+        const Spacer(),
+        FilledButton.icon(
+          onPressed: saving
+              ? null
+              : finalStep
+              ? () => _finish(estado)
+              : () => _next(estado),
+          style: FilledButton.styleFrom(
+            backgroundColor: _navy,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 21, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
             ),
           ),
-        if (_step > 0) const Spacer(),
-        const SizedBox(width: 18),
-        action,
+          icon: saving
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : Icon(
+                  finalStep
+                      ? Icons.auto_awesome_rounded
+                      : Icons.arrow_forward_rounded,
+                ),
+          label: Text(
+            finalStep
+                ? context.t(
+                    'initialOnboarding.start',
+                    fallback: 'Começar a usar o SixoApp',
+                  )
+                : context.t('common.continue', fallback: 'Continuar'),
+          ),
+        ),
       ],
     );
   }
@@ -704,7 +659,6 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
       setState(() => _errorKey = 'initialOnboarding.activityRequired');
       return;
     }
-
     try {
       await context.read<OnboardingInicialProvider>().concluir(
         ConcluirOnboardingInicialRequest(
@@ -759,663 +713,16 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
     if (normalized.startsWith('en')) return 'en-US';
     if (normalized.startsWith('es')) return 'es-ES';
     if (normalized.startsWith('pt')) return 'pt-BR';
-    return switch (fallback.languageCode) {
-      'en' => 'en-US',
-      'es' => 'es-ES',
-      _ => 'pt-BR',
-    };
+    return fallback.languageCode == 'en'
+        ? 'en-US'
+        : fallback.languageCode == 'es'
+        ? 'es-ES'
+        : 'pt-BR';
   }
 }
 
-class _OnboardingWebBackdrop extends StatelessWidget {
-  const _OnboardingWebBackdrop({required this.tokens});
-
-  final WebThemeTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRect(
-      child: Stack(
-        children: <Widget>[
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: <Color>[
-                    _brandBlue.withValues(alpha: 0.09),
-                    tokens.workspaceBackground,
-                    _brandCyan.withValues(alpha: 0.08),
-                  ],
-                  stops: const <double>[0, 0.48, 1],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: -160,
-            top: -190,
-            child: _GlowOrb(
-              size: 430,
-              color: _brandBlue.withValues(alpha: 0.08),
-            ),
-          ),
-          Positioned(
-            right: -120,
-            bottom: -210,
-            child: _GlowOrb(
-              size: 430,
-              color: _brandCyan.withValues(alpha: 0.10),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GlowOrb extends StatelessWidget {
-  const _GlowOrb({required this.size, required this.color});
-
-  final double size;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-    );
-  }
-}
-
-class _OnboardingWebBrandPanel extends StatelessWidget {
-  const _OnboardingWebBrandPanel({
-    required this.step,
-    required this.realizaVendas,
-    required this.prestaServicos,
-  });
-
-  final int step;
-  final bool realizaVendas;
-  final bool prestaServicos;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[_brandNavy, Color(0xFF0B3183), _brandBlue],
-        ),
-      ),
-      child: Stack(
-        children: <Widget>[
-          Positioned(
-            right: -92,
-            top: -54,
-            child: _GlowOrb(
-              size: 250,
-              color: _brandCyan.withValues(alpha: 0.13),
-            ),
-          ),
-          Positioned(
-            left: -100,
-            bottom: -115,
-            child: _GlowOrb(
-              size: 285,
-              color: Colors.white.withValues(alpha: 0.045),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(38, 36, 38, 34),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const _OnboardingBrandLockup(),
-                const SizedBox(height: 58),
-                AnimatedSwitcher(
-                  duration: MediaQuery.disableAnimationsOf(context)
-                      ? Duration.zero
-                      : const Duration(milliseconds: 260),
-                  child: Column(
-                    key: ValueKey<int>(step),
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 7,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.13),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            const Icon(
-                              Icons.schedule_rounded,
-                              size: 16,
-                              color: _brandCyan,
-                            ),
-                            const SizedBox(width: 7),
-                            Text(
-                              context.t(
-                                'initialOnboarding.timeBadge',
-                                fallback: 'Menos de 1 minuto',
-                              ),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        step == 0
-                            ? context.t(
-                                'initialOnboarding.identityBenefitTitle',
-                                fallback:
-                                    'Seu espaço, pronto para trabalhar do seu jeito.',
-                              )
-                            : context.t(
-                                'initialOnboarding.businessBenefitTitle',
-                                fallback: 'Menos ruído. Mais do que importa.',
-                              ),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 31,
-                          height: 1.12,
-                          letterSpacing: -0.7,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        step == 0
-                            ? context.t(
-                                'initialOnboarding.identityBenefitSubtitle',
-                                fallback:
-                                    'Idioma, perfil e empresa prontos antes da primeira tela.',
-                              )
-                            : context.t(
-                                'initialOnboarding.businessBenefitSubtitle',
-                                fallback:
-                                    'Organizamos a experiência a partir da rotina real do seu negócio.',
-                              ),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.74),
-                          fontSize: 15,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-                _BrandPreviewCard(
-                  step: step,
-                  realizaVendas: realizaVendas,
-                  prestaServicos: prestaServicos,
-                ),
-                const SizedBox(height: 28),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    const Icon(
-                      Icons.lock_outline_rounded,
-                      color: _brandCyan,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 9),
-                    Expanded(
-                      child: Text(
-                        context.t(
-                          'initialOnboarding.privacyNote',
-                          fallback:
-                              'Você poderá alterar essas informações depois.',
-                        ),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.68),
-                          fontSize: 12,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OnboardingBrandLockup extends StatelessWidget {
-  const _OnboardingBrandLockup();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        Container(
-          width: 47,
-          height: 47,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.16),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Image.asset('assets/images/sixoapp_splash_symbol.png'),
-        ),
-        const SizedBox(width: 13),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const Text(
-              'SixoApp',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 19,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.2,
-              ),
-            ),
-            Text(
-              context.t(
-                'initialOnboarding.brandTagline',
-                fallback: 'Tudo começa aqui',
-              ),
-              style: const TextStyle(
-                color: Color(0xFF99AEDA),
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _OnboardingWebCompactBrand extends StatelessWidget {
-  const _OnboardingWebCompactBrand();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: <Color>[_brandNavy, _brandBlue]),
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 42,
-            height: 42,
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(13),
-            ),
-            child: Image.asset('assets/images/sixoapp_splash_symbol.png'),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const Text(
-                  'SixoApp',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                Text(
-                  context.t(
-                    'initialOnboarding.eyebrow',
-                    fallback: 'Configuração inicial',
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF99AEDA),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.11),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.schedule_rounded,
-              color: _brandCyan,
-              size: 18,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BrandPreviewCard extends StatelessWidget {
-  const _BrandPreviewCard({
-    required this.step,
-    required this.realizaVendas,
-    required this.prestaServicos,
-  });
-
-  final int step;
-  final bool realizaVendas;
-  final bool prestaServicos;
-
-  @override
-  Widget build(BuildContext context) {
-    final List<({IconData icon, String label, bool active})> items = step == 0
-        ? <({IconData icon, String label, bool active})>[
-            (
-              icon: Icons.translate_rounded,
-              label: context.t(
-                'initialOnboarding.previewLanguage',
-                fallback: 'Idioma preferido',
-              ),
-              active: true,
-            ),
-            (
-              icon: Icons.person_outline_rounded,
-              label: context.t(
-                'initialOnboarding.previewProfile',
-                fallback: 'Perfil pessoal',
-              ),
-              active: true,
-            ),
-            (
-              icon: Icons.storefront_outlined,
-              label: context.t(
-                'initialOnboarding.previewCompany',
-                fallback: 'Identidade da empresa',
-              ),
-              active: true,
-            ),
-          ]
-        : <({IconData icon, String label, bool active})>[
-            (
-              icon: Icons.point_of_sale_rounded,
-              label: context.t(
-                'initialOnboarding.salesTitle',
-                fallback: 'Vende produtos',
-              ),
-              active: realizaVendas,
-            ),
-            (
-              icon: Icons.home_repair_service_rounded,
-              label: context.t(
-                'initialOnboarding.servicesTitle',
-                fallback: 'Presta serviços técnicos',
-              ),
-              active: prestaServicos,
-            ),
-            (
-              icon: Icons.auto_awesome_rounded,
-              label: context.t(
-                'initialOnboarding.previewPersonalized',
-                fallback: 'Experiência personalizada',
-              ),
-              active: realizaVendas || prestaServicos,
-            ),
-          ];
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.11)),
-      ),
-      child: Column(
-        children: items
-            .map(
-              (item) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 7),
-                child: Row(
-                  children: <Widget>[
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: item.active
-                            ? _brandCyan.withValues(alpha: 0.15)
-                            : Colors.white.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        item.icon,
-                        color: item.active
-                            ? _brandCyan
-                            : Colors.white.withValues(alpha: 0.42),
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 11),
-                    Expanded(
-                      child: Text(
-                        item.label,
-                        style: TextStyle(
-                          color: item.active
-                              ? Colors.white
-                              : Colors.white.withValues(alpha: 0.50),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    Icon(
-                      item.active
-                          ? Icons.check_circle_rounded
-                          : Icons.circle_outlined,
-                      size: 18,
-                      color: item.active
-                          ? _brandCyan
-                          : Colors.white.withValues(alpha: 0.30),
-                    ),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
-      ),
-    );
-  }
-}
-
-class _OnboardingWebProgress extends StatelessWidget {
-  const _OnboardingWebProgress({
-    required this.currentStep,
-    required this.totalSteps,
-  });
-
-  final int currentStep;
-  final int totalSteps;
-
-  @override
-  Widget build(BuildContext context) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    if (totalSteps == 1) {
-      return Row(
-        children: <Widget>[
-          const _ProgressDot(number: 1, active: true, complete: false),
-          const SizedBox(width: 10),
-          Text(
-            context.t(
-              'initialOnboarding.identityStepLabel',
-              fallback: 'Você e suas preferências',
-            ),
-            style: TextStyle(
-              color: tokens.primaryText,
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Row(
-      children: <Widget>[
-        _ProgressDot(
-          number: 1,
-          active: currentStep == 0,
-          complete: currentStep > 0,
-        ),
-        const SizedBox(width: 9),
-        Text(
-          context.t(
-            'initialOnboarding.identityStepLabel',
-            fallback: 'Você e sua empresa',
-          ),
-          style: TextStyle(
-            color: currentStep == 0 ? tokens.primaryText : tokens.secondaryText,
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        Expanded(
-          child: Container(
-            height: 2,
-            margin: const EdgeInsets.symmetric(horizontal: 13),
-            decoration: BoxDecoration(
-              color: currentStep > 0 ? _brandBlue : tokens.cardBorder,
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-        ),
-        _ProgressDot(
-          number: 2,
-          active: currentStep == 1,
-          complete: false,
-        ),
-        const SizedBox(width: 9),
-        Text(
-          context.t(
-            'initialOnboarding.businessStepLabel',
-            fallback: 'Seu negócio',
-          ),
-          style: TextStyle(
-            color: currentStep == 1 ? tokens.primaryText : tokens.mutedText,
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ProgressDot extends StatelessWidget {
-  const _ProgressDot({
-    required this.number,
-    required this.active,
-    required this.complete,
-  });
-
-  final int number;
-  final bool active;
-  final bool complete;
-
-  @override
-  Widget build(BuildContext context) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final bool highlighted = active || complete;
-    return AnimatedContainer(
-      duration: MediaQuery.disableAnimationsOf(context)
-          ? Duration.zero
-          : const Duration(milliseconds: 180),
-      width: 28,
-      height: 28,
-      decoration: BoxDecoration(
-        color: highlighted ? _brandBlue : tokens.surfaceMuted,
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: highlighted ? _brandBlue : tokens.cardBorder,
-        ),
-      ),
-      alignment: Alignment.center,
-      child: complete
-          ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
-          : Text(
-              '$number',
-              style: TextStyle(
-                color: active ? Colors.white : tokens.mutedText,
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-    );
-  }
-}
-
-class _OnboardingSectionLabel extends StatelessWidget {
-  const _OnboardingSectionLabel({required this.icon, required this.title});
-
-  final IconData icon;
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Row(
-      children: <Widget>[
-        Icon(icon, color: _brandBlue, size: 19),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            title,
-            style: TextStyle(
-              color: tokens.primaryText,
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _WebLanguageChoice extends StatelessWidget {
-  const _WebLanguageChoice({
+class _WebLanguageTile extends StatelessWidget {
+  const _WebLanguageTile({
     required this.code,
     required this.label,
     required this.selected,
@@ -1433,67 +740,57 @@ class _WebLanguageChoice extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: label,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: AnimatedContainer(
-            duration: MediaQuery.disableAnimationsOf(context)
-                ? Duration.zero
-                : const Duration(milliseconds: 170),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: BoxDecoration(
-              color: selected
-                  ? _brandBlue.withValues(alpha: 0.08)
-                  : tokens.inputBackground,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: selected ? _brandBlue : tokens.cardBorder,
-                width: selected ? 1.5 : 1,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(13),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: 145,
+          padding: const EdgeInsets.all(11),
+          decoration: BoxDecoration(
+            color: selected
+                ? _blue.withValues(alpha: 0.08)
+                : tokens.inputBackground,
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(
+              color: selected ? _blue : tokens.cardBorder,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 29,
+                height: 29,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected ? _blue : tokens.surfaceMuted,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  code,
+                  style: TextStyle(
+                    color: selected ? Colors.white : tokens.secondaryText,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
-            ),
-            child: Row(
-              children: <Widget>[
-                Container(
-                  width: 31,
-                  height: 31,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: selected ? _brandBlue : tokens.surfaceMuted,
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  child: Text(
-                    code,
-                    style: TextStyle(
-                      color: selected ? Colors.white : tokens.secondaryText,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                    ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: tokens.primaryText,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(width: 9),
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: tokens.primaryText,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                if (selected)
-                  const Icon(
-                    Icons.check_circle_rounded,
-                    color: _brandBlue,
-                    size: 18,
-                  ),
-              ],
-            ),
+              ),
+              if (selected)
+                const Icon(Icons.check_circle_rounded, color: _blue, size: 17),
+            ],
           ),
         ),
       ),
@@ -1501,8 +798,8 @@ class _WebLanguageChoice extends StatelessWidget {
   }
 }
 
-class _BusinessChoiceWeb extends StatelessWidget {
-  const _BusinessChoiceWeb({
+class _WebActivityTile extends StatelessWidget {
+  const _WebActivityTile({
     required this.icon,
     required this.accent,
     required this.title,
@@ -1524,207 +821,67 @@ class _BusinessChoiceWeb extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: AnimatedContainer(
-            duration: MediaQuery.disableAnimationsOf(context)
-                ? Duration.zero
-                : const Duration(milliseconds: 190),
-            constraints: const BoxConstraints(minHeight: 188),
-            padding: const EdgeInsets.all(19),
-            decoration: BoxDecoration(
-              color: selected
-                  ? accent.withValues(alpha: 0.075)
-                  : tokens.inputBackground,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: selected ? accent : tokens.cardBorder,
-                width: selected ? 1.6 : 1,
-              ),
-              boxShadow: selected
-                  ? <BoxShadow>[
-                      BoxShadow(
-                        color: accent.withValues(alpha: 0.10),
-                        blurRadius: 22,
-                        offset: const Offset(0, 9),
-                      ),
-                    ]
-                  : const <BoxShadow>[],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(icon, color: accent, size: 27),
-                    ),
-                    const Spacer(),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 160),
-                      width: 27,
-                      height: 27,
-                      decoration: BoxDecoration(
-                        color: selected ? accent : Colors.transparent,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: selected ? accent : tokens.mutedText,
-                          width: 1.4,
-                        ),
-                      ),
-                      child: selected
-                          ? const Icon(
-                              Icons.check_rounded,
-                              color: Colors.white,
-                              size: 17,
-                            )
-                          : null,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 22),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: tokens.primaryText,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: tokens.secondaryText,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-              ],
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          constraints: const BoxConstraints(minHeight: 180),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: selected
+                ? accent.withValues(alpha: 0.08)
+                : tokens.inputBackground,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected ? accent : tokens.cardBorder,
+              width: selected ? 1.5 : 1,
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _OnboardingWebPrimaryAction extends StatelessWidget {
-  const _OnboardingWebPrimaryAction({
-    required this.saving,
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final bool saving;
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      enabled: !saving,
-      label: label,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: saving ? null : onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Ink(
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: saving
-                    ? const <Color>[Color(0xFF64748B), Color(0xFF94A3B8)]
-                    : const <Color>[_brandNavy, _brandBlue],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: saving
-                  ? const <BoxShadow>[]
-                  : <BoxShadow>[
-                      BoxShadow(
-                        color: _brandBlue.withValues(alpha: 0.22),
-                        blurRadius: 18,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                if (saving)
-                  const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.2,
-                      color: Colors.white,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(15),
                     ),
-                  )
-                else
-                  Icon(icon, color: Colors.white, size: 19),
-                const SizedBox(width: 10),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
+                    child: Icon(icon, color: accent, size: 25),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _OnboardingWebError extends StatelessWidget {
-  const _OnboardingWebError({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Semantics(
-      liveRegion: true,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(13),
-        decoration: BoxDecoration(
-          color: tokens.danger.withValues(alpha: 0.075),
-          borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: tokens.danger.withValues(alpha: 0.28)),
-        ),
-        child: Row(
-          children: <Widget>[
-            Icon(Icons.error_outline_rounded, color: tokens.danger, size: 19),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Text(
-                message,
+                  const Spacer(),
+                  Icon(
+                    selected
+                        ? Icons.check_circle_rounded
+                        : Icons.circle_outlined,
+                    color: selected ? accent : tokens.mutedText,
+                    size: 25,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                title,
                 style: TextStyle(
                   color: tokens.primaryText,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 5),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: tokens.secondaryText,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
