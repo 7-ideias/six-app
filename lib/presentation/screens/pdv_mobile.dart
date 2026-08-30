@@ -757,6 +757,12 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       scrolledSurfaceOpacity: 0.66,
       actions: <Widget>[
         IconButton(
+          tooltip: 'Adicionar produto',
+          onPressed:
+              _enviando || !_caixaAbertoParaVenda ? null : _abrirSelecaoProduto,
+          icon: Icon(Icons.add_rounded),
+        ),
+        IconButton(
           tooltip: 'Ler código',
           onPressed:
               _enviando || _buscandoCodigo || !_caixaAbertoParaVenda
