@@ -239,6 +239,7 @@ void main() {
         'ordemCardsServicosMobile': <String>[
           'SERVICOS_EM_ANDAMENTO',
           'ORCAMENTOS_AGUARDANDO_APROVACAO',
+          'SERVICOS_JA_ENCERRADOS',
           'NOVO_SERVICO',
         ],
         'ordemCardsReceberMobile': <String>[
@@ -446,7 +447,7 @@ void main() {
     }
   });
 
-  testWidgets('menu de serviços abre criação, consulta técnica e orçamentos', (
+  testWidgets('menu de serviços abre listagens filtradas e orçamentos', (
     WidgetTester tester,
   ) async {
     final List<Widget> navigations = await _pumpServicos(tester);
@@ -454,15 +455,12 @@ void main() {
     expect(find.text('Novo serviço'), findsOneWidget);
     expect(find.text('Consultar serviços em andamento'), findsOneWidget);
     expect(find.text('Orçamentos aguardando aprovação'), findsOneWidget);
+    expect(find.text('Serviços já encerrados'), findsOneWidget);
     expect(
       find.text('Consulte serviços que ainda precisam da aprovação do cliente'),
       findsOneWidget,
     );
 
-    await tester.tap(
-      find.byKey(const ValueKey<String>('servicos-action-new-service')),
-    );
-    await tester.pump();
     await tester.tap(
       find.byKey(const ValueKey<String>('servicos-action-in-progress')),
     );
@@ -471,22 +469,33 @@ void main() {
       find.byKey(const ValueKey<String>('servicos-action-waiting-approval')),
     );
     await tester.pump();
+    await tester.tap(
+      find.byKey(const ValueKey<String>('servicos-action-closed-services')),
+    );
+    await tester.pump();
 
     expect(
       navigations.map((Widget page) => page.runtimeType.toString()),
       <String>[
-        'AtendimentoTecnicoMobileScreen',
+        'AtendimentosTecnicosMobileScreen',
         'AtendimentosTecnicosMobileScreen',
         'AtendimentosTecnicosMobileScreen',
       ],
     );
     final AtendimentosTecnicosMobileScreen approvalPage =
-        navigations.last as AtendimentosTecnicosMobileScreen;
+        navigations[1] as AtendimentosTecnicosMobileScreen;
+    final AtendimentosTecnicosMobileScreen closedPage =
+        navigations[2] as AtendimentosTecnicosMobileScreen;
+    final AtendimentosTecnicosMobileScreen inProgressPage =
+        navigations.first as AtendimentosTecnicosMobileScreen;
+    expect(inProgressPage.listContext.statusFilter, 'ACTIVE_GROUP');
     expect(approvalPage.listContext.statusFilter, 'WAITING_CUSTOMER_APROVAL');
     expect(
       approvalPage.listContext.titleFallback,
       'Orçamentos aguardando aprovação',
     );
+    expect(closedPage.listContext.statusFilter, 'FINALIZED_GROUP');
+    expect(closedPage.listContext.titleFallback, 'Serviços já encerrados');
     expect(tester.takeException(), isNull);
   });
 

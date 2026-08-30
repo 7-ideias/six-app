@@ -64,6 +64,7 @@ void main() {
         expect(find.text('Novo serviço'), findsOneWidget);
         expect(find.text('Consultar serviços em andamento'), findsOneWidget);
         expect(find.text('Orçamentos aguardando aprovação'), findsOneWidget);
+        expect(find.text('Serviços já encerrados'), findsOneWidget);
         expect(
           find.text(
             'Consulte serviços que ainda precisam da aprovação do cliente',
@@ -79,22 +80,34 @@ void main() {
           isTrue,
         );
 
-        await tester.tap(find.text('Novo serviço'));
+        await tester.tap(
+          find.byKey(const ValueKey<String>('servicos-action-in-progress')),
+        );
         await tester.pump();
-        await tester.tap(find.text('Consultar serviços em andamento'));
+        await tester.tap(
+          find.byKey(
+            const ValueKey<String>('servicos-action-waiting-approval'),
+          ),
+        );
         await tester.pump();
-        await tester.tap(find.text('Orçamentos aguardando aprovação'));
+        await tester.tap(
+          find.byKey(const ValueKey<String>('servicos-action-closed-services')),
+        );
         await tester.pump();
 
         expect(destinations, hasLength(3));
-        expect(destinations.first, isA<AtendimentoTecnicoMobileScreen>());
-        expect(destinations[1], isA<AtendimentosTecnicosMobileScreen>());
+        final AtendimentosTecnicosMobileScreen inProgressPage =
+            destinations.first as AtendimentosTecnicosMobileScreen;
+        expect(inProgressPage.listContext.statusFilter, 'ACTIVE_GROUP');
         final AtendimentosTecnicosMobileScreen approvalPage =
-            destinations.last as AtendimentosTecnicosMobileScreen;
+            destinations[1] as AtendimentosTecnicosMobileScreen;
         expect(
           approvalPage.listContext.statusFilter,
           'WAITING_CUSTOMER_APROVAL',
         );
+        final AtendimentosTecnicosMobileScreen closedPage =
+            destinations.last as AtendimentosTecnicosMobileScreen;
+        expect(closedPage.listContext.statusFilter, 'FINALIZED_GROUP');
       },
     );
 
@@ -477,13 +490,14 @@ void main() {
         expect(find.textContaining('OS-PAGAMENTO'), findsOneWidget);
         expect(find.text('Financeiro aberto'), findsWidgets);
 
-        final Finder detailsButton = find
-            .byWidgetPredicate(
-              (Widget widget) =>
-                  widget is IconButton &&
-                  widget.tooltip == 'Ver detalhes do atendimento',
-            )
-            .last;
+        final Finder detailsButton =
+            find
+                .byWidgetPredicate(
+                  (Widget widget) =>
+                      widget is IconButton &&
+                      widget.tooltip == 'Ver detalhes do atendimento',
+                )
+                .last;
         await Scrollable.ensureVisible(
           tester.element(detailsButton),
           alignment: 0.65,
@@ -725,6 +739,61 @@ void main() {
         );
         expect(warningText.style?.color, themeCase.colors.error);
         expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'in progress and closed queries use grouped status filters in ${themeCase.description} mode',
+      (WidgetTester tester) async {
+        final _FakeAtendimentoTecnicoService inProgressService =
+            _FakeAtendimentoTecnicoService();
+
+        await _pumpTechnicalList(
+          tester,
+          themeCase: themeCase,
+          service: inProgressService,
+          listContext: const AtendimentosTecnicosMobileListContext.inProgress(),
+        );
+
+        expect(inProgressService.lastListStatus, 'ACTIVE_GROUP');
+        expect(find.text('Serviços em andamento'), findsWidgets);
+
+        await tester.scrollUntilVisible(
+          find.text('Nenhum serviço em andamento no momento.'),
+          420,
+          scrollable: _verticalScrollable(),
+        );
+        await tester.pump();
+
+        expect(
+          find.text('Nenhum serviço em andamento no momento.'),
+          findsOneWidget,
+        );
+
+        final _FakeAtendimentoTecnicoService closedService =
+            _FakeAtendimentoTecnicoService();
+
+        await _pumpTechnicalList(
+          tester,
+          themeCase: themeCase,
+          service: closedService,
+          listContext: const AtendimentosTecnicosMobileListContext.closed(),
+        );
+
+        expect(closedService.lastListStatus, 'FINALIZED_GROUP');
+        expect(find.text('Serviços já encerrados'), findsWidgets);
+
+        await tester.scrollUntilVisible(
+          find.text('Nenhum serviço encerrado encontrado.'),
+          420,
+          scrollable: _verticalScrollable(),
+        );
+        await tester.pump();
+
+        expect(
+          find.text('Nenhum serviço encerrado encontrado.'),
+          findsOneWidget,
+        );
       },
     );
 
@@ -1204,9 +1273,8 @@ void main() {
         expect(find.byType(Signature), findsOneWidget);
         await tester.ensureVisible(find.byType(Signature));
         await tester.pumpAndSettle();
-        final SignatureController signatureController = tester
-            .widget<Signature>(find.byType(Signature))
-            .controller;
+        final SignatureController signatureController =
+            tester.widget<Signature>(find.byType(Signature)).controller;
         signatureController.addPoint(
           Point(const Offset(24, 42), PointType.tap, 1),
         );
@@ -1224,9 +1292,8 @@ void main() {
         );
         await tester.ensureVisible(registerSignatureButton);
         await tester.pumpAndSettle();
-        final VoidCallback? registerSignature = tester
-            .widget<FilledButton>(registerSignatureButton)
-            .onPressed;
+        final VoidCallback? registerSignature =
+            tester.widget<FilledButton>(registerSignatureButton).onPressed;
         expect(registerSignature, isNotNull);
         registerSignature?.call();
         await tester.pump(const Duration(milliseconds: 500));
@@ -1336,13 +1403,14 @@ void main() {
 
         await _dragUntilTextVisible(tester, 'OS-PAGAMENTO');
         await tester.pump();
-        final Finder detailsButton = find
-            .byWidgetPredicate(
-              (Widget widget) =>
-                  widget is IconButton &&
-                  widget.tooltip == 'Ver detalhes do atendimento',
-            )
-            .last;
+        final Finder detailsButton =
+            find
+                .byWidgetPredicate(
+                  (Widget widget) =>
+                      widget is IconButton &&
+                      widget.tooltip == 'Ver detalhes do atendimento',
+                )
+                .last;
         await tester.tap(detailsButton);
         await tester.pumpAndSettle();
         await _dragUntilTextVisible(
@@ -1737,13 +1805,14 @@ void main() {
         );
         expect(find.textContaining('Smartphone Six Pro Max'), findsWidgets);
         expect(find.text('Financeiro aberto'), findsWidgets);
-        final Finder detailsButton = find
-            .byWidgetPredicate(
-              (Widget widget) =>
-                  widget is IconButton &&
-                  widget.tooltip == 'Ver detalhes do atendimento',
-            )
-            .last;
+        final Finder detailsButton =
+            find
+                .byWidgetPredicate(
+                  (Widget widget) =>
+                      widget is IconButton &&
+                      widget.tooltip == 'Ver detalhes do atendimento',
+                )
+                .last;
         await Scrollable.ensureVisible(
           tester.element(detailsButton),
           alignment: 0.65,
@@ -2009,11 +2078,12 @@ Future<void> _pumpMobile(
 
   await tester.pumpWidget(
     ChangeNotifierProvider<LocaleSettingsProvider>(
-      create: (_) => LocaleSettingsProvider(
-        regionalizacaoService: RegionalizacaoService(
-          apiClient: _FakeRegionalizacaoApiClient(),
-        ),
-      ),
+      create:
+          (_) => LocaleSettingsProvider(
+            regionalizacaoService: RegionalizacaoService(
+              apiClient: _FakeRegionalizacaoApiClient(),
+            ),
+          ),
       child: MaterialApp(
         locale: const Locale('pt'),
         supportedLocales: _testSupportedLocales,
@@ -2311,12 +2381,13 @@ AtendimentoTecnicoModel _atendimento({
   DateTime? dataAtualizacao,
   DateTime? dataEntregaPrevista,
 }) {
-  final int statusId = _dominios.statusAtendimentoTecnico
-      .firstWhere(
-        (DominioOpcaoModel status) => status.codigo == statusCodigo,
-        orElse: () => _dominios.statusAtendimentoTecnico.first,
-      )
-      .id;
+  final int statusId =
+      _dominios.statusAtendimentoTecnico
+          .firstWhere(
+            (DominioOpcaoModel status) => status.codigo == statusCodigo,
+            orElse: () => _dominios.statusAtendimentoTecnico.first,
+          )
+          .id;
   final double valorTotal = 300;
   return AtendimentoTecnicoModel(
     id: numero.toLowerCase(),
@@ -2334,9 +2405,8 @@ AtendimentoTecnicoModel _atendimento({
     assinaturaAprovada: assinaturaAprovada,
     requerNovaAssinatura: requerNovaAssinatura,
     assinaturaNomeAssinante: assinaturaAprovada ? 'Cliente Six' : null,
-    assinaturaDataHora: assinaturaAprovada
-        ? DateTime(2026, 8, 6, 16, 15)
-        : null,
+    assinaturaDataHora:
+        assinaturaAprovada ? DateTime(2026, 8, 6, 16, 15) : null,
     validadeOrcamentoEm: DateTime(2026, 8, 20),
     dataVencimentoEm: DateTime(2026, 8, 18),
     dataEntregaPrevista: dataEntregaPrevista ?? DateTime(2026, 8, 16),
@@ -2420,16 +2490,17 @@ AtendimentoTecnicoModel _atendimento({
         observacao: 'Orçamento revisado.',
       ),
     ],
-    recebimentos: liquidada
-        ? const <AtendimentoTecnicoRecebimentoModel>[
-            AtendimentoTecnicoRecebimentoModel(
-              id: 'rec-1',
-              codigoFormaRecebimento: 'PIX',
-              nomeFormaRecebimento: 'Pix',
-              valor: 300,
-            ),
-          ]
-        : const <AtendimentoTecnicoRecebimentoModel>[],
+    recebimentos:
+        liquidada
+            ? const <AtendimentoTecnicoRecebimentoModel>[
+              AtendimentoTecnicoRecebimentoModel(
+                id: 'rec-1',
+                codigoFormaRecebimento: 'PIX',
+                nomeFormaRecebimento: 'Pix',
+                valor: 300,
+              ),
+            ]
+            : const <AtendimentoTecnicoRecebimentoModel>[],
     dataAtualizacao: dataAtualizacao ?? DateTime(2026, 8, 8, 12),
   );
 }
@@ -2601,11 +2672,12 @@ class _FakeAtendimentoTecnicoService extends AtendimentoTecnicoService {
     detailCalls++;
     return atendimentos.firstWhere(
       (AtendimentoTecnicoModel atendimento) => atendimento.id == id,
-      orElse: () => _atendimento(
-        numero: id.toUpperCase(),
-        statusCodigo: 'EM_ANDAMENTO',
-        statusNome: 'Em andamento',
-      ),
+      orElse:
+          () => _atendimento(
+            numero: id.toUpperCase(),
+            statusCodigo: 'EM_ANDAMENTO',
+            statusNome: 'Em andamento',
+          ),
     );
   }
 

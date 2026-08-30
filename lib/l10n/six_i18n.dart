@@ -1136,6 +1136,20 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.mobile.noTechnicianFound': 'Nenhum técnico encontrado.',
     'atendimentoTecnico.mobile.viewOneService': 'Ver 1 atendimento',
     'atendimentoTecnico.mobile.viewManyServices': 'Ver {count} atendimentos',
+    'atendimentoTecnico.mobile.inProgressTitle': 'Serviços em andamento',
+    'atendimentoTecnico.mobile.inProgressDescription':
+        'Atendimentos técnicos ativos em execução ou aguardando a próxima etapa.',
+    'atendimentoTecnico.mobile.inProgressEmptyTitle':
+        'Nenhum serviço em andamento no momento.',
+    'atendimentoTecnico.mobile.inProgressEmptyMessage':
+        'Quando um atendimento técnico ativo for criado, ele aparecerá aqui.',
+    'atendimentoTecnico.mobile.inProgressErrorTitle':
+        'Não foi possível consultar os serviços em andamento. Tente novamente.',
+    'atendimentoTecnico.mobile.inProgressLoading':
+        'Carregando serviços em andamento',
+    'atendimentoTecnico.mobile.inProgressSection': 'Serviços em andamento',
+    'atendimentoTecnico.mobile.inProgressFilteredSection':
+        'Resultado do filtro',
     'atendimentoTecnico.mobile.waitingApprovalTitle':
         'Orçamentos aguardando aprovação',
     'atendimentoTecnico.mobile.waitingApprovalDescription':
@@ -1152,6 +1166,18 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Orçamentos aguardando aprovação',
     'atendimentoTecnico.mobile.waitingApprovalFilteredSection':
         'Resultado do filtro',
+    'atendimentoTecnico.mobile.closedTitle': 'Serviços já encerrados',
+    'atendimentoTecnico.mobile.closedDescription':
+        'Atendimentos técnicos entregues, cancelados ou encerrados sem reparo.',
+    'atendimentoTecnico.mobile.closedEmptyTitle':
+        'Nenhum serviço encerrado encontrado.',
+    'atendimentoTecnico.mobile.closedEmptyMessage':
+        'Quando um atendimento for entregue, cancelado ou encerrado sem reparo, ele aparecerá aqui.',
+    'atendimentoTecnico.mobile.closedErrorTitle':
+        'Não foi possível consultar os serviços encerrados. Tente novamente.',
+    'atendimentoTecnico.mobile.closedLoading': 'Carregando serviços encerrados',
+    'atendimentoTecnico.mobile.closedSection': 'Serviços encerrados',
+    'atendimentoTecnico.mobile.closedFilteredSection': 'Resultado do filtro',
     'atendimentoTecnico.mobile.currentStatusOption': 'Status atual',
     'atendimentoTecnico.mobile.selectStatusOption': 'Toque para selecionar',
     'technicalService.status.waitingCustomerAproval':
@@ -2098,6 +2124,9 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Consultar serviços em andamento',
     'atendimento.mobile.consultServicesInProgressSubtitle':
         'Ver atendimentos técnicos ativos',
+    'atendimento.mobile.closedServicesTitle': 'Serviços já encerrados',
+    'atendimento.mobile.closedServicesSubtitle':
+        'Consultar atendimentos técnicos encerrados',
     'atendimento.mobile.waitingApprovalBudgetsTitle':
         'Orçamentos aguardando aprovação',
     'atendimento.mobile.waitingApprovalBudgetsSubtitle':
@@ -3431,6 +3460,46 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.mobile.noTechnicianFound': 'No technician found.',
     'atendimentoTecnico.mobile.viewOneService': 'View 1 service',
     'atendimentoTecnico.mobile.viewManyServices': 'View {count} services',
+    'atendimentoTecnico.mobile.inProgressTitle': 'Services in progress',
+    'atendimentoTecnico.mobile.inProgressDescription':
+        'Active technical services in execution or waiting for the next step.',
+    'atendimentoTecnico.mobile.inProgressEmptyTitle':
+        'No services in progress right now.',
+    'atendimentoTecnico.mobile.inProgressEmptyMessage':
+        'When an active technical service is created, it will appear here.',
+    'atendimentoTecnico.mobile.inProgressErrorTitle':
+        'Could not load the services in progress. Try again.',
+    'atendimentoTecnico.mobile.inProgressLoading':
+        'Loading services in progress',
+    'atendimentoTecnico.mobile.inProgressSection': 'Services in progress',
+    'atendimentoTecnico.mobile.inProgressFilteredSection': 'Filtered results',
+    'atendimentoTecnico.mobile.waitingApprovalTitle':
+        'Quotes awaiting approval',
+    'atendimentoTecnico.mobile.waitingApprovalDescription':
+        'Services sent to the customer that still need approval.',
+    'atendimentoTecnico.mobile.waitingApprovalEmptyTitle':
+        'No quotes awaiting approval right now.',
+    'atendimentoTecnico.mobile.waitingApprovalEmptyMessage':
+        'When a quote is sent and waiting for the customer decision, it will appear here.',
+    'atendimentoTecnico.mobile.waitingApprovalErrorTitle':
+        'Could not load the quotes. Try again.',
+    'atendimentoTecnico.mobile.waitingApprovalLoading':
+        'Loading quotes awaiting approval',
+    'atendimentoTecnico.mobile.waitingApprovalSection':
+        'Quotes awaiting approval',
+    'atendimentoTecnico.mobile.waitingApprovalFilteredSection':
+        'Filtered results',
+    'atendimentoTecnico.mobile.closedTitle': 'Closed services',
+    'atendimentoTecnico.mobile.closedDescription':
+        'Technical services delivered, canceled, or closed with no repair.',
+    'atendimentoTecnico.mobile.closedEmptyTitle': 'No closed services found.',
+    'atendimentoTecnico.mobile.closedEmptyMessage':
+        'When a service is delivered, canceled, or closed with no repair, it will appear here.',
+    'atendimentoTecnico.mobile.closedErrorTitle':
+        'Could not load the closed services. Try again.',
+    'atendimentoTecnico.mobile.closedLoading': 'Loading closed services',
+    'atendimentoTecnico.mobile.closedSection': 'Closed services',
+    'atendimentoTecnico.mobile.closedFilteredSection': 'Filtered results',
     'atendimentoTecnico.mobile.sharePdfTooltip': 'Share service',
     'atendimentoTecnico.mobile.pdfSectionTitle': 'Service document',
     'atendimentoTecnico.mobile.pdfSectionDescription':
@@ -4222,6 +4291,9 @@ const Map<String, Map<String, String>> _fallbacks = {
         'View services in progress',
     'atendimento.mobile.consultServicesInProgressSubtitle':
         'See active technical services',
+    'atendimento.mobile.closedServicesTitle': 'Closed services',
+    'atendimento.mobile.closedServicesSubtitle':
+        'Review closed technical services',
     'atendimento.mobile.receiveTitle': 'Receive',
     'atendimento.mobile.receiveSubtitle': 'Open sales',
     'atendimento.mobile.followToday': 'Track today',
@@ -5592,6 +5664,48 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.mobile.noTechnicianFound': 'No se encontró técnico.',
     'atendimentoTecnico.mobile.viewOneService': 'Ver 1 servicio',
     'atendimentoTecnico.mobile.viewManyServices': 'Ver {count} servicios',
+    'atendimentoTecnico.mobile.inProgressTitle': 'Servicios en curso',
+    'atendimentoTecnico.mobile.inProgressDescription':
+        'Atenciones técnicas activas en ejecución o esperando la siguiente etapa.',
+    'atendimentoTecnico.mobile.inProgressEmptyTitle':
+        'No hay servicios en curso en este momento.',
+    'atendimentoTecnico.mobile.inProgressEmptyMessage':
+        'Cuando se cree una atención técnica activa, aparecerá aquí.',
+    'atendimentoTecnico.mobile.inProgressErrorTitle':
+        'No se pudieron consultar los servicios en curso. Intenta nuevamente.',
+    'atendimentoTecnico.mobile.inProgressLoading':
+        'Cargando servicios en curso',
+    'atendimentoTecnico.mobile.inProgressSection': 'Servicios en curso',
+    'atendimentoTecnico.mobile.inProgressFilteredSection':
+        'Resultado del filtro',
+    'atendimentoTecnico.mobile.waitingApprovalTitle':
+        'Presupuestos en espera de aprobación',
+    'atendimentoTecnico.mobile.waitingApprovalDescription':
+        'Servicios enviados al cliente que todavía necesitan aprobación.',
+    'atendimentoTecnico.mobile.waitingApprovalEmptyTitle':
+        'No hay presupuestos en espera de aprobación por ahora.',
+    'atendimentoTecnico.mobile.waitingApprovalEmptyMessage':
+        'Cuando un presupuesto sea enviado y quede esperando la decisión del cliente, aparecerá aquí.',
+    'atendimentoTecnico.mobile.waitingApprovalErrorTitle':
+        'No se pudieron consultar los presupuestos. Intenta nuevamente.',
+    'atendimentoTecnico.mobile.waitingApprovalLoading':
+        'Cargando presupuestos en espera de aprobación',
+    'atendimentoTecnico.mobile.waitingApprovalSection':
+        'Presupuestos en espera de aprobación',
+    'atendimentoTecnico.mobile.waitingApprovalFilteredSection':
+        'Resultado del filtro',
+    'atendimentoTecnico.mobile.closedTitle': 'Servicios ya cerrados',
+    'atendimentoTecnico.mobile.closedDescription':
+        'Atenciones técnicas entregadas, canceladas o cerradas sin reparación.',
+    'atendimentoTecnico.mobile.closedEmptyTitle':
+        'No se encontraron servicios cerrados.',
+    'atendimentoTecnico.mobile.closedEmptyMessage':
+        'Cuando una atención sea entregada, cancelada o cerrada sin reparación, aparecerá aquí.',
+    'atendimentoTecnico.mobile.closedErrorTitle':
+        'No se pudieron consultar los servicios cerrados. Intenta nuevamente.',
+    'atendimentoTecnico.mobile.closedLoading': 'Cargando servicios cerrados',
+    'atendimentoTecnico.mobile.closedSection': 'Servicios cerrados',
+    'atendimentoTecnico.mobile.closedFilteredSection': 'Resultado del filtro',
     'atendimentoTecnico.mobile.sharePdfTooltip': 'Compartir servicio',
     'atendimentoTecnico.mobile.pdfSectionTitle': 'Documento del servicio',
     'atendimentoTecnico.mobile.pdfSectionDescription':
@@ -6406,6 +6520,9 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Consultar servicios en curso',
     'atendimento.mobile.consultServicesInProgressSubtitle':
         'Ver atenciones técnicas activas',
+    'atendimento.mobile.closedServicesTitle': 'Servicios ya cerrados',
+    'atendimento.mobile.closedServicesSubtitle':
+        'Consultar atenciones técnicas cerradas',
     'atendimento.mobile.receiveTitle': 'Cobrar',
     'atendimento.mobile.receiveSubtitle': 'Ventas abiertas',
     'atendimento.mobile.followToday': 'Seguimiento de hoy',

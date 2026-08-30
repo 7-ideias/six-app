@@ -34,6 +34,7 @@ class _OpcoesServicosAtendimentoMobileScreenState
   static const Color _accentColor = Color(0xFF7C3AED);
   static const Color _consultAccentColor = Color(0xFF0F766E);
   static Color get _approvalAccentColor => SixMobilePalette.accent;
+  static const Color _closedAccentColor = Color(0xFF64748B);
   static const String _serviceAssetContorno =
       'assets/images/atendimento mobile/acao-novo-servico.webp';
   static const String _serviceAssetAcento =
@@ -46,6 +47,10 @@ class _OpcoesServicosAtendimentoMobileScreenState
       'assets/images/servicos mobile/acao-orcamentos-aprovacao.webp';
   static const String _approvalAssetAcento =
       'assets/images/servicos mobile/acao-orcamentos-aprovacao-acento.webp';
+  static const String _closedAssetContorno =
+      'assets/images/servicos mobile/acao-servicos-em-andamento.webp';
+  static const String _closedAssetAcento =
+      'assets/images/servicos mobile/acao-servicos-em-andamento-acento.webp';
   static const double _serviceCardHeight = 136;
   static const double _serviceCardGap = 10;
 
@@ -124,7 +129,13 @@ class _OpcoesServicosAtendimentoMobileScreenState
         assetContorno: _inProgressAssetContorno,
         assetAcento: _inProgressAssetAcento,
         accentColor: _consultAccentColor,
-        onTap: () => _go(context, AtendimentosTecnicosMobileScreen()),
+        onTap:
+            () => _go(
+              context,
+              const AtendimentosTecnicosMobileScreen(
+                listContext: AtendimentosTecnicosMobileListContext.inProgress(),
+              ),
+            ),
       ),
       ServicosMobileCardPreferencia
           .orcamentosAguardandoAprovacao: _ServiceActionData(
@@ -150,6 +161,30 @@ class _OpcoesServicosAtendimentoMobileScreenState
               AtendimentosTecnicosMobileScreen(
                 listContext:
                     AtendimentosTecnicosMobileListContext.waitingCustomerApproval(),
+              ),
+            ),
+      ),
+      ServicosMobileCardPreferencia.servicosJaEncerrados: _ServiceActionData(
+        preferencia: ServicosMobileCardPreferencia.servicosJaEncerrados,
+        id: 'closed-services',
+        title: _t(
+          context,
+          'atendimento.mobile.closedServicesTitle',
+          'Serviços já encerrados',
+        ),
+        subtitle: _t(
+          context,
+          'atendimento.mobile.closedServicesSubtitle',
+          'Consultar atendimentos técnicos encerrados',
+        ),
+        assetContorno: _closedAssetContorno,
+        assetAcento: _closedAssetAcento,
+        accentColor: _closedAccentColor,
+        onTap:
+            () => _go(
+              context,
+              const AtendimentosTecnicosMobileScreen(
+                listContext: AtendimentosTecnicosMobileListContext.closed(),
               ),
             ),
       ),
