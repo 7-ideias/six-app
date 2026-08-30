@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
@@ -2154,19 +2155,19 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                           ),
                         );
                       },
-                      child: SizedBox(
+                      child: _QuantidadeValorButton(
                         key: ValueKey<String>(
                           '${item.idProduto}-${item.quantidade}',
                         ),
-                        width: 34,
-                        child: Text(
-                          '${item.quantidade}',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: SixMobilePalette.titleText,
-                            fontWeight: FontWeight.w900,
-                          ),
+                        quantidade: item.quantidade,
+                        label: _txt(
+                          'pdv.mobile.editQuantity',
+                          'Editar quantidade',
                         ),
+                        onTap:
+                            _enviando || !_caixaAbertoParaVenda
+                                ? null
+                                : () => _editarQuantidade(item),
                       ),
                     ),
                     _buildQuantityButton(
@@ -2246,21 +2247,291 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   }
 
   void _alterarQuantidade(_VendaItemMobile item, int delta) {
+    final index = _itens.indexWhere(
+      (element) => element.idProduto == item.idProduto,
+    );
+    if (index < 0) return;
+    _definirQuantidade(_itens[index], _itens[index].quantidade + delta);
+  }
+
+  void _definirQuantidade(_VendaItemMobile item, int quantidade) {
     setState(() {
       final index = _itens.indexWhere(
         (element) => element.idProduto == item.idProduto,
       );
       if (index < 0) return;
-      final novaQuantidade = _itens[index].quantidade + delta;
-      if (novaQuantidade <= 0) {
+      if (quantidade <= 0) {
         _itens.removeAt(index);
       } else {
-        _itens[index] = _itens[index].copyWith(quantidade: novaQuantidade);
+        _itens[index] = _itens[index].copyWith(quantidade: quantidade);
       }
     });
 
     if (_editandoVendaNaoLiquidada && _formasSelecionadas.length == 1) {
       _preencherValorRestante(_formasSelecionadas.first);
+    }
+  }
+
+  Future<void> _editarQuantidade(_VendaItemMobile item) async {
+    final TextEditingController controller = TextEditingController(
+      text: item.quantidade.toString(),
+    );
+    final FocusNode focusNode = FocusNode();
+
+    try {
+      final int? novaQuantidade = await showModalBottomSheet<int>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        useSafeArea: true,
+        builder: (BuildContext modalContext) {
+          String? validationError;
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!focusNode.canRequestFocus) return;
+            focusNode.requestFocus();
+            controller.selection = TextSelection(
+              baseOffset: 0,
+              extentOffset: controller.text.length,
+            );
+          });
+
+          int? parseQuantity() {
+            final int? parsed = int.tryParse(controller.text.trim());
+            if (parsed == null || parsed <= 0) {
+              return null;
+            }
+            return parsed;
+          }
+
+          return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setModalState) {
+              void confirmar() {
+                final int? quantidade = parseQuantity();
+                if (quantidade == null) {
+                  setModalState(() {
+                    validationError = _txt(
+                      'pdv.mobile.invalidQuantity',
+                      'Informe uma quantidade inteira maior que zero.',
+                    );
+                  });
+                  return;
+                }
+
+                Navigator.of(context).pop<int>(quantidade);
+              }
+
+              return Padding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  12,
+                  16,
+                  16 + MediaQuery.viewInsetsOf(context).bottom,
+                ),
+                child: Material(
+                  color: SixMobilePalette.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
+                    decoration: BoxDecoration(
+                      color: SixMobilePalette.surface,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: SixMobilePalette.border),
+                      boxShadow: <BoxShadow>[
+                        BoxShadow(
+                          color: SixMobilePalette.navigationShadow,
+                          blurRadius: 22,
+                          offset: Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Center(
+                          child: Container(
+                            width: 42,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: SixMobilePalette.border,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 18),
+                        Text(
+                          _txt(
+                            'pdv.mobile.editQuantityTitle',
+                            'Editar quantidade',
+                          ),
+                          style: TextStyle(
+                            color: SixMobilePalette.titleText,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          item.nome,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: SixMobilePalette.mutedText,
+                            fontSize: 13,
+                            height: 1.35,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        TextField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          autofocus: true,
+                          keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.done,
+                          inputFormatters: <TextInputFormatter>[
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          onChanged: (_) {
+                            if (validationError == null) return;
+                            setModalState(() => validationError = null);
+                          },
+                          onSubmitted: (_) => confirmar(),
+                          style: TextStyle(
+                            color: SixMobilePalette.titleText,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: _txt(
+                              'pdv.mobile.quantityFieldLabel',
+                              'Quantidade',
+                            ),
+                            hintText: _txt(
+                              'pdv.mobile.quantityFieldHint',
+                              'Digite a quantidade desejada',
+                            ),
+                            errorText: validationError,
+                            prefixIcon: Icon(
+                              Icons.tag_rounded,
+                              color: SixMobilePalette.accent,
+                            ),
+                            filled: true,
+                            fillColor: SixMobilePalette.surfaceElevated,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: SixMobilePalette.border,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: SixMobilePalette.accent,
+                                width: 1.4,
+                              ),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: SixMobilePalette.error,
+                              ),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: SixMobilePalette.error,
+                                width: 1.4,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: SixMobilePalette.softAccentSurface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: SixMobilePalette.border),
+                          ),
+                          child: Text(
+                            _txt(
+                              'pdv.mobile.quantityEditorHint',
+                              'Use os botões laterais para ajuste fino e a digitação para volumes maiores.',
+                            ),
+                            style: TextStyle(
+                              color: SixMobilePalette.mutedText,
+                              fontSize: 12,
+                              height: 1.35,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: Size.fromHeight(48),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  side: BorderSide(
+                                    color: SixMobilePalette.border,
+                                  ),
+                                ),
+                                child: Text(
+                                  _txt('common.cancel', 'Cancelar'),
+                                  style: TextStyle(fontWeight: FontWeight.w800),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: confirmar,
+                                style: FilledButton.styleFrom(
+                                  minimumSize: Size.fromHeight(48),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                child: Text(
+                                  _txt(
+                                    'pdv.mobile.applyQuantity',
+                                    'Aplicar quantidade',
+                                  ),
+                                  style: TextStyle(fontWeight: FontWeight.w800),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+
+      if (!mounted || novaQuantidade == null) return;
+      _definirQuantidade(item, novaQuantidade);
+    } finally {
+      focusNode.dispose();
+      controller.dispose();
     }
   }
 
@@ -2657,6 +2928,71 @@ class _PdvActionButtonState extends State<_PdvActionButton> {
     if (_disabled) return SixMobilePalette.border;
     if (widget.primary) return SixMobilePalette.primary;
     return SixMobilePalette.activeBorder;
+  }
+}
+
+class _QuantidadeValorButton extends StatelessWidget {
+  const _QuantidadeValorButton({
+    super.key,
+    required this.quantidade,
+    required this.label,
+    required this.onTap,
+  });
+
+  final int quantidade;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      value: quantidade.toString(),
+      enabled: onTap != null,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            constraints: BoxConstraints(minWidth: 58),
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: SixMobilePalette.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: SixMobilePalette.border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Flexible(
+                  child: Text(
+                    '$quantidade',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: SixMobilePalette.titleText,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 6),
+                Icon(
+                  Icons.edit_outlined,
+                  size: 15,
+                  color:
+                      onTap == null
+                          ? SixMobilePalette.mutedText
+                          : SixMobilePalette.accent,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
