@@ -9,7 +9,12 @@ abstract final class WebNavigationPermissionAdapter {
       return const <WebNavigationPermission>{};
     }
     if (provider.ehAdministrador) {
-      return WebNavigationPermission.values.toSet();
+      final Set<WebNavigationPermission> permissions =
+          WebNavigationPermission.values.toSet();
+      if (!provider.ehSuperUsuario) {
+        permissions.remove(WebNavigationPermission.podeAcessarUsuariosSixo);
+      }
+      return permissions;
     }
     return <WebNavigationPermission>{
       if (provider.podeFazerVenda) WebNavigationPermission.podeFazerVenda,
@@ -33,6 +38,8 @@ abstract final class WebNavigationPermissionAdapter {
         WebNavigationPermission.podeGerarRelatorio,
       if (!provider.ehColaborador && provider.ehSuperUsuario)
         WebNavigationPermission.podeGerenciarDesempenho,
+      if (provider.ehSuperUsuario)
+        WebNavigationPermission.podeAcessarUsuariosSixo,
       if (provider.podeVerQuantoVendeu)
         WebNavigationPermission.podeAcessarFinanceiro,
       if (provider.podeReceberNoCaixa)

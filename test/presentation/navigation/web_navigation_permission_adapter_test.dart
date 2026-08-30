@@ -142,6 +142,24 @@ void main() {
       );
     });
 
+    test('somente SUPER enxerga Usuarios do Sixo', () {
+      final List<WebNavigationItem> superVisible = _visibleItemsFor(
+        _FakeAutorizacoesProvider(superUser: true),
+      );
+      final List<WebNavigationItem> adminVisible = _visibleItemsFor(
+        _FakeAutorizacoesProvider(admin: true),
+      );
+
+      expect(
+        _childIds(_requiredItem(superVisible, WebNavigationIds.people)),
+        contains(WebNavigationIds.peopleSixoUsers),
+      );
+      expect(
+        _findItem(adminVisible, WebNavigationIds.peopleSixoUsers),
+        isNull,
+      );
+    });
+
     test('colaborador com relatorio nao enxerga desempenho da equipe', () {
       final List<WebNavigationItem> visible = _visibleItemsFor(
         _FakeAutorizacoesProvider(podeGerarRelatorio: true),
@@ -253,6 +271,7 @@ WebNavigationItem? _findItem(List<WebNavigationItem> items, String id) {
 class _FakeAutorizacoesProvider extends ColaboradorAutorizacoesProvider {
   _FakeAutorizacoesProvider({
     this.admin = false,
+    this.superUser = false,
     this.loaded = true,
     this.podeFazerVenda = false,
     this.podeLancarAssistenciaTecnica = false,
@@ -267,6 +286,7 @@ class _FakeAutorizacoesProvider extends ColaboradorAutorizacoesProvider {
   });
 
   final bool admin;
+  final bool superUser;
   final bool loaded;
 
   @override
@@ -301,6 +321,9 @@ class _FakeAutorizacoesProvider extends ColaboradorAutorizacoesProvider {
 
   @override
   bool get ehAdministrador => admin;
+
+  @override
+  bool get ehSuperUsuario => superUser;
 
   @override
   bool get ehColaborador => !admin;

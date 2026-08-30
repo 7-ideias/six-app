@@ -30,6 +30,7 @@ import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operational_procedures_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/regionalizacao_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/usuarios_sixo_mobile_screen.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/management_overview_provider.dart';
@@ -1241,6 +1242,22 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             onTap: () =>
                 _navigateTo(context, ColaboradoresUsuarioMobileScreen()),
           ),
+          if (autorizacoes.ehSuperUsuario)
+            _ManagementItem(
+              title: context.t(
+                'gestao.people.sixoUsers',
+                fallback: 'Usuários do Sixo',
+              ),
+              subtitle: context.t(
+                'gestao.people.sixoUsersDesc',
+                fallback: 'Base global protegida pelo perfil SUPER',
+              ),
+              icon: Icons.hub_outlined,
+              accentColor: colors.accent,
+              emphasis: ManagementActionEmphasis.secondary,
+              onTap: () =>
+                  _navigateTo(context, const UsuariosSixoMobileScreen()),
+            ),
           _ManagementItem(
             title: context.t(
               'gestao.people.suppliers',

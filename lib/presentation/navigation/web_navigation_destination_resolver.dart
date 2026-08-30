@@ -112,6 +112,11 @@ class WebNavigationDestinationResolver {
         return actions.openPeopleCustomers();
       case WebNavigationDestination.peopleCollaborators:
         return actions.openPeopleCollaborators();
+      case WebNavigationDestination.peopleSixoUsers:
+        return WebNavigationResolutionResult.reserved(
+          destination,
+          reason: 'Destino gerenciado pelo shell Web.',
+        );
       case WebNavigationDestination.peoplePerformance:
         return actions.openPeoplePerformance();
       case WebNavigationDestination.cash:

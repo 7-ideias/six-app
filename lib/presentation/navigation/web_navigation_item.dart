@@ -89,6 +89,7 @@ enum WebNavigationDestination {
   catalogCategories,
   peopleCustomers,
   peopleCollaborators,
+  peopleSixoUsers,
   peoplePerformance,
   cash,
   financialAgenda,
@@ -109,6 +110,7 @@ enum WebNavigationPermission {
   podeAcessarEtiquetas,
   podeGerarRelatorio,
   podeGerenciarDesempenho,
+  podeAcessarUsuariosSixo,
   podeAcessarFinanceiro,
   podeReceberNoCaixa,
 }

@@ -54,6 +54,7 @@ void main() {
       expect(_childIds(people), <String>[
         WebNavigationIds.peopleCustomers,
         WebNavigationIds.peopleCollaborators,
+        WebNavigationIds.peopleSixoUsers,
         WebNavigationIds.peoplePerformance,
       ]);
 
@@ -120,6 +121,7 @@ void main() {
           'people',
           'people.customers',
           'people.collaborators',
+          'people.sixo_users',
           'people.performance',
           'cash',
           'financial',

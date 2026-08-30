@@ -59,6 +59,21 @@ void main() {
       expect(actions.calls, isEmpty);
     });
 
+    test('reserva Usuarios do Sixo para o shell Web', () {
+      final _FakeWebNavigationActions actions = _FakeWebNavigationActions();
+      final WebNavigationDestinationResolver resolver =
+          WebNavigationDestinationResolver(actions: actions);
+
+      final WebNavigationResolutionResult result = resolver.resolve(
+        WebNavigationDestination.peopleSixoUsers,
+      );
+
+      expect(result.reserved, isTrue);
+      expect(result.destination, WebNavigationDestination.peopleSixoUsers);
+      expect(result.reason, isNotEmpty);
+      expect(actions.calls, isEmpty);
+    });
+
     test('retorna unsupported para destino ausente', () {
       final _FakeWebNavigationActions actions = _FakeWebNavigationActions();
       final WebNavigationDestinationResolver resolver =
