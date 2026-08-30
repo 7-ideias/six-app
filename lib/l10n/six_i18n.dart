@@ -1272,6 +1272,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.mobile.savingService': 'Iniciando atendimento...',
     'atendimentoTecnico.mobile.startServiceAction':
         'Iniciar atendimento técnico',
+    'atendimentoTecnico.mobile.startedSuccess': 'Atendimento técnico iniciado.',
+    'atendimentoTecnico.mobile.startedSuccessWithNumber':
+        'Atendimento {number} iniciado.',
     'auth.loginRequiredFields': 'Por favor, preencha o e-mail e a senha',
     'auth.loginTitleMobile': 'Entrar',
     'auth.loginSubtitleMobile':
@@ -3539,6 +3542,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.mobile.paymentStampOpen': 'OPEN',
     'atendimentoTecnico.mobile.savingService': 'Starting service...',
     'atendimentoTecnico.mobile.startServiceAction': 'Start technical service',
+    'atendimentoTecnico.mobile.startedSuccess': 'Technical service started.',
+    'atendimentoTecnico.mobile.startedSuccessWithNumber':
+        'Service {number} started.',
     'procedimentos.title': 'Procedures',
     'procedimentos.subtitle': 'Guides for sales, service and deliveries',
     'procedimentos.introTitle':
@@ -5701,6 +5707,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.mobile.paymentStampOpen': 'ABIERTO',
     'atendimentoTecnico.mobile.savingService': 'Iniciando atención...',
     'atendimentoTecnico.mobile.startServiceAction': 'Iniciar atención técnica',
+    'atendimentoTecnico.mobile.startedSuccess': 'Atención técnica iniciada.',
+    'atendimentoTecnico.mobile.startedSuccessWithNumber':
+        'Atención {number} iniciada.',
     'auth.loginRequiredFields':
         'Completa el correo electrónico y la contraseña',
     'auth.loginTitleMobile': 'Entrar',

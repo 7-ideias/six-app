@@ -132,6 +132,7 @@ class AtendimentosTecnicosMobileScreen extends StatefulWidget {
     this.colaboradorApiClient,
     this.caixaApiClient,
     this.listContext = const AtendimentosTecnicosMobileListContext.standard(),
+    this.initialFeedbackMessage,
   });
 
   final AtendimentoTecnicoService? service;
@@ -139,6 +140,7 @@ class AtendimentosTecnicosMobileScreen extends StatefulWidget {
   final ColaboradorUsuarioApiClient? colaboradorApiClient;
   final CaixaApiClient? caixaApiClient;
   final AtendimentosTecnicosMobileListContext listContext;
+  final String? initialFeedbackMessage;
 
   @override
   State<AtendimentosTecnicosMobileScreen> createState() =>
@@ -194,6 +196,14 @@ class _AtendimentosTecnicosMobileScreenState
         widget.colaboradorApiClient ?? HttpColaboradorUsuarioApiClient();
     _future = _carregar();
     _searchController.addListener(_onSearchChanged);
+    final String? initialFeedbackMessage =
+        widget.initialFeedbackMessage?.trim();
+    if (initialFeedbackMessage != null && initialFeedbackMessage.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _mostrarMensagem(initialFeedbackMessage);
+      });
+    }
     if (_permitePreferenciasAtendimentosCriados) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await _restaurarPreferenciasAtendimentosCriadosMobile();
@@ -2953,11 +2963,19 @@ class _AtendimentosTecnicosMobileScreenState
   }
 
   Future<void> _novoAtendimento() async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(builder: (_) => AtendimentoTecnicoMobileScreen()),
+    final AtendimentoTecnicoCreateFlowResult? result = await Navigator.of(
+      context,
+    ).push<AtendimentoTecnicoCreateFlowResult>(
+      MaterialPageRoute<AtendimentoTecnicoCreateFlowResult>(
+        builder: (_) => AtendimentoTecnicoMobileScreen(),
+      ),
     );
 
-    if (mounted) await _recarregar();
+    if (result != null && mounted) {
+      await _recarregar();
+      if (!mounted) return;
+      _mostrarMensagem(result.feedbackMessage);
+    }
   }
 
   Future<void> _abrirRecebimento(AtendimentoTecnicoModel atendimento) async {

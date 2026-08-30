@@ -19,6 +19,12 @@ import '../utils/atendimento_tecnico_foto_payload.dart';
 import 'cliente_usuario_cadastro_mobile_screen.dart';
 import 'produto_list_mobile_screen.dart';
 
+class AtendimentoTecnicoCreateFlowResult {
+  const AtendimentoTecnicoCreateFlowResult({required this.feedbackMessage});
+
+  final String feedbackMessage;
+}
+
 class AtendimentoTecnicoMobileScreen extends StatefulWidget {
   const AtendimentoTecnicoMobileScreen({
     super.key,
@@ -64,6 +70,7 @@ class _AtendimentoTecnicoMobileScreenState
   final ImagePicker _imagePicker = ImagePicker();
 
   final TextEditingController _descricaoController = TextEditingController();
+  final FocusNode _descricaoFocusNode = FocusNode();
   final TextEditingController _tipoEquipamentoController =
       TextEditingController(text: 'SMARTPHONE');
   final TextEditingController _marcaController = TextEditingController();
@@ -73,6 +80,8 @@ class _AtendimentoTecnicoMobileScreenState
   final TextEditingController _acessoriosController = TextEditingController();
   final TextEditingController _defeitoController = TextEditingController();
   final TextEditingController _diagnosticoController = TextEditingController();
+  final GlobalKey _continuarCtaKey = GlobalKey();
+  ScrollController? _pageScrollController;
 
   List<ClienteUsuario> _clientes = <ClienteUsuario>[];
   List<_ResponsavelTecnicoMobile> _responsaveis = <_ResponsavelTecnicoMobile>[];
@@ -111,12 +120,16 @@ class _AtendimentoTecnicoMobileScreenState
         widget.clienteApiClient ?? HttpClienteUsuarioApiClient();
     _colaboradorApiClient =
         widget.colaboradorApiClient ?? HttpColaboradorUsuarioApiClient();
+    _descricaoFocusNode.addListener(_onDescricaoFocusChanged);
     _carregarDados();
   }
 
   @override
   void dispose() {
     _descricaoController.dispose();
+    _descricaoFocusNode
+      ..removeListener(_onDescricaoFocusChanged)
+      ..dispose();
     _tipoEquipamentoController.dispose();
     _marcaController.dispose();
     _modeloController.dispose();
@@ -146,9 +159,8 @@ class _AtendimentoTecnicoMobileScreenState
 
       if (!mounted) return;
       setState(() {
-        _clientes = response.clientes
-            .where((cliente) => cliente.ativo)
-            .toList();
+        _clientes =
+            response.clientes.where((cliente) => cliente.ativo).toList();
         _responsaveis = responsaveis;
         _carregando = false;
       });
@@ -168,23 +180,26 @@ class _AtendimentoTecnicoMobileScreenState
         <String, _ResponsavelTecnicoMobile>{};
 
     void add(_ResponsavelTecnicoMobile responsavel) {
-      final String key = responsavel.id.trim().isNotEmpty
-          ? responsavel.id.trim()
-          : responsavel.nome.toLowerCase().trim();
+      final String key =
+          responsavel.id.trim().isNotEmpty
+              ? responsavel.id.trim()
+              : responsavel.nome.toLowerCase().trim();
       if (key.isEmpty || mapa.containsKey(key)) return;
       mapa[key] = responsavel;
     }
 
     for (final ColaboradorUsuarioResumo colaborador in colaboradores) {
       if (!colaborador.ehTecnicoAssistenciaTecnica) continue;
-      final String id = colaborador.idUnicoPessoal.trim().isNotEmpty
-          ? colaborador.idUnicoPessoal.trim()
-          : colaborador.email.trim();
-      final String nome = colaborador.nomeDeGuerra.trim().isNotEmpty
-          ? colaborador.nomeDeGuerra.trim()
-          : colaborador.nome.trim().isNotEmpty
-          ? colaborador.nome.trim()
-          : colaborador.email.trim();
+      final String id =
+          colaborador.idUnicoPessoal.trim().isNotEmpty
+              ? colaborador.idUnicoPessoal.trim()
+              : colaborador.email.trim();
+      final String nome =
+          colaborador.nomeDeGuerra.trim().isNotEmpty
+              ? colaborador.nomeDeGuerra.trim()
+              : colaborador.nome.trim().isNotEmpty
+              ? colaborador.nome.trim()
+              : colaborador.email.trim();
       if (id.isEmpty && nome.isEmpty) continue;
 
       final String subtitulo = <String>[
@@ -244,9 +259,8 @@ class _AtendimentoTecnicoMobileScreenState
   }) async {
     final inicio = _inicioHoje();
     final primeiraData = firstDate ?? inicio;
-    final initial = initialDate.isBefore(primeiraData)
-        ? primeiraData
-        : initialDate;
+    final initial =
+        initialDate.isBefore(primeiraData) ? primeiraData : initialDate;
     final selected = await showModalBottomSheet<DateTime>(
       context: context,
       isScrollControlled: true,
@@ -294,21 +308,24 @@ class _AtendimentoTecnicoMobileScreenState
   }
 
   Future<void> _cadastrarClientePeloAtendimento() async {
-    final ClienteUsuario? cliente = await Navigator.of(context)
-        .push<ClienteUsuario>(
-          MaterialPageRoute<ClienteUsuario>(
-            builder: (_) => ClienteUsuarioCadastroMobileScreen(
+    final ClienteUsuario? cliente = await Navigator.of(
+      context,
+    ).push<ClienteUsuario>(
+      MaterialPageRoute<ClienteUsuario>(
+        builder:
+            (_) => ClienteUsuarioCadastroMobileScreen(
               apiClient: _clienteApiClient,
               returnSavedCliente: true,
             ),
-          ),
-        );
+      ),
+    );
 
     if (cliente == null || !mounted) return;
     setState(() {
-      final List<ClienteUsuario> clientes = _clientes
-          .where((ClienteUsuario item) => item.id != cliente.id)
-          .toList();
+      final List<ClienteUsuario> clientes =
+          _clientes
+              .where((ClienteUsuario item) => item.id != cliente.id)
+              .toList();
       clientes.insert(0, cliente);
       _clientes = clientes;
       _clienteSelecionado = cliente;
@@ -344,18 +361,20 @@ class _AtendimentoTecnicoMobileScreenState
     final dynamic result = await Navigator.push<dynamic>(
       context,
       MaterialPageRoute<dynamic>(
-        builder: (_) => ProdutolistMobileScreen(
-          isSelecao: true,
-          permitirSelecaoMultipla: true,
-        ),
+        builder:
+            (_) => ProdutolistMobileScreen(
+              isSelecao: true,
+              permitirSelecaoMultipla: true,
+            ),
       ),
     );
 
     if (!mounted || result == null) return;
 
-    final List<ProdutoModel> produtos = result is List
-        ? result.whereType<ProdutoModel>().toList(growable: false)
-        : <ProdutoModel>[if (result is ProdutoModel) result];
+    final List<ProdutoModel> produtos =
+        result is List
+            ? result.whereType<ProdutoModel>().toList(growable: false)
+            : <ProdutoModel>[if (result is ProdutoModel) result];
     if (produtos.isEmpty) return;
 
     setState(() {
@@ -383,9 +402,10 @@ class _AtendimentoTecnicoMobileScreenState
       _AtendimentoItemMobile(
         chave: chave,
         idSku: produto.id ?? produto.codigoDeBarras,
-        descricao: produto.nomeProduto.trim().isEmpty
-            ? 'Item sem nome'
-            : produto.nomeProduto,
+        descricao:
+            produto.nomeProduto.trim().isEmpty
+                ? 'Item sem nome'
+                : produto.nomeProduto,
         tipoItemId: servico ? 20 : 10,
         tipoCodigo: tipoCodigo,
         quantidade: 1,
@@ -481,11 +501,11 @@ class _AtendimentoTecnicoMobileScreenState
       );
 
       if (!mounted) return;
-      _limparFormulario();
-      _mostrarMensagem(
-        atendimento.numero.trim().isEmpty
-            ? 'Atendimento técnico iniciado.'
-            : 'Atendimento ${atendimento.numero} iniciado.',
+      FocusScope.of(context).unfocus();
+      Navigator.of(context).pop(
+        AtendimentoTecnicoCreateFlowResult(
+          feedbackMessage: _sucessoAoCriarMensagem(atendimento),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
@@ -495,26 +515,18 @@ class _AtendimentoTecnicoMobileScreenState
     }
   }
 
-  void _limparFormulario() {
-    setState(() {
-      _clienteSelecionado = null;
-      _responsavelSelecionado = null;
-      _descricaoController.clear();
-      _tipoEquipamentoController.text = 'SMARTPHONE';
-      _marcaController.clear();
-      _modeloController.clear();
-      _numeroSerieController.clear();
-      _imeiController.clear();
-      _acessoriosController.clear();
-      _defeitoController.clear();
-      _diagnosticoController.clear();
-      _itens.clear();
-      _fotos.clear();
-      _etapaAtual = 0;
-      _validadeOrcamentoEm = _defaultDate();
-      _vencimentoFinanceiroEm = _defaultDate();
-      _dataEntregaPrevista = _defaultDate();
-    });
+  String _sucessoAoCriarMensagem(AtendimentoTecnicoModel atendimento) {
+    final String numero = atendimento.numero.trim();
+    if (numero.isEmpty) {
+      return _t(
+        'atendimentoTecnico.mobile.startedSuccess',
+        'Atendimento técnico iniciado.',
+      );
+    }
+    return _t(
+      'atendimentoTecnico.mobile.startedSuccessWithNumber',
+      'Atendimento {number} iniciado.',
+    ).replaceAll('{number}', numero);
   }
 
   String? _textoOuNulo(String value) {
@@ -532,9 +544,10 @@ class _AtendimentoTecnicoMobileScreenState
 
   String _itemsCountLabel(int count) {
     final String fallback = count == 1 ? '1 item' : '$count itens';
-    final String key = count == 1
-        ? 'procedimentos.itemCount.one'
-        : 'procedimentos.itemCount.other';
+    final String key =
+        count == 1
+            ? 'procedimentos.itemCount.one'
+            : 'procedimentos.itemCount.other';
     return _t(key, fallback).replaceAll('{count}', count.toString());
   }
 
@@ -543,6 +556,41 @@ class _AtendimentoTecnicoMobileScreenState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
     );
+  }
+
+  void _onDescricaoFocusChanged() {
+    if (!_descricaoFocusNode.hasFocus) return;
+    _agendarScrollParaContinuar();
+  }
+
+  void _agendarScrollParaContinuar() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(milliseconds: 260), () {
+        if (!mounted || !_descricaoFocusNode.hasFocus || _etapaAtual != 0) {
+          return;
+        }
+        final ScrollController? scrollController = _pageScrollController;
+        if (scrollController != null && scrollController.hasClients) {
+          final double targetOffset = scrollController.position.maxScrollExtent;
+          if (targetOffset > scrollController.offset) {
+            scrollController.animateTo(
+              targetOffset,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+            );
+          }
+        }
+        final BuildContext? ctaContext = _continuarCtaKey.currentContext;
+        if (ctaContext == null) return;
+        if (!ctaContext.mounted) return;
+        Scrollable.ensureVisible(
+          ctaContext,
+          alignment: 1,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+        );
+      });
+    });
   }
 
   @override
@@ -571,9 +619,10 @@ class _AtendimentoTecnicoMobileScreenState
       leading: IconButton(
         tooltip: _t('common.back', 'Voltar'),
         icon: Icon(Icons.arrow_back_rounded),
-        onPressed: _etapaAtual > 0
-            ? () => setState(() => _etapaAtual--)
-            : () => Navigator.of(context).maybePop(),
+        onPressed:
+            _etapaAtual > 0
+                ? () => setState(() => _etapaAtual--)
+                : () => Navigator.of(context).maybePop(),
       ),
       bodyBuilder: _buildContent,
     );
@@ -584,6 +633,8 @@ class _AtendimentoTecnicoMobileScreenState
     ScrollController scrollController,
     double topInset,
   ) {
+    _pageScrollController = scrollController;
+    final double bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     return SafeArea(
       top: false,
       child: RefreshIndicator(
@@ -591,7 +642,7 @@ class _AtendimentoTecnicoMobileScreenState
         child: ListView(
           controller: scrollController,
           physics: AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
+          padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24 + bottomInset),
           children: <Widget>[
             _buildHeader(),
             SizedBox(height: 16),
@@ -611,9 +662,10 @@ class _AtendimentoTecnicoMobileScreenState
 
   Widget _buildHeader() {
     final String? responsavel = _responsavelSelecionado?.nome;
-    final String subtitle = responsavel != null && responsavel.trim().isNotEmpty
-        ? '${_t('atendimentoTecnico.mobile.responsible', 'Responsável')}: $responsavel'
-        : '${_t('atendimentoTecnico.journey.step', 'Etapa')} ${_etapaAtual + 1}/5 • ${_journeyStepTitle(_etapaAtual)}';
+    final String subtitle =
+        responsavel != null && responsavel.trim().isNotEmpty
+            ? '${_t('atendimentoTecnico.mobile.responsible', 'Responsável')}: $responsavel'
+            : '${_t('atendimentoTecnico.journey.step', 'Etapa')} ${_etapaAtual + 1}/5 • ${_journeyStepTitle(_etapaAtual)}';
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -743,6 +795,8 @@ class _AtendimentoTecnicoMobileScreenState
                 SizedBox(height: 12),
                 TextField(
                   controller: _descricaoController,
+                  focusNode: _descricaoFocusNode,
+                  onTap: _agendarScrollParaContinuar,
                   decoration: _inputDecoration(
                     label: _t(
                       'atendimentoTecnico.mobile.internalDescription',
@@ -988,9 +1042,8 @@ class _AtendimentoTecnicoMobileScreenState
                       width: active ? 28 : 22,
                       height: active ? 28 : 22,
                       decoration: BoxDecoration(
-                        color: done || active
-                            ? _primaryColor
-                            : _softSurfaceColor,
+                        color:
+                            done || active ? _primaryColor : _softSurfaceColor,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: done || active ? _primaryColor : _borderColor,
@@ -999,18 +1052,18 @@ class _AtendimentoTecnicoMobileScreenState
                       child: Icon(
                         done ? Icons.check_rounded : _journeyStepIcon(index),
                         size: active ? 15 : 12,
-                        color: done || active
-                            ? _onPrimaryColor
-                            : _mutedTextColor,
+                        color:
+                            done || active ? _onPrimaryColor : _mutedTextColor,
                       ),
                     ),
                     if (index < 4)
                       Expanded(
                         child: Container(
                           height: 2,
-                          color: index < _etapaAtual
-                              ? _primaryColor
-                              : _borderColor,
+                          color:
+                              index < _etapaAtual
+                                  ? _primaryColor
+                                  : _borderColor,
                         ),
                       ),
                   ],
@@ -1048,6 +1101,7 @@ class _AtendimentoTecnicoMobileScreenState
         Expanded(
           flex: 2,
           child: FilledButton.icon(
+            key: _continuarCtaKey,
             onPressed: _avancarEtapa,
             icon: const Icon(Icons.arrow_forward_rounded),
             label: Text(_t('common.continue', 'Continuar')),
@@ -1248,22 +1302,23 @@ class _AtendimentoTecnicoMobileScreenState
       context: context,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          ListTile(
-            leading: const Icon(Icons.photo_camera_outlined),
-            title: Text(_t('atendimentoTecnico.photos.camera', 'Câmera')),
-            onTap: () => Navigator.pop(context, ImageSource.camera),
+      builder:
+          (BuildContext context) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: Text(_t('atendimentoTecnico.photos.camera', 'Câmera')),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: Text(_t('atendimentoTecnico.photos.gallery', 'Galeria')),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+              const SizedBox(height: 8),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.photo_library_outlined),
-            title: Text(_t('atendimentoTecnico.photos.gallery', 'Galeria')),
-            onTap: () => Navigator.pop(context, ImageSource.gallery),
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
     );
     if (source == null || !mounted) return;
 
@@ -1376,9 +1431,10 @@ class _AtendimentoTecnicoMobileScreenState
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        border: showDivider
-            ? Border(bottom: BorderSide(color: _borderColor))
-            : null,
+        border:
+            showDivider
+                ? Border(bottom: BorderSide(color: _borderColor))
+                : null,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1583,9 +1639,10 @@ class _AtendimentoTecnicoMobileScreenState
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final bool singleColumn = constraints.maxWidth < 330;
-            final double cardWidth = singleColumn
-                ? constraints.maxWidth
-                : (constraints.maxWidth - 12) / 2;
+            final double cardWidth =
+                singleColumn
+                    ? constraints.maxWidth
+                    : (constraints.maxWidth - 12) / 2;
             return Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -1698,9 +1755,8 @@ class _AtendimentoTecnicoMobileScreenState
     final bool reduceMotion =
         MediaQuery.disableAnimationsOf(context) ||
         MediaQuery.accessibleNavigationOf(context);
-    final Color borderColor = highlighted
-        ? SixMobilePalette.highlightedBorder
-        : _borderColor;
+    final Color borderColor =
+        highlighted ? SixMobilePalette.highlightedBorder : _borderColor;
     final Color foregroundColor = highlighted ? _accentColor : _titleTextColor;
 
     return Container(
@@ -1735,19 +1791,18 @@ class _AtendimentoTecnicoMobileScreenState
                 reduceMotion
                     ? _moneyText(value, foregroundColor)
                     : TweenAnimationBuilder<double>(
-                        key: ValueKey<String>('finance_${title}_$value'),
-                        tween: Tween<double>(begin: 0, end: value),
-                        duration: Duration(milliseconds: 620),
-                        curve: Curves.easeOutCubic,
-                        builder:
-                            (
-                              BuildContext context,
-                              double animatedValue,
-                              Widget? child,
-                            ) {
-                              return _moneyText(animatedValue, foregroundColor);
-                            },
-                      ),
+                      key: ValueKey<String>('finance_${title}_$value'),
+                      tween: Tween<double>(begin: 0, end: value),
+                      duration: Duration(milliseconds: 620),
+                      curve: Curves.easeOutCubic,
+                      builder: (
+                        BuildContext context,
+                        double animatedValue,
+                        Widget? child,
+                      ) {
+                        return _moneyText(animatedValue, foregroundColor);
+                      },
+                    ),
               ],
             ),
           ),
@@ -1783,23 +1838,24 @@ class _AtendimentoTecnicoMobileScreenState
       height: 52,
       child: FilledButton.icon(
         onPressed: _salvando ? null : _salvar,
-        icon: _salvando
-            ? SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2.3),
-              )
-            : Icon(Icons.playlist_add_check_rounded),
+        icon:
+            _salvando
+                ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2.3),
+                )
+                : Icon(Icons.playlist_add_check_rounded),
         label: Text(
           _salvando
               ? _t(
-                  'atendimentoTecnico.mobile.savingService',
-                  'Iniciando atendimento...',
-                )
+                'atendimentoTecnico.mobile.savingService',
+                'Iniciando atendimento...',
+              )
               : _t(
-                  'atendimentoTecnico.mobile.startServiceAction',
-                  'Iniciar atendimento técnico',
-                ),
+                'atendimentoTecnico.mobile.startServiceAction',
+                'Iniciar atendimento técnico',
+              ),
         ),
       ),
     );
@@ -2374,20 +2430,21 @@ class _AtendimentoTecnicoResponsavelSelectorMobileState
                   padding: EdgeInsets.symmetric(horizontal: 18),
                   child: TextField(
                     controller: _searchController,
-                    onChanged: (String value) =>
-                        setState(() => _filter = value),
+                    onChanged:
+                        (String value) => setState(() => _filter = value),
                     decoration: InputDecoration(
                       hintText: 'Buscar responsável',
                       prefixIcon: Icon(Icons.search_rounded),
-                      suffixIcon: _searchController.text.isEmpty
-                          ? null
-                          : IconButton(
-                              icon: Icon(Icons.close_rounded),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _filter = '');
-                              },
-                            ),
+                      suffixIcon:
+                          _searchController.text.isEmpty
+                              ? null
+                              : IconButton(
+                                icon: Icon(Icons.close_rounded),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _filter = '');
+                                },
+                              ),
                       filled: true,
                       fillColor: _surfaceColor,
                       border: OutlineInputBorder(
@@ -2407,25 +2464,27 @@ class _AtendimentoTecnicoResponsavelSelectorMobileState
                 ),
                 SizedBox(height: 12),
                 Expanded(
-                  child: responsaveis.isEmpty
-                      ? _emptyState()
-                      : ListView.separated(
-                          controller: scrollController,
-                          padding: EdgeInsets.fromLTRB(18, 0, 18, 22),
-                          itemBuilder: (BuildContext context, int index) {
-                            final _ResponsavelTecnicoMobile responsavel =
-                                responsaveis[index];
-                            final bool selected = _isSelected(responsavel);
-                            return _ResponsavelSelectorItem(
-                              responsavel: responsavel,
-                              selected: selected,
-                              onTap: () =>
-                                  Navigator.of(context).pop(responsavel),
-                            );
-                          },
-                          separatorBuilder: (_, __) => SizedBox(height: 10),
-                          itemCount: responsaveis.length,
-                        ),
+                  child:
+                      responsaveis.isEmpty
+                          ? _emptyState()
+                          : ListView.separated(
+                            controller: scrollController,
+                            padding: EdgeInsets.fromLTRB(18, 0, 18, 22),
+                            itemBuilder: (BuildContext context, int index) {
+                              final _ResponsavelTecnicoMobile responsavel =
+                                  responsaveis[index];
+                              final bool selected = _isSelected(responsavel);
+                              return _ResponsavelSelectorItem(
+                                responsavel: responsavel,
+                                selected: selected,
+                                onTap:
+                                    () =>
+                                        Navigator.of(context).pop(responsavel),
+                              );
+                            },
+                            separatorBuilder: (_, __) => SizedBox(height: 10),
+                            itemCount: responsaveis.length,
+                          ),
                 ),
               ],
             ),
@@ -2514,9 +2573,10 @@ class _ResponsavelSelectorItem extends StatelessWidget {
             children: <Widget>[
               CircleAvatar(
                 radius: 22,
-                backgroundColor: selected
-                    ? _accentColor.withValues(alpha: 0.12)
-                    : _iconSurfaceColor,
+                backgroundColor:
+                    selected
+                        ? _accentColor.withValues(alpha: 0.12)
+                        : _iconSurfaceColor,
                 child: Icon(
                   Icons.person_outline_rounded,
                   color: selected ? _accentColor : _titleTextColor,
@@ -2704,9 +2764,10 @@ class _AtendimentoTecnicoClienteSelectorMobileState
                     width: double.infinity,
                     height: 48,
                     child: FilledButton.icon(
-                      onPressed: () => Navigator.of(
-                        context,
-                      ).pop(const _CadastrarClienteAtendimentoAction()),
+                      onPressed:
+                          () => Navigator.of(
+                            context,
+                          ).pop(const _CadastrarClienteAtendimentoAction()),
                       icon: Icon(Icons.person_add_alt_1_rounded),
                       label: Text(
                         context.t(
@@ -2722,20 +2783,21 @@ class _AtendimentoTecnicoClienteSelectorMobileState
                   padding: EdgeInsets.symmetric(horizontal: 18),
                   child: TextField(
                     controller: _searchController,
-                    onChanged: (String value) =>
-                        setState(() => _filter = value),
+                    onChanged:
+                        (String value) => setState(() => _filter = value),
                     decoration: InputDecoration(
                       hintText: 'Buscar cliente',
                       prefixIcon: Icon(Icons.search_rounded),
-                      suffixIcon: _searchController.text.isEmpty
-                          ? null
-                          : IconButton(
-                              icon: Icon(Icons.close_rounded),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _filter = '');
-                              },
-                            ),
+                      suffixIcon:
+                          _searchController.text.isEmpty
+                              ? null
+                              : IconButton(
+                                icon: Icon(Icons.close_rounded),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _filter = '');
+                                },
+                              ),
                       filled: true,
                       fillColor: _surfaceColor,
                       border: OutlineInputBorder(
@@ -2754,23 +2816,24 @@ class _AtendimentoTecnicoClienteSelectorMobileState
                   ),
                 ),
                 Expanded(
-                  child: clientes.isEmpty
-                      ? _emptyState()
-                      : ListView.separated(
-                          controller: scrollController,
-                          padding: EdgeInsets.fromLTRB(18, 0, 18, 22),
-                          itemBuilder: (BuildContext context, int index) {
-                            final ClienteUsuario cliente = clientes[index];
-                            final bool selected = _isSelected(cliente);
-                            return _ClienteSelectorItem(
-                              cliente: cliente,
-                              selected: selected,
-                              onTap: () => Navigator.of(context).pop(cliente),
-                            );
-                          },
-                          separatorBuilder: (_, __) => SizedBox(height: 10),
-                          itemCount: clientes.length,
-                        ),
+                  child:
+                      clientes.isEmpty
+                          ? _emptyState()
+                          : ListView.separated(
+                            controller: scrollController,
+                            padding: EdgeInsets.fromLTRB(18, 0, 18, 22),
+                            itemBuilder: (BuildContext context, int index) {
+                              final ClienteUsuario cliente = clientes[index];
+                              final bool selected = _isSelected(cliente);
+                              return _ClienteSelectorItem(
+                                cliente: cliente,
+                                selected: selected,
+                                onTap: () => Navigator.of(context).pop(cliente),
+                              );
+                            },
+                            separatorBuilder: (_, __) => SizedBox(height: 10),
+                            itemCount: clientes.length,
+                          ),
                 ),
               ],
             ),
@@ -2886,9 +2949,10 @@ class _ClienteSelectorItem extends StatelessWidget {
             children: <Widget>[
               CircleAvatar(
                 radius: 22,
-                backgroundColor: selected
-                    ? _accentColor.withValues(alpha: 0.12)
-                    : _iconSurfaceColor,
+                backgroundColor:
+                    selected
+                        ? _accentColor.withValues(alpha: 0.12)
+                        : _iconSurfaceColor,
                 child: Text(
                   _initials(cliente.nome),
                   style: TextStyle(
@@ -2950,11 +3014,8 @@ class _ClienteSelectorItem extends StatelessWidget {
   }
 
   static String _initials(String name) {
-    final List<String> parts = name
-        .trim()
-        .split(' ')
-        .where((String item) => item.isNotEmpty)
-        .toList();
+    final List<String> parts =
+        name.trim().split(' ').where((String item) => item.isNotEmpty).toList();
     if (parts.isEmpty) {
       return 'CL';
     }
