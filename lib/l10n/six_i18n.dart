@@ -1,6718 +1,47 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
-
-import 'web_i18n_store.dart';
-
-/// Normaliza aliases histÃ³ricos encontrados em pacotes de traduÃ§Ã£o antigos.
-///
-/// A regra atua somente sobre textos de interface jÃ¡ classificados como i18n;
-/// identificadores tÃ©cnicos como `SixBack`, `sixappback.com` e chaves de API
-/// permanecem inalterados.
-String normalizeSixoAppBranding(String value) {
-  String normalized = value;
-  final List<RegExp> legacyAliases = <RegExp>[
-    RegExp(r'\bAppplanilha\b', caseSensitive: false),
-    RegExp(r'\bSix\s+POS\b', caseSensitive: false),
-    RegExp(r'\bSix\s+ERP\b', caseSensitive: false),
-    RegExp(r'\bSix\s+App\b', caseSensitive: false),
-    RegExp(r'\bSixApp\b', caseSensitive: false),
-  ];
-
-  for (final RegExp alias in legacyAliases) {
-    normalized = normalized.replaceAll(alias, 'SixoApp');
-  }
-  return normalized.replaceAllMapped(
-    RegExp(r'(^|[^A-Za-z0-9_-])Six(?=$|[^A-Za-z0-9_-])'),
-    (Match match) => '${match.group(1) ?? ''}SixoApp',
-  );
-}
-
-extension SixI18nBuildContext on BuildContext {
-  /// Resolve textos do SixoApp a partir do pacote de traduÃ§Ãµes carregado do
-  /// backend.
-  ///
-  /// Uso preferencial em telas web, Android e iOS:
-  /// `context.t('common.save')`.
-  ///
-  /// [fallback] deve ser usado apenas como proteÃ§Ã£o mÃ­nima durante migraÃ§Ã£o ou
-  /// quando o endpoint de i18n ainda nÃ£o trouxe a chave.
-  String t(String key, {String? fallback}) {
-    final code = _sixCurrentLanguageCode();
-    final value = SixI18nStore.instance.string(code, key);
-    if (value != null && value.isNotEmpty) {
-      return normalizeSixoAppBranding(value);
-    }
-
-    final resolvedFallback =
-        fallback ?? _fallbacks[code]?[key] ?? _fallbacks['pt']?[key];
-    if (resolvedFallback != null && resolvedFallback.isNotEmpty) {
-      if (kDebugMode) {
-        // debugPrint(
-        //   '[i18n] chave ausente: $key para idioma=$code. Usando fallback.',
-        // );
-      }
-      return normalizeSixoAppBranding(resolvedFallback);
-    }
-
-    if (kDebugMode) {
-      debugPrint('[i18n] chave ausente: $key para idioma=$code.');
-    }
-    return key;
-  }
-
-  String _sixCurrentLanguageCode() {
-    try {
-      return Localizations.localeOf(this).languageCode;
-    } catch (_) {
-      return 'pt';
-    }
-  }
-}
-
-const Map<String, Map<String, String>> _fallbacks = {
-  'pt': {
-    'produto.journey.changeMode': 'Alterar',
-    'clientes.journey.title': 'Escolha a jornada de cadastro',
-    'clientes.journey.subtitle':
-        'VocÃª pode salvar sÃ³ o essencial ou enriquecer o cadastro agora.',
-    'clientes.journey.simpleTitle': 'Cadastro simples',
-    'clientes.journey.simpleSubtitle':
-        'Nome, documento, telefone e e-mail para cadastrar sem atrito.',
-    'clientes.journey.completeTitle': 'Cadastro completo',
-    'clientes.journey.completeSubtitle':
-        'EndereÃ§o, crÃ©dito e contexto para uma operaÃ§Ã£o mais preparada.',
-    'clientes.journey.stepEssential': 'Essenciais',
-    'clientes.journey.stepAddress': 'EndereÃ§o',
-    'clientes.journey.stepRelationship': 'CrÃ©dito e relacionamento',
-    'clientes.journey.step': 'Etapa',
-    'clientes.journey.of': 'de',
-    'clientes.journey.reviewBeforeSave': 'Revise os dados antes de salvar.',
-    'clientes.journey.continueHint': 'Avance quando esta etapa estiver pronta.',
-    'clientes.quality.title': 'Qualidade do cadastro',
-    'clientes.quality.levelInitial': 'ComeÃ§ando agora',
-    'clientes.quality.levelEssential': 'Base essencial pronta',
-    'clientes.quality.levelDetailed': 'Cadastro bem detalhado',
-    'clientes.quality.levelExcellent': 'Cadastro excelente',
-    'clientes.quality.actionName': 'informar nome',
-    'clientes.quality.actionDocument': 'informar documento',
-    'clientes.quality.actionPhone': 'informar telefone',
-    'clientes.quality.actionEmail': 'informar e-mail',
-    'clientes.quality.actionZip': 'informar CEP',
-    'clientes.quality.actionAddress': 'completar endereÃ§o',
-    'clientes.quality.actionCredit': 'configurar crÃ©dito',
-    'clientes.quality.actionNotes': 'adicionar contexto',
-    'clientes.form.invalidEmail': 'Informe um e-mail vÃ¡lido',
-    'produto.quality.title': 'Qualidade do cadastro',
-    'produto.quality.levelEssential': 'Essencial',
-    'produto.quality.levelReady': 'Pronto para vender',
-    'produto.quality.levelPrepared': 'Bem preparado',
-    'produto.quality.levelExcellent': 'Excelente',
-    'produto.quality.nextActions':
-        'PrÃ³ximas melhorias que aumentam a qualidade:',
-    'produto.quality.completeMessage':
-        'Cadastro bem preparado para este nÃ­vel.',
-    'produto.quality.actionName': 'Informar nome',
-    'produto.quality.actionPrice': 'Adicionar preÃ§o',
-    'produto.quality.actionCategory': 'Escolher categoria',
-    'produto.quality.actionIdentifier': 'Adicionar cÃ³digo',
-    'produto.quality.actionOrganization': 'Informar grupo',
-    'produto.quality.actionStock': 'Configurar estoque',
-    'produto.quality.actionImage': 'Adicionar imagem',
-    'produto.quality.actionDetails': 'Completar detalhes',
-    'produto.quality.actionRules': 'Revisar regras',
-    'produto.quality.actionFiscal': 'Informar dados fiscais',
-    'app.title': 'SixoApp',
-    'common.save': 'Salvar',
-    'common.cancel': 'Cancelar',
-    'common.back': 'Voltar',
-    'common.close': 'Fechar',
-    'common.edit': 'Editar',
-    'common.delet\u0065': 'Excluir',
-    'common.search': 'Buscar',
-    'common.clear': 'Limpar',
-    'common.confirm': 'Confirmar',
-    'common.apply': 'Aplicar',
-    'common.continue': 'Continuar',
-    'common.tryAgain': 'Tentar novamente',
-    'common.loading': 'Carregando...',
-    'common.noResults': 'Nenhum resultado encontrado',
-    'common.unexpectedError': 'Erro inesperado',
-    'common.unableToLoad': 'NÃ£o foi possÃ­vel carregar.',
-    'common.savedSuccessfully': 'ConfiguraÃ§Ãµes salvas com sucesso.',
-    'common.yes': 'Sim',
-    'common.no': 'NÃ£o',
-    'common.active': 'Ativo',
-    'common.inactive': 'Inativo',
-    'common.online': 'Online',
-    'common.offline': 'Offline',
-    'common.required': 'ObrigatÃ³rio',
-    'common.optional': 'Opcional',
-    'common.soon': 'Em breve',
-    'common.refresh': 'Atualizar',
-    'common.copy': 'Copiar',
-    'common.share': 'Compartilhar',
-    'common.number': 'NÃºmero',
-    'common.all': 'Todos',
-    'common.customer': 'Cliente',
-    'common.updatedAt': 'Atualizado em',
-    'common.lastUpdatedAt': 'Ãšltima atualizaÃ§Ã£o Ã s',
-    'common.notInformed': 'NÃ£o informada',
-    'pdv.quantityEditor.title': 'Editar quantidade',
-    'pdv.quantityEditor.tooltip': 'Editar quantidade',
-    'pdv.quantityEditor.subtitle':
-        'Revise o item e aplique a nova quantidade. O subtotal e o total da venda serÃ£o recalculados imediatamente.',
-    'pdv.quantityEditor.codeLabel': 'CÃ³digo',
-    'pdv.quantityEditor.currentLabel': 'Quantidade atual',
-    'pdv.quantityEditor.currentHint':
-        'Ajuste fino continua disponÃ­vel nos botÃµes laterais.',
-    'pdv.quantityEditor.fieldLabel': 'Nova quantidade',
-    'pdv.quantityEditor.hint': 'Digite a quantidade desejada para este item.',
-    'pdv.quantityEditor.invalid':
-        'Informe uma quantidade inteira maior que zero.',
-    'pdv.quantityEditor.effectHint':
-        'A alteraÃ§Ã£o atualiza o subtotal do item e o total da venda imediatamente.',
-    'pdv.quantityEditor.confirm': 'Aplicar quantidade',
-    'pdv.quantityEditor.processing': 'Aplicando quantidade...',
-    'pdv.quantityEditor.successTitle': 'Quantidade atualizada',
-    'pdv.quantityEditor.successMessage':
-        'O item foi recalculado e a venda jÃ¡ reflete a nova quantidade.',
-    'pdv.quantityEditor.error':
-        'NÃ£o foi possÃ­vel atualizar a quantidade agora. Tente novamente em alguns instantes.',
-    'pdv.clearSale.dialogBarrier': 'Confirmar limpeza da venda atual',
-    'pdv.clearSale.dialogTitle': 'Limpar venda atual?',
-    'pdv.clearSale.dialogSubtitle':
-        'Revise o resumo antes de limpar. O atendimento atual serÃ¡ reiniciado para abrir uma nova venda.',
-    'pdv.clearSale.summaryItems': 'Itens',
-    'pdv.clearSale.summaryTotal': 'Total',
-    'pdv.clearSale.summaryCustomer': 'Cliente',
-    'pdv.clearSale.confirmAction': 'Limpar venda',
-    'pdv.clearSale.impactHint':
-        'Itens, cliente identificado e recebimentos temporÃ¡rios serÃ£o removidos deste PDV.',
-    'pdv.clearSale.processingTitle': 'Limpando venda...',
-    'pdv.clearSale.processingMessage':
-        'Aguarde enquanto os dados temporÃ¡rios desta venda sÃ£o removidos.',
-    'pdv.clearSale.successTitle': 'Venda limpa com sucesso',
-    'pdv.clearSale.successMessage':
-        'O PDV estÃ¡ pronto para iniciar uma nova venda.',
-    'pdv.clearSale.error':
-        'NÃ£o foi possÃ­vel limpar a venda agora. Tente novamente em instantes.',
-    'pdv.customerIdentification.title': 'Identificar cliente',
-    'pdv.customerIdentification.subtitle':
-        'Selecione um cliente cadastrado ou crie um novo sem sair desta etapa.',
-    'pdv.customerIdentification.availableCustomers': 'Clientes ativos',
-    'pdv.customerIdentification.currentCustomer': 'Cliente atual',
-    'pdv.customerIdentification.currentEmpty': 'Nenhum cliente vinculado',
-    'pdv.customerIdentification.searchLabel':
-        'Buscar cliente por nome, documento, telefone ou e-mail',
-    'pdv.customerIdentification.loading': 'Carregando clientes ativos...',
-    'pdv.customerIdentification.loadError':
-        'NÃ£o foi possÃ­vel carregar os clientes.',
-    'pdv.customerIdentification.errorTitle':
-        'NÃ£o foi possÃ­vel carregar os clientes',
-    'pdv.customerIdentification.newCustomer': 'Cadastrar cliente',
-    'pdv.customerIdentification.openingCreate': 'Abrindo cadastro...',
-    'pdv.customerIdentification.createError':
-        'NÃ£o foi possÃ­vel abrir o cadastro de cliente agora.',
-    'pdv.customerIdentification.emptyTitle': 'Nenhum cliente ativo cadastrado',
-    'pdv.customerIdentification.emptyMessage':
-        'Cadastre o cliente agora para seguir com o atendimento sem sair desta etapa.',
-    'pdv.customerIdentification.emptySearchTitle': 'Nenhum cliente encontrado',
-    'pdv.customerIdentification.emptySearchMessage':
-        'Revise os termos da busca ou cadastre um novo cliente para continuar.',
-    'pdv.customerIdentification.removeCustomer': 'Remover cliente atual',
-    'pdv.customerIdentification.unnamedCustomer': 'Cliente sem nome',
-    'pdv.customerIdentification.personTypeFallback': 'PF',
-    'pdv.customerIdentification.noDocument': 'Sem documento',
-    'pdv.customerIdentification.creditEnabled': 'Fiado liberado',
-    'pdv.customerIdentification.creditBlocked':
-        'Fiado bloqueado para novas vendas',
-    'pdv.customerIdentification.creditDisabled': 'Cliente sem fiado liberado',
-    'pdv.customerIdentification.selected': 'Selecionado',
-    'pdv.customerIdentification.select': 'Selecionar',
-    'recebimento.valorEmAberto': 'Valor em aberto',
-    'recebimento.summaryType': 'Tipo',
-    'recebimento.total': 'Total',
-    'recebimento.parcial': 'Parcial',
-    'recebimento.formasRecebimento': 'Formas de recebimento',
-    'recebimento.restante': 'Restante',
-    'recebimento.valorForma': 'Valor da forma',
-    'recebimento.tipoRecebimento': 'Tipo de recebimento',
-    'recebimento.carregandoTipos': 'Carregando tipos de recebimento...',
-    'recebimento.adicionarForma': 'Adicionar forma',
-    'recebimento.removerForma': 'Remover forma',
-    'recebimento.observacao': 'ObservaÃ§Ã£o',
-    'recebimento.receberTotal': 'Receber total',
-    'recebimento.receberParcial': 'Receber parcial',
-    'recebimento.erroValoresMaioresQueZero':
-        'Informe valores maiores que zero.',
-    'recebimento.erroValorMaiorQueZero': 'Informe um valor maior que zero.',
-    'recebimento.erroParcialMenorQueAberto':
-        'Para parcial, informe um valor menor que o aberto.',
-    'recebimento.erroTotalIgualSaldo':
-        'Para total, o valor precisa quitar o saldo em aberto.',
-    'recebimento.erroFormaDuplicada':
-        'Cada forma de recebimento pode ser usada apenas uma vez.',
-    'pdv.receipt.type': 'Tipo de recebimento',
-    'pdv.receipt.partialReady':
-        'Recebimento parcial pronto. O saldo ficarÃ¡ em aberto.',
-    'pdv.receipt.partialHint':
-        'Informe um valor maior que zero e menor que o total da venda.',
-    'pdv.receipt.partialDefined': 'Parcial definido',
-    'pdv.receipt.confirmPartial': 'Confirmar parcial',
-    'pdv.receipt.confirmPartialMessage': 'Deseja receber',
-    'pdv.receipt.keepOpenBalance': 'e manter o saldo restante em aberto',
-    'vendasAReceber.openInPdv': 'Abrir no PDV',
-    'pdv.openSale.status': 'Venda em aberto',
-    'pdv.openSale.readOnlyStatus': 'Somente consulta',
-    'pdv.openSale.readOnlyTitle': 'Consulta de venda em aberto',
-    'pdv.openSale.readOnlySubtitle':
-        'Produtos, quantidades e preÃ§os estÃ£o bloqueados nesta etapa. Revise os dados e receba o saldo.',
-    'pdv.openSale.editStatus': 'EdiÃ§Ã£o de itens',
-    'pdv.openSale.editTitle': 'Revise os itens antes de receber',
-    'pdv.openSale.editSubtitle':
-        'Inclua ou remova produtos e serviÃ§os e altere quantidades. Os preÃ§os originais sÃ£o preservados; itens novos usam o preÃ§o atual do cadastro. As mudanÃ§as serÃ£o aplicadas somente ao receber.',
-    'pdv.openSale.partialReadOnlySubtitle':
-        'Esta venda jÃ¡ possui recebimentos. Para preservar o histÃ³rico financeiro, os itens permanecem bloqueados.',
-    'pdv.openSale.pendingChanges': 'AlteraÃ§Ãµes pendentes',
-    'pdv.openSale.receiveBalance': 'Receber saldo',
-    'pdv.openSale.receiveUpdatedSale': 'Receber venda revisada',
-    'pdv.openSale.receiveTitle': 'Receber saldo da venda',
-    'pdv.openSale.receiptNote': 'Saldo recebido pelo PDV web.',
-    'pdv.openSale.updatedReceiptNote':
-        'Venda revisada e recebida pelo PDV web.',
-    'pdv.openSale.receivedMessage': 'Venda recebida com sucesso.',
-    'pdv.openSale.receiptErrorTitle': 'NÃ£o foi possÃ­vel receber a venda',
-    'pdv.openSale.originalTotal': 'Total original',
-    'pdv.openSale.openBalance': 'Saldo em aberto',
-    'pdv.openSale.currentTotal': 'Novo total',
-    'pdv.openSale.totalDifference': 'DiferenÃ§a',
-    'pdv.openSale.emptyItemsTitle': 'A venda precisa ter itens',
-    'pdv.openSale.emptyItemsMessage':
-        'Inclua pelo menos um produto ou serviÃ§o antes de receber a venda.',
-    'pdv.openSale.invalidItemsTitle': 'Revise os itens da venda',
-    'pdv.openSale.invalidItemsMessage':
-        'Todos os itens precisam ter nome, quantidade positiva e valor vÃ¡lido.',
-    'pdv.openSale.confirmChangesTitle': 'Confirmar itens revisados?',
-    'pdv.openSale.confirmChangesMessage':
-        'Ao receber, a nova composiÃ§Ã£o de itens serÃ¡ aplicada e o estoque e o financeiro serÃ£o conciliados.',
-    'pdv.openSale.continueToReceipt': 'Continuar para recebimento',
-    'pdv.openSale.outdatedTitle': 'A venda foi alterada',
-    'pdv.openSale.outdatedMessage':
-        'Outra operaÃ§Ã£o modificou esta venda. Feche a consulta e abra novamente para trabalhar com os dados atuais.',
-    'pdv.openSale.exitTitle': 'Sair da consulta?',
-    'pdv.openSale.exitMessage':
-        'A venda continuarÃ¡ em aberto. Nenhum item, preÃ§o ou recebimento serÃ¡ alterado.',
-    'pdv.openSale.exitAction': 'Sair da consulta',
-    'pdv.openSale.discardTitle': 'Descartar alteraÃ§Ãµes?',
-    'pdv.openSale.discardMessage':
-        'As alteraÃ§Ãµes feitas no PDV nÃ£o serÃ£o salvas. A venda continuarÃ¡ em aberto com os dados anteriores.',
-    'pdv.openSale.discardAction': 'Descartar e sair',
-    'pdv.openSale.replaceTitle': 'Substituir a venda atual?',
-    'pdv.openSale.replaceMessage':
-        'Os dados que estÃ£o no PDV serÃ£o substituÃ­dos pela venda em aberto selecionada.',
-    'pdv.openSale.replaceAction': 'Abrir venda',
-    'pdv.openSale.loadedMessage':
-        'Venda carregada para revisÃ£o. VocÃª pode incluir, remover e alterar quantidades antes de receber.',
-    'pdv.openSale.loadedReadOnlyMessage':
-        'Venda carregada para consulta. Como jÃ¡ existem recebimentos, os itens permanecem bloqueados.',
-    'pdv.openSale.loadErrorTitle': 'NÃ£o foi possÃ­vel abrir a venda',
-    'pdv.openSale.unavailableTitle': 'Venda nÃ£o disponÃ­vel',
-    'pdv.openSale.unavailableMessage':
-        'A venda pode ter sido recebida ou cancelada por outro usuÃ¡rio.',
-    'common.generating': 'Gerando...',
-    'common.saving': 'Salvando...',
-    'common.rangeTo': 'a',
-    'common.weekday.monday': 'Segunda-feira',
-    'common.weekday.tuesday': 'TerÃ§a-feira',
-    'common.weekday.wednesday': 'Quarta-feira',
-    'common.weekday.thursday': 'Quinta-feira',
-    'common.weekday.friday': 'Sexta-feira',
-    'common.weekday.saturday': 'SÃ¡bado',
-    'common.weekday.sunday': 'Domingo',
-    'common.weekdayShort.monday': 'Seg',
-    'common.weekdayShort.tuesday': 'Ter',
-    'common.weekdayShort.wednesday': 'Qua',
-    'common.weekdayShort.thursday': 'Qui',
-    'common.weekdayShort.friday': 'Sex',
-    'common.weekdayShort.saturday': 'SÃ¡b',
-    'common.weekdayShort.sunday': 'Dom',
-    'web.navigation.home': 'InÃ­cio',
-    'web.navigation.operations': 'Atendimento',
-    'web.navigation.operations.pos': 'Frente de caixa',
-    'web.navigation.operations.technicalService': 'AssistÃªncias tÃ©cnicas',
-    'web.navigation.operations.purchases': 'Compras',
-    'web.navigation.operations.reservations': 'Reservas',
-    'web.navigation.catalog': 'CatÃ¡logo',
-    'web.navigation.catalog.publicPage': 'PÃ¡gina pÃºblica',
-    'web.navigation.catalog.reservations': 'Reservas',
-    'web.navigation.catalog.products': 'Produtos',
-    'web.navigation.catalog.services': 'ServiÃ§os',
-    'web.navigation.catalog.stock': 'Estoque',
-    'web.navigation.catalog.categories': 'Categorias',
-    'catalog.publicPage.title': 'PÃ¡gina pÃºblica do catÃ¡logo',
-    'catalog.publicPage.subtitle':
-        'Personalize, visualize e compartilhe sua vitrine em um sÃ³ lugar.',
-    'catalog.publicPage.open': 'Abrir',
-    'catalog.publicPage.copy': 'Copiar link',
-    'catalog.publicPage.share': 'Compartilhar',
-    'catalog.publicPage.published': 'Publicado',
-    'catalog.publicPage.offline': 'Fora do ar',
-    'catalog.publicPage.save': 'Salvar alteraÃ§Ãµes',
-    'catalog.publicPage.discard': 'Descartar',
-    'catalog.publicPage.saveSuccessPublished':
-        'PÃ¡gina salva e publicada com sucesso.',
-    'catalog.publicPage.saveSuccessDraft':
-        'PersonalizaÃ§Ã£o salva. Publique quando estiver pronta.',
-    'catalog.publicPage.saveError':
-        'NÃ£o foi possÃ­vel salvar a pÃ¡gina do catÃ¡logo.',
-    'catalog.publicPage.openError':
-        'NÃ£o foi possÃ­vel abrir o catÃ¡logo em uma nova aba.',
-    'catalog.publicPage.linkCopied': 'Link pÃºblico copiado.',
-    'catalog.publicPage.shareSubject': 'CatÃ¡logo de {title}',
-    'catalog.publicPage.shareFallback':
-        'O compartilhamento nÃ£o estÃ¡ disponÃ­vel. O link foi copiado.',
-    'catalog.publicPage.loadErrorTitle':
-        'NÃ£o foi possÃ­vel carregar a pÃ¡gina pÃºblica',
-    'catalog.publicPage.editor.publication': 'CatÃ¡logo publicado',
-    'catalog.publicPage.editor.publicationOn':
-        'Clientes podem acessar pelo link pÃºblico.',
-    'catalog.publicPage.editor.publicationOff':
-        'O link fica preservado, mas indisponÃ­vel.',
-    'catalog.publicPage.editor.content': 'ApresentaÃ§Ã£o',
-    'catalog.publicPage.editor.contentHelp':
-        'Defina a mensagem que abre sua vitrine.',
-    'catalog.publicPage.editor.titleLabel': 'TÃ­tulo da vitrine',
-    'catalog.publicPage.editor.titleHint': 'Ex.: Encontre o que precisa',
-    'catalog.publicPage.editor.descriptionLabel': 'DescriÃ§Ã£o curta',
-    'catalog.publicPage.editor.descriptionHint':
-        'Explique em uma frase o que o cliente encontrarÃ¡.',
-    'catalog.publicPage.editor.appearance': 'AparÃªncia',
-    'catalog.publicPage.editor.appearanceHelp':
-        'Escolha o clima visual e a cor de destaque.',
-    'catalog.publicPage.editor.accentColor': 'Cor de destaque',
-    'catalog.publicPage.editor.customColor': 'Cor personalizada',
-    'catalog.publicPage.editor.invalidColor':
-        'Use uma cor hexadecimal com bom contraste, como #126BFF.',
-    'catalog.publicPage.editor.layout': 'ConteÃºdo e layout',
-    'catalog.publicPage.editor.layoutHelp':
-        'Controle a densidade e as informaÃ§Ãµes visÃ­veis.',
-    'catalog.publicPage.editor.comfortable': 'ConfortÃ¡vel',
-    'catalog.publicPage.editor.compact': 'Compacto',
-    'catalog.publicPage.editor.showPrices': 'Exibir preÃ§os',
-    'catalog.publicPage.editor.showContact': 'Exibir contatos',
-    'catalog.publicPage.editor.showAddress': 'Exibir endereÃ§o',
-    'catalog.publicPage.style.classic': 'ClÃ¡ssico',
-    'catalog.publicPage.style.classicHelp':
-        'Profissional, equilibrado e familiar.',
-    'catalog.publicPage.style.minimal': 'Minimalista',
-    'catalog.publicPage.style.minimalHelp':
-        'Mais espaÃ§o, menos elementos visuais.',
-    'catalog.publicPage.style.expressive': 'Expressivo',
-    'catalog.publicPage.style.expressiveHelp':
-        'Cor e contraste para destacar a marca.',
-    'catalog.publicPage.preview.title': 'PrÃ©via ao vivo',
-    'catalog.publicPage.preview.unsaved':
-        'Visualizando alteraÃ§Ãµes ainda nÃ£o salvas',
-    'catalog.publicPage.preview.saved': 'AparÃªncia salva no catÃ¡logo',
-    'catalog.publicPage.preview.desktop': 'Desktop',
-    'catalog.publicPage.preview.mobile': 'Celular',
-    'catalog.publicPage.preview.storeFallback': 'Seu comÃ©rcio',
-    'catalog.publicPage.preview.products': 'Produtos disponÃ­veis',
-    'catalog.publicPage.preview.chooseItems': 'Escolha seus itens',
-    'catalog.publicPage.preview.empty':
-        'Marque produtos como disponÃ­veis para o catÃ¡logo.',
-    'catalog.publicPage.unpublish.barrier':
-        'Confirmar despublicaÃ§Ã£o do catÃ¡logo',
-    'catalog.publicPage.unpublish.title': 'Despublicar catÃ¡logo?',
-    'catalog.publicPage.unpublish.body':
-        'Clientes com o link deixarÃ£o de ver os produtos atÃ© uma nova publicaÃ§Ã£o.',
-    'catalog.publicPage.unpublish.action': 'Despublicar',
-    'catalog.publicPage.unpublish.processing': 'Retirando o catÃ¡logo do ar...',
-    'catalog.publicPage.unpublish.processingBody':
-        'Aguarde enquanto atualizamos o acesso pÃºblico.',
-    'catalog.publicPage.unpublish.success': 'CatÃ¡logo despublicado',
-    'catalog.publicPage.unpublish.successBody':
-        'O link foi preservado e poderÃ¡ ser reativado depois.',
-    'catalog.publicPage.unpublish.error':
-        'NÃ£o foi possÃ­vel despublicar. Tente novamente.',
-    'produto.dashboard.importSpreadsheetSoon':
-        'Importar via planilha (em breve)',
-    'web.navigation.people': 'Pessoas',
-    'web.navigation.people.customers': 'Clientes',
-    'web.navigation.people.collaborators': 'Colaboradores',
-    'web.navigation.people.sixoUsers': 'UsuÃ¡rios do Sixo',
-    'web.navigation.people.performance': 'Desempenho',
-    'web.navigation.cash': 'Caixa',
-    'web.navigation.financial': 'Financeiro',
-    'web.navigation.financial.agenda': 'Agenda financeira',
-    'web.navigation.settings': 'ConfiguraÃ§Ãµes',
-    'web.navigation.reports': 'RelatÃ³rios',
-    'web.navigation.unavailable': 'Destino indisponÃ­vel nesta versÃ£o.',
-    'usuariosSixo.title': 'UsuÃ¡rios do Sixo',
-    'usuariosSixo.subtitle':
-        'Consulte os usuÃ¡rios cadastrados com acesso exclusivo para o perfil SUPER.',
-    'usuariosSixo.summarySemantics': 'Resumo dos usuÃ¡rios cadastrados no Sixo',
-    'usuariosSixo.summaryTitle': 'Base global de usuÃ¡rios',
-    'usuariosSixo.summarySubtitle':
-        'Consulta protegida pelo perfil SUPER do token.',
-    'usuariosSixo.totalLabel': 'usuÃ¡rios',
-    'usuariosSixo.totalRegistered': 'UsuÃ¡rios cadastrados',
-    'usuariosSixo.searchHint': 'Buscar por nome, e-mail, celular ou perfil',
-    'usuariosSixo.resultsLabel': 'encontrados',
-    'usuariosSixo.forbiddenTitle': 'Acesso exclusivo para SUPER',
-    'usuariosSixo.forbiddenMessage':
-        'Seu perfil nÃ£o possui permissÃ£o para consultar os usuÃ¡rios do Sixo.',
-    'usuariosSixo.loading': 'Carregando usuÃ¡rios do Sixo',
-    'usuariosSixo.loadErrorTitle': 'NÃ£o foi possÃ­vel carregar os usuÃ¡rios',
-    'usuariosSixo.loadError': 'Verifique sua conexÃ£o e tente novamente.',
-    'usuariosSixo.emptyTitle': 'Nenhum usuÃ¡rio encontrado',
-    'usuariosSixo.emptyMessage':
-        'Ajuste a busca para consultar outros usuÃ¡rios.',
-    'usuariosSixo.userFallback': 'UsuÃ¡rio do Sixo',
-    'usuariosSixo.noEmail': 'E-mail nÃ£o informado',
-    'usuariosSixo.noPhone': 'Celular nÃ£o informado',
-    'usuariosSixo.role.super': 'SUPER',
-    'usuariosSixo.role.admin': 'Administrador',
-    'usuariosSixo.role.collaborator': 'Colaborador',
-    'usuariosSixo.role.customer': 'Cliente',
-    'usuariosSixo.role.unknown': 'NÃ£o informado',
-    'usuariosSixo.detail.title': 'Detalhes do usuÃ¡rio',
-    'usuariosSixo.detail.subtitle':
-        'Cadastro, preferÃªncias, empresas e vÃ­nculos salvos no Sixo.',
-    'usuariosSixo.detail.loadError': 'NÃ£o foi possÃ­vel carregar os detalhes.',
-    'usuariosSixo.detail.personal': 'Dados pessoais',
-    'usuariosSixo.detail.account': 'Conta e permissÃµes',
-    'usuariosSixo.detail.preferences': 'PreferÃªncias individuais',
-    'usuariosSixo.detail.globalPreferences': 'PreferÃªncias globais',
-    'usuariosSixo.detail.companies': 'Empresas vinculadas',
-    'usuariosSixo.detail.links': 'VÃ­nculos e dados contratuais',
-    'usuariosSixo.detail.noCompanies': 'Nenhuma empresa vinculada.',
-    'usuariosSixo.detail.noLinks': 'Nenhum vÃ­nculo cadastrado.',
-    'usuariosSixo.detail.imageStored': 'Imagem armazenada',
-    'usuariosSixo.onboarding.completed': 'Onboarding concluÃ­do',
-    'usuariosSixo.onboarding.pending': 'Onboarding pendente',
-    'usuariosSixo.onboarding.dialogBarrier':
-        'Alterar status do onboarding inicial',
-    'usuariosSixo.onboarding.resetTitle': 'Solicitar novo onboarding?',
-    'usuariosSixo.onboarding.resetMessage':
-        'No prÃ³ximo acesso, o usuÃ¡rio deverÃ¡ confirmar novamente seus dados iniciais antes de entrar no sistema.',
-    'usuariosSixo.onboarding.resetAction': 'Refazer onboarding',
-    'usuariosSixo.onboarding.completeTitle':
-        'Marcar onboarding como concluÃ­do?',
-    'usuariosSixo.onboarding.completeMessage':
-        'O usuÃ¡rio deixarÃ¡ de ver o onboarding inicial nos prÃ³ximos acessos.',
-    'usuariosSixo.onboarding.completeAction': 'Marcar como concluÃ­do',
-    'usuariosSixo.onboarding.processingTitle': 'Atualizando onboarding...',
-    'usuariosSixo.onboarding.processingMessage':
-        'Aguarde enquanto a nova configuraÃ§Ã£o Ã© salva.',
-    'usuariosSixo.onboarding.successTitle': 'Onboarding atualizado',
-    'usuariosSixo.onboarding.successMessage':
-        'A nova regra jÃ¡ valerÃ¡ no prÃ³ximo acesso do usuÃ¡rio.',
-    'usuariosSixo.onboarding.errorTitle': 'NÃ£o foi possÃ­vel atualizar',
-    'usuariosSixo.onboarding.errorMessage':
-        'Tente novamente. Nenhuma outra informaÃ§Ã£o foi alterada.',
-    'usuariosSixo.passwordReset.title': 'Resetar senha',
-    'usuariosSixo.passwordReset.subtitle':
-        'Use esta aÃ§Ã£o quando o usuÃ¡rio precisar redefinir a senha de acesso.',
-    'usuariosSixo.passwordReset.dialogTitle': 'Resetar a senha deste usuÃ¡rio?',
-    'usuariosSixo.passwordReset.dialogMessage':
-        'A aÃ§Ã£o serÃ¡ aplicada imediatamente ao usuÃ¡rio selecionado.',
-    'usuariosSixo.passwordReset.action': 'Resetar senha',
-    'usuariosSixo.passwordReset.successMessage':
-        'O reset de senha foi concluÃ­do com sucesso.',
-    'usuariosSixo.passwordReset.errorMessage':
-        'NÃ£o foi possÃ­vel resetar a senha agora. Tente novamente.',
-    'initialOnboarding.eyebrow': 'ConfiguraÃ§Ã£o inicial',
-    'initialOnboarding.step': 'Etapa',
-    'initialOnboarding.of': 'de',
-    'initialOnboarding.identityTitle': 'Vamos comeÃ§ar pelo essencial',
-    'initialOnboarding.identitySubtitle':
-        'Confirme seus dados para personalizarmos sua experiÃªncia.',
-    'initialOnboarding.businessTitle': 'O que seu negÃ³cio faz?',
-    'initialOnboarding.businessSubtitle':
-        'Isso apenas organiza mÃ³dulos e atalhos. VocÃª poderÃ¡ alterar depois.',
-    'initialOnboarding.languageQuestion': 'Em qual idioma deseja continuar?',
-    'initialOnboarding.userName': 'Como podemos chamar vocÃª?',
-    'initialOnboarding.companyName': 'Nome do seu negÃ³cio',
-    'initialOnboarding.salesTitle': 'Vende produtos',
-    'initialOnboarding.salesSubtitle': 'PDV, catÃ¡logo, estoque e vendas.',
-    'initialOnboarding.servicesTitle': 'Presta serviÃ§os tÃ©cnicos',
-    'initialOnboarding.servicesSubtitle':
-        'Atendimentos, ordens de serviÃ§o e procedimentos.',
-    'initialOnboarding.start': 'ComeÃ§ar a usar o SixoApp',
-    'initialOnboarding.activityRequired':
-        'Selecione vendas, serviÃ§os tÃ©cnicos ou ambos.',
-    'initialOnboarding.userNameRequired': 'Informe seu nome para continuar.',
-    'initialOnboarding.companyNameRequired':
-        'Informe o nome da empresa para continuar.',
-    'initialOnboarding.saveError':
-        'NÃ£o foi possÃ­vel salvar agora. Tente novamente.',
-    'initialOnboarding.loadErrorTitle':
-        'NÃ£o foi possÃ­vel iniciar a configuraÃ§Ã£o',
-    'initialOnboarding.loadErrorMessage':
-        'Verifique sua conexÃ£o e tente novamente.',
-    'caixa.operacoes.openConfirmTitle': 'Confirmar abertura de caixa?',
-    'caixa.operacoes.openConfirmMessage':
-        'Deseja abrir {cashDesk} com troco inicial de {amount}?',
-    'caixa.operacoes.openConfirmAction': 'Abrir caixa',
-    'caixa.operacoes.closeSessionAction': 'Encerrar caixa',
-    'caixa.operacoes.closeDialogTitle': 'Encerrar sessÃ£o de caixa?',
-    'caixa.operacoes.closeDialogSubtitle':
-        'Revise o resumo antes de concluir. Esta aÃ§Ã£o nÃ£o poderÃ¡ ser desfeita.',
-    'caixa.operacoes.closeDialogCashDesk': 'Caixa',
-    'caixa.operacoes.closeDialogMovements': 'Movimentos',
-    'caixa.operacoes.closeDialogExpectedBalance': 'Saldo esperado',
-    'caixa.operacoes.closeDialogChecklistComplete':
-        'Resumo operacional disponÃ­vel',
-    'caixa.operacoes.closeDialogBack': 'Voltar',
-    'caixa.operacoes.closeDialogConfirm': 'Encerrar caixa',
-    'caixa.operacoes.closeDialogProcessing': 'Encerrando...',
-    'caixa.operacoes.closeDialogSuccessTitle': 'Caixa encerrado com sucesso',
-    'caixa.operacoes.closeDialogSuccessMessage':
-        'A sessÃ£o foi finalizada e permanece disponÃ­vel no histÃ³rico.',
-    'caixa.operacoes.closeDialogError':
-        'NÃ£o foi possÃ­vel encerrar o caixa. Verifique sua conexÃ£o e tente novamente.',
-    'caixa.operacoes.cancelDialogTitle': 'Cancelar movimentaÃ§Ã£o?',
-    'caixa.operacoes.cancelDialogSubtitle':
-        'Revise os vÃ­nculos desta operaÃ§Ã£o antes de cancelar. Dependendo do histÃ³rico financeiro, o lanÃ§amento pode precisar permanecer registrado.',
-    'caixa.operacoes.cancelDialogOperation': 'OperaÃ§Ã£o',
-    'caixa.operacoes.cancelDialogMethod': 'Forma',
-    'caixa.operacoes.cancelDialogAmount': 'Valor',
-    'caixa.operacoes.cancelDialogChecklist':
-        'Se a movimentaÃ§Ã£o estiver vinculada a recebimentos ou lanÃ§amentos futuros, o cancelamento poderÃ¡ ser bloqueado para preservar o histÃ³rico.',
-    'caixa.operacoes.cancelDialogBack': 'Voltar',
-    'caixa.operacoes.cancelDialogConfirm': 'Cancelar operaÃ§Ã£o',
-    'caixa.operacoes.cancelDialogProcessing': 'Cancelando...',
-    'caixa.operacoes.cancelDialogSuccessTitle': 'MovimentaÃ§Ã£o cancelada',
-    'caixa.operacoes.cancelDialogSuccessMessage':
-        'O histÃ³rico do caixa foi atualizado e a operaÃ§Ã£o nÃ£o seguirÃ¡ ativa na sessÃ£o atual.',
-    'caixa.operacoes.cancelDialogError':
-        'NÃ£o foi possÃ­vel cancelar a movimentaÃ§Ã£o agora. Revise os vÃ­nculos financeiros e tente novamente.',
-    'caixa.operacoes.cancelDialogLinkedRecordsError':
-        'Esta movimentaÃ§Ã£o possui vÃ­nculo com recebimentos ou lanÃ§amentos futuros e precisa permanecer registrada no histÃ³rico financeiro.',
-    'caixa.operacoes.cancelDialogPermissionError':
-        'VocÃª nÃ£o possui permissÃ£o para cancelar esta movimentaÃ§Ã£o.',
-    'caixa.operacoes.cancelDialogConnectivityError':
-        'NÃ£o foi possÃ­vel falar com o servidor agora. Verifique sua conexÃ£o e tente novamente.',
-    'caixa.operacoes.cancelDialogLikelyLinkedError':
-        'NÃ£o foi possÃ­vel cancelar esta movimentaÃ§Ã£o porque ela pode estar vinculada a outros registros financeiros. Revise os recebimentos relacionados e tente novamente.',
-    'caixa.operacoes.addEntryAction': 'Adicionar lanÃ§amento',
-    'caixa.operacoes.launchDialogTitle': 'Registrar lanÃ§amento operacional',
-    'caixa.operacoes.launchDialogSubtitle':
-        'Preencha os dados da operaÃ§Ã£o e revise antes de registrar no caixa.',
-    'caixa.operacoes.launchDialogTypeLabel': 'Tipo da operaÃ§Ã£o',
-    'caixa.operacoes.launchDialogSelect': 'Selecione',
-    'caixa.operacoes.launchDialogAmountLabel': 'Valor',
-    'caixa.operacoes.launchDialogRelatedTypeLabel': 'Forma relacionada',
-    'caixa.operacoes.launchDialogReferenceLabel': 'ReferÃªncia / comprovante',
-    'caixa.operacoes.launchDialogReferenceHint': 'Ex.: MOV-001',
-    'caixa.operacoes.launchDialogObservationLabel': 'ObservaÃ§Ã£o',
-    'caixa.operacoes.launchDialogObservationHint':
-        'Descreva o motivo da movimentaÃ§Ã£o com clareza.',
-    'caixa.operacoes.launchDialogLinkedSaleLabel': 'Possui vÃ­nculo com venda',
-    'caixa.operacoes.launchDialogLinkedSaleHint':
-        'Use em estornos ou situaÃ§Ãµes relacionadas a atendimento anterior.',
-    'caixa.operacoes.launchDialogReviewAction': 'Revisar lanÃ§amento',
-    'caixa.operacoes.launchDialogTypeRequired': 'Selecione o tipo da operaÃ§Ã£o.',
-    'caixa.operacoes.launchDialogRelatedTypeRequired':
-        'Selecione a forma relacionada.',
-    'caixa.operacoes.launchDialogAmountRequired': 'Informe um valor vÃ¡lido.',
-    'caixa.operacoes.launchDialogReviewTitle':
-        'Confirmar lanÃ§amento operacional?',
-    'caixa.operacoes.launchDialogReviewSubtitle':
-        'Revise os dados abaixo antes de registrar a movimentaÃ§Ã£o no caixa.',
-    'caixa.operacoes.launchDialogChecklist': 'Resumo pronto para confirmaÃ§Ã£o.',
-    'caixa.operacoes.launchDialogEditAction': 'Editar dados',
-    'caixa.operacoes.launchDialogConfirmAction': 'Registrar movimentaÃ§Ã£o',
-    'caixa.operacoes.launchDialogProcessing': 'Registrando...',
-    'caixa.operacoes.launchDialogError':
-        'NÃ£o foi possÃ­vel registrar a movimentaÃ§Ã£o. Verifique os dados e tente novamente.',
-    'caixa.operacoes.launchDialogSuccessTitle':
-        'MovimentaÃ§Ã£o registrada com sucesso',
-    'caixa.operacoes.launchDialogSuccessMessage':
-        'O lanÃ§amento jÃ¡ aparece no histÃ³rico e no resumo do caixa.',
-    'caixa.operacoes.launchDialogAvailableMethods': 'Formas ativas',
-    'caixa.operacoes.launchDialogLinkedSaleTag': 'Vinculado a venda',
-    'caixa.operacoes.historyTodayOnly': 'Somente hoje',
-    'caixa.operacoes.historyPeriod': 'PerÃ­odo',
-    'caixa.operacoes.historyPeriodToday': 'Hoje',
-    'caixa.operacoes.historyPeriodLast7Days': 'Ãšltimos 7 dias',
-    'caixa.operacoes.historyPeriodLast30Days': 'Ãšltimos 30 dias',
-    'caixa.operacoes.historyPeriodThisMonth': 'Este mÃªs',
-    'caixa.operacoes.historyPeriodLastMonth': 'MÃªs passado',
-    'caixa.operacoes.historyPeriodCustomRange': 'Intervalo personalizado',
-    'caixa.operacoes.historyNature': 'Natureza',
-    'caixa.operacoes.historyStatus': 'Status',
-    'caixa.operacoes.historyOperation': 'OperaÃ§Ã£o',
-    'caixa.operacoes.historyMethod': 'Forma',
-    'caixa.operacoes.historyStartDate': 'Data inicial',
-    'caixa.operacoes.historyEndDate': 'Data final',
-    'caixa.operacoes.historyStartDateHelp': 'Selecionar data inicial',
-    'caixa.operacoes.historyEndDateHelp': 'Selecionar data final',
-    'caixa.operacoes.historyClearFilters': 'Limpar filtros',
-    'caixa.operacoes.historyNoResultsFiltered':
-        'Nenhuma movimentaÃ§Ã£o encontrada com os filtros aplicados.',
-    'caixa.operacoes.historyNoResultsToday':
-        'Nenhuma movimentaÃ§Ã£o registrada hoje.',
-    'web.standalone.quote': 'OrÃ§amento',
-    'web.standalone.serviceOrder': 'Ordem de serviÃ§o',
-    'web.shell.expandSidebar': 'Expandir navegaÃ§Ã£o',
-    'web.shell.collapseSidebar': 'Recolher navegaÃ§Ã£o',
-    'web.shell.currentCommerce': 'ComÃ©rcio atual',
-    'web.shell.sessionContext': 'Contexto da sessÃ£o',
-    'web.shell.workspace': 'Workspace operacional',
-    'web.shell.version': 'VersÃ£o',
-    'web.header.profile': 'Perfil',
-    'web.header.profileTooltip': 'Meu perfil',
-    'web.header.userMenu': 'UsuÃ¡rio',
-    'web.header.myProfile': 'Meu perfil',
-    'web.header.theme.dark': 'Tema escuro',
-    'web.header.theme.dark.enable': 'Ativar tema escuro',
-    'web.header.theme.dark.disable': 'Desativar tema escuro',
-    'web.header.logout': 'Sair',
-    'web.logout.dialog.title': 'Encerrar sessÃ£o agora?',
-    'web.logout.dialog.subtitle':
-        'Revise o contexto antes de sair. VocÃª voltarÃ¡ para a tela pÃºblica de login neste navegador.',
-    'web.logout.dialog.user': 'UsuÃ¡rio',
-    'web.logout.dialog.currentCommerce': 'ComÃ©rcio atual',
-    'web.logout.dialog.nextStep': 'PrÃ³ximo passo',
-    'web.logout.dialog.nextStepValue': 'Tela pÃºblica de login',
-    'web.logout.dialog.checklist':
-        'A sessÃ£o atual serÃ¡ encerrada somente neste navegador.',
-    'web.logout.dialog.back': 'Continuar conectado',
-    'web.logout.dialog.confirm': 'Sair agora',
-    'web.logout.dialog.processing': 'Encerrando sessÃ£o...',
-    'web.logout.dialog.successTitle': 'SessÃ£o encerrada com sucesso',
-    'web.logout.dialog.successMessage':
-        'Preparando o retorno para a tela pÃºblica de login.',
-    'web.logout.dialog.error':
-        'NÃ£o foi possÃ­vel encerrar a sessÃ£o agora. Tente novamente em alguns instantes.',
-    'workspaceHome.title': 'Meu dia no SixoApp',
-    'workspaceHome.greeting': 'OlÃ¡, {name}',
-    'workspaceHome.unknownUser': 'usuÃ¡rio',
-    'workspaceHome.companyFallback': 'ComÃ©rcio atual',
-    'workspaceHome.operationalDate': 'Hoje: {date}',
-    'workspaceHome.refreshTooltip': 'Atualizar resumo do dia',
-    'workspaceHome.loading.title': 'Carregando resumo do dia',
-    'workspaceHome.loading.subtitle':
-        'Buscando a situaÃ§Ã£o atual desta empresa.',
-    'workspaceHome.error.title': 'NÃ£o foi possÃ­vel carregar o resumo do dia.',
-    'collaboratorHome.title': 'Meu painel',
-    'collaboratorHome.subtitle':
-        'Acompanhe metas, vendas, serviÃ§os e prioridades do seu trabalho.',
-    'collaboratorHome.loading': 'Carregando seu painel operacional',
-    'collaboratorHome.error.user':
-        'NÃ£o foi possÃ­vel identificar seu painel pessoal.',
-    'collaboratorHome.attention.title': 'Prioridades do trabalho',
-    'collaboratorHome.attention.clear':
-        'Tudo em dia nas suas frentes de trabalho.',
-    'collaboratorHome.attention.pending': '{count} pontos precisam de atenÃ§Ã£o.',
-    'collaboratorHome.attention.overdueSales': 'Vendas vencidas',
-    'collaboratorHome.attention.overdueServices': 'Entregas atrasadas',
-    'collaboratorHome.attention.reservations': 'Reservas para analisar',
-    'collaboratorHome.sales.title': 'Minhas vendas',
-    'collaboratorHome.sales.period': 'Resultados de {start} a {end}',
-    'collaboratorHome.sales.count': 'Vendas no mÃªs',
-    'collaboratorHome.sales.total': 'Total vendido',
-    'collaboratorHome.sales.received': 'JÃ¡ recebido',
-    'collaboratorHome.sales.openMonth': 'Em aberto no mÃªs',
-    'collaboratorHome.sales.loadError':
-        'NÃ£o foi possÃ­vel carregar o resumo das suas vendas.',
-    'collaboratorHome.openSales.title': 'Vendas ainda nÃ£o liquidadas',
-    'collaboratorHome.openSales.subtitle':
-        'Somente vendas registradas por vocÃª.',
-    'collaboratorHome.openSales.loadError':
-        'NÃ£o foi possÃ­vel carregar suas vendas em aberto.',
-    'collaboratorHome.openSales.empty':
-        'VocÃª nÃ£o possui vendas aguardando liquidaÃ§Ã£o.',
-    'collaboratorHome.openSales.more': 'Mais {count} vendas em aberto',
-    'collaboratorHome.openSales.customerFallback': 'Cliente nÃ£o informado',
-    'collaboratorHome.openSales.saleFallback': 'Venda',
-    'collaboratorHome.openSales.noDueDate': 'Sem vencimento',
-    'collaboratorHome.openSales.overdue': 'Vencida',
-    'collaboratorHome.services.title': 'Meus serviÃ§os por status',
-    'collaboratorHome.services.subtitle':
-        'DistribuiÃ§Ã£o dos atendimentos em que vocÃª Ã© o tÃ©cnico.',
-    'collaboratorHome.services.open': 'Abrir atendimentos',
-    'collaboratorHome.services.loadError':
-        'NÃ£o foi possÃ­vel carregar seus serviÃ§os.',
-    'collaboratorHome.services.empty':
-        'Nenhum atendimento estÃ¡ atribuÃ­do a vocÃª.',
-    'collaboratorHome.services.total': 'Total atribuÃ­do',
-    'collaboratorHome.services.inProgress': 'Em andamento',
-    'collaboratorHome.services.dueToday': 'Entregas hoje',
-    'collaboratorHome.services.overdue': 'Atrasados',
-    'collaboratorHome.services.moreStatuses':
-        'Mais {count} status com movimentaÃ§Ã£o',
-    'collaboratorHome.services.unknownStatus': 'Sem status',
-    'collaboratorHome.reservations.title': 'Fila de reservas',
-    'collaboratorHome.reservations.subtitle':
-        'Pedidos do catÃ¡logo que podem virar venda.',
-    'collaboratorHome.reservations.open': 'Abrir reservas',
-    'collaboratorHome.reservations.loadError':
-        'NÃ£o foi possÃ­vel carregar as reservas.',
-    'collaboratorHome.reservations.pending': 'Pendentes',
-    'collaboratorHome.reservations.received': 'Recebidas',
-    'collaboratorHome.reservations.analysis': 'Em anÃ¡lise',
-    'collaboratorHome.reservations.confirmed': 'Confirmadas',
-    'collaboratorHome.reservations.converted': 'Convertidas',
-    'performance.home.title': 'Minhas metas',
-    'performance.home.subtitle':
-        'Acompanhe suas metas e os resultados atualizados pelo SixoApp.',
-    'performance.home.dashboardTitle': 'Meta x resultado',
-    'performance.home.period': 'Resultados de {start} a {end}',
-    'performance.home.accessibilityLabel': 'Dashboard das minhas metas',
-    'performance.home.loading': 'Carregando suas metas',
-    'performance.home.loadError': 'NÃ£o foi possÃ­vel atualizar suas metas.',
-    'performance.home.emptyTitle': 'Nenhuma meta ativa neste mÃªs',
-    'performance.home.emptySubtitle':
-        'Quando uma meta for cadastrada para vocÃª, o resultado aparecerÃ¡ aqui.',
-    'performance.home.result': 'Resultado',
-    'performance.home.target': 'Meta',
-    'performance.indicator.salesValue': 'Valor vendido',
-    'performance.indicator.salesQuantity': 'Quantidade de vendas',
-    'performance.indicator.servicesValue': 'Valor em serviÃ§os',
-    'performance.indicator.serviceCalls': 'Atendimentos tÃ©cnicos',
-    'performance.indicator.finishedServiceCalls': 'Atendimentos finalizados',
-    'performance.indicator.serviceCallsValue': 'Valor em atendimentos',
-    'workspaceHome.section.today': 'SituaÃ§Ã£o de hoje',
-    'workspaceHome.section.attention': 'Precisa da sua atenÃ§Ã£o',
-    'workspaceHome.section.quickActions': 'AÃ§Ãµes rÃ¡pidas',
-    'workspaceHome.empty.today':
-        'Nenhum bloco do resumo estÃ¡ disponÃ­vel para suas permissÃµes.',
-    'workspaceHome.empty.attention': 'Nenhuma pendÃªncia importante agora.',
-    'workspaceHome.empty.quickActions':
-        'Nenhuma aÃ§Ã£o rÃ¡pida disponÃ­vel para suas permissÃµes.',
-    'dashboardInicio.mobileCompanyFilterTooltip':
-        'Filtrar comÃ©rcios: {comercio}',
-    'dashboardInicio.mobileCompanyFilterTitle': 'Filtrar comÃ©rcios',
-    'dashboardInicio.mobileCompanyFilterSubtitle':
-        'Escolha um comÃ©rcio para visualizar a dashboard.',
-    'dashboardInicio.mobileCompanyFilterAll': 'Todos',
-    'dashboardInicio.mobileGreetingSubtitle':
-        'Veja os principais movimentos de {empresa} hoje.',
-    'dashboardInicio.mobileCompanyFilterSearchHint': 'Buscar comÃ©rcio',
-    'dashboardInicio.mobileCompanyFilterEmptyTitle':
-        'Nenhum comÃ©rcio disponÃ­vel',
-    'dashboardInicio.mobileCompanyFilterEmptyMessage':
-        'NÃ£o encontramos vÃ­nculos ativos para este usuÃ¡rio.',
-    'dashboardInicio.mobileCompanyFilterLoadError':
-        'NÃ£o foi possÃ­vel carregar os comÃ©rcios disponÃ­veis agora.',
-    'dashboardInicio.mobileCompanyFilterSwitchError':
-        'NÃ£o foi possÃ­vel trocar o comÃ©rcio agora. Tente novamente.',
-    'dashboardInicio.mobileDashboardFilterTitle': 'Filtrar dashboard',
-    'dashboardInicio.mobileDashboardFilterSubtitle':
-        'Escolha o comÃ©rcio e, se precisar, refine por colaborador.',
-    'dashboardInicio.mobileDashboardFilterCompanyLabel': 'ComÃ©rcio',
-    'dashboardInicio.mobileDashboardFilterCompanyHelper':
-        'Define qual comÃ©rcio alimenta os indicadores exibidos.',
-    'dashboardInicio.mobileCollaboratorFilterLabel': 'Colaborador',
-    'dashboardInicio.mobileCollaboratorFilterAll': 'Todos os colaboradores',
-    'dashboardInicio.mobileCollaboratorFilterHelper':
-        'Mostra os indicadores do colaborador selecionado na dashboard.',
-    'dashboardInicio.mobileCollaboratorFilterDisabledHelper':
-        'Escolha um comÃ©rcio especÃ­fico para filtrar colaboradores.',
-    'dashboardInicio.mobileCollaboratorFilterLoadingHelper':
-        'Carregando colaboradores do comÃ©rcio atual.',
-    'dashboardInicio.mobileCollaboratorFilterTitle': 'Filtrar colaborador',
-    'dashboardInicio.mobileCollaboratorFilterSubtitle':
-        'Escolha um colaborador para refinar os indicadores.',
-    'dashboardInicio.mobileCollaboratorFilterSearchHint': 'Buscar colaborador',
-    'dashboardInicio.mobileCollaboratorFilterEmptyTitle':
-        'Nenhum colaborador disponÃ­vel',
-    'dashboardInicio.mobileCollaboratorFilterEmptyMessage':
-        'NÃ£o encontramos colaboradores ativos neste comÃ©rcio.',
-    'dashboardInicio.mobileCollaboratorFilterLoadError':
-        'NÃ£o foi possÃ­vel carregar os colaboradores deste comÃ©rcio agora.',
-    'dashboardInicio.mobileCollaboratorFilterSelectedFallback':
-        'Colaborador selecionado',
-    'dashboardInicio.mobileInfrastructureRequestsTitle': 'Requests do backend',
-    'dashboardInicio.mobileInfrastructureRequestsSubtitle':
-        'Respostas monitoradas na janela selecionada do backend.',
-    'dashboardInicio.mobileInfrastructureRequestsFilterTitle':
-        'Filtrar requests do backend',
-    'dashboardInicio.mobileInfrastructureRequestsFilterSubtitle':
-        'Informe a janela que entra na contagem dos status 200, 400 e 500.',
-    'dashboardInicio.mobileInfrastructureRequestsFilterValueLabel':
-        'Quantidade',
-    'dashboardInicio.mobileInfrastructureRequestsFilterUnitLabel': 'Unidade',
-    'dashboardInicio.mobileInfrastructureRequestsFilterMinutes': 'Minutos',
-    'dashboardInicio.mobileInfrastructureRequestsFilterHours': 'Horas',
-    'dashboardInicio.mobileInfrastructureRequestsFilterApply': 'Aplicar janela',
-    'dashboardInicio.mobileInfrastructureRequestsMinuteSingular': 'minuto',
-    'dashboardInicio.mobileInfrastructureRequestsMinutePlural': 'minutos',
-    'dashboardInicio.mobileInfrastructureRequestsHourSingular': 'hora',
-    'dashboardInicio.mobileInfrastructureRequestsHourPlural': 'horas',
-    'workspaceHome.cash.title': 'Caixa',
-    'workspaceHome.cash.open': 'Aberto',
-    'workspaceHome.cash.closed': 'Fechado',
-    'workspaceHome.cash.openedAt': 'desde {time}',
-    'workspaceHome.cash.openedAtWithDate': 'desde {date} Ã s {time}',
-    'workspaceHome.cash.responsible': 'Aberto por {name}',
-    'workspaceHome.technical.title': 'AssistÃªncias',
-    'workspaceHome.technical.active.one': '1 em andamento',
-    'workspaceHome.technical.active.other': '{count} em andamento',
-    'workspaceHome.financial.receivableToday': 'A receber hoje',
-    'workspaceHome.financial.payableToday': 'A pagar hoje',
-    'workspaceHome.financial.count.one': '1 conta',
-    'workspaceHome.financial.count.other': '{count} contas',
-    'workspaceHome.stock.title': 'Estoque',
-    'workspaceHome.stock.noCritical': 'Sem alertas crÃ­ticos',
-    'workspaceHome.stock.belowMinimum.one': '1 abaixo do mÃ­nimo',
-    'workspaceHome.stock.belowMinimum.other': '{count} abaixo do mÃ­nimo',
-    'workspaceHome.stock.withoutStock.one': '1 sem estoque',
-    'workspaceHome.stock.withoutStock.other': '{count} sem estoque',
-    'workspaceHome.stock.negative.one': '1 negativo',
-    'workspaceHome.stock.negative.other': '{count} negativos',
-    'workspaceHome.attention.lateServices.one': '1 serviÃ§o atrasado',
-    'workspaceHome.attention.lateServices.other': '{count} serviÃ§os atrasados',
-    'workspaceHome.attention.waitingApproval.one':
-        '1 orÃ§amento aguardando aprovaÃ§Ã£o',
-    'workspaceHome.attention.waitingApproval.other':
-        '{count} orÃ§amentos aguardando aprovaÃ§Ã£o',
-    'workspaceHome.attention.readyForPickup.one':
-        '1 equipamento pronto para retirada',
-    'workspaceHome.attention.readyForPickup.other':
-        '{count} equipamentos prontos para retirada',
-    'workspaceHome.attention.overdueReceivable.one':
-        '1 conta a receber vencida',
-    'workspaceHome.attention.overdueReceivable.other':
-        '{count} contas a receber vencidas',
-    'workspaceHome.attention.overduePayable.one': '1 conta a pagar vencida',
-    'workspaceHome.attention.overduePayable.other':
-        '{count} contas a pagar vencidas',
-    'workspaceHome.attention.stockNegative.one':
-        '1 produto com estoque negativo',
-    'workspaceHome.attention.stockNegative.other':
-        '{count} produtos com estoque negativo',
-    'workspaceHome.attention.stockWithout.one': '1 produto sem estoque',
-    'workspaceHome.attention.stockWithout.other':
-        '{count} produtos sem estoque',
-    'workspaceHome.attention.stockBelow.one':
-        '1 produto abaixo do estoque mÃ­nimo',
-    'workspaceHome.attention.stockBelow.other':
-        '{count} produtos abaixo do estoque mÃ­nimo',
-    'workspaceHome.action.openTechnicalServices': 'Abrir assistÃªncias',
-    'workspaceHome.action.openFinancial': 'Abrir financeiro',
-    'workspaceHome.action.openStock': 'Abrir estoque',
-    'workspaceHome.quickAction.newSale': 'Nova venda',
-    'workspaceHome.quickAction.newTechnicalService': 'Novo atendimento',
-    'workspaceHome.quickAction.cash': 'Caixa',
-    'workspaceHome.quickAction.financialAgenda': 'Agenda financeira',
-    'streak.title': 'Ofensiva',
-    'streak.mobile': 'Mobile',
-    'streak.web': 'Web',
-    'streak.shared': 'Geral',
-    'streak.longest': 'Recorde',
-    'streak.oneDay': '1 dia',
-    'streak.days': '{count} dias',
-    'streak.daysOfStreak': '{count} dias de ofensiva',
-    'streak.keepUsing': 'Use o SixoApp todos os dias para manter sua ofensiva.',
-    'streak.startedToday': 'Sua ofensiva comeÃ§ou hoje.',
-    'streak.loading': 'Carregando seus dias de ofensiva.',
-    'streak.loadError': 'NÃ£o foi possÃ­vel carregar sua ofensiva.',
-    'mobile.nav.dash': 'dash',
-    'mobile.nav.home': 'InÃ­cio',
-    'mobile.nav.management': 'GestÃ£o',
-    'mobile.nav.service': 'Atendimento',
-    'empresa.configuracao.title': 'Empresa',
-    'empresa.configuracao.loadError':
-        'NÃ£o foi possÃ­vel carregar os dados da empresa.',
-    'empresa.configuracao.saveSuccess':
-        'Dados da empresa atualizados com sucesso.',
-    'empresa.configuracao.saveError':
-        'NÃ£o foi possÃ­vel salvar os dados da empresa.',
-    'empresa.configuracao.summaryTitle': 'Dados do comÃ©rcio',
-    'empresa.configuracao.summarySubtitle':
-        'Atualize as informaÃ§Ãµes usadas nos documentos e no atendimento.',
-    'empresa.configuracao.identityTitle': 'Identidade da empresa',
-    'empresa.configuracao.identitySubtitle':
-        'Revise os dados principais antes de salvar as alteraÃ§Ãµes.',
-    'empresa.configuracao.legalName': 'RazÃ£o social',
-    'empresa.configuracao.legalNameHint': 'Nome legal da empresa',
-    'empresa.configuracao.tradeName': 'Nome fantasia',
-    'empresa.configuracao.tradeNameHint': 'Nome comercial usado no atendimento',
-    'empresa.configuracao.document': 'Documento da empresa',
-    'empresa.configuracao.documentHint': 'CNPJ ou documento fiscal equivalente',
-    'empresa.configuracao.requiredField': 'Informe este campo.',
-    'empresa.configuracao.readyToEdit': 'Dados prontos para ediÃ§Ã£o.',
-    'empresa.configuracao.waitingData': 'Aguardando dados da empresa.',
-    'empresa.configuracao.statusSubtitle':
-        'As informaÃ§Ãµes salvas aparecem nos documentos e comprovantes do comÃ©rcio.',
-    'empresa.configuracao.saveChanges': 'Salvar alteraÃ§Ãµes',
-    'empresa.configuracao.logoTitle': 'Logo da empresa',
-    'empresa.configuracao.logoSubtitle':
-        'Adicione uma imagem nÃ­tida, de preferÃªncia quadrada.',
-    'empresa.configuracao.logoRegistered':
-        'Imagem pronta para salvar no cadastro do comÃ©rcio.',
-    'empresa.configuracao.logoSelect': 'Selecionar logo',
-    'empresa.configuracao.logoChange': 'Trocar logo',
-    'empresa.configuracao.logoRemove': 'Remover',
-    'empresa.configuracao.logoSheetTitle': 'Cadastrar logo',
-    'empresa.configuracao.logoSheetSubtitle':
-        'Escolha uma imagem da galeria ou tire uma foto.',
-    'empresa.configuracao.logoFromGallery': 'Escolher da galeria',
-    'empresa.configuracao.logoFromCamera': 'Usar cÃ¢mera',
-    'empresa.configuracao.logoLoadError': 'NÃ£o foi possÃ­vel carregar o logo.',
-    'empresa.configuracao.logoTooLarge': 'Escolha uma imagem de atÃ© 1 MB.',
-    'empresa.configuracao.logoSemantics': 'Logo cadastrado da empresa.',
-    'empresa.configuracao.logoEmptySemantics': 'Nenhum logo cadastrado.',
-    'catalogHealth.mobile.attentionItems': '{count} itens precisam de atenÃ§Ã£o',
-    'catalogHealth.status.critical': 'CrÃ­tico',
-    'catalogHealth.status.warning': 'AtenÃ§Ã£o',
-    'catalogHealth.status.healthy': 'SaudÃ¡vel',
-    'catalogHealth.status.default': 'SaÃºde',
-    'atendimentoTecnico.status': 'Status',
-    'atendimentoTecnico.filters.paymentStatus.label': 'Status pagamento',
-    'atendimentoTecnico.filters.paymentStatus.tooltip':
-        'Filtrar por status do pagamento',
-    'atendimentoTecnico.filters.paymentStatus.helper':
-        'Filtre atendimentos por saldo em aberto ou liquidado.',
-    'atendimentoTecnico.filters.paymentStatus.all': 'Todos os pagamentos',
-    'atendimentoTecnico.filters.paymentStatus.open': 'Em aberto',
-    'atendimentoTecnico.filters.paymentStatus.paid': 'Liquidado',
-    'atendimentoTecnico.filters.multiSelected': '{count} selecionados',
-    'atendimentoTecnico.filters.technician.label': 'TÃ©cnico responsÃ¡vel',
-    'atendimentoTecnico.filters.technician.tooltip':
-        'Filtrar por tÃ©cnico responsÃ¡vel',
-    'atendimentoTecnico.filters.technician.all': 'Todos os tÃ©cnicos',
-    'atendimentoTecnico.filters.technician.none': 'Sem tÃ©cnico responsÃ¡vel',
-    'atendimentoTecnico.filters.technician.selectedFallback':
-        'TÃ©cnico selecionado',
-    'atendimentoTecnico.filters.status.tooltip': 'Filtrar por status',
-    'atendimentoTecnico.filters.status.all': 'Todos os status',
-    'atendimentoTecnico.filters.status.allWithCount':
-        'Todos os status ({count})',
-    'atendimentoTecnico.filters.status.selectedFallback': 'Status selecionado',
-    'atendimentoTecnico.lista.openDetails': 'Ver detalhes',
-    'atendimentoTecnico.lista.detailsDialog.title': 'Detalhes do atendimento',
-    'atendimentoTecnico.lista.detailsDialog.subtitle':
-        'Revise financeiro, andamento e histÃ³rico completos antes de seguir para outra aÃ§Ã£o.',
-    'atendimentoTecnico.lista.detailsDialog.barrierLabel':
-        'Fechar detalhes do atendimento',
-    'atendimentoTecnico.web.dateFilterDialog.barrierLabel':
-        'Fechar filtro de data',
-    'atendimentoTecnico.web.dateFilterDialog.filterLabel': 'Data',
-    'atendimentoTecnico.web.dateFilterDialog.title': 'Filtrar por data',
-    'atendimentoTecnico.web.dateFilterDialog.subtitle':
-        'Defina o intervalo de atualizaÃ§Ã£o dos atendimentos.',
-    'atendimentoTecnico.web.dateFilterDialog.fieldLabel': 'Campo',
-    'atendimentoTecnico.web.dateFilterDialog.fieldValueUpdatedAt':
-        'AtualizaÃ§Ã£o',
-    'atendimentoTecnico.web.dateFilterDialog.currentRangeLabel': 'Intervalo',
-    'atendimentoTecnico.web.dateFilterDialog.allDates': 'Todas as datas',
-    'atendimentoTecnico.web.dateFilterDialog.dateFrom': 'A partir de {date}',
-    'atendimentoTecnico.web.dateFilterDialog.dateUntil': 'AtÃ© {date}',
-    'atendimentoTecnico.web.dateFilterDialog.dateRange': '{start} atÃ© {end}',
-    'atendimentoTecnico.web.dateFilterDialog.startLabel': 'InÃ­cio',
-    'atendimentoTecnico.web.dateFilterDialog.endLabel': 'Fim',
-    'atendimentoTecnico.web.dateFilterDialog.dateHint': 'dd/MM/yyyy',
-    'atendimentoTecnico.web.dateFilterDialog.quickToday': 'Hoje',
-    'atendimentoTecnico.web.dateFilterDialog.quickLast7Days': 'Ãšltimos 7 dias',
-    'atendimentoTecnico.web.dateFilterDialog.quickNext7Days': 'PrÃ³ximos 7 dias',
-    'atendimentoTecnico.web.dateFilterDialog.quickOverdue': 'Vencidos',
-    'atendimentoTecnico.web.dateFilterDialog.quickLast30Days':
-        'Ãšltimos 30 dias',
-    'atendimentoTecnico.web.dateFilterDialog.quickThisMonth': 'Este mÃªs',
-    'atendimentoTecnico.web.dateFilterDialog.clearAction': 'Limpar',
-    'atendimentoTecnico.web.dateFilterDialog.cancelAction': 'Cancelar',
-    'atendimentoTecnico.web.dateFilterDialog.applyAction': 'Aplicar',
-    'atendimentoTecnico.web.dateFilterDialog.startInvalid':
-        'Informe a data inicial em um formato vÃ¡lido.',
-    'atendimentoTecnico.web.dateFilterDialog.endInvalid':
-        'Informe a data final em um formato vÃ¡lido.',
-    'atendimentoTecnico.web.dateFilterDialog.endBeforeStart':
-        'A data final nÃ£o pode ser anterior Ã  inicial.',
-    'atendimentoTecnico.customerNotInformed': 'Cliente nÃ£o informado',
-    'atendimentoTecnico.expectedDelivery': 'Entrega prevista',
-    'atendimentoTecnico.equipment': 'Equipamento',
-    'atendimentoTecnico.reportedIssue': 'Defeito',
-    'atendimentoTecnico.publicStatus.title': 'Status do serviÃ§o',
-    'atendimentoTecnico.publicStatus.subtitle':
-        'Acompanhe a etapa atual do atendimento tÃ©cnico pelo link pÃºblico.',
-    'atendimentoTecnico.publicStatus.progressTitle': 'Progresso do atendimento',
-    'atendimentoTecnico.publicStatus.progressShort': 'Progresso do serviÃ§o',
-    'atendimentoTecnico.publicStatus.serviceData': 'Dados do serviÃ§o',
-    'atendimentoTecnico.publicStatus.history': 'HistÃ³rico de status',
-    'atendimentoTecnico.publicStatus.noHistory':
-        'Nenhuma mudanÃ§a de status registrada.',
-    'atendimentoTecnico.publicStatus.loading':
-        'Carregando status do serviÃ§o...',
-    'atendimentoTecnico.publicStatus.errorTitle':
-        'NÃ£o foi possÃ­vel carregar o status',
-    'atendimentoTecnico.publicStatus.invalidLink':
-        'Link invÃ¡lido. Token ou comÃ©rcio nÃ£o informado.',
-    'atendimentoTecnico.publicStatus.linkTitle': 'Link pÃºblico de status',
-    'atendimentoTecnico.publicStatus.linkCopied':
-        'Link copiado para a Ã¡rea de transferÃªncia.',
-    'atendimentoTecnico.publicStatus.linkCopiedShort':
-        'Link de status copiado.',
-    'atendimentoTecnico.publicStatus.linkHelp':
-        'Envie este link ao cliente para acompanhar o status atual do serviÃ§o.',
-    'atendimentoTecnico.publicStatus.linkMissing':
-        'Link nÃ£o retornado pelo backend.',
-    'atendimentoTecnico.publicStatus.linkError':
-        'NÃ£o foi possÃ­vel gerar o link de status',
-    'atendimentoTecnico.publicStatus.shareMessage':
-        'Acompanhe o status do seu serviÃ§o pelo link abaixo:',
-    'atendimentoTecnico.publicStatus.shareSubject': 'Status do serviÃ§o',
-    'atendimentoTecnico.publicStatus.shareFallback':
-        'NÃ£o foi possÃ­vel abrir o compartilhamento. O link foi copiado.',
-    'atendimentoTecnico.publicStatus.publicUrlMissing':
-        'URL pÃºblica do aplicativo nÃ£o configurada.',
-    'atendimentoTecnico.publicStatus.action': 'Status pÃºblico',
-    'atendimentoTecnico.publicStatus.actionShort': 'Status',
-    'atendimentoTecnico.publicStatus.signaturePendingTitle':
-        'Assinatura de aprovaÃ§Ã£o pendente',
-    'atendimentoTecnico.publicStatus.signaturePendingDescription':
-        'VocÃª pode acompanhar o status normalmente. Para aprovar o serviÃ§o, clique no botÃ£o e assine na prÃ³xima pÃ¡gina.',
-    'atendimentoTecnico.publicStatus.signatureRenewTitle':
-        'Nova assinatura necessÃ¡ria',
-    'atendimentoTecnico.publicStatus.signatureRenewDescription':
-        'O atendimento foi alterado depois da Ãºltima aprovaÃ§Ã£o. VocÃª pode acompanhar o status normalmente e assinar a versÃ£o atual quando quiser aprovar.',
-    'atendimentoTecnico.publicStatus.signatureAction': 'Assinar aprovaÃ§Ã£o',
-    'atendimentoTecnico.publicStatus.signatureLinkMissing':
-        'Link de assinatura nÃ£o retornado pelo backend.',
-    'atendimentoTecnico.publicStatus.signatureLinkError':
-        'NÃ£o foi possÃ­vel abrir a assinatura.',
-    'atendimentoTecnico.publicStatus.responsibleUnit': 'Unidade responsÃ¡vel',
-    'atendimentoTecnico.publicStatus.officialChannel': 'Canal oficial',
-    'atendimentoTecnico.publicStatus.updatedByBusiness':
-        'Status atualizado pelo estabelecimento',
-    'atendimentoTecnico.publicStatus.companyDataSource':
-        'Dados fornecidos pelo estabelecimento.',
-    'atendimentoTecnico.publicStatus.officialServiceChannel':
-        'Canal oficial de acompanhamento do serviÃ§o.',
-    'atendimentoTecnico.publicStatus.externalLinkUnavailable':
-        'NÃ£o foi possÃ­vel abrir este contato neste dispositivo.',
-    'atendimentoTecnico.mobile.loading': 'Carregando atendimentos tÃ©cnicos',
-    'atendimentoTecnico.mobile.dashboardTitle': 'Dashboard tÃ©cnico',
-    'atendimentoTecnico.mobile.dashboardDescription': '',
-    'atendimentoTecnico.mobile.emptyTitle': 'Nenhum atendimento encontrado',
-    'atendimentoTecnico.mobile.emptyMessage':
-        'Tente buscar por cliente, equipamento, status ou nÃºmero.',
-    'atendimentoTecnico.mobile.emptyFilteredMessage':
-        'Nenhum atendimento encontrado com os filtros selecionados.',
-    'atendimentoTecnico.mobile.errorTitle':
-        'NÃ£o foi possÃ­vel carregar os atendimentos',
-    'atendimentoTecnico.mobile.recentSection': 'Atendimentos recentes',
-    'atendimentoTecnico.mobile.filteredSection': 'Resultado do filtro',
-    'atendimentoTecnico.mobile.searchHint':
-        'Buscar por cliente, status, equipamento ou nÃºmero',
-    'atendimentoTecnico.mobile.advancedFilters': 'Filtros avanÃ§ados',
-    'atendimentoTecnico.mobile.advancedFiltersActive':
-        'Filtros avanÃ§ados ativos',
-    'atendimentoTecnico.mobile.clearFilters': 'Limpar filtros',
-    'atendimentoTecnico.mobile.sortRecent': 'Mais recentes',
-    'atendimentoTecnico.mobile.resultCountOne': '1 atendimento',
-    'atendimentoTecnico.mobile.resultCountMany': '{count} atendimentos',
-    'atendimentoTecnico.mobile.periodSummaryTitle': 'Resumo do perÃ­odo',
-    'atendimentoTecnico.mobile.summaryServiceOne': 'atendimento',
-    'atendimentoTecnico.mobile.summaryServiceMany': 'atendimentos',
-    'atendimentoTecnico.mobile.summaryOpenOne': 'em aberto',
-    'atendimentoTecnico.mobile.summaryOpenMany': 'em aberto',
-    'atendimentoTecnico.mobile.summarySignedOne': 'assinado',
-    'atendimentoTecnico.mobile.summarySignedMany': 'assinados',
-    'atendimentoTecnico.mobile.summaryOpenValue': '{value} em aberto',
-    'atendimentoTecnico.mobile.summaryOpenValueCaption': 'em aberto',
-    'atendimentoTecnico.mobile.filterSheetTitle': 'Filtrar atendimentos',
-    'atendimentoTecnico.mobile.filterPeriod': 'PerÃ­odo',
-    'atendimentoTecnico.mobile.filterPaymentStatus': 'Status do pagamento',
-    'atendimentoTecnico.mobile.filterDate': 'Data',
-    'atendimentoTecnico.mobile.filterStartDate': 'InÃ­cio',
-    'atendimentoTecnico.mobile.filterEndDate': 'Fim',
-    'atendimentoTecnico.mobile.dateToday': 'Hoje',
-    'atendimentoTecnico.mobile.dateAll': 'Todas as datas',
-    'atendimentoTecnico.mobile.dateRange': '{start} atÃ© {end}',
-    'atendimentoTecnico.mobile.dateFrom': 'A partir de {date}',
-    'atendimentoTecnico.mobile.dateUntil': 'AtÃ© {date}',
-    'atendimentoTecnico.mobile.dateLast7Days': 'Ãšltimos 7 dias',
-    'atendimentoTecnico.mobile.dateNext7Days': 'PrÃ³ximos 7 dias',
-    'atendimentoTecnico.mobile.dateOverdue': 'Vencidos',
-    'atendimentoTecnico.mobile.filterTechnician': 'TÃ©cnico responsÃ¡vel',
-    'atendimentoTecnico.mobile.searchTechnician': 'Buscar tÃ©cnico',
-    'atendimentoTecnico.mobile.allTechnicians': 'Todos os tÃ©cnicos',
-    'atendimentoTecnico.mobile.selectedTechnician': 'TÃ©cnico selecionado',
-    'atendimentoTecnico.mobile.noTechnicianFound': 'Nenhum tÃ©cnico encontrado.',
-    'atendimentoTecnico.mobile.viewOneService': 'Ver 1 atendimento',
-    'atendimentoTecnico.mobile.viewManyServices': 'Ver {count} atendimentos',
-    'atendimentoTecnico.mobile.waitingApprovalTitle':
-        'OrÃ§amentos aguardando aprovaÃ§Ã£o',
-    'atendimentoTecnico.mobile.waitingApprovalDescription':
-        'ServiÃ§os enviados ao cliente que ainda precisam de aprovaÃ§Ã£o.',
-    'atendimentoTecnico.mobile.waitingApprovalEmptyTitle':
-        'Nenhum orÃ§amento aguardando aprovaÃ§Ã£o no momento.',
-    'atendimentoTecnico.mobile.waitingApprovalEmptyMessage':
-        'Quando um orÃ§amento for enviado e estiver aguardando a decisÃ£o do cliente, ele aparecerÃ¡ aqui.',
-    'atendimentoTecnico.mobile.waitingApprovalErrorTitle':
-        'NÃ£o foi possÃ­vel consultar os orÃ§amentos. Tente novamente.',
-    'atendimentoTecnico.mobile.waitingApprovalLoading':
-        'Carregando orÃ§amentos aguardando aprovaÃ§Ã£o',
-    'atendimentoTecnico.mobile.waitingApprovalSection':
-        'OrÃ§amentos aguardando aprovaÃ§Ã£o',
-    'atendimentoTecnico.mobile.waitingApprovalFilteredSection':
-        'Resultado do filtro',
-    'atendimentoTecnico.mobile.currentStatusOption': 'Status atual',
-    'atendimentoTecnico.mobile.selectStatusOption': 'Toque para selecionar',
-    'technicalService.status.waitingCustomerAproval':
-        'Aguardando aprovaÃ§Ã£o do cliente',
-    'atendimentoTecnico.mobile.sharePdfTooltip': 'Compartilhar atendimento',
-    'atendimentoTecnico.mobile.pdfSectionTitle': 'Documento do atendimento',
-    'atendimentoTecnico.mobile.pdfSectionDescription':
-        'PDF pronto para enviar ao cliente com os dados do atendimento.',
-    'atendimentoTecnico.mobile.pdfSectionGenerating':
-        'Preparando o PDF para compartilhamento.',
-    'atendimentoTecnico.mobile.sharePdfAction': 'Compartilhar PDF',
-    'atendimentoTecnico.mobile.pdfLoadingTitle': 'Gerando PDF do atendimento',
-    'atendimentoTecnico.mobile.pdfLoadingSubtitle':
-        'Aguarde enquanto o documento Ã© preparado.',
-    'atendimentoTecnico.mobile.detailLoadError':
-        'NÃ£o foi possÃ­vel carregar os dados atualizados do atendimento.',
-    'atendimentoTecnico.mobile.pdfDownloaded': 'PDF baixado com sucesso.',
-    'atendimentoTecnico.mobile.pdfPermissionDenied':
-        'VocÃª nÃ£o possui permissÃ£o para compartilhar este atendimento.',
-    'atendimentoTecnico.mobile.pdfNotFound': 'Atendimento nÃ£o encontrado.',
-    'atendimentoTecnico.mobile.pdfInvalidFile':
-        'O arquivo recebido Ã© invÃ¡lido.',
-    'atendimentoTecnico.mobile.pdfShareUnavailable':
-        'NÃ£o foi possÃ­vel compartilhar o documento.',
-    'atendimentoTecnico.mobile.pdfShareError':
-        'NÃ£o foi possÃ­vel compartilhar o documento.',
-    'atendimentoTecnico.mobile.pdfGenerationError':
-        'NÃ£o foi possÃ­vel gerar o PDF do atendimento.',
-    'atendimentoTecnico.mobile.publicStatusDescription':
-        'VisÃ­vel para o cliente no link de acompanhamento.',
-    'atendimentoTecnico.publicStatus.shareLinkAction': 'Compartilhar link',
-    'atendimentoTecnico.mobile.paymentOpen': 'Financeiro aberto',
-    'atendimentoTecnico.mobile.paymentSettled': 'Financeiro liquidado',
-    'atendimentoTecnico.mobile.signed': 'Assinado',
-    'atendimentoTecnico.mobile.signaturePending': 'Assinatura pendente',
-    'atendimentoTecnico.customerNotSigned': 'Cliente nÃ£o assinou',
-    'atendimentoTecnico.mobile.customerNotSigned': 'Cliente nÃ£o assinou',
-    'atendimentoTecnico.mobile.deliveryLate': 'Entrega atrasada',
-    'atendimentoTecnico.signatureGate.title': 'Assinatura necessÃ¡ria',
-    'atendimentoTecnico.signatureGate.message':
-        'Para avanÃ§ar para {status}, envie o link de assinatura ao cliente, assine neste dispositivo ou registre o bypass.',
-    'atendimentoTecnico.signatureGate.sendLink': 'Enviar link ao cliente',
-    'atendimentoTecnico.signatureGate.signHere': 'Assinar neste dispositivo',
-    'atendimentoTecnico.signatureGate.bypass': 'AvanÃ§ar sem assinatura',
-    'atendimentoTecnico.signatureGate.deviceTitle': 'Coletar assinatura',
-    'atendimentoTecnico.signatureGate.deviceMessage':
-        'Registre a assinatura para avanÃ§ar para {status}.',
-    'atendimentoTecnico.signatureGate.deviceSigner': 'Nome de quem assina',
-    'atendimentoTecnico.signatureGate.deviceDocument': 'Documento opcional',
-    'atendimentoTecnico.signatureGate.deviceSignatureField': 'Assinatura',
-    'atendimentoTecnico.signatureGate.deviceObservation': 'ObservaÃ§Ã£o opcional',
-    'atendimentoTecnico.signatureGate.deviceSave': 'Registrar assinatura',
-    'atendimentoTecnico.signatureGate.deviceSignerRequired':
-        'Informe o nome de quem estÃ¡ assinando.',
-    'atendimentoTecnico.signatureGate.deviceSignatureRequired':
-        'FaÃ§a a assinatura no quadro indicado.',
-    'atendimentoTecnico.signatureGate.deviceSignatureSaved':
-        'Assinatura registrada e status atualizado.',
-    'atendimentoTecnico.signatureGate.deviceSignatureError':
-        'NÃ£o foi possÃ­vel registrar a assinatura',
-    'atendimentoTecnico.signatureGate.publicUrlMissing':
-        'URL pÃºblica do aplicativo nÃ£o configurada.',
-    'atendimentoTecnico.signatureGate.linkMissing':
-        'Link de assinatura nÃ£o retornado pelo backend.',
-    'atendimentoTecnico.signatureGate.linkCopied':
-        'Link de assinatura copiado.',
-    'atendimentoTecnico.signatureGate.linkError':
-        'NÃ£o foi possÃ­vel gerar o link de assinatura',
-    'atendimentoTecnico.signatureGate.shareMessage':
-        'Para aprovar o atendimento, assine pelo link abaixo:',
-    'atendimentoTecnico.signatureGate.shareSubject':
-        'Assinatura do atendimento',
-    'atendimentoTecnico.mobile.valorOriginal': 'Valor original',
-    'atendimentoTecnico.mobile.valorJaRecebido': 'Valor jÃ¡ recebido',
-    'atendimentoTecnico.mobile.valorEmAberto': 'Valor em aberto',
-    'atendimentoTecnico.mobile.liquidation': 'LiquidaÃ§Ã£o',
-    'atendimentoTecnico.mobile.liquidated': 'Liquidada',
-    'atendimentoTecnico.mobile.notLiquidated': 'NÃ£o liquidada',
-    'atendimentoTecnico.mobile.products': 'Produtos',
-    'atendimentoTecnico.mobile.services': 'ServiÃ§os',
-    'atendimentoTecnico.mobile.changeStatusAction': 'Mudar status',
-    'atendimentoTecnico.mobile.createTitle': 'Novo atendimento tÃ©cnico',
-    'atendimentoTecnico.mobile.createHeaderTitle': 'Iniciar assistÃªncia',
-    'atendimentoTecnico.mobile.createHeaderSubtitle':
-        'Cliente, equipamento e defeito em uma tela rÃ¡pida para balcÃ£o.',
-    'atendimentoTecnico.mobile.responsible': 'ResponsÃ¡vel',
-    'atendimentoTecnico.mobile.serviceChip': 'AssistÃªncia',
-    'atendimentoTecnico.mobile.quoteChip': 'OrÃ§amento',
-    'atendimentoTecnico.mobile.noItemsChip': 'Sem itens',
-    'atendimentoTecnico.mobile.mainDataSection': 'Dados principais',
-    'atendimentoTecnico.mobile.internalDescription': 'DescriÃ§Ã£o interna',
-    'atendimentoTecnico.mobile.internalDescriptionHint':
-        'Ex.: Troca de tela iPhone 11',
-    'atendimentoTecnico.mobile.equipmentType': 'Tipo de equipamento',
-    'atendimentoTecnico.mobile.brand': 'Marca',
-    'atendimentoTecnico.mobile.model': 'Modelo',
-    'atendimentoTecnico.mobile.serialNumber': 'NÂº sÃ©rie',
-    'atendimentoTecnico.mobile.imei': 'IMEI',
-    'atendimentoTecnico.mobile.accessoriesNotes': 'AcessÃ³rios / observaÃ§Ãµes',
-    'atendimentoTecnico.mobile.accessoriesNotesHint':
-        'Ex.: sem carregador, com capa, tela trincada...',
-    'atendimentoTecnico.mobile.technicalReportSection': 'Relato tÃ©cnico',
-    'atendimentoTecnico.mobile.customerIssue': 'Defeito relatado pelo cliente',
-    'atendimentoTecnico.mobile.customerIssueHint':
-        'Descreva o problema informado no balcÃ£o.',
-    'atendimentoTecnico.mobile.initialDiagnosis': 'DiagnÃ³stico tÃ©cnico inicial',
-    'atendimentoTecnico.mobile.initialDiagnosisHint':
-        'Opcional neste primeiro momento.',
-    'atendimentoTecnico.mobile.datesSection': 'Datas',
-    'atendimentoTecnico.mobile.validity': 'Validade',
-    'atendimentoTecnico.mobile.financialDueDate': 'Vencimento financeiro',
-    'atendimentoTecnico.mobile.financialPreviewSection': 'PrÃ©via financeira',
-    'atendimentoTecnico.mobile.financialPreviewDescription':
-        'O valor fica em aberto atÃ© registrar um recebimento.',
-    'atendimentoTecnico.mobile.valorConfirmado': 'Confirmado',
-    'atendimentoTecnico.mobile.paymentStampNoValue': 'SEM VALOR',
-    'atendimentoTecnico.mobile.paymentStampOpen': 'EM ABERTO',
-    'atendimentoTecnico.mobile.savingService': 'Iniciando atendimento...',
-    'atendimentoTecnico.mobile.startServiceAction':
-        'Iniciar atendimento tÃ©cnico',
-    'auth.loginRequiredFields': 'Por favor, preencha o e-mail e a senha',
-    'auth.loginTitleMobile': 'Entrar',
-    'auth.loginSubtitleMobile':
-        'Para entrar em sua conta, informe\nseu e-mail e senha',
-    'auth.email': 'E-mail',
-    'auth.password': 'Senha',
-    'auth.forgotPassword': 'Esqueceu a senha?',
-    'auth.continue': 'Continuar',
-    'auth.noAccount': 'Ainda nÃ£o tem uma contaXPTO?',
-    'auth.createAccount': 'Criar conta',
-    'auth.signInWithApple': 'Entrar com Apple',
-    'auth.signInWithGoogle': 'Entrar com Google',
-    'auth.googleLoginError': 'NÃ£o foi possÃ­vel concluir o login com Google.',
-    'auth.session.validatingTitle': 'Entrando no SixoApp',
-    'auth.session.validatingMessage': 'Validando sua sessÃ£o com seguranÃ§a...',
-    'splash.preparingWorkspace': 'Preparando seu espaÃ§o...',
-    'splash.validatingSession': 'Validando sua sessÃ£o...',
-    'splash.syncingAccount': 'Sincronizando seus dados...',
-    'splash.connectedTagline': 'Tudo conectado. Tudo sob controle.',
-    'auth.session.temporaryErrorTitle': 'NÃ£o foi possÃ­vel validar sua sessÃ£o',
-    'auth.session.temporaryErrorMessage':
-        'Sua sessÃ£o foi preservada. Verifique sua conexÃ£o e tente novamente.',
-    'webAuthGate.temporaryError.title': 'NÃ£o foi possÃ­vel validar sua sessÃ£o',
-    'webAuthGate.temporaryError.message':
-        'Verifique sua conexÃ£o ou aguarde o backend responder e tente novamente.',
-    'auth.appleLoginMock': 'Login com Apple (mocked)',
-    'auth.termsPrefix':
-        'Ao clicar em "Continuar", declaro ter lido e concordo com os ',
-    'auth.terms': 'Termos de Uso e PolÃ­tica de Privacidade',
-    'auth.mobileEntry.title': 'Seu negÃ³cio, conectado.',
-    'auth.mobileEntry.subtitle':
-        'Vendas, estoque e gestÃ£o no mesmo ritmo â€” onde vocÃª estiver.',
-    'auth.mobileEntry.sales': 'Vendas',
-    'auth.mobileEntry.stock': 'Estoque',
-    'auth.mobileEntry.management': 'GestÃ£o',
-    'auth.mobileEntry.continueTitle': 'Como deseja continuar?',
-    'auth.mobileEntry.loginAction': 'Entrar na minha conta',
-    'auth.mobileEntry.createAction': 'Criar minha conta',
-    'auth.mobileEntry.securityNote': 'Acesso seguro e dados sempre protegidos.',
-    'auth.mobileLogin.title': 'Bem-vindo de volta',
-    'auth.mobileLogin.subtitle': 'Entre para continuar de onde parou.',
-    'auth.mobileLogin.formTitle': 'Acesse seu espaÃ§o',
-    'auth.mobileLogin.emailHint': 'voce@empresa.com',
-    'auth.mobileLogin.passwordHint': 'Digite sua senha',
-    'auth.mobileLogin.showPassword': 'Mostrar senha',
-    'auth.mobileLogin.hidePassword': 'Ocultar senha',
-    'auth.mobileLogin.submit': 'Entrar',
-    'auth.mobileLogin.socialDivider': 'ou continue com',
-    'auth.mobileLogin.createPrompt': 'Primeira vez no SixoApp?',
-    'auth.mobileCreate.title': 'Crie seu espaÃ§o',
-    'auth.mobileCreate.subtitle':
-        'Comece simples. O SixoApp cresce junto com seu negÃ³cio.',
-    'auth.mobileCreate.formTitle': 'Sua conta comeÃ§a aqui',
-    'auth.mobileCreate.formNote': 'Leva menos de um minuto.',
-    'auth.mobileCreate.loginLabel': 'Login',
-    'auth.mobileCreate.loginHint': 'Escolha seu login de acesso',
-    'auth.mobileCreate.passwordLabel': 'Senha',
-    'auth.mobileCreate.passwordHint': 'MÃ­nimo de 8 caracteres',
-    'auth.mobileCreate.confirmPasswordLabel': 'Confirme a senha',
-    'auth.mobileCreate.confirmPasswordHint': 'Repita sua senha',
-    'auth.mobileCreate.acceptTerms':
-        'Concordo com os Termos e a PolÃ­tica de Privacidade.',
-    'auth.mobileCreate.submit': 'Criar conta',
-    'auth.mobileCreate.loginPrompt': 'JÃ¡ tem uma conta? Entrar',
-    'auth.mobileCreate.acceptTermsError':
-        'Aceite os Termos e CondiÃ§Ãµes para continuar.',
-    'auth.mobileCreate.requiredFieldsError': 'Preencha todos os campos.',
-    'auth.mobileCreate.passwordLengthError':
-        'A senha precisa ter ao menos 8 caracteres.',
-    'auth.mobileCreate.passwordMismatchInline': 'As senhas nÃ£o coincidem.',
-    'auth.mobileCreate.passwordMismatchError':
-        'As senhas informadas nÃ£o sÃ£o iguais. Verifique e tente novamente.',
-    'auth.entry.title': 'Bem-vindo ao SixoApp',
-    'auth.entry.subtitle':
-        'Antes de continuar, diga como deseja acessar o app.',
-    'auth.entry.hasAccountTitle': 'JÃ¡ tenho uma conta',
-    'auth.entry.hasAccountSubtitle':
-        'Entre com seu e-mail e senha para acessar sua empresa.',
-    'auth.entry.loginAction': 'Entrar',
-    'auth.entry.newAccountTitle': 'Sou novo por aqui',
-    'auth.entry.newAccountSubtitle':
-        'Veja um resumo rÃ¡pido e crie sua conta para comeÃ§ar.',
-    'auth.entry.newAccountAction': 'Conhecer o SixoApp',
-    'auth.onboarding.title': 'Comece pelo essencial',
-    'auth.onboarding.subtitle':
-        'Veja trÃªs pontos rÃ¡pidos antes de criar sua conta.',
-    'auth.onboarding.step1Title': 'Atendimento organizado',
-    'auth.onboarding.step1Subtitle':
-        'Registre vendas, orÃ§amentos e assistÃªncias em um fluxo simples.',
-    'auth.onboarding.step2Title': 'CatÃ¡logo e estoque no bolso',
-    'auth.onboarding.step2Subtitle':
-        'Mantenha produtos, serviÃ§os e informaÃ§Ãµes essenciais sempre Ã  mÃ£o.',
-    'auth.onboarding.step3Title': 'GestÃ£o para crescer',
-    'auth.onboarding.step3Subtitle':
-        'Acompanhe indicadores e prepare sua operaÃ§Ã£o para evoluir com o SixoApp.',
-    'auth.onboarding.skip': 'Pular',
-    'auth.onboarding.next': 'AvanÃ§ar',
-    'auth.onboarding.createAccountAction': 'Criar minha conta',
-    'auth.onboarding.loginAction': 'JÃ¡ tenho uma conta',
-    'configuracoes.regionalizationTitle': 'RegionalizaÃ§Ã£o',
-    'configuracoes.descRegionalization':
-        'Idioma, paÃ­s, moeda, fuso horÃ¡rio, formatos de data e padronizaÃ§Ã£o financeira da empresa.',
-    'configuracoes.languageAndRegionalConventions':
-        'Idioma e convenÃ§Ãµes regionais',
-    'configuracoes.languageAndRegionalConventionsDesc':
-        'Defina a experiÃªncia local da empresa, incluindo idioma, fuso e padrÃµes de exibiÃ§Ã£o.',
-    'configuracoes.systemLanguage': 'Idioma do sistema',
-    'configuracoes.countryRegion': 'PaÃ­s / regiÃ£o',
-    'configuracoes.timeZone': 'Fuso horÃ¡rio',
-    'configuracoes.dateFormat': 'Formato de data',
-    'configuracoes.timeFormat': 'Formato de hora',
-    'configuracoes.firstDayOfWeek': 'Primeiro dia da semana',
-    'configuracoes.numberFormat': 'Formato numÃ©rico',
-    'configuracoes.currencyAndFinancialStandard':
-        'Moeda e padronizaÃ§Ã£o financeira',
-    'configuracoes.currencyAndFinancialStandardDesc':
-        'Essas definiÃ§Ãµes influenciam dashboards, vendas, ordem de serviÃ§o, orÃ§amentos e documentos.',
-    'configuracoes.mainCurrency': 'Moeda principal',
-    'configuracoes.symbolPosition': 'PosiÃ§Ã£o do sÃ­mbolo',
-    'configuracoes.decimalPlaces': 'Casas decimais',
-    'configuracoes.decimalSeparator': 'Separador decimal',
-    'configuracoes.thousandSeparator': 'Separador de milhar',
-    'configuracoes.allowMultipleCurrencies': 'Permitir mÃºltiplas moedas',
-    'configuracoes.allowMultipleCurrenciesDesc':
-        'MantÃ©m a base preparada para cenÃ¡rios internacionais e conversÃ£o futura.',
-    'configuracoes.applyFinancialRounding': 'Aplicar arredondamento financeiro',
-    'configuracoes.applyFinancialRoundingDesc':
-        'Padroniza cÃ¡lculos e evita divergÃªncias de centavos em documentos e totais.',
-    'configuracoes.recebimento.contextTitle':
-        'Formas de recebimento configurÃ¡veis',
-    'configuracoes.recebimento.contextDescription':
-        'Personalize como sua empresa recebe pagamentos. Os cÃ³digos internos sÃ£o mantidos pelo sistema, mas o nome e o comportamento podem ser ajustados.',
-    'configuracoes.recebimento.metricsTotal': 'Tipos configurados',
-    'configuracoes.recebimento.metricsActive': 'Ativos',
-    'configuracoes.recebimento.metricsImmediate': 'Natureza imediata',
-    'configuracoes.recebimento.metricsFuture': 'Natureza futura',
-    'configuracoes.recebimento.loadingTitle':
-        'Carregando formas de recebimento',
-    'configuracoes.recebimento.loadingSubtitle':
-        'Sincronizando as configuraÃ§Ãµes da empresa no backend.',
-    'configuracoes.recebimento.errorLoad':
-        'NÃ£o foi possÃ­vel carregar as formas de recebimento.',
-    'configuracoes.recebimento.errorBadRequest':
-        'Dados invÃ¡lidos para esta operaÃ§Ã£o.',
-    'configuracoes.recebimento.errorUnauthorized':
-        'SessÃ£o expirada. FaÃ§a login novamente.',
-    'configuracoes.recebimento.errorForbidden':
-        'VocÃª nÃ£o possui permissÃ£o para alterar configuraÃ§Ãµes da empresa.',
-    'configuracoes.recebimento.errorNotFound':
-        'ConfiguraÃ§Ã£o de forma de recebimento nÃ£o encontrada.',
-    'configuracoes.recebimento.errorLoadWithStatus':
-        'Erro ao carregar formas de recebimento.',
-    'configuracoes.recebimento.errorSaveWithStatus':
-        'Erro ao salvar forma de recebimento.',
-    'configuracoes.recebimento.saveSuccess':
-        'Forma de recebimento atualizada com sucesso.',
-    'configuracoes.recebimento.errorSave':
-        'NÃ£o foi possÃ­vel salvar a forma de recebimento.',
-    'configuracoes.recebimento.restoreConfirmTitle': 'Restaurar padrÃ£o',
-    'configuracoes.recebimento.restoreConfirmBody':
-        'Esta aÃ§Ã£o restaura os 10 tipos de recebimento para a configuraÃ§Ã£o padrÃ£o da empresa.',
-    'configuracoes.recebimento.restoreAction': 'Restaurar padrÃ£o',
-    'configuracoes.recebimento.restoreSuccess':
-        'ConfiguraÃ§Ã£o padrÃ£o das formas de recebimento restaurada com sucesso.',
-    'configuracoes.recebimento.restoreError':
-        'NÃ£o foi possÃ­vel restaurar a configuraÃ§Ã£o padrÃ£o.',
-    'configuracoes.recebimento.countPrefix': 'Tipos carregados',
-    'configuracoes.recebimento.activeCount': 'Ativos',
-    'configuracoes.recebimento.refreshAction': 'Atualizar',
-    'configuracoes.recebimento.unnamed': 'Sem nome definido',
-    'configuracoes.recebimento.nature': 'Natureza',
-    'configuracoes.recebimento.natureImmediate': 'Imediato',
-    'configuracoes.recebimento.natureFuture': 'Futuro',
-    'configuracoes.recebimento.natureImmediateDescription':
-        'Entra no caixa no momento do recebimento.',
-    'configuracoes.recebimento.natureFutureDescription':
-        'Gera valor a receber para uma data futura.',
-    'configuracoes.recebimento.requiresClient': 'Exige cliente',
-    'configuracoes.recebimento.requiresClientDescription':
-        'ObrigatÃ³rio quando esta forma depende de um cliente identificado.',
-    'configuracoes.recebimento.installments': 'Aceita parcelamento',
-    'configuracoes.recebimento.installmentsDescription':
-        'Permite dividir o recebimento em parcelas.',
-    'configuracoes.recebimento.displayOrder': 'Ordem de exibiÃ§Ã£o',
-    'configuracoes.recebimento.technicalCode': 'CÃ³digo tÃ©cnico',
-    'configuracoes.recebimento.displayName': 'Nome de exibiÃ§Ã£o',
-    'configuracoes.recebimento.validationName': 'Informe o nome de exibiÃ§Ã£o.',
-    'configuracoes.recebimento.validationNameLength':
-        'Use pelo menos 2 caracteres.',
-    'configuracoes.recebimento.validationOrder':
-        'Informe uma ordem vÃ¡lida maior ou igual a 1.',
-    'configuracoes.recebimento.validationColor':
-        'Use um HEX vÃ¡lido no formato #RRGGBB.',
-    'configuracoes.recebimento.color': 'Cor (opcional)',
-    'configuracoes.recebimento.icon': 'Ãcone (opcional)',
-    'configuracoes.recebimento.activeDescription':
-        'Controla se a forma pode ser utilizada nos fluxos.',
-    'configuracoes.recebimento.editDialogTitle': 'Editar forma de recebimento',
-    'configuracoes.recebimento.errorStateTitle':
-        'NÃ£o foi possÃ­vel carregar as configuraÃ§Ãµes',
-    'configuracoes.recebimento.emptyTitle':
-        'Nenhuma forma de recebimento encontrada',
-    'configuracoes.recebimento.emptyDescription':
-        'Atualize a tela para sincronizar os tipos configurados da empresa.',
-    'procedimentos.title': 'Procedimentos',
-    'procedimentos.subtitle': 'Guias para vendas, atendimentos e entregas',
-    'procedimentos.introTitle':
-        'Configure orientaÃ§Ãµes para vendas, atendimentos e entregas.',
-    'procedimentos.demoData': 'Dados demonstrativos',
-    'procedimentos.filtersLabel': 'Filtros de procedimentos',
-    'procedimentos.filterAll': 'Todos',
-    'procedimentos.filterActive': 'Ativos',
-    'procedimentos.filterInactive': 'Inativos',
-    'procedimentos.newProcedure': 'Novo procedimento',
-    'procedimentos.newProcedureSemantics': 'Novo procedimento',
-    'procedimentos.createProcedure': 'Criar procedimento',
-    'procedimentos.openAction': 'Abrir',
-    'procedimentos.createUnavailable':
-        'A criaÃ§Ã£o de procedimentos serÃ¡ disponibilizada na prÃ³xima etapa.',
-    'procedimentos.editUnavailable':
-        'A ediÃ§Ã£o deste procedimento serÃ¡ disponibilizada na prÃ³xima etapa.',
-    'procedimentos.loading': 'Carregando procedimentos',
-    'procedimentos.emptyTitle': 'Nenhum procedimento configurado',
-    'procedimentos.emptyDescription':
-        'Crie orientaÃ§Ãµes para apoiar a equipe nos momentos importantes da operaÃ§Ã£o.',
-    'procedimentos.filteredEmptyTitle': 'Nenhum procedimento neste filtro',
-    'procedimentos.filteredEmptyDescription':
-        'Altere o filtro para ver outros procedimentos demonstrativos.',
-    'procedimentos.errorTitle': 'NÃ£o foi possÃ­vel carregar os procedimentos',
-    'procedimentos.errorDescription': 'Tente novamente em instantes.',
-    'procedimentos.statusDraft': 'Rascunho',
-    'procedimentos.operationSale': 'Venda',
-    'procedimentos.operationTechnicalService': 'Atendimento tÃ©cnico',
-    'procedimentos.operationQuote': 'OrÃ§amento',
-    'procedimentos.operationDelivery': 'Entrega',
-    'procedimentos.momentBeforeStart': 'Antes de iniciar',
-    'procedimentos.momentBeforeFinish': 'Antes de finalizar',
-    'procedimentos.momentBeforeDelivery': 'Antes da entrega',
-    'procedimentos.stageSingular': 'etapa',
-    'procedimentos.stagePlural': 'etapas',
-    'procedimentos.itemSingular': 'item',
-    'procedimentos.itemPlural': 'itens',
-    'procedimentos.stageProgress': 'Etapa {current} de {total}',
-    'procedimentos.procedureSequence': 'Procedimento {current} de {total}',
-    'procedimentos.actionsCompleted.zero': '0 de {total} aÃ§Ãµes concluÃ­das',
-    'procedimentos.actionsCompleted.one': '1 de {total} aÃ§Ã£o concluÃ­da',
-    'procedimentos.actionsCompleted.other':
-        '{count} de {total} aÃ§Ãµes concluÃ­das',
-    'procedimentos.answeredActionsSummary.zero':
-        '0 de {total} aÃ§Ãµes respondidas.',
-    'procedimentos.answeredActionsSummary.one': '1 de {total} aÃ§Ã£o respondida.',
-    'procedimentos.answeredActionsSummary.other':
-        '{count} de {total} aÃ§Ãµes respondidas.',
-    'procedimentos.optionalPendingSummary.zero':
-        'Nenhum item opcional pendente.',
-    'procedimentos.optionalPendingSummary.one': '1 item opcional pendente.',
-    'procedimentos.optionalPendingSummary.other':
-        '{count} itens opcionais pendentes.',
-    'procedimentos.requiredPendingSummary.zero':
-        'Nenhum item obrigatÃ³rio pendente.',
-    'procedimentos.requiredPendingSummary.one': '1 item obrigatÃ³rio pendente.',
-    'procedimentos.requiredPendingSummary.other':
-        '{count} itens obrigatÃ³rios pendentes.',
-    'procedimentos.itemCount.zero': '0 itens',
-    'procedimentos.itemCount.one': '1 item',
-    'procedimentos.itemCount.other': '{count} itens',
-    'procedimentos.stageCount.zero': '0 etapas',
-    'procedimentos.stageCount.one': '1 etapa',
-    'procedimentos.stageCount.other': '{count} etapas',
-    'procedimentos.stageSemantics': 'Etapa {order}: {title}. {itemCountLabel}.',
-    'procedimentos.executionItemSemantics': '{requiredLabel}: {title}. {type}.',
-    'procedimentos.executionItemStatus': '{type} â€¢ {requiredLabel}',
-    'procedimentos.responseTypeSemantics': '{label}. {description}.',
-    'procedimentos.responseTypeSimulatedSemantics':
-        '{label}. {description}. {demoLabel}.',
-    'procedimentos.triggerSemantics':
-        '{operation}, {moment}, {activation}, {enforcement}, {status}',
-    'procedimentos.triggerSummarySingle': '{operation}, {moment}',
-    'procedimentos.triggerSummaryMultiple': '{first} â€¢ +{remaining}',
-    'procedimentos.optionNumber': 'OpÃ§Ã£o {index}',
-    'procedimentos.editorNewTitle': 'Novo procedimento',
-    'procedimentos.editorEditTitle': 'Editar procedimento',
-    'procedimentos.generalInfo': 'InformaÃ§Ãµes gerais',
-    'procedimentos.nameField': 'Nome',
-    'procedimentos.descriptionField': 'DescriÃ§Ã£o',
-    'procedimentos.operationContext': 'Contexto operacional',
-    'procedimentos.momentField': 'Momento',
-    'procedimentos.requireCompletion': 'Exigir conclusÃ£o deste procedimento',
-    'procedimentos.requireCompletionHelp':
-        'Na integraÃ§Ã£o futura, esse procedimento poderÃ¡ exigir conclusÃ£o antes de continuar a operaÃ§Ã£o.',
-    'procedimentos.stages': 'Etapas',
-    'procedimentos.addStage': 'Adicionar etapa',
-    'procedimentos.editStage': 'Editar etapa',
-    'procedimentos.deleteStage': 'Excluir etapa',
-    'procedimentos.items': 'Itens',
-    'procedimentos.addItem': 'Adicionar item',
-    'procedimentos.editItem': 'Editar item',
-    'procedimentos.deleteItem': 'Excluir item',
-    'procedimentos.itemType': 'Tipo de item',
-    'procedimentos.stageTitleField': 'TÃ­tulo da etapa',
-    'procedimentos.itemTitleField': 'TÃ­tulo ou instruÃ§Ã£o',
-    'procedimentos.itemGuidanceField': 'Texto de apoio',
-    'procedimentos.saveStage': 'Salvar etapa',
-    'procedimentos.saveItem': 'Salvar item',
-    'procedimentos.responseInstruction': 'OrientaÃ§Ã£o',
-    'procedimentos.responseConfirmation': 'ConfirmaÃ§Ã£o',
-    'procedimentos.responseYesNo': 'Sim ou nÃ£o',
-    'procedimentos.responseInstructionDescription':
-        'Apresenta uma instruÃ§Ã£o ao colaborador.',
-    'procedimentos.responseConfirmationDescription':
-        'Exige que o colaborador confirme uma aÃ§Ã£o.',
-    'procedimentos.responseYesNoDescription':
-        'Apresenta uma pergunta objetiva.',
-    'procedimentos.validationName': 'Informe o nome do procedimento.',
-    'procedimentos.validationReviewFields':
-        'Revise os campos destacados antes de salvar.',
-    'procedimentos.validationAtLeastOneStage':
-        'Adicione pelo menos uma etapa ao procedimento.',
-    'procedimentos.validationStageTitle': 'Informe o tÃ­tulo da etapa.',
-    'procedimentos.validationStageItem':
-        'Cada etapa precisa ter pelo menos um item.',
-    'procedimentos.validationItemTitle': 'Informe o tÃ­tulo do item.',
-    'procedimentos.createdSuccess': 'Procedimento criado.',
-    'procedimentos.updatedSuccess': 'Procedimento atualizado.',
-    'procedimentos.discardChangesTitle': 'Descartar alteraÃ§Ãµes?',
-    'procedimentos.discardChangesMessage':
-        'As alteraÃ§Ãµes feitas neste procedimento ainda nÃ£o foram salvas.',
-    'procedimentos.keepEditing': 'Continuar editando',
-    'procedimentos.discard': 'Descartar',
-    'procedimentos.confirmDeleteStageTitle': 'Excluir etapa?',
-    'procedimentos.confirmDeleteStageMessage':
-        'Os itens desta etapa tambÃ©m serÃ£o removidos.',
-    'procedimentos.confirmDeleteItemTitle': 'Excluir item?',
-    'procedimentos.confirmDeleteItemMessage':
-        'Este item serÃ¡ removido do procedimento.',
-    'procedimentos.editorDemoNotice':
-        'As alteraÃ§Ãµes serÃ£o mantidas apenas durante esta sessÃ£o.',
-    'procedimentos.noStages': 'Nenhuma etapa adicionada',
-    'procedimentos.itemRequiredHelp':
-        'A lÃ³gica final de obrigatoriedade serÃ¡ definida na integraÃ§Ã£o operacional.',
-    'procedimentos.previewAction': 'PrÃ©-visualizar',
-    'procedimentos.demonstration': 'DemonstraÃ§Ã£o',
-    'procedimentos.responsePhoto': 'Tirar foto',
-    'procedimentos.responseSignature': 'Assinatura',
-    'procedimentos.responseLocation': 'Capturar localizaÃ§Ã£o',
-    'procedimentos.responseBarcode': 'Ler cÃ³digo de barras',
-    'procedimentos.responseImei': 'Informar IMEI',
-    'procedimentos.responseDocument': 'Anexar documento',
-    'procedimentos.responseAudio': 'Gravar Ã¡udio',
-    'procedimentos.responseFreeText': 'Texto livre',
-    'procedimentos.responseNumber': 'NÃºmero',
-    'procedimentos.responseDate': 'Data',
-    'procedimentos.responseSingleChoice': 'Escolha Ãºnica',
-    'procedimentos.responseMultipleChoice': 'Escolha mÃºltipla',
-    'procedimentos.responsePhotoDescription':
-        'Simula a captura de uma foto como evidÃªncia.',
-    'procedimentos.responseSignatureDescription':
-        'Simula a coleta de uma assinatura.',
-    'procedimentos.responseLocationDescription':
-        'Simula a captura de uma localizaÃ§Ã£o.',
-    'procedimentos.responseBarcodeDescription':
-        'Simula a leitura de um cÃ³digo de barras.',
-    'procedimentos.responseImeiDescription':
-        'Permite informar um IMEI manualmente.',
-    'procedimentos.responseDocumentDescription':
-        'Simula o anexo de um documento.',
-    'procedimentos.responseAudioDescription': 'Simula uma gravaÃ§Ã£o de Ã¡udio.',
-    'procedimentos.responseFreeTextDescription':
-        'Permite registrar uma resposta em texto.',
-    'procedimentos.responseNumberDescription':
-        'Permite registrar um valor numÃ©rico.',
-    'procedimentos.responseDateDescription': 'Permite selecionar uma data.',
-    'procedimentos.responseSingleChoiceDescription':
-        'Permite selecionar uma opÃ§Ã£o.',
-    'procedimentos.responseMultipleChoiceDescription':
-        'Permite selecionar uma ou mais opÃ§Ãµes.',
-    'procedimentos.typeCategoryGuide': 'Orientar e confirmar',
-    'procedimentos.typeCategoryCollect': 'Coletar informaÃ§Ã£o',
-    'procedimentos.typeCategoryEvidence': 'Registrar evidÃªncia',
-    'procedimentos.typeCategoryIdentify': 'Identificar',
-    'procedimentos.itemTypePickerHelp':
-        'Escolha como o colaborador vai responder ou registrar esta aÃ§Ã£o.',
-    'procedimentos.placeholderField': 'Placeholder',
-    'procedimentos.unitField': 'Unidade',
-    'procedimentos.choiceOptions': 'OpÃ§Ãµes de escolha',
-    'procedimentos.addOption': 'Adicionar opÃ§Ã£o',
-    'procedimentos.removeOption': 'Remover opÃ§Ã£o',
-    'procedimentos.optionField': 'OpÃ§Ã£o',
-    'procedimentos.validationChoiceOptions': 'Informe pelo menos duas opÃ§Ãµes.',
-    'procedimentos.changeTypeTitle': 'Trocar tipo de item?',
-    'procedimentos.changeTypeMessage':
-        'As opÃ§Ãµes configuradas serÃ£o removidas para este tipo.',
-    'procedimentos.simulatedTypeEditorHelp':
-        'No modo demonstraÃ§Ã£o, esta captura serÃ¡ simulada sem usar recursos do dispositivo.',
-    'procedimentos.previewTitle': 'PrÃ©-visualizaÃ§Ã£o',
-    'procedimentos.previewUntitledProcedure': 'Procedimento sem nome',
-    'procedimentos.previewIncompleteProcedure':
-        'Este procedimento ainda nÃ£o possui etapas para demonstrar.',
-    'procedimentos.previewOf': 'de',
-    'procedimentos.previewProgressLabel': 'AÃ§Ãµes concluÃ­das',
-    'procedimentos.previewPendingMessage':
-        'Existem aÃ§Ãµes obrigatÃ³rias pendentes nesta etapa.',
-    'procedimentos.previewRequiredPending':
-        'Responda esta aÃ§Ã£o obrigatÃ³ria para continuar.',
-    'procedimentos.previewNextStage': 'PrÃ³xima etapa',
-    'procedimentos.previewFinishDemo': 'Finalizar',
-    'procedimentos.previewReviewStages': 'Revisar etapas',
-    'procedimentos.previewSummaryTitle': 'DemonstraÃ§Ã£o concluÃ­da',
-    'procedimentos.previewSummarySavedMessage': 'Nenhuma resposta foi salva.',
-    'procedimentos.previewSummaryAnswered': 'AÃ§Ãµes respondidas.',
-    'procedimentos.previewSummaryNoOptionalPending':
-        'Nenhum item opcional pendente.',
-    'procedimentos.previewSummaryOptionalPending': 'Item opcional pendente.',
-    'procedimentos.previewDiscardTitle': 'Descartar respostas?',
-    'procedimentos.previewDiscardMessage':
-        'As respostas desta demonstraÃ§Ã£o serÃ£o descartadas ao sair.',
-    'procedimentos.previewConfirmAction': 'Confirmar aÃ§Ã£o',
-    'procedimentos.previewUnderstood': 'Marcar como entendido',
-    'procedimentos.previewUnderstoodDone': 'Entendido',
-    'procedimentos.previewTextHint': 'Digite a resposta',
-    'procedimentos.previewNumberHint': 'Digite um nÃºmero',
-    'procedimentos.previewSelectDate': 'Selecionar data',
-    'procedimentos.previewImeiHint': 'Digite o IMEI',
-    'procedimentos.previewUseDemoImei': 'Usar IMEI demonstrativo',
-    'procedimentos.previewTakePhoto': 'Tirar foto',
-    'procedimentos.previewSimulateSignature': 'Simular assinatura',
-    'procedimentos.previewCaptureLocation': 'Capturar localizaÃ§Ã£o',
-    'procedimentos.previewSimulateBarcode': 'Simular leitura',
-    'procedimentos.previewSimulateDocument': 'Simular anexo',
-    'procedimentos.previewSimulateAudio': 'Simular gravaÃ§Ã£o',
-    'procedimentos.previewRemoveEvidence': 'Remover evidÃªncia',
-    'procedimentos.simulatedResourceNotice':
-        'Recurso demonstrativo. Nenhum dado real serÃ¡ capturado.',
-    'procedimentos.previewPhotoAdded': 'Foto adicionada',
-    'procedimentos.previewSignatureAdded': 'Assinatura adicionada',
-    'procedimentos.previewSignatureDemoDetail':
-        'TraÃ§o demonstrativo registrado',
-    'procedimentos.previewLocationAdded':
-        'LocalizaÃ§Ã£o de demonstraÃ§Ã£o capturada',
-    'procedimentos.previewBarcodeAdded': 'CÃ³digo lido',
-    'procedimentos.previewDocumentAdded': 'Documento anexado',
-    'procedimentos.previewAudioAdded': 'Ãudio gravado',
-    'procedimentos.operationCashRegister': 'Caixa',
-    'procedimentos.operationCustomerRegistration': 'Cadastro de cliente',
-    'procedimentos.triggerMomentBeforeStart': 'Antes de iniciar',
-    'procedimentos.triggerMomentAfterStart': 'ApÃ³s iniciar',
-    'procedimentos.triggerMomentBeforeFinish': 'Antes de concluir',
-    'procedimentos.triggerMomentAfterFinish': 'ApÃ³s concluir',
-    'procedimentos.triggerMomentBeforeDelivery': 'Antes da entrega',
-    'procedimentos.triggerMomentAfterDelivery': 'ApÃ³s a entrega',
-    'procedimentos.triggerMomentOnDemand': 'Sob demanda',
-    'procedimentos.activationManual': 'Manual',
-    'procedimentos.activationAutomatic': 'AutomÃ¡tico',
-    'procedimentos.activationManualDescription':
-        'O colaborador poderÃ¡ iniciar este procedimento quando necessÃ¡rio.',
-    'procedimentos.activationAutomaticDescription':
-        'Na integraÃ§Ã£o futura, o procedimento serÃ¡ apresentado no momento configurado.',
-    'procedimentos.enforcementInformative': 'Informativo',
-    'procedimentos.enforcementRecommended': 'Recomendado',
-    'procedimentos.enforcementRequired': 'ObrigatÃ³rio',
-    'procedimentos.enforcementInformativeDescription':
-        'Apresenta o procedimento sem exigir conclusÃ£o.',
-    'procedimentos.enforcementRecommendedDescription':
-        'Recomenda a conclusÃ£o, mas nÃ£o deve bloquear a operaÃ§Ã£o.',
-    'procedimentos.enforcementRequiredDescription':
-        'Na integraÃ§Ã£o futura, exigirÃ¡ conclusÃ£o antes de continuar.',
-    'procedimentos.whenExecute': 'Quando executar',
-    'procedimentos.addTrigger': 'Adicionar gatilho',
-    'procedimentos.editTrigger': 'Editar gatilho',
-    'procedimentos.deleteTrigger': 'Excluir gatilho',
-    'procedimentos.noTriggers': 'Nenhum gatilho configurado.',
-    'procedimentos.noTriggersDescription':
-        'Sem gatilhos, o procedimento ficarÃ¡ disponÃ­vel apenas para uso e prÃ©-visualizaÃ§Ã£o dentro deste mÃ³dulo.',
-    'procedimentos.triggerCount': 'gatilhos',
-    'procedimentos.selectOperationContext': 'Selecionar contexto',
-    'procedimentos.selectTriggerMoment': 'Selecionar momento',
-    'procedimentos.activationMode': 'Modo de execuÃ§Ã£o',
-    'procedimentos.enforcementMode': 'NÃ­vel de exigÃªncia',
-    'procedimentos.triggerEnabledHelp':
-        'Controla se este gatilho serÃ¡ considerado na integraÃ§Ã£o futura.',
-    'procedimentos.saveTrigger': 'Salvar gatilho',
-    'procedimentos.triggerMomentCleared':
-        'O momento foi limpo porque nÃ£o Ã© compatÃ­vel com o contexto selecionado.',
-    'procedimentos.validationTriggerOperation':
-        'Escolha o contexto operacional.',
-    'procedimentos.validationTriggerMoment': 'Escolha o momento de execuÃ§Ã£o.',
-    'procedimentos.validationTriggerMomentInvalid':
-        'Escolha um momento compatÃ­vel com o contexto.',
-    'procedimentos.validationDuplicateTrigger':
-        'JÃ¡ existe um gatilho com este contexto, momento e modo de execuÃ§Ã£o.',
-    'procedimentos.deleteTriggerTitle': 'Excluir gatilho?',
-    'procedimentos.deleteTriggerMessage':
-        'O procedimento deixarÃ¡ de ser apresentado neste momento operacional.',
-    'procedimentos.triggerSummaryNone': 'Sem gatilhos configurados',
-    'procedimentos.triggerSummaryOnlyInactive': 'Gatilhos inativos',
-    'procedimentos.executionConfiguration': 'ConfiguraÃ§Ã£o de execuÃ§Ã£o',
-    'procedimentos.triggerSimulationNotice':
-        'SimulaÃ§Ã£o de gatilho. Nenhuma operaÃ§Ã£o real serÃ¡ bloqueada.',
-    'procedimentos.manualDemoExecution': 'ExecuÃ§Ã£o manual de demonstraÃ§Ã£o.',
-    'procedimentos.operationPointSaleStartBefore': 'Antes de iniciar uma venda',
-    'procedimentos.operationPointSaleStartBeforeDescription':
-        'Executado antes de abrir o fluxo de uma nova venda.',
-    'procedimentos.mobilePointAvailable': 'DisponÃ­vel no aplicativo mobile.',
-    'procedimentos.operationalExecutionTitle': 'Antes de iniciar a venda',
-    'procedimentos.operationalSummaryTitle': 'Procedimento concluÃ­do',
-    'procedimentos.operationalNoDataSaved':
-        'Nenhuma resposta foi salva nesta integraÃ§Ã£o local experimental.',
-    'procedimentos.completeAndStartSale': 'Concluir e iniciar venda',
-    'procedimentos.experimentalIntegration': 'IntegraÃ§Ã£o experimental',
-    'procedimentos.continueToStartSale': 'Continuar para a venda',
-    'procedimentos.continueWithoutCompleting': 'Continuar sem concluir',
-    'procedimentos.continueWithoutCompletingTitle': 'Continuar sem concluir?',
-    'procedimentos.continueWithoutCompletingMessage':
-        'Este procedimento Ã© recomendado antes de iniciar a venda.',
-    'procedimentos.continueAnyway': 'Continuar mesmo assim',
-    'procedimentos.returnToProcedure': 'Voltar ao procedimento',
-    'procedimentos.cancelSaleStartTitle': 'Cancelar inÃ­cio da venda?',
-    'procedimentos.cancelSaleStartMessage':
-        'Este procedimento Ã© obrigatÃ³rio. Ao sair, a nova venda nÃ£o serÃ¡ iniciada.',
-    'procedimentos.cancelSale': 'Cancelar venda',
-    'procedimentos.sequenceProgressPrefix': 'Procedimento',
-    'procedimentos.previewNegativeTextLabel': 'O que faltou?',
-    'procedimentos.previewNegativeTextHint': 'Digite o que faltou',
-    'procedimentos.operationalLoadError':
-        'NÃ£o foi possÃ­vel carregar os procedimentos.',
-    'procedimentos.operationalBadge': 'Procedimento operacional',
-    'procedimentos.operationalExecutionTitleReal': 'Procedimento operacional',
-    'procedimentos.executionWillBeSaved':
-        'As respostas e o horÃ¡rio serÃ£o salvos ao concluir.',
-    'procedimentos.completeAndContinue': 'Concluir e continuar',
-    'procedimentos.continueOperation': 'Continuar operaÃ§Ã£o',
-    'procedimentos.processingSkip': 'Continuando...',
-    'procedimentos.processingCancel': 'Cancelando...',
-    'procedimentos.executionSaveError':
-        'NÃ£o foi possÃ­vel salvar as respostas. Tente novamente.',
-    'procedimentos.skipSuccessTitle': 'Procedimento ignorado',
-    'procedimentos.cancelSuccessTitle': 'OperaÃ§Ã£o cancelada',
-    'procedimentos.completeSuccessMessage':
-        'As respostas foram registradas e a operaÃ§Ã£o pode continuar.',
-    'procedimentos.skipSuccessMessage':
-        'O procedimento foi ignorado e a operaÃ§Ã£o seguirÃ¡ conforme a configuraÃ§Ã£o.',
-    'procedimentos.cancelSuccessMessage':
-        'A operaÃ§Ã£o foi encerrada antes de seguir para a prÃ³xima etapa.',
-    'procedimentos.persistedConfiguration': 'ConfiguraÃ§Ã£o sincronizada',
-    'procedimentos.editorPersistenceNotice':
-        'As alteraÃ§Ãµes sÃ£o salvas para a empresa e respeitam o idioma atual.',
-    'procedimentos.notifyAdmin': 'Notificar ADMIN por push',
-    'procedimentos.notifyAdminHelp':
-        'Avisa os administradores ativos quando a condiÃ§Ã£o ocorrer.',
-    'procedimentos.notificationCondition': 'Quando notificar',
-    'procedimentos.notificationAlways': 'Em toda execuÃ§Ã£o',
-    'procedimentos.notificationNegative': 'Ao registrar resposta negativa',
-    'procedimentos.notificationSkipped': 'Ao ignorar o procedimento',
-    'procedimentos.analyticsTitle': 'AnÃ¡lise de resultados',
-    'procedimentos.analyticsExecutions': 'ExecuÃ§Ãµes',
-    'procedimentos.analyticsCompletion': 'Taxa de conclusÃ£o',
-    'procedimentos.analyticsNegative': 'Respostas negativas',
-    'procedimentos.analyticsAverageTime': 'Tempo mÃ©dio',
-    'procedimentos.analyticsByQuestion': 'Resultados por pergunta',
-    'procedimentos.analyticsRecent': 'ExecuÃ§Ãµes recentes',
-    'procedimentos.analyticsEmpty': 'Ainda nÃ£o hÃ¡ execuÃ§Ãµes neste perÃ­odo.',
-    'procedimentos.contextSale': 'Venda',
-    'procedimentos.contextTechnicalService': 'Atendimento tÃ©cnico',
-    'procedimentos.contextCashRegister': 'Caixa',
-
-    // GestÃ£o â€” seÃ§Ãµes
-    'gestao.title': 'GestÃ£o',
-    'gestao.hub.title': 'O que vocÃª quer gerenciar?',
-    'gestao.hub.subtitle':
-        'Acesse cadastros, pessoas, financeiro e preferÃªncias.',
-    'gestao.hub.terminal.products': 'Gerencie seus produtos e colaboradores',
-    'gestao.hub.terminal.finance': 'Gerencie seu financeiro',
-    'gestao.hub.terminal.preferences':
-        'Ajuste suas preferÃªncias e configuraÃ§Ãµes',
-    'gestao.catalog.title': 'CatÃ¡logo',
-    'gestao.catalog.subtitle': 'Produtos, categorias e estoque',
-    'gestao.people.title': 'Pessoas',
-    'gestao.people.subtitle': 'Clientes, equipe e parceiros',
-    'gestao.finance.title': 'Financeiro',
-    'gestao.finance.subtitle': 'Contas, agenda e recebimentos',
-    'gestao.settings.title': 'ConfiguraÃ§Ãµes',
-    'gestao.settings.selectorTitle': 'Geral',
-    'gestao.settings.subtitle': 'Empresa, idioma e integraÃ§Ãµes',
-
-    // GestÃ£o â€” itens de CatÃ¡logo
-    'gestao.catalog.productsServices': 'Produtos e ServiÃ§os',
-    'gestao.catalog.productsServicesDesc':
-        'SaÃºde, cadastro e revisÃ£o do catÃ¡logo',
-    'gestao.catalog.categories': 'Categorias',
-    'gestao.catalog.categoriesDesc': 'OrganizaÃ§Ã£o do catÃ¡logo',
-    'gestao.catalog.inventory': 'Estoque',
-    'gestao.catalog.inventoryDesc': 'Saldos, entradas e ajustes',
-
-    // GestÃ£o â€” itens de Pessoas
-    'gestao.people.clients': 'Clientes',
-    'gestao.people.clientsDesc': 'Base de atendimento e relacionamento',
-    'gestao.people.collaborators': 'Colaboradores',
-    'gestao.people.collaboratorsDesc': 'Equipe, acessos e responsabilidades',
-    'gestao.people.sixoUsers': 'UsuÃ¡rios do Sixo',
-    'gestao.people.sixoUsersDesc': 'Base global protegida pelo perfil SUPER',
-    'gestao.people.suppliers': 'Fornecedores',
-    'gestao.people.suppliersDesc': 'Parceiros e compras do comÃ©rcio',
-    'gestao.people.performance': 'Desempenho do colaborador',
-    'gestao.people.performanceDesc':
-        'Metas, vendas, serviÃ§os e evoluÃ§Ã£o da equipe',
-
-    // Desempenho do colaborador â€” mobile
-    'performance.mobile.title': 'Desempenho',
-    'performance.mobile.heroTitle': 'Desempenho da equipe',
-    'performance.mobile.heroSubtitle':
-        'Acompanhe metas, vendas, serviÃ§os e atendimentos por participante.',
-    'performance.mobile.refresh': 'Atualizar desempenho',
-    'performance.mobile.newGoal': 'Nova meta',
-    'performance.mobile.editGoal': 'Editar meta',
-    'performance.mobile.currentMonth': 'MÃªs atual',
-    'performance.mobile.lastThirtyDays': 'Ãšltimos 30 dias',
-    'performance.mobile.today': 'Hoje',
-    'performance.mobile.period': 'PerÃ­odo',
-    'performance.mobile.participant': 'Participante',
-    'performance.mobile.selectParticipant': 'Selecionar participante',
-    'performance.mobile.searchParticipant': 'Buscar participante',
-    'performance.mobile.noParticipant': 'Nenhum participante encontrado',
-    'performance.mobile.noParticipantMessage':
-        'Ajuste o filtro ou cadastre colaboradores para continuar.',
-    'performance.mobile.allActive': 'Todos os ativos',
-    'performance.mobile.allInactive': 'Todos os nÃ£o ativos',
-    'performance.mobile.allParticipants': 'Todos os participantes',
-    'performance.mobile.active': 'Ativos',
-    'performance.mobile.inactive': 'NÃ£o ativos',
-    'performance.mobile.both': 'Ambos',
-    'performance.mobile.score': 'Score mÃ©dio',
-    'performance.mobile.scoreDesc': 'MÃ©dia ponderada das metas',
-    'performance.mobile.goalsReached': 'Metas batidas',
-    'performance.mobile.goalsReachedDesc': 'No perÃ­odo selecionado',
-    'performance.mobile.sales': 'Vendas',
-    'performance.mobile.salesOperations': '{count} operaÃ§Ãµes no perÃ­odo',
-    'performance.mobile.serviceCalls': 'Atendimentos',
-    'performance.mobile.serviceCallsDesc': 'AssistÃªncias tÃ©cnicas no perÃ­odo',
-    'performance.mobile.resultsTab': 'Resultados',
-    'performance.mobile.goalsTab': 'Metas',
-    'performance.mobile.resultsTitle': 'Meta x realizado',
-    'performance.mobile.resultsSubtitle':
-        'EvoluÃ§Ã£o calculada para o perÃ­odo selecionado.',
-    'performance.mobile.goalsTitle': 'Metas cadastradas',
-    'performance.mobile.goalsSubtitle':
-        'Toque em uma meta para consultar ou editar.',
-    'performance.mobile.noResults': 'Nenhuma meta ativa para exibir',
-    'performance.mobile.noResultsDesc':
-        'Ajuste os filtros ou cadastre uma nova meta.',
-    'performance.mobile.noGoals': 'Sem metas cadastradas',
-    'performance.mobile.noGoalsDesc':
-        'Crie metas para acompanhar o desempenho da equipe.',
-    'performance.mobile.loadError': 'NÃ£o foi possÃ­vel carregar o desempenho.',
-    'performance.mobile.loadErrorDesc':
-        'Verifique sua conexÃ£o e tente novamente.',
-    'performance.mobile.tryAgain': 'Tentar novamente',
-    'performance.mobile.loading': 'Carregando desempenho da equipe',
-    'performance.mobile.goalSaved': 'Meta cadastrada.',
-    'performance.mobile.goalUpdated': 'Meta atualizada.',
-    'performance.mobile.goalSaveError':
-        'NÃ£o foi possÃ­vel salvar a meta. Tente novamente.',
-    'performance.mobile.noFilteredParticipant':
-        'NÃ£o hÃ¡ participantes para o filtro selecionado.',
-    'performance.mobile.indicator': 'Indicador',
-    'performance.mobile.selectIndicator': 'Selecionar indicador',
-    'performance.mobile.targetValue': 'Valor alvo',
-    'performance.mobile.weight': 'Peso',
-    'performance.mobile.startDate': 'Data inicial',
-    'performance.mobile.endDate': 'Data final',
-    'performance.mobile.applyDate': 'Aplicar data',
-    'performance.mobile.status': 'SituaÃ§Ã£o da meta',
-    'performance.mobile.goalActive': 'Ativa',
-    'performance.mobile.goalPaused': 'Pausada',
-    'performance.mobile.goalClosed': 'Encerrada',
-    'performance.mobile.createGoal': 'Cadastrar meta',
-    'performance.mobile.saveGoal': 'Salvar meta',
-    'performance.mobile.cancel': 'Cancelar',
-    'performance.mobile.invalidPositiveNumber':
-        'Informe um valor maior que zero',
-    'performance.mobile.invalidDateRange':
-        'A data final nÃ£o pode ser anterior Ã  data inicial.',
-    'performance.mobile.participantFallback': 'Participante',
-    'performance.mobile.noPeriod': 'Sem perÃ­odo',
-    'performance.mobile.valueOfTarget': '{value} de {target}',
-    'performance.mobile.statusAboveGoal': 'Acima da meta',
-    'performance.mobile.statusInProgress': 'Em progresso',
-    'performance.mobile.statusAtRisk': 'Em risco',
-    'performance.mobile.statusCritical': 'CrÃ­tico',
-    'performance.mobile.statusUnknown': 'Sem status',
-    'performance.mobile.indicator.salesValue': 'Valor vendido',
-    'performance.mobile.indicator.salesQuantity': 'Quantidade de vendas',
-    'performance.mobile.indicator.servicesValue': 'Valor em serviÃ§os',
-    'performance.mobile.indicator.serviceCalls': 'Atendimentos tÃ©cnicos',
-    'performance.mobile.indicator.finishedServiceCalls':
-        'Atendimentos finalizados',
-    'performance.mobile.indicator.serviceCallsValue': 'Valor em atendimentos',
-
-    // GestÃ£o â€” itens de Financeiro
-    'gestao.finance.receivable': 'Contas a receber',
-    'gestao.finance.receivableDesc': 'RecebÃ­veis e cobranÃ§as em aberto',
-    'gestao.finance.payable': 'Contas a pagar',
-    'gestao.finance.payableDesc': 'Despesas e compromissos',
-    'gestao.finance.schedule': 'Agenda financeira',
-    'gestao.finance.scheduleDesc': 'PrevisÃµes, fiado e crediÃ¡rio',
-    'gestao.finance.paymentMethods': 'Formas de recebimento',
-    'gestao.finance.paymentMethodsDesc': 'Dinheiro, cartÃ£o, Pix e outros meios',
-
-    // GestÃ£o â€” grupos de ConfiguraÃ§Ãµes
-    'gestao.settings.group.company': 'Empresa',
-    'gestao.settings.group.teamAccess': 'Equipe e acesso',
-    'gestao.settings.group.operation': 'OperaÃ§Ã£o',
-    'gestao.settings.group.communication': 'ComunicaÃ§Ã£o',
-    'gestao.settings.group.docsIntegrations': 'Documentos e integraÃ§Ãµes',
-
-    // GestÃ£o â€” itens de ConfiguraÃ§Ãµes
-    'gestao.settings.item.company.title': 'Empresa',
-    'gestao.settings.item.company.subtitle':
-        'Dados cadastrais e identidade do comÃ©rcio',
-    'gestao.settings.item.regionalization.title': 'RegionalizaÃ§Ã£o',
-    'gestao.settings.item.regionalization.subtitle':
-        'Idioma, moeda, paÃ­s e formatos locais',
-    'gestao.settings.item.users.title': 'UsuÃ¡rios e permissÃµes',
-    'gestao.settings.item.users.subtitle':
-        'Acessos, perfis e seguranÃ§a da equipe',
-    'gestao.settings.item.procedures.title': 'Procedimentos',
-    'gestao.settings.item.procedures.subtitle':
-        'Guias para vendas, atendimentos e entregas',
-    'gestao.settings.item.notifications.title': 'NotificaÃ§Ãµes',
-    'gestao.settings.item.notifications.subtitle':
-        'Eventos recebidos e alertas do sistema',
-    'gestao.settings.item.pdfTemplates.title': 'Modelos de PDF',
-    'gestao.settings.item.pdfTemplates.subtitle':
-        'OrÃ§amentos, OS, recibos e documentos',
-    'gestao.settings.item.integrations.title': 'IntegraÃ§Ãµes',
-    'gestao.settings.item.integrations.subtitle':
-        'ServiÃ§os externos e automaÃ§Ãµes',
-
-    // GestÃ£o â€” visÃ£o contextual mobile
-    'gestao.overview.selectedArea': 'Ãrea selecionada',
-    'gestao.overview.generalTitle': 'VisÃ£o geral',
-    'gestao.overview.valueUnavailable': '--',
-    'gestao.overview.mainActions': 'AÃ§Ãµes principais',
-    'gestao.overview.errorMessage':
-        'As aÃ§Ãµes continuam disponÃ­veis. Tente atualizar os dados em instantes.',
-    'gestao.catalog.summaryTitle': 'Resumo do catÃ¡logo',
-    'gestao.catalog.metric.products': 'Produtos',
-    'gestao.catalog.metric.productsServices': 'Produtos e serviÃ§os',
-    'gestao.catalog.metric.categories': 'Categorias',
-    'gestao.catalog.metric.lowStock': 'Estoque baixo',
-    'gestao.catalog.lowStockAlertSemantic':
-        'Indicador de atenÃ§Ã£o para estoque baixo',
-    'gestao.catalog.loadError':
-        'NÃ£o foi possÃ­vel carregar o resumo do catÃ¡logo.',
-    'gestao.catalog.emptyTitle': 'CatÃ¡logo sem dados para exibir',
-    'gestao.catalog.emptyMessage':
-        'Cadastre produtos, serviÃ§os ou categorias para preencher os indicadores.',
-    'gestao.catalog.permissionRestrictedTitle':
-        'CatÃ¡logo restrito para este usuÃ¡rio',
-    'gestao.catalog.permissionRestrictedMessage':
-        'A aÃ§Ã£o de produtos e serviÃ§os respeita as permissÃµes atuais.',
-    'gestao.catalog.webCatalog': 'CatÃ¡logo web',
-    'gestao.catalog.webCatalogDesc':
-        'ExperiÃªncia completa do catÃ¡logo no navegador',
-    'gestao.catalog.webCatalogBadge': 'WEB',
-    'gestao.catalog.lowStockTitle': 'Estoque precisa de atenÃ§Ã£o',
-    'gestao.catalog.lowStockMessage':
-        '{count} item(ns) abaixo do limite configurado no catÃ¡logo.',
-    'gestao.catalog.lowStockAction': 'Ver itens',
-    'gestao.people.summaryTitle': 'Resumo de pessoas',
-    'gestao.people.metric.clients': 'Clientes',
-    'gestao.people.metric.collaborators': 'Colaboradores',
-    'gestao.people.metric.suppliers': 'Fornecedores',
-    'gestao.people.suppliersUnavailableSemantic': 'Recurso em breve',
-    'gestao.people.loadError': 'NÃ£o foi possÃ­vel carregar o resumo de pessoas.',
-    'gestao.people.emptyTitle': 'Nenhum contato carregado',
-    'gestao.people.emptyMessage':
-        'Clientes e colaboradores aparecerÃ£o aqui quando estiverem cadastrados.',
-    'gestao.people.suppliersBlockedTitle': 'Fornecedores ainda nÃ£o disponÃ­vel',
-    'gestao.people.suppliersBlockedMessage':
-        'O recurso segue marcado como Em breve e nÃ£o possui navegaÃ§Ã£o mobile ativa.',
-    'gestao.finance.actionGroup': 'Agenda e recursos',
-    'gestao.finance.summaryTitle': 'Resumo financeiro',
-    'gestao.finance.metric.events': 'PrÃ³ximos eventos',
-    'gestao.finance.metric.receivableEvents': 'A receber',
-    'gestao.finance.metric.payableEvents': 'A pagar',
-    'gestao.finance.loadError':
-        'NÃ£o foi possÃ­vel carregar a agenda financeira.',
-    'gestao.finance.emptyTitle': 'Agenda sem lanÃ§amentos prÃ³ximos',
-    'gestao.finance.emptyMessage':
-        'Abra a agenda financeira para criar previsÃµes e acompanhar vencimentos.',
-    'gestao.finance.openSchedule': 'Abrir agenda',
-    'gestao.finance.attentionTitle': 'Agenda com vencimentos prÃ³ximos',
-    'gestao.finance.attentionMessage':
-        '{count} evento(s) vencido(s) ou vencendo hoje na agenda.',
-    'gestao.finance.blockedResourcesTitle': 'Recursos financeiros em evoluÃ§Ã£o',
-    'gestao.finance.blockedResourcesMessage':
-        'Contas a receber, contas a pagar e formas de recebimento continuam bloqueadas no mobile.',
-
-    // Atendimento mobile
-    'atendimento.mobile.title': 'Atendimento',
-    'atendimento.mobile.heroTitle': 'O que vocÃª deseja fazer?',
-    'atendimento.mobile.heroSubtitle':
-        'Venda, serviÃ§o ou recebimento em poucos passos',
-    'atendimento.mobile.introTitle': 'Atendimento ao Cliente',
-    'atendimento.mobile.introLineSales': 'vender, receber, consultar',
-    'atendimento.mobile.introLineReturns': 'devoluÃ§Ãµes de produtos',
-    'atendimento.mobile.introLineServices': 'serviÃ§os, orÃ§amentos etc',
-    'atendimento.mobile.chooseOperation': 'Escolha a operaÃ§Ã£o para iniciar.',
-    'atendimento.mobile.salesMenuTitle': 'Vendas',
-    'atendimento.mobile.newSaleTitle': 'Vendas',
-    'atendimento.mobile.newSaleSubtitle': 'OpÃ§Ãµes',
-    'atendimento.mobile.consultSalesTitle': 'Consultar vendas',
-    'atendimento.mobile.consultSalesSubtitle': 'Consultar histÃ³rico de vendas',
-    'atendimento.mobile.newServiceTitle': 'ServiÃ§os',
-    'atendimento.mobile.newServiceSubtitle': 'Criar ou acompanhar',
-    'atendimento.mobile.servicesMenuTitle': 'ServiÃ§os',
-    'atendimento.mobile.createServiceTitle': 'Novo serviÃ§o',
-    'atendimento.mobile.createServiceSubtitle':
-        'Abrir novo atendimento tÃ©cnico',
-    'atendimento.mobile.consultServicesInProgressTitle':
-        'Consultar serviÃ§os em andamento',
-    'atendimento.mobile.consultServicesInProgressSubtitle':
-        'Ver atendimentos tÃ©cnicos ativos',
-    'atendimento.mobile.waitingApprovalBudgetsTitle':
-        'OrÃ§amentos aguardando aprovaÃ§Ã£o',
-    'atendimento.mobile.waitingApprovalBudgetsSubtitle':
-        'Consulte serviÃ§os que ainda precisam da aprovaÃ§Ã£o do cliente',
-    'atendimento.mobile.receiveTitle': 'Receber',
-    'atendimento.mobile.receiveSubtitle': 'Vendas em aberto',
-    'atendimento.mobile.followToday': 'Acompanhe hoje',
-    'atendimento.mobile.salesToReceiveTitle': 'Vendas a receber',
-    'atendimento.mobile.salesToReceiveSubtitle': 'Vendas nÃ£o liquidadas',
-    'atendimento.mobile.servicesInProgressTitle': 'ServiÃ§os em andamento',
-    'atendimento.mobile.servicesInProgressSubtitle':
-        'Atendimentos tÃ©cnicos ativos',
-    'atendimento.mobile.moreOptions': 'Mais opÃ§Ãµes',
-    'atendimento.mobile.cashOperationsTitle': 'Caixa',
-    'atendimento.mobile.cashOperationsSubtitle': 'Abrir e movimentar',
-    'atendimento.mobile.counterLoadError': 'NÃ£o foi possÃ­vel atualizar agora',
-    'atendimento.mobile.servicesToReceiveTitle': 'ServiÃ§os a receber',
-    'atendimento.mobile.servicesToReceiveSubtitle':
-        'Atendimentos tÃ©cnicos com financeiro aberto',
-    'atendimento.mobile.technicalServicesPendingPaymentTitle':
-        'Atendimentos tÃ©cnicos pendentes de pagamento',
-    'atendimento.mobile.pendingPaymentsLoadingTitle': 'Carregando atendimentos',
-    'atendimento.mobile.pendingPaymentsLoadingSubtitle':
-        'Buscando serviÃ§os com financeiro em aberto.',
-    'atendimento.mobile.pendingPaymentHeaderTitle': 'Financeiro aberto',
-    'atendimento.mobile.pendingPaymentTotalOpen': 'Total em aberto',
-    'atendimento.mobile.pendingPaymentSection': 'Atendimentos com saldo',
-    'atendimento.mobile.pendingPaymentErrorTitle': 'NÃ£o foi possÃ­vel carregar',
-    'atendimento.mobile.pendingPaymentErrorMessage':
-        'Tente atualizar os atendimentos tÃ©cnicos em instantes.',
-    'atendimento.mobile.pendingPaymentEmptyTitle': 'Nenhum serviÃ§o a receber',
-    'atendimento.mobile.pendingPaymentEmptyMessage':
-        'Os atendimentos tÃ©cnicos estÃ£o sem financeiro em aberto.',
-    'atendimento.mobile.onePendingPaymentService':
-        '1 atendimento com financeiro aberto',
-    'atendimento.mobile.pendingPaymentServices':
-        'atendimentos com financeiro aberto',
-    'atendimento.mobile.serviceNumber': 'Atendimento',
-    'atendimento.mobile.openValue': 'Valor em aberto',
-    'atendimento.mobile.totalValue': 'Valor total',
-    'atendimento.mobile.dueDate': 'Vence em',
-    'atendimento.mobile.noDueDate': 'Sem vencimento',
-    'operacao.mobile.returnTitle': 'DevoluÃ§Ãµes e Trocas',
-    'operacao.mobile.returnSubtitle': 'Registrar devoluÃ§Ã£o',
-    'operacao.mobile.returnUnavailable': 'Em breve',
-
-    // DevoluÃ§Ãµes mobile
-    'devolucao.mobile.title': 'DevoluÃ§Ãµes',
-    'devolucao.mobile.introTitle': 'Localize a venda',
-    'devolucao.mobile.introSubtitle':
-        'Use o cÃ³digo do comprovante para iniciar uma devoluÃ§Ã£o ou troca.',
-    'devolucao.mobile.saleCodeLabel': 'CÃ³digo ou ID da venda',
-    'devolucao.mobile.saleCodeHint': 'Ex.: VEN-1024',
-    'devolucao.mobile.searchSale': 'Buscar venda',
-    'devolucao.mobile.searching': 'Buscando...',
-    'devolucao.mobile.operationCompleted': 'OperaÃ§Ã£o concluÃ­da',
-    'devolucao.mobile.saleFound': 'Venda encontrada',
-    'devolucao.mobile.changeSale': 'Trocar venda',
-    'devolucao.mobile.unidentifiedCustomer': 'Cliente nÃ£o identificado',
-    'devolucao.mobile.productsValue': 'Valor dos produtos',
-    'devolucao.mobile.returnBalance': 'Saldo devolvÃ­vel',
-    'devolucao.mobile.hasEligibleItems': 'Possui itens disponÃ­veis',
-    'devolucao.mobile.noEligibleBalance': 'Sem itens disponÃ­veis',
-    'devolucao.mobile.operationTypeTitle': 'O que serÃ¡ feito?',
-    'devolucao.mobile.operationTypeSubtitle':
-        'Escolha entre devolver ou trocar produtos.',
-    'devolucao.mobile.returnOnly': 'Somente devoluÃ§Ã£o',
-    'devolucao.mobile.exchange': 'Troca',
-    'devolucao.mobile.itemsTitle': 'Produtos que retornam',
-    'devolucao.mobile.itemsSubtitle':
-        'Selecione os itens e informe quantidade, condiÃ§Ã£o e motivo.',
-    'devolucao.mobile.noItems':
-        'Esta venda nÃ£o possui itens disponÃ­veis para devoluÃ§Ã£o.',
-    'devolucao.mobile.soldValue': 'Vendido: {value}',
-    'devolucao.mobile.availableValue': 'DisponÃ­vel: {value}',
-    'devolucao.mobile.quantity': 'Quantidade',
-    'devolucao.mobile.maximumQuantity': 'MÃ¡ximo: {value}',
-    'devolucao.mobile.condition': 'CondiÃ§Ã£o do produto',
-    'devolucao.mobile.reason': 'Motivo da devoluÃ§Ã£o',
-    'devolucao.mobile.stockReturn': 'Retornar ao estoque',
-    'devolucao.mobile.stockReturnOn':
-        'O saldo disponÃ­vel do produto serÃ¡ recomposto.',
-    'devolucao.mobile.stockReturnOff':
-        'A devoluÃ§Ã£o serÃ¡ registrada sem recompor o estoque.',
-    'devolucao.mobile.exchangeItemsTitle': 'Produtos da troca',
-    'devolucao.mobile.exchangeItemsSubtitle':
-        'Os novos produtos sairÃ£o do estoque pelo preÃ§o atual.',
-    'devolucao.mobile.addProduct': 'Adicionar produto',
-    'devolucao.mobile.exchangeEmpty':
-        'Adicione o produto que o cliente receberÃ¡.',
-    'devolucao.mobile.selectExchangeProduct': 'Escolher produto da troca',
-    'devolucao.mobile.searchProduct': 'Buscar produto',
-    'devolucao.mobile.noProductsTitle': 'Nenhum produto encontrado',
-    'devolucao.mobile.noProductsMessage':
-        'Revise a busca ou o cadastro de produtos ativos.',
-    'devolucao.mobile.productPrice': 'PreÃ§o atual: {value}',
-    'devolucao.mobile.perUnit': '{value} por unidade',
-    'devolucao.mobile.remove': 'Remover produto',
-    'devolucao.mobile.financialTitle': 'Acerto financeiro',
-    'devolucao.mobile.returnedProducts': 'Produtos devolvidos',
-    'devolucao.mobile.exchangeProducts': 'Produtos da troca',
-    'devolucao.mobile.differenceReceive': 'DiferenÃ§a a receber',
-    'devolucao.mobile.refundValue': 'Valor a reembolsar',
-    'devolucao.mobile.customerPays': 'O cliente paga a diferenÃ§a.',
-    'devolucao.mobile.companyRefunds': 'A empresa reembolsa o cliente.',
-    'devolucao.mobile.noFinancialMovement': 'NÃ£o haverÃ¡ movimento financeiro.',
-    'devolucao.mobile.paymentMethod': 'Forma de pagamento ou reembolso',
-    'devolucao.mobile.paymentHelper': 'Exige sessÃ£o de caixa aberta.',
-    'devolucao.mobile.selectPayment': 'Selecionar forma',
-    'devolucao.mobile.searchPayment': 'Buscar forma',
-    'devolucao.mobile.noPaymentMethods': 'Nenhuma forma disponÃ­vel',
-    'devolucao.mobile.noPaymentMethodsMessage':
-        'Configure uma forma de recebimento imediato antes de concluir.',
-    'devolucao.mobile.reviewTitle': 'Revisar e concluir',
-    'devolucao.mobile.reviewSubtitle':
-        'Confirme os dados antes de movimentar estoque e caixa.',
-    'devolucao.mobile.notes': 'ObservaÃ§Ãµes internas (opcional)',
-    'devolucao.mobile.processing': 'Processando...',
-    'devolucao.mobile.completeExchange': 'Concluir troca',
-    'devolucao.mobile.completeReturn': 'Concluir devoluÃ§Ã£o',
-    'devolucao.mobile.confirmationHelper':
-        'A confirmaÃ§Ã£o pode movimentar estoque e registrar o acerto no caixa.',
-    'devolucao.mobile.recentTitle': 'OperaÃ§Ãµes recentes',
-    'devolucao.mobile.recentSubtitle':
-        'Ãšltimas devoluÃ§Ãµes e trocas desta empresa.',
-    'devolucao.mobile.loadingRecent': 'Carregando operaÃ§Ãµes recentes',
-    'devolucao.mobile.emptyRecent':
-        'Nenhuma devoluÃ§Ã£o ou troca concluÃ­da recentemente.',
-    'devolucao.mobile.successMessage': 'OperaÃ§Ã£o {code} concluÃ­da com sucesso.',
-    'devolucao.mobile.unexpectedError':
-        'NÃ£o foi possÃ­vel concluir a operaÃ§Ã£o. Tente novamente.',
-    'devolucao.mobile.validation.saleRequired':
-        'Informe o cÃ³digo ou identificador da venda.',
-    'devolucao.mobile.validation.invalidQuantity':
-        'Informe uma quantidade vÃ¡lida para {product}.',
-    'devolucao.mobile.validation.quantityExceeded':
-        'A quantidade de {product} supera o saldo devolvÃ­vel.',
-    'devolucao.mobile.validation.reasonRequired':
-        'Informe o motivo da devoluÃ§Ã£o de {product}.',
-    'devolucao.mobile.validation.selectReturnItem':
-        'Selecione pelo menos um produto para devolver.',
-    'devolucao.mobile.validation.selectExchangeItem':
-        'Adicione pelo menos um produto para a troca.',
-    'devolucao.mobile.validation.selectPayment':
-        'Selecione a forma usada no acerto da diferenÃ§a.',
-    'devolucao.mobile.condition.sealed': 'Novo / lacrado',
-    'devolucao.mobile.condition.opened': 'Aberto',
-    'devolucao.mobile.condition.used': 'Usado',
-    'devolucao.mobile.condition.defective': 'Com defeito',
-    'devolucao.mobile.condition.damaged': 'Avariado',
-    'devolucao.mobile.condition.other': 'Outra condiÃ§Ã£o',
-
-    // Vendas nÃ£o liquidadas mobile
-    'vendasNaoLiquidadas.recebimentos': 'Recebimentos',
-    'vendasNaoLiquidadas.semRecebimentos': 'Nenhum recebimento lanÃ§ado.',
-    'vendasNaoLiquidadas.referencia': 'ReferÃªncia',
-    'vendasNaoLiquidadas.recebimento': 'Recebimento',
-    'vendasNaoLiquidadas.recebimentoTotal': 'Total',
-    'vendasNaoLiquidadas.recebimentoParcial': 'Parcial',
-
-    // GestÃ£o â€” badges e cabeÃ§alho admin
-    'gestao.settings.badge.experimental': 'Experimental',
-    'gestao.settings.badge.comingSoon': 'Em breve',
-    'gestao.settings.adminHeader.title': 'ConfiguraÃ§Ãµes da empresa',
-    'gestao.settings.adminHeader.subtitle':
-        'Organize empresa, equipe, operaÃ§Ã£o e comunicaÃ§Ã£o.',
-    'gestao.featureInProgress': 'Fluxo mobile em evoluÃ§Ã£o.',
-    'produto.webList.selection.titleMany': 'Selecionar itens',
-    'produto.webList.selection.titleOne': 'Selecionar item',
-    'produto.webList.selection.subtitleMany':
-        'Marque produtos e serviÃ§os e adicione tudo na venda de uma vez.',
-    'produto.webList.selection.subtitleOne':
-        'Busca rÃ¡pida para incluir produto ou serviÃ§o na venda.',
-    'produto.webList.edit.title': 'Editar produtos',
-    'produto.webList.edit.subtitle':
-        'Gerencie seu catÃ¡logo de produtos, estoque, preÃ§os e imagens.',
-    'produto.webList.default.subtitle':
-        'Consulta rÃ¡pida do catÃ¡logo com aÃ§Ãµes de balcÃ£o.',
-    'produto.webList.newItem': 'Novo item',
-    'produto.webList.printPdf': 'Imprimir PDF',
-    'produto.webList.publicCatalogLink': 'Link do catÃ¡logo',
-    'produto.webList.publicCatalogPreparing': 'Preparando...',
-    'produto.webList.publicCatalogCopied': 'Link pÃºblico do catÃ¡logo copiado.',
-    'produto.webList.publicCatalogError':
-        'NÃ£o foi possÃ­vel preparar o link do catÃ¡logo.',
-    'catalogReservations.title': 'Reservas do catÃ¡logo',
-    'catalogReservations.subtitle':
-        'Acompanhe solicitaÃ§Ãµes recebidas pelo catÃ¡logo virtual.',
-    'catalogReservations.loadingTitle': 'Carregando reservas',
-    'catalogReservations.loadingSubtitle':
-        'Sincronizando as solicitaÃ§Ãµes deste comÃ©rcio.',
-    'catalogReservations.detailLoading': 'Carregando detalhes',
-    'catalogReservations.detailLoadingSubtitle':
-        'Buscando os produtos e dados do cliente.',
-    'catalogReservations.detailTitle': 'Detalhes da reserva',
-    'catalogReservations.empty': 'Nenhuma reserva encontrada.',
-    'catalogReservations.error': 'NÃ£o foi possÃ­vel carregar as reservas.',
-    'catalogReservations.status': 'Status',
-    'catalogReservations.filters.apply': 'Aplicar',
-    'catalogReservations.filters.clear': 'Limpar filtros',
-    'catalogReservations.filters.status.selectedCount': '{count} selecionados',
-    'catalogReservations.filters.period': 'PerÃ­odo',
-    'catalogReservations.filters.start': 'InÃ­cio',
-    'catalogReservations.filters.end': 'Fim',
-    'catalogReservations.filters.date': 'Data',
-    'catalogReservations.filters.date.all': 'Todas as datas',
-    'catalogReservations.filters.date.today': 'Hoje',
-    'catalogReservations.filters.date.yesterday': 'Ontem',
-    'catalogReservations.filters.date.last7Days': 'Ultimos 7 dias',
-    'catalogReservations.filters.date.next7Days': 'Proximos 7 dias',
-    'catalogReservations.filters.date.thisMonth': 'Este mÃªs',
-    'catalogReservations.filters.date.nextMonth': 'PrÃ³ximo mÃªs',
-    'catalogReservations.filters.date.customRange': 'Intervalo personalizado',
-    'catalogReservations.filters.date.pick': 'Escolher data',
-    'catalogReservations.filters.date.pickRange': 'De dia a tal dia',
-    'catalogReservations.filters.date.helpText': 'Selecionar data',
-    'catalogReservations.filters.date.startHelpText': 'Selecionar data inicial',
-    'catalogReservations.filters.date.endHelpText': 'Selecionar data final',
-    'catalogReservations.filters.date.rangeHelpText': 'Selecionar periodo',
-    'catalogReservations.status.received': 'Recebida',
-    'catalogReservations.status.analysis': 'Em anÃ¡lise',
-    'catalogReservations.status.confirmed': 'Confirmada',
-    'catalogReservations.status.cancelled': 'Cancelada',
-    'catalogReservations.status.converted': 'Convertida em venda',
-    'catalogReservations.convert.title': 'Converter em venda',
-    'catalogReservations.convert.description':
-        'Valida o estoque e cria uma venda a receber com estes produtos.',
-    'catalogReservations.convert.action': 'Converter em venda',
-    'catalogReservations.convert.processing': 'Convertendo...',
-    'catalogReservations.convert.confirmTitle': 'Converter reserva em venda?',
-    'catalogReservations.convert.confirmMessage':
-        'O estoque serÃ¡ validado e os itens serÃ£o enviados para uma venda a receber.',
-    'catalogReservations.convert.success':
-        'Reserva convertida em venda a receber.',
-    'catalogReservations.convert.convertedTitle': 'Venda criada',
-    'catalogReservations.convert.saleId': 'Venda',
-    'catalogReservations.convert.error.stock':
-        'Estoque insuficiente para converter esta reserva.',
-    'catalogReservations.convert.error.confirmedOnly':
-        'Confirme a reserva antes de convertÃª-la em venda.',
-    'catalogReservations.convert.error.processing':
-        'Esta reserva jÃ¡ estÃ¡ sendo convertida. Atualize a tela.',
-    'catalogReservations.convert.error.paymentConfig':
-        'Configure um tipo de recebimento futuro antes da conversÃ£o.',
-    'catalogReservations.convert.error.product':
-        'Um dos produtos reservados nÃ£o estÃ¡ mais disponÃ­vel.',
-    'catalogReservations.convert.error.generic':
-        'NÃ£o foi possÃ­vel converter a reserva em venda.',
-    'catalogReservations.items': 'itens',
-    'catalogReservations.products': 'Produtos reservados',
-    'catalogReservations.notes': 'ObservaÃ§Ã£o',
-    'catalogReservations.noNotes': 'Nenhuma observaÃ§Ã£o informada.',
-    'catalogReservations.previous': 'PÃ¡gina anterior',
-    'catalogReservations.next': 'PrÃ³xima pÃ¡gina',
-    'produto.webList.edit.banner':
-        'Modo ediÃ§Ã£o ativo â€¢ {count} itens encontrados â€¢ clique em um produto para alterar.',
-    'produto.webList.searchHint': 'Buscar por nome, cÃ³digo ou SKU...',
-    'produto.webList.preferenceSaved':
-        'PreferÃªncia de visualizaÃ§Ã£o atualizada.',
-    'produto.webList.view.vertical': 'Vertical',
-    'produto.webList.view.horizontal': 'Horizontal',
-    'produto.webList.view.list': 'Lista',
-    'produto.webList.view.grid': 'Grade',
-    'produto.webList.filter.category': 'Categoria',
-    'produto.webList.filter.categoryAll': 'Todas categorias',
-    'produto.webList.filter.flags': 'Marcadores',
-    'produto.webList.filter.flagsAll': 'Todos itens',
-    'produto.webList.filter.flagsFavorites': 'Favoritos',
-    'produto.webList.filter.flagsCatalog': 'No catÃ¡logo',
-    'produto.webList.filter.flagsFavoritesCatalog': 'Favoritos e catÃ¡logo',
-    'produto.webList.filter.statusAll': 'Todos',
-    'produto.webList.filter.stockAll': 'Todos',
-    'produto.webList.filter.stockAvailable': 'Em estoque',
-    'produto.webList.filter.stockLow': 'Estoque baixo',
-    'produto.webList.filter.stockOut': 'Sem estoque',
-    'produto.webList.filter.stockNegative': 'Estoque negativo',
-    'produto.webList.sort.label': 'OrdenaÃ§Ã£o',
-    'produto.webList.sort.name': 'Ordenar por nome',
-    'produto.webList.sort.priceAsc': 'Menor preÃ§o',
-    'produto.webList.sort.priceDesc': 'Maior preÃ§o',
-    'produto.webList.quick.withImage': 'Com imagem',
-    'produto.webList.quick.lowStock': 'Estoque baixo',
-    'produto.webList.errorTitle': 'NÃ£o foi possÃ­vel carregar o catÃ¡logo.',
-    'produto.webList.itemWithoutName': 'Item sem nome',
-    'produto.webList.table.product': 'Produto',
-    'produto.webList.table.category': 'Categoria',
-    'produto.webList.table.code': 'CÃ³digo',
-    'produto.webList.table.price': 'PreÃ§o',
-    'produto.webList.itemsPerPageLabel': 'Itens por pÃ¡gina',
-    'produto.webList.pagination.summary':
-        'Exibindo {start} a {end} de {total} itens',
-    'produto.webList.stockNotApplicable': 'Sem controle',
-    'produto.webList.stockQuantity': 'Qtd {value}',
-    'produto.webList.stockLow': 'Estoque baixo',
-    'produto.webList.stockOut': 'Sem estoque',
-    'produto.webList.stockNegative': 'Estoque negativo',
-    'produto.webList.codeUnavailable': 'Sem cÃ³digo',
-    'produto.webList.viewAction': 'Ver',
-    'produto.favorite.addTooltip': 'Marcar como favorito',
-    'produto.favorite.removeTooltip': 'Remover dos favoritos',
-    'produto.favorite.enabledFeedback': 'Favorito ativado',
-    'produto.favorite.disabledFeedback': 'Favorito desativado',
-    'produto.favorite.updateError':
-        'NÃ£o foi possÃ­vel atualizar o favorito do produto.',
-    'produto.catalog.enableTooltip': 'Disponibilizar para catÃ¡logo',
-    'produto.catalog.disableTooltip':
-        'Retirar da disponibilidade para catÃ¡logo',
-    'produto.catalog.enabledFeedback': 'DisponÃ­vel para catÃ¡logo ativado',
-    'produto.catalog.disabledFeedback': 'DisponÃ­vel para catÃ¡logo desativado',
-    'produto.catalog.updateError':
-        'NÃ£o foi possÃ­vel atualizar a disponibilidade no catÃ¡logo.',
-    'produto.catalog.statusLabel': 'CatÃ¡logo',
-    'produto.catalog.availableStatus': 'DisponÃ­vel',
-    'produto.catalog.unavailableStatus': 'IndisponÃ­vel',
-  },
-  'en': {
-    'produto.journey.changeMode': 'Change',
-    'clientes.journey.title': 'Choose the registration journey',
-    'clientes.journey.subtitle':
-        'Save only the essentials or enrich the customer profile now.',
-    'clientes.journey.simpleTitle': 'Simple registration',
-    'clientes.journey.simpleSubtitle':
-        'Name, document, phone and email for a frictionless registration.',
-    'clientes.journey.completeTitle': 'Complete registration',
-    'clientes.journey.completeSubtitle':
-        'Address, credit and context for a better-prepared operation.',
-    'clientes.journey.stepEssential': 'Essentials',
-    'clientes.journey.stepAddress': 'Address',
-    'clientes.journey.stepRelationship': 'Credit and relationship',
-    'clientes.journey.step': 'Step',
-    'clientes.journey.of': 'of',
-    'clientes.journey.reviewBeforeSave': 'Review the data before saving.',
-    'clientes.journey.continueHint': 'Continue when this step is ready.',
-    'clientes.quality.title': 'Registration quality',
-    'clientes.quality.levelInitial': 'Just getting started',
-    'clientes.quality.levelEssential': 'Essential profile ready',
-    'clientes.quality.levelDetailed': 'Well-detailed profile',
-    'clientes.quality.levelExcellent': 'Excellent profile',
-    'clientes.quality.actionName': 'add a name',
-    'clientes.quality.actionDocument': 'add a document',
-    'clientes.quality.actionPhone': 'add a phone',
-    'clientes.quality.actionEmail': 'add an email',
-    'clientes.quality.actionZip': 'add a postal code',
-    'clientes.quality.actionAddress': 'complete the address',
-    'clientes.quality.actionCredit': 'configure credit',
-    'clientes.quality.actionNotes': 'add context',
-    'clientes.form.invalidEmail': 'Enter a valid email',
-    'produto.quality.title': 'Registration quality',
-    'produto.quality.levelEssential': 'Essential',
-    'produto.quality.levelReady': 'Ready to sell',
-    'produto.quality.levelPrepared': 'Well prepared',
-    'produto.quality.levelExcellent': 'Excellent',
-    'produto.quality.nextActions': 'Next improvements that increase quality:',
-    'produto.quality.completeMessage':
-        'Registration is well prepared for this level.',
-    'produto.quality.actionName': 'Enter name',
-    'produto.quality.actionPrice': 'Add price',
-    'produto.quality.actionCategory': 'Choose category',
-    'produto.quality.actionIdentifier': 'Add code',
-    'produto.quality.actionOrganization': 'Enter group',
-    'produto.quality.actionStock': 'Configure stock',
-    'produto.quality.actionImage': 'Add image',
-    'produto.quality.actionDetails': 'Complete details',
-    'produto.quality.actionRules': 'Review rules',
-    'produto.quality.actionFiscal': 'Enter tax data',
-    'app.title': 'SixoApp',
-    'common.save': 'Save',
-    'common.cancel': 'Cancel',
-    'common.back': 'Back',
-    'common.close': 'Close',
-    'common.edit': 'Edit',
-    'common.delet\u0065': 'Delete',
-    'common.search': 'Search',
-    'common.clear': 'Clear',
-    'common.confirm': 'Confirm',
-    'common.apply': 'Apply',
-    'common.continue': 'Continue',
-    'common.tryAgain': 'Try again',
-    'common.loading': 'Loading...',
-    'common.noResults': 'No results found',
-    'common.unexpectedError': 'Unexpected error',
-    'common.unableToLoad': 'Could not load.',
-    'common.savedSuccessfully': 'Settings saved successfully.',
-    'common.yes': 'Yes',
-    'common.no': 'No',
-    'common.active': 'Active',
-    'common.inactive': 'Inactive',
-    'common.online': 'Online',
-    'common.offline': 'Offline',
-    'common.required': 'Required',
-    'common.optional': 'Optional',
-    'common.soon': 'Coming soon',
-    'common.refresh': 'Refresh',
-    'common.copy': 'Copy',
-    'common.share': 'Share',
-    'common.number': 'Number',
-    'common.all': 'All',
-    'common.customer': 'Customer',
-    'common.updatedAt': 'Updated at',
-    'common.lastUpdatedAt': 'Last updated at',
-    'common.notInformed': 'Not informed',
-    'pdv.quantityEditor.title': 'Edit quantity',
-    'pdv.quantityEditor.tooltip': 'Edit quantity',
-    'pdv.quantityEditor.subtitle':
-        'Review the item and apply the new quantity. The item subtotal and sale total will be recalculated immediately.',
-    'pdv.quantityEditor.codeLabel': 'Code',
-    'pdv.quantityEditor.currentLabel': 'Current quantity',
-    'pdv.quantityEditor.currentHint':
-        'Fine adjustment remains available on the side buttons.',
-    'pdv.quantityEditor.fieldLabel': 'New quantity',
-    'pdv.quantityEditor.hint': 'Enter the desired quantity for this item.',
-    'pdv.quantityEditor.invalid': 'Enter a whole quantity greater than zero.',
-    'pdv.quantityEditor.effectHint':
-        'The change updates the item subtotal and the sale total immediately.',
-    'pdv.quantityEditor.confirm': 'Apply quantity',
-    'pdv.customerIdentification.title': 'Identify customer',
-    'pdv.customerIdentification.subtitle':
-        'Select a registered customer or create a new one without leaving this step.',
-    'pdv.customerIdentification.availableCustomers': 'Active customers',
-    'pdv.customerIdentification.currentCustomer': 'Current customer',
-    'pdv.customerIdentification.currentEmpty': 'No customer linked',
-    'pdv.customerIdentification.searchLabel':
-        'Search customer by name, document, phone or email',
-    'pdv.customerIdentification.loading': 'Loading active customers...',
-    'pdv.customerIdentification.loadError': 'Unable to load customers.',
-    'pdv.customerIdentification.errorTitle': 'Unable to load customers',
-    'pdv.customerIdentification.newCustomer': 'Create customer',
-    'pdv.customerIdentification.openingCreate': 'Opening registration...',
-    'pdv.customerIdentification.createError':
-        'Unable to open customer registration right now.',
-    'pdv.customerIdentification.emptyTitle': 'No active customers registered',
-    'pdv.customerIdentification.emptyMessage':
-        'Create the customer now to continue without leaving this step.',
-    'pdv.customerIdentification.emptySearchTitle': 'No customer found',
-    'pdv.customerIdentification.emptySearchMessage':
-        'Review the search terms or create a new customer to continue.',
-    'pdv.customerIdentification.removeCustomer': 'Remove current customer',
-    'pdv.customerIdentification.unnamedCustomer': 'Unnamed customer',
-    'pdv.customerIdentification.personTypeFallback': 'PF',
-    'pdv.customerIdentification.noDocument': 'No document',
-    'pdv.customerIdentification.creditEnabled': 'Store credit enabled',
-    'pdv.customerIdentification.creditBlocked':
-        'Store credit blocked for new sales',
-    'pdv.customerIdentification.creditDisabled':
-        'Customer without store credit enabled',
-    'pdv.customerIdentification.selected': 'Selected',
-    'pdv.customerIdentification.select': 'Select',
-    'pdv.quantityEditor.processing': 'Applying quantity...',
-    'pdv.quantityEditor.successTitle': 'Quantity updated',
-    'pdv.quantityEditor.successMessage':
-        'The item was recalculated and the sale already reflects the new quantity.',
-    'pdv.quantityEditor.error':
-        'Could not update the quantity right now. Try again in a moment.',
-    'pdv.clearSale.dialogBarrier': 'Confirm clearing the current sale',
-    'pdv.clearSale.dialogTitle': 'Clear current sale?',
-    'pdv.clearSale.dialogSubtitle':
-        'Review the summary before clearing. The current service will be reset so you can start a new sale.',
-    'pdv.clearSale.summaryItems': 'Items',
-    'pdv.clearSale.summaryTotal': 'Total',
-    'pdv.clearSale.summaryCustomer': 'Customer',
-    'pdv.clearSale.confirmAction': 'Clear sale',
-    'pdv.clearSale.impactHint':
-        'Items, identified customer and temporary receipts will be removed from this POS.',
-    'pdv.clearSale.processingTitle': 'Clearing sale...',
-    'pdv.clearSale.processingMessage':
-        'Please wait while the temporary data from this sale is removed.',
-    'pdv.clearSale.successTitle': 'Sale cleared successfully',
-    'pdv.clearSale.successMessage': 'The POS is ready to start a new sale.',
-    'pdv.clearSale.error':
-        'Unable to clear the sale right now. Please try again shortly.',
-    'recebimento.valorEmAberto': 'Outstanding amount',
-    'recebimento.summaryType': 'Type',
-    'recebimento.total': 'Full',
-    'recebimento.parcial': 'Partial',
-    'recebimento.formasRecebimento': 'Payment methods',
-    'recebimento.restante': 'Remaining',
-    'recebimento.valorForma': 'Method amount',
-    'recebimento.tipoRecebimento': 'Payment method',
-    'recebimento.carregandoTipos': 'Loading payment methods...',
-    'recebimento.adicionarForma': 'Add method',
-    'recebimento.removerForma': 'Remove method',
-    'recebimento.observacao': 'Notes',
-    'recebimento.receberTotal': 'Receive full amount',
-    'recebimento.receberParcial': 'Receive partial amount',
-    'recebimento.erroValoresMaioresQueZero': 'Enter amounts greater than zero.',
-    'recebimento.erroValorMaiorQueZero': 'Enter an amount greater than zero.',
-    'recebimento.erroParcialMenorQueAberto':
-        'For a partial receipt, enter less than the outstanding amount.',
-    'recebimento.erroTotalIgualSaldo':
-        'For a full receipt, the amount must settle the outstanding balance.',
-    'recebimento.erroFormaDuplicada':
-        'Each payment method can be used only once.',
-    'pdv.receipt.type': 'Receipt type',
-    'pdv.receipt.partialReady':
-        'Partial receipt ready. The remaining balance will stay open.',
-    'pdv.receipt.partialHint':
-        'Enter an amount greater than zero and lower than the sale total.',
-    'pdv.receipt.partialDefined': 'Partial defined',
-    'pdv.receipt.confirmPartial': 'Confirm partial receipt',
-    'pdv.receipt.confirmPartialMessage': 'Do you want to receive',
-    'pdv.receipt.keepOpenBalance': 'and keep the remaining balance outstanding',
-    'vendasAReceber.openInPdv': 'Open in POS',
-    'pdv.openSale.status': 'Open sale',
-    'pdv.openSale.readOnlyStatus': 'View only',
-    'pdv.openSale.readOnlyTitle': 'Open sale review',
-    'pdv.openSale.readOnlySubtitle':
-        'Products, quantities, and prices are locked at this stage. Review the data and receive the outstanding balance.',
-    'pdv.openSale.editStatus': 'Item editing',
-    'pdv.openSale.editTitle': 'Review the items before receiving',
-    'pdv.openSale.editSubtitle':
-        'Add or remove products and services and change quantities. Original prices are preserved; new items use the current catalog price. Changes are applied only when receiving.',
-    'pdv.openSale.partialReadOnlySubtitle':
-        'This sale already has receipts. To preserve the financial history, its items remain locked.',
-    'pdv.openSale.pendingChanges': 'Pending changes',
-    'pdv.openSale.receiveBalance': 'Receive balance',
-    'pdv.openSale.receiveUpdatedSale': 'Receive revised sale',
-    'pdv.openSale.receiveTitle': 'Receive sale balance',
-    'pdv.openSale.receiptNote': 'Balance received through the web POS.',
-    'pdv.openSale.updatedReceiptNote':
-        'Revised sale received through the web POS.',
-    'pdv.openSale.receivedMessage': 'Sale received successfully.',
-    'pdv.openSale.receiptErrorTitle': 'Unable to receive the sale',
-    'pdv.openSale.originalTotal': 'Original total',
-    'pdv.openSale.openBalance': 'Outstanding balance',
-    'pdv.openSale.currentTotal': 'New total',
-    'pdv.openSale.totalDifference': 'Difference',
-    'pdv.openSale.emptyItemsTitle': 'The sale must have items',
-    'pdv.openSale.emptyItemsMessage':
-        'Add at least one product or service before receiving the sale.',
-    'pdv.openSale.invalidItemsTitle': 'Review the sale items',
-    'pdv.openSale.invalidItemsMessage':
-        'Every item must have a name, a positive quantity, and a valid price.',
-    'pdv.openSale.confirmChangesTitle': 'Confirm revised items?',
-    'pdv.openSale.confirmChangesMessage':
-        'When receiving, the revised item composition will be applied and inventory and finance will be reconciled.',
-    'pdv.openSale.continueToReceipt': 'Continue to receipt',
-    'pdv.openSale.outdatedTitle': 'The sale has changed',
-    'pdv.openSale.outdatedMessage':
-        'Another operation changed this sale. Close the review and open it again to use the current data.',
-    'pdv.openSale.exitTitle': 'Exit review?',
-    'pdv.openSale.exitMessage':
-        'The sale will remain open. No item, price, or receipt will be changed.',
-    'pdv.openSale.exitAction': 'Exit review',
-    'pdv.openSale.discardTitle': 'Discard changes?',
-    'pdv.openSale.discardMessage':
-        'Changes made in the POS will not be saved. The sale will remain open with its previous data.',
-    'pdv.openSale.discardAction': 'Discard and exit',
-    'pdv.openSale.replaceTitle': 'Replace the current sale?',
-    'pdv.openSale.replaceMessage':
-        'The current POS data will be replaced by the selected open sale.',
-    'pdv.openSale.replaceAction': 'Open sale',
-    'pdv.openSale.loadedMessage':
-        'Sale loaded for review. You can add, remove, and change quantities before receiving.',
-    'pdv.openSale.loadedReadOnlyMessage':
-        'Sale loaded for review. Because it already has receipts, its items remain locked.',
-    'pdv.openSale.loadErrorTitle': 'Unable to open the sale',
-    'pdv.openSale.unavailableTitle': 'Sale unavailable',
-    'pdv.openSale.unavailableMessage':
-        'The sale may have been received or canceled by another user.',
-    'common.generating': 'Generating...',
-    'common.saving': 'Saving...',
-    'common.rangeTo': 'to',
-    'common.weekday.monday': 'Monday',
-    'common.weekday.tuesday': 'Tuesday',
-    'common.weekday.wednesday': 'Wednesday',
-    'common.weekday.thursday': 'Thursday',
-    'common.weekday.friday': 'Friday',
-    'common.weekday.saturday': 'Saturday',
-    'common.weekday.sunday': 'Sunday',
-    'common.weekdayShort.monday': 'Mon',
-    'common.weekdayShort.tuesday': 'Tue',
-    'common.weekdayShort.wednesday': 'Wed',
-    'common.weekdayShort.thursday': 'Thu',
-    'common.weekdayShort.friday': 'Fri',
-    'common.weekdayShort.saturday': 'Sat',
-    'common.weekdayShort.sunday': 'Sun',
-    'web.navigation.home': 'Home',
-    'web.navigation.operations': 'Operations',
-    'web.navigation.operations.pos': 'Point of sale',
-    'web.navigation.operations.technicalService': 'Technical services',
-    'web.navigation.operations.purchases': 'Purchases',
-    'web.navigation.operations.reservations': 'Reservations',
-    'web.navigation.catalog': 'Catalog',
-    'web.navigation.catalog.publicPage': 'Public page',
-    'web.navigation.catalog.reservations': 'Reservations',
-    'web.navigation.catalog.products': 'Products',
-    'web.navigation.catalog.services': 'Services',
-    'web.navigation.catalog.stock': 'Stock',
-    'web.navigation.catalog.categories': 'Categories',
-    'catalog.publicPage.title': 'Public catalog page',
-    'catalog.publicPage.subtitle':
-        'Customize, preview, and share your storefront in one place.',
-    'catalog.publicPage.open': 'Open',
-    'catalog.publicPage.copy': 'Copy link',
-    'catalog.publicPage.share': 'Share',
-    'catalog.publicPage.published': 'Published',
-    'catalog.publicPage.offline': 'Offline',
-    'catalog.publicPage.save': 'Save changes',
-    'catalog.publicPage.discard': 'Discard',
-    'catalog.publicPage.saveSuccessPublished':
-        'Page saved and published successfully.',
-    'catalog.publicPage.saveSuccessDraft':
-        'Customization saved. Publish it when it is ready.',
-    'catalog.publicPage.saveError': 'Could not save the catalog page.',
-    'catalog.publicPage.openError': 'Could not open the catalog in a new tab.',
-    'catalog.publicPage.linkCopied': 'Public link copied.',
-    'catalog.publicPage.shareSubject': '{title} catalog',
-    'catalog.publicPage.shareFallback':
-        'Sharing is unavailable. The public link was copied.',
-    'catalog.publicPage.loadErrorTitle': 'Could not load the public page',
-    'catalog.publicPage.editor.publication': 'Published catalog',
-    'catalog.publicPage.editor.publicationOn':
-        'Customers can access it through the public link.',
-    'catalog.publicPage.editor.publicationOff':
-        'The link is preserved but unavailable.',
-    'catalog.publicPage.editor.content': 'Introduction',
-    'catalog.publicPage.editor.contentHelp':
-        'Set the message that opens your storefront.',
-    'catalog.publicPage.editor.titleLabel': 'Storefront title',
-    'catalog.publicPage.editor.titleHint': 'Example: Find what you need',
-    'catalog.publicPage.editor.descriptionLabel': 'Short description',
-    'catalog.publicPage.editor.descriptionHint':
-        'Explain in one sentence what customers will find.',
-    'catalog.publicPage.editor.appearance': 'Appearance',
-    'catalog.publicPage.editor.appearanceHelp':
-        'Choose the visual mood and accent color.',
-    'catalog.publicPage.editor.accentColor': 'Accent color',
-    'catalog.publicPage.editor.customColor': 'Custom color',
-    'catalog.publicPage.editor.invalidColor':
-        'Use a high-contrast hexadecimal color, such as #126BFF.',
-    'catalog.publicPage.editor.layout': 'Content and layout',
-    'catalog.publicPage.editor.layoutHelp':
-        'Control density and visible information.',
-    'catalog.publicPage.editor.comfortable': 'Comfortable',
-    'catalog.publicPage.editor.compact': 'Compact',
-    'catalog.publicPage.editor.showPrices': 'Show prices',
-    'catalog.publicPage.editor.showContact': 'Show contact details',
-    'catalog.publicPage.editor.showAddress': 'Show address',
-    'catalog.publicPage.style.classic': 'Classic',
-    'catalog.publicPage.style.classicHelp':
-        'Professional, balanced, and familiar.',
-    'catalog.publicPage.style.minimal': 'Minimal',
-    'catalog.publicPage.style.minimalHelp':
-        'More space and fewer visual elements.',
-    'catalog.publicPage.style.expressive': 'Expressive',
-    'catalog.publicPage.style.expressiveHelp':
-        'Color and contrast to highlight your brand.',
-    'catalog.publicPage.preview.title': 'Live preview',
-    'catalog.publicPage.preview.unsaved': 'Previewing unsaved changes',
-    'catalog.publicPage.preview.saved': 'Appearance saved to the catalog',
-    'catalog.publicPage.preview.desktop': 'Desktop',
-    'catalog.publicPage.preview.mobile': 'Mobile',
-    'catalog.publicPage.preview.storeFallback': 'Your business',
-    'catalog.publicPage.preview.products': 'Available products',
-    'catalog.publicPage.preview.chooseItems': 'Choose your items',
-    'catalog.publicPage.preview.empty':
-        'Mark products as available for the catalog.',
-    'catalog.publicPage.unpublish.barrier': 'Confirm catalog unpublishing',
-    'catalog.publicPage.unpublish.title': 'Unpublish catalog?',
-    'catalog.publicPage.unpublish.body':
-        'Customers with the link will no longer see products until it is published again.',
-    'catalog.publicPage.unpublish.action': 'Unpublish',
-    'catalog.publicPage.unpublish.processing': 'Taking the catalog offline...',
-    'catalog.publicPage.unpublish.processingBody':
-        'Please wait while we update public access.',
-    'catalog.publicPage.unpublish.success': 'Catalog unpublished',
-    'catalog.publicPage.unpublish.successBody':
-        'The link was preserved and can be reactivated later.',
-    'catalog.publicPage.unpublish.error':
-        'Could not unpublish. Please try again.',
-    'produto.dashboard.importSpreadsheetSoon':
-        'Import via spreadsheet (coming soon)',
-    'web.navigation.people': 'People',
-    'web.navigation.people.customers': 'Customers',
-    'web.navigation.people.collaborators': 'Team members',
-    'web.navigation.people.sixoUsers': 'Sixo users',
-    'web.navigation.people.performance': 'Performance',
-    'web.navigation.cash': 'Cash register',
-    'web.navigation.financial': 'Financial',
-    'web.navigation.financial.agenda': 'Financial agenda',
-    'web.navigation.settings': 'Settings',
-    'web.navigation.reports': 'Reports',
-    'web.navigation.unavailable': 'Destination unavailable in this version.',
-    'usuariosSixo.title': 'Sixo users',
-    'usuariosSixo.subtitle':
-        'View all registered users with access restricted to the SUPER role.',
-    'usuariosSixo.summarySemantics': 'Registered Sixo users summary',
-    'usuariosSixo.summaryTitle': 'Global user base',
-    'usuariosSixo.summarySubtitle':
-        'Query protected by the SUPER role in the token.',
-    'usuariosSixo.totalLabel': 'users',
-    'usuariosSixo.totalRegistered': 'Registered users',
-    'usuariosSixo.searchHint': 'Search by name, email, phone, or role',
-    'usuariosSixo.resultsLabel': 'found',
-    'usuariosSixo.forbiddenTitle': 'SUPER-only access',
-    'usuariosSixo.forbiddenMessage':
-        'Your profile is not allowed to view Sixo users.',
-    'usuariosSixo.loading': 'Loading Sixo users',
-    'usuariosSixo.loadErrorTitle': 'Unable to load users',
-    'usuariosSixo.loadError': 'Check your connection and try again.',
-    'usuariosSixo.emptyTitle': 'No users found',
-    'usuariosSixo.emptyMessage': 'Adjust the search to find other users.',
-    'usuariosSixo.userFallback': 'Sixo user',
-    'usuariosSixo.noEmail': 'Email not provided',
-    'usuariosSixo.noPhone': 'Phone not provided',
-    'usuariosSixo.role.super': 'SUPER',
-    'usuariosSixo.role.admin': 'Administrator',
-    'usuariosSixo.role.collaborator': 'Collaborator',
-    'usuariosSixo.role.customer': 'Customer',
-    'usuariosSixo.role.unknown': 'Not provided',
-    'usuariosSixo.detail.title': 'User details',
-    'usuariosSixo.detail.subtitle':
-        'Registration, preferences, companies, and links saved in Sixo.',
-    'usuariosSixo.detail.loadError': 'Unable to load user details.',
-    'usuariosSixo.detail.personal': 'Personal data',
-    'usuariosSixo.detail.account': 'Account and permissions',
-    'usuariosSixo.detail.preferences': 'Individual preferences',
-    'usuariosSixo.detail.globalPreferences': 'Global preferences',
-    'usuariosSixo.detail.companies': 'Linked companies',
-    'usuariosSixo.detail.links': 'Links and contract data',
-    'usuariosSixo.detail.noCompanies': 'No linked companies.',
-    'usuariosSixo.detail.noLinks': 'No links registered.',
-    'usuariosSixo.detail.imageStored': 'Stored image',
-    'usuariosSixo.onboarding.completed': 'Onboarding completed',
-    'usuariosSixo.onboarding.pending': 'Onboarding pending',
-    'usuariosSixo.onboarding.dialogBarrier': 'Change initial onboarding status',
-    'usuariosSixo.onboarding.resetTitle': 'Request onboarding again?',
-    'usuariosSixo.onboarding.resetMessage':
-        'On the next access, the user will need to confirm their initial data again before entering the system.',
-    'usuariosSixo.onboarding.resetAction': 'Redo onboarding',
-    'usuariosSixo.onboarding.completeTitle': 'Mark onboarding as completed?',
-    'usuariosSixo.onboarding.completeMessage':
-        'The user will no longer see initial onboarding on future access.',
-    'usuariosSixo.onboarding.completeAction': 'Mark as completed',
-    'usuariosSixo.onboarding.processingTitle': 'Updating onboarding...',
-    'usuariosSixo.onboarding.processingMessage':
-        'Please wait while the new setting is saved.',
-    'usuariosSixo.onboarding.successTitle': 'Onboarding updated',
-    'usuariosSixo.onboarding.successMessage':
-        'The new rule will apply the next time the user signs in.',
-    'usuariosSixo.onboarding.errorTitle': 'Unable to update',
-    'usuariosSixo.onboarding.errorMessage':
-        'Try again. No other information was changed.',
-    'usuariosSixo.passwordReset.title': 'Reset password',
-    'usuariosSixo.passwordReset.subtitle':
-        'Use this action when the user needs to redefine their sign-in password.',
-    'usuariosSixo.passwordReset.dialogTitle': 'Reset this user password?',
-    'usuariosSixo.passwordReset.dialogMessage':
-        'The action will be applied immediately to the selected user.',
-    'usuariosSixo.passwordReset.action': 'Reset password',
-    'usuariosSixo.passwordReset.successMessage':
-        'The password reset was completed successfully.',
-    'usuariosSixo.passwordReset.errorMessage':
-        'Could not reset the password right now. Try again.',
-    'initialOnboarding.eyebrow': 'Initial setup',
-    'initialOnboarding.step': 'Step',
-    'initialOnboarding.of': 'of',
-    'initialOnboarding.identityTitle': 'Letâ€™s start with the essentials',
-    'initialOnboarding.identitySubtitle':
-        'Confirm your information so we can personalize your experience.',
-    'initialOnboarding.businessTitle': 'What does your business do?',
-    'initialOnboarding.businessSubtitle':
-        'This only organizes modules and shortcuts. You can change it later.',
-    'initialOnboarding.languageQuestion':
-        'Which language would you like to continue in?',
-    'initialOnboarding.userName': 'What should we call you?',
-    'initialOnboarding.companyName': 'Business name',
-    'initialOnboarding.salesTitle': 'Sells products',
-    'initialOnboarding.salesSubtitle':
-        'Point of sale, catalog, inventory, and sales.',
-    'initialOnboarding.servicesTitle': 'Provides technical services',
-    'initialOnboarding.servicesSubtitle':
-        'Appointments, service orders, and procedures.',
-    'initialOnboarding.start': 'Start using SixoApp',
-    'initialOnboarding.activityRequired':
-        'Select sales, technical services, or both.',
-    'initialOnboarding.userNameRequired': 'Enter your name to continue.',
-    'initialOnboarding.companyNameRequired':
-        'Enter the company name to continue.',
-    'initialOnboarding.saveError': 'Unable to save now. Please try again.',
-    'initialOnboarding.loadErrorTitle': 'Unable to start setup',
-    'initialOnboarding.loadErrorMessage':
-        'Check your connection and try again.',
-    'caixa.operacoes.openConfirmTitle': 'Confirm cash opening?',
-    'caixa.operacoes.openConfirmMessage':
-        'Do you want to open {cashDesk} with an initial cash amount of {amount}?',
-    'caixa.operacoes.openConfirmAction': 'Open cash register',
-    'caixa.operacoes.closeSessionAction': 'Close cash register',
-    'caixa.operacoes.closeDialogTitle': 'Close cash register session?',
-    'caixa.operacoes.closeDialogSubtitle':
-        'Review the summary before continuing. This action cannot be undone.',
-    'caixa.operacoes.closeDialogCashDesk': 'Cash register',
-    'caixa.operacoes.closeDialogMovements': 'Transactions',
-    'caixa.operacoes.closeDialogExpectedBalance': 'Expected balance',
-    'caixa.operacoes.closeDialogChecklistComplete':
-        'Operational summary available',
-    'caixa.operacoes.closeDialogBack': 'Back',
-    'caixa.operacoes.closeDialogConfirm': 'Close cash register',
-    'caixa.operacoes.closeDialogProcessing': 'Closing...',
-    'caixa.operacoes.closeDialogSuccessTitle':
-        'Cash register closed successfully',
-    'caixa.operacoes.closeDialogSuccessMessage':
-        'The session has ended and remains available in the history.',
-    'caixa.operacoes.closeDialogError':
-        'Unable to close the cash register. Check your connection and try again.',
-    'caixa.operacoes.cancelDialogTitle': 'Cancel transaction?',
-    'caixa.operacoes.cancelDialogSubtitle':
-        'Review this transaction linkage before canceling. Depending on the financial history, the entry may need to remain recorded.',
-    'caixa.operacoes.cancelDialogOperation': 'Transaction',
-    'caixa.operacoes.cancelDialogMethod': 'Method',
-    'caixa.operacoes.cancelDialogAmount': 'Amount',
-    'caixa.operacoes.cancelDialogChecklist':
-        'If the transaction is linked to future receipts or related entries, cancellation may be blocked to preserve the history.',
-    'caixa.operacoes.cancelDialogBack': 'Back',
-    'caixa.operacoes.cancelDialogConfirm': 'Cancel transaction',
-    'caixa.operacoes.cancelDialogProcessing': 'Canceling...',
-    'caixa.operacoes.cancelDialogSuccessTitle': 'Transaction canceled',
-    'caixa.operacoes.cancelDialogSuccessMessage':
-        'The cash history has been updated and this transaction is no longer active in the current session.',
-    'caixa.operacoes.cancelDialogError':
-        'Unable to cancel this transaction right now. Review related financial links and try again.',
-    'caixa.operacoes.cancelDialogLinkedRecordsError':
-        'This transaction is linked to future receipts or entries and must remain recorded in the financial history.',
-    'caixa.operacoes.cancelDialogPermissionError':
-        'You do not have permission to cancel this transaction.',
-    'caixa.operacoes.cancelDialogConnectivityError':
-        'Unable to reach the server right now. Check your connection and try again.',
-    'caixa.operacoes.cancelDialogLikelyLinkedError':
-        'Unable to cancel this transaction because it may be linked to other financial records. Review the related receipts and try again.',
-    'caixa.operacoes.addEntryAction': 'Add entry',
-    'caixa.operacoes.launchDialogTitle': 'Register operational entry',
-    'caixa.operacoes.launchDialogSubtitle':
-        'Fill in the operation details and review them before posting to the cash register.',
-    'caixa.operacoes.launchDialogTypeLabel': 'Operation type',
-    'caixa.operacoes.launchDialogSelect': 'Select',
-    'caixa.operacoes.launchDialogAmountLabel': 'Amount',
-    'caixa.operacoes.launchDialogRelatedTypeLabel': 'Related method',
-    'caixa.operacoes.launchDialogReferenceLabel': 'Reference / receipt',
-    'caixa.operacoes.launchDialogReferenceHint': 'Example: MOV-001',
-    'caixa.operacoes.launchDialogObservationLabel': 'Note',
-    'caixa.operacoes.launchDialogObservationHint':
-        'Describe the reason for the movement clearly.',
-    'caixa.operacoes.launchDialogLinkedSaleLabel': 'Linked to a sale',
-    'caixa.operacoes.launchDialogLinkedSaleHint':
-        'Use this for reversals or cases related to a previous service.',
-    'caixa.operacoes.launchDialogReviewAction': 'Review entry',
-    'caixa.operacoes.launchDialogTypeRequired': 'Select the operation type.',
-    'caixa.operacoes.launchDialogRelatedTypeRequired':
-        'Select the related method.',
-    'caixa.operacoes.launchDialogAmountRequired': 'Enter a valid amount.',
-    'caixa.operacoes.launchDialogReviewTitle': 'Confirm operational entry?',
-    'caixa.operacoes.launchDialogReviewSubtitle':
-        'Review the details below before posting the movement to the cash register.',
-    'caixa.operacoes.launchDialogChecklist': 'Summary ready for confirmation.',
-    'caixa.operacoes.launchDialogEditAction': 'Edit details',
-    'caixa.operacoes.launchDialogConfirmAction': 'Register movement',
-    'caixa.operacoes.launchDialogProcessing': 'Registering...',
-    'caixa.operacoes.launchDialogError':
-        'The movement could not be registered. Check the details and try again.',
-    'caixa.operacoes.launchDialogSuccessTitle':
-        'Movement registered successfully',
-    'caixa.operacoes.launchDialogSuccessMessage':
-        'The entry is already visible in the history and cash summary.',
-    'caixa.operacoes.launchDialogAvailableMethods': 'Active methods',
-    'caixa.operacoes.launchDialogLinkedSaleTag': 'Linked to sale',
-    'caixa.operacoes.historyTodayOnly': 'Today only',
-    'caixa.operacoes.historyPeriod': 'Period',
-    'caixa.operacoes.historyPeriodToday': 'Today',
-    'caixa.operacoes.historyPeriodLast7Days': 'Last 7 days',
-    'caixa.operacoes.historyPeriodLast30Days': 'Last 30 days',
-    'caixa.operacoes.historyPeriodThisMonth': 'This month',
-    'caixa.operacoes.historyPeriodLastMonth': 'Last month',
-    'caixa.operacoes.historyPeriodCustomRange': 'Custom range',
-    'caixa.operacoes.historyNature': 'Direction',
-    'caixa.operacoes.historyStatus': 'Status',
-    'caixa.operacoes.historyOperation': 'Operation',
-    'caixa.operacoes.historyMethod': 'Method',
-    'caixa.operacoes.historyStartDate': 'Start date',
-    'caixa.operacoes.historyEndDate': 'End date',
-    'caixa.operacoes.historyStartDateHelp': 'Select start date',
-    'caixa.operacoes.historyEndDateHelp': 'Select end date',
-    'caixa.operacoes.historyClearFilters': 'Clear filters',
-    'caixa.operacoes.historyNoResultsFiltered':
-        'No transactions found for the selected filters.',
-    'caixa.operacoes.historyNoResultsToday':
-        'No transactions registered today.',
-    'web.standalone.quote': 'Quote',
-    'web.standalone.serviceOrder': 'Service order',
-    'web.shell.expandSidebar': 'Expand navigation',
-    'web.shell.collapseSidebar': 'Collapse navigation',
-    'web.shell.currentCommerce': 'Current business',
-    'web.shell.sessionContext': 'Session context',
-    'web.shell.workspace': 'Operational workspace',
-    'web.shell.version': 'Version',
-    'web.header.profile': 'Profile',
-    'web.header.profileTooltip': 'My profile',
-    'web.header.userMenu': 'User',
-    'web.header.myProfile': 'My profile',
-    'web.header.theme.dark': 'Dark theme',
-    'web.header.theme.dark.enable': 'Enable dark theme',
-    'web.header.theme.dark.disable': 'Disable dark theme',
-    'web.header.logout': 'Sign out',
-    'web.logout.dialog.title': 'End session now?',
-    'web.logout.dialog.subtitle':
-        'Review the current context before signing out. You will return to the public login screen in this browser.',
-    'web.logout.dialog.user': 'User',
-    'web.logout.dialog.currentCommerce': 'Current business',
-    'web.logout.dialog.nextStep': 'Next step',
-    'web.logout.dialog.nextStepValue': 'Public login screen',
-    'web.logout.dialog.checklist':
-        'The current session will end only in this browser.',
-    'web.logout.dialog.back': 'Stay signed in',
-    'web.logout.dialog.confirm': 'Sign out now',
-    'web.logout.dialog.processing': 'Ending session...',
-    'web.logout.dialog.successTitle': 'Session ended successfully',
-    'web.logout.dialog.successMessage':
-        'Preparing the return to the public login screen.',
-    'web.logout.dialog.error':
-        'Unable to end the session right now. Please try again in a moment.',
-    'workspaceHome.title': 'My day in SixoApp',
-    'workspaceHome.greeting': 'Hello, {name}',
-    'workspaceHome.unknownUser': 'user',
-    'workspaceHome.companyFallback': 'Current business',
-    'workspaceHome.operationalDate': 'Today: {date}',
-    'workspaceHome.refreshTooltip': 'Refresh day summary',
-    'workspaceHome.loading.title': 'Loading day summary',
-    'workspaceHome.loading.subtitle':
-        'Fetching the current situation for this business.',
-    'workspaceHome.error.title': 'Could not load the day summary.',
-    'collaboratorHome.title': 'My dashboard',
-    'collaboratorHome.subtitle':
-        'Track your goals, sales, services, and work priorities.',
-    'collaboratorHome.loading': 'Loading your operational dashboard',
-    'collaboratorHome.error.user':
-        'We could not identify your personal dashboard.',
-    'collaboratorHome.attention.title': 'Work priorities',
-    'collaboratorHome.attention.clear':
-        'Everything is up to date across your work areas.',
-    'collaboratorHome.attention.pending': '{count} items need attention.',
-    'collaboratorHome.attention.overdueSales': 'Overdue sales',
-    'collaboratorHome.attention.overdueServices': 'Late deliveries',
-    'collaboratorHome.attention.reservations': 'Reservations to review',
-    'collaboratorHome.sales.title': 'My sales',
-    'collaboratorHome.sales.period': 'Results from {start} to {end}',
-    'collaboratorHome.sales.count': 'Sales this month',
-    'collaboratorHome.sales.total': 'Total sold',
-    'collaboratorHome.sales.received': 'Already received',
-    'collaboratorHome.sales.openMonth': 'Outstanding this month',
-    'collaboratorHome.sales.loadError': 'We could not load your sales summary.',
-    'collaboratorHome.openSales.title': 'Unsettled sales',
-    'collaboratorHome.openSales.subtitle': 'Only sales registered by you.',
-    'collaboratorHome.openSales.loadError':
-        'We could not load your outstanding sales.',
-    'collaboratorHome.openSales.empty':
-        'You have no sales awaiting settlement.',
-    'collaboratorHome.openSales.more': '{count} more outstanding sales',
-    'collaboratorHome.openSales.customerFallback': 'Customer not provided',
-    'collaboratorHome.openSales.saleFallback': 'Sale',
-    'collaboratorHome.openSales.noDueDate': 'No due date',
-    'collaboratorHome.openSales.overdue': 'Overdue',
-    'collaboratorHome.services.title': 'My services by status',
-    'collaboratorHome.services.subtitle':
-        'Distribution of service calls assigned to you.',
-    'collaboratorHome.services.open': 'Open service calls',
-    'collaboratorHome.services.loadError': 'We could not load your services.',
-    'collaboratorHome.services.empty':
-        'No service call is currently assigned to you.',
-    'collaboratorHome.services.total': 'Total assigned',
-    'collaboratorHome.services.inProgress': 'In progress',
-    'collaboratorHome.services.dueToday': 'Due today',
-    'collaboratorHome.services.overdue': 'Overdue',
-    'collaboratorHome.services.moreStatuses':
-        '{count} more statuses with activity',
-    'collaboratorHome.services.unknownStatus': 'No status',
-    'collaboratorHome.reservations.title': 'Reservation queue',
-    'collaboratorHome.reservations.subtitle':
-        'Catalog requests that can become sales.',
-    'collaboratorHome.reservations.open': 'Open reservations',
-    'collaboratorHome.reservations.loadError':
-        'We could not load reservations.',
-    'collaboratorHome.reservations.pending': 'Pending',
-    'collaboratorHome.reservations.received': 'Received',
-    'collaboratorHome.reservations.analysis': 'Under review',
-    'collaboratorHome.reservations.confirmed': 'Confirmed',
-    'collaboratorHome.reservations.converted': 'Converted',
-    'performance.home.title': 'My goals',
-    'performance.home.subtitle':
-        'Track your goals and results updated by SixoApp.',
-    'performance.home.dashboardTitle': 'Goal vs. result',
-    'performance.home.period': 'Results from {start} to {end}',
-    'performance.home.accessibilityLabel': 'My goals dashboard',
-    'performance.home.loading': 'Loading your goals',
-    'performance.home.loadError': 'Could not update your goals.',
-    'performance.home.emptyTitle': 'No active goal this month',
-    'performance.home.emptySubtitle':
-        'When a goal is assigned to you, its result will appear here.',
-    'performance.home.result': 'Result',
-    'performance.home.target': 'Goal',
-    'performance.indicator.salesValue': 'Sales amount',
-    'performance.indicator.salesQuantity': 'Number of sales',
-    'performance.indicator.servicesValue': 'Services amount',
-    'performance.indicator.serviceCalls': 'Technical services',
-    'performance.indicator.finishedServiceCalls': 'Completed services',
-    'performance.indicator.serviceCallsValue': 'Service calls amount',
-    'workspaceHome.section.today': 'Today status',
-    'workspaceHome.section.attention': 'Needs your attention',
-    'workspaceHome.section.quickActions': 'Quick actions',
-    'workspaceHome.empty.today':
-        'No summary block is available for your permissions.',
-    'dashboardInicio.mobileGreetingSubtitle':
-        'See the main activity for {empresa} today.',
-    'workspaceHome.empty.attention': 'No important pending items right now.',
-    'workspaceHome.empty.quickActions':
-        'No quick action is available for your permissions.',
-    'workspaceHome.cash.title': 'Cash register',
-    'workspaceHome.cash.open': 'Open',
-    'workspaceHome.cash.closed': 'Closed',
-    'workspaceHome.cash.openedAt': 'since {time}',
-    'workspaceHome.cash.openedAtWithDate': 'since {date} at {time}',
-    'workspaceHome.cash.responsible': 'Opened by {name}',
-    'workspaceHome.technical.title': 'Services',
-    'workspaceHome.technical.active.one': '1 in progress',
-    'workspaceHome.technical.active.other': '{count} in progress',
-    'workspaceHome.financial.receivableToday': 'Receivable today',
-    'workspaceHome.financial.payableToday': 'Payable today',
-    'workspaceHome.financial.count.one': '1 account',
-    'workspaceHome.financial.count.other': '{count} accounts',
-    'workspaceHome.stock.title': 'Stock',
-    'workspaceHome.stock.noCritical': 'No critical alerts',
-    'workspaceHome.stock.belowMinimum.one': '1 below minimum',
-    'workspaceHome.stock.belowMinimum.other': '{count} below minimum',
-    'workspaceHome.stock.withoutStock.one': '1 out of stock',
-    'workspaceHome.stock.withoutStock.other': '{count} out of stock',
-    'workspaceHome.stock.negative.one': '1 negative',
-    'workspaceHome.stock.negative.other': '{count} negative',
-    'workspaceHome.attention.lateServices.one': '1 late service',
-    'workspaceHome.attention.lateServices.other': '{count} late services',
-    'workspaceHome.attention.waitingApproval.one':
-        '1 quote waiting for approval',
-    'workspaceHome.attention.waitingApproval.other':
-        '{count} quotes waiting for approval',
-    'workspaceHome.attention.readyForPickup.one': '1 device ready for pickup',
-    'workspaceHome.attention.readyForPickup.other':
-        '{count} devices ready for pickup',
-    'workspaceHome.attention.overdueReceivable.one': '1 overdue receivable',
-    'workspaceHome.attention.overdueReceivable.other':
-        '{count} overdue receivables',
-    'workspaceHome.attention.overduePayable.one': '1 overdue payable',
-    'workspaceHome.attention.overduePayable.other': '{count} overdue payables',
-    'workspaceHome.attention.stockNegative.one':
-        '1 product with negative stock',
-    'workspaceHome.attention.stockNegative.other':
-        '{count} products with negative stock',
-    'workspaceHome.attention.stockWithout.one': '1 product out of stock',
-    'workspaceHome.attention.stockWithout.other':
-        '{count} products out of stock',
-    'workspaceHome.attention.stockBelow.one': '1 product below minimum stock',
-    'workspaceHome.attention.stockBelow.other':
-        '{count} products below minimum stock',
-    'workspaceHome.action.openTechnicalServices': 'Open services',
-    'workspaceHome.action.openFinancial': 'Open financial',
-    'workspaceHome.action.openStock': 'Open stock',
-    'workspaceHome.quickAction.newSale': 'New sale',
-    'workspaceHome.quickAction.newTechnicalService': 'New service',
-    'workspaceHome.quickAction.cash': 'Cash register',
-    'workspaceHome.quickAction.financialAgenda': 'Financial agenda',
-    'streak.title': 'Streak',
-    'streak.mobile': 'Mobile',
-    'streak.web': 'Web',
-    'streak.shared': 'Overall',
-    'streak.longest': 'Best',
-    'streak.oneDay': '1 day',
-    'streak.days': '{count} days',
-    'streak.daysOfStreak': '{count} day streak',
-    'streak.keepUsing': 'Use SixoApp every day to keep your streak.',
-    'streak.startedToday': 'Your streak started today.',
-    'streak.loading': 'Loading your streak days.',
-    'streak.loadError': 'Could not load your streak.',
-    'dashboardInicio.mobileCompanyFilterTooltip':
-        'Filter businesses: {comercio}',
-    'dashboardInicio.mobileCompanyFilterTitle': 'Filter businesses',
-    'dashboardInicio.mobileCompanyFilterSubtitle':
-        'Choose a business to view on the dashboard.',
-    'dashboardInicio.mobileCompanyFilterAll': 'All',
-    'dashboardInicio.mobileCompanyFilterSearchHint': 'Search business',
-    'dashboardInicio.mobileCompanyFilterEmptyTitle': 'No business available',
-    'dashboardInicio.mobileCompanyFilterEmptyMessage':
-        'We could not find active links for this user.',
-    'dashboardInicio.mobileCompanyFilterLoadError':
-        'Could not load the available businesses right now.',
-    'dashboardInicio.mobileCompanyFilterSwitchError':
-        'Could not switch the business right now. Try again.',
-    'dashboardInicio.mobileDashboardFilterTitle': 'Filter dashboard',
-    'dashboardInicio.mobileDashboardFilterSubtitle':
-        'Choose the business and, if needed, refine by collaborator.',
-    'dashboardInicio.mobileDashboardFilterCompanyLabel': 'Business',
-    'dashboardInicio.mobileDashboardFilterCompanyHelper':
-        'Defines which business feeds the displayed indicators.',
-    'dashboardInicio.mobileCollaboratorFilterLabel': 'Collaborator',
-    'dashboardInicio.mobileCollaboratorFilterAll': 'All collaborators',
-    'dashboardInicio.mobileCollaboratorFilterHelper':
-        'Shows the dashboard indicators for the selected collaborator.',
-    'dashboardInicio.mobileCollaboratorFilterDisabledHelper':
-        'Choose a specific business before filtering collaborators.',
-    'dashboardInicio.mobileCollaboratorFilterLoadingHelper':
-        'Loading collaborators for the current business.',
-    'dashboardInicio.mobileCollaboratorFilterTitle': 'Filter collaborator',
-    'dashboardInicio.mobileCollaboratorFilterSubtitle':
-        'Choose a collaborator to refine the indicators.',
-    'dashboardInicio.mobileCollaboratorFilterSearchHint': 'Search collaborator',
-    'dashboardInicio.mobileCollaboratorFilterEmptyTitle':
-        'No collaborator available',
-    'dashboardInicio.mobileCollaboratorFilterEmptyMessage':
-        'We could not find active collaborators for this business.',
-    'dashboardInicio.mobileCollaboratorFilterLoadError':
-        'Could not load the collaborators for this business right now.',
-    'dashboardInicio.mobileCollaboratorFilterSelectedFallback':
-        'Selected collaborator',
-    'dashboardInicio.mobileInfrastructureRequestsTitle': 'Backend requests',
-    'dashboardInicio.mobileInfrastructureRequestsSubtitle':
-        'Responses monitored in the selected backend time window.',
-    'dashboardInicio.mobileInfrastructureRequestsFilterTitle':
-        'Filter backend requests',
-    'dashboardInicio.mobileInfrastructureRequestsFilterSubtitle':
-        'Enter the time window used to count status 200, 400 and 500 responses.',
-    'dashboardInicio.mobileInfrastructureRequestsFilterValueLabel': 'Amount',
-    'dashboardInicio.mobileInfrastructureRequestsFilterUnitLabel': 'Unit',
-    'dashboardInicio.mobileInfrastructureRequestsFilterMinutes': 'Minutes',
-    'dashboardInicio.mobileInfrastructureRequestsFilterHours': 'Hours',
-    'dashboardInicio.mobileInfrastructureRequestsFilterApply': 'Apply window',
-    'dashboardInicio.mobileInfrastructureRequestsMinuteSingular': 'minute',
-    'dashboardInicio.mobileInfrastructureRequestsMinutePlural': 'minutes',
-    'dashboardInicio.mobileInfrastructureRequestsHourSingular': 'hour',
-    'dashboardInicio.mobileInfrastructureRequestsHourPlural': 'hours',
-    'mobile.nav.dash': 'dash',
-    'mobile.nav.home': 'Home',
-    'mobile.nav.management': 'Management',
-    'mobile.nav.service': 'Service',
-    'empresa.configuracao.title': 'Company',
-    'empresa.configuracao.loadError': 'Could not load company data.',
-    'empresa.configuracao.saveSuccess': 'Company data updated successfully.',
-    'empresa.configuracao.saveError': 'Could not save company data.',
-    'empresa.configuracao.summaryTitle': 'Business data',
-    'empresa.configuracao.summarySubtitle':
-        'Update the information used in documents and service.',
-    'empresa.configuracao.identityTitle': 'Company identity',
-    'empresa.configuracao.identitySubtitle':
-        'Review the main data before saving changes.',
-    'empresa.configuracao.legalName': 'Legal name',
-    'empresa.configuracao.legalNameHint': 'Company legal name',
-    'empresa.configuracao.tradeName': 'Trade name',
-    'empresa.configuracao.tradeNameHint': 'Commercial name used during service',
-    'empresa.configuracao.document': 'Company document',
-    'empresa.configuracao.documentHint': 'Tax ID or equivalent fiscal document',
-    'empresa.configuracao.requiredField': 'Fill in this field.',
-    'empresa.configuracao.readyToEdit': 'Data ready for editing.',
-    'empresa.configuracao.waitingData': 'Waiting for company data.',
-    'empresa.configuracao.statusSubtitle':
-        'Saved information appears in business documents and receipts.',
-    'empresa.configuracao.saveChanges': 'Save changes',
-    'empresa.configuracao.logoTitle': 'Company logo',
-    'empresa.configuracao.logoSubtitle':
-        'Add a clear image, preferably square.',
-    'empresa.configuracao.logoRegistered':
-        'Image ready to save in the business profile.',
-    'empresa.configuracao.logoSelect': 'Select logo',
-    'empresa.configuracao.logoChange': 'Change logo',
-    'empresa.configuracao.logoRemove': 'Remove',
-    'empresa.configuracao.logoSheetTitle': 'Add logo',
-    'empresa.configuracao.logoSheetSubtitle':
-        'Choose an image from the gallery or take a photo.',
-    'empresa.configuracao.logoFromGallery': 'Choose from gallery',
-    'empresa.configuracao.logoFromCamera': 'Use camera',
-    'empresa.configuracao.logoLoadError': 'Could not load the logo.',
-    'empresa.configuracao.logoTooLarge': 'Choose an image up to 1 MB.',
-    'empresa.configuracao.logoSemantics': 'Company logo registered.',
-    'empresa.configuracao.logoEmptySemantics': 'No logo registered.',
-    'atendimentoTecnico.status': 'Status',
-    'atendimentoTecnico.filters.paymentStatus.label': 'Payment status',
-    'atendimentoTecnico.filters.paymentStatus.tooltip':
-        'Filter by payment status',
-    'atendimentoTecnico.filters.paymentStatus.helper':
-        'Filter service records by open balance or paid status.',
-    'atendimentoTecnico.filters.paymentStatus.all': 'All payments',
-    'atendimentoTecnico.filters.paymentStatus.open': 'Open',
-    'atendimentoTecnico.filters.paymentStatus.paid': 'Paid',
-    'atendimentoTecnico.filters.multiSelected': '{count} selected',
-    'atendimentoTecnico.filters.technician.label': 'Responsible technician',
-    'atendimentoTecnico.filters.technician.tooltip': 'Filter by technician',
-    'atendimentoTecnico.filters.technician.all': 'All technicians',
-    'atendimentoTecnico.filters.technician.none': 'No responsible technician',
-    'atendimentoTecnico.filters.technician.selectedFallback':
-        'Selected technician',
-    'atendimentoTecnico.filters.status.tooltip': 'Filter by status',
-    'atendimentoTecnico.filters.status.all': 'All statuses',
-    'atendimentoTecnico.filters.status.allWithCount': 'All statuses ({count})',
-    'atendimentoTecnico.filters.status.selectedFallback': 'Selected status',
-    'atendimentoTecnico.lista.openDetails': 'View details',
-    'atendimentoTecnico.lista.detailsDialog.title': 'Service details',
-    'atendimentoTecnico.lista.detailsDialog.subtitle':
-        'Review the financials, progress, and complete history before moving to another action.',
-    'atendimentoTecnico.lista.detailsDialog.barrierLabel':
-        'Close service details',
-    'atendimentoTecnico.web.dateFilterDialog.barrierLabel': 'Close date filter',
-    'atendimentoTecnico.web.dateFilterDialog.filterLabel': 'Date',
-    'atendimentoTecnico.web.dateFilterDialog.title': 'Filter by date',
-    'atendimentoTecnico.web.dateFilterDialog.subtitle':
-        'Set the service update interval.',
-    'atendimentoTecnico.web.dateFilterDialog.fieldLabel': 'Field',
-    'atendimentoTecnico.web.dateFilterDialog.fieldValueUpdatedAt':
-        'Update date',
-    'atendimentoTecnico.web.dateFilterDialog.currentRangeLabel': 'Range',
-    'atendimentoTecnico.web.dateFilterDialog.allDates': 'All dates',
-    'atendimentoTecnico.web.dateFilterDialog.dateFrom': 'From {date}',
-    'atendimentoTecnico.web.dateFilterDialog.dateUntil': 'Until {date}',
-    'atendimentoTecnico.web.dateFilterDialog.dateRange': '{start} to {end}',
-    'atendimentoTecnico.web.dateFilterDialog.startLabel': 'Start',
-    'atendimentoTecnico.web.dateFilterDialog.endLabel': 'End',
-    'atendimentoTecnico.web.dateFilterDialog.dateHint': 'MM/dd/yyyy',
-    'atendimentoTecnico.web.dateFilterDialog.quickToday': 'Today',
-    'atendimentoTecnico.web.dateFilterDialog.quickLast7Days': 'Last 7 days',
-    'atendimentoTecnico.web.dateFilterDialog.quickNext7Days': 'Next 7 days',
-    'atendimentoTecnico.web.dateFilterDialog.quickOverdue': 'Overdue',
-    'atendimentoTecnico.web.dateFilterDialog.quickLast30Days': 'Last 30 days',
-    'atendimentoTecnico.web.dateFilterDialog.quickThisMonth': 'This month',
-    'atendimentoTecnico.web.dateFilterDialog.clearAction': 'Clear',
-    'atendimentoTecnico.web.dateFilterDialog.cancelAction': 'Cancel',
-    'atendimentoTecnico.web.dateFilterDialog.applyAction': 'Apply',
-    'atendimentoTecnico.web.dateFilterDialog.startInvalid':
-        'Enter a valid start date.',
-    'atendimentoTecnico.web.dateFilterDialog.endInvalid':
-        'Enter a valid end date.',
-    'atendimentoTecnico.web.dateFilterDialog.endBeforeStart':
-        'The end date cannot be before the start date.',
-    'atendimentoTecnico.customerNotInformed': 'Customer not informed',
-    'atendimentoTecnico.expectedDelivery': 'Expected delivery',
-    'atendimentoTecnico.equipment': 'Equipment',
-    'atendimentoTecnico.reportedIssue': 'Reported issue',
-    'atendimentoTecnico.publicStatus.title': 'Service status',
-    'atendimentoTecnico.publicStatus.subtitle':
-        'Track the current technical service stage through the public link.',
-    'atendimentoTecnico.publicStatus.progressTitle': 'Service progress',
-    'atendimentoTecnico.publicStatus.progressShort': 'Service progress',
-    'atendimentoTecnico.publicStatus.serviceData': 'Service data',
-    'atendimentoTecnico.publicStatus.history': 'Status history',
-    'atendimentoTecnico.publicStatus.noHistory': 'No status changes recorded.',
-    'atendimentoTecnico.publicStatus.loading': 'Loading service status...',
-    'atendimentoTecnico.publicStatus.errorTitle': 'Could not load the status',
-    'atendimentoTecnico.publicStatus.invalidLink':
-        'Invalid link. Token or business not informed.',
-    'atendimentoTecnico.publicStatus.linkTitle': 'Public status link',
-    'atendimentoTecnico.publicStatus.linkCopied': 'Link copied to clipboard.',
-    'atendimentoTecnico.publicStatus.linkCopiedShort': 'Status link copied.',
-    'atendimentoTecnico.publicStatus.linkHelp':
-        'Send this link to the customer to track the current service status.',
-    'atendimentoTecnico.publicStatus.linkMissing':
-        'The backend did not return a link.',
-    'atendimentoTecnico.publicStatus.linkError':
-        'Could not generate the status link',
-    'atendimentoTecnico.publicStatus.shareMessage':
-        'Track your service status through the link below:',
-    'atendimentoTecnico.publicStatus.shareSubject': 'Service status',
-    'atendimentoTecnico.publicStatus.shareFallback':
-        'Could not open sharing. The link was copied.',
-    'atendimentoTecnico.publicStatus.publicUrlMissing':
-        'Public app URL is not configured.',
-    'atendimentoTecnico.publicStatus.action': 'Public status',
-    'atendimentoTecnico.publicStatus.actionShort': 'Status',
-    'atendimentoTecnico.publicStatus.signaturePendingTitle':
-        'Approval signature pending',
-    'atendimentoTecnico.publicStatus.signaturePendingDescription':
-        'You can keep tracking the status normally. To approve the service, tap the button and sign on the next page.',
-    'atendimentoTecnico.publicStatus.signatureRenewTitle':
-        'New signature required',
-    'atendimentoTecnico.publicStatus.signatureRenewDescription':
-        'This service was changed after the last approval. You can keep tracking the status normally and sign the current version when you want to approve it.',
-    'atendimentoTecnico.publicStatus.signatureAction': 'Sign approval',
-    'atendimentoTecnico.publicStatus.signatureLinkMissing':
-        'The backend did not return a signature link.',
-    'atendimentoTecnico.publicStatus.signatureLinkError':
-        'Could not open the signature.',
-    'atendimentoTecnico.publicStatus.responsibleUnit': 'Responsible unit',
-    'atendimentoTecnico.publicStatus.officialChannel': 'Official channel',
-    'atendimentoTecnico.publicStatus.updatedByBusiness':
-        'Status updated by the business',
-    'atendimentoTecnico.publicStatus.companyDataSource':
-        'Data provided by the business.',
-    'atendimentoTecnico.publicStatus.officialServiceChannel':
-        'Official service tracking channel.',
-    'atendimentoTecnico.publicStatus.externalLinkUnavailable':
-        'Could not open this contact on this device.',
-    'atendimentoTecnico.mobile.loading': 'Loading technical services',
-    'atendimentoTecnico.mobile.emptyFilteredMessage':
-        'No services found with the selected filters.',
-    'atendimentoTecnico.mobile.searchHint':
-        'Search by customer, status, equipment, or number',
-    'atendimentoTecnico.mobile.advancedFilters': 'Advanced filters',
-    'atendimentoTecnico.mobile.advancedFiltersActive':
-        'Active advanced filters',
-    'atendimentoTecnico.mobile.clearFilters': 'Clear filters',
-    'atendimentoTecnico.mobile.sortRecent': 'Most recent',
-    'atendimentoTecnico.mobile.resultCountOne': '1 service',
-    'atendimentoTecnico.mobile.resultCountMany': '{count} services',
-    'atendimentoTecnico.mobile.periodSummaryTitle': 'Period summary',
-    'atendimentoTecnico.mobile.summaryServiceOne': 'service',
-    'atendimentoTecnico.mobile.summaryServiceMany': 'services',
-    'atendimentoTecnico.mobile.summaryOpenOne': 'open',
-    'atendimentoTecnico.mobile.summaryOpenMany': 'open',
-    'atendimentoTecnico.mobile.summarySignedOne': 'signed',
-    'atendimentoTecnico.mobile.summarySignedMany': 'signed',
-    'atendimentoTecnico.mobile.summaryOpenValue': '{value} open',
-    'atendimentoTecnico.mobile.summaryOpenValueCaption': 'open',
-    'atendimentoTecnico.mobile.filterSheetTitle': 'Filter services',
-    'atendimentoTecnico.mobile.filterPeriod': 'Period',
-    'atendimentoTecnico.mobile.filterPaymentStatus': 'Payment status',
-    'atendimentoTecnico.mobile.filterDate': 'Date',
-    'atendimentoTecnico.mobile.filterStartDate': 'Start',
-    'atendimentoTecnico.mobile.filterEndDate': 'End',
-    'atendimentoTecnico.mobile.dateToday': 'Today',
-    'atendimentoTecnico.mobile.dateAll': 'All dates',
-    'atendimentoTecnico.mobile.dateRange': '{start} to {end}',
-    'atendimentoTecnico.mobile.dateFrom': 'From {date}',
-    'atendimentoTecnico.mobile.dateUntil': 'Until {date}',
-    'atendimentoTecnico.mobile.dateLast7Days': 'Last 7 days',
-    'atendimentoTecnico.mobile.dateNext7Days': 'Next 7 days',
-    'atendimentoTecnico.mobile.dateOverdue': 'Overdue',
-    'atendimentoTecnico.mobile.filterTechnician': 'Responsible technician',
-    'atendimentoTecnico.mobile.searchTechnician': 'Search technician',
-    'atendimentoTecnico.mobile.allTechnicians': 'All technicians',
-    'atendimentoTecnico.mobile.selectedTechnician': 'Selected technician',
-    'atendimentoTecnico.mobile.noTechnicianFound': 'No technician found.',
-    'atendimentoTecnico.mobile.viewOneService': 'View 1 service',
-    'atendimentoTecnico.mobile.viewManyServices': 'View {count} services',
-    'atendimentoTecnico.mobile.sharePdfTooltip': 'Share service',
-    'atendimentoTecnico.mobile.pdfSectionTitle': 'Service document',
-    'atendimentoTecnico.mobile.pdfSectionDescription':
-        'PDF ready to send to the customer with the service details.',
-    'atendimentoTecnico.mobile.pdfSectionGenerating':
-        'Preparing the PDF for sharing.',
-    'atendimentoTecnico.mobile.sharePdfAction': 'Share PDF',
-    'atendimentoTecnico.mobile.pdfLoadingTitle': 'Generating service PDF',
-    'atendimentoTecnico.mobile.pdfLoadingSubtitle':
-        'Please wait while the document is prepared.',
-    'atendimentoTecnico.mobile.detailLoadError':
-        'Could not load the latest service data.',
-    'atendimentoTecnico.mobile.pdfDownloaded': 'PDF downloaded successfully.',
-    'atendimentoTecnico.mobile.pdfPermissionDenied':
-        'You do not have permission to share this service.',
-    'atendimentoTecnico.mobile.pdfNotFound': 'Service not found.',
-    'atendimentoTecnico.mobile.pdfInvalidFile': 'The received file is invalid.',
-    'atendimentoTecnico.mobile.pdfShareUnavailable':
-        'Could not share the document.',
-    'atendimentoTecnico.mobile.pdfShareError': 'Could not share the document.',
-    'atendimentoTecnico.mobile.pdfGenerationError':
-        'Could not generate the service PDF.',
-    'atendimentoTecnico.mobile.publicStatusDescription':
-        'Visible to the customer in the tracking link.',
-    'atendimentoTecnico.publicStatus.shareLinkAction': 'Share link',
-    'atendimentoTecnico.mobile.paymentOpen': 'Open financial balance',
-    'atendimentoTecnico.mobile.paymentSettled': 'Financial balance settled',
-    'atendimentoTecnico.mobile.signed': 'Signed',
-    'atendimentoTecnico.mobile.signaturePending': 'Signature pending',
-    'atendimentoTecnico.customerNotSigned': 'Customer has not signed',
-    'atendimentoTecnico.mobile.customerNotSigned': 'Customer has not signed',
-    'atendimentoTecnico.mobile.deliveryLate': 'Delivery late',
-    'atendimentoTecnico.signatureGate.title': 'Signature required',
-    'atendimentoTecnico.signatureGate.message':
-        'To move to {status}, send the signature link to the customer, sign on this device, or register the bypass.',
-    'atendimentoTecnico.signatureGate.sendLink': 'Send link to customer',
-    'atendimentoTecnico.signatureGate.signHere': 'Sign on this device',
-    'atendimentoTecnico.signatureGate.bypass': 'Move without signature',
-    'atendimentoTecnico.signatureGate.deviceTitle': 'Collect signature',
-    'atendimentoTecnico.signatureGate.deviceMessage':
-        'Register the signature to move to {status}.',
-    'atendimentoTecnico.signatureGate.deviceSigner': 'Signer name',
-    'atendimentoTecnico.signatureGate.deviceDocument': 'Optional document',
-    'atendimentoTecnico.signatureGate.deviceSignatureField': 'Signature',
-    'atendimentoTecnico.signatureGate.deviceObservation': 'Optional note',
-    'atendimentoTecnico.signatureGate.deviceSave': 'Register signature',
-    'atendimentoTecnico.signatureGate.deviceSignerRequired':
-        'Enter the name of the person signing.',
-    'atendimentoTecnico.signatureGate.deviceSignatureRequired':
-        'Sign in the indicated area.',
-    'atendimentoTecnico.signatureGate.deviceSignatureSaved':
-        'Signature registered and status updated.',
-    'atendimentoTecnico.signatureGate.deviceSignatureError':
-        'Could not register the signature',
-    'atendimentoTecnico.signatureGate.publicUrlMissing':
-        'The public app URL is not configured.',
-    'atendimentoTecnico.signatureGate.linkMissing':
-        'The backend did not return a signature link.',
-    'atendimentoTecnico.signatureGate.linkCopied': 'Signature link copied.',
-    'atendimentoTecnico.signatureGate.linkError':
-        'Could not generate the signature link',
-    'atendimentoTecnico.signatureGate.shareMessage':
-        'To approve the service, sign using the link below:',
-    'atendimentoTecnico.signatureGate.shareSubject': 'Service signature',
-    'atendimentoTecnico.mobile.valorOriginal': 'Original amount',
-    'atendimentoTecnico.mobile.valorJaRecebido': 'Amount already received',
-    'atendimentoTecnico.mobile.valorEmAberto': 'Open amount',
-    'atendimentoTecnico.mobile.liquidation': 'Settlement',
-    'atendimentoTecnico.mobile.liquidated': 'Settled',
-    'atendimentoTecnico.mobile.notLiquidated': 'Not settled',
-    'atendimentoTecnico.mobile.products': 'Products',
-    'atendimentoTecnico.mobile.services': 'Services',
-    'atendimentoTecnico.mobile.changeStatusAction': 'Change status',
-    'atendimentoTecnico.mobile.createTitle': 'New technical service',
-    'atendimentoTecnico.mobile.createHeaderTitle': 'Start service',
-    'atendimentoTecnico.mobile.createHeaderSubtitle':
-        'Customer, equipment and issue in a fast counter screen.',
-    'atendimentoTecnico.mobile.responsible': 'Responsible',
-    'atendimentoTecnico.mobile.serviceChip': 'Service',
-    'atendimentoTecnico.mobile.quoteChip': 'Quote',
-    'atendimentoTecnico.mobile.noItemsChip': 'No items',
-    'atendimentoTecnico.mobile.mainDataSection': 'Main data',
-    'atendimentoTecnico.mobile.internalDescription': 'Internal description',
-    'atendimentoTecnico.mobile.internalDescriptionHint':
-        'E.g.: iPhone 11 screen replacement',
-    'atendimentoTecnico.mobile.equipmentType': 'Equipment type',
-    'atendimentoTecnico.mobile.brand': 'Brand',
-    'atendimentoTecnico.mobile.model': 'Model',
-    'atendimentoTecnico.mobile.serialNumber': 'Serial no.',
-    'atendimentoTecnico.mobile.imei': 'IMEI',
-    'atendimentoTecnico.mobile.accessoriesNotes': 'Accessories / notes',
-    'atendimentoTecnico.mobile.accessoriesNotesHint':
-        'E.g.: no charger, with case, cracked screen...',
-    'atendimentoTecnico.mobile.technicalReportSection': 'Technical report',
-    'atendimentoTecnico.mobile.customerIssue': 'Issue reported by the customer',
-    'atendimentoTecnico.mobile.customerIssueHint':
-        'Describe the problem reported at the counter.',
-    'atendimentoTecnico.mobile.initialDiagnosis': 'Initial technical diagnosis',
-    'atendimentoTecnico.mobile.initialDiagnosisHint':
-        'Optional at this first moment.',
-    'atendimentoTecnico.mobile.datesSection': 'Dates',
-    'atendimentoTecnico.mobile.validity': 'Validity',
-    'atendimentoTecnico.mobile.financialDueDate': 'Financial due date',
-    'atendimentoTecnico.mobile.financialPreviewSection': 'Financial preview',
-    'atendimentoTecnico.mobile.financialPreviewDescription':
-        'The amount remains open until a receipt is recorded.',
-    'atendimentoTecnico.mobile.valorConfirmado': 'Confirmed',
-    'atendimentoTecnico.mobile.paymentStampNoValue': 'NO VALUE',
-    'atendimentoTecnico.mobile.paymentStampOpen': 'OPEN',
-    'atendimentoTecnico.mobile.savingService': 'Starting service...',
-    'atendimentoTecnico.mobile.startServiceAction': 'Start technical service',
-    'procedimentos.title': 'Procedures',
-    'procedimentos.subtitle': 'Guides for sales, service and deliveries',
-    'procedimentos.introTitle':
-        'Configure guidance for sales, service and deliveries.',
-    'procedimentos.demoData': 'Demo data',
-    'procedimentos.filtersLabel': 'Procedure filters',
-    'procedimentos.filterAll': 'All',
-    'procedimentos.filterActive': 'Active',
-    'procedimentos.filterInactive': 'Inactive',
-    'procedimentos.newProcedure': 'New procedure',
-    'procedimentos.newProcedureSemantics': 'New procedure',
-    'procedimentos.createProcedure': 'Create procedure',
-    'procedimentos.openAction': 'Open',
-    'procedimentos.createUnavailable':
-        'Procedure creation will be available in the next step.',
-    'procedimentos.editUnavailable':
-        'Editing this procedure will be available in the next step.',
-    'procedimentos.loading': 'Loading procedures',
-    'procedimentos.emptyTitle': 'No procedures configured',
-    'procedimentos.emptyDescription':
-        'Create guidance to support the team at key moments of the operation.',
-    'procedimentos.filteredEmptyTitle': 'No procedures in this filter',
-    'procedimentos.filteredEmptyDescription':
-        'Change the filter to see other demo procedures.',
-    'procedimentos.errorTitle': 'Could not load procedures',
-    'procedimentos.errorDescription': 'Try again in a moment.',
-    'procedimentos.statusDraft': 'Draft',
-    'procedimentos.operationSale': 'Sale',
-    'procedimentos.operationTechnicalService': 'Technical service',
-    'procedimentos.operationQuote': 'Quote',
-    'procedimentos.operationDelivery': 'Delivery',
-    'procedimentos.momentBeforeStart': 'Before starting',
-    'procedimentos.momentBeforeFinish': 'Before finishing',
-    'procedimentos.momentBeforeDelivery': 'Before delivery',
-    'procedimentos.stageSingular': 'stage',
-    'procedimentos.stagePlural': 'stages',
-    'procedimentos.itemSingular': 'item',
-    'procedimentos.itemPlural': 'items',
-    'procedimentos.stageProgress': 'Stage {current} of {total}',
-    'procedimentos.procedureSequence': 'Procedure {current} of {total}',
-    'procedimentos.actionsCompleted.zero': '0 of {total} actions completed',
-    'procedimentos.actionsCompleted.one': '1 of {total} action completed',
-    'procedimentos.actionsCompleted.other':
-        '{count} of {total} actions completed',
-    'procedimentos.answeredActionsSummary.zero':
-        '0 of {total} actions answered.',
-    'procedimentos.answeredActionsSummary.one': '1 of {total} action answered.',
-    'procedimentos.answeredActionsSummary.other':
-        '{count} of {total} actions answered.',
-    'procedimentos.optionalPendingSummary.zero': 'No optional items pending.',
-    'procedimentos.optionalPendingSummary.one': '1 optional item pending.',
-    'procedimentos.optionalPendingSummary.other':
-        '{count} optional items pending.',
-    'procedimentos.requiredPendingSummary.zero': 'No required items pending.',
-    'procedimentos.requiredPendingSummary.one': '1 required item pending.',
-    'procedimentos.requiredPendingSummary.other':
-        '{count} required items pending.',
-    'procedimentos.itemCount.zero': '0 items',
-    'procedimentos.itemCount.one': '1 item',
-    'procedimentos.itemCount.other': '{count} items',
-    'procedimentos.stageCount.zero': '0 stages',
-    'procedimentos.stageCount.one': '1 stage',
-    'procedimentos.stageCount.other': '{count} stages',
-    'procedimentos.stageSemantics': 'Stage {order}: {title}. {itemCountLabel}.',
-    'procedimentos.executionItemSemantics': '{requiredLabel}: {title}. {type}.',
-    'procedimentos.executionItemStatus': '{type} â€¢ {requiredLabel}',
-    'procedimentos.responseTypeSemantics': '{label}. {description}.',
-    'procedimentos.responseTypeSimulatedSemantics':
-        '{label}. {description}. {demoLabel}.',
-    'procedimentos.triggerSemantics':
-        '{operation}, {moment}, {activation}, {enforcement}, {status}',
-    'procedimentos.triggerSummarySingle': '{operation}, {moment}',
-    'procedimentos.triggerSummaryMultiple': '{first} â€¢ +{remaining}',
-    'procedimentos.optionNumber': 'Option {index}',
-    'procedimentos.editorNewTitle': 'New procedure',
-    'procedimentos.editorEditTitle': 'Edit procedure',
-    'procedimentos.generalInfo': 'General information',
-    'procedimentos.nameField': 'Name',
-    'procedimentos.descriptionField': 'Description',
-    'procedimentos.operationContext': 'Operational context',
-    'procedimentos.momentField': 'Moment',
-    'procedimentos.requireCompletion': 'Require procedure completion',
-    'procedimentos.requireCompletionHelp':
-        'In a future integration, this procedure may require completion before continuing the operation.',
-    'procedimentos.stages': 'Stages',
-    'procedimentos.addStage': 'Add stage',
-    'procedimentos.editStage': 'Edit stage',
-    'procedimentos.deleteStage': 'Delete stage',
-    'procedimentos.items': 'Items',
-    'procedimentos.addItem': 'Add item',
-    'procedimentos.editItem': 'Edit item',
-    'procedimentos.deleteItem': 'Delete item',
-    'procedimentos.itemType': 'Item type',
-    'procedimentos.stageTitleField': 'Stage title',
-    'procedimentos.itemTitleField': 'Title or instruction',
-    'procedimentos.itemGuidanceField': 'Supporting text',
-    'procedimentos.saveStage': 'Save stage',
-    'procedimentos.saveItem': 'Save item',
-    'procedimentos.responseInstruction': 'Instruction',
-    'procedimentos.responseConfirmation': 'Confirmation',
-    'procedimentos.responseYesNo': 'Yes or no',
-    'procedimentos.responseInstructionDescription':
-        'Shows an instruction to the staff member.',
-    'procedimentos.responseConfirmationDescription':
-        'Requires the staff member to confirm an action.',
-    'procedimentos.responseYesNoDescription': 'Shows an objective question.',
-    'procedimentos.validationName': 'Enter the procedure name.',
-    'procedimentos.validationReviewFields':
-        'Review the highlighted fields before saving.',
-    'procedimentos.validationAtLeastOneStage':
-        'Add at least one stage to the procedure.',
-    'procedimentos.validationStageTitle': 'Enter the stage title.',
-    'procedimentos.validationStageItem': 'Each stage needs at least one item.',
-    'procedimentos.validationItemTitle': 'Enter the item title.',
-    'procedimentos.createdSuccess': 'Procedure created.',
-    'procedimentos.updatedSuccess': 'Procedure updated.',
-    'procedimentos.discardChangesTitle': 'Discard changes?',
-    'procedimentos.discardChangesMessage':
-        'The changes made to this procedure have not been saved yet.',
-    'procedimentos.keepEditing': 'Keep editing',
-    'procedimentos.discard': 'Discard',
-    'procedimentos.confirmDeleteStageTitle': 'Delete stage?',
-    'procedimentos.confirmDeleteStageMessage':
-        'The items in this stage will also be removed.',
-    'procedimentos.confirmDeleteItemTitle': 'Delete item?',
-    'procedimentos.confirmDeleteItemMessage':
-        'This item will be removed from the procedure.',
-    'procedimentos.editorDemoNotice':
-        'Changes will be kept only during this session.',
-    'procedimentos.noStages': 'No stages added',
-    'procedimentos.itemRequiredHelp':
-        'The final required behavior will be defined in the operational integration.',
-    'procedimentos.previewAction': 'Preview',
-    'procedimentos.demonstration': 'Demo',
-    'procedimentos.responsePhoto': 'Take photo',
-    'procedimentos.responseSignature': 'Signature',
-    'procedimentos.responseLocation': 'Capture location',
-    'procedimentos.responseBarcode': 'Read barcode',
-    'procedimentos.responseImei': 'Enter IMEI',
-    'procedimentos.responseDocument': 'Attach document',
-    'procedimentos.responseAudio': 'Record audio',
-    'procedimentos.responseFreeText': 'Free text',
-    'procedimentos.responseNumber': 'Number',
-    'procedimentos.responseDate': 'Date',
-    'procedimentos.responseSingleChoice': 'Single choice',
-    'procedimentos.responseMultipleChoice': 'Multiple choice',
-    'procedimentos.responsePhotoDescription':
-        'Simulates capturing a photo as evidence.',
-    'procedimentos.responseSignatureDescription':
-        'Simulates collecting a signature.',
-    'procedimentos.responseLocationDescription':
-        'Simulates capturing a location.',
-    'procedimentos.responseBarcodeDescription': 'Simulates reading a barcode.',
-    'procedimentos.responseImeiDescription':
-        'Allows entering an IMEI manually.',
-    'procedimentos.responseDocumentDescription':
-        'Simulates attaching a document.',
-    'procedimentos.responseAudioDescription': 'Simulates an audio recording.',
-    'procedimentos.responseFreeTextDescription':
-        'Allows recording a text response.',
-    'procedimentos.responseNumberDescription':
-        'Allows recording a numeric value.',
-    'procedimentos.responseDateDescription': 'Allows selecting a date.',
-    'procedimentos.responseSingleChoiceDescription':
-        'Allows selecting one option.',
-    'procedimentos.responseMultipleChoiceDescription':
-        'Allows selecting one or more options.',
-    'procedimentos.typeCategoryGuide': 'Guide and confirm',
-    'procedimentos.typeCategoryCollect': 'Collect information',
-    'procedimentos.typeCategoryEvidence': 'Record evidence',
-    'procedimentos.typeCategoryIdentify': 'Identify',
-    'procedimentos.itemTypePickerHelp':
-        'Choose how the staff member will respond to or record this action.',
-    'procedimentos.placeholderField': 'Placeholder',
-    'procedimentos.unitField': 'Unit',
-    'procedimentos.choiceOptions': 'Choice options',
-    'procedimentos.addOption': 'Add option',
-    'procedimentos.removeOption': 'Remove option',
-    'procedimentos.optionField': 'Option',
-    'procedimentos.validationChoiceOptions': 'Enter at least two options.',
-    'procedimentos.changeTypeTitle': 'Change item type?',
-    'procedimentos.changeTypeMessage':
-        'The configured options will be removed for this type.',
-    'procedimentos.simulatedTypeEditorHelp':
-        'In demo mode, this capture will be simulated without using device resources.',
-    'procedimentos.previewTitle': 'Preview',
-    'procedimentos.previewUntitledProcedure': 'Untitled procedure',
-    'procedimentos.previewIncompleteProcedure':
-        'This procedure does not have stages to demonstrate yet.',
-    'procedimentos.previewOf': 'of',
-    'procedimentos.previewProgressLabel': 'Completed actions',
-    'procedimentos.previewPendingMessage':
-        'There are required actions pending in this stage.',
-    'procedimentos.previewRequiredPending':
-        'Answer this required action to continue.',
-    'procedimentos.previewNextStage': 'Next stage',
-    'procedimentos.previewFinishDemo': 'Finish',
-    'procedimentos.previewReviewStages': 'Review stages',
-    'procedimentos.previewSummaryTitle': 'Demo completed',
-    'procedimentos.previewSummarySavedMessage': 'No response was saved.',
-    'procedimentos.previewSummaryAnswered': 'Answered actions.',
-    'procedimentos.previewSummaryNoOptionalPending':
-        'No optional items pending.',
-    'procedimentos.previewSummaryOptionalPending': 'Optional item pending.',
-    'procedimentos.previewDiscardTitle': 'Discard responses?',
-    'procedimentos.previewDiscardMessage':
-        'The responses from this demo will be discarded when leaving.',
-    'procedimentos.previewConfirmAction': 'Confirm action',
-    'procedimentos.previewUnderstood': 'Mark as understood',
-    'procedimentos.previewUnderstoodDone': 'Understood',
-    'procedimentos.previewTextHint': 'Enter the response',
-    'procedimentos.previewNumberHint': 'Enter a number',
-    'procedimentos.previewSelectDate': 'Select date',
-    'procedimentos.previewImeiHint': 'Enter IMEI',
-    'procedimentos.previewUseDemoImei': 'Use demo IMEI',
-    'procedimentos.previewTakePhoto': 'Take photo',
-    'procedimentos.previewSimulateSignature': 'Simulate signature',
-    'procedimentos.previewCaptureLocation': 'Capture location',
-    'procedimentos.previewSimulateBarcode': 'Simulate reading',
-    'procedimentos.previewSimulateDocument': 'Simulate attachment',
-    'procedimentos.previewSimulateAudio': 'Simulate recording',
-    'procedimentos.previewRemoveEvidence': 'Remove evidence',
-    'procedimentos.simulatedResourceNotice':
-        'Demo resource. No real data will be captured.',
-    'procedimentos.previewPhotoAdded': 'Photo added',
-    'procedimentos.previewSignatureAdded': 'Signature added',
-    'procedimentos.previewSignatureDemoDetail': 'Demo stroke recorded',
-    'procedimentos.previewLocationAdded': 'Demo location captured',
-    'procedimentos.previewBarcodeAdded': 'Code read',
-    'procedimentos.previewDocumentAdded': 'Document attached',
-    'procedimentos.previewAudioAdded': 'Audio recorded',
-    'procedimentos.operationCashRegister': 'Cash register',
-    'procedimentos.operationCustomerRegistration': 'Customer registration',
-    'procedimentos.triggerMomentBeforeStart': 'Before starting',
-    'procedimentos.triggerMomentAfterStart': 'After starting',
-    'procedimentos.triggerMomentBeforeFinish': 'Before completing',
-    'procedimentos.triggerMomentAfterFinish': 'After completing',
-    'procedimentos.triggerMomentBeforeDelivery': 'Before delivery',
-    'procedimentos.triggerMomentAfterDelivery': 'After delivery',
-    'procedimentos.triggerMomentOnDemand': 'On demand',
-    'procedimentos.activationManual': 'Manual',
-    'procedimentos.activationAutomatic': 'Automatic',
-    'procedimentos.activationManualDescription':
-        'The staff member can start this procedure when needed.',
-    'procedimentos.activationAutomaticDescription':
-        'In a future integration, the procedure will be shown at the configured moment.',
-    'procedimentos.enforcementInformative': 'Informative',
-    'procedimentos.enforcementRecommended': 'Recommended',
-    'procedimentos.enforcementRequired': 'Required',
-    'procedimentos.enforcementInformativeDescription':
-        'Shows the procedure without requiring completion.',
-    'procedimentos.enforcementRecommendedDescription':
-        'Recommends completion, but should not block the operation.',
-    'procedimentos.enforcementRequiredDescription':
-        'In a future integration, it will require completion before continuing.',
-    'procedimentos.whenExecute': 'When to execute',
-    'procedimentos.addTrigger': 'Add trigger',
-    'procedimentos.editTrigger': 'Edit trigger',
-    'procedimentos.deleteTrigger': 'Delete trigger',
-    'procedimentos.noTriggers': 'No triggers configured.',
-    'procedimentos.noTriggersDescription':
-        'Without triggers, the procedure will only be available for use and preview inside this module.',
-    'procedimentos.triggerCount': 'triggers',
-    'procedimentos.selectOperationContext': 'Select context',
-    'procedimentos.selectTriggerMoment': 'Select moment',
-    'procedimentos.activationMode': 'Execution mode',
-    'procedimentos.enforcementMode': 'Enforcement level',
-    'procedimentos.triggerEnabledHelp':
-        'Controls whether this trigger will be considered in a future integration.',
-    'procedimentos.saveTrigger': 'Save trigger',
-    'procedimentos.triggerMomentCleared':
-        'The moment was cleared because it is not compatible with the selected context.',
-    'procedimentos.validationTriggerOperation':
-        'Choose the operational context.',
-    'procedimentos.validationTriggerMoment': 'Choose the execution moment.',
-    'procedimentos.validationTriggerMomentInvalid':
-        'Choose a moment compatible with the context.',
-    'procedimentos.validationDuplicateTrigger':
-        'A trigger with this context, moment and execution mode already exists.',
-    'procedimentos.deleteTriggerTitle': 'Delete trigger?',
-    'procedimentos.deleteTriggerMessage':
-        'The procedure will no longer be shown at this operational moment.',
-    'procedimentos.triggerSummaryNone': 'No triggers configured',
-    'procedimentos.triggerSummaryOnlyInactive': 'Inactive triggers',
-    'procedimentos.executionConfiguration': 'Execution configuration',
-    'procedimentos.triggerSimulationNotice':
-        'Trigger simulation. No real operation will be blocked.',
-    'procedimentos.manualDemoExecution': 'Manual demo execution.',
-    'procedimentos.operationPointSaleStartBefore': 'Before starting a sale',
-    'procedimentos.operationPointSaleStartBeforeDescription':
-        'Runs before opening the new sale flow.',
-    'procedimentos.mobilePointAvailable': 'Available in the mobile app.',
-    'procedimentos.operationalExecutionTitle': 'Before starting the sale',
-    'procedimentos.operationalSummaryTitle': 'Procedure completed',
-    'procedimentos.operationalNoDataSaved':
-        'No response was saved in this local experimental integration.',
-    'procedimentos.completeAndStartSale': 'Complete and start sale',
-    'procedimentos.experimentalIntegration': 'Experimental integration',
-    'procedimentos.continueToStartSale': 'Continue to sale',
-    'procedimentos.continueWithoutCompleting': 'Continue without completing',
-    'procedimentos.continueWithoutCompletingTitle':
-        'Continue without completing?',
-    'procedimentos.continueWithoutCompletingMessage':
-        'This procedure is recommended before starting the sale.',
-    'procedimentos.continueAnyway': 'Continue anyway',
-    'procedimentos.returnToProcedure': 'Return to procedure',
-    'procedimentos.cancelSaleStartTitle': 'Cancel sale start?',
-    'procedimentos.cancelSaleStartMessage':
-        'This procedure is required. If you leave, the new sale will not be started.',
-    'procedimentos.cancelSale': 'Cancel sale',
-    'procedimentos.sequenceProgressPrefix': 'Procedure',
-    'procedimentos.previewNegativeTextLabel': 'What was missing?',
-    'procedimentos.previewNegativeTextHint': 'Describe what was missing',
-    'procedimentos.operationalLoadError': 'Could not load procedures.',
-    'procedimentos.operationalBadge': 'Operational procedure',
-    'procedimentos.operationalExecutionTitleReal': 'Operational procedure',
-    'procedimentos.executionWillBeSaved':
-        'Answers and timestamps will be saved when you finish.',
-    'procedimentos.completeAndContinue': 'Complete and continue',
-    'procedimentos.continueOperation': 'Continue operation',
-    'procedimentos.processingSkip': 'Continuing...',
-    'procedimentos.processingCancel': 'Cancelling...',
-    'procedimentos.executionSaveError':
-        'Could not save the answers. Please try again.',
-    'procedimentos.skipSuccessTitle': 'Procedure skipped',
-    'procedimentos.cancelSuccessTitle': 'Operation cancelled',
-    'procedimentos.completeSuccessMessage':
-        'The answers were saved and the operation can continue.',
-    'procedimentos.skipSuccessMessage':
-        'The procedure was skipped and the operation will continue under the current configuration.',
-    'procedimentos.cancelSuccessMessage':
-        'The operation was closed before moving to the next step.',
-    'procedimentos.persistedConfiguration': 'Synced configuration',
-    'procedimentos.editorPersistenceNotice':
-        'Changes are saved for the company in the current language.',
-    'procedimentos.notifyAdmin': 'Send push notification to ADMIN',
-    'procedimentos.notifyAdminHelp':
-        'Notifies active administrators when the condition occurs.',
-    'procedimentos.notificationCondition': 'When to notify',
-    'procedimentos.notificationAlways': 'On every execution',
-    'procedimentos.notificationNegative': 'When an answer is negative',
-    'procedimentos.notificationSkipped': 'When the procedure is skipped',
-    'procedimentos.analyticsTitle': 'Results analysis',
-    'procedimentos.analyticsExecutions': 'Executions',
-    'procedimentos.analyticsCompletion': 'Completion rate',
-    'procedimentos.analyticsNegative': 'Negative answers',
-    'procedimentos.analyticsAverageTime': 'Average time',
-    'procedimentos.analyticsByQuestion': 'Results by question',
-    'procedimentos.analyticsRecent': 'Recent executions',
-    'procedimentos.analyticsEmpty':
-        'There are no executions in this period yet.',
-    'procedimentos.contextSale': 'Sale',
-    'procedimentos.contextTechnicalService': 'Technical service',
-    'procedimentos.contextCashRegister': 'Cash register',
-    'auth.loginRequiredFields': 'Please fill in email and password',
-    'auth.loginTitleMobile': 'Sign in',
-    'auth.loginSubtitleMobile':
-        'To access your account, enter\nyour email and password',
-    'auth.email': 'Email',
-    'auth.password': 'Password',
-    'auth.forgotPassword': 'Forgot password?',
-    'auth.continue': 'Continue',
-    'auth.noAccount': 'Don\'t have an account yet?',
-    'auth.createAccount': 'Create account',
-    'auth.signInWithApple': 'Sign in with Apple',
-    'auth.signInWithGoogle': 'Sign in with Google',
-    'auth.googleLoginError': 'Could not complete Google sign-in.',
-    'auth.session.validatingTitle': 'Signing in to SixoApp',
-    'auth.session.validatingMessage': 'Validating your session securely...',
-    'splash.preparingWorkspace': 'Preparing your workspace...',
-    'splash.validatingSession': 'Validating your session...',
-    'splash.syncingAccount': 'Syncing your data...',
-    'splash.connectedTagline': 'Everything connected. Everything in control.',
-    'auth.session.temporaryErrorTitle': 'Could not validate your session',
-    'auth.session.temporaryErrorMessage':
-        'Your session was preserved. Check your connection and try again.',
-    'webAuthGate.temporaryError.title': 'Could not validate your session',
-    'webAuthGate.temporaryError.message':
-        'Check your connection or wait for the backend to respond, then try again.',
-    'auth.appleLoginMock': 'Apple sign-in (mocked)',
-    'auth.termsPrefix':
-        'By clicking "Continue", I confirm that I have read and agree with the ',
-    'auth.terms': 'Terms of Use and Privacy Policy',
-    'auth.mobileEntry.title': 'Your business, connected.',
-    'auth.mobileEntry.subtitle':
-        'Sales, inventory and management moving together â€” wherever you are.',
-    'auth.mobileEntry.sales': 'Sales',
-    'auth.mobileEntry.stock': 'Inventory',
-    'auth.mobileEntry.management': 'Management',
-    'auth.mobileEntry.continueTitle': 'How would you like to continue?',
-    'auth.mobileEntry.loginAction': 'Sign in to my account',
-    'auth.mobileEntry.createAction': 'Create my account',
-    'auth.mobileEntry.securityNote':
-        'Secure access with your data always protected.',
-    'auth.mobileLogin.title': 'Welcome back',
-    'auth.mobileLogin.subtitle': 'Sign in to continue where you left off.',
-    'auth.mobileLogin.formTitle': 'Access your workspace',
-    'auth.mobileLogin.emailHint': 'you@company.com',
-    'auth.mobileLogin.passwordHint': 'Enter your password',
-    'auth.mobileLogin.showPassword': 'Show password',
-    'auth.mobileLogin.hidePassword': 'Hide password',
-    'auth.mobileLogin.submit': 'Sign in',
-    'auth.mobileLogin.socialDivider': 'or continue with',
-    'auth.mobileLogin.createPrompt': 'New to SixoApp?',
-    'auth.mobileCreate.title': 'Create your workspace',
-    'auth.mobileCreate.subtitle':
-        'Start simple. SixoApp grows with your business.',
-    'auth.mobileCreate.formTitle': 'Your account starts here',
-    'auth.mobileCreate.formNote': 'It takes less than a minute.',
-    'auth.mobileCreate.loginLabel': 'Login',
-    'auth.mobileCreate.loginHint': 'Choose your access login',
-    'auth.mobileCreate.passwordLabel': 'Password',
-    'auth.mobileCreate.passwordHint': 'At least 8 characters',
-    'auth.mobileCreate.confirmPasswordLabel': 'Confirm password',
-    'auth.mobileCreate.confirmPasswordHint': 'Repeat your password',
-    'auth.mobileCreate.acceptTerms': 'I agree to the Terms and Privacy Policy.',
-    'auth.mobileCreate.submit': 'Create account',
-    'auth.mobileCreate.loginPrompt': 'Already have an account? Sign in',
-    'auth.mobileCreate.acceptTermsError':
-        'Accept the Terms and Conditions to continue.',
-    'auth.mobileCreate.requiredFieldsError': 'Fill in all fields.',
-    'auth.mobileCreate.passwordLengthError':
-        'The password must be at least 8 characters long.',
-    'auth.mobileCreate.passwordMismatchInline': 'Passwords do not match.',
-    'auth.mobileCreate.passwordMismatchError':
-        'The passwords are different. Check them and try again.',
-    'auth.entry.title': 'Welcome to SixoApp',
-    'auth.entry.subtitle':
-        'Before continuing, choose how you want to access the app.',
-    'auth.entry.hasAccountTitle': 'I already have an account',
-    'auth.entry.hasAccountSubtitle':
-        'Sign in with your email and password to access your company.',
-    'auth.entry.loginAction': 'Sign in',
-    'auth.entry.newAccountTitle': 'I am new here',
-    'auth.entry.newAccountSubtitle':
-        'See a quick overview and create your account to get started.',
-    'auth.entry.newAccountAction': 'Explore SixoApp',
-    'auth.onboarding.title': 'Start with the essentials',
-    'auth.onboarding.subtitle':
-        'See three quick points before creating your account.',
-    'auth.onboarding.step1Title': 'Organized service',
-    'auth.onboarding.step1Subtitle':
-        'Register sales, quotes and service orders in a simple flow.',
-    'auth.onboarding.step2Title': 'Catalog and stock in your pocket',
-    'auth.onboarding.step2Subtitle':
-        'Keep products, services and key information always at hand.',
-    'auth.onboarding.step3Title': 'Management to grow',
-    'auth.onboarding.step3Subtitle':
-        'Track indicators and prepare your operation to evolve with SixoApp.',
-    'auth.onboarding.skip': 'Skip',
-    'auth.onboarding.next': 'Next',
-    'auth.onboarding.createAccountAction': 'Create my account',
-    'auth.onboarding.loginAction': 'I already have an account',
-    'configuracoes.recebimento.contextTitle': 'Configurable payment methods',
-    'configuracoes.recebimento.contextDescription':
-        'Customize how your company receives payments. Internal codes stay fixed by the system, while names and behavior can be adjusted.',
-    'configuracoes.recebimento.metricsTotal': 'Configured types',
-    'configuracoes.recebimento.metricsActive': 'Active',
-    'configuracoes.recebimento.metricsImmediate': 'Immediate nature',
-    'configuracoes.recebimento.metricsFuture': 'Future nature',
-    'configuracoes.recebimento.loadingTitle': 'Loading payment methods',
-    'configuracoes.recebimento.loadingSubtitle':
-        'Syncing company settings from the backend.',
-    'configuracoes.recebimento.errorLoad': 'Could not load payment methods.',
-    'configuracoes.recebimento.errorBadRequest':
-        'Invalid data for this operation.',
-    'configuracoes.recebimento.errorUnauthorized':
-        'Session expired. Please sign in again.',
-    'configuracoes.recebimento.errorForbidden':
-        'You do not have permission to change company settings.',
-    'configuracoes.recebimento.errorNotFound':
-        'Payment method configuration not found.',
-    'configuracoes.recebimento.errorLoadWithStatus':
-        'Error loading payment methods.',
-    'configuracoes.recebimento.errorSaveWithStatus':
-        'Error saving payment method.',
-    'configuracoes.recebimento.saveSuccess':
-        'Payment method updated successfully.',
-    'configuracoes.recebimento.errorSave': 'Could not save payment method.',
-    'configuracoes.recebimento.restoreConfirmTitle': 'Restore defaults',
-    'configuracoes.recebimento.restoreConfirmBody':
-        'This action restores the 10 payment types to the company default setup.',
-    'configuracoes.recebimento.restoreAction': 'Restore defaults',
-    'configuracoes.recebimento.restoreSuccess':
-        'Default payment method setup restored successfully.',
-    'configuracoes.recebimento.restoreError':
-        'Could not restore default setup.',
-    'configuracoes.recebimento.countPrefix': 'Loaded types',
-    'configuracoes.recebimento.activeCount': 'Active',
-    'configuracoes.recebimento.refreshAction': 'Refresh',
-    'configuracoes.recebimento.unnamed': 'Unnamed type',
-    'configuracoes.recebimento.nature': 'Nature',
-    'configuracoes.recebimento.natureImmediate': 'Immediate',
-    'configuracoes.recebimento.natureFuture': 'Future',
-    'configuracoes.recebimento.natureImmediateDescription':
-        'Enters cash flow at the time of receipt.',
-    'configuracoes.recebimento.natureFutureDescription':
-        'Creates an amount receivable on a future date.',
-    'configuracoes.recebimento.requiresClient': 'Requires customer',
-    'configuracoes.recebimento.requiresClientDescription':
-        'Required when this method depends on an identified customer.',
-    'configuracoes.recebimento.installments': 'Allows installments',
-    'configuracoes.recebimento.installmentsDescription':
-        'Allows splitting the receipt into installments.',
-    'configuracoes.recebimento.displayOrder': 'Display order',
-    'configuracoes.recebimento.technicalCode': 'Technical code',
-    'configuracoes.recebimento.displayName': 'Display name',
-    'configuracoes.recebimento.validationName': 'Enter a display name.',
-    'configuracoes.recebimento.validationNameLength':
-        'Use at least 2 characters.',
-    'configuracoes.recebimento.validationOrder':
-        'Enter a valid order greater than or equal to 1.',
-    'configuracoes.recebimento.validationColor':
-        'Use a valid HEX in #RRGGBB format.',
-    'configuracoes.recebimento.color': 'Color (optional)',
-    'configuracoes.recebimento.icon': 'Icon (optional)',
-    'configuracoes.recebimento.activeDescription':
-        'Controls whether the method can be used in workflows.',
-    'configuracoes.recebimento.editDialogTitle': 'Edit payment method',
-    'configuracoes.recebimento.errorStateTitle': 'Could not load settings',
-    'configuracoes.recebimento.emptyTitle': 'No payment methods found',
-    'configuracoes.recebimento.emptyDescription':
-        'Refresh the screen to sync the configured company types.',
-
-    // Management â€” sections
-    'gestao.title': 'Management',
-    'gestao.hub.title': 'What would you like to manage?',
-    'gestao.hub.subtitle':
-        'Access catalog records, people, finances, and preferences.',
-    'gestao.hub.terminal.products': 'Manage your products and collaborators',
-    'gestao.hub.terminal.finance': 'Manage your finances',
-    'gestao.hub.terminal.preferences': 'Adjust your preferences and settings',
-    'gestao.catalog.title': 'Catalog',
-    'gestao.catalog.subtitle': 'Products, categories and inventory',
-    'gestao.people.title': 'People',
-    'gestao.people.subtitle': 'Customers, team and partners',
-    'gestao.finance.title': 'Finance',
-    'gestao.finance.subtitle': 'Accounts, schedule and receipts',
-    'gestao.settings.title': 'Settings',
-    'gestao.settings.selectorTitle': 'General',
-    'gestao.settings.subtitle': 'Company, language and integrations',
-
-    // Management â€” Catalog items
-    'gestao.catalog.productsServices': 'Products & Services',
-    'gestao.catalog.productsServicesDesc': 'Health, records and catalog review',
-    'gestao.catalog.categories': 'Categories',
-    'gestao.catalog.categoriesDesc': 'Catalog organization',
-    'gestao.catalog.inventory': 'Inventory',
-    'gestao.catalog.inventoryDesc': 'Balances, entries and adjustments',
-
-    // Management â€” People items
-    'gestao.people.clients': 'Customers',
-    'gestao.people.clientsDesc': 'Service and relationship base',
-    'gestao.people.collaborators': 'Collaborators',
-    'gestao.people.collaboratorsDesc': 'Team, access and responsibilities',
-    'gestao.people.sixoUsers': 'Sixo users',
-    'gestao.people.sixoUsersDesc': 'Global base protected by the SUPER role',
-    'gestao.people.suppliers': 'Suppliers',
-    'gestao.people.suppliersDesc': 'Partners and business purchases',
-
-    // Management â€” Finance items
-    'gestao.finance.receivable': 'Accounts receivable',
-    'gestao.finance.receivableDesc': 'Receivables and open billings',
-    'gestao.finance.payable': 'Accounts payable',
-    'gestao.finance.payableDesc': 'Expenses and commitments',
-    'gestao.finance.schedule': 'Financial schedule',
-    'gestao.finance.scheduleDesc': 'Forecasts, credit and installments',
-    'gestao.finance.paymentMethods': 'Payment methods',
-    'gestao.finance.paymentMethodsDesc': 'Cash, card, Pix and other means',
-
-    // Management â€” Settings groups
-    'gestao.settings.group.company': 'Company',
-    'gestao.settings.group.teamAccess': 'Team & access',
-    'gestao.settings.group.operation': 'Operation',
-    'gestao.settings.group.communication': 'Communication',
-    'gestao.settings.group.docsIntegrations': 'Documents & integrations',
-
-    // Management â€” Settings items
-    'gestao.settings.item.company.title': 'Company',
-    'gestao.settings.item.company.subtitle':
-        'Business registration and identity',
-    'gestao.settings.item.regionalization.title': 'Regionalization',
-    'gestao.settings.item.regionalization.subtitle':
-        'Language, currency, country and local formats',
-    'gestao.settings.item.users.title': 'Users & permissions',
-    'gestao.settings.item.users.subtitle': 'Access, profiles and team security',
-    'gestao.settings.item.procedures.title': 'Procedures',
-    'gestao.settings.item.procedures.subtitle':
-        'Guides for sales, services and deliveries',
-    'gestao.settings.item.notifications.title': 'Notifications',
-    'gestao.settings.item.notifications.subtitle':
-        'Received events and system alerts',
-    'gestao.settings.item.pdfTemplates.title': 'PDF templates',
-    'gestao.settings.item.pdfTemplates.subtitle':
-        'Quotes, work orders, receipts and documents',
-    'gestao.settings.item.integrations.title': 'Integrations',
-    'gestao.settings.item.integrations.subtitle':
-        'External services and automations',
-
-    // Management â€” contextual mobile overview
-    'gestao.overview.selectedArea': 'Selected area',
-    'gestao.overview.generalTitle': 'Overview',
-    'gestao.overview.valueUnavailable': '--',
-    'gestao.overview.mainActions': 'Main actions',
-    'gestao.overview.errorMessage':
-        'Actions are still available. Try refreshing the data in a moment.',
-    'gestao.catalog.summaryTitle': 'Catalog summary',
-    'gestao.catalog.metric.products': 'Products',
-    'gestao.catalog.metric.productsServices': 'Products and services',
-    'gestao.catalog.metric.categories': 'Categories',
-    'gestao.catalog.metric.lowStock': 'Low stock',
-    'gestao.catalog.lowStockAlertSemantic': 'Attention indicator for low stock',
-    'gestao.catalog.loadError': 'Could not load the catalog summary.',
-    'gestao.catalog.emptyTitle': 'No catalog data to show',
-    'gestao.catalog.emptyMessage':
-        'Add products, services or categories to fill the indicators.',
-    'gestao.catalog.permissionRestrictedTitle':
-        'Catalog restricted for this user',
-    'gestao.catalog.permissionRestrictedMessage':
-        'The Products & Services action respects current permissions.',
-    'gestao.catalog.lowStockTitle': 'Inventory needs attention',
-    'gestao.catalog.lowStockMessage':
-        '{count} item(s) below the configured catalog threshold.',
-    'gestao.catalog.lowStockAction': 'View items',
-    'gestao.people.summaryTitle': 'People summary',
-    'gestao.people.metric.clients': 'Customers',
-    'gestao.people.metric.collaborators': 'Collaborators',
-    'gestao.people.metric.suppliers': 'Suppliers',
-    'gestao.people.suppliersUnavailableSemantic': 'Coming soon resource',
-    'gestao.people.loadError': 'Could not load the people summary.',
-    'gestao.people.emptyTitle': 'No contacts loaded',
-    'gestao.people.emptyMessage':
-        'Customers and collaborators will appear here when registered.',
-    'gestao.people.suppliersBlockedTitle': 'Suppliers not available yet',
-    'gestao.people.suppliersBlockedMessage':
-        'The resource remains marked as Coming soon and has no active mobile navigation.',
-    'gestao.finance.actionGroup': 'Schedule and resources',
-    'gestao.finance.summaryTitle': 'Financial summary',
-    'gestao.finance.metric.events': 'Upcoming events',
-    'gestao.finance.metric.receivableEvents': 'Receivable',
-    'gestao.finance.metric.payableEvents': 'Payable',
-    'gestao.finance.loadError': 'Could not load the financial schedule.',
-    'gestao.finance.emptyTitle': 'No upcoming schedule entries',
-    'gestao.finance.emptyMessage':
-        'Open the financial schedule to create forecasts and track due dates.',
-    'gestao.finance.openSchedule': 'Open schedule',
-    'gestao.finance.attentionTitle': 'Schedule with upcoming due dates',
-    'gestao.finance.attentionMessage':
-        '{count} overdue or due-today event(s) in the schedule.',
-    'gestao.finance.blockedResourcesTitle': 'Financial resources in progress',
-    'gestao.finance.blockedResourcesMessage':
-        'Accounts receivable, accounts payable and payment methods remain locked on mobile.',
-
-    // Service mobile
-    'atendimento.mobile.title': 'Service',
-    'atendimento.mobile.heroTitle': 'What do you want to do?',
-    'atendimento.mobile.heroSubtitle':
-        'Sale, service or receipt in a few steps',
-    'atendimento.mobile.introTitle': 'Customer Service',
-    'atendimento.mobile.introLineSales': 'sell, collect, review',
-    'atendimento.mobile.introLineReturns': 'product returns',
-    'atendimento.mobile.introLineServices': 'services, estimates, and more',
-    'atendimento.mobile.chooseOperation': 'Choose the operation to start.',
-    'atendimento.mobile.salesMenuTitle': 'Sales',
-    'atendimento.mobile.newSaleTitle': 'Sales',
-    'atendimento.mobile.newSaleSubtitle': 'Options',
-    'atendimento.mobile.consultSalesTitle': 'View sales',
-    'atendimento.mobile.consultSalesSubtitle': 'View sales history',
-    'atendimento.mobile.newServiceTitle': 'Services',
-    'atendimento.mobile.newServiceSubtitle': 'Create or track',
-    'atendimento.mobile.servicesMenuTitle': 'Services',
-    'atendimento.mobile.createServiceTitle': 'New service',
-    'atendimento.mobile.createServiceSubtitle': 'Open new technical service',
-    'atendimento.mobile.consultServicesInProgressTitle':
-        'View services in progress',
-    'atendimento.mobile.consultServicesInProgressSubtitle':
-        'See active technical services',
-    'atendimento.mobile.receiveTitle': 'Receive',
-    'atendimento.mobile.receiveSubtitle': 'Open sales',
-    'atendimento.mobile.followToday': 'Track today',
-    'atendimento.mobile.salesToReceiveTitle': 'Sales to receive',
-    'atendimento.mobile.salesToReceiveSubtitle': 'Unsettled sales',
-    'atendimento.mobile.servicesInProgressTitle': 'Services in progress',
-    'atendimento.mobile.servicesInProgressSubtitle':
-        'Active technical services',
-    'atendimento.mobile.moreOptions': 'More options',
-    'atendimento.mobile.cashOperationsTitle': 'Cash',
-    'atendimento.mobile.cashOperationsSubtitle': 'Open and move',
-    'atendimento.mobile.counterLoadError': 'Could not update right now',
-    'atendimento.mobile.servicesToReceiveTitle': 'Services to receive',
-    'atendimento.mobile.servicesToReceiveSubtitle':
-        'Technical services with open financial balance',
-    'atendimento.mobile.technicalServicesPendingPaymentTitle':
-        'Technical services pending payment',
-    'atendimento.mobile.pendingPaymentsLoadingTitle':
-        'Loading technical services',
-    'atendimento.mobile.pendingPaymentsLoadingSubtitle':
-        'Fetching services with open financial balance.',
-    'atendimento.mobile.pendingPaymentHeaderTitle': 'Open financial balance',
-    'atendimento.mobile.pendingPaymentTotalOpen': 'Total open',
-    'atendimento.mobile.pendingPaymentSection': 'Services with balance',
-    'atendimento.mobile.pendingPaymentErrorTitle': 'Could not load',
-    'atendimento.mobile.pendingPaymentErrorMessage':
-        'Try refreshing technical services in a moment.',
-    'atendimento.mobile.pendingPaymentEmptyTitle': 'No services to receive',
-    'atendimento.mobile.pendingPaymentEmptyMessage':
-        'Technical services have no open financial balance.',
-    'atendimento.mobile.onePendingPaymentService':
-        '1 service with open financial balance',
-    'atendimento.mobile.pendingPaymentServices':
-        'services with open financial balance',
-    'atendimento.mobile.serviceNumber': 'Service',
-    'atendimento.mobile.openValue': 'Open amount',
-    'atendimento.mobile.totalValue': 'Total amount',
-    'atendimento.mobile.dueDate': 'Due on',
-    'atendimento.mobile.noDueDate': 'No due date',
-    'operacao.mobile.returnTitle': 'Returns and Exchanges',
-    'operacao.mobile.returnSubtitle': 'Register return',
-    'operacao.mobile.returnUnavailable': 'Coming soon',
-
-    // Mobile returns
-    'devolucao.mobile.title': 'Returns',
-    'devolucao.mobile.introTitle': 'Find the sale',
-    'devolucao.mobile.introSubtitle':
-        'Use the receipt code to start a return or exchange.',
-    'devolucao.mobile.saleCodeLabel': 'Sale code or ID',
-    'devolucao.mobile.saleCodeHint': 'Example: SALE-1024',
-    'devolucao.mobile.searchSale': 'Find sale',
-    'devolucao.mobile.searching': 'Searching...',
-    'devolucao.mobile.operationCompleted': 'Operation completed',
-    'devolucao.mobile.saleFound': 'Sale found',
-    'devolucao.mobile.changeSale': 'Change sale',
-    'devolucao.mobile.unidentifiedCustomer': 'Unidentified customer',
-    'devolucao.mobile.productsValue': 'Product value',
-    'devolucao.mobile.returnBalance': 'Returnable balance',
-    'devolucao.mobile.hasEligibleItems': 'Items are available',
-    'devolucao.mobile.noEligibleBalance': 'No items available',
-    'devolucao.mobile.operationTypeTitle': 'What will be done?',
-    'devolucao.mobile.operationTypeSubtitle':
-        'Choose between returning or exchanging products.',
-    'devolucao.mobile.returnOnly': 'Return only',
-    'devolucao.mobile.exchange': 'Exchange',
-    'devolucao.mobile.itemsTitle': 'Products being returned',
-    'devolucao.mobile.itemsSubtitle':
-        'Select the items and enter quantity, condition and reason.',
-    'devolucao.mobile.noItems': 'This sale has no items available for return.',
-    'devolucao.mobile.soldValue': 'Sold: {value}',
-    'devolucao.mobile.availableValue': 'Available: {value}',
-    'devolucao.mobile.quantity': 'Quantity',
-    'devolucao.mobile.maximumQuantity': 'Maximum: {value}',
-    'devolucao.mobile.condition': 'Product condition',
-    'devolucao.mobile.reason': 'Reason for return',
-    'devolucao.mobile.stockReturn': 'Return to inventory',
-    'devolucao.mobile.stockReturnOn':
-        'The available product balance will be restored.',
-    'devolucao.mobile.stockReturnOff':
-        'The return will be recorded without restoring inventory.',
-    'devolucao.mobile.exchangeItemsTitle': 'Exchange products',
-    'devolucao.mobile.exchangeItemsSubtitle':
-        'New products will leave inventory at the current price.',
-    'devolucao.mobile.addProduct': 'Add product',
-    'devolucao.mobile.exchangeEmpty':
-        'Add the product the customer will receive.',
-    'devolucao.mobile.selectExchangeProduct': 'Choose exchange product',
-    'devolucao.mobile.searchProduct': 'Search products',
-    'devolucao.mobile.noProductsTitle': 'No products found',
-    'devolucao.mobile.noProductsMessage':
-        'Review the search or the active product catalog.',
-    'devolucao.mobile.productPrice': 'Current price: {value}',
-    'devolucao.mobile.perUnit': '{value} per unit',
-    'devolucao.mobile.remove': 'Remove product',
-    'devolucao.mobile.financialTitle': 'Financial settlement',
-    'devolucao.mobile.returnedProducts': 'Returned products',
-    'devolucao.mobile.exchangeProducts': 'Exchange products',
-    'devolucao.mobile.differenceReceive': 'Difference to receive',
-    'devolucao.mobile.refundValue': 'Refund amount',
-    'devolucao.mobile.customerPays': 'The customer pays the difference.',
-    'devolucao.mobile.companyRefunds': 'The company refunds the customer.',
-    'devolucao.mobile.noFinancialMovement':
-        'There will be no financial movement.',
-    'devolucao.mobile.paymentMethod': 'Payment or refund method',
-    'devolucao.mobile.paymentHelper': 'Requires an open cash session.',
-    'devolucao.mobile.selectPayment': 'Select method',
-    'devolucao.mobile.searchPayment': 'Search methods',
-    'devolucao.mobile.noPaymentMethods': 'No methods available',
-    'devolucao.mobile.noPaymentMethodsMessage':
-        'Configure an immediate payment method before completing.',
-    'devolucao.mobile.reviewTitle': 'Review and complete',
-    'devolucao.mobile.reviewSubtitle':
-        'Confirm the data before moving inventory and cash.',
-    'devolucao.mobile.notes': 'Internal notes (optional)',
-    'devolucao.mobile.processing': 'Processing...',
-    'devolucao.mobile.completeExchange': 'Complete exchange',
-    'devolucao.mobile.completeReturn': 'Complete return',
-    'devolucao.mobile.confirmationHelper':
-        'Confirmation may move inventory and record the cash settlement.',
-    'devolucao.mobile.recentTitle': 'Recent operations',
-    'devolucao.mobile.recentSubtitle':
-        'Latest returns and exchanges for this business.',
-    'devolucao.mobile.loadingRecent': 'Loading recent operations',
-    'devolucao.mobile.emptyRecent':
-        'No returns or exchanges were completed recently.',
-    'devolucao.mobile.successMessage':
-        'Operation {code} completed successfully.',
-    'devolucao.mobile.unexpectedError':
-        'The operation could not be completed. Please try again.',
-    'devolucao.mobile.validation.saleRequired':
-        'Enter the sale code or identifier.',
-    'devolucao.mobile.validation.invalidQuantity':
-        'Enter a valid quantity for {product}.',
-    'devolucao.mobile.validation.quantityExceeded':
-        'The quantity of {product} exceeds the returnable balance.',
-    'devolucao.mobile.validation.reasonRequired':
-        'Enter the return reason for {product}.',
-    'devolucao.mobile.validation.selectReturnItem':
-        'Select at least one product to return.',
-    'devolucao.mobile.validation.selectExchangeItem':
-        'Add at least one product to the exchange.',
-    'devolucao.mobile.validation.selectPayment':
-        'Select the method used to settle the difference.',
-    'devolucao.mobile.condition.sealed': 'New / sealed',
-    'devolucao.mobile.condition.opened': 'Opened',
-    'devolucao.mobile.condition.used': 'Used',
-    'devolucao.mobile.condition.defective': 'Defective',
-    'devolucao.mobile.condition.damaged': 'Damaged',
-    'devolucao.mobile.condition.other': 'Other condition',
-
-    // Open sales mobile
-    'vendasNaoLiquidadas.recebimentos': 'Receipts',
-    'vendasNaoLiquidadas.semRecebimentos': 'No receipt recorded.',
-    'vendasNaoLiquidadas.referencia': 'Reference',
-    'vendasNaoLiquidadas.recebimento': 'Receipt',
-    'vendasNaoLiquidadas.recebimentoTotal': 'Full',
-    'vendasNaoLiquidadas.recebimentoParcial': 'Partial',
-
-    // Management â€” badges and admin header
-    'gestao.settings.badge.experimental': 'Experimental',
-    'gestao.settings.badge.comingSoon': 'Coming soon',
-    'gestao.settings.adminHeader.title': 'Company settings',
-    'gestao.settings.adminHeader.subtitle':
-        'Organize company, team, operation and communication.',
-    'gestao.catalog.webCatalog': 'Web catalog',
-    'gestao.catalog.webCatalogDesc': 'Full catalog experience in the browser',
-    'gestao.catalog.webCatalogBadge': 'WEB',
-    'gestao.featureInProgress': 'Mobile flow in progress.',
-    'produto.webList.selection.titleMany': 'Select items',
-    'produto.webList.selection.titleOne': 'Select item',
-    'produto.webList.selection.subtitleMany':
-        'Check products and services and add everything to the sale at once.',
-    'produto.webList.selection.subtitleOne':
-        'Quick search to add a product or service to the sale.',
-    'produto.webList.edit.title': 'Edit products',
-    'produto.webList.edit.subtitle':
-        'Manage your product catalog, stock, prices and images.',
-    'produto.webList.default.subtitle':
-        'Quick catalog lookup with counter actions.',
-    'produto.webList.newItem': 'New item',
-    'produto.webList.printPdf': 'Print PDF',
-    'produto.webList.publicCatalogLink': 'Catalog link',
-    'produto.webList.publicCatalogPreparing': 'Preparing...',
-    'produto.webList.publicCatalogCopied': 'Public catalog link copied.',
-    'produto.webList.publicCatalogError': 'Could not prepare the catalog link.',
-    'catalogReservations.title': 'Catalog reservations',
-    'catalogReservations.subtitle':
-        'Track requests received through the virtual catalog.',
-    'catalogReservations.loadingTitle': 'Loading reservations',
-    'catalogReservations.loadingSubtitle':
-        'Syncing requests for this business.',
-    'catalogReservations.detailLoading': 'Loading details',
-    'catalogReservations.detailLoadingSubtitle':
-        'Fetching products and customer information.',
-    'catalogReservations.detailTitle': 'Reservation details',
-    'catalogReservations.empty': 'No reservations found.',
-    'catalogReservations.error': 'Could not load reservations.',
-    'catalogReservations.status': 'Status',
-    'catalogReservations.filters.apply': 'Apply',
-    'catalogReservations.filters.clear': 'Clear filters',
-    'catalogReservations.filters.status.selectedCount': '{count} selected',
-    'catalogReservations.filters.period': 'Period',
-    'catalogReservations.filters.start': 'Start',
-    'catalogReservations.filters.end': 'End',
-    'catalogReservations.filters.date': 'Date',
-    'catalogReservations.filters.date.all': 'All dates',
-    'catalogReservations.filters.date.today': 'Today',
-    'catalogReservations.filters.date.yesterday': 'Yesterday',
-    'catalogReservations.filters.date.last7Days': 'Last 7 days',
-    'catalogReservations.filters.date.next7Days': 'Next 7 days',
-    'catalogReservations.filters.date.thisMonth': 'This month',
-    'catalogReservations.filters.date.nextMonth': 'Next month',
-    'catalogReservations.filters.date.customRange': 'Custom range',
-    'catalogReservations.filters.date.pick': 'Pick a date',
-    'catalogReservations.filters.date.pickRange': 'From day to day',
-    'catalogReservations.filters.date.helpText': 'Select date',
-    'catalogReservations.filters.date.startHelpText': 'Select start date',
-    'catalogReservations.filters.date.endHelpText': 'Select end date',
-    'catalogReservations.filters.date.rangeHelpText': 'Select period',
-    'catalogReservations.status.received': 'Received',
-    'catalogReservations.status.analysis': 'Under review',
-    'catalogReservations.status.confirmed': 'Confirmed',
-    'catalogReservations.status.cancelled': 'Cancelled',
-    'catalogReservations.status.converted': 'Converted to sale',
-    'catalogReservations.convert.title': 'Convert to sale',
-    'catalogReservations.convert.description':
-        'Validates stock and creates an accounts-receivable sale with these products.',
-    'catalogReservations.convert.action': 'Convert to sale',
-    'catalogReservations.convert.processing': 'Converting...',
-    'catalogReservations.convert.confirmTitle': 'Convert reservation to sale?',
-    'catalogReservations.convert.confirmMessage':
-        'Stock will be validated and the items will be sent to an accounts-receivable sale.',
-    'catalogReservations.convert.success':
-        'Reservation converted to an accounts-receivable sale.',
-    'catalogReservations.convert.convertedTitle': 'Sale created',
-    'catalogReservations.convert.saleId': 'Sale',
-    'catalogReservations.convert.error.stock':
-        'Insufficient stock to convert this reservation.',
-    'catalogReservations.convert.error.confirmedOnly':
-        'Confirm the reservation before converting it to a sale.',
-    'catalogReservations.convert.error.processing':
-        'This reservation is already being converted. Refresh the screen.',
-    'catalogReservations.convert.error.paymentConfig':
-        'Configure a future payment type before conversion.',
-    'catalogReservations.convert.error.product':
-        'One of the reserved products is no longer available.',
-    'catalogReservations.convert.error.generic':
-        'The reservation could not be converted to a sale.',
-    'catalogReservations.items': 'items',
-    'catalogReservations.products': 'Reserved products',
-    'catalogReservations.notes': 'Notes',
-    'catalogReservations.noNotes': 'No notes provided.',
-    'catalogReservations.previous': 'Previous page',
-    'catalogReservations.next': 'Next page',
-    'produto.webList.edit.banner':
-        'Edit mode active â€¢ {count} items found â€¢ click a product to change it.',
-    'produto.webList.searchHint': 'Search by name, code or SKU...',
-    'produto.webList.preferenceSaved': 'View preference updated.',
-    'produto.webList.view.vertical': 'Vertical',
-    'produto.webList.view.horizontal': 'Horizontal',
-    'produto.webList.view.list': 'List',
-    'produto.webList.view.grid': 'Grid',
-    'produto.webList.filter.category': 'Category',
-    'produto.webList.filter.categoryAll': 'All categories',
-    'produto.webList.filter.flags': 'Flags',
-    'produto.webList.filter.flagsAll': 'All items',
-    'produto.webList.filter.flagsFavorites': 'Favorites',
-    'produto.webList.filter.flagsCatalog': 'In catalog',
-    'produto.webList.filter.flagsFavoritesCatalog': 'Favorites and catalog',
-    'produto.webList.filter.statusAll': 'All',
-    'produto.webList.filter.stockAll': 'All',
-    'produto.webList.filter.stockAvailable': 'In stock',
-    'produto.webList.filter.stockLow': 'Low stock',
-    'produto.webList.filter.stockOut': 'Out of stock',
-    'produto.webList.filter.stockNegative': 'Negative stock',
-    'produto.webList.sort.label': 'Sort',
-    'produto.webList.sort.name': 'Sort by name',
-    'produto.webList.sort.priceAsc': 'Lowest price',
-    'produto.webList.sort.priceDesc': 'Highest price',
-    'produto.webList.quick.withImage': 'With image',
-    'produto.webList.quick.lowStock': 'Low stock',
-    'produto.webList.errorTitle': 'Could not load the catalog.',
-    'produto.webList.itemWithoutName': 'Unnamed item',
-    'produto.webList.table.product': 'Product',
-    'produto.webList.table.category': 'Category',
-    'produto.webList.table.code': 'Code',
-    'produto.webList.table.price': 'Price',
-    'produto.webList.itemsPerPageLabel': 'Items per page',
-    'produto.webList.pagination.summary':
-        'Showing {start} to {end} of {total} items',
-    'produto.webList.stockNotApplicable': 'No stock control',
-    'produto.webList.stockQuantity': 'Qty {value}',
-    'produto.webList.stockLow': 'Low stock',
-    'produto.webList.stockOut': 'Out of stock',
-    'produto.webList.stockNegative': 'Negative stock',
-    'produto.webList.codeUnavailable': 'No code',
-    'produto.webList.viewAction': 'View',
-    'produto.favorite.addTooltip': 'Mark as favorite',
-    'produto.favorite.removeTooltip': 'Remove from favorites',
-    'produto.favorite.enabledFeedback': 'Favorite enabled',
-    'produto.favorite.disabledFeedback': 'Favorite disabled',
-    'produto.favorite.updateError':
-        'Could not update the product favorite flag.',
-    'produto.catalog.enableTooltip': 'Make available for catalog',
-    'produto.catalog.disableTooltip': 'Remove from catalog availability',
-    'produto.catalog.enabledFeedback': 'Available for catalog enabled',
-    'produto.catalog.disabledFeedback': 'Available for catalog disabled',
-    'produto.catalog.updateError': 'Could not update catalog availability.',
-    'produto.catalog.statusLabel': 'Catalog',
-    'produto.catalog.availableStatus': 'Available',
-    'produto.catalog.unavailableStatus': 'Unavailable',
-  },
-  'es': {
-    'produto.journey.changeMode': 'Cambiar',
-    'clientes.journey.title': 'Elige la jornada de registro',
-    'clientes.journey.subtitle':
-        'Guarda solo lo esencial o enriquece el perfil del cliente ahora.',
-    'clientes.journey.simpleTitle': 'Registro simple',
-    'clientes.journey.simpleSubtitle':
-        'Nombre, documento, telÃ©fono y correo para registrar sin fricciÃ³n.',
-    'clientes.journey.completeTitle': 'Registro completo',
-    'clientes.journey.completeSubtitle':
-        'DirecciÃ³n, crÃ©dito y contexto para una operaciÃ³n mÃ¡s preparada.',
-    'clientes.journey.stepEssential': 'Esenciales',
-    'clientes.journey.stepAddress': 'DirecciÃ³n',
-    'clientes.journey.stepRelationship': 'CrÃ©dito y relaciÃ³n',
-    'clientes.journey.step': 'Paso',
-    'clientes.journey.of': 'de',
-    'clientes.journey.reviewBeforeSave': 'Revisa los datos antes de guardar.',
-    'clientes.journey.continueHint': 'Avanza cuando este paso estÃ© listo.',
-    'clientes.quality.title': 'Calidad del registro',
-    'clientes.quality.levelInitial': 'Comenzando ahora',
-    'clientes.quality.levelEssential': 'Perfil esencial listo',
-    'clientes.quality.levelDetailed': 'Perfil bien detallado',
-    'clientes.quality.levelExcellent': 'Perfil excelente',
-    'clientes.quality.actionName': 'informar nombre',
-    'clientes.quality.actionDocument': 'informar documento',
-    'clientes.quality.actionPhone': 'informar telÃ©fono',
-    'clientes.quality.actionEmail': 'informar correo',
-    'clientes.quality.actionZip': 'informar cÃ³digo postal',
-    'clientes.quality.actionAddress': 'completar direcciÃ³n',
-    'clientes.quality.actionCredit': 'configurar crÃ©dito',
-    'clientes.quality.actionNotes': 'agregar contexto',
-    'clientes.form.invalidEmail': 'Ingresa un correo vÃ¡lido',
-    'produto.quality.title': 'Calidad del registro',
-    'produto.quality.levelEssential': 'Esencial',
-    'produto.quality.levelReady': 'Listo para vender',
-    'produto.quality.levelPrepared': 'Bien preparado',
-    'produto.quality.levelExcellent': 'Excelente',
-    'produto.quality.nextActions': 'PrÃ³ximas mejoras que aumentan la calidad:',
-    'produto.quality.completeMessage':
-        'Registro bien preparado para este nivel.',
-    'produto.quality.actionName': 'Informar nombre',
-    'produto.quality.actionPrice': 'Agregar precio',
-    'produto.quality.actionCategory': 'Elegir categorÃ­a',
-    'produto.quality.actionIdentifier': 'Agregar cÃ³digo',
-    'produto.quality.actionOrganization': 'Informar grupo',
-    'produto.quality.actionStock': 'Configurar stock',
-    'produto.quality.actionImage': 'Agregar imagen',
-    'produto.quality.actionDetails': 'Completar detalles',
-    'produto.quality.actionRules': 'Revisar reglas',
-    'produto.quality.actionFiscal': 'Informar datos fiscales',
-    'app.title': 'SixoApp',
-    'common.save': 'Guardar',
-    'common.cancel': 'Cancelar',
-    'common.back': 'Volver',
-    'common.close': 'Cerrar',
-    'common.edit': 'Editar',
-    'common.delet\u0065': 'Eliminar',
-    'common.search': 'Buscar',
-    'common.clear': 'Limpiar',
-    'common.confirm': 'Confirmar',
-    'common.apply': 'Aplicar',
-    'common.continue': 'Continuar',
-    'common.tryAgain': 'Intentar de nuevo',
-    'common.loading': 'Cargando...',
-    'common.noResults': 'No se encontraron resultados',
-    'common.unexpectedError': 'Error inesperado',
-    'common.unableToLoad': 'No se pudo cargar.',
-    'common.savedSuccessfully': 'ConfiguraciÃ³n guardada correctamente.',
-    'common.yes': 'SÃ­',
-    'common.no': 'No',
-    'common.active': 'Activo',
-    'common.inactive': 'Inactivo',
-    'common.online': 'Online',
-    'common.offline': 'Offline',
-    'common.required': 'Obligatorio',
-    'common.optional': 'Opcional',
-    'common.soon': 'PrÃ³ximamente',
-    'common.refresh': 'Actualizar',
-    'common.copy': 'Copiar',
-    'common.share': 'Compartir',
-    'common.number': 'NÃºmero',
-    'common.all': 'Todos',
-    'common.customer': 'Cliente',
-    'common.updatedAt': 'Actualizado el',
-    'common.lastUpdatedAt': 'Ãšltima actualizaciÃ³n a las',
-    'common.notInformed': 'No informado',
-    'pdv.quantityEditor.title': 'Editar cantidad',
-    'pdv.quantityEditor.tooltip': 'Editar cantidad',
-    'pdv.quantityEditor.subtitle':
-        'Revisa el artÃ­culo y aplica la nueva cantidad. El subtotal del artÃ­culo y el total de la venta se recalcularÃ¡n de inmediato.',
-    'pdv.quantityEditor.codeLabel': 'CÃ³digo',
-    'pdv.quantityEditor.currentLabel': 'Cantidad actual',
-    'pdv.quantityEditor.currentHint':
-        'El ajuste fino sigue disponible en los botones laterales.',
-    'pdv.quantityEditor.fieldLabel': 'Nueva cantidad',
-    'pdv.quantityEditor.hint':
-        'Ingresa la cantidad deseada para este artÃ­culo.',
-    'pdv.quantityEditor.invalid': 'Ingresa una cantidad entera mayor que cero.',
-    'pdv.quantityEditor.effectHint':
-        'El cambio actualiza de inmediato el subtotal del artÃ­culo y el total de la venta.',
-    'pdv.quantityEditor.confirm': 'Aplicar cantidad',
-    'pdv.customerIdentification.title': 'Identificar cliente',
-    'pdv.customerIdentification.subtitle':
-        'Selecciona un cliente registrado o crea uno nuevo sin salir de esta etapa.',
-    'pdv.customerIdentification.availableCustomers': 'Clientes activos',
-    'pdv.customerIdentification.currentCustomer': 'Cliente actual',
-    'pdv.customerIdentification.currentEmpty': 'NingÃºn cliente vinculado',
-    'pdv.customerIdentification.searchLabel':
-        'Buscar cliente por nombre, documento, telÃ©fono o correo',
-    'pdv.customerIdentification.loading': 'Cargando clientes activos...',
-    'pdv.customerIdentification.loadError':
-        'No se pudieron cargar los clientes.',
-    'pdv.customerIdentification.errorTitle':
-        'No se pudieron cargar los clientes',
-    'pdv.customerIdentification.newCustomer': 'Registrar cliente',
-    'pdv.customerIdentification.openingCreate': 'Abriendo registro...',
-    'pdv.customerIdentification.createError':
-        'No se pudo abrir el registro del cliente ahora.',
-    'pdv.customerIdentification.emptyTitle':
-        'No hay clientes activos registrados',
-    'pdv.customerIdentification.emptyMessage':
-        'Registra al cliente ahora para continuar sin salir de esta etapa.',
-    'pdv.customerIdentification.emptySearchTitle':
-        'No se encontrÃ³ ningÃºn cliente',
-    'pdv.customerIdentification.emptySearchMessage':
-        'Revisa los tÃ©rminos de bÃºsqueda o registra un nuevo cliente para continuar.',
-    'pdv.customerIdentification.removeCustomer': 'Quitar cliente actual',
-    'pdv.customerIdentification.unnamedCustomer': 'Cliente sin nombre',
-    'pdv.customerIdentification.personTypeFallback': 'PF',
-    'pdv.customerIdentification.noDocument': 'Sin documento',
-    'pdv.customerIdentification.creditEnabled': 'CrÃ©dito habilitado',
-    'pdv.customerIdentification.creditBlocked':
-        'CrÃ©dito bloqueado para nuevas ventas',
-    'pdv.customerIdentification.creditDisabled':
-        'Cliente sin crÃ©dito habilitado',
-    'pdv.customerIdentification.selected': 'Seleccionado',
-    'pdv.customerIdentification.select': 'Seleccionar',
-    'pdv.quantityEditor.processing': 'Aplicando cantidad...',
-    'pdv.quantityEditor.successTitle': 'Cantidad actualizada',
-    'pdv.quantityEditor.successMessage':
-        'El artÃ­culo fue recalculado y la venta ya refleja la nueva cantidad.',
-    'pdv.quantityEditor.error':
-        'No fue posible actualizar la cantidad ahora. IntÃ©ntalo de nuevo en unos instantes.',
-    'pdv.clearSale.dialogBarrier': 'Confirmar limpieza de la venta actual',
-    'pdv.clearSale.dialogTitle': 'Â¿Limpiar venta actual?',
-    'pdv.clearSale.dialogSubtitle':
-        'Revise el resumen antes de limpiar. La atenciÃ³n actual se reiniciarÃ¡ para abrir una nueva venta.',
-    'pdv.clearSale.summaryItems': 'ArtÃ­culos',
-    'pdv.clearSale.summaryTotal': 'Total',
-    'pdv.clearSale.summaryCustomer': 'Cliente',
-    'pdv.clearSale.confirmAction': 'Limpiar venta',
-    'pdv.clearSale.impactHint':
-        'Los artÃ­culos, el cliente identificado y los cobros temporales se eliminarÃ¡n de este TPV.',
-    'pdv.clearSale.processingTitle': 'Limpiando venta...',
-    'pdv.clearSale.processingMessage':
-        'Espera mientras se eliminan los datos temporales de esta venta.',
-    'pdv.clearSale.successTitle': 'Venta limpiada correctamente',
-    'pdv.clearSale.successMessage':
-        'El TPV estÃ¡ listo para iniciar una nueva venta.',
-    'pdv.clearSale.error':
-        'No fue posible limpiar la venta ahora. IntÃ©ntalo de nuevo en unos instantes.',
-    'recebimento.valorEmAberto': 'Valor pendiente',
-    'recebimento.summaryType': 'Tipo',
-    'recebimento.total': 'Total',
-    'recebimento.parcial': 'Parcial',
-    'recebimento.formasRecebimento': 'Formas de cobro',
-    'recebimento.restante': 'Restante',
-    'recebimento.valorForma': 'Valor de la forma',
-    'recebimento.tipoRecebimento': 'Forma de cobro',
-    'recebimento.carregandoTipos': 'Cargando formas de cobro...',
-    'recebimento.adicionarForma': 'AÃ±adir forma',
-    'recebimento.removerForma': 'Eliminar forma',
-    'recebimento.observacao': 'ObservaciÃ³n',
-    'recebimento.receberTotal': 'Cobrar total',
-    'recebimento.receberParcial': 'Cobrar parcial',
-    'recebimento.erroValoresMaioresQueZero':
-        'Introduzca valores mayores que cero.',
-    'recebimento.erroValorMaiorQueZero': 'Introduzca un valor mayor que cero.',
-    'recebimento.erroParcialMenorQueAberto':
-        'Para un cobro parcial, introduzca menos que el saldo pendiente.',
-    'recebimento.erroTotalIgualSaldo':
-        'Para un cobro total, el valor debe liquidar el saldo pendiente.',
-    'recebimento.erroFormaDuplicada':
-        'Cada forma de cobro puede utilizarse solo una vez.',
-    'pdv.receipt.type': 'Tipo de cobro',
-    'pdv.receipt.partialReady':
-        'Cobro parcial listo. El saldo restante quedarÃ¡ pendiente.',
-    'pdv.receipt.partialHint':
-        'Introduzca un valor mayor que cero y menor que el total de la venta.',
-    'pdv.receipt.partialDefined': 'Parcial definido',
-    'pdv.receipt.confirmPartial': 'Confirmar cobro parcial',
-    'pdv.receipt.confirmPartialMessage': 'Â¿Desea cobrar',
-    'pdv.receipt.keepOpenBalance': 'y mantener pendiente el saldo restante',
-    'vendasAReceber.openInPdv': 'Abrir en el TPV',
-    'pdv.openSale.status': 'Venta pendiente',
-    'pdv.openSale.readOnlyStatus': 'Solo consulta',
-    'pdv.openSale.readOnlyTitle': 'Consulta de venta pendiente',
-    'pdv.openSale.readOnlySubtitle':
-        'Los productos, las cantidades y los precios estÃ¡n bloqueados en esta etapa. Revise los datos y cobre el saldo.',
-    'pdv.openSale.editStatus': 'EdiciÃ³n de artÃ­culos',
-    'pdv.openSale.editTitle': 'Revise los artÃ­culos antes de cobrar',
-    'pdv.openSale.editSubtitle':
-        'AÃ±ada o elimine productos y servicios y cambie cantidades. Se conservan los precios originales; los artÃ­culos nuevos usan el precio actual del catÃ¡logo. Los cambios se aplican solo al cobrar.',
-    'pdv.openSale.partialReadOnlySubtitle':
-        'Esta venta ya tiene cobros. Para conservar el historial financiero, sus artÃ­culos permanecen bloqueados.',
-    'pdv.openSale.pendingChanges': 'Cambios pendientes',
-    'pdv.openSale.receiveBalance': 'Cobrar saldo',
-    'pdv.openSale.receiveUpdatedSale': 'Cobrar venta revisada',
-    'pdv.openSale.receiveTitle': 'Cobrar saldo de la venta',
-    'pdv.openSale.receiptNote': 'Saldo cobrado desde el TPV web.',
-    'pdv.openSale.updatedReceiptNote':
-        'Venta revisada y cobrada desde el TPV web.',
-    'pdv.openSale.receivedMessage': 'Venta cobrada correctamente.',
-    'pdv.openSale.receiptErrorTitle': 'No se pudo cobrar la venta',
-    'pdv.openSale.originalTotal': 'Total original',
-    'pdv.openSale.openBalance': 'Saldo pendiente',
-    'pdv.openSale.currentTotal': 'Nuevo total',
-    'pdv.openSale.totalDifference': 'Diferencia',
-    'pdv.openSale.emptyItemsTitle': 'La venta debe tener artÃ­culos',
-    'pdv.openSale.emptyItemsMessage':
-        'AÃ±ada al menos un producto o servicio antes de cobrar la venta.',
-    'pdv.openSale.invalidItemsTitle': 'Revise los artÃ­culos de la venta',
-    'pdv.openSale.invalidItemsMessage':
-        'Todos los artÃ­culos deben tener nombre, cantidad positiva y precio vÃ¡lido.',
-    'pdv.openSale.confirmChangesTitle': 'Â¿Confirmar artÃ­culos revisados?',
-    'pdv.openSale.confirmChangesMessage':
-        'Al cobrar, se aplicarÃ¡ la nueva composiciÃ³n de artÃ­culos y se conciliarÃ¡n el inventario y las finanzas.',
-    'pdv.openSale.continueToReceipt': 'Continuar al cobro',
-    'pdv.openSale.outdatedTitle': 'La venta ha cambiado',
-    'pdv.openSale.outdatedMessage':
-        'Otra operaciÃ³n modificÃ³ esta venta. Cierre la consulta y Ã¡brala de nuevo para usar los datos actuales.',
-    'pdv.openSale.exitTitle': 'Â¿Salir de la consulta?',
-    'pdv.openSale.exitMessage':
-        'La venta seguirÃ¡ pendiente. No se modificarÃ¡ ningÃºn artÃ­culo, precio ni cobro.',
-    'pdv.openSale.exitAction': 'Salir de la consulta',
-    'pdv.openSale.discardTitle': 'Â¿Descartar cambios?',
-    'pdv.openSale.discardMessage':
-        'Los cambios realizados en el TPV no se guardarÃ¡n. La venta seguirÃ¡ pendiente con los datos anteriores.',
-    'pdv.openSale.discardAction': 'Descartar y salir',
-    'pdv.openSale.replaceTitle': 'Â¿Reemplazar la venta actual?',
-    'pdv.openSale.replaceMessage':
-        'Los datos actuales del TPV serÃ¡n reemplazados por la venta pendiente seleccionada.',
-    'pdv.openSale.replaceAction': 'Abrir venta',
-    'pdv.openSale.loadedMessage':
-        'Venta cargada para revisiÃ³n. Puede aÃ±adir, eliminar y cambiar cantidades antes de cobrar.',
-    'pdv.openSale.loadedReadOnlyMessage':
-        'Venta cargada para consulta. Como ya tiene cobros, sus artÃ­culos permanecen bloqueados.',
-    'pdv.openSale.loadErrorTitle': 'No se pudo abrir la venta',
-    'pdv.openSale.unavailableTitle': 'Venta no disponible',
-    'pdv.openSale.unavailableMessage':
-        'La venta puede haber sido cobrada o cancelada por otro usuario.',
-    'common.generating': 'Generando...',
-    'common.saving': 'Guardando...',
-    'common.rangeTo': 'a',
-    'common.weekday.monday': 'Lunes',
-    'common.weekday.tuesday': 'Martes',
-    'common.weekday.wednesday': 'MiÃ©rcoles',
-    'common.weekday.thursday': 'Jueves',
-    'common.weekday.friday': 'Viernes',
-    'common.weekday.saturday': 'SÃ¡bado',
-    'common.weekday.sunday': 'Domingo',
-    'common.weekdayShort.monday': 'Lun',
-    'common.weekdayShort.tuesday': 'Mar',
-    'common.weekdayShort.wednesday': 'MiÃ©',
-    'common.weekdayShort.thursday': 'Jue',
-    'common.weekdayShort.friday': 'Vie',
-    'common.weekdayShort.saturday': 'SÃ¡b',
-    'common.weekdayShort.sunday': 'Dom',
-    'web.navigation.home': 'Inicio',
-    'web.navigation.operations': 'Operaciones',
-    'web.navigation.operations.pos': 'Punto de venta',
-    'web.navigation.operations.technicalService': 'Servicios tÃ©cnicos',
-    'web.navigation.operations.purchases': 'Compras',
-    'web.navigation.operations.reservations': 'Reservas',
-    'web.navigation.catalog': 'CatÃ¡logo',
-    'web.navigation.catalog.publicPage': 'PÃ¡gina pÃºblica',
-    'web.navigation.catalog.reservations': 'Reservas',
-    'web.navigation.catalog.products': 'Productos',
-    'web.navigation.catalog.services': 'Servicios',
-    'web.navigation.catalog.stock': 'Inventario',
-    'web.navigation.catalog.categories': 'CategorÃ­as',
-    'catalog.publicPage.title': 'PÃ¡gina pÃºblica del catÃ¡logo',
-    'catalog.publicPage.subtitle':
-        'Personaliza, visualiza y comparte tu vitrina en un solo lugar.',
-    'catalog.publicPage.open': 'Abrir',
-    'catalog.publicPage.copy': 'Copiar enlace',
-    'catalog.publicPage.share': 'Compartir',
-    'catalog.publicPage.published': 'Publicado',
-    'catalog.publicPage.offline': 'Fuera de lÃ­nea',
-    'catalog.publicPage.save': 'Guardar cambios',
-    'catalog.publicPage.discard': 'Descartar',
-    'catalog.publicPage.saveSuccessPublished':
-        'PÃ¡gina guardada y publicada correctamente.',
-    'catalog.publicPage.saveSuccessDraft':
-        'PersonalizaciÃ³n guardada. PublÃ­cala cuando estÃ© lista.',
-    'catalog.publicPage.saveError':
-        'No fue posible guardar la pÃ¡gina del catÃ¡logo.',
-    'catalog.publicPage.openError':
-        'No fue posible abrir el catÃ¡logo en una nueva pestaÃ±a.',
-    'catalog.publicPage.linkCopied': 'Enlace pÃºblico copiado.',
-    'catalog.publicPage.shareSubject': 'CatÃ¡logo de {title}',
-    'catalog.publicPage.shareFallback':
-        'Compartir no estÃ¡ disponible. Se copiÃ³ el enlace pÃºblico.',
-    'catalog.publicPage.loadErrorTitle':
-        'No fue posible cargar la pÃ¡gina pÃºblica',
-    'catalog.publicPage.editor.publication': 'CatÃ¡logo publicado',
-    'catalog.publicPage.editor.publicationOn':
-        'Los clientes pueden acceder mediante el enlace pÃºblico.',
-    'catalog.publicPage.editor.publicationOff':
-        'El enlace se conserva, pero no estÃ¡ disponible.',
-    'catalog.publicPage.editor.content': 'PresentaciÃ³n',
-    'catalog.publicPage.editor.contentHelp':
-        'Define el mensaje que abre tu vitrina.',
-    'catalog.publicPage.editor.titleLabel': 'TÃ­tulo de la vitrina',
-    'catalog.publicPage.editor.titleHint': 'Ej.: Encuentra lo que necesitas',
-    'catalog.publicPage.editor.descriptionLabel': 'DescripciÃ³n breve',
-    'catalog.publicPage.editor.descriptionHint':
-        'Explica en una frase quÃ© encontrarÃ¡ el cliente.',
-    'catalog.publicPage.editor.appearance': 'Apariencia',
-    'catalog.publicPage.editor.appearanceHelp':
-        'Elige el estilo visual y el color destacado.',
-    'catalog.publicPage.editor.accentColor': 'Color destacado',
-    'catalog.publicPage.editor.customColor': 'Color personalizado',
-    'catalog.publicPage.editor.invalidColor':
-        'Usa un color hexadecimal con buen contraste, como #126BFF.',
-    'catalog.publicPage.editor.layout': 'Contenido y diseÃ±o',
-    'catalog.publicPage.editor.layoutHelp':
-        'Controla la densidad y la informaciÃ³n visible.',
-    'catalog.publicPage.editor.comfortable': 'CÃ³modo',
-    'catalog.publicPage.editor.compact': 'Compacto',
-    'catalog.publicPage.editor.showPrices': 'Mostrar precios',
-    'catalog.publicPage.editor.showContact': 'Mostrar contactos',
-    'catalog.publicPage.editor.showAddress': 'Mostrar direcciÃ³n',
-    'catalog.publicPage.style.classic': 'ClÃ¡sico',
-    'catalog.publicPage.style.classicHelp':
-        'Profesional, equilibrado y familiar.',
-    'catalog.publicPage.style.minimal': 'Minimalista',
-    'catalog.publicPage.style.minimalHelp':
-        'MÃ¡s espacio y menos elementos visuales.',
-    'catalog.publicPage.style.expressive': 'Expresivo',
-    'catalog.publicPage.style.expressiveHelp':
-        'Color y contraste para destacar la marca.',
-    'catalog.publicPage.preview.title': 'Vista previa en vivo',
-    'catalog.publicPage.preview.unsaved':
-        'Visualizando cambios aÃºn no guardados',
-    'catalog.publicPage.preview.saved': 'Apariencia guardada en el catÃ¡logo',
-    'catalog.publicPage.preview.desktop': 'Escritorio',
-    'catalog.publicPage.preview.mobile': 'MÃ³vil',
-    'catalog.publicPage.preview.storeFallback': 'Tu comercio',
-    'catalog.publicPage.preview.products': 'Productos disponibles',
-    'catalog.publicPage.preview.chooseItems': 'Elige tus artÃ­culos',
-    'catalog.publicPage.preview.empty':
-        'Marca productos como disponibles para el catÃ¡logo.',
-    'catalog.publicPage.unpublish.barrier': 'Confirmar retirada del catÃ¡logo',
-    'catalog.publicPage.unpublish.title': 'Â¿Retirar el catÃ¡logo?',
-    'catalog.publicPage.unpublish.body':
-        'Los clientes con el enlace dejarÃ¡n de ver los productos hasta una nueva publicaciÃ³n.',
-    'catalog.publicPage.unpublish.action': 'Retirar',
-    'catalog.publicPage.unpublish.processing':
-        'Retirando el catÃ¡logo de lÃ­nea...',
-    'catalog.publicPage.unpublish.processingBody':
-        'Espera mientras actualizamos el acceso pÃºblico.',
-    'catalog.publicPage.unpublish.success': 'CatÃ¡logo retirado',
-    'catalog.publicPage.unpublish.successBody':
-        'El enlace se conservÃ³ y podrÃ¡ reactivarse despuÃ©s.',
-    'catalog.publicPage.unpublish.error':
-        'No fue posible retirar el catÃ¡logo. IntÃ©ntalo de nuevo.',
-    'produto.dashboard.importSpreadsheetSoon':
-        'Importar por hoja de cÃ¡lculo (prÃ³ximamente)',
-    'web.navigation.people': 'Personas',
-    'web.navigation.people.customers': 'Clientes',
-    'web.navigation.people.collaborators': 'Colaboradores',
-    'web.navigation.people.sixoUsers': 'Usuarios de Sixo',
-    'web.navigation.people.performance': 'DesempeÃ±o',
-    'web.navigation.cash': 'Caja',
-    'web.navigation.financial': 'Financiero',
-    'web.navigation.financial.agenda': 'Agenda financiera',
-    'web.navigation.settings': 'ConfiguraciÃ³n',
-    'web.navigation.reports': 'Informes',
-    'web.navigation.unavailable': 'Destino no disponible en esta versiÃ³n.',
-    'usuariosSixo.title': 'Usuarios de Sixo',
-    'usuariosSixo.subtitle':
-        'Consulta todos los usuarios registrados con acceso exclusivo para el perfil SUPER.',
-    'usuariosSixo.summarySemantics': 'Resumen de usuarios registrados en Sixo',
-    'usuariosSixo.summaryTitle': 'Base global de usuarios',
-    'usuariosSixo.summarySubtitle':
-        'Consulta protegida por el perfil SUPER del token.',
-    'usuariosSixo.totalLabel': 'usuarios',
-    'usuariosSixo.totalRegistered': 'Usuarios registrados',
-    'usuariosSixo.searchHint': 'Buscar por nombre, correo, celular o perfil',
-    'usuariosSixo.resultsLabel': 'encontrados',
-    'usuariosSixo.forbiddenTitle': 'Acceso exclusivo para SUPER',
-    'usuariosSixo.forbiddenMessage':
-        'Tu perfil no tiene permiso para consultar los usuarios de Sixo.',
-    'usuariosSixo.loading': 'Cargando usuarios de Sixo',
-    'usuariosSixo.loadErrorTitle': 'No fue posible cargar los usuarios',
-    'usuariosSixo.loadError': 'Verifica tu conexiÃ³n e intÃ©ntalo de nuevo.',
-    'usuariosSixo.emptyTitle': 'No se encontraron usuarios',
-    'usuariosSixo.emptyMessage':
-        'Ajusta la bÃºsqueda para consultar otros usuarios.',
-    'usuariosSixo.userFallback': 'Usuario de Sixo',
-    'usuariosSixo.noEmail': 'Correo no informado',
-    'usuariosSixo.noPhone': 'Celular no informado',
-    'usuariosSixo.role.super': 'SUPER',
-    'usuariosSixo.role.admin': 'Administrador',
-    'usuariosSixo.role.collaborator': 'Colaborador',
-    'usuariosSixo.role.customer': 'Cliente',
-    'usuariosSixo.role.unknown': 'No informado',
-    'usuariosSixo.detail.title': 'Detalles del usuario',
-    'usuariosSixo.detail.subtitle':
-        'Registro, preferencias, empresas y vÃ­nculos guardados en Sixo.',
-    'usuariosSixo.detail.loadError': 'No fue posible cargar los detalles.',
-    'usuariosSixo.detail.personal': 'Datos personales',
-    'usuariosSixo.detail.account': 'Cuenta y permisos',
-    'usuariosSixo.detail.preferences': 'Preferencias individuales',
-    'usuariosSixo.detail.globalPreferences': 'Preferencias globales',
-    'usuariosSixo.detail.companies': 'Empresas vinculadas',
-    'usuariosSixo.detail.links': 'VÃ­nculos y datos contractuales',
-    'usuariosSixo.detail.noCompanies': 'No hay empresas vinculadas.',
-    'usuariosSixo.detail.noLinks': 'No hay vÃ­nculos registrados.',
-    'usuariosSixo.detail.imageStored': 'Imagen almacenada',
-    'usuariosSixo.onboarding.completed': 'Onboarding completado',
-    'usuariosSixo.onboarding.pending': 'Onboarding pendiente',
-    'usuariosSixo.onboarding.dialogBarrier':
-        'Cambiar estado del onboarding inicial',
-    'usuariosSixo.onboarding.resetTitle':
-        'Â¿Solicitar nuevamente el onboarding?',
-    'usuariosSixo.onboarding.resetMessage':
-        'En el prÃ³ximo acceso, el usuario deberÃ¡ confirmar nuevamente sus datos iniciales antes de entrar al sistema.',
-    'usuariosSixo.onboarding.resetAction': 'Repetir onboarding',
-    'usuariosSixo.onboarding.completeTitle':
-        'Â¿Marcar el onboarding como completado?',
-    'usuariosSixo.onboarding.completeMessage':
-        'El usuario dejarÃ¡ de ver el onboarding inicial en sus prÃ³ximos accesos.',
-    'usuariosSixo.onboarding.completeAction': 'Marcar como completado',
-    'usuariosSixo.onboarding.processingTitle': 'Actualizando onboarding...',
-    'usuariosSixo.onboarding.processingMessage':
-        'Espera mientras se guarda la nueva configuraciÃ³n.',
-    'usuariosSixo.onboarding.successTitle': 'Onboarding actualizado',
-    'usuariosSixo.onboarding.successMessage':
-        'La nueva regla se aplicarÃ¡ en el prÃ³ximo acceso del usuario.',
-    'usuariosSixo.onboarding.errorTitle': 'No fue posible actualizar',
-    'usuariosSixo.onboarding.errorMessage':
-        'IntÃ©ntalo de nuevo. No se modificÃ³ ninguna otra informaciÃ³n.',
-    'usuariosSixo.passwordReset.title': 'Restablecer contraseÃ±a',
-    'usuariosSixo.passwordReset.subtitle':
-        'Usa esta acciÃ³n cuando el usuario necesite redefinir su contraseÃ±a de acceso.',
-    'usuariosSixo.passwordReset.dialogTitle':
-        'Â¿Restablecer la contraseÃ±a de este usuario?',
-    'usuariosSixo.passwordReset.dialogMessage':
-        'La acciÃ³n se aplicarÃ¡ inmediatamente al usuario seleccionado.',
-    'usuariosSixo.passwordReset.action': 'Restablecer contraseÃ±a',
-    'usuariosSixo.passwordReset.successMessage':
-        'El restablecimiento de contraseÃ±a se completÃ³ correctamente.',
-    'usuariosSixo.passwordReset.errorMessage':
-        'No fue posible restablecer la contraseÃ±a ahora. IntÃ©ntalo de nuevo.',
-    'initialOnboarding.eyebrow': 'ConfiguraciÃ³n inicial',
-    'initialOnboarding.step': 'Paso',
-    'initialOnboarding.of': 'de',
-    'initialOnboarding.identityTitle': 'Empecemos por lo esencial',
-    'initialOnboarding.identitySubtitle':
-        'Confirma tus datos para personalizar tu experiencia.',
-    'initialOnboarding.businessTitle': 'Â¿QuÃ© hace tu negocio?',
-    'initialOnboarding.businessSubtitle':
-        'Esto solo organiza mÃ³dulos y accesos. PodrÃ¡s cambiarlo despuÃ©s.',
-    'initialOnboarding.languageQuestion': 'Â¿En quÃ© idioma deseas continuar?',
-    'initialOnboarding.userName': 'Â¿CÃ³mo podemos llamarte?',
-    'initialOnboarding.companyName': 'Nombre de tu negocio',
-    'initialOnboarding.salesTitle': 'Vende productos',
-    'initialOnboarding.salesSubtitle':
-        'Punto de venta, catÃ¡logo, inventario y ventas.',
-    'initialOnboarding.servicesTitle': 'Presta servicios tÃ©cnicos',
-    'initialOnboarding.servicesSubtitle':
-        'Atenciones, Ã³rdenes de servicio y procedimientos.',
-    'initialOnboarding.start': 'Comenzar a usar SixoApp',
-    'initialOnboarding.activityRequired':
-        'Selecciona ventas, servicios tÃ©cnicos o ambos.',
-    'initialOnboarding.userNameRequired': 'Ingresa tu nombre para continuar.',
-    'initialOnboarding.companyNameRequired':
-        'Ingresa el nombre de la empresa para continuar.',
-    'initialOnboarding.saveError':
-        'No fue posible guardar ahora. IntÃ©ntalo de nuevo.',
-    'initialOnboarding.loadErrorTitle':
-        'No fue posible iniciar la configuraciÃ³n',
-    'initialOnboarding.loadErrorMessage':
-        'Verifica tu conexiÃ³n e intÃ©ntalo de nuevo.',
-    'caixa.operacoes.openConfirmTitle': 'Â¿Confirmar apertura de caja?',
-    'caixa.operacoes.openConfirmMessage':
-        'Â¿Deseas abrir {cashDesk} con fondo inicial de {amount}?',
-    'caixa.operacoes.openConfirmAction': 'Abrir caja',
-    'caixa.operacoes.closeSessionAction': 'Cerrar caja',
-    'caixa.operacoes.closeDialogTitle': 'Â¿Cerrar la sesiÃ³n de caja?',
-    'caixa.operacoes.closeDialogSubtitle':
-        'Revise el resumen antes de continuar. Esta acciÃ³n no se puede deshacer.',
-    'caixa.operacoes.closeDialogCashDesk': 'Caja',
-    'caixa.operacoes.closeDialogMovements': 'Movimientos',
-    'caixa.operacoes.closeDialogExpectedBalance': 'Saldo esperado',
-    'caixa.operacoes.closeDialogChecklistComplete':
-        'Resumen operativo disponible',
-    'caixa.operacoes.closeDialogBack': 'Volver',
-    'caixa.operacoes.closeDialogConfirm': 'Cerrar caja',
-    'caixa.operacoes.closeDialogProcessing': 'Cerrando...',
-    'caixa.operacoes.closeDialogSuccessTitle': 'Caja cerrada correctamente',
-    'caixa.operacoes.closeDialogSuccessMessage':
-        'La sesiÃ³n ha finalizado y permanece disponible en el historial.',
-    'caixa.operacoes.closeDialogError':
-        'No se pudo cerrar la caja. Compruebe su conexiÃ³n e intÃ©ntelo de nuevo.',
-    'caixa.operacoes.cancelDialogTitle': 'Â¿Cancelar movimiento?',
-    'caixa.operacoes.cancelDialogSubtitle':
-        'Revise los vÃ­nculos de esta operaciÃ³n antes de cancelarla. SegÃºn el historial financiero, el registro puede necesitar mantenerse.',
-    'caixa.operacoes.cancelDialogOperation': 'OperaciÃ³n',
-    'caixa.operacoes.cancelDialogMethod': 'Forma',
-    'caixa.operacoes.cancelDialogAmount': 'Importe',
-    'caixa.operacoes.cancelDialogChecklist':
-        'Si el movimiento estÃ¡ vinculado a cobros o registros futuros, la cancelaciÃ³n puede bloquearse para preservar el historial.',
-    'caixa.operacoes.cancelDialogBack': 'Volver',
-    'caixa.operacoes.cancelDialogConfirm': 'Cancelar operaciÃ³n',
-    'caixa.operacoes.cancelDialogProcessing': 'Cancelando...',
-    'caixa.operacoes.cancelDialogSuccessTitle': 'Movimiento cancelado',
-    'caixa.operacoes.cancelDialogSuccessMessage':
-        'El historial de caja se actualizÃ³ y esta operaciÃ³n ya no seguirÃ¡ activa en la sesiÃ³n actual.',
-    'caixa.operacoes.cancelDialogError':
-        'No se pudo cancelar el movimiento ahora. Revise los vÃ­nculos financieros e intÃ©ntelo nuevamente.',
-    'caixa.operacoes.cancelDialogLinkedRecordsError':
-        'Este movimiento estÃ¡ vinculado a cobros o registros futuros y debe permanecer registrado en el historial financiero.',
-    'caixa.operacoes.cancelDialogPermissionError':
-        'No tienes permiso para cancelar este movimiento.',
-    'caixa.operacoes.cancelDialogConnectivityError':
-        'No fue posible comunicarse con el servidor ahora. Revise su conexiÃ³n e intÃ©ntelo nuevamente.',
-    'caixa.operacoes.cancelDialogLikelyLinkedError':
-        'No fue posible cancelar este movimiento porque puede estar vinculado a otros registros financieros. Revise los cobros relacionados e intÃ©ntelo nuevamente.',
-    'caixa.operacoes.addEntryAction': 'Agregar lanzamiento',
-    'caixa.operacoes.launchDialogTitle': 'Registrar lanzamiento operativo',
-    'caixa.operacoes.launchDialogSubtitle':
-        'Complete los datos de la operaciÃ³n y revÃ­selos antes de registrarla en la caja.',
-    'caixa.operacoes.launchDialogTypeLabel': 'Tipo de operaciÃ³n',
-    'caixa.operacoes.launchDialogSelect': 'Seleccione',
-    'caixa.operacoes.launchDialogAmountLabel': 'Importe',
-    'caixa.operacoes.launchDialogRelatedTypeLabel': 'Forma relacionada',
-    'caixa.operacoes.launchDialogReferenceLabel': 'Referencia / comprobante',
-    'caixa.operacoes.launchDialogReferenceHint': 'Ej.: MOV-001',
-    'caixa.operacoes.launchDialogObservationLabel': 'ObservaciÃ³n',
-    'caixa.operacoes.launchDialogObservationHint':
-        'Describa con claridad el motivo del movimiento.',
-    'caixa.operacoes.launchDialogLinkedSaleLabel':
-        'Tiene vÃ­nculo con una venta',
-    'caixa.operacoes.launchDialogLinkedSaleHint':
-        'Ãšselo en reversiones o situaciones relacionadas con una atenciÃ³n anterior.',
-    'caixa.operacoes.launchDialogReviewAction': 'Revisar lanzamiento',
-    'caixa.operacoes.launchDialogTypeRequired':
-        'Seleccione el tipo de operaciÃ³n.',
-    'caixa.operacoes.launchDialogRelatedTypeRequired':
-        'Seleccione la forma relacionada.',
-    'caixa.operacoes.launchDialogAmountRequired': 'Ingrese un importe vÃ¡lido.',
-    'caixa.operacoes.launchDialogReviewTitle':
-        'Â¿Confirmar lanzamiento operativo?',
-    'caixa.operacoes.launchDialogReviewSubtitle':
-        'Revise los datos a continuaciÃ³n antes de registrar el movimiento en la caja.',
-    'caixa.operacoes.launchDialogChecklist': 'Resumen listo para confirmar.',
-    'caixa.operacoes.launchDialogEditAction': 'Editar datos',
-    'caixa.operacoes.launchDialogConfirmAction': 'Registrar movimiento',
-    'caixa.operacoes.launchDialogProcessing': 'Registrando...',
-    'caixa.operacoes.launchDialogError':
-        'No fue posible registrar el movimiento. Revise los datos e intÃ©ntelo nuevamente.',
-    'caixa.operacoes.launchDialogSuccessTitle':
-        'Movimiento registrado correctamente',
-    'caixa.operacoes.launchDialogSuccessMessage':
-        'El lanzamiento ya aparece en el historial y en el resumen de caja.',
-    'caixa.operacoes.launchDialogAvailableMethods': 'Formas activas',
-    'caixa.operacoes.launchDialogLinkedSaleTag': 'Vinculado a venta',
-    'caixa.operacoes.historyTodayOnly': 'Solo hoy',
-    'caixa.operacoes.historyPeriod': 'PerÃ­odo',
-    'caixa.operacoes.historyPeriodToday': 'Hoy',
-    'caixa.operacoes.historyPeriodLast7Days': 'Ãšltimos 7 dÃ­as',
-    'caixa.operacoes.historyPeriodLast30Days': 'Ãšltimos 30 dÃ­as',
-    'caixa.operacoes.historyPeriodThisMonth': 'Este mes',
-    'caixa.operacoes.historyPeriodLastMonth': 'Mes pasado',
-    'caixa.operacoes.historyPeriodCustomRange': 'Intervalo personalizado',
-    'caixa.operacoes.historyNature': 'Naturaleza',
-    'caixa.operacoes.historyStatus': 'Estado',
-    'caixa.operacoes.historyOperation': 'OperaciÃ³n',
-    'caixa.operacoes.historyMethod': 'Forma',
-    'caixa.operacoes.historyStartDate': 'Fecha inicial',
-    'caixa.operacoes.historyEndDate': 'Fecha final',
-    'caixa.operacoes.historyStartDateHelp': 'Seleccionar fecha inicial',
-    'caixa.operacoes.historyEndDateHelp': 'Seleccionar fecha final',
-    'caixa.operacoes.historyClearFilters': 'Limpiar filtros',
-    'caixa.operacoes.historyNoResultsFiltered':
-        'No se encontraron movimientos con los filtros aplicados.',
-    'caixa.operacoes.historyNoResultsToday':
-        'No se registraron movimientos hoy.',
-    'web.standalone.quote': 'Presupuesto',
-    'web.standalone.serviceOrder': 'Orden de servicio',
-    'web.shell.expandSidebar': 'Expandir navegaciÃ³n',
-    'web.shell.collapseSidebar': 'Contraer navegaciÃ³n',
-    'web.shell.currentCommerce': 'Comercio actual',
-    'web.shell.sessionContext': 'Contexto de la sesiÃ³n',
-    'web.shell.workspace': 'Workspace operativo',
-    'web.shell.version': 'VersiÃ³n',
-    'web.header.profile': 'Perfil',
-    'web.header.profileTooltip': 'Mi perfil',
-    'web.header.userMenu': 'Usuario',
-    'web.header.myProfile': 'Mi perfil',
-    'web.header.theme.dark': 'Tema oscuro',
-    'web.header.theme.dark.enable': 'Activar tema oscuro',
-    'web.header.theme.dark.disable': 'Desactivar tema oscuro',
-    'web.header.logout': 'Salir',
-    'web.logout.dialog.title': 'Â¿Cerrar la sesiÃ³n ahora?',
-    'web.logout.dialog.subtitle':
-        'Revise el contexto antes de salir. VolverÃ¡ a la pantalla pÃºblica de inicio de sesiÃ³n en este navegador.',
-    'web.logout.dialog.user': 'Usuario',
-    'web.logout.dialog.currentCommerce': 'Comercio actual',
-    'web.logout.dialog.nextStep': 'Siguiente paso',
-    'web.logout.dialog.nextStepValue': 'Pantalla pÃºblica de inicio de sesiÃ³n',
-    'web.logout.dialog.checklist':
-        'La sesiÃ³n actual se cerrarÃ¡ solo en este navegador.',
-    'web.logout.dialog.back': 'Seguir conectado',
-    'web.logout.dialog.confirm': 'Salir ahora',
-    'web.logout.dialog.processing': 'Cerrando sesiÃ³n...',
-    'web.logout.dialog.successTitle': 'SesiÃ³n cerrada correctamente',
-    'web.logout.dialog.successMessage':
-        'Preparando el regreso a la pantalla pÃºblica de inicio de sesiÃ³n.',
-    'web.logout.dialog.error':
-        'No fue posible cerrar la sesiÃ³n ahora. IntÃ©ntelo nuevamente en unos instantes.',
-    'workspaceHome.title': 'Mi dÃ­a en SixoApp',
-    'workspaceHome.greeting': 'Hola, {name}',
-    'workspaceHome.unknownUser': 'usuario',
-    'workspaceHome.companyFallback': 'Comercio actual',
-    'workspaceHome.operationalDate': 'Hoy: {date}',
-    'workspaceHome.refreshTooltip': 'Actualizar resumen del dÃ­a',
-    'workspaceHome.loading.title': 'Cargando resumen del dÃ­a',
-    'workspaceHome.loading.subtitle':
-        'Buscando la situaciÃ³n actual de este comercio.',
-    'workspaceHome.error.title': 'No fue posible cargar el resumen del dÃ­a.',
-    'collaboratorHome.title': 'Mi panel',
-    'collaboratorHome.subtitle':
-        'Sigue tus metas, ventas, servicios y prioridades de trabajo.',
-    'collaboratorHome.loading': 'Cargando tu panel operativo',
-    'collaboratorHome.error.user':
-        'No fue posible identificar tu panel personal.',
-    'collaboratorHome.attention.title': 'Prioridades del trabajo',
-    'collaboratorHome.attention.clear':
-        'Todo estÃ¡ al dÃ­a en tus frentes de trabajo.',
-    'collaboratorHome.attention.pending': '{count} puntos necesitan atenciÃ³n.',
-    'collaboratorHome.attention.overdueSales': 'Ventas vencidas',
-    'collaboratorHome.attention.overdueServices': 'Entregas atrasadas',
-    'collaboratorHome.attention.reservations': 'Reservas para revisar',
-    'collaboratorHome.sales.title': 'Mis ventas',
-    'collaboratorHome.sales.period': 'Resultados de {start} a {end}',
-    'collaboratorHome.sales.count': 'Ventas del mes',
-    'collaboratorHome.sales.total': 'Total vendido',
-    'collaboratorHome.sales.received': 'Ya recibido',
-    'collaboratorHome.sales.openMonth': 'Pendiente en el mes',
-    'collaboratorHome.sales.loadError':
-        'No fue posible cargar el resumen de tus ventas.',
-    'collaboratorHome.openSales.title': 'Ventas aÃºn no liquidadas',
-    'collaboratorHome.openSales.subtitle': 'Solo ventas registradas por ti.',
-    'collaboratorHome.openSales.loadError':
-        'No fue posible cargar tus ventas pendientes.',
-    'collaboratorHome.openSales.empty':
-        'No tienes ventas pendientes de liquidaciÃ³n.',
-    'collaboratorHome.openSales.more': 'Hay {count} ventas pendientes mÃ¡s',
-    'collaboratorHome.openSales.customerFallback': 'Cliente no informado',
-    'collaboratorHome.openSales.saleFallback': 'Venta',
-    'collaboratorHome.openSales.noDueDate': 'Sin vencimiento',
-    'collaboratorHome.openSales.overdue': 'Vencida',
-    'collaboratorHome.services.title': 'Mis servicios por estado',
-    'collaboratorHome.services.subtitle':
-        'DistribuciÃ³n de las atenciones donde eres el tÃ©cnico.',
-    'collaboratorHome.services.open': 'Abrir atenciones',
-    'collaboratorHome.services.loadError':
-        'No fue posible cargar tus servicios.',
-    'collaboratorHome.services.empty':
-        'No tienes atenciones asignadas actualmente.',
-    'collaboratorHome.services.total': 'Total asignado',
-    'collaboratorHome.services.inProgress': 'En curso',
-    'collaboratorHome.services.dueToday': 'Entregas hoy',
-    'collaboratorHome.services.overdue': 'Atrasados',
-    'collaboratorHome.services.moreStatuses':
-        'Hay {count} estados mÃ¡s con actividad',
-    'collaboratorHome.services.unknownStatus': 'Sin estado',
-    'collaboratorHome.reservations.title': 'Cola de reservas',
-    'collaboratorHome.reservations.subtitle':
-        'Solicitudes del catÃ¡logo que pueden convertirse en ventas.',
-    'collaboratorHome.reservations.open': 'Abrir reservas',
-    'collaboratorHome.reservations.loadError':
-        'No fue posible cargar las reservas.',
-    'collaboratorHome.reservations.pending': 'Pendientes',
-    'collaboratorHome.reservations.received': 'Recibidas',
-    'collaboratorHome.reservations.analysis': 'En anÃ¡lisis',
-    'collaboratorHome.reservations.confirmed': 'Confirmadas',
-    'collaboratorHome.reservations.converted': 'Convertidas',
-    'performance.home.title': 'Mis metas',
-    'performance.home.subtitle':
-        'AcompaÃ±a tus metas y los resultados actualizados por SixoApp.',
-    'performance.home.dashboardTitle': 'Meta vs. resultado',
-    'performance.home.period': 'Resultados de {start} a {end}',
-    'performance.home.accessibilityLabel': 'Dashboard de mis metas',
-    'performance.home.loading': 'Cargando tus metas',
-    'performance.home.loadError': 'No fue posible actualizar tus metas.',
-    'performance.home.emptyTitle': 'Ninguna meta activa este mes',
-    'performance.home.emptySubtitle':
-        'Cuando se te asigne una meta, su resultado aparecerÃ¡ aquÃ­.',
-    'performance.home.result': 'Resultado',
-    'performance.home.target': 'Meta',
-    'performance.indicator.salesValue': 'Valor vendido',
-    'performance.indicator.salesQuantity': 'Cantidad de ventas',
-    'performance.indicator.servicesValue': 'Valor en servicios',
-    'performance.indicator.serviceCalls': 'Atenciones tÃ©cnicas',
-    'performance.indicator.finishedServiceCalls': 'Atenciones finalizadas',
-    'performance.indicator.serviceCallsValue': 'Valor en atenciones',
-    'workspaceHome.section.today': 'SituaciÃ³n de hoy',
-    'workspaceHome.section.attention': 'Necesita tu atenciÃ³n',
-    'workspaceHome.section.quickActions': 'Acciones rÃ¡pidas',
-    'workspaceHome.empty.today':
-        'NingÃºn bloque del resumen estÃ¡ disponible para tus permisos.',
-    'dashboardInicio.mobileGreetingSubtitle':
-        'Consulta los principales movimientos de {empresa} hoy.',
-    'workspaceHome.empty.attention': 'No hay pendientes importantes por ahora.',
-    'workspaceHome.empty.quickActions':
-        'No hay acciones rÃ¡pidas disponibles para tus permisos.',
-    'workspaceHome.cash.title': 'Caja',
-    'workspaceHome.cash.open': 'Abierta',
-    'workspaceHome.cash.closed': 'Cerrada',
-    'workspaceHome.cash.openedAt': 'desde {time}',
-    'workspaceHome.cash.openedAtWithDate': 'desde {date} a las {time}',
-    'workspaceHome.cash.responsible': 'Abierta por {name}',
-    'workspaceHome.technical.title': 'Servicios',
-    'workspaceHome.technical.active.one': '1 en curso',
-    'workspaceHome.technical.active.other': '{count} en curso',
-    'workspaceHome.financial.receivableToday': 'Por cobrar hoy',
-    'workspaceHome.financial.payableToday': 'Por pagar hoy',
-    'workspaceHome.financial.count.one': '1 cuenta',
-    'workspaceHome.financial.count.other': '{count} cuentas',
-    'workspaceHome.stock.title': 'Stock',
-    'workspaceHome.stock.noCritical': 'Sin alertas crÃ­ticas',
-    'workspaceHome.stock.belowMinimum.one': '1 por debajo del mÃ­nimo',
-    'workspaceHome.stock.belowMinimum.other': '{count} por debajo del mÃ­nimo',
-    'workspaceHome.stock.withoutStock.one': '1 sin stock',
-    'workspaceHome.stock.withoutStock.other': '{count} sin stock',
-    'workspaceHome.stock.negative.one': '1 negativo',
-    'workspaceHome.stock.negative.other': '{count} negativos',
-    'workspaceHome.attention.lateServices.one': '1 servicio atrasado',
-    'workspaceHome.attention.lateServices.other': '{count} servicios atrasados',
-    'workspaceHome.attention.waitingApproval.one':
-        '1 presupuesto esperando aprobaciÃ³n',
-    'workspaceHome.attention.waitingApproval.other':
-        '{count} presupuestos esperando aprobaciÃ³n',
-    'workspaceHome.attention.readyForPickup.one':
-        '1 equipo listo para retirada',
-    'workspaceHome.attention.readyForPickup.other':
-        '{count} equipos listos para retirada',
-    'workspaceHome.attention.overdueReceivable.one':
-        '1 cuenta por cobrar vencida',
-    'workspaceHome.attention.overdueReceivable.other':
-        '{count} cuentas por cobrar vencidas',
-    'workspaceHome.attention.overduePayable.one': '1 cuenta por pagar vencida',
-    'workspaceHome.attention.overduePayable.other':
-        '{count} cuentas por pagar vencidas',
-    'workspaceHome.attention.stockNegative.one':
-        '1 producto con stock negativo',
-    'workspaceHome.attention.stockNegative.other':
-        '{count} productos con stock negativo',
-    'workspaceHome.attention.stockWithout.one': '1 producto sin stock',
-    'workspaceHome.attention.stockWithout.other': '{count} productos sin stock',
-    'workspaceHome.attention.stockBelow.one':
-        '1 producto por debajo del stock mÃ­nimo',
-    'workspaceHome.attention.stockBelow.other':
-        '{count} productos por debajo del stock mÃ­nimo',
-    'workspaceHome.action.openTechnicalServices': 'Abrir asistencias',
-    'workspaceHome.action.openFinancial': 'Abrir financiero',
-    'workspaceHome.action.openStock': 'Abrir stock',
-    'workspaceHome.quickAction.newSale': 'Nueva venta',
-    'workspaceHome.quickAction.newTechnicalService': 'Nuevo servicio',
-    'workspaceHome.quickAction.cash': 'Caja',
-    'workspaceHome.quickAction.financialAgenda': 'Agenda financiera',
-    'streak.title': 'Racha',
-    'streak.mobile': 'Mobile',
-    'streak.web': 'Web',
-    'streak.shared': 'General',
-    'streak.longest': 'RÃ©cord',
-    'streak.oneDay': '1 dÃ­a',
-    'streak.days': '{count} dÃ­as',
-    'streak.daysOfStreak': '{count} dÃ­as de racha',
-    'streak.keepUsing': 'Usa SixoApp todos los dÃ­as para mantener tu racha.',
-    'streak.startedToday': 'Tu racha empezÃ³ hoy.',
-    'streak.loading': 'Cargando tus dÃ­as de racha.',
-    'streak.loadError': 'No se pudo cargar tu racha.',
-    'dashboardInicio.mobileCompanyFilterTooltip':
-        'Filtrar comercios: {comercio}',
-    'dashboardInicio.mobileCompanyFilterTitle': 'Filtrar comercios',
-    'dashboardInicio.mobileCompanyFilterSubtitle':
-        'Elige un comercio para ver el dashboard.',
-    'dashboardInicio.mobileCompanyFilterAll': 'Todos',
-    'dashboardInicio.mobileCompanyFilterSearchHint': 'Buscar comercio',
-    'dashboardInicio.mobileCompanyFilterEmptyTitle':
-        'NingÃºn comercio disponible',
-    'dashboardInicio.mobileCompanyFilterEmptyMessage':
-        'No encontramos vÃ­nculos activos para este usuario.',
-    'dashboardInicio.mobileCompanyFilterLoadError':
-        'No se pudieron cargar los comercios disponibles ahora.',
-    'dashboardInicio.mobileCompanyFilterSwitchError':
-        'No se pudo cambiar el comercio ahora. IntÃ©ntalo de nuevo.',
-    'dashboardInicio.mobileDashboardFilterTitle': 'Filtrar dashboard',
-    'dashboardInicio.mobileDashboardFilterSubtitle':
-        'Elige el comercio y, si hace falta, refina por colaborador.',
-    'dashboardInicio.mobileDashboardFilterCompanyLabel': 'Comercio',
-    'dashboardInicio.mobileDashboardFilterCompanyHelper':
-        'Define quÃ© comercio alimenta los indicadores mostrados.',
-    'dashboardInicio.mobileCollaboratorFilterLabel': 'Colaborador',
-    'dashboardInicio.mobileCollaboratorFilterAll': 'Todos los colaboradores',
-    'dashboardInicio.mobileCollaboratorFilterHelper':
-        'Muestra los indicadores del colaborador seleccionado en el dashboard.',
-    'dashboardInicio.mobileCollaboratorFilterDisabledHelper':
-        'Elige un comercio especÃ­fico para filtrar colaboradores.',
-    'dashboardInicio.mobileCollaboratorFilterLoadingHelper':
-        'Cargando colaboradores del comercio actual.',
-    'dashboardInicio.mobileCollaboratorFilterTitle': 'Filtrar colaborador',
-    'dashboardInicio.mobileCollaboratorFilterSubtitle':
-        'Elige un colaborador para refinar los indicadores.',
-    'dashboardInicio.mobileCollaboratorFilterSearchHint': 'Buscar colaborador',
-    'dashboardInicio.mobileCollaboratorFilterEmptyTitle':
-        'NingÃºn colaborador disponible',
-    'dashboardInicio.mobileCollaboratorFilterEmptyMessage':
-        'No encontramos colaboradores activos en este comercio.',
-    'dashboardInicio.mobileCollaboratorFilterLoadError':
-        'No se pudieron cargar los colaboradores de este comercio ahora.',
-    'dashboardInicio.mobileCollaboratorFilterSelectedFallback':
-        'Colaborador seleccionado',
-    'dashboardInicio.mobileInfrastructureRequestsTitle': 'Requests del backend',
-    'dashboardInicio.mobileInfrastructureRequestsSubtitle':
-        'Respuestas monitoreadas en la ventana seleccionada del backend.',
-    'dashboardInicio.mobileInfrastructureRequestsFilterTitle':
-        'Filtrar requests del backend',
-    'dashboardInicio.mobileInfrastructureRequestsFilterSubtitle':
-        'Indica la ventana que entra en el conteo de los estados 200, 400 y 500.',
-    'dashboardInicio.mobileInfrastructureRequestsFilterValueLabel': 'Cantidad',
-    'dashboardInicio.mobileInfrastructureRequestsFilterUnitLabel': 'Unidad',
-    'dashboardInicio.mobileInfrastructureRequestsFilterMinutes': 'Minutos',
-    'dashboardInicio.mobileInfrastructureRequestsFilterHours': 'Horas',
-    'dashboardInicio.mobileInfrastructureRequestsFilterApply':
-        'Aplicar ventana',
-    'dashboardInicio.mobileInfrastructureRequestsMinuteSingular': 'minuto',
-    'dashboardInicio.mobileInfrastructureRequestsMinutePlural': 'minutos',
-    'dashboardInicio.mobileInfrastructureRequestsHourSingular': 'hora',
-    'dashboardInicio.mobileInfrastructureRequestsHourPlural': 'horas',
-    'mobile.nav.dash': 'dash',
-    'mobile.nav.home': 'Inicio',
-    'mobile.nav.management': 'GestiÃ³n',
-    'mobile.nav.service': 'AtenciÃ³n',
-    'empresa.configuracao.title': 'Empresa',
-    'empresa.configuracao.loadError':
-        'No se pudieron cargar los datos de la empresa.',
-    'empresa.configuracao.saveSuccess':
-        'Datos de la empresa actualizados correctamente.',
-    'empresa.configuracao.saveError':
-        'No se pudieron guardar los datos de la empresa.',
-    'empresa.configuracao.summaryTitle': 'Datos del comercio',
-    'empresa.configuracao.summarySubtitle':
-        'Actualiza la informaciÃ³n usada en documentos y atenciÃ³n.',
-    'empresa.configuracao.identityTitle': 'Identidad de la empresa',
-    'empresa.configuracao.identitySubtitle':
-        'Revisa los datos principales antes de guardar los cambios.',
-    'empresa.configuracao.legalName': 'RazÃ³n social',
-    'empresa.configuracao.legalNameHint': 'Nombre legal de la empresa',
-    'empresa.configuracao.tradeName': 'Nombre comercial',
-    'empresa.configuracao.tradeNameHint':
-        'Nombre comercial usado en la atenciÃ³n',
-    'empresa.configuracao.document': 'Documento de la empresa',
-    'empresa.configuracao.documentHint':
-        'IdentificaciÃ³n fiscal o documento equivalente',
-    'empresa.configuracao.requiredField': 'Completa este campo.',
-    'empresa.configuracao.readyToEdit': 'Datos listos para ediciÃ³n.',
-    'empresa.configuracao.waitingData': 'Esperando datos de la empresa.',
-    'empresa.configuracao.statusSubtitle':
-        'La informaciÃ³n guardada aparece en documentos y comprobantes del comercio.',
-    'empresa.configuracao.saveChanges': 'Guardar cambios',
-    'empresa.configuracao.logoTitle': 'Logo de la empresa',
-    'empresa.configuracao.logoSubtitle':
-        'Agrega una imagen nÃ­tida, preferiblemente cuadrada.',
-    'empresa.configuracao.logoRegistered':
-        'Imagen lista para guardar en el perfil del comercio.',
-    'empresa.configuracao.logoSelect': 'Seleccionar logo',
-    'empresa.configuracao.logoChange': 'Cambiar logo',
-    'empresa.configuracao.logoRemove': 'Eliminar',
-    'empresa.configuracao.logoSheetTitle': 'Registrar logo',
-    'empresa.configuracao.logoSheetSubtitle':
-        'Elige una imagen de la galerÃ­a o toma una foto.',
-    'empresa.configuracao.logoFromGallery': 'Elegir de la galerÃ­a',
-    'empresa.configuracao.logoFromCamera': 'Usar cÃ¡mara',
-    'empresa.configuracao.logoLoadError': 'No se pudo cargar el logo.',
-    'empresa.configuracao.logoTooLarge': 'Elige una imagen de hasta 1 MB.',
-    'empresa.configuracao.logoSemantics': 'Logo registrado de la empresa.',
-    'empresa.configuracao.logoEmptySemantics': 'NingÃºn logo registrado.',
-    'atendimentoTecnico.status': 'Estado',
-    'atendimentoTecnico.filters.paymentStatus.label': 'Estado de pago',
-    'atendimentoTecnico.filters.paymentStatus.tooltip':
-        'Filtrar por estado de pago',
-    'atendimentoTecnico.filters.paymentStatus.helper':
-        'Filtre atenciones por saldo abierto o liquidado.',
-    'atendimentoTecnico.filters.paymentStatus.all': 'Todos los pagos',
-    'atendimentoTecnico.filters.paymentStatus.open': 'Abierto',
-    'atendimentoTecnico.filters.paymentStatus.paid': 'Liquidado',
-    'atendimentoTecnico.filters.multiSelected': '{count} seleccionados',
-    'atendimentoTecnico.filters.technician.label': 'TÃ©cnico responsable',
-    'atendimentoTecnico.filters.technician.tooltip':
-        'Filtrar por tÃ©cnico responsable',
-    'atendimentoTecnico.filters.technician.all': 'Todos los tÃ©cnicos',
-    'atendimentoTecnico.filters.technician.none': 'Sin tÃ©cnico responsable',
-    'atendimentoTecnico.filters.technician.selectedFallback':
-        'TÃ©cnico seleccionado',
-    'atendimentoTecnico.filters.status.tooltip': 'Filtrar por estado',
-    'atendimentoTecnico.filters.status.all': 'Todos los estados',
-    'atendimentoTecnico.filters.status.allWithCount':
-        'Todos los estados ({count})',
-    'atendimentoTecnico.filters.status.selectedFallback': 'Estado seleccionado',
-    'atendimentoTecnico.lista.openDetails': 'Ver detalles',
-    'atendimentoTecnico.lista.detailsDialog.title': 'Detalles del servicio',
-    'atendimentoTecnico.lista.detailsDialog.subtitle':
-        'Revise finanzas, avance e historial completo antes de continuar con otra acciÃ³n.',
-    'atendimentoTecnico.lista.detailsDialog.barrierLabel':
-        'Cerrar detalles del servicio',
-    'atendimentoTecnico.web.dateFilterDialog.barrierLabel':
-        'Cerrar filtro de fecha',
-    'atendimentoTecnico.web.dateFilterDialog.filterLabel': 'Fecha',
-    'atendimentoTecnico.web.dateFilterDialog.title': 'Filtrar por fecha',
-    'atendimentoTecnico.web.dateFilterDialog.subtitle':
-        'Define el intervalo de actualizaciÃ³n de las atenciones.',
-    'atendimentoTecnico.web.dateFilterDialog.fieldLabel': 'Campo',
-    'atendimentoTecnico.web.dateFilterDialog.fieldValueUpdatedAt':
-        'ActualizaciÃ³n',
-    'atendimentoTecnico.web.dateFilterDialog.currentRangeLabel': 'Intervalo',
-    'atendimentoTecnico.web.dateFilterDialog.allDates': 'Todas las fechas',
-    'atendimentoTecnico.web.dateFilterDialog.dateFrom': 'Desde {date}',
-    'atendimentoTecnico.web.dateFilterDialog.dateUntil': 'Hasta {date}',
-    'atendimentoTecnico.web.dateFilterDialog.dateRange': '{start} hasta {end}',
-    'atendimentoTecnico.web.dateFilterDialog.startLabel': 'Inicio',
-    'atendimentoTecnico.web.dateFilterDialog.endLabel': 'Fin',
-    'atendimentoTecnico.web.dateFilterDialog.dateHint': 'dd/MM/yyyy',
-    'atendimentoTecnico.web.dateFilterDialog.quickToday': 'Hoy',
-    'atendimentoTecnico.web.dateFilterDialog.quickLast7Days': 'Ãšltimos 7 dÃ­as',
-    'atendimentoTecnico.web.dateFilterDialog.quickNext7Days': 'PrÃ³ximos 7 dÃ­as',
-    'atendimentoTecnico.web.dateFilterDialog.quickOverdue': 'Vencidos',
-    'atendimentoTecnico.web.dateFilterDialog.quickLast30Days':
-        'Ãšltimos 30 dÃ­as',
-    'atendimentoTecnico.web.dateFilterDialog.quickThisMonth': 'Este mes',
-    'atendimentoTecnico.web.dateFilterDialog.clearAction': 'Limpiar',
-    'atendimentoTecnico.web.dateFilterDialog.cancelAction': 'Cancelar',
-    'atendimentoTecnico.web.dateFilterDialog.applyAction': 'Aplicar',
-    'atendimentoTecnico.web.dateFilterDialog.startInvalid':
-        'Ingresa una fecha inicial vÃ¡lida.',
-    'atendimentoTecnico.web.dateFilterDialog.endInvalid':
-        'Ingresa una fecha final vÃ¡lida.',
-    'atendimentoTecnico.web.dateFilterDialog.endBeforeStart':
-        'La fecha final no puede ser anterior a la inicial.',
-    'atendimentoTecnico.customerNotInformed': 'Cliente no informado',
-    'atendimentoTecnico.expectedDelivery': 'Entrega prevista',
-    'atendimentoTecnico.equipment': 'Equipo',
-    'atendimentoTecnico.reportedIssue': 'Defecto',
-    'atendimentoTecnico.publicStatus.title': 'Estado del servicio',
-    'atendimentoTecnico.publicStatus.subtitle':
-        'Sigue la etapa actual del servicio tÃ©cnico por el link pÃºblico.',
-    'atendimentoTecnico.publicStatus.progressTitle': 'Progreso del servicio',
-    'atendimentoTecnico.publicStatus.progressShort': 'Progreso del servicio',
-    'atendimentoTecnico.publicStatus.serviceData': 'Datos del servicio',
-    'atendimentoTecnico.publicStatus.history': 'Historial de estado',
-    'atendimentoTecnico.publicStatus.noHistory':
-        'No hay cambios de estado registrados.',
-    'atendimentoTecnico.publicStatus.loading':
-        'Cargando estado del servicio...',
-    'atendimentoTecnico.publicStatus.errorTitle': 'No se pudo cargar el estado',
-    'atendimentoTecnico.publicStatus.invalidLink':
-        'Link invÃ¡lido. Token o comercio no informado.',
-    'atendimentoTecnico.publicStatus.linkTitle': 'Link pÃºblico de estado',
-    'atendimentoTecnico.publicStatus.linkCopied':
-        'Link copiado al portapapeles.',
-    'atendimentoTecnico.publicStatus.linkCopiedShort':
-        'Link de estado copiado.',
-    'atendimentoTecnico.publicStatus.linkHelp':
-        'EnvÃ­a este link al cliente para seguir el estado actual del servicio.',
-    'atendimentoTecnico.publicStatus.linkMissing':
-        'El backend no devolviÃ³ un link.',
-    'atendimentoTecnico.publicStatus.linkError':
-        'No se pudo generar el link de estado',
-    'atendimentoTecnico.publicStatus.shareMessage':
-        'Sigue el estado de tu servicio en el siguiente link:',
-    'atendimentoTecnico.publicStatus.shareSubject': 'Estado del servicio',
-    'atendimentoTecnico.publicStatus.shareFallback':
-        'No se pudo abrir el compartir. El link fue copiado.',
-    'atendimentoTecnico.publicStatus.publicUrlMissing':
-        'La URL pÃºblica de la aplicaciÃ³n no estÃ¡ configurada.',
-    'atendimentoTecnico.publicStatus.action': 'Estado pÃºblico',
-    'atendimentoTecnico.publicStatus.actionShort': 'Estado',
-    'atendimentoTecnico.publicStatus.signaturePendingTitle':
-        'Firma de aprobaciÃ³n pendiente',
-    'atendimentoTecnico.publicStatus.signaturePendingDescription':
-        'Puedes seguir el estado normalmente. Para aprobar el servicio, toca el botÃ³n y firma en la siguiente pÃ¡gina.',
-    'atendimentoTecnico.publicStatus.signatureRenewTitle':
-        'Nueva firma necesaria',
-    'atendimentoTecnico.publicStatus.signatureRenewDescription':
-        'El servicio fue modificado despuÃ©s de la Ãºltima aprobaciÃ³n. Puedes seguir el estado normalmente y firmar la versiÃ³n actual cuando quieras aprobarla.',
-    'atendimentoTecnico.publicStatus.signatureAction': 'Firmar aprobaciÃ³n',
-    'atendimentoTecnico.publicStatus.signatureLinkMissing':
-        'El backend no devolviÃ³ un link de firma.',
-    'atendimentoTecnico.publicStatus.signatureLinkError':
-        'No se pudo abrir la firma.',
-    'atendimentoTecnico.publicStatus.responsibleUnit': 'Unidad responsable',
-    'atendimentoTecnico.publicStatus.officialChannel': 'Canal oficial',
-    'atendimentoTecnico.publicStatus.updatedByBusiness':
-        'Estado actualizado por el comercio',
-    'atendimentoTecnico.publicStatus.companyDataSource':
-        'Datos proporcionados por el establecimiento.',
-    'atendimentoTecnico.publicStatus.officialServiceChannel':
-        'Canal oficial de seguimiento del servicio.',
-    'atendimentoTecnico.publicStatus.externalLinkUnavailable':
-        'No fue posible abrir este contacto en este dispositivo.',
-    'atendimentoTecnico.mobile.loading': 'Cargando servicios tÃ©cnicos',
-    'atendimentoTecnico.mobile.emptyFilteredMessage':
-        'No se encontraron servicios con los filtros seleccionados.',
-    'atendimentoTecnico.mobile.searchHint':
-        'Buscar por cliente, estado, equipo o nÃºmero',
-    'atendimentoTecnico.mobile.advancedFilters': 'Filtros avanzados',
-    'atendimentoTecnico.mobile.advancedFiltersActive':
-        'Filtros avanzados activos',
-    'atendimentoTecnico.mobile.clearFilters': 'Limpiar filtros',
-    'atendimentoTecnico.mobile.sortRecent': 'MÃ¡s recientes',
-    'atendimentoTecnico.mobile.resultCountOne': '1 servicio',
-    'atendimentoTecnico.mobile.resultCountMany': '{count} servicios',
-    'atendimentoTecnico.mobile.periodSummaryTitle': 'Resumen del perÃ­odo',
-    'atendimentoTecnico.mobile.summaryServiceOne': 'servicio',
-    'atendimentoTecnico.mobile.summaryServiceMany': 'servicios',
-    'atendimentoTecnico.mobile.summaryOpenOne': 'abierto',
-    'atendimentoTecnico.mobile.summaryOpenMany': 'abiertos',
-    'atendimentoTecnico.mobile.summarySignedOne': 'firmado',
-    'atendimentoTecnico.mobile.summarySignedMany': 'firmados',
-    'atendimentoTecnico.mobile.summaryOpenValue': '{value} abierto',
-    'atendimentoTecnico.mobile.summaryOpenValueCaption': 'abierto',
-    'atendimentoTecnico.mobile.filterSheetTitle': 'Filtrar servicios',
-    'atendimentoTecnico.mobile.filterPeriod': 'PerÃ­odo',
-    'atendimentoTecnico.mobile.filterPaymentStatus': 'Estado del pago',
-    'atendimentoTecnico.mobile.filterDate': 'Fecha',
-    'atendimentoTecnico.mobile.filterStartDate': 'Inicio',
-    'atendimentoTecnico.mobile.filterEndDate': 'Fin',
-    'atendimentoTecnico.mobile.dateToday': 'Hoy',
-    'atendimentoTecnico.mobile.dateAll': 'Todas las fechas',
-    'atendimentoTecnico.mobile.dateRange': '{start} hasta {end}',
-    'atendimentoTecnico.mobile.dateFrom': 'Desde {date}',
-    'atendimentoTecnico.mobile.dateUntil': 'Hasta {date}',
-    'atendimentoTecnico.mobile.dateLast7Days': 'Ãšltimos 7 dÃ­as',
-    'atendimentoTecnico.mobile.dateNext7Days': 'PrÃ³ximos 7 dÃ­as',
-    'atendimentoTecnico.mobile.dateOverdue': 'Vencidos',
-    'atendimentoTecnico.mobile.filterTechnician': 'TÃ©cnico responsable',
-    'atendimentoTecnico.mobile.searchTechnician': 'Buscar tÃ©cnico',
-    'atendimentoTecnico.mobile.allTechnicians': 'Todos los tÃ©cnicos',
-    'atendimentoTecnico.mobile.selectedTechnician': 'TÃ©cnico seleccionado',
-    'atendimentoTecnico.mobile.noTechnicianFound': 'No se encontrÃ³ tÃ©cnico.',
-    'atendimentoTecnico.mobile.viewOneService': 'Ver 1 servicio',
-    'atendimentoTecnico.mobile.viewManyServices': 'Ver {count} servicios',
-    'atendimentoTecnico.mobile.sharePdfTooltip': 'Compartir servicio',
-    'atendimentoTecnico.mobile.pdfSectionTitle': 'Documento del servicio',
-    'atendimentoTecnico.mobile.pdfSectionDescription':
-        'PDF listo para enviar al cliente con los datos del servicio.',
-    'atendimentoTecnico.mobile.pdfSectionGenerating':
-        'Preparando el PDF para compartir.',
-    'atendimentoTecnico.mobile.sharePdfAction': 'Compartir PDF',
-    'atendimentoTecnico.mobile.pdfLoadingTitle': 'Generando PDF del servicio',
-    'atendimentoTecnico.mobile.pdfLoadingSubtitle':
-        'Espera mientras se prepara el documento.',
-    'atendimentoTecnico.mobile.detailLoadError':
-        'No se pudieron cargar los datos actualizados del servicio.',
-    'atendimentoTecnico.mobile.pdfDownloaded': 'PDF descargado correctamente.',
-    'atendimentoTecnico.mobile.pdfPermissionDenied':
-        'No tienes permiso para compartir este servicio.',
-    'atendimentoTecnico.mobile.pdfNotFound': 'Servicio no encontrado.',
-    'atendimentoTecnico.mobile.pdfInvalidFile':
-        'El archivo recibido no es vÃ¡lido.',
-    'atendimentoTecnico.mobile.pdfShareUnavailable':
-        'No se pudo compartir el documento.',
-    'atendimentoTecnico.mobile.pdfShareError':
-        'No se pudo compartir el documento.',
-    'atendimentoTecnico.mobile.pdfGenerationError':
-        'No se pudo generar el PDF del servicio.',
-    'atendimentoTecnico.mobile.publicStatusDescription':
-        'Visible para el cliente en el link de seguimiento.',
-    'atendimentoTecnico.publicStatus.shareLinkAction': 'Compartir link',
-    'atendimentoTecnico.mobile.paymentOpen': 'Financiero abierto',
-    'atendimentoTecnico.mobile.paymentSettled': 'Financiero liquidado',
-    'atendimentoTecnico.mobile.signed': 'Firmado',
-    'atendimentoTecnico.mobile.signaturePending': 'Firma pendiente',
-    'atendimentoTecnico.customerNotSigned': 'Cliente no firmÃ³',
-    'atendimentoTecnico.mobile.customerNotSigned': 'Cliente no firmÃ³',
-    'atendimentoTecnico.mobile.deliveryLate': 'Entrega atrasada',
-    'atendimentoTecnico.signatureGate.title': 'Firma necesaria',
-    'atendimentoTecnico.signatureGate.message':
-        'Para avanzar a {status}, envÃ­a el link de firma al cliente, firma en este dispositivo o registra el bypass.',
-    'atendimentoTecnico.signatureGate.sendLink': 'Enviar link al cliente',
-    'atendimentoTecnico.signatureGate.signHere': 'Firmar en este dispositivo',
-    'atendimentoTecnico.signatureGate.bypass': 'Avanzar sin firma',
-    'atendimentoTecnico.signatureGate.deviceTitle': 'Recoger firma',
-    'atendimentoTecnico.signatureGate.deviceMessage':
-        'Registra la firma para avanzar a {status}.',
-    'atendimentoTecnico.signatureGate.deviceSigner': 'Nombre de quien firma',
-    'atendimentoTecnico.signatureGate.deviceDocument': 'Documento opcional',
-    'atendimentoTecnico.signatureGate.deviceSignatureField': 'Firma',
-    'atendimentoTecnico.signatureGate.deviceObservation':
-        'ObservaciÃ³n opcional',
-    'atendimentoTecnico.signatureGate.deviceSave': 'Registrar firma',
-    'atendimentoTecnico.signatureGate.deviceSignerRequired':
-        'Informa el nombre de quien firma.',
-    'atendimentoTecnico.signatureGate.deviceSignatureRequired':
-        'Firma en el cuadro indicado.',
-    'atendimentoTecnico.signatureGate.deviceSignatureSaved':
-        'Firma registrada y estado actualizado.',
-    'atendimentoTecnico.signatureGate.deviceSignatureError':
-        'No se pudo registrar la firma',
-    'atendimentoTecnico.signatureGate.publicUrlMissing':
-        'La URL pÃºblica de la aplicaciÃ³n no estÃ¡ configurada.',
-    'atendimentoTecnico.signatureGate.linkMissing':
-        'El backend no devolviÃ³ el link de firma.',
-    'atendimentoTecnico.signatureGate.linkCopied': 'Link de firma copiado.',
-    'atendimentoTecnico.signatureGate.linkError':
-        'No se pudo generar el link de firma',
-    'atendimentoTecnico.signatureGate.shareMessage':
-        'Para aprobar el servicio, firma por el link abajo:',
-    'atendimentoTecnico.signatureGate.shareSubject': 'Firma del servicio',
-    'atendimentoTecnico.mobile.valorOriginal': 'Valor original',
-    'atendimentoTecnico.mobile.valorJaRecebido': 'Valor ya recibido',
-    'atendimentoTecnico.mobile.valorEmAberto': 'Valor abierto',
-    'atendimentoTecnico.mobile.liquidation': 'LiquidaciÃ³n',
-    'atendimentoTecnico.mobile.liquidated': 'Liquidada',
-    'atendimentoTecnico.mobile.notLiquidated': 'No liquidada',
-    'atendimentoTecnico.mobile.products': 'Productos',
-    'atendimentoTecnico.mobile.services': 'Servicios',
-    'atendimentoTecnico.mobile.changeStatusAction': 'Cambiar estado',
-    'atendimentoTecnico.mobile.createTitle': 'Nueva atenciÃ³n tÃ©cnica',
-    'atendimentoTecnico.mobile.createHeaderTitle': 'Iniciar asistencia',
-    'atendimentoTecnico.mobile.createHeaderSubtitle':
-        'Cliente, equipo y defecto en una pantalla rÃ¡pida para mostrador.',
-    'atendimentoTecnico.mobile.responsible': 'Responsable',
-    'atendimentoTecnico.mobile.serviceChip': 'Asistencia',
-    'atendimentoTecnico.mobile.quoteChip': 'Presupuesto',
-    'atendimentoTecnico.mobile.noItemsChip': 'Sin Ã­tems',
-    'atendimentoTecnico.mobile.mainDataSection': 'Datos principales',
-    'atendimentoTecnico.mobile.internalDescription': 'DescripciÃ³n interna',
-    'atendimentoTecnico.mobile.internalDescriptionHint':
-        'Ej.: Cambio de pantalla iPhone 11',
-    'atendimentoTecnico.mobile.equipmentType': 'Tipo de equipo',
-    'atendimentoTecnico.mobile.brand': 'Marca',
-    'atendimentoTecnico.mobile.model': 'Modelo',
-    'atendimentoTecnico.mobile.serialNumber': 'NÂº de serie',
-    'atendimentoTecnico.mobile.imei': 'IMEI',
-    'atendimentoTecnico.mobile.accessoriesNotes': 'Accesorios / observaciones',
-    'atendimentoTecnico.mobile.accessoriesNotesHint':
-        'Ej.: sin cargador, con funda, pantalla rota...',
-    'atendimentoTecnico.mobile.technicalReportSection': 'Relato tÃ©cnico',
-    'atendimentoTecnico.mobile.customerIssue':
-        'Defecto relatado por el cliente',
-    'atendimentoTecnico.mobile.customerIssueHint':
-        'Describe el problema informado en el mostrador.',
-    'atendimentoTecnico.mobile.initialDiagnosis': 'DiagnÃ³stico tÃ©cnico inicial',
-    'atendimentoTecnico.mobile.initialDiagnosisHint':
-        'Opcional en este primer momento.',
-    'atendimentoTecnico.mobile.datesSection': 'Fechas',
-    'atendimentoTecnico.mobile.validity': 'Validez',
-    'atendimentoTecnico.mobile.financialDueDate': 'Vencimiento financiero',
-    'atendimentoTecnico.mobile.financialPreviewSection': 'Vista financiera',
-    'atendimentoTecnico.mobile.financialPreviewDescription':
-        'El valor queda abierto hasta registrar un cobro.',
-    'atendimentoTecnico.mobile.valorConfirmado': 'Confirmado',
-    'atendimentoTecnico.mobile.paymentStampNoValue': 'SIN VALOR',
-    'atendimentoTecnico.mobile.paymentStampOpen': 'ABIERTO',
-    'atendimentoTecnico.mobile.savingService': 'Iniciando atenciÃ³n...',
-    'atendimentoTecnico.mobile.startServiceAction': 'Iniciar atenciÃ³n tÃ©cnica',
-    'auth.loginRequiredFields':
-        'Completa el correo electrÃ³nico y la contraseÃ±a',
-    'auth.loginTitleMobile': 'Entrar',
-    'auth.loginSubtitleMobile':
-        'Para acceder a tu cuenta, ingresa\ntu correo y contraseÃ±a',
-    'auth.email': 'Correo electrÃ³nico',
-    'auth.password': 'ContraseÃ±a',
-    'auth.forgotPassword': 'Â¿Olvidaste tu contraseÃ±a?',
-    'auth.continue': 'Continuar',
-    'auth.noAccount': 'Â¿AÃºn no tienes una cuenta?',
-    'auth.createAccount': 'Crear cuenta',
-    'auth.signInWithApple': 'Entrar con Apple',
-    'auth.signInWithGoogle': 'Entrar con Google',
-    'auth.googleLoginError':
-        'No se pudo completar el inicio de sesiÃ³n con Google.',
-    'auth.session.validatingTitle': 'Entrando a SixoApp',
-    'auth.session.validatingMessage': 'Validando tu sesiÃ³n de forma segura...',
-    'splash.preparingWorkspace': 'Preparando tu espacio...',
-    'splash.validatingSession': 'Validando tu sesiÃ³n...',
-    'splash.syncingAccount': 'Sincronizando tus datos...',
-    'splash.connectedTagline': 'Todo conectado. Todo bajo control.',
-    'auth.session.temporaryErrorTitle': 'No se pudo validar tu sesiÃ³n',
-    'auth.session.temporaryErrorMessage':
-        'Tu sesiÃ³n fue preservada. Verifica tu conexiÃ³n e intÃ©ntalo de nuevo.',
-    'webAuthGate.temporaryError.title': 'No se pudo validar tu sesiÃ³n',
-    'webAuthGate.temporaryError.message':
-        'Verifica tu conexiÃ³n o espera a que el backend responda y vuelve a intentarlo.',
-    'auth.appleLoginMock': 'Inicio de sesiÃ³n con Apple (mocked)',
-    'auth.termsPrefix':
-        'Al hacer clic en "Continuar", declaro que leÃ­ y acepto los ',
-    'auth.terms': 'TÃ©rminos de Uso y PolÃ­tica de Privacidad',
-    'auth.mobileEntry.title': 'Tu negocio, conectado.',
-    'auth.mobileEntry.subtitle':
-        'Ventas, inventario y gestiÃ³n al mismo ritmo â€” estÃ©s donde estÃ©s.',
-    'auth.mobileEntry.sales': 'Ventas',
-    'auth.mobileEntry.stock': 'Inventario',
-    'auth.mobileEntry.management': 'GestiÃ³n',
-    'auth.mobileEntry.continueTitle': 'Â¿CÃ³mo quieres continuar?',
-    'auth.mobileEntry.loginAction': 'Entrar en mi cuenta',
-    'auth.mobileEntry.createAction': 'Crear mi cuenta',
-    'auth.mobileEntry.securityNote':
-        'Acceso seguro y datos siempre protegidos.',
-    'auth.mobileLogin.title': 'Bienvenido de nuevo',
-    'auth.mobileLogin.subtitle': 'Entra para continuar donde lo dejaste.',
-    'auth.mobileLogin.formTitle': 'Accede a tu espacio',
-    'auth.mobileLogin.emailHint': 'tu@empresa.com',
-    'auth.mobileLogin.passwordHint': 'Ingresa tu contraseÃ±a',
-    'auth.mobileLogin.showPassword': 'Mostrar contraseÃ±a',
-    'auth.mobileLogin.hidePassword': 'Ocultar contraseÃ±a',
-    'auth.mobileLogin.submit': 'Entrar',
-    'auth.mobileLogin.socialDivider': 'o continÃºa con',
-    'auth.mobileLogin.createPrompt': 'Â¿Primera vez en SixoApp?',
-    'auth.mobileCreate.title': 'Crea tu espacio',
-    'auth.mobileCreate.subtitle':
-        'Empieza simple. SixoApp crece junto con tu negocio.',
-    'auth.mobileCreate.formTitle': 'Tu cuenta empieza aquÃ­',
-    'auth.mobileCreate.formNote': 'Toma menos de un minuto.',
-    'auth.mobileCreate.loginLabel': 'Usuario',
-    'auth.mobileCreate.loginHint': 'Elige tu usuario de acceso',
-    'auth.mobileCreate.passwordLabel': 'ContraseÃ±a',
-    'auth.mobileCreate.passwordHint': 'MÃ­nimo de 8 caracteres',
-    'auth.mobileCreate.confirmPasswordLabel': 'Confirma la contraseÃ±a',
-    'auth.mobileCreate.confirmPasswordHint': 'Repite tu contraseÃ±a',
-    'auth.mobileCreate.acceptTerms':
-        'Acepto los TÃ©rminos y la PolÃ­tica de Privacidad.',
-    'auth.mobileCreate.submit': 'Crear cuenta',
-    'auth.mobileCreate.loginPrompt': 'Â¿Ya tienes una cuenta? Entrar',
-    'auth.mobileCreate.acceptTermsError':
-        'Acepta los TÃ©rminos y Condiciones para continuar.',
-    'auth.mobileCreate.requiredFieldsError': 'Completa todos los campos.',
-    'auth.mobileCreate.passwordLengthError':
-        'La contraseÃ±a debe tener al menos 8 caracteres.',
-    'auth.mobileCreate.passwordMismatchInline': 'Las contraseÃ±as no coinciden.',
-    'auth.mobileCreate.passwordMismatchError':
-        'Las contraseÃ±as son diferentes. VerifÃ­calas e intÃ©ntalo de nuevo.',
-    'auth.entry.title': 'Bienvenido a SixoApp',
-    'auth.entry.subtitle':
-        'Antes de continuar, elige cÃ³mo quieres acceder a la app.',
-    'auth.entry.hasAccountTitle': 'Ya tengo una cuenta',
-    'auth.entry.hasAccountSubtitle':
-        'Entra con tu correo y contraseÃ±a para acceder a tu empresa.',
-    'auth.entry.loginAction': 'Entrar',
-    'auth.entry.newAccountTitle': 'Soy nuevo aquÃ­',
-    'auth.entry.newAccountSubtitle':
-        'Mira un resumen rÃ¡pido y crea tu cuenta para comenzar.',
-    'auth.entry.newAccountAction': 'Conocer SixoApp',
-    'auth.onboarding.title': 'Empieza por lo esencial',
-    'auth.onboarding.subtitle':
-        'Mira tres puntos rÃ¡pidos antes de crear tu cuenta.',
-    'auth.onboarding.step1Title': 'AtenciÃ³n organizada',
-    'auth.onboarding.step1Subtitle':
-        'Registra ventas, presupuestos y asistencias en un flujo simple.',
-    'auth.onboarding.step2Title': 'CatÃ¡logo y stock en el bolsillo',
-    'auth.onboarding.step2Subtitle':
-        'MantÃ©n productos, servicios e informaciÃ³n esencial siempre a mano.',
-    'auth.onboarding.step3Title': 'GestiÃ³n para crecer',
-    'auth.onboarding.step3Subtitle':
-        'AcompaÃ±a indicadores y prepara tu operaciÃ³n para evolucionar con SixoApp.',
-    'auth.onboarding.skip': 'Saltar',
-    'auth.onboarding.next': 'Avanzar',
-    'auth.onboarding.createAccountAction': 'Crear mi cuenta',
-    'auth.onboarding.loginAction': 'Ya tengo una cuenta',
-    'configuracoes.recebimento.contextTitle': 'Formas de cobro configurables',
-    'configuracoes.recebimento.contextDescription':
-        'Personaliza cÃ³mo tu empresa recibe pagos. Los cÃ³digos internos se mantienen fijos por el sistema, pero el nombre y el comportamiento se pueden ajustar.',
-    'configuracoes.recebimento.metricsTotal': 'Tipos configurados',
-    'configuracoes.recebimento.metricsActive': 'Activos',
-    'configuracoes.recebimento.metricsImmediate': 'Naturaleza inmediata',
-    'configuracoes.recebimento.metricsFuture': 'Naturaleza futura',
-    'configuracoes.recebimento.loadingTitle': 'Cargando formas de cobro',
-    'configuracoes.recebimento.loadingSubtitle':
-        'Sincronizando la configuraciÃ³n de la empresa desde el backend.',
-    'configuracoes.recebimento.errorLoad':
-        'No se pudieron cargar las formas de cobro.',
-    'configuracoes.recebimento.errorBadRequest':
-        'Datos invÃ¡lidos para esta operaciÃ³n.',
-    'configuracoes.recebimento.errorUnauthorized':
-        'SesiÃ³n expirada. Inicia sesiÃ³n nuevamente.',
-    'configuracoes.recebimento.errorForbidden':
-        'No tienes permiso para cambiar la configuraciÃ³n de la empresa.',
-    'configuracoes.recebimento.errorNotFound':
-        'No se encontrÃ³ la configuraciÃ³n de la forma de cobro.',
-    'configuracoes.recebimento.errorLoadWithStatus':
-        'Error al cargar formas de cobro.',
-    'configuracoes.recebimento.errorSaveWithStatus':
-        'Error al guardar la forma de cobro.',
-    'configuracoes.recebimento.saveSuccess':
-        'Forma de cobro actualizada correctamente.',
-    'configuracoes.recebimento.errorSave':
-        'No se pudo guardar la forma de cobro.',
-    'configuracoes.recebimento.restoreConfirmTitle':
-        'Restaurar valores predeterminados',
-    'configuracoes.recebimento.restoreConfirmBody':
-        'Esta acciÃ³n restaura los 10 tipos de cobro a la configuraciÃ³n predeterminada de la empresa.',
-    'configuracoes.recebimento.restoreAction':
-        'Restaurar valores predeterminados',
-    'configuracoes.recebimento.restoreSuccess':
-        'La configuraciÃ³n predeterminada de formas de cobro fue restaurada correctamente.',
-    'configuracoes.recebimento.restoreError':
-        'No se pudo restaurar la configuraciÃ³n predeterminada.',
-    'configuracoes.recebimento.countPrefix': 'Tipos cargados',
-    'configuracoes.recebimento.activeCount': 'Activos',
-    'configuracoes.recebimento.refreshAction': 'Actualizar',
-    'configuracoes.recebimento.unnamed': 'Sin nombre definido',
-    'configuracoes.recebimento.nature': 'Naturaleza',
-    'configuracoes.recebimento.natureImmediate': 'Inmediato',
-    'configuracoes.recebimento.natureFuture': 'Futuro',
-    'configuracoes.recebimento.natureImmediateDescription':
-        'Ingresa en caja en el momento del cobro.',
-    'configuracoes.recebimento.natureFutureDescription':
-        'Genera un valor por cobrar para una fecha futura.',
-    'configuracoes.recebimento.requiresClient': 'Requiere cliente',
-    'configuracoes.recebimento.requiresClientDescription':
-        'Obligatorio cuando esta forma depende de un cliente identificado.',
-    'configuracoes.recebimento.installments': 'Permite cuotas',
-    'configuracoes.recebimento.installmentsDescription':
-        'Permite dividir el cobro en cuotas.',
-    'configuracoes.recebimento.displayOrder': 'Orden de visualizaciÃ³n',
-    'configuracoes.recebimento.technicalCode': 'CÃ³digo tÃ©cnico',
-    'configuracoes.recebimento.displayName': 'Nombre para mostrar',
-    'configuracoes.recebimento.validationName':
-        'Ingresa el nombre para mostrar.',
-    'configuracoes.recebimento.validationNameLength':
-        'Usa al menos 2 caracteres.',
-    'configuracoes.recebimento.validationOrder':
-        'Ingresa un orden vÃ¡lido mayor o igual a 1.',
-    'configuracoes.recebimento.validationColor':
-        'Usa un HEX vÃ¡lido con formato #RRGGBB.',
-    'configuracoes.recebimento.color': 'Color (opcional)',
-    'configuracoes.recebimento.icon': 'Ãcono (opcional)',
-    'configuracoes.recebimento.activeDescription':
-        'Controla si la forma puede utilizarse en los flujos.',
-    'configuracoes.recebimento.editDialogTitle': 'Editar forma de cobro',
-    'configuracoes.recebimento.errorStateTitle':
-        'No se pudo cargar la configuraciÃ³n',
-    'configuracoes.recebimento.emptyTitle': 'No se encontraron formas de cobro',
-    'configuracoes.recebimento.emptyDescription':
-        'Actualiza la pantalla para sincronizar los tipos configurados de la empresa.',
-    'procedimentos.title': 'Procedimientos',
-    'procedimentos.subtitle': 'GuÃ­as para ventas, atenciones y entregas',
-    'procedimentos.introTitle':
-        'Configura orientaciones para ventas, atenciones y entregas.',
-    'procedimentos.demoData': 'Datos demostrativos',
-    'procedimentos.filtersLabel': 'Filtros de procedimientos',
-    'procedimentos.filterAll': 'Todos',
-    'procedimentos.filterActive': 'Activos',
-    'procedimentos.filterInactive': 'Inactivos',
-    'procedimentos.newProcedure': 'Nuevo procedimiento',
-    'procedimentos.newProcedureSemantics': 'Nuevo procedimiento',
-    'procedimentos.createProcedure': 'Crear procedimiento',
-    'procedimentos.openAction': 'Abrir',
-    'procedimentos.createUnavailable':
-        'La creaciÃ³n de procedimientos estarÃ¡ disponible en la prÃ³xima etapa.',
-    'procedimentos.editUnavailable':
-        'La ediciÃ³n de este procedimiento estarÃ¡ disponible en la prÃ³xima etapa.',
-    'procedimentos.loading': 'Cargando procedimientos',
-    'procedimentos.emptyTitle': 'NingÃºn procedimiento configurado',
-    'procedimentos.emptyDescription':
-        'Crea orientaciones para apoyar al equipo en los momentos importantes de la operaciÃ³n.',
-    'procedimentos.filteredEmptyTitle': 'NingÃºn procedimiento en este filtro',
-    'procedimentos.filteredEmptyDescription':
-        'Cambia el filtro para ver otros procedimientos demostrativos.',
-    'procedimentos.errorTitle': 'No fue posible cargar los procedimientos',
-    'procedimentos.errorDescription': 'IntÃ©ntalo nuevamente en unos instantes.',
-    'procedimentos.statusDraft': 'Borrador',
-    'procedimentos.operationSale': 'Venta',
-    'procedimentos.operationTechnicalService': 'AtenciÃ³n tÃ©cnica',
-    'procedimentos.operationQuote': 'Presupuesto',
-    'procedimentos.operationDelivery': 'Entrega',
-    'procedimentos.momentBeforeStart': 'Antes de iniciar',
-    'procedimentos.momentBeforeFinish': 'Antes de finalizar',
-    'procedimentos.momentBeforeDelivery': 'Antes de la entrega',
-    'procedimentos.stageSingular': 'etapa',
-    'procedimentos.stagePlural': 'etapas',
-    'procedimentos.itemSingular': 'Ã­tem',
-    'procedimentos.itemPlural': 'Ã­tems',
-    'procedimentos.stageProgress': 'Etapa {current} de {total}',
-    'procedimentos.procedureSequence': 'Procedimiento {current} de {total}',
-    'procedimentos.actionsCompleted.zero': '0 de {total} acciones concluidas',
-    'procedimentos.actionsCompleted.one': '1 de {total} acciÃ³n concluida',
-    'procedimentos.actionsCompleted.other':
-        '{count} de {total} acciones concluidas',
-    'procedimentos.answeredActionsSummary.zero':
-        '0 de {total} acciones respondidas.',
-    'procedimentos.answeredActionsSummary.one':
-        '1 de {total} acciÃ³n respondida.',
-    'procedimentos.answeredActionsSummary.other':
-        '{count} de {total} acciones respondidas.',
-    'procedimentos.optionalPendingSummary.zero':
-        'NingÃºn Ã­tem opcional pendiente.',
-    'procedimentos.optionalPendingSummary.one': '1 Ã­tem opcional pendiente.',
-    'procedimentos.optionalPendingSummary.other':
-        '{count} Ã­tems opcionales pendientes.',
-    'procedimentos.requiredPendingSummary.zero':
-        'NingÃºn Ã­tem obligatorio pendiente.',
-    'procedimentos.requiredPendingSummary.one': '1 Ã­tem obligatorio pendiente.',
-    'procedimentos.requiredPendingSummary.other':
-        '{count} Ã­tems obligatorios pendientes.',
-    'procedimentos.itemCount.zero': '0 Ã­tems',
-    'procedimentos.itemCount.one': '1 Ã­tem',
-    'procedimentos.itemCount.other': '{count} Ã­tems',
-    'procedimentos.stageCount.zero': '0 etapas',
-    'procedimentos.stageCount.one': '1 etapa',
-    'procedimentos.stageCount.other': '{count} etapas',
-    'procedimentos.stageSemantics': 'Etapa {order}: {title}. {itemCountLabel}.',
-    'procedimentos.executionItemSemantics': '{requiredLabel}: {title}. {type}.',
-    'procedimentos.executionItemStatus': '{type} â€¢ {requiredLabel}',
-    'procedimentos.responseTypeSemantics': '{label}. {description}.',
-    'procedimentos.responseTypeSimulatedSemantics':
-        '{label}. {description}. {demoLabel}.',
-    'procedimentos.triggerSemantics':
-        '{operation}, {moment}, {activation}, {enforcement}, {status}',
-    'procedimentos.triggerSummarySingle': '{operation}, {moment}',
-    'procedimentos.triggerSummaryMultiple': '{first} â€¢ +{remaining}',
-    'procedimentos.optionNumber': 'OpciÃ³n {index}',
-    'procedimentos.editorNewTitle': 'Nuevo procedimiento',
-    'procedimentos.editorEditTitle': 'Editar procedimiento',
-    'procedimentos.generalInfo': 'InformaciÃ³n general',
-    'procedimentos.nameField': 'Nombre',
-    'procedimentos.descriptionField': 'DescripciÃ³n',
-    'procedimentos.operationContext': 'Contexto operativo',
-    'procedimentos.momentField': 'Momento',
-    'procedimentos.requireCompletion':
-        'Exigir conclusiÃ³n de este procedimiento',
-    'procedimentos.requireCompletionHelp':
-        'En una integraciÃ³n futura, este procedimiento podrÃ¡ exigir conclusiÃ³n antes de continuar la operaciÃ³n.',
-    'procedimentos.stages': 'Etapas',
-    'procedimentos.addStage': 'Agregar etapa',
-    'procedimentos.editStage': 'Editar etapa',
-    'procedimentos.deleteStage': 'Eliminar etapa',
-    'procedimentos.items': 'Ãtems',
-    'procedimentos.addItem': 'Agregar Ã­tem',
-    'procedimentos.editItem': 'Editar Ã­tem',
-    'procedimentos.deleteItem': 'Eliminar Ã­tem',
-    'procedimentos.itemType': 'Tipo de Ã­tem',
-    'procedimentos.stageTitleField': 'TÃ­tulo de la etapa',
-    'procedimentos.itemTitleField': 'TÃ­tulo o instrucciÃ³n',
-    'procedimentos.itemGuidanceField': 'Texto de apoyo',
-    'procedimentos.saveStage': 'Guardar etapa',
-    'procedimentos.saveItem': 'Guardar Ã­tem',
-    'procedimentos.responseInstruction': 'OrientaciÃ³n',
-    'procedimentos.responseConfirmation': 'ConfirmaciÃ³n',
-    'procedimentos.responseYesNo': 'SÃ­ o no',
-    'procedimentos.responseInstructionDescription':
-        'Presenta una instrucciÃ³n al colaborador.',
-    'procedimentos.responseConfirmationDescription':
-        'Exige que el colaborador confirme una acciÃ³n.',
-    'procedimentos.responseYesNoDescription': 'Presenta una pregunta objetiva.',
-    'procedimentos.validationName': 'Ingresa el nombre del procedimiento.',
-    'procedimentos.validationReviewFields':
-        'Revisa los campos destacados antes de guardar.',
-    'procedimentos.validationAtLeastOneStage':
-        'Agrega al menos una etapa al procedimiento.',
-    'procedimentos.validationStageTitle': 'Ingresa el tÃ­tulo de la etapa.',
-    'procedimentos.validationStageItem':
-        'Cada etapa debe tener al menos un Ã­tem.',
-    'procedimentos.validationItemTitle': 'Ingresa el tÃ­tulo del Ã­tem.',
-    'procedimentos.createdSuccess': 'Procedimiento creado.',
-    'procedimentos.updatedSuccess': 'Procedimiento actualizado.',
-    'procedimentos.discardChangesTitle': 'Â¿Descartar cambios?',
-    'procedimentos.discardChangesMessage':
-        'Los cambios realizados en este procedimiento aÃºn no se han guardado.',
-    'procedimentos.keepEditing': 'Continuar editando',
-    'procedimentos.discard': 'Descartar',
-    'procedimentos.confirmDeleteStageTitle': 'Â¿Eliminar etapa?',
-    'procedimentos.confirmDeleteStageMessage':
-        'Los Ã­tems de esta etapa tambiÃ©n serÃ¡n removidos.',
-    'procedimentos.confirmDeleteItemTitle': 'Â¿Eliminar Ã­tem?',
-    'procedimentos.confirmDeleteItemMessage':
-        'Este Ã­tem serÃ¡ removido del procedimiento.',
-    'procedimentos.editorDemoNotice':
-        'Los cambios se mantendrÃ¡n solo durante esta sesiÃ³n.',
-    'procedimentos.noStages': 'Ninguna etapa agregada',
-    'procedimentos.itemRequiredHelp':
-        'La lÃ³gica final de obligatoriedad se definirÃ¡ en la integraciÃ³n operativa.',
-    'procedimentos.previewAction': 'Previsualizar',
-    'procedimentos.demonstration': 'DemostraciÃ³n',
-    'procedimentos.responsePhoto': 'Tomar foto',
-    'procedimentos.responseSignature': 'Firma',
-    'procedimentos.responseLocation': 'Capturar ubicaciÃ³n',
-    'procedimentos.responseBarcode': 'Leer cÃ³digo de barras',
-    'procedimentos.responseImei': 'Informar IMEI',
-    'procedimentos.responseDocument': 'Adjuntar documento',
-    'procedimentos.responseAudio': 'Grabar audio',
-    'procedimentos.responseFreeText': 'Texto libre',
-    'procedimentos.responseNumber': 'NÃºmero',
-    'procedimentos.responseDate': 'Fecha',
-    'procedimentos.responseSingleChoice': 'ElecciÃ³n Ãºnica',
-    'procedimentos.responseMultipleChoice': 'ElecciÃ³n mÃºltiple',
-    'procedimentos.responsePhotoDescription':
-        'Simula la captura de una foto como evidencia.',
-    'procedimentos.responseSignatureDescription':
-        'Simula la recolecciÃ³n de una firma.',
-    'procedimentos.responseLocationDescription':
-        'Simula la captura de una ubicaciÃ³n.',
-    'procedimentos.responseBarcodeDescription':
-        'Simula la lectura de un cÃ³digo de barras.',
-    'procedimentos.responseImeiDescription':
-        'Permite informar un IMEI manualmente.',
-    'procedimentos.responseDocumentDescription':
-        'Simula adjuntar un documento.',
-    'procedimentos.responseAudioDescription': 'Simula una grabaciÃ³n de audio.',
-    'procedimentos.responseFreeTextDescription':
-        'Permite registrar una respuesta en texto.',
-    'procedimentos.responseNumberDescription':
-        'Permite registrar un valor numÃ©rico.',
-    'procedimentos.responseDateDescription': 'Permite seleccionar una fecha.',
-    'procedimentos.responseSingleChoiceDescription':
-        'Permite seleccionar una opciÃ³n.',
-    'procedimentos.responseMultipleChoiceDescription':
-        'Permite seleccionar una o mÃ¡s opciones.',
-    'procedimentos.typeCategoryGuide': 'Orientar y confirmar',
-    'procedimentos.typeCategoryCollect': 'Recolectar informaciÃ³n',
-    'procedimentos.typeCategoryEvidence': 'Registrar evidencia',
-    'procedimentos.typeCategoryIdentify': 'Identificar',
-    'procedimentos.itemTypePickerHelp':
-        'Elige cÃ³mo el colaborador responderÃ¡ o registrarÃ¡ esta acciÃ³n.',
-    'procedimentos.placeholderField': 'Placeholder',
-    'procedimentos.unitField': 'Unidad',
-    'procedimentos.choiceOptions': 'Opciones de elecciÃ³n',
-    'procedimentos.addOption': 'Agregar opciÃ³n',
-    'procedimentos.removeOption': 'Eliminar opciÃ³n',
-    'procedimentos.optionField': 'OpciÃ³n',
-    'procedimentos.validationChoiceOptions': 'Ingresa al menos dos opciones.',
-    'procedimentos.changeTypeTitle': 'Â¿Cambiar tipo de Ã­tem?',
-    'procedimentos.changeTypeMessage':
-        'Las opciones configuradas serÃ¡n removidas para este tipo.',
-    'procedimentos.simulatedTypeEditorHelp':
-        'En modo demostraciÃ³n, esta captura serÃ¡ simulada sin usar recursos del dispositivo.',
-    'procedimentos.previewTitle': 'PrevisualizaciÃ³n',
-    'procedimentos.previewUntitledProcedure': 'Procedimiento sin nombre',
-    'procedimentos.previewIncompleteProcedure':
-        'Este procedimiento aÃºn no tiene etapas para demostrar.',
-    'procedimentos.previewOf': 'de',
-    'procedimentos.previewProgressLabel': 'Acciones concluidas',
-    'procedimentos.previewPendingMessage':
-        'Hay acciones obligatorias pendientes en esta etapa.',
-    'procedimentos.previewRequiredPending':
-        'Responde esta acciÃ³n obligatoria para continuar.',
-    'procedimentos.previewNextStage': 'Siguiente etapa',
-    'procedimentos.previewFinishDemo': 'Finalizar',
-    'procedimentos.previewReviewStages': 'Revisar etapas',
-    'procedimentos.previewSummaryTitle': 'DemostraciÃ³n concluida',
-    'procedimentos.previewSummarySavedMessage':
-        'Ninguna respuesta fue guardada.',
-    'procedimentos.previewSummaryAnswered': 'Acciones respondidas.',
-    'procedimentos.previewSummaryNoOptionalPending':
-        'NingÃºn Ã­tem opcional pendiente.',
-    'procedimentos.previewSummaryOptionalPending': 'Ãtem opcional pendiente.',
-    'procedimentos.previewDiscardTitle': 'Â¿Descartar respuestas?',
-    'procedimentos.previewDiscardMessage':
-        'Las respuestas de esta demostraciÃ³n serÃ¡n descartadas al salir.',
-    'procedimentos.previewConfirmAction': 'Confirmar acciÃ³n',
-    'procedimentos.previewUnderstood': 'Marcar como entendido',
-    'procedimentos.previewUnderstoodDone': 'Entendido',
-    'procedimentos.previewTextHint': 'Ingresa la respuesta',
-    'procedimentos.previewNumberHint': 'Ingresa un nÃºmero',
-    'procedimentos.previewSelectDate': 'Seleccionar fecha',
-    'procedimentos.previewImeiHint': 'Ingresa el IMEI',
-    'procedimentos.previewUseDemoImei': 'Usar IMEI demostrativo',
-    'procedimentos.previewTakePhoto': 'Tomar foto',
-    'procedimentos.previewSimulateSignature': 'Simular firma',
-    'procedimentos.previewCaptureLocation': 'Capturar ubicaciÃ³n',
-    'procedimentos.previewSimulateBarcode': 'Simular lectura',
-    'procedimentos.previewSimulateDocument': 'Simular anexo',
-    'procedimentos.previewSimulateAudio': 'Simular grabaciÃ³n',
-    'procedimentos.previewRemoveEvidence': 'Remover evidencia',
-    'procedimentos.simulatedResourceNotice':
-        'Recurso demostrativo. NingÃºn dato real serÃ¡ capturado.',
-    'procedimentos.previewPhotoAdded': 'Foto agregada',
-    'procedimentos.previewSignatureAdded': 'Firma agregada',
-    'procedimentos.previewSignatureDemoDetail': 'Trazo demostrativo registrado',
-    'procedimentos.previewLocationAdded': 'UbicaciÃ³n de demostraciÃ³n capturada',
-    'procedimentos.previewBarcodeAdded': 'CÃ³digo leÃ­do',
-    'procedimentos.previewDocumentAdded': 'Documento adjuntado',
-    'procedimentos.previewAudioAdded': 'Audio grabado',
-    'procedimentos.operationCashRegister': 'Caja',
-    'procedimentos.operationCustomerRegistration': 'Registro de cliente',
-    'procedimentos.triggerMomentBeforeStart': 'Antes de iniciar',
-    'procedimentos.triggerMomentAfterStart': 'DespuÃ©s de iniciar',
-    'procedimentos.triggerMomentBeforeFinish': 'Antes de concluir',
-    'procedimentos.triggerMomentAfterFinish': 'DespuÃ©s de concluir',
-    'procedimentos.triggerMomentBeforeDelivery': 'Antes de la entrega',
-    'procedimentos.triggerMomentAfterDelivery': 'DespuÃ©s de la entrega',
-    'procedimentos.triggerMomentOnDemand': 'Bajo demanda',
-    'procedimentos.activationManual': 'Manual',
-    'procedimentos.activationAutomatic': 'AutomÃ¡tico',
-    'procedimentos.activationManualDescription':
-        'El colaborador podrÃ¡ iniciar este procedimiento cuando sea necesario.',
-    'procedimentos.activationAutomaticDescription':
-        'En una integraciÃ³n futura, el procedimiento serÃ¡ presentado en el momento configurado.',
-    'procedimentos.enforcementInformative': 'Informativo',
-    'procedimentos.enforcementRecommended': 'Recomendado',
-    'procedimentos.enforcementRequired': 'Obligatorio',
-    'procedimentos.enforcementInformativeDescription':
-        'Presenta el procedimiento sin exigir conclusiÃ³n.',
-    'procedimentos.enforcementRecommendedDescription':
-        'Recomienda la conclusiÃ³n, pero no debe bloquear la operaciÃ³n.',
-    'procedimentos.enforcementRequiredDescription':
-        'En una integraciÃ³n futura, exigirÃ¡ conclusiÃ³n antes de continuar.',
-    'procedimentos.whenExecute': 'CuÃ¡ndo ejecutar',
-    'procedimentos.addTrigger': 'Agregar gatillo',
-    'procedimentos.editTrigger': 'Editar gatillo',
-    'procedimentos.deleteTrigger': 'Eliminar gatillo',
-    'procedimentos.noTriggers': 'NingÃºn gatillo configurado.',
-    'procedimentos.noTriggersDescription':
-        'Sin gatillos, el procedimiento estarÃ¡ disponible solo para uso y previsualizaciÃ³n dentro de este mÃ³dulo.',
-    'procedimentos.triggerCount': 'gatillos',
-    'procedimentos.selectOperationContext': 'Seleccionar contexto',
-    'procedimentos.selectTriggerMoment': 'Seleccionar momento',
-    'procedimentos.activationMode': 'Modo de ejecuciÃ³n',
-    'procedimentos.enforcementMode': 'Nivel de exigencia',
-    'procedimentos.triggerEnabledHelp':
-        'Controla si este gatillo serÃ¡ considerado en una integraciÃ³n futura.',
-    'procedimentos.saveTrigger': 'Guardar gatillo',
-    'procedimentos.triggerMomentCleared':
-        'El momento fue limpiado porque no es compatible con el contexto seleccionado.',
-    'procedimentos.validationTriggerOperation': 'Elige el contexto operativo.',
-    'procedimentos.validationTriggerMoment': 'Elige el momento de ejecuciÃ³n.',
-    'procedimentos.validationTriggerMomentInvalid':
-        'Elige un momento compatible con el contexto.',
-    'procedimentos.validationDuplicateTrigger':
-        'Ya existe un gatillo con este contexto, momento y modo de ejecuciÃ³n.',
-    'procedimentos.deleteTriggerTitle': 'Â¿Eliminar gatillo?',
-    'procedimentos.deleteTriggerMessage':
-        'El procedimiento dejarÃ¡ de mostrarse en este momento operativo.',
-    'procedimentos.triggerSummaryNone': 'Sin gatillos configurados',
-    'procedimentos.triggerSummaryOnlyInactive': 'Gatillos inactivos',
-    'procedimentos.executionConfiguration': 'ConfiguraciÃ³n de ejecuciÃ³n',
-    'procedimentos.triggerSimulationNotice':
-        'SimulaciÃ³n de gatillo. Ninguna operaciÃ³n real serÃ¡ bloqueada.',
-    'procedimentos.manualDemoExecution': 'EjecuciÃ³n manual de demostraciÃ³n.',
-    'procedimentos.operationPointSaleStartBefore': 'Antes de iniciar una venta',
-    'procedimentos.operationPointSaleStartBeforeDescription':
-        'Se ejecuta antes de abrir el flujo de una nueva venta.',
-    'procedimentos.mobilePointAvailable': 'Disponible en la aplicaciÃ³n mÃ³vil.',
-    'procedimentos.operationalExecutionTitle': 'Antes de iniciar la venta',
-    'procedimentos.operationalSummaryTitle': 'Procedimiento concluido',
-    'procedimentos.operationalNoDataSaved':
-        'Ninguna respuesta fue guardada en esta integraciÃ³n local experimental.',
-    'procedimentos.completeAndStartSale': 'Concluir e iniciar venta',
-    'procedimentos.experimentalIntegration': 'IntegraciÃ³n experimental',
-    'procedimentos.continueToStartSale': 'Continuar a la venta',
-    'procedimentos.continueWithoutCompleting': 'Continuar sin concluir',
-    'procedimentos.continueWithoutCompletingTitle': 'Â¿Continuar sin concluir?',
-    'procedimentos.continueWithoutCompletingMessage':
-        'Este procedimiento es recomendado antes de iniciar la venta.',
-    'procedimentos.continueAnyway': 'Continuar de todos modos',
-    'procedimentos.returnToProcedure': 'Volver al procedimiento',
-    'procedimentos.cancelSaleStartTitle': 'Â¿Cancelar inicio de venta?',
-    'procedimentos.cancelSaleStartMessage':
-        'Este procedimiento es obligatorio. Al salir, la nueva venta no serÃ¡ iniciada.',
-    'procedimentos.cancelSale': 'Cancelar venta',
-    'procedimentos.sequenceProgressPrefix': 'Procedimiento',
-    'procedimentos.previewNegativeTextLabel': 'Â¿QuÃ© faltÃ³?',
-    'procedimentos.previewNegativeTextHint': 'Describe quÃ© faltÃ³',
-    'procedimentos.operationalLoadError':
-        'No fue posible cargar los procedimientos.',
-    'procedimentos.operationalBadge': 'Procedimiento operativo',
-    'procedimentos.operationalExecutionTitleReal': 'Procedimiento operativo',
-    'procedimentos.executionWillBeSaved':
-        'Las respuestas y los horarios se guardarÃ¡n al finalizar.',
-    'procedimentos.completeAndContinue': 'Concluir y continuar',
-    'procedimentos.continueOperation': 'Continuar operaciÃ³n',
-    'procedimentos.processingSkip': 'Continuando...',
-    'procedimentos.processingCancel': 'Cancelando...',
-    'procedimentos.executionSaveError':
-        'No fue posible guardar las respuestas. IntÃ©ntalo de nuevo.',
-    'procedimentos.skipSuccessTitle': 'Procedimiento omitido',
-    'procedimentos.cancelSuccessTitle': 'OperaciÃ³n cancelada',
-    'procedimentos.completeSuccessMessage':
-        'Las respuestas fueron guardadas y la operaciÃ³n puede continuar.',
-    'procedimentos.skipSuccessMessage':
-        'El procedimiento fue omitido y la operaciÃ³n continuarÃ¡ segÃºn la configuraciÃ³n actual.',
-    'procedimentos.cancelSuccessMessage':
-        'La operaciÃ³n se cerrÃ³ antes de avanzar al siguiente paso.',
-    'procedimentos.persistedConfiguration': 'ConfiguraciÃ³n sincronizada',
-    'procedimentos.editorPersistenceNotice':
-        'Los cambios se guardan para la empresa en el idioma actual.',
-    'procedimentos.notifyAdmin': 'Notificar al ADMIN por push',
-    'procedimentos.notifyAdminHelp':
-        'Notifica a los administradores activos cuando ocurre la condiciÃ³n.',
-    'procedimentos.notificationCondition': 'CuÃ¡ndo notificar',
-    'procedimentos.notificationAlways': 'En cada ejecuciÃ³n',
-    'procedimentos.notificationNegative': 'Al registrar una respuesta negativa',
-    'procedimentos.notificationSkipped': 'Al omitir el procedimiento',
-    'procedimentos.analyticsTitle': 'AnÃ¡lisis de resultados',
-    'procedimentos.analyticsExecutions': 'Ejecuciones',
-    'procedimentos.analyticsCompletion': 'Tasa de conclusiÃ³n',
-    'procedimentos.analyticsNegative': 'Respuestas negativas',
-    'procedimentos.analyticsAverageTime': 'Tiempo medio',
-    'procedimentos.analyticsByQuestion': 'Resultados por pregunta',
-    'procedimentos.analyticsRecent': 'Ejecuciones recientes',
-    'procedimentos.analyticsEmpty': 'AÃºn no hay ejecuciones en este perÃ­odo.',
-    'procedimentos.contextSale': 'Venta',
-    'procedimentos.contextTechnicalService': 'AtenciÃ³n tÃ©cnica',
-    'procedimentos.contextCashRegister': 'Caja',
-
-    // GestiÃ³n â€” secciones
-    'gestao.title': 'GestiÃ³n',
-    'gestao.hub.title': 'Â¿QuÃ© quieres gestionar?',
-    'gestao.hub.subtitle':
-        'Accede a catÃ¡logos, personas, finanzas y preferencias.',
-    'gestao.hub.terminal.products': 'Gestiona tus productos y colaboradores',
-    'gestao.hub.terminal.finance': 'Gestiona tus finanzas',
-    'gestao.hub.terminal.preferences':
-        'Ajusta tus preferencias y configuraciones',
-    'gestao.catalog.title': 'CatÃ¡logo',
-    'gestao.catalog.subtitle': 'Productos, categorÃ­as e inventario',
-    'gestao.people.title': 'Personas',
-    'gestao.people.subtitle': 'Clientes, equipo y socios',
-    'gestao.finance.title': 'Financiero',
-    'gestao.finance.subtitle': 'Cuentas, agenda y recibos',
-    'gestao.settings.title': 'ConfiguraciÃ³n',
-    'gestao.settings.selectorTitle': 'General',
-    'gestao.settings.subtitle': 'Empresa, idioma e integraciones',
-
-    // GestiÃ³n â€” Ã­tems de CatÃ¡logo
-    'gestao.catalog.productsServices': 'Productos y Servicios',
-    'gestao.catalog.productsServicesDesc':
-        'Salud, registros y revisiÃ³n del catÃ¡logo',
-    'gestao.catalog.categories': 'CategorÃ­as',
-    'gestao.catalog.categoriesDesc': 'OrganizaciÃ³n del catÃ¡logo',
-    'gestao.catalog.inventory': 'Inventario',
-    'gestao.catalog.inventoryDesc': 'Saldos, entradas y ajustes',
-
-    // GestiÃ³n â€” Ã­tems de Personas
-    'gestao.people.clients': 'Clientes',
-    'gestao.people.clientsDesc': 'Base de atenciÃ³n y relaciÃ³n',
-    'gestao.people.collaborators': 'Colaboradores',
-    'gestao.people.collaboratorsDesc': 'Equipo, accesos y responsabilidades',
-    'gestao.people.sixoUsers': 'Usuarios de Sixo',
-    'gestao.people.sixoUsersDesc': 'Base global protegida por el perfil SUPER',
-    'gestao.people.suppliers': 'Proveedores',
-    'gestao.people.suppliersDesc': 'Socios y compras del comercio',
-
-    // GestiÃ³n â€” Ã­tems de Financiero
-    'gestao.finance.receivable': 'Cuentas por cobrar',
-    'gestao.finance.receivableDesc': 'Cobros y facturas pendientes',
-    'gestao.finance.payable': 'Cuentas por pagar',
-    'gestao.finance.payableDesc': 'Gastos y compromisos',
-    'gestao.finance.schedule': 'Agenda financiera',
-    'gestao.finance.scheduleDesc': 'Previsiones, fiado y crÃ©ditos',
-    'gestao.finance.paymentMethods': 'Formas de cobro',
-    'gestao.finance.paymentMethodsDesc':
-        'Efectivo, tarjeta, Pix y otros medios',
-
-    // GestiÃ³n â€” grupos de ConfiguraciÃ³n
-    'gestao.settings.group.company': 'Empresa',
-    'gestao.settings.group.teamAccess': 'Equipo y acceso',
-    'gestao.settings.group.operation': 'OperaciÃ³n',
-    'gestao.settings.group.communication': 'ComunicaciÃ³n',
-    'gestao.settings.group.docsIntegrations': 'Documentos e integraciones',
-
-    // GestiÃ³n â€” Ã­tems de ConfiguraciÃ³n
-    'gestao.settings.item.company.title': 'Empresa',
-    'gestao.settings.item.company.subtitle':
-        'Datos de registro e identidad del comercio',
-    'gestao.settings.item.regionalization.title': 'RegionalizaciÃ³n',
-    'gestao.settings.item.regionalization.subtitle':
-        'Idioma, moneda, paÃ­s y formatos locales',
-    'gestao.settings.item.users.title': 'Usuarios y permisos',
-    'gestao.settings.item.users.subtitle':
-        'Accesos, perfiles y seguridad del equipo',
-    'gestao.settings.item.procedures.title': 'Procedimientos',
-    'gestao.settings.item.procedures.subtitle':
-        'GuÃ­as para ventas, servicios y entregas',
-    'gestao.settings.item.notifications.title': 'Notificaciones',
-    'gestao.settings.item.notifications.subtitle':
-        'Eventos recibidos y alertas del sistema',
-    'gestao.settings.item.pdfTemplates.title': 'Plantillas PDF',
-    'gestao.settings.item.pdfTemplates.subtitle':
-        'Presupuestos, OS, recibos y documentos',
-    'gestao.settings.item.integrations.title': 'Integraciones',
-    'gestao.settings.item.integrations.subtitle':
-        'Servicios externos y automatizaciones',
-
-    // GestiÃ³n â€” visiÃ³n contextual mÃ³vil
-    'gestao.overview.selectedArea': 'Ãrea seleccionada',
-    'gestao.overview.generalTitle': 'Vista general',
-    'gestao.overview.valueUnavailable': '--',
-    'gestao.overview.mainActions': 'Acciones principales',
-    'gestao.overview.errorMessage':
-        'Las acciones siguen disponibles. Intenta actualizar los datos en unos instantes.',
-    'gestao.catalog.summaryTitle': 'Resumen del catÃ¡logo',
-    'gestao.catalog.metric.products': 'Productos',
-    'gestao.catalog.metric.productsServices': 'Productos y servicios',
-    'gestao.catalog.metric.categories': 'CategorÃ­as',
-    'gestao.catalog.metric.lowStock': 'Stock bajo',
-    'gestao.catalog.lowStockAlertSemantic':
-        'Indicador de atenciÃ³n para stock bajo',
-    'gestao.catalog.loadError':
-        'No fue posible cargar el resumen del catÃ¡logo.',
-    'gestao.catalog.emptyTitle': 'CatÃ¡logo sin datos para mostrar',
-    'gestao.catalog.emptyMessage':
-        'Registra productos, servicios o categorÃ­as para completar los indicadores.',
-    'gestao.catalog.permissionRestrictedTitle':
-        'CatÃ¡logo restringido para este usuario',
-    'gestao.catalog.permissionRestrictedMessage':
-        'La acciÃ³n de Productos y Servicios respeta los permisos actuales.',
-    'gestao.catalog.lowStockTitle': 'El inventario necesita atenciÃ³n',
-    'gestao.catalog.lowStockMessage':
-        '{count} elemento(s) por debajo del lÃ­mite configurado en el catÃ¡logo.',
-    'gestao.catalog.lowStockAction': 'Ver elementos',
-    'gestao.people.summaryTitle': 'Resumen de personas',
-    'gestao.people.metric.clients': 'Clientes',
-    'gestao.people.metric.collaborators': 'Colaboradores',
-    'gestao.people.metric.suppliers': 'Proveedores',
-    'gestao.people.suppliersUnavailableSemantic': 'Recurso prÃ³ximamente',
-    'gestao.people.loadError': 'No fue posible cargar el resumen de personas.',
-    'gestao.people.emptyTitle': 'NingÃºn contacto cargado',
-    'gestao.people.emptyMessage':
-        'Clientes y colaboradores aparecerÃ¡n aquÃ­ cuando estÃ©n registrados.',
-    'gestao.people.suppliersBlockedTitle': 'Proveedores aÃºn no estÃ¡ disponible',
-    'gestao.people.suppliersBlockedMessage':
-        'El recurso sigue marcado como PrÃ³ximamente y no tiene navegaciÃ³n mÃ³vil activa.',
-    'gestao.finance.actionGroup': 'Agenda y recursos',
-    'gestao.finance.summaryTitle': 'Resumen financiero',
-    'gestao.finance.metric.events': 'PrÃ³ximos eventos',
-    'gestao.finance.metric.receivableEvents': 'Por cobrar',
-    'gestao.finance.metric.payableEvents': 'Por pagar',
-    'gestao.finance.loadError': 'No fue posible cargar la agenda financiera.',
-    'gestao.finance.emptyTitle': 'Agenda sin lanzamientos prÃ³ximos',
-    'gestao.finance.emptyMessage':
-        'Abre la agenda financiera para crear previsiones y seguir vencimientos.',
-    'gestao.finance.openSchedule': 'Abrir agenda',
-    'gestao.finance.attentionTitle': 'Agenda con vencimientos prÃ³ximos',
-    'gestao.finance.attentionMessage':
-        '{count} evento(s) vencido(s) o con vencimiento hoy en la agenda.',
-    'gestao.finance.blockedResourcesTitle': 'Recursos financieros en evoluciÃ³n',
-    'gestao.finance.blockedResourcesMessage':
-        'Cuentas por cobrar, cuentas por pagar y formas de cobro continÃºan bloqueadas en mobile.',
-
-    // AtenciÃ³n mobile
-    'atendimento.mobile.title': 'AtenciÃ³n',
-    'atendimento.mobile.heroTitle': 'Â¿QuÃ© deseas hacer?',
-    'atendimento.mobile.heroSubtitle': 'Venta, servicio o cobro en pocos pasos',
-    'atendimento.mobile.introTitle': 'AtenciÃ³n al Cliente',
-    'atendimento.mobile.introLineSales': 'vender, cobrar, consultar',
-    'atendimento.mobile.introLineReturns': 'devoluciones de productos',
-    'atendimento.mobile.introLineServices': 'servicios, presupuestos, etc.',
-    'atendimento.mobile.chooseOperation': 'Elige la operaciÃ³n para iniciar.',
-    'atendimento.mobile.salesMenuTitle': 'Ventas',
-    'atendimento.mobile.newSaleTitle': 'Ventas',
-    'atendimento.mobile.newSaleSubtitle': 'Opciones',
-    'atendimento.mobile.consultSalesTitle': 'Consultar ventas',
-    'atendimento.mobile.consultSalesSubtitle': 'Consultar historial de ventas',
-    'atendimento.mobile.newServiceTitle': 'Servicios',
-    'atendimento.mobile.newServiceSubtitle': 'Crear o acompaÃ±ar',
-    'atendimento.mobile.servicesMenuTitle': 'Servicios',
-    'atendimento.mobile.createServiceTitle': 'Nuevo servicio',
-    'atendimento.mobile.createServiceSubtitle': 'Abrir nueva atenciÃ³n tÃ©cnica',
-    'atendimento.mobile.consultServicesInProgressTitle':
-        'Consultar servicios en curso',
-    'atendimento.mobile.consultServicesInProgressSubtitle':
-        'Ver atenciones tÃ©cnicas activas',
-    'atendimento.mobile.receiveTitle': 'Cobrar',
-    'atendimento.mobile.receiveSubtitle': 'Ventas abiertas',
-    'atendimento.mobile.followToday': 'Seguimiento de hoy',
-    'atendimento.mobile.salesToReceiveTitle': 'Ventas por cobrar',
-    'atendimento.mobile.salesToReceiveSubtitle': 'Ventas no liquidadas',
-    'atendimento.mobile.servicesInProgressTitle': 'Servicios en curso',
-    'atendimento.mobile.servicesInProgressSubtitle':
-        'Atenciones tÃ©cnicas activas',
-    'atendimento.mobile.moreOptions': 'MÃ¡s opciones',
-    'atendimento.mobile.cashOperationsTitle': 'Caja',
-    'atendimento.mobile.cashOperationsSubtitle': 'Abrir y mover',
-    'atendimento.mobile.counterLoadError': 'No fue posible actualizar ahora',
-    'atendimento.mobile.servicesToReceiveTitle': 'Servicios por cobrar',
-    'atendimento.mobile.servicesToReceiveSubtitle':
-        'Atenciones tÃ©cnicas con financiero abierto',
-    'atendimento.mobile.technicalServicesPendingPaymentTitle':
-        'Atenciones tÃ©cnicas pendientes de pago',
-    'atendimento.mobile.pendingPaymentsLoadingTitle': 'Cargando atenciones',
-    'atendimento.mobile.pendingPaymentsLoadingSubtitle':
-        'Buscando servicios con financiero abierto.',
-    'atendimento.mobile.pendingPaymentHeaderTitle': 'Financiero abierto',
-    'atendimento.mobile.pendingPaymentTotalOpen': 'Total abierto',
-    'atendimento.mobile.pendingPaymentSection': 'Atenciones con saldo',
-    'atendimento.mobile.pendingPaymentErrorTitle': 'No fue posible cargar',
-    'atendimento.mobile.pendingPaymentErrorMessage':
-        'Intenta actualizar las atenciones tÃ©cnicas en instantes.',
-    'atendimento.mobile.pendingPaymentEmptyTitle': 'NingÃºn servicio por cobrar',
-    'atendimento.mobile.pendingPaymentEmptyMessage':
-        'Las atenciones tÃ©cnicas no tienen financiero abierto.',
-    'atendimento.mobile.onePendingPaymentService':
-        '1 atenciÃ³n con financiero abierto',
-    'atendimento.mobile.pendingPaymentServices':
-        'atenciones con financiero abierto',
-    'atendimento.mobile.serviceNumber': 'AtenciÃ³n',
-    'atendimento.mobile.openValue': 'Valor abierto',
-    'atendimento.mobile.totalValue': 'Valor total',
-    'atendimento.mobile.dueDate': 'Vence el',
-    'atendimento.mobile.noDueDate': 'Sin vencimiento',
-    'operacao.mobile.returnTitle': 'Devoluciones y Cambios',
-    'operacao.mobile.returnSubtitle': 'Registrar devoluciÃ³n',
-    'operacao.mobile.returnUnavailable': 'PrÃ³ximamente',
-
-    // Devoluciones mobile
-    'devolucao.mobile.title': 'Devoluciones',
-    'devolucao.mobile.introTitle': 'Localiza la venta',
-    'devolucao.mobile.introSubtitle':
-        'Usa el cÃ³digo del comprobante para iniciar una devoluciÃ³n o cambio.',
-    'devolucao.mobile.saleCodeLabel': 'CÃ³digo o ID de la venta',
-    'devolucao.mobile.saleCodeHint': 'Ej.: VEN-1024',
-    'devolucao.mobile.searchSale': 'Buscar venta',
-    'devolucao.mobile.searching': 'Buscando...',
-    'devolucao.mobile.operationCompleted': 'OperaciÃ³n concluida',
-    'devolucao.mobile.saleFound': 'Venta encontrada',
-    'devolucao.mobile.changeSale': 'Cambiar venta',
-    'devolucao.mobile.unidentifiedCustomer': 'Cliente no identificado',
-    'devolucao.mobile.productsValue': 'Valor de los productos',
-    'devolucao.mobile.returnBalance': 'Saldo devolvible',
-    'devolucao.mobile.hasEligibleItems': 'Hay artÃ­culos disponibles',
-    'devolucao.mobile.noEligibleBalance': 'Sin artÃ­culos disponibles',
-    'devolucao.mobile.operationTypeTitle': 'Â¿QuÃ© se harÃ¡?',
-    'devolucao.mobile.operationTypeSubtitle':
-        'Elige entre devolver o cambiar productos.',
-    'devolucao.mobile.returnOnly': 'Solo devoluciÃ³n',
-    'devolucao.mobile.exchange': 'Cambio',
-    'devolucao.mobile.itemsTitle': 'Productos que regresan',
-    'devolucao.mobile.itemsSubtitle':
-        'Selecciona los artÃ­culos e informa cantidad, condiciÃ³n y motivo.',
-    'devolucao.mobile.noItems':
-        'Esta venta no tiene artÃ­culos disponibles para devoluciÃ³n.',
-    'devolucao.mobile.soldValue': 'Vendido: {value}',
-    'devolucao.mobile.availableValue': 'Disponible: {value}',
-    'devolucao.mobile.quantity': 'Cantidad',
-    'devolucao.mobile.maximumQuantity': 'MÃ¡ximo: {value}',
-    'devolucao.mobile.condition': 'CondiciÃ³n del producto',
-    'devolucao.mobile.reason': 'Motivo de la devoluciÃ³n',
-    'devolucao.mobile.stockReturn': 'Regresar al inventario',
-    'devolucao.mobile.stockReturnOn':
-        'El saldo disponible del producto serÃ¡ repuesto.',
-    'devolucao.mobile.stockReturnOff':
-        'La devoluciÃ³n se registrarÃ¡ sin reponer el inventario.',
-    'devolucao.mobile.exchangeItemsTitle': 'Productos del cambio',
-    'devolucao.mobile.exchangeItemsSubtitle':
-        'Los nuevos productos saldrÃ¡n del inventario al precio actual.',
-    'devolucao.mobile.addProduct': 'Agregar producto',
-    'devolucao.mobile.exchangeEmpty':
-        'Agrega el producto que recibirÃ¡ el cliente.',
-    'devolucao.mobile.selectExchangeProduct': 'Elegir producto del cambio',
-    'devolucao.mobile.searchProduct': 'Buscar producto',
-    'devolucao.mobile.noProductsTitle': 'No se encontraron productos',
-    'devolucao.mobile.noProductsMessage':
-        'Revisa la bÃºsqueda o el catÃ¡logo de productos activos.',
-    'devolucao.mobile.productPrice': 'Precio actual: {value}',
-    'devolucao.mobile.perUnit': '{value} por unidad',
-    'devolucao.mobile.remove': 'Quitar producto',
-    'devolucao.mobile.financialTitle': 'Ajuste financiero',
-    'devolucao.mobile.returnedProducts': 'Productos devueltos',
-    'devolucao.mobile.exchangeProducts': 'Productos del cambio',
-    'devolucao.mobile.differenceReceive': 'Diferencia por cobrar',
-    'devolucao.mobile.refundValue': 'Valor a reembolsar',
-    'devolucao.mobile.customerPays': 'El cliente paga la diferencia.',
-    'devolucao.mobile.companyRefunds': 'La empresa reembolsa al cliente.',
-    'devolucao.mobile.noFinancialMovement': 'No habrÃ¡ movimiento financiero.',
-    'devolucao.mobile.paymentMethod': 'Forma de pago o reembolso',
-    'devolucao.mobile.paymentHelper': 'Requiere una sesiÃ³n de caja abierta.',
-    'devolucao.mobile.selectPayment': 'Seleccionar forma',
-    'devolucao.mobile.searchPayment': 'Buscar forma',
-    'devolucao.mobile.noPaymentMethods': 'No hay formas disponibles',
-    'devolucao.mobile.noPaymentMethodsMessage':
-        'Configura una forma de cobro inmediato antes de concluir.',
-    'devolucao.mobile.reviewTitle': 'Revisar y concluir',
-    'devolucao.mobile.reviewSubtitle':
-        'Confirma los datos antes de mover inventario y caja.',
-    'devolucao.mobile.notes': 'Observaciones internas (opcional)',
-    'devolucao.mobile.processing': 'Procesando...',
-    'devolucao.mobile.completeExchange': 'Concluir cambio',
-    'devolucao.mobile.completeReturn': 'Concluir devoluciÃ³n',
-    'devolucao.mobile.confirmationHelper':
-        'La confirmaciÃ³n puede mover inventario y registrar el ajuste en caja.',
-    'devolucao.mobile.recentTitle': 'Operaciones recientes',
-    'devolucao.mobile.recentSubtitle':
-        'Ãšltimas devoluciones y cambios de esta empresa.',
-    'devolucao.mobile.loadingRecent': 'Cargando operaciones recientes',
-    'devolucao.mobile.emptyRecent':
-        'No se concluyeron devoluciones o cambios recientemente.',
-    'devolucao.mobile.successMessage': 'OperaciÃ³n {code} concluida con Ã©xito.',
-    'devolucao.mobile.unexpectedError':
-        'No fue posible concluir la operaciÃ³n. IntÃ©ntalo de nuevo.',
-    'devolucao.mobile.validation.saleRequired':
-        'Informa el cÃ³digo o identificador de la venta.',
-    'devolucao.mobile.validation.invalidQuantity':
-        'Informa una cantidad vÃ¡lida para {product}.',
-    'devolucao.mobile.validation.quantityExceeded':
-        'La cantidad de {product} supera el saldo devolvible.',
-    'devolucao.mobile.validation.reasonRequired':
-        'Informa el motivo de devoluciÃ³n de {product}.',
-    'devolucao.mobile.validation.selectReturnItem':
-        'Selecciona al menos un producto para devolver.',
-    'devolucao.mobile.validation.selectExchangeItem':
-        'Agrega al menos un producto para el cambio.',
-    'devolucao.mobile.validation.selectPayment':
-        'Selecciona la forma usada para ajustar la diferencia.',
-    'devolucao.mobile.condition.sealed': 'Nuevo / sellado',
-    'devolucao.mobile.condition.opened': 'Abierto',
-    'devolucao.mobile.condition.used': 'Usado',
-    'devolucao.mobile.condition.defective': 'Con defecto',
-    'devolucao.mobile.condition.damaged': 'Averiado',
-    'devolucao.mobile.condition.other': 'Otra condiciÃ³n',
-
-    // Ventas no liquidadas mobile
-    'vendasNaoLiquidadas.recebimentos': 'Cobros',
-    'vendasNaoLiquidadas.semRecebimentos': 'NingÃºn cobro registrado.',
-    'vendasNaoLiquidadas.referencia': 'Referencia',
-    'vendasNaoLiquidadas.recebimento': 'Cobro',
-    'vendasNaoLiquidadas.recebimentoTotal': 'Total',
-    'vendasNaoLiquidadas.recebimentoParcial': 'Parcial',
-
-    // GestiÃ³n â€” badges y encabezado admin
-    'gestao.settings.badge.experimental': 'Experimental',
-    'gestao.settings.badge.comingSoon': 'PrÃ³ximamente',
-    'gestao.settings.adminHeader.title': 'ConfiguraciÃ³n de la empresa',
-    'gestao.settings.adminHeader.subtitle':
-        'Organiza empresa, equipo, operaciÃ³n y comunicaciÃ³n.',
-    'gestao.catalog.webCatalog': 'CatÃ¡logo web',
-    'gestao.catalog.webCatalogDesc':
-        'Experiencia completa del catÃ¡logo en el navegador',
-    'gestao.catalog.webCatalogBadge': 'WEB',
-    'gestao.featureInProgress': 'Flujo mÃ³vil en evoluciÃ³n.',
-    'produto.webList.selection.titleMany': 'Seleccionar Ã­tems',
-    'produto.webList.selection.titleOne': 'Seleccionar Ã­tem',
-    'produto.webList.selection.subtitleMany':
-        'Marca productos y servicios y agrega todo a la venta de una sola vez.',
-    'produto.webList.selection.subtitleOne':
-        'BÃºsqueda rÃ¡pida para incluir un producto o servicio en la venta.',
-    'produto.webList.edit.title': 'Editar productos',
-    'produto.webList.edit.subtitle':
-        'Gestiona tu catÃ¡logo de productos, stock, precios e imÃ¡genes.',
-    'produto.webList.default.subtitle':
-        'Consulta rÃ¡pida del catÃ¡logo con acciones de mostrador.',
-    'produto.webList.newItem': 'Nuevo Ã­tem',
-    'produto.webList.printPdf': 'Imprimir PDF',
-    'produto.webList.publicCatalogLink': 'Enlace del catÃ¡logo',
-    'produto.webList.publicCatalogPreparing': 'Preparando...',
-    'produto.webList.publicCatalogCopied':
-        'Enlace pÃºblico del catÃ¡logo copiado.',
-    'produto.webList.publicCatalogError':
-        'No fue posible preparar el enlace del catÃ¡logo.',
-    'catalogReservations.title': 'Reservas del catÃ¡logo',
-    'catalogReservations.subtitle':
-        'AcompaÃ±a las solicitudes recibidas por el catÃ¡logo virtual.',
-    'catalogReservations.loadingTitle': 'Cargando reservas',
-    'catalogReservations.loadingSubtitle':
-        'Sincronizando las solicitudes de este comercio.',
-    'catalogReservations.detailLoading': 'Cargando detalles',
-    'catalogReservations.detailLoadingSubtitle':
-        'Buscando los productos y datos del cliente.',
-    'catalogReservations.detailTitle': 'Detalles de la reserva',
-    'catalogReservations.empty': 'No se encontraron reservas.',
-    'catalogReservations.error': 'No fue posible cargar las reservas.',
-    'catalogReservations.status': 'Estado',
-    'catalogReservations.filters.apply': 'Aplicar',
-    'catalogReservations.filters.clear': 'Limpiar filtros',
-    'catalogReservations.filters.status.selectedCount': '{count} seleccionados',
-    'catalogReservations.filters.period': 'PerÃ­odo',
-    'catalogReservations.filters.start': 'Inicio',
-    'catalogReservations.filters.end': 'Fin',
-    'catalogReservations.filters.date': 'Fecha',
-    'catalogReservations.filters.date.all': 'Todas las fechas',
-    'catalogReservations.filters.date.today': 'Hoy',
-    'catalogReservations.filters.date.yesterday': 'Ayer',
-    'catalogReservations.filters.date.last7Days': 'Ultimos 7 dias',
-    'catalogReservations.filters.date.next7Days': 'Proximos 7 dias',
-    'catalogReservations.filters.date.thisMonth': 'Este mes',
-    'catalogReservations.filters.date.nextMonth': 'PrÃ³ximo mes',
-    'catalogReservations.filters.date.customRange': 'Intervalo personalizado',
-    'catalogReservations.filters.date.pick': 'Elegir fecha',
-    'catalogReservations.filters.date.pickRange': 'De dia a tal dia',
-    'catalogReservations.filters.date.helpText': 'Seleccionar fecha',
-    'catalogReservations.filters.date.startHelpText':
-        'Seleccionar fecha inicial',
-    'catalogReservations.filters.date.endHelpText': 'Seleccionar fecha final',
-    'catalogReservations.filters.date.rangeHelpText': 'Seleccionar periodo',
-    'catalogReservations.status.received': 'Recibida',
-    'catalogReservations.status.analysis': 'En anÃ¡lisis',
-    'catalogReservations.status.confirmed': 'Confirmada',
-    'catalogReservations.status.cancelled': 'Cancelada',
-    'catalogReservations.status.converted': 'Convertida en venta',
-    'catalogReservations.convert.title': 'Convertir en venta',
-    'catalogReservations.convert.description':
-        'Valida el stock y crea una venta por cobrar con estos productos.',
-    'catalogReservations.convert.action': 'Convertir en venta',
-    'catalogReservations.convert.processing': 'Convirtiendo...',
-    'catalogReservations.convert.confirmTitle':
-        'Â¿Convertir la reserva en venta?',
-    'catalogReservations.convert.confirmMessage':
-        'Se validarÃ¡ el stock y los Ã­tems se enviarÃ¡n a una venta por cobrar.',
-    'catalogReservations.convert.success':
-        'Reserva convertida en una venta por cobrar.',
-    'catalogReservations.convert.convertedTitle': 'Venta creada',
-    'catalogReservations.convert.saleId': 'Venta',
-    'catalogReservations.convert.error.stock':
-        'Stock insuficiente para convertir esta reserva.',
-    'catalogReservations.convert.error.confirmedOnly':
-        'Confirme la reserva antes de convertirla en venta.',
-    'catalogReservations.convert.error.processing':
-        'Esta reserva ya se estÃ¡ convirtiendo. Actualice la pantalla.',
-    'catalogReservations.convert.error.paymentConfig':
-        'Configure un tipo de cobro futuro antes de la conversiÃ³n.',
-    'catalogReservations.convert.error.product':
-        'Uno de los productos reservados ya no estÃ¡ disponible.',
-    'catalogReservations.convert.error.generic':
-        'No fue posible convertir la reserva en venta.',
-    'catalogReservations.items': 'Ã­tems',
-    'catalogReservations.products': 'Productos reservados',
-    'catalogReservations.notes': 'ObservaciÃ³n',
-    'catalogReservations.noNotes': 'No se informÃ³ ninguna observaciÃ³n.',
-    'catalogReservations.previous': 'PÃ¡gina anterior',
-    'catalogReservations.next': 'PÃ¡gina siguiente',
-    'produto.webList.edit.banner':
-        'Modo ediciÃ³n activo â€¢ {count} Ã­tems encontrados â€¢ haz clic en un producto para cambiarlo.',
-    'produto.webList.searchHint': 'Buscar por nombre, cÃ³digo o SKU...',
-    'produto.webList.preferenceSaved':
-        'Preferencia de visualizaciÃ³n actualizada.',
-    'produto.webList.view.vertical': 'Vertical',
-    'produto.webList.view.horizontal': 'Horizontal',
-    'produto.webList.view.list': 'Lista',
-    'produto.webList.view.grid': 'CuadrÃ­cula',
-    'produto.webList.filter.category': 'CategorÃ­a',
-    'produto.webList.filter.categoryAll': 'Todas las categorÃ­as',
-    'produto.webList.filter.flags': 'Marcadores',
-    'produto.webList.filter.flagsAll': 'Todos los Ã­tems',
-    'produto.webList.filter.flagsFavorites': 'Favoritos',
-    'produto.webList.filter.flagsCatalog': 'En catÃ¡logo',
-    'produto.webList.filter.flagsFavoritesCatalog': 'Favoritos y catÃ¡logo',
-    'produto.webList.filter.statusAll': 'Todos',
-    'produto.webList.filter.stockAll': 'Todos',
-    'produto.webList.filter.stockAvailable': 'En stock',
-    'produto.webList.filter.stockLow': 'Stock bajo',
-    'produto.webList.filter.stockOut': 'Sin stock',
-    'produto.webList.filter.stockNegative': 'Stock negativo',
-    'produto.webList.sort.label': 'Orden',
-    'produto.webList.sort.name': 'Ordenar por nombre',
-    'produto.webList.sort.priceAsc': 'Menor precio',
-    'produto.webList.sort.priceDesc': 'Mayor precio',
-    'produto.webList.quick.withImage': 'Con imagen',
-    'produto.webList.quick.lowStock': 'Stock bajo',
-    'produto.webList.errorTitle': 'No se pudo cargar el catÃ¡logo.',
-    'produto.webList.itemWithoutName': 'Ãtem sin nombre',
-    'produto.webList.table.product': 'Producto',
-    'produto.webList.table.category': 'CategorÃ­a',
-    'produto.webList.table.code': 'CÃ³digo',
-    'produto.webList.table.price': 'Precio',
-    'produto.webList.itemsPerPageLabel': 'Ãtems por pÃ¡gina',
-    'produto.webList.pagination.summary':
-        'Mostrando {start} a {end} de {total} Ã­tems',
-    'produto.webList.stockNotApplicable': 'Sin control',
-    'produto.webList.stockQuantity': 'Cant. {value}',
-    'produto.webList.stockLow': 'Stock bajo',
-    'produto.webList.stockOut': 'Sin stock',
-    'produto.webList.stockNegative': 'Stock negativo',
-    'produto.webList.codeUnavailable': 'Sin cÃ³digo',
-    'produto.webList.viewAction': 'Ver',
-    'produto.favorite.addTooltip': 'Marcar como favorito',
-    'produto.favorite.removeTooltip': 'Quitar de favoritos',
-    'produto.favorite.enabledFeedback': 'Favorito activado',
-    'produto.favorite.disabledFeedback': 'Favorito desactivado',
-    'produto.favorite.updateError':
-        'No se pudo actualizar el favorito del producto.',
-    'produto.catalog.enableTooltip': 'Disponibilizar para catÃ¡logo',
-    'produto.catalog.disableTooltip':
-        'Quitar de la disponibilidad para catÃ¡logo',
-    'produto.catalog.enabledFeedback': 'Disponible para catÃ¡logo activado',
-    'produto.catalog.disabledFeedback': 'Disponible para catÃ¡logo desactivado',
-    'produto.catalog.updateError':
-        'No se pudo actualizar la disponibilidad en el catÃ¡logo.',
-    'produto.catalog.statusLabel': 'CatÃ¡logo',
-    'produto.catalog.availableStatus': 'Disponible',
-    'produto.catalog.unavailableStatus': 'No disponible',
-  },
-};
+YªçŠx-®éÜj×¢ëiºÚ+Š§j[h‘éÜ¢éí×o{çdèµ©hºÚn¶X§zÍZ[\Ü	ÜXÚØYÙN™›]\‹Ù›Ý[™][Û‹™\	ÎÂš[\Ü	ÜXÚØYÙN™›]\‹ÝÚYÙ]Ë™\	ÎÂ‚š[\Ü	ÝÙX—ÚLN—ÜÝÜ™K™\	ÎÂ‚‹ËËÈ›Ü›X[^˜H[X\Ù\È\Ý0ìÜšXÛÜÈ[˜ÛÛ˜YÜÈ[HXÛÝ\ÈH˜YpéðèÛÈ[YÛÜË‚‹ËËÂ‹ËËÈH™YÜ˜H]XHÛÛY[HÛØœ™H^ÜÈH[\™˜XÙH°èHÛ\ÜÚYšXØYÜÈÛÛ[ÈLNŽÂ‹ËËÈY[YšXØYÜ™\È0êXÛšXÛÜÈÛÛ[ÈÚ^˜XÚØÚ^\˜XÚË˜ÛÛXHÚ]™\ÈHTB‹ËËÈ\›X[™XÙ[H[˜[\˜YÜË‚”Ýš[™È›Ü›X[^™TÚ^Ð\œ˜[™[™ÊÝš[™È˜[YJHÂˆÝš[™È›Ü›X[^™YH˜[YNÂˆš[˜[\Ý™YÑ^ˆYØXÞP[X\Ù\ÈH™YÑ^–Âˆ™YÑ^
+‰×\[š[W‰ËØ\ÙTÙ[œÚ]]™Nˆ˜[ÙJKˆ™YÑ^
+‰×”Ú^ÊÔÔ×‰ËØ\ÙTÙ[œÚ]]™Nˆ˜[ÙJKˆ™YÑ^
+‰×”Ú^ÊÑT”‰ËØ\ÙTÙ[œÚ]]™Nˆ˜[ÙJKˆ™YÑ^
+‰×”Ú^ÊÐ\‰ËØ\ÙTÙ[œÚ]]™Nˆ˜[ÙJKˆ™YÑ^
+‰×”Ú^\‰ËØ\ÙTÙ[œÚ]]™Nˆ˜[ÙJKˆNÂ‚ˆ›Üˆ
+š[˜[™YÑ^[X\È[ˆYØXÞP[X\Ù\ÊHÂˆ›Ü›X[^™YH›Ü›X[^™Yœ™\XÙP[
+[X\Ë	ÔÚ^Ð\	ÊNÂˆBˆ™]\›ˆ›Ü›X[^™Yœ™\XÙP[X\Y
+ˆ™YÑ^
+‰ÊŸ×KV˜K^ŒNWËWJTÚ^
+ÏI×KV˜K^ŒNWËWJIÊKˆ
+X]ÚX]Ú
+HOˆ	ÉÛX]Ú™Ü›Ý\
+JHÏÈ	ÉßTÚ^Ð\	Ëˆ
+NÂŸB‚™^[œÚ[ÛˆÚ^LNZ[ÛÛ^ÛˆZ[ÛÛ^ÂˆËËÈ™\ÛÛ™H^ÜÈÈÚ^Ð\H\\ˆÈXÛÝHH˜YpéðíY\ÈØ\œ™YØYÈÂˆËËÈ˜XÚÙ[™‚ˆËËÂˆËËÈ\ÛÈ™Y™\™[˜ÚX[[H[\ÈÙX‹[™›ÚYHSÔÎ‚ˆËËÈÛÛ^
+	ØÛÛ[[Û‹œØ]™IÊX‚ˆËËÂˆËËÈÙ˜[˜XÚ×H]™HÙ\ˆ\ØYÈ\[˜\ÈÛÛ[È›ÝpéðèÛÈpë[š[XH\˜[HZYÜ˜péðèÛÈÝBˆËËÈ]X[™ÈÈ[™Ú[HLNˆZ[™H°èÛÈ›Ý^HHÚ]™K‚ˆÝš[™È
+Ýš[™ÈÙ^KÔÝš[™ÏÈ˜[˜XÚßJHÂˆš[˜[ÛÙHHÜÚ^Ý\œ™[[™ÝXYÙPÛÙJ
+NÂˆš[˜[˜[YHHÚ^LN”ÝÜ™Kš[œÝ[˜ÙKœÝš[™ÊÛÙKÙ^JNÂˆYˆ
+˜[YHOH[	‰ˆ˜[YKš\Ó›Ý[\JHÂˆ™]\›ˆ›Ü›X[^™TÚ^Ð\œ˜[™[™Ê˜[YJNÂˆB‚ˆš[˜[™\ÛÛ™Y˜[˜XÚÈBˆ˜[˜XÚÈÏÈÙ˜[˜XÚÜÖØÛÙWOÖÚÙ^WHÏÈÙ˜[˜XÚÜÖÉÜ	×OÖÚÙ^WNÂˆYˆ
+™\ÛÛ™Y˜[˜XÚÈOH[	‰ˆ™\ÛÛ™Y˜[˜XÚËš\Ó›Ý[\JHÂˆYˆ
+ÑXYÓ[ÙJHÂˆËÈXYÔš[
+ˆËÈ	ÖÚLN—HÚ]™H]\Ù[Nˆ	Ù^H\˜HY[ÛXOIÛÙKˆ\Ø[™È˜[˜XÚË‰ËˆËÈ
+NÂˆBˆ™]\›ˆ›Ü›X[^™TÚ^Ð\œ˜[™[™Ê™\ÛÛ™Y˜[˜XÚÊNÂˆB‚ˆYˆ
+ÑXYÓ[ÙJHÂˆXYÔš[
+	ÖÚLN—HÚ]™H]\Ù[Nˆ	Ù^H\˜HY[ÛXOIÛÙK‰ÊNÂˆBˆ™]\›ˆÙ^NÂˆB‚ˆÝš[™ÈÜÚ^Ý\œ™[[™ÝXYÙPÛÙJ
+HÂˆžHÂˆ™]\›ˆØØ[^˜][ÛœË›ØØ[SÙŠ\ÊK›[™ÝXYÙPÛÙNÂˆHØ]Ú
+ÊHÂˆ™]\›ˆ	Ü	ÎÂˆBˆBŸB‚˜ÛÛœÝX\Ýš[™ËX\Ýš[™ËÝš[™ÏˆÙ˜[˜XÚÜÈHÂˆ	Ü	ÎˆÂˆ	Ü›Ù]Ëš›Ý\›™^K˜Ú[™ÙS[ÙIÎˆ	Ð[\˜\‰Ëˆ	ØÛY[\Ëš›Ý\›™^K]IÎˆ	Ñ\ØÛÛHH›Ü›˜YHHØY\Ý›ÉËˆ	ØÛY[\Ëš›Ý\›™^KœÝX]IÎ‚ˆ	Õ›ØðêˆÙHØ[˜\ˆðìÈÈ\ÜÙ[˜ÚX[ÝH[œš\]YXÙ\ˆÈØY\Ý›ÈYÛÜ˜K‰Ëˆ	ØÛY[\Ëš›Ý\›™^KœÚ[\U]IÎˆ	ÐØY\Ý›ÈÚ[\\ÉËˆ	ØÛY[\Ëš›Ý\›™^KœÚ[\TÝX]IÎ‚ˆ	Ó›ÛYKØÝ[Y[Ë[Y›Û™HHK[XZ[\˜HØY\Ý˜\ˆÙ[H]š]Ë‰Ëˆ	ØÛY[\Ëš›Ý\›™^K˜ÛÛ\]U]IÎˆ	ÐØY\Ý›ÈÛÛ\]ÉËˆ	ØÛY[\Ëš›Ý\›™^K˜ÛÛ\]TÝX]IÎ‚ˆ	Ñ[™\™péÛËÜ°êY]ÈHÛÛ^È\˜H[XHÜ\˜péðèÛÈXZ\È™\\˜YK‰Ëˆ	ØÛY[\Ëš›Ý\›™^KœÝ\\ÜÙ[X[	Îˆ	Ñ\ÜÙ[˜ÚXZ\ÉËˆ	ØÛY[\Ëš›Ý\›™^KœÝ\Y™\ÜÉÎˆ	Ñ[™\™péÛÉËˆ	ØÛY[\Ëš›Ý\›™^KœÝ\™[][ÛœÚ\	Îˆ	ÐÜ°êY]ÈH™[XÚ[Û˜[Y[ÉËˆ	ØÛY[\Ëš›Ý\›™^KœÝ\	Îˆ	Ñ]\IËˆ	ØÛY[\Ëš›Ý\›™^K›Ù‰Îˆ	ÙIËˆ	ØÛY[\Ëš›Ý\›™^Kœ™]šY]Ð™Y›Ü™TØ]™IÎˆ	Ô™]š\ÙHÜÈYÜÈ[\ÈHØ[˜\‹‰Ëˆ	ØÛY[\Ëš›Ý\›™^K˜ÛÛ[YR[	Îˆ	Ð]˜[˜ÙH]X[™È\ÝH]\H\Ý]™\ˆ›ÛK‰Ëˆ	ØÛY[\Ëœ]X[]K]IÎˆ	Ô]X[YYHÈØY\Ý›ÉËˆ	ØÛY[\Ëœ]X[]K›]™[[š]X[	Îˆ	ÐÛÛYpéØ[™ÈYÛÜ˜IËˆ	ØÛY[\Ëœ]X[]K›]™[\ÜÙ[X[	Îˆ	Ð˜\ÙH\ÜÙ[˜ÚX[›ÛIËˆ	ØÛY[\Ëœ]X[]K›]™[]Z[Y	Îˆ	ÐØY\Ý›È™[H][YÉËˆ	ØÛY[\Ëœ]X[]K›]™[^Ù[[	Îˆ	ÐØY\Ý›È^Ù[[IËˆ	ØÛY[\Ëœ]X[]K˜XÝ[Û“˜[YIÎˆ	Ú[™›Ü›X\ˆ›ÛYIËˆ	ØÛY[\Ëœ]X[]K˜XÝ[Û‘ØÝ[Y[	Îˆ	Ú[™›Ü›X\ˆØÝ[Y[ÉËˆ	ØÛY[\Ëœ]X[]K˜XÝ[Û”Û™IÎˆ	Ú[™›Ü›X\ˆ[Y›Û™IËˆ	ØÛY[\Ëœ]X[]K˜XÝ[Û‘[XZ[	Îˆ	Ú[™›Ü›X\ˆK[XZ[	Ëˆ	ØÛY[\Ëœ]X[]K˜XÝ[Û–š\	Îˆ	Ú[™›Ü›X\ˆÑT	Ëˆ	ØÛY[\Ëœ]X[]K˜XÝ[ÛY™\ÜÉÎˆ	ØÛÛ\]\ˆ[™\™péÛÉËˆ	ØÛY[\Ëœ]X[]K˜XÝ[ÛÜ™Y]	Îˆ	ØÛÛ™šYÝ\˜\ˆÜ°êY]ÉËˆ	ØÛY[\Ëœ]X[]K˜XÝ[Û“›Ý\ÉÎˆ	ØYXÚ[Û˜\ˆÛÛ^ÉËˆ	ØÛY[\Ë™›Ü›Kš[˜[Y[XZ[	Îˆ	Ò[™›Ü›YH[HK[XZ[°è[YÉËˆ	Ü›Ù]Ëœ]X[]K]IÎˆ	Ô]X[YYHÈØY\Ý›ÉËˆ	Ü›Ù]Ëœ]X[]K›]™[\ÜÙ[X[	Îˆ	Ñ\ÜÙ[˜ÚX[	Ëˆ	Ü›Ù]Ëœ]X[]K›]™[™XYIÎˆ	Ô›ÛÈ\˜H™[™\‰Ëˆ	Ü›Ù]Ëœ]X[]K›]™[™\\™Y	Îˆ	Ð™[H™\\˜YÉËˆ	Ü›Ù]Ëœ]X[]K›]™[^Ù[[	Îˆ	Ñ^Ù[[IËˆ	Ü›Ù]Ëœ]X[]K›™^XÝ[ÛœÉÎ‚ˆ	Ô°ìÞ[X\ÈY[ÜšX\È]YH][Y[[HH]X[YYN‰Ëˆ	Ü›Ù]Ëœ]X[]K˜ÛÛ\]SY\ÜØYÙIÎ‚ˆ	ÐØY\Ý›È™[H™\\˜YÈ\˜H\ÝH°ë]™[‰Ëˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û“˜[YIÎˆ	Ò[™›Ü›X\ˆ›ÛYIËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û”šXÙIÎˆ	ÐYXÚ[Û˜\ˆ™péÛÉËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[ÛØ]YÛÜžIÎˆ	Ñ\ØÛÛ\ˆØ]YÛÜšXIËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û’Y[YšY\‰Îˆ	ÐYXÚ[Û˜\ˆðìÙYÛÉËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û“Ü™Ø[š^˜][Û‰Îˆ	Ò[™›Ü›X\ˆÜ\ÉËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û”ÝØÚÉÎˆ	ÐÛÛ™šYÝ\˜\ˆ\ÝÜ]YIËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û’[XYÙIÎˆ	ÐYXÚ[Û˜\ˆ[XYÙ[IËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û‘]Z[ÉÎˆ	ÐÛÛ\]\ˆ][\ÉËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û”[\ÉÎˆ	Ô™]š\Ø\ˆ™YÜ˜\ÉËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û‘š\ØØ[	Îˆ	Ò[™›Ü›X\ˆYÜÈš\ØØZ\ÉËˆ	Ø\]IÎˆ	ÔÚ^Ð\	Ëˆ	ØÛÛ[[Û‹œØ]™IÎˆ	ÔØ[˜\‰Ëˆ	ØÛÛ[[Û‹˜Ø[˜Ù[	Îˆ	ÐØ[˜Ù[\‰Ëˆ	ØÛÛ[[Û‹˜˜XÚÉÎˆ	Õ›Û\‰Ëˆ	ØÛÛ[[Û‹˜ÛÜÙIÎˆ	Ñ™XÚ\‰Ëˆ	ØÛÛ[[Û‹™Y]	Îˆ	ÑY]\‰Ëˆ	ØÛÛ[[Û‹™[]LIÎˆ	Ñ^ÛZ\‰Ëˆ	ØÛÛ[[Û‹œÙX\˜Ú	Îˆ	Ð\ØØ\‰Ëˆ	ØÛÛ[[Û‹˜ÛX\‰Îˆ	Ó[\\‰Ëˆ	ØÛÛ[[Û‹˜ÛÛ™š\›IÎˆ	ÐÛÛ™š\›X\‰Ëˆ	ØÛÛ[[Û‹˜\IÎˆ	Ð\XØ\‰Ëˆ	ØÛÛ[[Û‹˜ÛÛ[YIÎˆ	ÐÛÛ[X\‰Ëˆ	ØÛÛ[[Û‹žPYØZ[‰Îˆ	Õ[\ˆ›Ý˜[Y[IËˆ	ØÛÛ[[Û‹›ØY[™ÉÎˆ	ÐØ\œ™YØ[™Ë‹‹‰Ëˆ	ØÛÛ[[Û‹››Ô™\Ý[ÉÎˆ	Ó™[š[H™\Ý[YÈ[˜ÛÛ˜YÉËˆ	ØÛÛ[[Û‹[™^XÝY\œ›Ü‰Îˆ	Ñ\œ›È[™\Ü\˜YÉËˆ	ØÛÛ[[Û‹[˜X›UÓØY	Îˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\‹‰Ëˆ	ØÛÛ[[Û‹œØ]™YÝXØÙ\ÜÙ[IÎˆ	ÐÛÛ™šYÝ\˜péðíY\ÈØ[˜\ÈÛÛHÝXÙ\ÜÛË‰Ëˆ	ØÛÛ[[Û‹žY\ÉÎˆ	ÔÚ[IËˆ	ØÛÛ[[Û‹››ÉÎˆ	Ó°èÛÉËˆ	ØÛÛ[[Û‹˜XÝ]™IÎˆ	Ð]]›ÉËˆ	ØÛÛ[[Û‹š[˜XÝ]™IÎˆ	Ò[˜]]›ÉËˆ	ØÛÛ[[Û‹›Û›[™IÎˆ	ÓÛ›[™IËˆ	ØÛÛ[[Û‹›Ù™›[™IÎˆ	ÓÙ™›[™IËˆ	ØÛÛ[[Û‹œ™\]Z\™Y	Îˆ	ÓØœšYØ]0ìÜš[ÉËˆ	ØÛÛ[[Û‹›Ü[Û˜[	Îˆ	ÓÜÚ[Û˜[	Ëˆ	ØÛÛ[[Û‹œÛÛÛ‰Îˆ	Ñ[Hœ™]™IËˆ	ØÛÛ[[Û‹œ™Yœ™\Ú	Îˆ	Ð]X[^˜\‰Ëˆ	ØÛÛ[[Û‹˜ÛÜIÎˆ	ÐÛÜX\‰Ëˆ	ØÛÛ[[Û‹œÚ\™IÎˆ	ÐÛÛ\\[\‰Ëˆ	ØÛÛ[[Û‹›[X™\‰Îˆ	Ó°î›Y\›ÉËˆ	ØÛÛ[[Û‹˜[	Îˆ	ÕÙÜÉËˆ	ØÛÛ[[Û‹˜Ý\ÝÛY\‰Îˆ	ÐÛY[IËˆ	ØÛÛ[[Û‹\]Y]	Îˆ	Ð]X[^˜YÈ[IËˆ	ØÛÛ[[Û‹›\Ý\]Y]	Îˆ	ðæ›[XH]X[^˜péðèÛÈ0èÉËˆ	ØÛÛ[[Û‹››Ý[™›Ü›YY	Îˆ	Ó°èÛÈ[™›Ü›XYIËˆ	Ü‹œ]X[]QY]Ü‹]IÎˆ	ÑY]\ˆ]X[YYIËˆ	Ü‹œ]X[]QY]Ü‹ÛÛ\	Îˆ	ÑY]\ˆ]X[YYIËˆ	Ü‹œ]X[]QY]Ü‹œÝX]IÎ‚ˆ	Ô™]š\ÙHÈ][HH\\]YHH›Ý˜H]X[YYKˆÈÝXÝ[HÈÝ[H™[™HÙ\°èÛÈ™XØ[Ý[YÜÈ[YYX][Y[K‰Ëˆ	Ü‹œ]X[]QY]Ü‹˜ÛÙSX™[	Îˆ	ÐðìÙYÛÉËˆ	Ü‹œ]X[]QY]Ü‹˜Ý\œ™[X™[	Îˆ	Ô]X[YYH]X[	Ëˆ	Ü‹œ]X[]QY]Ü‹˜Ý\œ™[[	Î‚ˆ	ÐZ\ÝHš[›ÈÛÛ[XH\ÜÛ°ë]™[›ÜÈ›Ý0íY\È]\˜Z\Ë‰Ëˆ	Ü‹œ]X[]QY]Ü‹™šY[X™[	Îˆ	Ó›Ý˜H]X[YYIËˆ	Ü‹œ]X[]QY]Ü‹š[	Îˆ	ÑYÚ]HH]X[YYH\ÙZ˜YH\˜H\ÝH][K‰Ëˆ	Ü‹œ]X[]QY]Ü‹š[˜[Y	Î‚ˆ	Ò[™›Ü›YH[XH]X[YYH[Z\˜HXZ[Üˆ]YH™\›Ë‰Ëˆ	Ü‹œ]X[]QY]Ü‹™Y™™XÝ[	Î‚ˆ	ÐH[\˜péðèÛÈ]X[^˜HÈÝXÝ[È][HHÈÝ[H™[™H[YYX][Y[K‰Ëˆ	Ü‹œ]X[]QY]Ü‹˜ÛÛ™š\›IÎˆ	Ð\XØ\ˆ]X[YYIËˆ	Ü‹œ]X[]QY]Ü‹œ›ØÙ\ÜÚ[™ÉÎˆ	Ð\XØ[™È]X[YYK‹‹‰Ëˆ	Ü‹œ]X[]QY]Ü‹œÝXØÙ\ÜÕ]IÎˆ	Ô]X[YYH]X[^˜YIËˆ	Ü‹œ]X[]QY]Ü‹œÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	ÓÈ][H›ÚH™XØ[Ý[YÈHH™[™H°èH™Y›]HH›Ý˜H]X[YYK‰Ëˆ	Ü‹œ]X[]QY]Ü‹™\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[]X[^˜\ˆH]X[YYHYÛÜ˜Kˆ[H›Ý˜[Y[H[H[Ý[œÈ[œÝ[\Ë‰Ëˆ	Ü‹˜ÛX\”Ø[K™X[ÙÐ˜\œšY\‰Îˆ	ÐÛÛ™š\›X\ˆ[\^˜HH™[™H]X[	Ëˆ	Ü‹˜ÛX\”Ø[K™X[ÙÕ]IÎˆ	Ó[\\ˆ™[™H]X[ÉËˆ	Ü‹˜ÛX\”Ø[K™X[ÙÔÝX]IÎ‚ˆ	Ô™]š\ÙHÈ™\Ý[[È[\ÈH[\\‹ˆÈ][™[Y[È]X[Ù\°èH™Z[šXÚXYÈ\˜HXœš\ˆ[XH›Ý˜H™[™K‰Ëˆ	Ü‹˜ÛX\”Ø[KœÝ[[X\žR][\ÉÎˆ	Ò][œÉËˆ	Ü‹˜ÛX\”Ø[KœÝ[[X\žUÝ[	Îˆ	ÕÝ[	Ëˆ	Ü‹˜ÛX\”Ø[KœÝ[[X\žPÝ\ÝÛY\‰Îˆ	ÐÛY[IËˆ	Ü‹˜ÛX\”Ø[K˜ÛÛ™š\›PXÝ[Û‰Îˆ	Ó[\\ˆ™[™IËˆ	Ü‹˜ÛX\”Ø[Kš[\XÝ[	Î‚ˆ	Ò][œËÛY[HY[YšXØYÈH™XÙXš[Y[ÜÈ[\Ü°è\š[ÜÈÙ\°èÛÈ™[[ÝšYÜÈ\ÝH‹‰Ëˆ	Ü‹˜ÛX\”Ø[Kœ›ØÙ\ÜÚ[™Õ]IÎˆ	Ó[\[™È™[™K‹‹‰Ëˆ	Ü‹˜ÛX\”Ø[Kœ›ØÙ\ÜÚ[™ÓY\ÜØYÙIÎ‚ˆ	ÐYÝX\™H[œ]X[ÈÜÈYÜÈ[\Ü°è\š[ÜÈ\ÝH™[™HðèÛÈ™[[ÝšYÜË‰Ëˆ	Ü‹˜ÛX\”Ø[KœÝXØÙ\ÜÕ]IÎˆ	Õ™[™H[\HÛÛHÝXÙ\ÜÛÉËˆ	Ü‹˜ÛX\”Ø[KœÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	ÓÈˆ\Ý0èH›ÛÈ\˜H[šXÚX\ˆ[XH›Ý˜H™[™K‰Ëˆ	Ü‹˜ÛX\”Ø[K™\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[[\\ˆH™[™HYÛÜ˜Kˆ[H›Ý˜[Y[H[H[œÝ[\Ë‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹]IÎˆ	ÒY[YšXØ\ˆÛY[IËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹œÝX]IÎ‚ˆ	ÔÙ[XÚ[Û™H[HÛY[HØY\Ý˜YÈÝHÜšYH[H›Ý›ÈÙ[HØZ\ˆ\ÝH]\K‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹˜]˜Z[X›PÝ\ÝÛY\œÉÎˆ	ÐÛY[\È]]›ÜÉËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹˜Ý\œ™[Ý\ÝÛY\‰Îˆ	ÐÛY[H]X[	Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹˜Ý\œ™[[\IÎˆ	Ó™[š[HÛY[Hš[˜Ý[YÉËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹œÙX\˜ÚX™[	Î‚ˆ	Ð\ØØ\ˆÛY[HÜˆ›ÛYKØÝ[Y[Ë[Y›Û™HÝHK[XZ[	Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹›ØY[™ÉÎˆ	ÐØ\œ™YØ[™ÈÛY[\È]]›ÜË‹‹‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹›ØY\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÜÈÛY[\Ë‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹™\œ›Ü•]IÎ‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÜÈÛY[\ÉËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹›™]ÐÝ\ÝÛY\‰Îˆ	ÐØY\Ý˜\ˆÛY[IËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹›Ü[š[™ÐÜ™X]IÎˆ	ÐXœš[™ÈØY\Ý›Ë‹‹‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹˜Ü™X]Q\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Xœš\ˆÈØY\Ý›ÈHÛY[HYÛÜ˜K‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹™[\U]IÎˆ	Ó™[š[HÛY[H]]›ÈØY\Ý˜YÉËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹™[\SY\ÜØYÙIÎ‚ˆ	ÐØY\Ý™HÈÛY[HYÛÜ˜H\˜HÙYÝZ\ˆÛÛHÈ][™[Y[ÈÙ[HØZ\ˆ\ÝH]\K‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹™[\TÙX\˜Ú]IÎˆ	Ó™[š[HÛY[H[˜ÛÛ˜YÉËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹™[\TÙX\˜ÚY\ÜØYÙIÎ‚ˆ	Ô™]š\ÙHÜÈ\›[ÜÈH\ØØHÝHØY\Ý™H[H›Ý›ÈÛY[H\˜HÛÛ[X\‹‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹œ™[[Ý™PÝ\ÝÛY\‰Îˆ	Ô™[[Ý™\ˆÛY[H]X[	Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹[›˜[YYÝ\ÝÛY\‰Îˆ	ÐÛY[HÙ[H›ÛYIËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹œ\œÛÛ•\Q˜[˜XÚÉÎˆ	Ô‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹››ÑØÝ[Y[	Îˆ	ÔÙ[HØÝ[Y[ÉËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹˜Ü™Y][˜X›Y	Îˆ	ÑšXYÈX™\˜YÉËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹˜Ü™Y]›ØÚÙY	Î‚ˆ	ÑšXYÈ›Ü]YXYÈ\˜H›Ý˜\È™[™\ÉËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹˜Ü™Y]\ØX›Y	Îˆ	ÐÛY[HÙ[HšXYÈX™\˜YÉËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹œÙ[XÝY	Îˆ	ÔÙ[XÚ[Û˜YÉËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹œÙ[XÝ	Îˆ	ÔÙ[XÚ[Û˜\‰Ëˆ	Ü™XÙXš[Y[Ë˜[Ü‘[PX™\ÉÎˆ	Õ˜[Üˆ[HX™\ÉËˆ	Ü™XÙXš[Y[ËœÝ[[X\žU\IÎˆ	Õ\ÉËˆ	Ü™XÙXš[Y[ËÝ[	Îˆ	ÕÝ[	Ëˆ	Ü™XÙXš[Y[Ëœ\˜ÚX[	Îˆ	Ô\˜ÚX[	Ëˆ	Ü™XÙXš[Y[Ë™›Ü›X\Ô™XÙXš[Y[ÉÎˆ	Ñ›Ü›X\ÈH™XÙXš[Y[ÉËˆ	Ü™XÙXš[Y[Ëœ™\Ý[IÎˆ	Ô™\Ý[IËˆ	Ü™XÙXš[Y[Ë˜[Ü‘›Ü›XIÎˆ	Õ˜[ÜˆH›Ü›XIËˆ	Ü™XÙXš[Y[Ë\Ô™XÙXš[Y[ÉÎˆ	Õ\ÈH™XÙXš[Y[ÉËˆ	Ü™XÙXš[Y[Ë˜Ø\œ™YØ[™Õ\ÜÉÎˆ	ÐØ\œ™YØ[™È\ÜÈH™XÙXš[Y[Ë‹‹‰Ëˆ	Ü™XÙXš[Y[Ë˜YXÚ[Û˜\‘›Ü›XIÎˆ	ÐYXÚ[Û˜\ˆ›Ü›XIËˆ	Ü™XÙXš[Y[Ëœ™[[Ý™\‘›Ü›XIÎˆ	Ô™[[Ý™\ˆ›Ü›XIËˆ	Ü™XÙXš[Y[Ë›ØœÙ\˜XØ[ÉÎˆ	ÓØœÙ\˜péðèÛÉËˆ	Ü™XÙXš[Y[Ëœ™XÙX™\•Ý[	Îˆ	Ô™XÙX™\ˆÝ[	Ëˆ	Ü™XÙXš[Y[Ëœ™XÙX™\”\˜ÚX[	Îˆ	Ô™XÙX™\ˆ\˜ÚX[	Ëˆ	Ü™XÙXš[Y[Ë™\œ›Õ˜[Ü™\ÓXZ[Ü™\Ô]YV™\›ÉÎ‚ˆ	Ò[™›Ü›YH˜[Ü™\ÈXZ[Ü™\È]YH™\›Ë‰Ëˆ	Ü™XÙXš[Y[Ë™\œ›Õ˜[Ü“XZ[Ü”]YV™\›ÉÎˆ	Ò[™›Ü›YH[H˜[ÜˆXZ[Üˆ]YH™\›Ë‰Ëˆ	Ü™XÙXš[Y[Ë™\œ›Ô\˜ÚX[Y[›Ü”]YPX™\ÉÎ‚ˆ	Ô\˜H\˜ÚX[[™›Ü›YH[H˜[ÜˆY[›Üˆ]YHÈX™\Ë‰Ëˆ	Ü™XÙXš[Y[Ë™\œ›ÕÝ[YÝX[Ø[ÉÎ‚ˆ	Ô\˜HÝ[È˜[Üˆ™XÚ\ØH]Z]\ˆÈØ[È[HX™\Ë‰Ëˆ	Ü™XÙXš[Y[Ë™\œ›Ñ›Ü›XQ\XØYIÎ‚ˆ	ÐØYH›Ü›XHH™XÙXš[Y[ÈÙHÙ\ˆ\ØYH\[˜\È[XH™^‹‰Ëˆ	Ü‹œ™XÙZ\\IÎˆ	Õ\ÈH™XÙXš[Y[ÉËˆ	Ü‹œ™XÙZ\œ\X[™XYIÎ‚ˆ	Ô™XÙXš[Y[È\˜ÚX[›ÛËˆÈØ[ÈšXØ\°èH[HX™\Ë‰Ëˆ	Ü‹œ™XÙZ\œ\X[[	Î‚ˆ	Ò[™›Ü›YH[H˜[ÜˆXZ[Üˆ]YH™\›ÈHY[›Üˆ]YHÈÝ[H™[™K‰Ëˆ	Ü‹œ™XÙZ\œ\X[Yš[™Y	Îˆ	Ô\˜ÚX[Yš[šYÉËˆ	Ü‹œ™XÙZ\˜ÛÛ™š\›T\X[	Îˆ	ÐÛÛ™š\›X\ˆ\˜ÚX[	Ëˆ	Ü‹œ™XÙZ\˜ÛÛ™š\›T\X[Y\ÜØYÙIÎˆ	Ñ\ÙZ˜H™XÙX™\‰Ëˆ	Ü‹œ™XÙZ\šÙY\Ü[˜[[˜ÙIÎˆ	ÙHX[\ˆÈØ[È™\Ý[H[HX™\ÉËˆ	Ý™[™\ÐT™XÙX™\‹›Ü[’[”‰Îˆ	ÐXœš\ˆ›È‰Ëˆ	Ü‹›Ü[”Ø[KœÝ]\ÉÎˆ	Õ™[™H[HX™\ÉËˆ	Ü‹›Ü[”Ø[Kœ™XYÛ›TÝ]\ÉÎˆ	ÔÛÛY[HÛÛœÝ[IËˆ	Ü‹›Ü[”Ø[Kœ™XYÛ›U]IÎˆ	ÐÛÛœÝ[HH™[™H[HX™\ÉËˆ	Ü‹›Ü[”Ø[Kœ™XYÛ›TÝX]IÎ‚ˆ	Ô›Ù]ÜË]X[YY\ÈH™péÛÜÈ\Ý0èÛÈ›Ü]YXYÜÈ™\ÝH]\Kˆ™]š\ÙHÜÈYÜÈH™XÙX˜HÈØ[Ë‰Ëˆ	Ü‹›Ü[”Ø[K™Y]Ý]\ÉÎˆ	ÑYpéðèÛÈH][œÉËˆ	Ü‹›Ü[”Ø[K™Y]]IÎˆ	Ô™]š\ÙHÜÈ][œÈ[\ÈH™XÙX™\‰Ëˆ	Ü‹›Ü[”Ø[K™Y]ÝX]IÎ‚ˆ	Ò[˜ÛXHÝH™[[Ý˜H›Ù]ÜÈHÙ\špéÛÜÈH[\™H]X[YY\ËˆÜÈ™péÛÜÈÜšYÚ[˜Z\ÈðèÛÈ™\Ù\˜YÜÎÈ][œÈ›Ý›ÜÈ\Ø[HÈ™péÛÈ]X[ÈØY\Ý›Ëˆ\È]Y[°éØ\ÈÙ\°èÛÈ\XØY\ÈÛÛY[H[È™XÙX™\‹‰Ëˆ	Ü‹›Ü[”Ø[Kœ\X[™XYÛ›TÝX]IÎ‚ˆ	Ñ\ÝH™[™H°èHÜÜÝZH™XÙXš[Y[ÜËˆ\˜H™\Ù\˜\ˆÈ\Ý0ìÜšXÛÈš[˜[˜ÙZ\›ËÜÈ][œÈ\›X[™XÙ[H›Ü]YXYÜË‰Ëˆ	Ü‹›Ü[”Ø[Kœ[™[™ÐÚ[™Ù\ÉÎˆ	Ð[\˜péðíY\È[™[\ÉËˆ	Ü‹›Ü[”Ø[Kœ™XÙZ]™P˜[[˜ÙIÎˆ	Ô™XÙX™\ˆØ[ÉËˆ	Ü‹›Ü[”Ø[Kœ™XÙZ]™U\]YØ[IÎˆ	Ô™XÙX™\ˆ™[™H™]š\ØYIËˆ	Ü‹›Ü[”Ø[Kœ™XÙZ]™U]IÎˆ	Ô™XÙX™\ˆØ[ÈH™[™IËˆ	Ü‹›Ü[”Ø[Kœ™XÙZ\›ÝIÎˆ	ÔØ[È™XÙXšYÈ[ÈˆÙX‹‰Ëˆ	Ü‹›Ü[”Ø[K\]Y™XÙZ\›ÝIÎ‚ˆ	Õ™[™H™]š\ØYHH™XÙXšYH[ÈˆÙX‹‰Ëˆ	Ü‹›Ü[”Ø[Kœ™XÙZ]™YY\ÜØYÙIÎˆ	Õ™[™H™XÙXšYHÛÛHÝXÙ\ÜÛË‰Ëˆ	Ü‹›Ü[”Ø[Kœ™XÙZ\\œ›Ü•]IÎˆ	Ó°èÛÈ›ÚHÜÜðë]™[™XÙX™\ˆH™[™IËˆ	Ü‹›Ü[”Ø[K›ÜšYÚ[˜[Ý[	Îˆ	ÕÝ[ÜšYÚ[˜[	Ëˆ	Ü‹›Ü[”Ø[K›Ü[˜[[˜ÙIÎˆ	ÔØ[È[HX™\ÉËˆ	Ü‹›Ü[”Ø[K˜Ý\œ™[Ý[	Îˆ	Ó›Ý›ÈÝ[	Ëˆ	Ü‹›Ü[”Ø[KÝ[Y™™\™[˜ÙIÎˆ	ÑY™\™[°éØIËˆ	Ü‹›Ü[”Ø[K™[\R][\Õ]IÎˆ	ÐH™[™H™XÚ\ØH\ˆ][œÉËˆ	Ü‹›Ü[”Ø[K™[\R][\ÓY\ÜØYÙIÎ‚ˆ	Ò[˜ÛXH[ÈY[›ÜÈ[H›Ù]ÈÝHÙ\špéÛÈ[\ÈH™XÙX™\ˆH™[™K‰Ëˆ	Ü‹›Ü[”Ø[Kš[˜[Y][\Õ]IÎˆ	Ô™]š\ÙHÜÈ][œÈH™[™IËˆ	Ü‹›Ü[”Ø[Kš[˜[Y][\ÓY\ÜØYÙIÎ‚ˆ	ÕÙÜÈÜÈ][œÈ™XÚ\Ø[H\ˆ›ÛYK]X[YYHÜÚ]]˜HH˜[Üˆ°è[YË‰Ëˆ	Ü‹›Ü[”Ø[K˜ÛÛ™š\›PÚ[™Ù\Õ]IÎˆ	ÐÛÛ™š\›X\ˆ][œÈ™]š\ØYÜÏÉËˆ	Ü‹›Ü[”Ø[K˜ÛÛ™š\›PÚ[™Ù\ÓY\ÜØYÙIÎ‚ˆ	Ð[È™XÙX™\‹H›Ý˜HÛÛ\ÜÚpéðèÛÈH][œÈÙ\°èH\XØYHHÈ\ÝÜ]YHHÈš[˜[˜ÙZ\›ÈÙ\°èÛÈÛÛ˜Ú[XYÜË‰Ëˆ	Ü‹›Ü[”Ø[K˜ÛÛ[YUÔ™XÙZ\	Îˆ	ÐÛÛ[X\ˆ\˜H™XÙXš[Y[ÉËˆ	Ü‹›Ü[”Ø[K›Ý]]Y]IÎˆ	ÐH™[™H›ÚH[\˜YIËˆ	Ü‹›Ü[”Ø[K›Ý]]YY\ÜØYÙIÎ‚ˆ	ÓÝ]˜HÜ\˜péðèÛÈ[ÙYšXÛÝH\ÝH™[™Kˆ™XÚHHÛÛœÝ[HHXœ˜H›Ý˜[Y[H\˜H˜X˜[\ˆÛÛHÜÈYÜÈ]XZ\Ë‰Ëˆ	Ü‹›Ü[”Ø[K™^]]IÎˆ	ÔØZ\ˆHÛÛœÝ[OÉËˆ	Ü‹›Ü[”Ø[K™^]Y\ÜØYÙIÎ‚ˆ	ÐH™[™HÛÛ[X\°èH[HX™\Ëˆ™[š[H][K™péÛÈÝH™XÙXš[Y[ÈÙ\°èH[\˜YË‰Ëˆ	Ü‹›Ü[”Ø[K™^]XÝ[Û‰Îˆ	ÔØZ\ˆHÛÛœÝ[IËˆ	Ü‹›Ü[”Ø[K™\ØØ\™]IÎˆ	Ñ\ØØ\\ˆ[\˜péðíY\ÏÉËˆ	Ü‹›Ü[”Ø[K™\ØØ\™Y\ÜØYÙIÎ‚ˆ	Ð\È[\˜péðíY\È™Z]\È›Èˆ°èÛÈÙ\°èÛÈØ[˜\ËˆH™[™HÛÛ[X\°èH[HX™\ÈÛÛHÜÈYÜÈ[\š[Ü™\Ë‰Ëˆ	Ü‹›Ü[”Ø[K™\ØØ\™XÝ[Û‰Îˆ	Ñ\ØØ\\ˆHØZ\‰Ëˆ	Ü‹›Ü[”Ø[Kœ™\XÙU]IÎˆ	ÔÝXœÝ]Z\ˆH™[™H]X[ÉËˆ	Ü‹›Ü[”Ø[Kœ™\XÙSY\ÜØYÙIÎ‚ˆ	ÓÜÈYÜÈ]YH\Ý0èÛÈ›ÈˆÙ\°èÛÈÝXœÝ]pëYÜÈ[H™[™H[HX™\ÈÙ[XÚ[Û˜YK‰Ëˆ	Ü‹›Ü[”Ø[Kœ™\XÙPXÝ[Û‰Îˆ	ÐXœš\ˆ™[™IËˆ	Ü‹›Ü[”Ø[K›ØYYY\ÜØYÙIÎ‚ˆ	Õ™[™HØ\œ™YØYH\˜H™]š\ðèÛËˆ›ØðêˆÙH[˜ÛZ\‹™[[Ý™\ˆH[\˜\ˆ]X[YY\È[\ÈH™XÙX™\‹‰Ëˆ	Ü‹›Ü[”Ø[K›ØYY™XYÛ›SY\ÜØYÙIÎ‚ˆ	Õ™[™HØ\œ™YØYH\˜HÛÛœÝ[KˆÛÛ[È°èH^\Ý[H™XÙXš[Y[ÜËÜÈ][œÈ\›X[™XÙ[H›Ü]YXYÜË‰Ëˆ	Ü‹›Ü[”Ø[K›ØY\œ›Ü•]IÎˆ	Ó°èÛÈ›ÚHÜÜðë]™[Xœš\ˆH™[™IËˆ	Ü‹›Ü[”Ø[K[˜]˜Z[X›U]IÎˆ	Õ™[™H°èÛÈ\ÜÛ°ë]™[	Ëˆ	Ü‹›Ü[”Ø[K[˜]˜Z[X›SY\ÜØYÙIÎ‚ˆ	ÐH™[™HÙH\ˆÚYÈ™XÙXšYHÝHØ[˜Ù[YHÜˆÝ]›È\Ýpè\š[Ë‰Ëˆ	ØÛÛ[[Û‹™Ù[™\˜][™ÉÎˆ	ÑÙ\˜[™Ë‹‹‰Ëˆ	ØÛÛ[[Û‹œØ]š[™ÉÎˆ	ÔØ[˜[™Ë‹‹‰Ëˆ	ØÛÛ[[Û‹œ˜[™ÙUÉÎˆ	ØIËˆ	ØÛÛ[[Û‹ÙYZÙ^K›[Û™^IÎˆ	ÔÙYÝ[™KY™Z\˜IËˆ	ØÛÛ[[Û‹ÙYZÙ^KY\Ù^IÎˆ	Õ\°éØKY™Z\˜IËˆ	ØÛÛ[[Û‹ÙYZÙ^KÙY™\Ù^IÎˆ	Ô]X\KY™Z\˜IËˆ	ØÛÛ[[Û‹ÙYZÙ^K\œÙ^IÎˆ	Ô]Z[KY™Z\˜IËˆ	ØÛÛ[[Û‹ÙYZÙ^K™œšY^IÎˆ	ÔÙ^KY™Z\˜IËˆ	ØÛÛ[[Û‹ÙYZÙ^KœØ]\™^IÎˆ	ÔðèX˜YÉËˆ	ØÛÛ[[Û‹ÙYZÙ^KœÝ[™^IÎˆ	ÑÛZ[™ÛÉËˆ	ØÛÛ[[Û‹ÙYZÙ^TÚÜ›[Û™^IÎˆ	ÔÙYÉËˆ	ØÛÛ[[Û‹ÙYZÙ^TÚÜY\Ù^IÎˆ	Õ\‰Ëˆ	ØÛÛ[[Û‹ÙYZÙ^TÚÜÙY™\Ù^IÎˆ	Ô]XIËˆ	ØÛÛ[[Û‹ÙYZÙ^TÚÜ\œÙ^IÎˆ	Ô]ZIËˆ	ØÛÛ[[Û‹ÙYZÙ^TÚÜ™œšY^IÎˆ	ÔÙ^	Ëˆ	ØÛÛ[[Û‹ÙYZÙ^TÚÜœØ]\™^IÎˆ	ÔðèX‰Ëˆ	ØÛÛ[[Û‹ÙYZÙ^TÚÜœÝ[™^IÎˆ	ÑÛIËˆ	ÝÙX‹›˜]šYØ][Û‹šÛYIÎˆ	Ò[°ëXÚ[ÉËˆ	ÝÙX‹›˜]šYØ][Û‹›Ü\˜][ÛœÉÎˆ	Ð][™[Y[ÉËˆ	ÝÙX‹›˜]šYØ][Û‹›Ü\˜][ÛœËœÜÉÎˆ	Ñœ™[HHØZ^IËˆ	ÝÙX‹›˜]šYØ][Û‹›Ü\˜][ÛœËXÚšXØ[Ù\šXÙIÎˆ	Ð\ÜÚ\Ý0ê›˜ÚX\È0êXÛšXØ\ÉËˆ	ÝÙX‹›˜]šYØ][Û‹›Ü\˜][ÛœËœ\˜Ú\Ù\ÉÎˆ	ÐÛÛ\˜\ÉËˆ	ÝÙX‹›˜]šYØ][Û‹›Ü\˜][ÛœËœ™\Ù\˜][ÛœÉÎˆ	Ô™\Ù\˜\ÉËˆ	ÝÙX‹›˜]šYØ][Û‹˜Ø][ÙÉÎˆ	ÐØ]0è[ÙÛÉËˆ	ÝÙX‹›˜]šYØ][Û‹˜Ø][ÙËœX›XÔYÙIÎˆ	Ô0èYÚ[˜H0î˜›XØIËˆ	ÝÙX‹›˜]šYØ][Û‹˜Ø][ÙËœ™\Ù\˜][ÛœÉÎˆ	Ô™\Ù\˜\ÉËˆ	ÝÙX‹›˜]šYØ][Û‹˜Ø][ÙËœ›ÙXÝÉÎˆ	Ô›Ù]ÜÉËˆ	ÝÙX‹›˜]šYØ][Û‹˜Ø][ÙËœÙ\šXÙ\ÉÎˆ	ÔÙ\špéÛÜÉËˆ	ÝÙX‹›˜]šYØ][Û‹˜Ø][ÙËœÝØÚÉÎˆ	Ñ\ÝÜ]YIËˆ	ÝÙX‹›˜]šYØ][Û‹˜Ø][ÙË˜Ø]YÛÜšY\ÉÎˆ	ÐØ]YÛÜšX\ÉËˆ	ØØ][ÙËœX›XÔYÙK]IÎˆ	Ô0èYÚ[˜H0î˜›XØHÈØ]0è[ÙÛÉËˆ	ØØ][ÙËœX›XÔYÙKœÝX]IÎ‚ˆ	Ô\œÛÛ˜[^™Kš\ÝX[^™HHÛÛ\\[HÝXHš]š[™H[H[HðìÈYØ\‹‰Ëˆ	ØØ][ÙËœX›XÔYÙK›Ü[‰Îˆ	ÐXœš\‰Ëˆ	ØØ][ÙËœX›XÔYÙK˜ÛÜIÎˆ	ÐÛÜX\ˆ[šÉËˆ	ØØ][ÙËœX›XÔYÙKœÚ\™IÎˆ	ÐÛÛ\\[\‰Ëˆ	ØØ][ÙËœX›XÔYÙKœX›\ÚY	Îˆ	ÔX›XØYÉËˆ	ØØ][ÙËœX›XÔYÙK›Ù™›[™IÎˆ	Ñ›Ü˜HÈ\‰Ëˆ	ØØ][ÙËœX›XÔYÙKœØ]™IÎˆ	ÔØ[˜\ˆ[\˜péðíY\ÉËˆ	ØØ][ÙËœX›XÔYÙK™\ØØ\™	Îˆ	Ñ\ØØ\\‰Ëˆ	ØØ][ÙËœX›XÔYÙKœØ]™TÝXØÙ\ÜÔX›\ÚY	Î‚ˆ	Ô0èYÚ[˜HØ[˜HHX›XØYHÛÛHÝXÙ\ÜÛË‰Ëˆ	ØØ][ÙËœX›XÔYÙKœØ]™TÝXØÙ\ÜÑ˜Y	Î‚ˆ	Ô\œÛÛ˜[^˜péðèÛÈØ[˜KˆX›\]YH]X[™È\Ý]™\ˆ›ÛK‰Ëˆ	ØØ][ÙËœX›XÔYÙKœØ]™Q\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø[˜\ˆH0èYÚ[˜HÈØ]0è[ÙÛË‰Ëˆ	ØØ][ÙËœX›XÔYÙK›Ü[‘\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Xœš\ˆÈØ]0è[ÙÛÈ[H[XH›Ý˜HX˜K‰Ëˆ	ØØ][ÙËœX›XÔYÙK›[šÐÛÜYY	Îˆ	Ó[šÈ0î˜›XÛÈÛÜXYË‰Ëˆ	ØØ][ÙËœX›XÔYÙKœÚ\™TÝXš™XÝ	Îˆ	ÐØ]0è[ÙÛÈHÝ]_IËˆ	ØØ][ÙËœX›XÔYÙKœÚ\™Q˜[˜XÚÉÎ‚ˆ	ÓÈÛÛ\\[[Y[È°èÛÈ\Ý0èH\ÜÛ°ë]™[ˆÈ[šÈ›ÚHÛÜXYË‰Ëˆ	ØØ][ÙËœX›XÔYÙK›ØY\œ›Ü•]IÎ‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆH0èYÚ[˜H0î˜›XØIËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹œX›XØ][Û‰Îˆ	ÐØ]0è[ÙÛÈX›XØYÉËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹œX›XØ][Û“Û‰Î‚ˆ	ÐÛY[\ÈÙ[HXÙ\ÜØ\ˆ[È[šÈ0î˜›XÛË‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹œX›XØ][Û“Ù™‰Î‚ˆ	ÓÈ[šÈšXØH™\Ù\˜YËX\È[™\ÜÛ°ë]™[‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹˜ÛÛ[	Îˆ	Ð\™\Ù[péðèÛÉËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹˜ÛÛ[[	Î‚ˆ	ÑYš[˜HHY[œØYÙ[H]YHXœ™HÝXHš]š[™K‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹]SX™[	Îˆ	Õ0ë][ÈHš]š[™IËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹]R[	Îˆ	Ñ^Žˆ[˜ÛÛ™HÈ]YH™XÚ\ØIËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹™\ØÜš\[Û“X™[	Îˆ	Ñ\ØÜšpéðèÛÈÝ\IËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹™\ØÜš\[Û’[	Î‚ˆ	Ñ^\]YH[H[XHœ˜\ÙHÈ]YHÈÛY[H[˜ÛÛ˜\°èK‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹˜\X\˜[˜ÙIÎˆ	Ð\\°ê›˜ÚXIËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹˜\X\˜[˜ÙR[	Î‚ˆ	Ñ\ØÛÛHÈÛ[XHš\ÝX[HHÛÜˆH\Ý\]YK‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹˜XØÙ[ÛÛÜ‰Îˆ	ÐÛÜˆH\Ý\]YIËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹˜Ý\ÝÛPÛÛÜ‰Îˆ	ÐÛÜˆ\œÛÛ˜[^˜YIËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹š[˜[YÛÛÜ‰Î‚ˆ	Õ\ÙH[XHÛÜˆ^YXÚ[X[ÛÛH›ÛHÛÛ˜\ÝKÛÛ[ÈÌL‘‘‹‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹›^[Ý]	Îˆ	ÐÛÛpî™ÈH^[Ý]	Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹›^[Ý][	Î‚ˆ	ÐÛÛ›ÛHH[œÚYYHH\È[™›Ü›XpéðíY\Èš\ðë]™Z\Ë‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹˜ÛÛY›ÜX›IÎˆ	ÐÛÛ™›Ü0è]™[	Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹˜ÛÛ\XÝ	Îˆ	ÐÛÛ\XÝÉËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹œÚÝÔšXÙ\ÉÎˆ	Ñ^Xš\ˆ™péÛÜÉËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹œÚÝÐÛÛXÝ	Îˆ	Ñ^Xš\ˆÛÛ]ÜÉËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹œÚÝÐY™\ÜÉÎˆ	Ñ^Xš\ˆ[™\™péÛÉËˆ	ØØ][ÙËœX›XÔYÙKœÝ[K˜Û\ÜÚXÉÎˆ	ÐÛ0è\ÜÚXÛÉËˆ	ØØ][ÙËœX›XÔYÙKœÝ[K˜Û\ÜÚXÒ[	Î‚ˆ	Ô›Ùš\ÜÚ[Û˜[\]Z[Xœ˜YÈH˜[Z[X\‹‰Ëˆ	ØØ][ÙËœX›XÔYÙKœÝ[K›Z[š[X[	Îˆ	ÓZ[š[X[\ÝIËˆ	ØØ][ÙËœX›XÔYÙKœÝ[K›Z[š[X[[	Î‚ˆ	ÓXZ\È\ÜpéÛËY[›ÜÈ[[Y[ÜÈš\ÝXZ\Ë‰Ëˆ	ØØ][ÙËœX›XÔYÙKœÝ[K™^™\ÜÚ]™IÎˆ	Ñ^™\ÜÚ]›ÉËˆ	ØØ][ÙËœX›XÔYÙKœÝ[K™^™\ÜÚ]™R[	Î‚ˆ	ÐÛÜˆHÛÛ˜\ÝH\˜H\ÝXØ\ˆHX\˜ØK‰Ëˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]Ë]IÎˆ	Ô°ê]šXH[Èš]›ÉËˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]Ë[œØ]™Y	Î‚ˆ	Õš\ÝX[^˜[™È[\˜péðíY\ÈZ[™H°èÛÈØ[˜\ÉËˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]ËœØ]™Y	Îˆ	Ð\\°ê›˜ÚXHØ[˜H›ÈØ]0è[ÙÛÉËˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]Ë™\ÚÝÜ	Îˆ	Ñ\ÚÝÜ	Ëˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]Ë›[Øš[IÎˆ	ÐÙ[[\‰Ëˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]ËœÝÜ™Q˜[˜XÚÉÎˆ	ÔÙ]HÛÛpê\˜Ú[ÉËˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]Ëœ›ÙXÝÉÎˆ	Ô›Ù]ÜÈ\ÜÛ°ë]™Z\ÉËˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]Ë˜ÚÛÜÙR][\ÉÎˆ	Ñ\ØÛÛHÙ]\È][œÉËˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]Ë™[\IÎ‚ˆ	ÓX\œ]YH›Ù]ÜÈÛÛ[È\ÜÛ°ë]™Z\È\˜HÈØ]0è[ÙÛË‰Ëˆ	ØØ][ÙËœX›XÔYÙK[œX›\Ú˜˜\œšY\‰Î‚ˆ	ÐÛÛ™š\›X\ˆ\ÜX›XØpéðèÛÈÈØ]0è[ÙÛÉËˆ	ØØ][ÙËœX›XÔYÙK[œX›\Ú]IÎˆ	Ñ\ÜX›XØ\ˆØ]0è[ÙÛÏÉËˆ	ØØ][ÙËœX›XÔYÙK[œX›\Ú˜›ÙIÎ‚ˆ	ÐÛY[\ÈÛÛHÈ[šÈZ^\°èÛÈH™\ˆÜÈ›Ù]ÜÈ]0êH[XH›Ý˜HX›XØpéðèÛË‰Ëˆ	ØØ][ÙËœX›XÔYÙK[œX›\Ú˜XÝ[Û‰Îˆ	Ñ\ÜX›XØ\‰Ëˆ	ØØ][ÙËœX›XÔYÙK[œX›\Úœ›ØÙ\ÜÚ[™ÉÎˆ	Ô™]\˜[™ÈÈØ]0è[ÙÛÈÈ\‹‹‹‰Ëˆ	ØØ][ÙËœX›XÔYÙK[œX›\Úœ›ØÙ\ÜÚ[™Ð›ÙIÎ‚ˆ	ÐYÝX\™H[œ]X[È]X[^˜[[ÜÈÈXÙ\ÜÛÈ0î˜›XÛË‰Ëˆ	ØØ][ÙËœX›XÔYÙK[œX›\ÚœÝXØÙ\ÜÉÎˆ	ÐØ]0è[ÙÛÈ\ÜX›XØYÉËˆ	ØØ][ÙËœX›XÔYÙK[œX›\ÚœÝXØÙ\ÜÐ›ÙIÎ‚ˆ	ÓÈ[šÈ›ÚH™\Ù\˜YÈHÙ\°èHÙ\ˆ™X]]˜YÈ\Ú\Ë‰Ëˆ	ØØ][ÙËœX›XÔYÙK[œX›\Ú™\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[\ÜX›XØ\‹ˆ[H›Ý˜[Y[K‰Ëˆ	Ü›Ù]Ë™\Ú›Ø\™š[\ÜÜ™XYÚY]ÛÛÛ‰Î‚ˆ	Ò[\Ü\ˆšXH[š[H
+[Hœ™]™JIËˆ	ÝÙX‹›˜]šYØ][Û‹œ[ÜIÎˆ	Ô\ÜÛØ\ÉËˆ	ÝÙX‹›˜]šYØ][Û‹œ[ÜK˜Ý\ÝÛY\œÉÎˆ	ÐÛY[\ÉËˆ	ÝÙX‹›˜]šYØ][Û‹œ[ÜK˜ÛÛX›Ü˜]ÜœÉÎˆ	ÐÛÛX›Ü˜YÜ™\ÉËˆ	ÝÙX‹›˜]šYØ][Û‹œ[ÜKœÚ^Õ\Ù\œÉÎˆ	Õ\Ýpè\š[ÜÈÈÚ^ÉËˆ	ÝÙX‹›˜]šYØ][Û‹œ[ÜKœ\™›Ü›X[˜ÙIÎˆ	Ñ\Ù[\[šÉËˆ	ÝÙX‹›˜]šYØ][Û‹˜Ø\Ú	Îˆ	ÐØZ^IËˆ	ÝÙX‹›˜]šYØ][Û‹™š[˜[˜ÚX[	Îˆ	Ñš[˜[˜ÙZ\›ÉËˆ	ÝÙX‹›˜]šYØ][Û‹™š[˜[˜ÚX[˜YÙ[™IÎˆ	ÐYÙ[™Hš[˜[˜ÙZ\˜IËˆ	ÝÙX‹›˜]šYØ][Û‹œÙ][™ÜÉÎˆ	ÐÛÛ™šYÝ\˜péðíY\ÉËˆ	ÝÙX‹›˜]šYØ][Û‹œ™\ÜÉÎˆ	Ô™[]0ìÜš[ÜÉËˆ	ÝÙX‹›˜]šYØ][Û‹[˜]˜Z[X›IÎˆ	Ñ\Ý[›È[™\ÜÛ°ë]™[™\ÝH™\œðèÛË‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë]IÎˆ	Õ\Ýpè\š[ÜÈÈÚ^ÉËˆ	Ý\ÝX\š[ÜÔÚ^ËœÝX]IÎ‚ˆ	ÐÛÛœÝ[HÜÈ\Ýpè\š[ÜÈØY\Ý˜YÜÈÛÛHXÙ\ÜÛÈ^Û\Ú]›È\˜HÈ\™š[ÕTT‹‰Ëˆ	Ý\ÝX\š[ÜÔÚ^ËœÝ[[X\žTÙ[X[XÜÉÎˆ	Ô™\Ý[[ÈÜÈ\Ýpè\š[ÜÈØY\Ý˜YÜÈ›ÈÚ^ÉËˆ	Ý\ÝX\š[ÜÔÚ^ËœÝ[[X\žU]IÎˆ	Ð˜\ÙHÛØ˜[H\Ýpè\š[ÜÉËˆ	Ý\ÝX\š[ÜÔÚ^ËœÝ[[X\žTÝX]IÎ‚ˆ	ÐÛÛœÝ[H›ÝYÚYH[È\™š[ÕTTˆÈÚÙ[‹‰Ëˆ	Ý\ÝX\š[ÜÔÚ^ËÝ[X™[	Îˆ	Ý\Ýpè\š[ÜÉËˆ	Ý\ÝX\š[ÜÔÚ^ËÝ[™YÚ\Ý\™Y	Îˆ	Õ\Ýpè\š[ÜÈØY\Ý˜YÜÉËˆ	Ý\ÝX\š[ÜÔÚ^ËœÙX\˜Ú[	Îˆ	Ð\ØØ\ˆÜˆ›ÛYKK[XZ[Ù[[\ˆÝH\™š[	Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ™\Ý[ÓX™[	Îˆ	Ù[˜ÛÛ˜YÜÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë™›Ü˜šY[•]IÎˆ	ÐXÙ\ÜÛÈ^Û\Ú]›È\˜HÕTT‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë™›Ü˜šY[“Y\ÜØYÙIÎ‚ˆ	ÔÙ]H\™š[°èÛÈÜÜÝZH\›Z\ÜðèÛÈ\˜HÛÛœÝ[\ˆÜÈ\Ýpè\š[ÜÈÈÚ^Ë‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›ØY[™ÉÎˆ	ÐØ\œ™YØ[™È\Ýpè\š[ÜÈÈÚ^ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë›ØY\œ›Ü•]IÎˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÜÈ\Ýpè\š[ÜÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë›ØY\œ›Ü‰Îˆ	Õ™\šYš\]YHÝXHÛÛ™^0èÛÈH[H›Ý˜[Y[K‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë™[\U]IÎˆ	Ó™[š[H\Ýpè\š[È[˜ÛÛ˜YÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë™[\SY\ÜØYÙIÎ‚ˆ	ÐZ\ÝHH\ØØH\˜HÛÛœÝ[\ˆÝ]›ÜÈ\Ýpè\š[ÜË‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë\Ù\‘˜[˜XÚÉÎˆ	Õ\Ýpè\š[ÈÈÚ^ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë››Ñ[XZ[	Îˆ	ÑK[XZ[°èÛÈ[™›Ü›XYÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë››ÔÛ™IÎˆ	ÐÙ[[\ˆ°èÛÈ[™›Ü›XYÉËˆ	Ý\ÝX\š[ÜÔÚ^Ëœ›ÛKœÝ\\‰Îˆ	ÔÕTT‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ›ÛK˜YZ[‰Îˆ	ÐYZ[š\Ý˜YÜ‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ›ÛK˜ÛÛX›Ü˜]Ü‰Îˆ	ÐÛÛX›Ü˜YÜ‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ›ÛK˜Ý\ÝÛY\‰Îˆ	ÐÛY[IËˆ	Ý\ÝX\š[ÜÔÚ^Ëœ›ÛK[šÛ›ÝÛ‰Îˆ	Ó°èÛÈ[™›Ü›XYÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[]IÎˆ	Ñ][\ÈÈ\Ýpè\š[ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[œÝX]IÎ‚ˆ	ÐØY\Ý›Ë™Y™\°ê›˜ÚX\Ë[\™\Ø\ÈH°ë[˜Ý[ÜÈØ[›ÜÈ›ÈÚ^Ë‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[›ØY\œ›Ü‰Îˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÜÈ][\Ë‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[œ\œÛÛ˜[	Îˆ	ÑYÜÈ\ÜÛØZ\ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[˜XØÛÝ[	Îˆ	ÐÛÛHH\›Z\ÜðíY\ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[œ™Y™\™[˜Ù\ÉÎˆ	Ô™Y™\°ê›˜ÚX\È[™]šYXZ\ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[™ÛØ˜[™Y™\™[˜Ù\ÉÎˆ	Ô™Y™\°ê›˜ÚX\ÈÛØ˜Z\ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[˜ÛÛ\[šY\ÉÎˆ	Ñ[\™\Ø\Èš[˜Ý[Y\ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[›[šÜÉÎˆ	Õ°ë[˜Ý[ÜÈHYÜÈÛÛ˜]XZ\ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[››ÐÛÛ\[šY\ÉÎˆ	Ó™[š[XH[\™\ØHš[˜Ý[YK‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[››Ó[šÜÉÎˆ	Ó™[š[H°ë[˜Ý[ÈØY\Ý˜YË‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[š[XYÙTÝÜ™Y	Îˆ	Ò[XYÙ[H\›X^™[˜YIËˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ë˜ÛÛ\]Y	Îˆ	ÓÛ˜›Ø\™[™ÈÛÛ˜ÛpëYÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ëœ[™[™ÉÎˆ	ÓÛ˜›Ø\™[™È[™[IËˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ë™X[ÙÐ˜\œšY\‰Î‚ˆ	Ð[\˜\ˆÝ]\ÈÈÛ˜›Ø\™[™È[šXÚX[	Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ëœ™\Ù]]IÎˆ	ÔÛÛXÚ]\ˆ›Ý›ÈÛ˜›Ø\™[™ÏÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ëœ™\Ù]Y\ÜØYÙIÎ‚ˆ	Ó›È°ìÞ[[ÈXÙ\ÜÛËÈ\Ýpè\š[È]™\°èHÛÛ™š\›X\ˆ›Ý˜[Y[HÙ]\ÈYÜÈ[šXÚXZ\È[\ÈH[˜\ˆ›ÈÚ\Ý[XK‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ëœ™\Ù]XÝ[Û‰Îˆ	Ô™Y˜^™\ˆÛ˜›Ø\™[™ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ë˜ÛÛ\]U]IÎ‚ˆ	ÓX\˜Ø\ˆÛ˜›Ø\™[™ÈÛÛ[ÈÛÛ˜ÛpëYÏÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ë˜ÛÛ\]SY\ÜØYÙIÎ‚ˆ	ÓÈ\Ýpè\š[ÈZ^\°èHH™\ˆÈÛ˜›Ø\™[™È[šXÚX[›ÜÈ°ìÞ[[ÜÈXÙ\ÜÛÜË‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ë˜ÛÛ\]PXÝ[Û‰Îˆ	ÓX\˜Ø\ˆÛÛ[ÈÛÛ˜ÛpëYÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ëœ›ØÙ\ÜÚ[™Õ]IÎˆ	Ð]X[^˜[™ÈÛ˜›Ø\™[™Ë‹‹‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ëœ›ØÙ\ÜÚ[™ÓY\ÜØYÙIÎ‚ˆ	ÐYÝX\™H[œ]X[ÈH›Ý˜HÛÛ™šYÝ\˜péðèÛÈ0êHØ[˜K‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™ËœÝXØÙ\ÜÕ]IÎˆ	ÓÛ˜›Ø\™[™È]X[^˜YÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™ËœÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	ÐH›Ý˜H™YÜ˜H°èH˜[\°èH›È°ìÞ[[ÈXÙ\ÜÛÈÈ\Ýpè\š[Ë‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ë™\œ›Ü•]IÎˆ	Ó°èÛÈ›ÚHÜÜðë]™[]X[^˜\‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ë™\œ›Ü“Y\ÜØYÙIÎ‚ˆ	Õ[H›Ý˜[Y[Kˆ™[š[XHÝ]˜H[™›Ü›XpéðèÛÈ›ÚH[\˜YK‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ\ÜÝÛÜ™™\Ù]]IÎˆ	Ô™\Ù]\ˆÙ[šIËˆ	Ý\ÝX\š[ÜÔÚ^Ëœ\ÜÝÛÜ™™\Ù]œÝX]IÎ‚ˆ	Õ\ÙH\ÝHpéðèÛÈ]X[™ÈÈ\Ýpè\š[È™XÚ\Ø\ˆ™YYš[š\ˆHÙ[šHHXÙ\ÜÛË‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ\ÜÝÛÜ™™\Ù]™X[ÙÕ]IÎˆ	Ô™\Ù]\ˆHÙ[šH\ÝH\Ýpè\š[ÏÉËˆ	Ý\ÝX\š[ÜÔÚ^Ëœ\ÜÝÛÜ™™\Ù]™X[ÙÓY\ÜØYÙIÎ‚ˆ	ÐHpéðèÛÈÙ\°èH\XØYH[YYX][Y[H[È\Ýpè\š[ÈÙ[XÚ[Û˜YË‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ\ÜÝÛÜ™™\Ù]˜XÝ[Û‰Îˆ	Ô™\Ù]\ˆÙ[šIËˆ	Ý\ÝX\š[ÜÔÚ^Ëœ\ÜÝÛÜ™™\Ù]œÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	ÓÈ™\Ù]HÙ[šH›ÚHÛÛ˜ÛpëYÈÛÛHÝXÙ\ÜÛË‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ\ÜÝÛÜ™™\Ù]™\œ›Ü“Y\ÜØYÙIÎ‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[™\Ù]\ˆHÙ[šHYÛÜ˜Kˆ[H›Ý˜[Y[K‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë™^YXœ›ÝÉÎˆ	ÐÛÛ™šYÝ\˜péðèÛÈ[šXÚX[	Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë˜œ˜[™YÛ[™IÎˆ	ÕYÈÛÛYpéØH\]ZIËˆ	Ú[š]X[Û˜›Ø\™[™Ë[YP˜YÙIÎˆ	ÓY[›ÜÈHHZ[]ÉËˆ	Ú[š]X[Û˜›Ø\™[™ËšY[]TÝ\X™[	Îˆ	Õ›ØðêˆHÝXH[\™\ØIËˆ	Ú[š]X[Û˜›Ø\™[™Ë˜\Ú[™\ÜÔÝ\X™[	Îˆ	ÔÙ]H™YðìØÚ[ÉËˆ	Ú[š]X[Û˜›Ø\™[™ËšY[]P™[™Yš]]IÎ‚ˆ	ÔÙ]H\ÜpéÛË›ÛÈ\˜H˜X˜[\ˆÈÙ]H™Z]Ë‰Ëˆ	Ú[š]X[Û˜›Ø\™[™ËšY[]P™[™Yš]ÝX]IÎ‚ˆ	ÒY[ÛXK\™š[H[\™\ØH›ÛÜÈ[\ÈHš[YZ\˜H[K‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë˜\Ú[™\ÜÐ™[™Yš]]IÎ‚ˆ	ÓY[›ÜÈpëYËˆXZ\ÈÈ]YH[\ÜK‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë˜\Ú[™\ÜÐ™[™Yš]ÝX]IÎ‚ˆ	ÓÜ™Ø[š^˜[[ÜÈH^\špê›˜ÚXHH\\ˆH›Ý[˜H™X[ÈÙ]H™YðìØÚ[Ë‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ëœš]˜XÞS›ÝIÎ‚ˆ	Õ›ØðêˆÙ\°èH[\˜\ˆ\ÜØ\È[™›Ü›XpéðíY\È\Ú\Ë‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ëœ™]šY]Ó[™ÝXYÙIÎˆ	ÒY[ÛXH™Y™\šYÉËˆ	Ú[š]X[Û˜›Ø\™[™Ëœ™]šY]Ô›Ùš[IÎˆ	Ô\™š[\ÜÛØ[	Ëˆ	Ú[š]X[Û˜›Ø\™[™Ëœ™]šY]ÐÛÛ\[žIÎˆ	ÒY[YYHH[\™\ØIËˆ	Ú[š]X[Û˜›Ø\™[™Ëœ™]šY]Ô\œÛÛ˜[^™Y	Îˆ	Ñ^\špê›˜ÚXH\œÛÛ˜[^˜YIËˆ	Ú[š]X[Û˜›Ø\™[™Ëž[Ý\‘]Z[ÉÎˆ	ÔÙ]\ÈYÜÉËˆ	Ú[š]X[Û˜›Ø\™[™Ëœ™\]Z\™Y[	Îˆ	ÐØ[\ÜÈØœšYØ]0ìÜš[ÜÉËˆ	Ú[š]X[Û˜›Ø\™[™Ë˜ÚÛÜÙR[	Îˆ	Ñ\ØÛÛH[XHÜ0éðèÛÈÝH\ÈX\Ë‰Ëˆ	Ú[š]X[Û˜›Ø\™[™ËœÝ\	Îˆ	Ñ]\IËˆ	Ú[š]X[Û˜›Ø\™[™Ë›Ù‰Îˆ	ÙIËˆ	Ú[š]X[Û˜›Ø\™[™ËšY[]U]IÎˆ	Õ˜[[ÜÈÛÛYpéØ\ˆ[È\ÜÙ[˜ÚX[	Ëˆ	Ú[š]X[Û˜›Ø\™[™ËšY[]TÝX]IÎ‚ˆ	ÐÛÛ™š\›YHÙ]\ÈYÜÈ\˜H\œÛÛ˜[^˜\›[ÜÈÝXH^\špê›˜ÚXK‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë˜\Ú[™\ÜÕ]IÎˆ	ÓÈ]YHÙ]H™YðìØÚ[È˜^ÉËˆ	Ú[š]X[Û˜›Ø\™[™Ë˜\Ú[™\ÜÔÝX]IÎ‚ˆ	Ò\ÜÛÈ\[˜\ÈÜ™Ø[š^˜HpìÙ[ÜÈH][ÜËˆ›ØðêˆÙ\°èH[\˜\ˆ\Ú\Ë‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë›[™ÝXYÙT]Y\Ý[Û‰Îˆ	Ñ[H]X[Y[ÛXH\ÙZ˜HÛÛ[X\ÉËˆ	Ú[š]X[Û˜›Ø\™[™Ë\Ù\“˜[YIÎˆ	ÐÛÛ[ÈÙ[[ÜÈÚ[X\ˆ›ØðêÉËˆ	Ú[š]X[Û˜›Ø\™[™Ë˜ÛÛ\[žS˜[YIÎˆ	Ó›ÛYHÈÙ]H™YðìØÚ[ÉËˆ	Ú[š]X[Û˜›Ø\™[™ËœØ[\Õ]IÎˆ	Õ™[™H›Ù]ÜÉËˆ	Ú[š]X[Û˜›Ø\™[™ËœØ[\ÔÝX]IÎˆ	Ô‹Ø]0è[ÙÛË\ÝÜ]YHH™[™\Ë‰Ëˆ	Ú[š]X[Û˜›Ø\™[™ËœÙ\šXÙ\Õ]IÎˆ	Ô™\ÝHÙ\špéÛÜÈ0êXÛšXÛÜÉËˆ	Ú[š]X[Û˜›Ø\™[™ËœÙ\šXÙ\ÔÝX]IÎ‚ˆ	Ð][™[Y[ÜËÜ™[œÈHÙ\špéÛÈH›ØÙY[Y[ÜË‰Ëˆ	Ú[š]X[Û˜›Ø\™[™ËœÝ\	Îˆ	ÐÛÛYpéØ\ˆH\Ø\ˆÈÚ^Ð\	Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë˜XÝ]š]T™\]Z\™Y	Î‚ˆ	ÔÙ[XÚ[Û™H™[™\ËÙ\špéÛÜÈ0êXÛšXÛÜÈÝH[X›ÜË‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë\Ù\“˜[YT™\]Z\™Y	Îˆ	Ò[™›Ü›YHÙ]H›ÛYH\˜HÛÛ[X\‹‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë˜ÛÛ\[žS˜[YT™\]Z\™Y	Î‚ˆ	Ò[™›Ü›YHÈ›ÛYHH[\™\ØH\˜HÛÛ[X\‹‰Ëˆ	Ú[š]X[Û˜›Ø\™[™ËœØ]™Q\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø[˜\ˆYÛÜ˜Kˆ[H›Ý˜[Y[K‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë›ØY\œ›Ü•]IÎ‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[[šXÚX\ˆHÛÛ™šYÝ\˜péðèÛÉËˆ	Ú[š]X[Û˜›Ø\™[™Ë›ØY\œ›Ü“Y\ÜØYÙIÎ‚ˆ	Õ™\šYš\]YHÝXHÛÛ™^0èÛÈH[H›Ý˜[Y[K‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›Ü[ÛÛ™š\›U]IÎˆ	ÐÛÛ™š\›X\ˆX™\\˜HHØZ^OÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›Ü[ÛÛ™š\›SY\ÜØYÙIÎ‚ˆ	Ñ\ÙZ˜HXœš\ˆØØ\Ú\ÚßHÛÛH›ØÛÈ[šXÚX[HØ[[Ý[OÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›Ü[ÛÛ™š\›PXÝ[Û‰Îˆ	ÐXœš\ˆØZ^IËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙTÙ\ÜÚ[ÛXÝ[Û‰Îˆ	Ñ[˜Ù\œ˜\ˆØZ^IËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÕ]IÎˆ	Ñ[˜Ù\œ˜\ˆÙ\ÜðèÛÈHØZ^OÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÔÝX]IÎ‚ˆ	Ô™]š\ÙHÈ™\Ý[[È[\ÈHÛÛ˜ÛZ\‹ˆ\ÝHpéðèÛÈ°èÛÈÙ\°èHÙ\ˆ\Ù™Z]K‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÐØ\Ú\ÚÉÎˆ	ÐØZ^IËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÓ[Ý™[Y[ÉÎˆ	Ó[Ýš[Y[ÜÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÑ^XÝY˜[[˜ÙIÎˆ	ÔØ[È\Ü\˜YÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÐÚXÚÛ\ÝÛÛ\]IÎ‚ˆ	Ô™\Ý[[ÈÜ\˜XÚ[Û˜[\ÜÛ°ë]™[	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÐ˜XÚÉÎˆ	Õ›Û\‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÐÛÛ™š\›IÎˆ	Ñ[˜Ù\œ˜\ˆØZ^IËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÔ›ØÙ\ÜÚ[™ÉÎˆ	Ñ[˜Ù\œ˜[™Ë‹‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÔÝXØÙ\ÜÕ]IÎˆ	ÐØZ^H[˜Ù\œ˜YÈÛÛHÝXÙ\ÜÛÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÔÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	ÐHÙ\ÜðèÛÈ›ÚHš[˜[^˜YHH\›X[™XÙH\ÜÛ°ë]™[›È\Ý0ìÜšXÛË‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÑ\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[[˜Ù\œ˜\ˆÈØZ^Kˆ™\šYš\]YHÝXHÛÛ™^0èÛÈH[H›Ý˜[Y[K‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÕ]IÎˆ	ÐØ[˜Ù[\ˆ[Ýš[Y[péðèÛÏÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÔÝX]IÎ‚ˆ	Ô™]š\ÙHÜÈ°ë[˜Ý[ÜÈ\ÝHÜ\˜péðèÛÈ[\ÈHØ[˜Ù[\‹ˆ\[™[™ÈÈ\Ý0ìÜšXÛÈš[˜[˜ÙZ\›ËÈ[°éØ[Y[ÈÙH™XÚ\Ø\ˆ\›X[™XÙ\ˆ™YÚ\Ý˜YË‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÓÜ\˜][Û‰Îˆ	ÓÜ\˜péðèÛÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÓY]Ù	Îˆ	Ñ›Ü›XIËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÐ[[Ý[	Îˆ	Õ˜[Ü‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÐÚXÚÛ\Ý	Î‚ˆ	ÔÙHH[Ýš[Y[péðèÛÈ\Ý]™\ˆš[˜Ý[YHH™XÙXš[Y[ÜÈÝH[°éØ[Y[ÜÈ]\›ÜËÈØ[˜Ù[[Y[ÈÙ\°èHÙ\ˆ›Ü]YXYÈ\˜H™\Ù\˜\ˆÈ\Ý0ìÜšXÛË‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÐ˜XÚÉÎˆ	Õ›Û\‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÐÛÛ™š\›IÎˆ	ÐØ[˜Ù[\ˆÜ\˜péðèÛÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÔ›ØÙ\ÜÚ[™ÉÎˆ	ÐØ[˜Ù[[™Ë‹‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÔÝXØÙ\ÜÕ]IÎˆ	Ó[Ýš[Y[péðèÛÈØ[˜Ù[YIËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÔÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	ÓÈ\Ý0ìÜšXÛÈÈØZ^H›ÚH]X[^˜YÈHHÜ\˜péðèÛÈ°èÛÈÙYÝZ\°èH]]˜H˜HÙ\ÜðèÛÈ]X[‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÑ\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø[˜Ù[\ˆH[Ýš[Y[péðèÛÈYÛÜ˜Kˆ™]š\ÙHÜÈ°ë[˜Ý[ÜÈš[˜[˜ÙZ\›ÜÈH[H›Ý˜[Y[K‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÓ[šÙY™XÛÜ™Ñ\œ›Ü‰Î‚ˆ	Ñ\ÝH[Ýš[Y[péðèÛÈÜÜÝZH°ë[˜Ý[ÈÛÛH™XÙXš[Y[ÜÈÝH[°éØ[Y[ÜÈ]\›ÜÈH™XÚ\ØH\›X[™XÙ\ˆ™YÚ\Ý˜YH›È\Ý0ìÜšXÛÈš[˜[˜ÙZ\›Ë‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÔ\›Z\ÜÚ[Û‘\œ›Ü‰Î‚ˆ	Õ›Øðêˆ°èÛÈÜÜÝZH\›Z\ÜðèÛÈ\˜HØ[˜Ù[\ˆ\ÝH[Ýš[Y[péðèÛË‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÐÛÛ›™XÝ]š]Q\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[˜[\ˆÛÛHÈÙ\šYÜˆYÛÜ˜Kˆ™\šYš\]YHÝXHÛÛ™^0èÛÈH[H›Ý˜[Y[K‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÓZÙ[S[šÙY\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø[˜Ù[\ˆ\ÝH[Ýš[Y[péðèÛÈÜœ]YH[HÙH\Ý\ˆš[˜Ý[YHHÝ]›ÜÈ™YÚ\Ý›ÜÈš[˜[˜ÙZ\›ÜËˆ™]š\ÙHÜÈ™XÙXš[Y[ÜÈ™[XÚ[Û˜YÜÈH[H›Ý˜[Y[K‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Y[žPXÝ[Û‰Îˆ	ÐYXÚ[Û˜\ˆ[°éØ[Y[ÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÕ]IÎˆ	Ô™YÚ\Ý˜\ˆ[°éØ[Y[ÈÜ\˜XÚ[Û˜[	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔÝX]IÎ‚ˆ	Ô™Y[˜ÚHÜÈYÜÈHÜ\˜péðèÛÈH™]š\ÙH[\ÈH™YÚ\Ý˜\ˆ›ÈØZ^K‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÕ\SX™[	Îˆ	Õ\ÈHÜ\˜péðèÛÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔÙ[XÝ	Îˆ	ÔÙ[XÚ[Û™IËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÐ[[Ý[X™[	Îˆ	Õ˜[Ü‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔ™[]Y\SX™[	Îˆ	Ñ›Ü›XH™[XÚ[Û˜YIËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔ™Y™\™[˜ÙSX™[	Îˆ	Ô™Y™\°ê›˜ÚXHÈÛÛ\›Ý˜[IËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔ™Y™\™[˜ÙR[	Îˆ	Ñ^ŽˆSÕ‹LIËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÓØœÙ\˜][Û“X™[	Îˆ	ÓØœÙ\˜péðèÛÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÓØœÙ\˜][Û’[	Î‚ˆ	Ñ\ØÜ™]˜HÈ[Ý]›ÈH[Ýš[Y[péðèÛÈÛÛHÛ\™^˜K‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÓ[šÙYØ[SX™[	Îˆ	ÔÜÜÝZH°ë[˜Ý[ÈÛÛH™[™IËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÓ[šÙYØ[R[	Î‚ˆ	Õ\ÙH[H\ÝÜ››ÜÈÝHÚ]XpéðíY\È™[XÚ[Û˜Y\ÈH][™[Y[È[\š[Ü‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔ™]šY]ÐXÝ[Û‰Îˆ	Ô™]š\Ø\ˆ[°éØ[Y[ÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÕ\T™\]Z\™Y	Îˆ	ÔÙ[XÚ[Û™HÈ\ÈHÜ\˜péðèÛË‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔ™[]Y\T™\]Z\™Y	Î‚ˆ	ÔÙ[XÚ[Û™HH›Ü›XH™[XÚ[Û˜YK‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÐ[[Ý[™\]Z\™Y	Îˆ	Ò[™›Ü›YH[H˜[Üˆ°è[YË‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔ™]šY]Õ]IÎ‚ˆ	ÐÛÛ™š\›X\ˆ[°éØ[Y[ÈÜ\˜XÚ[Û˜[ÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔ™]šY]ÔÝX]IÎ‚ˆ	Ô™]š\ÙHÜÈYÜÈX˜Z^È[\ÈH™YÚ\Ý˜\ˆH[Ýš[Y[péðèÛÈ›ÈØZ^K‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÐÚXÚÛ\Ý	Îˆ	Ô™\Ý[[È›ÛÈ\˜HÛÛ™š\›XpéðèÛË‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÑY]XÝ[Û‰Îˆ	ÑY]\ˆYÜÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÐÛÛ™š\›PXÝ[Û‰Îˆ	Ô™YÚ\Ý˜\ˆ[Ýš[Y[péðèÛÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔ›ØÙ\ÜÚ[™ÉÎˆ	Ô™YÚ\Ý˜[™Ë‹‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÑ\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[™YÚ\Ý˜\ˆH[Ýš[Y[péðèÛËˆ™\šYš\]YHÜÈYÜÈH[H›Ý˜[Y[K‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔÝXØÙ\ÜÕ]IÎ‚ˆ	Ó[Ýš[Y[péðèÛÈ™YÚ\Ý˜YHÛÛHÝXÙ\ÜÛÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	ÓÈ[°éØ[Y[È°èH\\™XÙH›È\Ý0ìÜšXÛÈH›È™\Ý[[ÈÈØZ^K‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÐ]˜Z[X›SY]ÙÉÎˆ	Ñ›Ü›X\È]]˜\ÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÓ[šÙYØ[UYÉÎˆ	Õš[˜Ý[YÈH™[™IËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžUÙ^SÛ›IÎˆ	ÔÛÛY[HÚ™IËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžT\š[Ù	Îˆ	Ô\°ë[ÙÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžT\š[ÙÙ^IÎˆ	ÒÚ™IËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžT\š[Ù\ÝÑ^\ÉÎˆ	ðæ›[[ÜÈÈX\ÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžT\š[Ù\ÝÌ^\ÉÎˆ	ðæ›[[ÜÈÌX\ÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžT\š[Ù\Ó[Û	Îˆ	Ñ\ÝHpêœÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžT\š[Ù\Ý[Û	Îˆ	ÓpêœÈ\ÜØYÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžT\š[ÙÝ\ÝÛT˜[™ÙIÎˆ	Ò[\˜[È\œÛÛ˜[^˜YÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžS˜]\™IÎˆ	Ó˜]\™^˜IËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžTÝ]\ÉÎˆ	ÔÝ]\ÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžSÜ\˜][Û‰Îˆ	ÓÜ\˜péðèÛÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžSY]Ù	Îˆ	Ñ›Ü›XIËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžTÝ\]IÎˆ	Ñ]H[šXÚX[	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžQ[™]IÎˆ	Ñ]Hš[˜[	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžTÝ\]R[	Îˆ	ÔÙ[XÚ[Û˜\ˆ]H[šXÚX[	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžQ[™]R[	Îˆ	ÔÙ[XÚ[Û˜\ˆ]Hš[˜[	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžPÛX\‘š[\œÉÎˆ	Ó[\\ˆš[›ÜÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžS›Ô™\Ý[Ñš[\™Y	Î‚ˆ	Ó™[š[XH[Ýš[Y[péðèÛÈ[˜ÛÛ˜YHÛÛHÜÈš[›ÜÈ\XØYÜË‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžS›Ô™\Ý[ÕÙ^IÎ‚ˆ	Ó™[š[XH[Ýš[Y[péðèÛÈ™YÚ\Ý˜YHÚ™K‰Ëˆ	ÝÙX‹œÝ[™[Û™Kœ][ÝIÎˆ	ÓÜ°éØ[Y[ÉËˆ	ÝÙX‹œÝ[™[Û™KœÙ\šXÙSÜ™\‰Îˆ	ÓÜ™[HHÙ\špéÛÉËˆ	ÝÙX‹œÚ[™^[™ÚYX˜\‰Îˆ	Ñ^[™\ˆ˜]™YØpéðèÛÉËˆ	ÝÙX‹œÚ[˜ÛÛ\ÙTÚYX˜\‰Îˆ	Ô™XÛÛ\ˆ˜]™YØpéðèÛÉËˆ	ÝÙX‹œÚ[˜Ý\œ™[ÛÛ[Y\˜ÙIÎˆ	ÐÛÛpê\˜Ú[È]X[	Ëˆ	ÝÙX‹œÚ[œÙ\ÜÚ[ÛÛÛ^	Îˆ	ÐÛÛ^ÈHÙ\ÜðèÛÉËˆ	ÝÙX‹œÚ[ÛÜšÜÜXÙIÎˆ	ÕÛÜšÜÜXÙHÜ\˜XÚ[Û˜[	Ëˆ	ÝÙX‹œÚ[™\œÚ[Û‰Îˆ	Õ™\œðèÛÉËˆ	ÝÙX‹šXY\‹œ›Ùš[IÎˆ	Ô\™š[	Ëˆ	ÝÙX‹šXY\‹œ›Ùš[UÛÛ\	Îˆ	ÓY]H\™š[	Ëˆ	ÝÙX‹šXY\‹\Ù\“Y[IÎˆ	Õ\Ýpè\š[ÉËˆ	ÝÙX‹šXY\‹›^T›Ùš[IÎˆ	ÓY]H\™š[	Ëˆ	ÝÙX‹šXY\‹[YK™\šÉÎˆ	Õ[XH\ØÝ\›ÉËˆ	ÝÙX‹šXY\‹[YK™\šË™[˜X›IÎˆ	Ð]]˜\ˆ[XH\ØÝ\›ÉËˆ	ÝÙX‹šXY\‹[YK™\šË™\ØX›IÎˆ	Ñ\Ø]]˜\ˆ[XH\ØÝ\›ÉËˆ	ÝÙX‹šXY\‹›ÙÛÝ]	Îˆ	ÔØZ\‰Ëˆ	ÝÙX‹›ÙÛÝ]™X[ÙË]IÎˆ	Ñ[˜Ù\œ˜\ˆÙ\ÜðèÛÈYÛÜ˜OÉËˆ	ÝÙX‹›ÙÛÝ]™X[ÙËœÝX]IÎ‚ˆ	Ô™]š\ÙHÈÛÛ^È[\ÈHØZ\‹ˆ›Øðêˆ›Û\°èH\˜HH[H0î˜›XØHHÙÚ[ˆ™\ÝH˜]™YØYÜ‹‰Ëˆ	ÝÙX‹›ÙÛÝ]™X[ÙË\Ù\‰Îˆ	Õ\Ýpè\š[ÉËˆ	ÝÙX‹›ÙÛÝ]™X[ÙË˜Ý\œ™[ÛÛ[Y\˜ÙIÎˆ	ÐÛÛpê\˜Ú[È]X[	Ëˆ	ÝÙX‹›ÙÛÝ]™X[ÙË›™^Ý\	Îˆ	Ô°ìÞ[[È\ÜÛÉËˆ	ÝÙX‹›ÙÛÝ]™X[ÙË›™^Ý\˜[YIÎˆ	Õ[H0î˜›XØHHÙÚ[‰Ëˆ	ÝÙX‹›ÙÛÝ]™X[ÙË˜ÚXÚÛ\Ý	Î‚ˆ	ÐHÙ\ÜðèÛÈ]X[Ù\°èH[˜Ù\œ˜YHÛÛY[H™\ÝH˜]™YØYÜ‹‰Ëˆ	ÝÙX‹›ÙÛÝ]™X[ÙË˜˜XÚÉÎˆ	ÐÛÛ[X\ˆÛÛ™XÝYÉËˆ	ÝÙX‹›ÙÛÝ]™X[ÙË˜ÛÛ™š\›IÎˆ	ÔØZ\ˆYÛÜ˜IËˆ	ÝÙX‹›ÙÛÝ]™X[ÙËœ›ØÙ\ÜÚ[™ÉÎˆ	Ñ[˜Ù\œ˜[™ÈÙ\ÜðèÛË‹‹‰Ëˆ	ÝÙX‹›ÙÛÝ]™X[ÙËœÝXØÙ\ÜÕ]IÎˆ	ÔÙ\ÜðèÛÈ[˜Ù\œ˜YHÛÛHÝXÙ\ÜÛÉËˆ	ÝÙX‹›ÙÛÝ]™X[ÙËœÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	Ô™\\˜[™ÈÈ™]Ü››È\˜HH[H0î˜›XØHHÙÚ[‹‰Ëˆ	ÝÙX‹›ÙÛÝ]™X[ÙË™\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[[˜Ù\œ˜\ˆHÙ\ÜðèÛÈYÛÜ˜Kˆ[H›Ý˜[Y[H[H[Ý[œÈ[œÝ[\Ë‰Ëˆ	ÝÛÜšÜÜXÙRÛYK]IÎˆ	ÓY]HXH›ÈÚ^Ð\	Ëˆ	ÝÛÜšÜÜXÙRÛYK™Ü™Y][™ÉÎˆ	ÓÛ0èKÛ˜[Y_IËˆ	ÝÛÜšÜÜXÙRÛYK[šÛ›ÝÛ•\Ù\‰Îˆ	Ý\Ýpè\š[ÉËˆ	ÝÛÜšÜÜXÙRÛYK˜ÛÛ\[žQ˜[˜XÚÉÎˆ	ÐÛÛpê\˜Ú[È]X[	Ëˆ	ÝÛÜšÜÜXÙRÛYK›Ü\˜][Û˜[]IÎˆ	ÒÚ™NˆÙ]_IËˆ	ÝÛÜšÜÜXÙRÛYKœ™Yœ™\ÚÛÛ\	Îˆ	Ð]X[^˜\ˆ™\Ý[[ÈÈXIËˆ	ÝÛÜšÜÜXÙRÛYK›ØY[™Ë]IÎˆ	ÐØ\œ™YØ[™È™\Ý[[ÈÈXIËˆ	ÝÛÜšÜÜXÙRÛYK›ØY[™ËœÝX]IÎ‚ˆ	Ð\ØØ[™ÈHÚ]XpéðèÛÈ]X[\ÝH[\™\ØK‰Ëˆ	ÝÛÜšÜÜXÙRÛYK™\œ›Ü‹]IÎˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÈ™\Ý[[ÈÈXK‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK]IÎˆ	ÓY]HZ[™[	Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœÝX]IÎ‚ˆ	ÐXÛÛ\[šHY]\Ë™[™\ËÙ\špéÛÜÈHš[ÜšYY\ÈÈÙ]H˜X˜[Ë‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK›ØY[™ÉÎˆ	ÐØ\œ™YØ[™ÈÙ]HZ[™[Ü\˜XÚ[Û˜[	Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK™\œ›Ü‹\Ù\‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Y[YšXØ\ˆÙ]HZ[™[\ÜÛØ[‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK˜][[Û‹]IÎˆ	Ôš[ÜšYY\ÈÈ˜X˜[ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYK˜][[Û‹˜ÛX\‰Î‚ˆ	ÕYÈ[HXH˜\ÈÝX\Èœ™[\ÈH˜X˜[Ë‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK˜][[Û‹œ[™[™ÉÎˆ	ÞØÛÝ[HÛÜÈ™XÚ\Ø[HH][°éðèÛË‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK˜][[Û‹›Ý™\™YTØ[\ÉÎˆ	Õ™[™\È™[˜ÚY\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYK˜][[Û‹›Ý™\™YTÙ\šXÙ\ÉÎˆ	Ñ[™YØ\È]˜\ØY\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYK˜][[Û‹œ™\Ù\˜][ÛœÉÎˆ	Ô™\Ù\˜\È\˜H[˜[\Ø\‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœØ[\Ë]IÎˆ	ÓZ[š\È™[™\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœØ[\Ëœ\š[Ù	Îˆ	Ô™\Ý[YÜÈHÜÝ\HHÙ[™IËˆ	ØÛÛX›Ü˜]Ü’ÛYKœØ[\Ë˜ÛÝ[	Îˆ	Õ™[™\È›ÈpêœÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœØ[\ËÝ[	Îˆ	ÕÝ[™[™YÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœØ[\Ëœ™XÙZ]™Y	Îˆ	Ò°èH™XÙXšYÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœØ[\Ë›Ü[“[Û	Îˆ	Ñ[HX™\È›ÈpêœÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœØ[\Ë›ØY\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÈ™\Ý[[È\ÈÝX\È™[™\Ë‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\Ë]IÎˆ	Õ™[™\ÈZ[™H°èÛÈ\]ZYY\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\ËœÝX]IÎ‚ˆ	ÔÛÛY[H™[™\È™YÚ\Ý˜Y\ÈÜˆ›Øðê‹‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\Ë›ØY\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÝX\È™[™\È[HX™\Ë‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\Ë™[\IÎ‚ˆ	Õ›Øðêˆ°èÛÈÜÜÝZH™[™\ÈYÝX\™[™È\]ZYpéðèÛË‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\Ë›[Ü™IÎˆ	ÓXZ\ÈØÛÝ[H™[™\È[HX™\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\Ë˜Ý\ÝÛY\‘˜[˜XÚÉÎˆ	ÐÛY[H°èÛÈ[™›Ü›XYÉËˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\ËœØ[Q˜[˜XÚÉÎˆ	Õ™[™IËˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\Ë››ÑYQ]IÎˆ	ÔÙ[H™[˜Ú[Y[ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\Ë›Ý™\™YIÎˆ	Õ™[˜ÚYIËˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ë]IÎˆ	ÓY]\ÈÙ\špéÛÜÈÜˆÝ]\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\ËœÝX]IÎ‚ˆ	Ñ\ÝšXZpéðèÛÈÜÈ][™[Y[ÜÈ[H]YH›Øðêˆ0êHÈ0êXÛšXÛË‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ë›Ü[‰Îˆ	ÐXœš\ˆ][™[Y[ÜÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ë›ØY\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÙ]\ÈÙ\špéÛÜË‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ë™[\IÎ‚ˆ	Ó™[š[H][™[Y[È\Ý0èH]šXpëYÈH›Øðê‹‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\ËÝ[	Îˆ	ÕÝ[]šXpëYÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ëš[”›ÙÜ™\ÜÉÎˆ	Ñ[H[™[Y[ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ë™YUÙ^IÎˆ	Ñ[™YØ\ÈÚ™IËˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ë›Ý™\™YIÎˆ	Ð]˜\ØYÜÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ë›[Ü™TÝ]\Ù\ÉÎ‚ˆ	ÓXZ\ÈØÛÝ[HÝ]\ÈÛÛH[Ýš[Y[péðèÛÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ë[šÛ›ÝÛ”Ý]\ÉÎˆ	ÔÙ[HÝ]\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœË]IÎˆ	Ñš[HH™\Ù\˜\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœËœÝX]IÎ‚ˆ	ÔYYÜÈÈØ]0è[ÙÛÈ]YHÙ[Hš\˜\ˆ™[™K‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœË›Ü[‰Îˆ	ÐXœš\ˆ™\Ù\˜\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœË›ØY\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆ\È™\Ù\˜\Ë‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœËœ[™[™ÉÎˆ	Ô[™[\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœËœ™XÙZ]™Y	Îˆ	Ô™XÙXšY\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœË˜[˜[\Ú\ÉÎˆ	Ñ[H[°è[\ÙIËˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœË˜ÛÛ™š\›YY	Îˆ	ÐÛÛ™š\›XY\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœË˜ÛÛ™\Y	Îˆ	ÐÛÛ™\Y\ÉËˆ	Ü\™›Ü›X[˜ÙKšÛYK]IÎˆ	ÓZ[š\ÈY]\ÉËˆ	Ü\™›Ü›X[˜ÙKšÛYKœÝX]IÎ‚ˆ	ÐXÛÛ\[šHÝX\ÈY]\ÈHÜÈ™\Ý[YÜÈ]X[^˜YÜÈ[ÈÚ^Ð\‰Ëˆ	Ü\™›Ü›X[˜ÙKšÛYK™\Ú›Ø\™]IÎˆ	ÓY]H™\Ý[YÉËˆ	Ü\™›Ü›X[˜ÙKšÛYKœ\š[Ù	Îˆ	Ô™\Ý[YÜÈHÜÝ\HHÙ[™IËˆ	Ü\™›Ü›X[˜ÙKšÛYK˜XØÙ\ÜÚXš[]SX™[	Îˆ	Ñ\Ú›Ø\™\ÈZ[š\ÈY]\ÉËˆ	Ü\™›Ü›X[˜ÙKšÛYK›ØY[™ÉÎˆ	ÐØ\œ™YØ[™ÈÝX\ÈY]\ÉËˆ	Ü\™›Ü›X[˜ÙKšÛYK›ØY\œ›Ü‰Îˆ	Ó°èÛÈ›ÚHÜÜðë]™[]X[^˜\ˆÝX\ÈY]\Ë‰Ëˆ	Ü\™›Ü›X[˜ÙKšÛYK™[\U]IÎˆ	Ó™[š[XHY]H]]˜H™\ÝHpêœÉËˆ	Ü\™›Ü›X[˜ÙKšÛYK™[\TÝX]IÎ‚ˆ	Ô]X[™È[XHY]H›ÜˆØY\Ý˜YH\˜H›Øðê‹È™\Ý[YÈ\\™XÙ\°èH\]ZK‰Ëˆ	Ü\™›Ü›X[˜ÙKšÛYKœ™\Ý[	Îˆ	Ô™\Ý[YÉËˆ	Ü\™›Ü›X[˜ÙKšÛYK\™Ù]	Îˆ	ÓY]IËˆ	Ü\™›Ü›X[˜ÙKš[™XØ]Ü‹œØ[\Õ˜[YIÎˆ	Õ˜[Üˆ™[™YÉËˆ	Ü\™›Ü›X[˜ÙKš[™XØ]Ü‹œØ[\Ô]X[]IÎˆ	Ô]X[YYHH™[™\ÉËˆ	Ü\™›Ü›X[˜ÙKš[™XØ]Ü‹œÙ\šXÙ\Õ˜[YIÎˆ	Õ˜[Üˆ[HÙ\špéÛÜÉËˆ	Ü\™›Ü›X[˜ÙKš[™XØ]Ü‹œÙ\šXÙPØ[ÉÎˆ	Ð][™[Y[ÜÈ0êXÛšXÛÜÉËˆ	Ü\™›Ü›X[˜ÙKš[™XØ]Ü‹™š[š\ÚYÙ\šXÙPØ[ÉÎˆ	Ð][™[Y[ÜÈš[˜[^˜YÜÉËˆ	Ü\™›Ü›X[˜ÙKš[™XØ]Ü‹œÙ\šXÙPØ[Õ˜[YIÎˆ	Õ˜[Üˆ[H][™[Y[ÜÉËˆ	ÝÛÜšÜÜXÙRÛYKœÙXÝ[Û‹Ù^IÎˆ	ÔÚ]XpéðèÛÈHÚ™IËˆ	ÝÛÜšÜÜXÙRÛYKœÙXÝ[Û‹˜][[Û‰Îˆ	Ô™XÚ\ØHHÝXH][°éðèÛÉËˆ	ÝÛÜšÜÜXÙRÛYKœÙXÝ[Û‹œ]ZXÚÐXÝ[ÛœÉÎˆ	ÐpéðíY\È°è\Y\ÉËˆ	ÝÛÜšÜÜXÙRÛYK™[\KÙ^IÎ‚ˆ	Ó™[š[H›ØÛÈÈ™\Ý[[È\Ý0èH\ÜÛ°ë]™[\˜HÝX\È\›Z\ÜðíY\Ë‰Ëˆ	ÝÛÜšÜÜXÙRÛYK™[\K˜][[Û‰Îˆ	Ó™[š[XH[™0ê›˜ÚXH[\Ü[HYÛÜ˜K‰Ëˆ	ÝÛÜšÜÜXÙRÛYK™[\Kœ]ZXÚÐXÝ[ÛœÉÎ‚ˆ	Ó™[š[XHpéðèÛÈ°è\YH\ÜÛ°ë]™[\˜HÝX\È\›Z\ÜðíY\Ë‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛ\[žQš[\•ÛÛ\	Î‚ˆ	Ñš[˜\ˆÛÛpê\˜Ú[ÜÎˆØÛÛY\˜Ú[ßIËˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛ\[žQš[\•]IÎˆ	Ñš[˜\ˆÛÛpê\˜Ú[ÜÉËˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛ\[žQš[\”ÝX]IÎ‚ˆ	Ñ\ØÛÛH[HÛÛpê\˜Ú[È\˜Hš\ÝX[^˜\ˆH\Ú›Ø\™‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛ\[žQš[\[	Îˆ	ÕÙÜÉËˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[QÜ™Y][™ÔÝX]IÎ‚ˆ	Õ™Z˜HÜÈš[˜Ú\Z\È[Ýš[Y[ÜÈHÙ[\™\Ø_HÚ™K‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛ\[žQš[\”ÙX\˜Ú[	Îˆ	Ð\ØØ\ˆÛÛpê\˜Ú[ÉËˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛ\[žQš[\‘[\U]IÎ‚ˆ	Ó™[š[HÛÛpê\˜Ú[È\ÜÛ°ë]™[	Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛ\[žQš[\‘[\SY\ÜØYÙIÎ‚ˆ	Ó°èÛÈ[˜ÛÛ˜[[ÜÈ°ë[˜Ý[ÜÈ]]›ÜÈ\˜H\ÝH\Ýpè\š[Ë‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛ\[žQš[\“ØY\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÜÈÛÛpê\˜Ú[ÜÈ\ÜÛ°ë]™Z\ÈYÛÜ˜K‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛ\[žQš[\”ÝÚ]Ú\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[›ØØ\ˆÈÛÛpê\˜Ú[ÈYÛÜ˜Kˆ[H›Ý˜[Y[K‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[Q\Ú›Ø\™š[\•]IÎˆ	Ñš[˜\ˆ\Ú›Ø\™	Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[Q\Ú›Ø\™š[\”ÝX]IÎ‚ˆ	Ñ\ØÛÛHÈÛÛpê\˜Ú[ÈKÙH™XÚ\Ø\‹™Yš[™HÜˆÛÛX›Ü˜YÜ‹‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[Q\Ú›Ø\™š[\ÛÛ\[žSX™[	Îˆ	ÐÛÛpê\˜Ú[ÉËˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[Q\Ú›Ø\™š[\ÛÛ\[žR[\‰Î‚ˆ	ÑYš[™H]X[ÛÛpê\˜Ú[È[[Y[HÜÈ[™XØYÜ™\È^XšYÜË‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛX›Ü˜]Ü‘š[\“X™[	Îˆ	ÐÛÛX›Ü˜YÜ‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛX›Ü˜]Ü‘š[\[	Îˆ	ÕÙÜÈÜÈÛÛX›Ü˜YÜ™\ÉËˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛX›Ü˜]Ü‘š[\’[\‰Î‚ˆ	Ó[ÜÝ˜HÜÈ[™XØYÜ™\ÈÈÛÛX›Ü˜YÜˆÙ[XÚ[Û˜YÈ˜H\Ú›Ø\™‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛX›Ü˜]Ü‘š[\‘\ØX›Y[\‰Î‚ˆ	Ñ\ØÛÛH[HÛÛpê\˜Ú[È\ÜXðëYšXÛÈ\˜Hš[˜\ˆÛÛX›Ü˜YÜ™\Ë‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛX›Ü˜]Ü‘š[\“ØY[™Ò[\‰Î‚ˆ	ÐØ\œ™YØ[™ÈÛÛX›Ü˜YÜ™\ÈÈÛÛpê\˜Ú[È]X[‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛX›Ü˜]Ü‘š[\•]IÎˆ	Ñš[˜\ˆÛÛX›Ü˜YÜ‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛX›Ü˜]Ü‘š[\”ÝX]IÎ‚ˆ	Ñ\ØÛÛH[HÛÛX›Ü˜YÜˆ\˜H™Yš[˜\ˆÜÈ[™XØYÜ™\Ë‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛX›Ü˜]Ü‘š[\”ÙX\˜Ú[	Îˆ	Ð\ØØ\ˆÛÛX›Ü˜YÜ‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛX›Ü˜]Ü‘š[\‘[\U]IÎ‚ˆ	Ó™[š[HÛÛX›Ü˜YÜˆ\ÜÛ°ë]™[	Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛX›Ü˜]Ü‘š[\‘[\SY\ÜØYÙIÎ‚ˆ	Ó°èÛÈ[˜ÛÛ˜[[ÜÈÛÛX›Ü˜YÜ™\È]]›ÜÈ™\ÝHÛÛpê\˜Ú[Ë‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛX›Ü˜]Ü‘š[\“ØY\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÜÈÛÛX›Ü˜YÜ™\È\ÝHÛÛpê\˜Ú[ÈYÛÜ˜K‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[PÛÛX›Ü˜]Ü‘š[\”Ù[XÝY˜[˜XÚÉÎ‚ˆ	ÐÛÛX›Ü˜YÜˆÙ[XÚ[Û˜YÉËˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[R[™œ˜\ÝXÝ\™T™\]Y\ÝÕ]IÎˆ	Ô™\]Y\ÝÈÈ˜XÚÙ[™	Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[R[™œ˜\ÝXÝ\™T™\]Y\ÝÔÝX]IÎ‚ˆ	Ô™\ÜÜÝ\È[Ûš]Ü˜Y\È˜H˜[™[HÙ[XÚ[Û˜YHÈ˜XÚÙ[™‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[R[™œ˜\ÝXÝ\™T™\]Y\ÝÑš[\•]IÎ‚ˆ	Ñš[˜\ˆ™\]Y\ÝÈÈ˜XÚÙ[™	Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[R[™œ˜\ÝXÝ\™T™\]Y\ÝÑš[\”ÝX]IÎ‚ˆ	Ò[™›Ü›YHH˜[™[H]YH[˜H˜HÛÛYÙ[HÜÈÝ]\ÈŒHL‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[R[™œ˜\ÝXÝ\™T™\]Y\ÝÑš[\•˜[YSX™[	Î‚ˆ	Ô]X[YYIËˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[R[™œ˜\ÝXÝ\™T™\]Y\ÝÑš[\•[š]X™[	Îˆ	Õ[šYYIËˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[R[™œ˜\ÝXÝ\™T™\]Y\ÝÑš[\“Z[]\ÉÎˆ	ÓZ[]ÜÉËˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[R[™œ˜\ÝXÝ\™T™\]Y\ÝÑš[\’Ý\œÉÎˆ	ÒÜ˜\ÉËˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[R[™œ˜\ÝXÝ\™T™\]Y\ÝÑš[\\IÎˆ	Ð\XØ\ˆ˜[™[IËˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[R[™œ˜\ÝXÝ\™T™\]Y\ÝÓZ[]TÚ[™Ý[\‰Îˆ	ÛZ[]ÉËˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[R[™œ˜\ÝXÝ\™T™\]Y\ÝÓZ[]T\˜[	Îˆ	ÛZ[]ÜÉËˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[R[™œ˜\ÝXÝ\™T™\]Y\ÝÒÝ\”Ú[™Ý[\‰Îˆ	ÚÜ˜IËˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[R[™œ˜\ÝXÝ\™T™\]Y\ÝÒÝ\”\˜[	Îˆ	ÚÜ˜\ÉËˆ	ÝÛÜšÜÜXÙRÛYK˜Ø\Ú]IÎˆ	ÐØZ^IËˆ	ÝÛÜšÜÜXÙRÛYK˜Ø\Ú›Ü[‰Îˆ	ÐX™\ÉËˆ	ÝÛÜšÜÜXÙRÛYK˜Ø\Ú˜ÛÜÙY	Îˆ	Ñ™XÚYÉËˆ	ÝÛÜšÜÜXÙRÛYK˜Ø\Ú›Ü[™Y]	Îˆ	Ù\ÙHÝ[Y_IËˆ	ÝÛÜšÜÜXÙRÛYK˜Ø\Ú›Ü[™Y]Ú]]IÎˆ	Ù\ÙHÙ]_H0èÈÝ[Y_IËˆ	ÝÛÜšÜÜXÙRÛYK˜Ø\Úœ™\ÜÛœÚX›IÎˆ	ÐX™\ÈÜˆÛ˜[Y_IËˆ	ÝÛÜšÜÜXÙRÛYKXÚšXØ[]IÎˆ	Ð\ÜÚ\Ý0ê›˜ÚX\ÉËˆ	ÝÛÜšÜÜXÙRÛYKXÚšXØ[˜XÝ]™K›Û™IÎˆ	ÌH[H[™[Y[ÉËˆ	ÝÛÜšÜÜXÙRÛYKXÚšXØ[˜XÝ]™K›Ý\‰Îˆ	ÞØÛÝ[H[H[™[Y[ÉËˆ	ÝÛÜšÜÜXÙRÛYK™š[˜[˜ÚX[œ™XÙZ]˜X›UÙ^IÎˆ	ÐH™XÙX™\ˆÚ™IËˆ	ÝÛÜšÜÜXÙRÛYK™š[˜[˜ÚX[œ^XX›UÙ^IÎˆ	ÐHYØ\ˆÚ™IËˆ	ÝÛÜšÜÜXÙRÛYK™š[˜[˜ÚX[˜ÛÝ[›Û™IÎˆ	ÌHÛÛIËˆ	ÝÛÜšÜÜXÙRÛYK™š[˜[˜ÚX[˜ÛÝ[›Ý\‰Îˆ	ÞØÛÝ[HÛÛ\ÉËˆ	ÝÛÜšÜÜXÙRÛYKœÝØÚË]IÎˆ	Ñ\ÝÜ]YIËˆ	ÝÛÜšÜÜXÙRÛYKœÝØÚË››ÐÜš]XØ[	Îˆ	ÔÙ[H[\\ÈÜ°ë]XÛÜÉËˆ	ÝÛÜšÜÜXÙRÛYKœÝØÚË˜™[ÝÓZ[š[][K›Û™IÎˆ	ÌHX˜Z^ÈÈpë[š[[ÉËˆ	ÝÛÜšÜÜXÙRÛYKœÝØÚË˜™[ÝÓZ[š[][K›Ý\‰Îˆ	ÞØÛÝ[HX˜Z^ÈÈpë[š[[ÉËˆ	ÝÛÜšÜÜXÙRÛYKœÝØÚËÚ]Ý]ÝØÚË›Û™IÎˆ	ÌHÙ[H\ÝÜ]YIËˆ	ÝÛÜšÜÜXÙRÛYKœÝØÚËÚ]Ý]ÝØÚË›Ý\‰Îˆ	ÞØÛÝ[HÙ[H\ÝÜ]YIËˆ	ÝÛÜšÜÜXÙRÛYKœÝØÚË›™YØ]]™K›Û™IÎˆ	ÌH™YØ]]›ÉËˆ	ÝÛÜšÜÜXÙRÛYKœÝØÚË›™YØ]]™K›Ý\‰Îˆ	ÞØÛÝ[H™YØ]]›ÜÉËˆ	ÝÛÜšÜÜXÙRÛYK˜][[Û‹›]TÙ\šXÙ\Ë›Û™IÎˆ	ÌHÙ\špéÛÈ]˜\ØYÉËˆ	ÝÛÜšÜÜXÙRÛYK˜][[Û‹›]TÙ\šXÙ\Ë›Ý\‰Îˆ	ÞØÛÝ[HÙ\špéÛÜÈ]˜\ØYÜÉËˆ	ÝÛÜšÜÜXÙRÛYK˜][[Û‹ØZ][™Ð\›Ý˜[›Û™IÎ‚ˆ	ÌHÜ°éØ[Y[ÈYÝX\™[™È\›Ý˜péðèÛÉËˆ	ÝÛÜšÜÜXÙRÛYK˜][[Û‹ØZ][™Ð\›Ý˜[›Ý\‰Î‚ˆ	ÞØÛÝ[HÜ°éØ[Y[ÜÈYÝX\™[™È\›Ý˜péðèÛÉËˆ	ÝÛÜšÜÜXÙRÛYK˜][[Û‹œ™XYQ›Ü”XÚÝ\›Û™IÎ‚ˆ	ÌH\]Z\[Y[È›ÛÈ\˜H™]\˜YIËˆ	ÝÛÜšÜÜXÙRÛYK˜][[Û‹œ™XYQ›Ü”XÚÝ\›Ý\‰Î‚ˆ	ÞØÛÝ[H\]Z\[Y[ÜÈ›ÛÜÈ\˜H™]\˜YIËˆ	ÝÛÜšÜÜXÙRÛYK˜][[Û‹›Ý™\™YT™XÙZ]˜X›K›Û™IÎ‚ˆ	ÌHÛÛHH™XÙX™\ˆ™[˜ÚYIËˆ	ÝÛÜšÜÜXÙRÛYK˜][[Û‹›Ý™\™YT™XÙZ]˜X›K›Ý\‰Î‚ˆ	ÞØÛÝ[HÛÛ\ÈH™XÙX™\ˆ™[˜ÚY\ÉËˆ	ÝÛÜšÜÜXÙRÛYK˜][[Û‹›Ý™\™YT^XX›K›Û™IÎˆ	ÌHÛÛHHYØ\ˆ™[˜ÚYIËˆ	ÝÛÜšÜÜXÙRÛYK˜][[Û‹›Ý™\™YT^XX›K›Ý\‰Î‚ˆ	ÞØÛÝ[HÛÛ\ÈHYØ\ˆ™[˜ÚY\ÉËˆ	ÝÛÜšÜÜXÙRÛYK˜][[Û‹œÝØÚÓ™YØ]]™K›Û™IÎ‚ˆ	ÌH›Ù]ÈÛÛH\ÝÜ]YH™YØ]]›ÉËˆ	ÝÛÜšÜÜXÙRÛYK˜][[Û‹œÝØÚÓ™YØ]]™K›Ý\‰Î‚ˆ	ÞØÛÝ[H›Ù]ÜÈÛÛH\ÝÜ]YH™YØ]]›ÉËˆ	ÝÛÜšÜÜXÙRÛYK˜][[Û‹œÝØÚÕÚ]Ý]›Û™IÎˆ	ÌH›Ù]ÈÙ[H\ÝÜ]YIËˆ	ÝÛÜšÜÜXÙRÛYK˜][[Û‹œÝØÚÕÚ]Ý]›Ý\‰Î‚ˆ	ÞØÛÝ[H›Ù]ÜÈÙ[H\ÝÜ]YIËˆ	ÝÛÜšÜÜXÙRÛYK˜][[Û‹œÝØÚÐ™[ÝË›Û™IÎ‚ˆ	ÌH›Ù]ÈX˜Z^ÈÈ\ÝÜ]YHpë[š[[ÉËˆ	ÝÛÜšÜÜXÙRÛYK˜][[Û‹œÝØÚÐ™[ÝË›Ý\‰Î‚ˆ	ÞØÛÝ[H›Ù]ÜÈX˜Z^ÈÈ\ÝÜ]YHpë[š[[ÉËˆ	ÝÛÜšÜÜXÙRÛYK˜XÝ[Û‹›Ü[•XÚšXØ[Ù\šXÙ\ÉÎˆ	ÐXœš\ˆ\ÜÚ\Ý0ê›˜ÚX\ÉËˆ	ÝÛÜšÜÜXÙRÛYK˜XÝ[Û‹›Ü[‘š[˜[˜ÚX[	Îˆ	ÐXœš\ˆš[˜[˜ÙZ\›ÉËˆ	ÝÛÜšÜÜXÙRÛYK˜XÝ[Û‹›Ü[”ÝØÚÉÎˆ	ÐXœš\ˆ\ÝÜ]YIËˆ	ÝÛÜšÜÜXÙRÛYKœ]ZXÚÐXÝ[Û‹›™]ÔØ[IÎˆ	Ó›Ý˜H™[™IËˆ	ÝÛÜšÜÜXÙRÛYKœ]ZXÚÐXÝ[Û‹›™]ÕXÚšXØ[Ù\šXÙIÎˆ	Ó›Ý›È][™[Y[ÉËˆ	ÝÛÜšÜÜXÙRÛYKœ]ZXÚÐXÝ[Û‹˜Ø\Ú	Îˆ	ÐØZ^IËˆ	ÝÛÜšÜÜXÙRÛYKœ]ZXÚÐXÝ[Û‹™š[˜[˜ÚX[YÙ[™IÎˆ	ÐYÙ[™Hš[˜[˜ÙZ\˜IËˆ	ÜÝ™XZË]IÎˆ	ÓÙ™[œÚ]˜IËˆ	ÜÝ™XZË›[Øš[IÎˆ	Ó[Øš[IËˆ	ÜÝ™XZËÙX‰Îˆ	ÕÙX‰Ëˆ	ÜÝ™XZËœÚ\™Y	Îˆ	ÑÙ\˜[	Ëˆ	ÜÝ™XZË›Û™Ù\Ý	Îˆ	Ô™XÛÜ™IËˆ	ÜÝ™XZË›Û™Q^IÎˆ	ÌHXIËˆ	ÜÝ™XZË™^\ÉÎˆ	ÞØÛÝ[HX\ÉËˆ	ÜÝ™XZË™^\ÓÙ”Ý™XZÉÎˆ	ÞØÛÝ[HX\ÈHÙ™[œÚ]˜IËˆ	ÜÝ™XZËšÙY\\Ú[™ÉÎˆ	Õ\ÙHÈÚ^Ð\ÙÜÈÜÈX\È\˜HX[\ˆÝXHÙ™[œÚ]˜K‰Ëˆ	ÜÝ™XZËœÝ\YÙ^IÎˆ	ÔÝXHÙ™[œÚ]˜HÛÛYpéÛÝHÚ™K‰Ëˆ	ÜÝ™XZË›ØY[™ÉÎˆ	ÐØ\œ™YØ[™ÈÙ]\ÈX\ÈHÙ™[œÚ]˜K‰Ëˆ	ÜÝ™XZË›ØY\œ›Ü‰Îˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÝXHÙ™[œÚ]˜K‰Ëˆ	Û[Øš[K›˜]‹™\Ú	Îˆ	Ù\Ú	Ëˆ	Û[Øš[K›˜]‹šÛYIÎˆ	Ò[°ëXÚ[ÉËˆ	Û[Øš[K›˜]‹›X[˜YÙ[Y[	Îˆ	ÑÙ\Ý0èÛÉËˆ	Û[Øš[K›˜]‹œÙ\šXÙIÎˆ	Ð][™[Y[ÉËˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë]IÎˆ	Ñ[\™\ØIËˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›ØY\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÜÈYÜÈH[\™\ØK‰Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[ËœØ]™TÝXØÙ\ÜÉÎ‚ˆ	ÑYÜÈH[\™\ØH]X[^˜YÜÈÛÛHÝXÙ\ÜÛË‰Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[ËœØ]™Q\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø[˜\ˆÜÈYÜÈH[\™\ØK‰Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[ËœÝ[[X\žU]IÎˆ	ÑYÜÈÈÛÛpê\˜Ú[ÉËˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[ËœÝ[[X\žTÝX]IÎ‚ˆ	Ð]X[^™H\È[™›Ü›XpéðíY\È\ØY\È›ÜÈØÝ[Y[ÜÈH›È][™[Y[Ë‰Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[ËšY[]U]IÎˆ	ÒY[YYHH[\™\ØIËˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[ËšY[]TÝX]IÎ‚ˆ	Ô™]š\ÙHÜÈYÜÈš[˜Ú\Z\È[\ÈHØ[˜\ˆ\È[\˜péðíY\Ë‰Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›YØ[˜[YIÎˆ	Ô˜^°èÛÈÛØÚX[	Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›YØ[˜[YR[	Îˆ	Ó›ÛYHYØ[H[\™\ØIËˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë˜YS˜[YIÎˆ	Ó›ÛYH˜[\ÚXIËˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë˜YS˜[YR[	Îˆ	Ó›ÛYHÛÛY\˜ÚX[\ØYÈ›È][™[Y[ÉËˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë™ØÝ[Y[	Îˆ	ÑØÝ[Y[ÈH[\™\ØIËˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë™ØÝ[Y[[	Îˆ	ÐÓ”ˆÝHØÝ[Y[Èš\ØØ[\]Z]˜[[IËˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ëœ™\]Z\™YšY[	Îˆ	Ò[™›Ü›YH\ÝHØ[\Ë‰Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ëœ™XYUÑY]	Îˆ	ÑYÜÈ›ÛÜÈ\˜HYpéðèÛË‰Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[ËØZ][™Ñ]IÎˆ	ÐYÝX\™[™ÈYÜÈH[\™\ØK‰Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[ËœÝ]\ÔÝX]IÎ‚ˆ	Ð\È[™›Ü›XpéðíY\ÈØ[˜\È\\™XÙ[H›ÜÈØÝ[Y[ÜÈHÛÛ\›Ý˜[\ÈÈÛÛpê\˜Ú[Ë‰Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[ËœØ]™PÚ[™Ù\ÉÎˆ	ÔØ[˜\ˆ[\˜péðíY\ÉËˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›ÙÛÕ]IÎˆ	ÓÙÛÈH[\™\ØIËˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›ÙÛÔÝX]IÎ‚ˆ	ÐYXÚ[Û™H[XH[XYÙ[H°ë]YKH™Y™\°ê›˜ÚXH]XY˜YK‰Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›ÙÛÔ™YÚ\Ý\™Y	Î‚ˆ	Ò[XYÙ[H›ÛH\˜HØ[˜\ˆ›ÈØY\Ý›ÈÈÛÛpê\˜Ú[Ë‰Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›ÙÛÔÙ[XÝ	Îˆ	ÔÙ[XÚ[Û˜\ˆÙÛÉËˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›ÙÛÐÚ[™ÙIÎˆ	Õ›ØØ\ˆÙÛÉËˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›ÙÛÔ™[[Ý™IÎˆ	Ô™[[Ý™\‰Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›ÙÛÔÚY]]IÎˆ	ÐØY\Ý˜\ˆÙÛÉËˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›ÙÛÔÚY]ÝX]IÎ‚ˆ	Ñ\ØÛÛH[XH[XYÙ[HHØ[\šXHÝH\™H[XH›ÝË‰Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›ÙÛÑœ›ÛQØ[\žIÎˆ	Ñ\ØÛÛ\ˆHØ[\šXIËˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›ÙÛÑœ›ÛPØ[Y\˜IÎˆ	Õ\Ø\ˆðè›Y\˜IËˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›ÙÛÓØY\œ›Ü‰Îˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÈÙÛË‰Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›ÙÛÕÛÓ\™ÙIÎˆ	Ñ\ØÛÛH[XH[XYÙ[HH]0êHHP‹‰Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›ÙÛÔÙ[X[XÜÉÎˆ	ÓÙÛÈØY\Ý˜YÈH[\™\ØK‰Ëˆ	Ù[\™\ØK˜ÛÛ™šYÝ\˜XØ[Ë›ÙÛÑ[\TÙ[X[XÜÉÎˆ	Ó™[š[HÙÛÈØY\Ý˜YË‰Ëˆ	ØØ][ÙÒX[›[Øš[K˜][[Û’][\ÉÎˆ	ÞØÛÝ[H][œÈ™XÚ\Ø[HH][°éðèÛÉËˆ	ØØ][ÙÒX[œÝ]\Ë˜Üš]XØ[	Îˆ	ÐÜ°ë]XÛÉËˆ	ØØ][ÙÒX[œÝ]\ËØ\›š[™ÉÎˆ	Ð][°éðèÛÉËˆ	ØØ][ÙÒX[œÝ]\ËšX[IÎˆ	ÔØ]Y0è]™[	Ëˆ	ØØ][ÙÒX[œÝ]\Ë™Y˜][	Îˆ	ÔØpî™IËˆ	Ø][™[Y[ÕXÛšXÛËœÝ]\ÉÎˆ	ÔÝ]\ÉËˆ	Ø][™[Y[ÕXÛšXÛË™š[\œËœ^[Y[Ý]\Ë›X™[	Îˆ	ÔÝ]\ÈYØ[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛË™š[\œËœ^[Y[Ý]\ËÛÛ\	Î‚ˆ	Ñš[˜\ˆÜˆÝ]\ÈÈYØ[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛË™š[\œËœ^[Y[Ý]\Ëš[\‰Î‚ˆ	Ñš[™H][™[Y[ÜÈÜˆØ[È[HX™\ÈÝH\]ZYYË‰Ëˆ	Ø][™[Y[ÕXÛšXÛË™š[\œËœ^[Y[Ý]\Ë˜[	Îˆ	ÕÙÜÈÜÈYØ[Y[ÜÉËˆ	Ø][™[Y[ÕXÛšXÛË™š[\œËœ^[Y[Ý]\Ë›Ü[‰Îˆ	Ñ[HX™\ÉËˆ	Ø][™[Y[ÕXÛšXÛË™š[\œËœ^[Y[Ý]\ËœZY	Îˆ	Ó\]ZYYÉËˆ	Ø][™[Y[ÕXÛšXÛË™š[\œË›][TÙ[XÝY	Îˆ	ÞØÛÝ[HÙ[XÚ[Û˜YÜÉËˆ	Ø][™[Y[ÕXÛšXÛË™š[\œËXÚšXÚX[‹›X™[	Îˆ	Õ0êXÛšXÛÈ™\ÜÛœðè]™[	Ëˆ	Ø][™[Y[ÕXÛšXÛË™š[\œËXÚšXÚX[‹ÛÛ\	Î‚ˆ	Ñš[˜\ˆÜˆ0êXÛšXÛÈ™\ÜÛœðè]™[	Ëˆ	Ø][™[Y[ÕXÛšXÛË™š[\œËXÚšXÚX[‹˜[	Îˆ	ÕÙÜÈÜÈ0êXÛšXÛÜÉËˆ	Ø][™[Y[ÕXÛšXÛË™š[\œËXÚšXÚX[‹››Û™IÎˆ	ÔÙ[H0êXÛšXÛÈ™\ÜÛœðè]™[	Ëˆ	Ø][™[Y[ÕXÛšXÛË™š[\œËXÚšXÚX[‹œÙ[XÝY˜[˜XÚÉÎ‚ˆ	Õ0êXÛšXÛÈÙ[XÚ[Û˜YÉËˆ	Ø][™[Y[ÕXÛšXÛË™š[\œËœÝ]\ËÛÛ\	Îˆ	Ñš[˜\ˆÜˆÝ]\ÉËˆ	Ø][™[Y[ÕXÛšXÛË™š[\œËœÝ]\Ë˜[	Îˆ	ÕÙÜÈÜÈÝ]\ÉËˆ	Ø][™[Y[ÕXÛšXÛË™š[\œËœÝ]\Ë˜[Ú]ÛÝ[	Î‚ˆ	ÕÙÜÈÜÈÝ]\È
+ØÛÝ[JIËˆ	Ø][™[Y[ÕXÛšXÛË™š[\œËœÝ]\ËœÙ[XÝY˜[˜XÚÉÎˆ	ÔÝ]\ÈÙ[XÚ[Û˜YÉËˆ	Ø][™[Y[ÕXÛšXÛË›\ÝK›Ü[‘]Z[ÉÎˆ	Õ™\ˆ][\ÉËˆ	Ø][™[Y[ÕXÛšXÛË›\ÝK™]Z[ÑX[ÙË]IÎˆ	Ñ][\ÈÈ][™[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛË›\ÝK™]Z[ÑX[ÙËœÝX]IÎ‚ˆ	Ô™]š\ÙHš[˜[˜ÙZ\›Ë[™[Y[ÈH\Ý0ìÜšXÛÈÛÛ\]ÜÈ[\ÈHÙYÝZ\ˆ\˜HÝ]˜HpéðèÛË‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›\ÝK™]Z[ÑX[ÙË˜˜\œšY\“X™[	Î‚ˆ	Ñ™XÚ\ˆ][\ÈÈ][™[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË˜˜\œšY\“X™[	Î‚ˆ	Ñ™XÚ\ˆš[›ÈH]IËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË™š[\“X™[	Îˆ	Ñ]IËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË]IÎˆ	Ñš[˜\ˆÜˆ]IËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙËœÝX]IÎ‚ˆ	ÑYš[˜HÈ[\˜[ÈH]X[^˜péðèÛÈÜÈ][™[Y[ÜË‰Ëˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË™šY[X™[	Îˆ	ÐØ[\ÉËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË™šY[˜[YU\]Y]	Î‚ˆ	Ð]X[^˜péðèÛÉËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË˜Ý\œ™[˜[™ÙSX™[	Îˆ	Ò[\˜[ÉËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË˜[]\ÉÎˆ	ÕÙ\È\È]\ÉËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË™]Qœ›ÛIÎˆ	ÐH\\ˆHÙ]_IËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË™]U[[	Îˆ	Ð]0êHÙ]_IËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË™]T˜[™ÙIÎˆ	ÞÜÝ\H]0êHÙ[™IËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙËœÝ\X™[	Îˆ	Ò[°ëXÚ[ÉËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË™[™X™[	Îˆ	Ñš[IËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË™]R[	Îˆ	ÙÓSKÞ^^^IËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙËœ]ZXÚÕÙ^IÎˆ	ÒÚ™IËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙËœ]ZXÚÓ\ÝÑ^\ÉÎˆ	ðæ›[[ÜÈÈX\ÉËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙËœ]ZXÚÓ™^Ñ^\ÉÎˆ	Ô°ìÞ[[ÜÈÈX\ÉËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙËœ]ZXÚÓÝ™\™YIÎˆ	Õ™[˜ÚYÜÉËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙËœ]ZXÚÓ\ÝÌ^\ÉÎ‚ˆ	ðæ›[[ÜÈÌX\ÉËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙËœ]ZXÚÕ\Ó[Û	Îˆ	Ñ\ÝHpêœÉËˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË˜ÛX\XÝ[Û‰Îˆ	Ó[\\‰Ëˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË˜Ø[˜Ù[XÝ[Û‰Îˆ	ÐØ[˜Ù[\‰Ëˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË˜\PXÝ[Û‰Îˆ	Ð\XØ\‰Ëˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙËœÝ\[˜[Y	Î‚ˆ	Ò[™›Ü›YHH]H[šXÚX[[H[H›Ü›X]È°è[YË‰Ëˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË™[™[˜[Y	Î‚ˆ	Ò[™›Ü›YHH]Hš[˜[[H[H›Ü›X]È°è[YË‰Ëˆ	Ø][™[Y[ÕXÛšXÛËÙX‹™]Qš[\‘X[ÙË™[™™Y›Ü™TÝ\	Î‚ˆ	ÐH]Hš[˜[°èÛÈÙHÙ\ˆ[\š[Üˆ0è[šXÚX[‰Ëˆ	Ø][™[Y[ÕXÛšXÛË˜Ý\ÝÛY\“›Ý[™›Ü›YY	Îˆ	ÐÛY[H°èÛÈ[™›Ü›XYÉËˆ	Ø][™[Y[ÕXÛšXÛË™^XÝY[]™\žIÎˆ	Ñ[™YØH™]š\ÝIËˆ	Ø][™[Y[ÕXÛšXÛË™\]Z\Y[	Îˆ	Ñ\]Z\[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛËœ™\ÜY\ÜÝYIÎˆ	ÑY™Z]ÉËˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë]IÎˆ	ÔÝ]\ÈÈÙ\špéÛÉËˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\ËœÝX]IÎ‚ˆ	ÐXÛÛ\[šHH]\H]X[È][™[Y[È0êXÛšXÛÈ[È[šÈ0î˜›XÛË‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ëœ›ÙÜ™\ÜÕ]IÎˆ	Ô›ÙÜ™\ÜÛÈÈ][™[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ëœ›ÙÜ™\ÜÔÚÜ	Îˆ	Ô›ÙÜ™\ÜÛÈÈÙ\špéÛÉËˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\ËœÙ\šXÙQ]IÎˆ	ÑYÜÈÈÙ\špéÛÉËˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ëš\ÝÜžIÎˆ	Ò\Ý0ìÜšXÛÈHÝ]\ÉËˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë››Ò\ÝÜžIÎ‚ˆ	Ó™[š[XH]Y[°éØHHÝ]\È™YÚ\Ý˜YK‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë›ØY[™ÉÎ‚ˆ	ÐØ\œ™YØ[™ÈÝ]\ÈÈÙ\špéÛË‹‹‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë™\œ›Ü•]IÎ‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÈÝ]\ÉËˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ëš[˜[Y[šÉÎ‚ˆ	Ó[šÈ[°è[YËˆÚÙ[ˆÝHÛÛpê\˜Ú[È°èÛÈ[™›Ü›XYË‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë›[šÕ]IÎˆ	Ó[šÈ0î˜›XÛÈHÝ]\ÉËˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë›[šÐÛÜYY	Î‚ˆ	Ó[šÈÛÜXYÈ\˜HH0è\™XHH˜[œÙ™\°ê›˜ÚXK‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë›[šÐÛÜYYÚÜ	Î‚ˆ	Ó[šÈHÝ]\ÈÛÜXYË‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë›[šÒ[	Î‚ˆ	Ñ[šYH\ÝH[šÈ[ÈÛY[H\˜HXÛÛ\[š\ˆÈÝ]\È]X[ÈÙ\špéÛË‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë›[šÓZ\ÜÚ[™ÉÎ‚ˆ	Ó[šÈ°èÛÈ™]Ü›˜YÈ[È˜XÚÙ[™‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë›[šÑ\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ù\˜\ˆÈ[šÈHÝ]\ÉËˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\ËœÚ\™SY\ÜØYÙIÎ‚ˆ	ÐXÛÛ\[šHÈÝ]\ÈÈÙ]HÙ\špéÛÈ[È[šÈX˜Z^Î‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\ËœÚ\™TÝXš™XÝ	Îˆ	ÔÝ]\ÈÈÙ\špéÛÉËˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\ËœÚ\™Q˜[˜XÚÉÎ‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Xœš\ˆÈÛÛ\\[[Y[ËˆÈ[šÈ›ÚHÛÜXYË‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\ËœX›XÕ\›Z\ÜÚ[™ÉÎ‚ˆ	ÕT“0î˜›XØHÈ\XØ]]›È°èÛÈÛÛ™šYÝ\˜YK‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë˜XÝ[Û‰Îˆ	ÔÝ]\È0î˜›XÛÉËˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë˜XÝ[Û”ÚÜ	Îˆ	ÔÝ]\ÉËˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\ËœÚYÛ˜]\™T[™[™Õ]IÎ‚ˆ	Ð\ÜÚ[˜]\˜HH\›Ý˜péðèÛÈ[™[IËˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\ËœÚYÛ˜]\™T[™[™Ñ\ØÜš\[Û‰Î‚ˆ	Õ›ØðêˆÙHXÛÛ\[š\ˆÈÝ]\È›Ü›X[Y[Kˆ\˜H\›Ý˜\ˆÈÙ\špéÛËÛ\]YH›È›Ý0èÛÈH\ÜÚ[™H˜H°ìÞ[XH0èYÚ[˜K‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\ËœÚYÛ˜]\™T™[™]Õ]IÎ‚ˆ	Ó›Ý˜H\ÜÚ[˜]\˜H™XÙ\Üðè\šXIËˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\ËœÚYÛ˜]\™T™[™]Ñ\ØÜš\[Û‰Î‚ˆ	ÓÈ][™[Y[È›ÚH[\˜YÈ\Ú\ÈH0î›[XH\›Ý˜péðèÛËˆ›ØðêˆÙHXÛÛ\[š\ˆÈÝ]\È›Ü›X[Y[HH\ÜÚ[˜\ˆH™\œðèÛÈ]X[]X[™È]Z\Ù\ˆ\›Ý˜\‹‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\ËœÚYÛ˜]\™PXÝ[Û‰Îˆ	Ð\ÜÚ[˜\ˆ\›Ý˜péðèÛÉËˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\ËœÚYÛ˜]\™S[šÓZ\ÜÚ[™ÉÎ‚ˆ	Ó[šÈH\ÜÚ[˜]\˜H°èÛÈ™]Ü›˜YÈ[È˜XÚÙ[™‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\ËœÚYÛ˜]\™S[šÑ\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Xœš\ˆH\ÜÚ[˜]\˜K‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ëœ™\ÜÛœÚX›U[š]	Îˆ	Õ[šYYH™\ÜÛœðè]™[	Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë›Ù™šXÚX[Ú[›™[	Îˆ	ÐØ[˜[ÙšXÚX[	Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë\]YžP\Ú[™\ÜÉÎ‚ˆ	ÔÝ]\È]X[^˜YÈ[È\ÝX™[XÚ[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë˜ÛÛ\[žQ]TÛÝ\˜ÙIÎ‚ˆ	ÑYÜÈ›Ü›™XÚYÜÈ[È\ÝX™[XÚ[Y[Ë‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë›Ù™šXÚX[Ù\šXÙPÚ[›™[	Î‚ˆ	ÐØ[˜[ÙšXÚX[HXÛÛ\[š[Y[ÈÈÙ\špéÛË‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\Ë™^\›˜[[šÕ[˜]˜Z[X›IÎ‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Xœš\ˆ\ÝHÛÛ]È™\ÝH\ÜÜÚ]]›Ë‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K›ØY[™ÉÎˆ	ÐØ\œ™YØ[™È][™[Y[ÜÈ0êXÛšXÛÜÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™\Ú›Ø\™]IÎˆ	Ñ\Ú›Ø\™0êXÛšXÛÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™\Ú›Ø\™\ØÜš\[Û‰Îˆ	ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™[\U]IÎˆ	Ó™[š[H][™[Y[È[˜ÛÛ˜YÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™[\SY\ÜØYÙIÎ‚ˆ	Õ[H\ØØ\ˆÜˆÛY[K\]Z\[Y[ËÝ]\ÈÝH°î›Y\›Ë‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™[\Qš[\™YY\ÜØYÙIÎ‚ˆ	Ó™[š[H][™[Y[È[˜ÛÛ˜YÈÛÛHÜÈš[›ÜÈÙ[XÚ[Û˜YÜË‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™\œ›Ü•]IÎ‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÜÈ][™[Y[ÜÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ™XÙ[ÙXÝ[Û‰Îˆ	Ð][™[Y[ÜÈ™XÙ[\ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™š[\™YÙXÝ[Û‰Îˆ	Ô™\Ý[YÈÈš[›ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÙX\˜Ú[	Î‚ˆ	Ð\ØØ\ˆÜˆÛY[KÝ]\Ë\]Z\[Y[ÈÝH°î›Y\›ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜Y˜[˜ÙYš[\œÉÎˆ	Ñš[›ÜÈ]˜[°éØYÜÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜Y˜[˜ÙYš[\œÐXÝ]™IÎ‚ˆ	Ñš[›ÜÈ]˜[°éØYÜÈ]]›ÜÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜ÛX\‘š[\œÉÎˆ	Ó[\\ˆš[›ÜÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÛÜ™XÙ[	Îˆ	ÓXZ\È™XÙ[\ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ™\Ý[ÛÝ[Û™IÎˆ	ÌH][™[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ™\Ý[ÛÝ[X[žIÎˆ	ÞØÛÝ[H][™[Y[ÜÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ\š[ÙÝ[[X\žU]IÎˆ	Ô™\Ý[[ÈÈ\°ë[ÙÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÝ[[X\žTÙ\šXÙSÛ™IÎˆ	Ø][™[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÝ[[X\žTÙ\šXÙSX[žIÎˆ	Ø][™[Y[ÜÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÝ[[X\žSÜ[“Û™IÎˆ	Ù[HX™\ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÝ[[X\žSÜ[“X[žIÎˆ	Ù[HX™\ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÝ[[X\žTÚYÛ™YÛ™IÎˆ	Ø\ÜÚ[˜YÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÝ[[X\žTÚYÛ™YX[žIÎˆ	Ø\ÜÚ[˜YÜÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÝ[[X\žSÜ[•˜[YIÎˆ	ÞÝ˜[Y_H[HX™\ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÝ[[X\žSÜ[•˜[YPØ\[Û‰Îˆ	Ù[HX™\ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™š[\”ÚY]]IÎˆ	Ñš[˜\ˆ][™[Y[ÜÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™š[\”\š[Ù	Îˆ	Ô\°ë[ÙÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™š[\”^[Y[Ý]\ÉÎˆ	ÔÝ]\ÈÈYØ[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™š[\‘]IÎˆ	Ñ]IËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™š[\”Ý\]IÎˆ	Ò[°ëXÚ[ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™š[\‘[™]IÎˆ	Ñš[IËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™]UÙ^IÎˆ	ÒÚ™IËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™]P[	Îˆ	ÕÙ\È\È]\ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™]T˜[™ÙIÎˆ	ÞÜÝ\H]0êHÙ[™IËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™]Qœ›ÛIÎˆ	ÐH\\ˆHÙ]_IËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™]U[[	Îˆ	Ð]0êHÙ]_IËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™]S\ÝÑ^\ÉÎˆ	ðæ›[[ÜÈÈX\ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™]S™^Ñ^\ÉÎˆ	Ô°ìÞ[[ÜÈÈX\ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™]SÝ™\™YIÎˆ	Õ™[˜ÚYÜÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™š[\•XÚšXÚX[‰Îˆ	Õ0êXÛšXÛÈ™\ÜÛœðè]™[	Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÙX\˜ÚXÚšXÚX[‰Îˆ	Ð\ØØ\ˆ0êXÛšXÛÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜[XÚšXÚX[œÉÎˆ	ÕÙÜÈÜÈ0êXÛšXÛÜÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÙ[XÝYXÚšXÚX[‰Îˆ	Õ0êXÛšXÛÈÙ[XÚ[Û˜YÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K››ÕXÚšXÚX[‘›Ý[™	Îˆ	Ó™[š[H0êXÛšXÛÈ[˜ÛÛ˜YË‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KšY]ÓÛ™TÙ\šXÙIÎˆ	Õ™\ˆH][™[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KšY]ÓX[žTÙ\šXÙ\ÉÎˆ	Õ™\ˆØÛÝ[H][™[Y[ÜÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KØZ][™Ð\›Ý˜[]IÎ‚ˆ	ÓÜ°éØ[Y[ÜÈYÝX\™[™È\›Ý˜péðèÛÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KØZ][™Ð\›Ý˜[\ØÜš\[Û‰Î‚ˆ	ÔÙ\špéÛÜÈ[šXYÜÈ[ÈÛY[H]YHZ[™H™XÚ\Ø[HH\›Ý˜péðèÛË‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KØZ][™Ð\›Ý˜[[\U]IÎ‚ˆ	Ó™[š[HÜ°éØ[Y[ÈYÝX\™[™È\›Ý˜péðèÛÈ›È[ÛY[Ë‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KØZ][™Ð\›Ý˜[[\SY\ÜØYÙIÎ‚ˆ	Ô]X[™È[HÜ°éØ[Y[È›Üˆ[šXYÈH\Ý]™\ˆYÝX\™[™ÈHXÚ\ðèÛÈÈÛY[K[H\\™XÙ\°èH\]ZK‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KØZ][™Ð\›Ý˜[\œ›Ü•]IÎ‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[ÛÛœÝ[\ˆÜÈÜ°éØ[Y[ÜËˆ[H›Ý˜[Y[K‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KØZ][™Ð\›Ý˜[ØY[™ÉÎ‚ˆ	ÐØ\œ™YØ[™ÈÜ°éØ[Y[ÜÈYÝX\™[™È\›Ý˜péðèÛÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KØZ][™Ð\›Ý˜[ÙXÝ[Û‰Î‚ˆ	ÓÜ°éØ[Y[ÜÈYÝX\™[™È\›Ý˜péðèÛÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KØZ][™Ð\›Ý˜[š[\™YÙXÝ[Û‰Î‚ˆ	Ô™\Ý[YÈÈš[›ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜Ý\œ™[Ý]\ÓÜ[Û‰Îˆ	ÔÝ]\È]X[	Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÙ[XÝÝ]\ÓÜ[Û‰Îˆ	ÕÜ]YH\˜HÙ[XÚ[Û˜\‰Ëˆ	ÝXÚšXØ[Ù\šXÙKœÝ]\ËØZ][™ÐÝ\ÝÛY\\›Ý˜[	Î‚ˆ	ÐYÝX\™[™È\›Ý˜péðèÛÈÈÛY[IËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÚ\™T•ÛÛ\	Îˆ	ÐÛÛ\\[\ˆ][™[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ”ÙXÝ[Û•]IÎˆ	ÑØÝ[Y[ÈÈ][™[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ”ÙXÝ[Û‘\ØÜš\[Û‰Î‚ˆ	Ôˆ›ÛÈ\˜H[šX\ˆ[ÈÛY[HÛÛHÜÈYÜÈÈ][™[Y[Ë‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ”ÙXÝ[Û‘Ù[™\˜][™ÉÎ‚ˆ	Ô™\\˜[™ÈÈˆ\˜HÛÛ\\[[Y[Ë‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÚ\™TXÝ[Û‰Îˆ	ÐÛÛ\\[\ˆ‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ“ØY[™Õ]IÎˆ	ÑÙ\˜[™ÈˆÈ][™[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ“ØY[™ÔÝX]IÎ‚ˆ	ÐYÝX\™H[œ]X[ÈÈØÝ[Y[È0êH™\\˜YË‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™]Z[ØY\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÜÈYÜÈ]X[^˜YÜÈÈ][™[Y[Ë‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ‘ÝÛ›ØYY	Îˆ	Ôˆ˜Z^YÈÛÛHÝXÙ\ÜÛË‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ”\›Z\ÜÚ[Û‘[šYY	Î‚ˆ	Õ›Øðêˆ°èÛÈÜÜÝZH\›Z\ÜðèÛÈ\˜HÛÛ\\[\ˆ\ÝH][™[Y[Ë‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ“›Ý›Ý[™	Îˆ	Ð][™[Y[È°èÛÈ[˜ÛÛ˜YË‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ’[˜[Yš[IÎ‚ˆ	ÓÈ\œ]Z]›È™XÙXšYÈ0êH[°è[YË‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ”Ú\™U[˜]˜Z[X›IÎ‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[ÛÛ\\[\ˆÈØÝ[Y[Ë‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ”Ú\™Q\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[ÛÛ\\[\ˆÈØÝ[Y[Ë‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ‘Ù[™\˜][Û‘\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ù\˜\ˆÈˆÈ][™[Y[Ë‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœX›XÔÝ]\Ñ\ØÜš\[Û‰Î‚ˆ	Õš\ðë]™[\˜HÈÛY[H›È[šÈHXÛÛ\[š[Y[Ë‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœX›XÔÝ]\ËœÚ\™S[šÐXÝ[Û‰Îˆ	ÐÛÛ\\[\ˆ[šÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ^[Y[Ü[‰Îˆ	Ñš[˜[˜ÙZ\›ÈX™\ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ^[Y[Ù]Y	Îˆ	Ñš[˜[˜ÙZ\›È\]ZYYÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÚYÛ™Y	Îˆ	Ð\ÜÚ[˜YÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÚYÛ˜]\™T[™[™ÉÎˆ	Ð\ÜÚ[˜]\˜H[™[IËˆ	Ø][™[Y[ÕXÛšXÛË˜Ý\ÝÛY\“›ÝÚYÛ™Y	Îˆ	ÐÛY[H°èÛÈ\ÜÚ[›ÝIËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜Ý\ÝÛY\“›ÝÚYÛ™Y	Îˆ	ÐÛY[H°èÛÈ\ÜÚ[›ÝIËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™[]™\žS]IÎˆ	Ñ[™YØH]˜\ØYIËˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K]IÎˆ	Ð\ÜÚ[˜]\˜H™XÙ\Üðè\šXIËˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K›Y\ÜØYÙIÎ‚ˆ	Ô\˜H]˜[°éØ\ˆ\˜HÜÝ]\ßK[šYHÈ[šÈH\ÜÚ[˜]\˜H[ÈÛY[K\ÜÚ[™H™\ÝH\ÜÜÚ]]›ÈÝH™YÚ\Ý™HÈž\\ÜË‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]KœÙ[™[šÉÎˆ	Ñ[šX\ˆ[šÈ[ÈÛY[IËˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]KœÚYÛ’\™IÎˆ	Ð\ÜÚ[˜\ˆ™\ÝH\ÜÜÚ]]›ÉËˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K˜ž\\ÜÉÎˆ	Ð]˜[°éØ\ˆÙ[H\ÜÚ[˜]\˜IËˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K™]šXÙU]IÎˆ	ÐÛÛ]\ˆ\ÜÚ[˜]\˜IËˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K™]šXÙSY\ÜØYÙIÎ‚ˆ	Ô™YÚ\Ý™HH\ÜÚ[˜]\˜H\˜H]˜[°éØ\ˆ\˜HÜÝ]\ßK‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K™]šXÙTÚYÛ™\‰Îˆ	Ó›ÛYHH]Y[H\ÜÚ[˜IËˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K™]šXÙQØÝ[Y[	Îˆ	ÑØÝ[Y[ÈÜÚ[Û˜[	Ëˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K™]šXÙTÚYÛ˜]\™QšY[	Îˆ	Ð\ÜÚ[˜]\˜IËˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K™]šXÙSØœÙ\˜][Û‰Îˆ	ÓØœÙ\˜péðèÛÈÜÚ[Û˜[	Ëˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K™]šXÙTØ]™IÎˆ	Ô™YÚ\Ý˜\ˆ\ÜÚ[˜]\˜IËˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K™]šXÙTÚYÛ™\”™\]Z\™Y	Î‚ˆ	Ò[™›Ü›YHÈ›ÛYHH]Y[H\Ý0èH\ÜÚ[˜[™Ë‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K™]šXÙTÚYÛ˜]\™T™\]Z\™Y	Î‚ˆ	Ñ˜péØHH\ÜÚ[˜]\˜H›È]XY›È[™XØYË‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K™]šXÙTÚYÛ˜]\™TØ]™Y	Î‚ˆ	Ð\ÜÚ[˜]\˜H™YÚ\Ý˜YHHÝ]\È]X[^˜YË‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K™]šXÙTÚYÛ˜]\™Q\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[™YÚ\Ý˜\ˆH\ÜÚ[˜]\˜IËˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]KœX›XÕ\›Z\ÜÚ[™ÉÎ‚ˆ	ÕT“0î˜›XØHÈ\XØ]]›È°èÛÈÛÛ™šYÝ\˜YK‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K›[šÓZ\ÜÚ[™ÉÎ‚ˆ	Ó[šÈH\ÜÚ[˜]\˜H°èÛÈ™]Ü›˜YÈ[È˜XÚÙ[™‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K›[šÐÛÜYY	Î‚ˆ	Ó[šÈH\ÜÚ[˜]\˜HÛÜXYË‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]K›[šÑ\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ù\˜\ˆÈ[šÈH\ÜÚ[˜]\˜IËˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]KœÚ\™SY\ÜØYÙIÎ‚ˆ	Ô\˜H\›Ý˜\ˆÈ][™[Y[Ë\ÜÚ[™H[È[šÈX˜Z^Î‰Ëˆ	Ø][™[Y[ÕXÛšXÛËœÚYÛ˜]\™QØ]KœÚ\™TÝXš™XÝ	Î‚ˆ	Ð\ÜÚ[˜]\˜HÈ][™[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜[Ü“ÜšYÚ[˜[	Îˆ	Õ˜[ÜˆÜšYÚ[˜[	Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜[Ü’˜T™XÙXšYÉÎˆ	Õ˜[Üˆ°èH™XÙXšYÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜[Ü‘[PX™\ÉÎˆ	Õ˜[Üˆ[HX™\ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K›\]ZY][Û‰Îˆ	Ó\]ZYpéðèÛÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K›\]ZY]Y	Îˆ	Ó\]ZYYIËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K››Ý\]ZY]Y	Îˆ	Ó°èÛÈ\]ZYYIËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ›ÙXÝÉÎˆ	Ô›Ù]ÜÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÙ\šXÙ\ÉÎˆ	ÔÙ\špéÛÜÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜Ú[™ÙTÝ]\ÐXÝ[Û‰Îˆ	Ó]Y\ˆÝ]\ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜Ü™X]U]IÎˆ	Ó›Ý›È][™[Y[È0êXÛšXÛÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜Ü™X]RXY\•]IÎˆ	Ò[šXÚX\ˆ\ÜÚ\Ý0ê›˜ÚXIËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜Ü™X]RXY\”ÝX]IÎ‚ˆ	ÐÛY[K\]Z\[Y[ÈHY™Z]È[H[XH[H°è\YH\˜H˜[ðèÛË‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ™\ÜÛœÚX›IÎˆ	Ô™\ÜÛœðè]™[	Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÙ\šXÙPÚ\	Îˆ	Ð\ÜÚ\Ý0ê›˜ÚXIËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ][ÝPÚ\	Îˆ	ÓÜ°éØ[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K››Ò][\ÐÚ\	Îˆ	ÔÙ[H][œÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K›XZ[‘]TÙXÝ[Û‰Îˆ	ÑYÜÈš[˜Ú\Z\ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kš[\›˜[\ØÜš\[Û‰Îˆ	Ñ\ØÜšpéðèÛÈ[\›˜IËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kš[\›˜[\ØÜš\[Û’[	Î‚ˆ	Ñ^Žˆ›ØØHH[HTÛ™HLIËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™\]Z\Y[\IÎˆ	Õ\ÈH\]Z\[Y[ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜œ˜[™	Îˆ	ÓX\˜ØIËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K›[Ù[	Îˆ	Ó[Ù[ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÙ\šX[[X™\‰Îˆ	Ó°®ˆðê\šYIËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kš[YZIÎˆ	ÒSQRIËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜XØÙ\ÜÛÜšY\Ó›Ý\ÉÎˆ	ÐXÙ\ÜðìÜš[ÜÈÈØœÙ\˜péðíY\ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜XØÙ\ÜÛÜšY\Ó›Ý\Ò[	Î‚ˆ	Ñ^ŽˆÙ[HØ\œ™YØYÜ‹ÛÛHØ\K[Hš[˜ØYK‹‹‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KXÚšXØ[™\ÜÙXÝ[Û‰Îˆ	Ô™[]È0êXÛšXÛÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜Ý\ÝÛY\’\ÜÝYIÎˆ	ÑY™Z]È™[]YÈ[ÈÛY[IËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜Ý\ÝÛY\’\ÜÝYR[	Î‚ˆ	Ñ\ØÜ™]˜HÈ›Ø›[XH[™›Ü›XYÈ›È˜[ðèÛË‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kš[š]X[XYÛ›ÜÚ\ÉÎˆ	ÑXYÛ°ìÜÝXÛÈ0êXÛšXÛÈ[šXÚX[	Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kš[š]X[XYÛ›ÜÚ\Ò[	Î‚ˆ	ÓÜÚ[Û˜[™\ÝHš[YZ\›È[ÛY[Ë‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™]\ÔÙXÝ[Û‰Îˆ	Ñ]\ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜[Y]IÎˆ	Õ˜[YYIËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™š[˜[˜ÚX[YQ]IÎˆ	Õ™[˜Ú[Y[Èš[˜[˜ÙZ\›ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™š[˜[˜ÚX[™]šY]ÔÙXÝ[Û‰Îˆ	Ô°ê]šXHš[˜[˜ÙZ\˜IËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K™š[˜[˜ÚX[™]šY]Ñ\ØÜš\[Û‰Î‚ˆ	ÓÈ˜[ÜˆšXØH[HX™\È]0êH™YÚ\Ý˜\ˆ[H™XÙXš[Y[Ë‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[K˜[ÜÛÛ™š\›XYÉÎˆ	ÐÛÛ™š\›XYÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ^[Y[Ý[\›Õ˜[YIÎˆ	ÔÑSHSÔ‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[Kœ^[Y[Ý[\Ü[‰Îˆ	ÑSHP‘T•ÉËˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœØ]š[™ÔÙ\šXÙIÎˆ	Ò[šXÚX[™È][™[Y[Ë‹‹‰Ëˆ	Ø][™[Y[ÕXÛšXÛË›[Øš[KœÝ\Ù\šXÙPXÝ[Û‰Î‚ˆ	Ò[šXÚX\ˆ][™[Y[È0êXÛšXÛÉËˆ	Ø]]›ÙÚ[”™\]Z\™YšY[ÉÎˆ	ÔÜˆ˜]›Ü‹™Y[˜ÚHÈK[XZ[HHÙ[šIËˆ	Ø]]›ÙÚ[•]S[Øš[IÎˆ	Ñ[˜\‰Ëˆ	Ø]]›ÙÚ[”ÝX]S[Øš[IÎ‚ˆ	Ô\˜H[˜\ˆ[HÝXHÛÛK[™›Ü›YWœÙ]HK[XZ[HÙ[šIËˆ	Ø]]™[XZ[	Îˆ	ÑK[XZ[	Ëˆ	Ø]]œ\ÜÝÛÜ™	Îˆ	ÔÙ[šIËˆ	Ø]]™›Ü™ÛÝ\ÜÝÛÜ™	Îˆ	Ñ\Ü]YXÙ]HHÙ[šOÉËˆ	Ø]]˜ÛÛ[YIÎˆ	ÐÛÛ[X\‰Ëˆ	Ø]]››ÐXØÛÝ[	Îˆ	ÐZ[™H°èÛÈ[H[XHÛÛVÏÉËˆ	Ø]]˜Ü™X]PXØÛÝ[	Îˆ	ÐÜšX\ˆÛÛIËˆ	Ø]]œÚYÛ’[•Ú]\IÎˆ	Ñ[˜\ˆÛÛH\IËˆ	Ø]]œÚYÛ’[•Ú]ÛÛÙÛIÎˆ	Ñ[˜\ˆÛÛHÛÛÙÛIËˆ	Ø]]™ÛÛÙÛSÙÚ[‘\œ›Ü‰Îˆ	Ó°èÛÈ›ÚHÜÜðë]™[ÛÛ˜ÛZ\ˆÈÙÚ[ˆÛÛHÛÛÙÛK‰Ëˆ	Ø]]œÙ\ÜÚ[Û‹˜[Y][™Õ]IÎˆ	Ñ[˜[™È›ÈÚ^Ð\	Ëˆ	Ø]]œÙ\ÜÚ[Û‹˜[Y][™ÓY\ÜØYÙIÎˆ	Õ˜[Y[™ÈÝXHÙ\ÜðèÛÈÛÛHÙYÝ\˜[°éØK‹‹‰Ëˆ	ÜÜ\Úœ™\\š[™ÕÛÜšÜÜXÙIÎˆ	Ô™\\˜[™ÈÙ]H\ÜpéÛË‹‹‰Ëˆ	ÜÜ\Ú˜[Y][™ÔÙ\ÜÚ[Û‰Îˆ	Õ˜[Y[™ÈÝXHÙ\ÜðèÛË‹‹‰Ëˆ	ÜÜ\ÚœÞ[˜Ú[™ÐXØÛÝ[	Îˆ	ÔÚ[˜Ü›Ûš^˜[™ÈÙ]\ÈYÜË‹‹‰Ëˆ	ÜÜ\Ú˜ÛÛ›™XÝYYÛ[™IÎˆ	ÕYÈÛÛ™XÝYËˆYÈÛØˆÛÛ›ÛK‰Ëˆ	Ø]]œÙ\ÜÚ[Û‹[\Ü˜\žQ\œ›Ü•]IÎˆ	Ó°èÛÈ›ÚHÜÜðë]™[˜[Y\ˆÝXHÙ\ÜðèÛÉËˆ	Ø]]œÙ\ÜÚ[Û‹[\Ü˜\žQ\œ›Ü“Y\ÜØYÙIÎ‚ˆ	ÔÝXHÙ\ÜðèÛÈ›ÚH™\Ù\˜YKˆ™\šYš\]YHÝXHÛÛ™^0èÛÈH[H›Ý˜[Y[K‰Ëˆ	ÝÙX]]Ø]K[\Ü˜\žQ\œ›Ü‹]IÎˆ	Ó°èÛÈ›ÚHÜÜðë]™[˜[Y\ˆÝXHÙ\ÜðèÛÉËˆ	ÝÙX]]Ø]K[\Ü˜\žQ\œ›Ü‹›Y\ÜØYÙIÎ‚ˆ	Õ™\šYš\]YHÝXHÛÛ™^0èÛÈÝHYÝX\™HÈ˜XÚÙ[™™\ÜÛ™\ˆH[H›Ý˜[Y[K‰Ëˆ	Ø]]˜\SÙÚ[“[ØÚÉÎˆ	ÓÙÚ[ˆÛÛH\H
+[ØÚÙY
+IËˆ	Ø]]\›\Ô™Yš^	Î‚ˆ	Ð[ÈÛXØ\ˆ[HÛÛ[X\ˆ‹XÛ\›È\ˆYÈHÛÛ˜ÛÜ™ÈÛÛHÜÈ	Ëˆ	Ø]]\›\ÉÎˆ	Õ\›[ÜÈH\ÛÈHÛ0ë]XØHHš]˜XÚYYIËˆ	Ø]]›[Øš[Q[žK]IÎˆ	ÔÙ]H™YðìØÚ[ËÛÛ™XÝYË‰Ëˆ	Ø]]›[Øš[Q[žKœÝX]IÎ‚ˆ	Õ™[™\Ë\ÝÜ]YHHÙ\Ý0èÛÈ›ÈY\Û[Èš][È8 %Û™H›Øðêˆ\Ý]™\‹‰Ëˆ	Ø]]›[Øš[Q[žKœØ[\ÉÎˆ	Õ™[™\ÉËˆ	Ø]]›[Øš[Q[žKœÝØÚÉÎˆ	Ñ\ÝÜ]YIËˆ	Ø]]›[Øš[Q[žK›X[˜YÙ[Y[	Îˆ	ÑÙ\Ý0èÛÉËˆ	Ø]]›[Øš[Q[žK˜ÛÛ[YU]IÎˆ	ÐÛÛ[È\ÙZ˜HÛÛ[X\ÉËˆ	Ø]]›[Øš[Q[žK›ÙÚ[XÝ[Û‰Îˆ	Ñ[˜\ˆ˜HZ[šHÛÛIËˆ	Ø]]›[Øš[Q[žK˜Ü™X]PXÝ[Û‰Îˆ	ÐÜšX\ˆZ[šHÛÛIËˆ	Ø]]›[Øš[Q[žKœÙXÝ\š]S›ÝIÎˆ	ÐXÙ\ÜÛÈÙYÝ\›ÈHYÜÈÙ[\™H›ÝYÚYÜË‰Ëˆ	Ø]]›[Øš[SÙÚ[‹]IÎˆ	Ð™[K]š[™ÈH›ÛIËˆ	Ø]]›[Øš[SÙÚ[‹œÝX]IÎˆ	Ñ[™H\˜HÛÛ[X\ˆHÛ™H\›ÝK‰Ëˆ	Ø]]›[Øš[SÙÚ[‹™›Ü›U]IÎˆ	ÐXÙ\ÜÙHÙ]H\ÜpéÛÉËˆ	Ø]]›[Øš[SÙÚ[‹™[XZ[[	Îˆ	Ý›ØÙP[\™\ØK˜ÛÛIËˆ	Ø]]›[Øš[SÙÚ[‹œ\ÜÝÛÜ™[	Îˆ	ÑYÚ]HÝXHÙ[šIËˆ	Ø]]›[Øš[SÙÚ[‹œÚÝÔ\ÜÝÛÜ™	Îˆ	Ó[ÜÝ˜\ˆÙ[šIËˆ	Ø]]›[Øš[SÙÚ[‹šYT\ÜÝÛÜ™	Îˆ	ÓØÝ[\ˆÙ[šIËˆ	Ø]]›[Øš[SÙÚ[‹œÝX›Z]	Îˆ	Ñ[˜\‰Ëˆ	Ø]]›[Øš[SÙÚ[‹œÛØÚX[]šY\‰Îˆ	ÛÝHÛÛ[YHÛÛIËˆ	Ø]]›[Øš[SÙÚ[‹˜Ü™X]T›Û\	Îˆ	Ôš[YZ\˜H™^ˆ›ÈÚ^Ð\ÉËˆ	Ø]]›[Øš[PÜ™X]K]IÎˆ	ÐÜšYHÙ]H\ÜpéÛÉËˆ	Ø]]›[Øš[PÜ™X]KœÝX]IÎ‚ˆ	ÐÛÛYXÙHÚ[\\ËˆÈÚ^Ð\Ü™\ØÙH[ÈÛÛHÙ]H™YðìØÚ[Ë‰Ëˆ	Ø]]›[Øš[PÜ™X]K™›Ü›U]IÎˆ	ÔÝXHÛÛHÛÛYpéØH\]ZIËˆ	Ø]]›[Øš[PÜ™X]K™›Ü›S›ÝIÎˆ	Ó]˜HY[›ÜÈH[HZ[]Ë‰Ëˆ	Ø]]›[Øš[PÜ™X]K›ÙÚ[“X™[	Îˆ	ÓÙÚ[‰Ëˆ	Ø]]›[Øš[PÜ™X]K›ÙÚ[’[	Îˆ	Ñ\ØÛÛHÙ]HÙÚ[ˆHXÙ\ÜÛÉËˆ	Ø]]›[Øš[PÜ™X]Kœ\ÜÝÛÜ™X™[	Îˆ	ÔÙ[šIËˆ	Ø]]›[Øš[PÜ™X]Kœ\ÜÝÛÜ™[	Îˆ	Ópë[š[[ÈHØ\˜XÝ\™\ÉËˆ	Ø]]›[Øš[PÜ™X]K˜ÛÛ™š\›T\ÜÝÛÜ™X™[	Îˆ	ÐÛÛ™š\›YHHÙ[šIËˆ	Ø]]›[Øš[PÜ™X]K˜ÛÛ™š\›T\ÜÝÛÜ™[	Îˆ	Ô™\]HÝXHÙ[šIËˆ	Ø]]›[Øš[PÜ™X]K˜XØÙ\\›\ÉÎ‚ˆ	ÐÛÛ˜ÛÜ™ÈÛÛHÜÈ\›[ÜÈHHÛ0ë]XØHHš]˜XÚYYK‰Ëˆ	Ø]]›[Øš[PÜ™X]KœÝX›Z]	Îˆ	ÐÜšX\ˆÛÛIËˆ	Ø]]›[Øš[PÜ™X]K›ÙÚ[”›Û\	Îˆ	Ò°èH[H[XHÛÛOÈ[˜\‰Ëˆ	Ø]]›[Øš[PÜ™X]K˜XØÙ\\›\Ñ\œ›Ü‰Î‚ˆ	ÐXÙZ]HÜÈ\›[ÜÈHÛÛ™péðíY\È\˜HÛÛ[X\‹‰Ëˆ	Ø]]›[Øš[PÜ™X]Kœ™\]Z\™YšY[Ñ\œ›Ü‰Îˆ	Ô™Y[˜ÚHÙÜÈÜÈØ[\ÜË‰Ëˆ	Ø]]›[Øš[PÜ™X]Kœ\ÜÝÛÜ™[™Ý\œ›Ü‰Î‚ˆ	ÐHÙ[šH™XÚ\ØH\ˆ[ÈY[›ÜÈØ\˜XÝ\™\Ë‰Ëˆ	Ø]]›[Øš[PÜ™X]Kœ\ÜÝÛÜ™Z\ÛX]Ú[›[™IÎˆ	Ð\ÈÙ[š\È°èÛÈÛÚ[˜ÚY[K‰Ëˆ	Ø]]›[Øš[PÜ™X]Kœ\ÜÝÛÜ™Z\ÛX]Ú\œ›Ü‰Î‚ˆ	Ð\ÈÙ[š\È[™›Ü›XY\È°èÛÈðèÛÈYÝXZ\Ëˆ™\šYš\]YHH[H›Ý˜[Y[K‰Ëˆ	Ø]]™[žK]IÎˆ	Ð™[K]š[™È[ÈÚ^Ð\	Ëˆ	Ø]]™[žKœÝX]IÎ‚ˆ	Ð[\ÈHÛÛ[X\‹YØHÛÛ[È\ÙZ˜HXÙ\ÜØ\ˆÈ\‰Ëˆ	Ø]]™[žKš\ÐXØÛÝ[]IÎˆ	Ò°èH[šÈ[XHÛÛIËˆ	Ø]]™[žKš\ÐXØÛÝ[ÝX]IÎ‚ˆ	Ñ[™HÛÛHÙ]HK[XZ[HÙ[šH\˜HXÙ\ÜØ\ˆÝXH[\™\ØK‰Ëˆ	Ø]]™[žK›ÙÚ[XÝ[Û‰Îˆ	Ñ[˜\‰Ëˆ	Ø]]™[žK›™]ÐXØÛÝ[]IÎˆ	ÔÛÝH›Ý›ÈÜˆ\]ZIËˆ	Ø]]™[žK›™]ÐXØÛÝ[ÝX]IÎ‚ˆ	Õ™Z˜H[H™\Ý[[È°è\YÈHÜšYHÝXHÛÛH\˜HÛÛYpéØ\‹‰Ëˆ	Ø]]™[žK›™]ÐXØÛÝ[XÝ[Û‰Îˆ	ÐÛÛšXÙ\ˆÈÚ^Ð\	Ëˆ	Ø]]›Û˜›Ø\™[™Ë]IÎˆ	ÐÛÛYXÙH[È\ÜÙ[˜ÚX[	Ëˆ	Ø]]›Û˜›Ø\™[™ËœÝX]IÎ‚ˆ	Õ™Z˜H°êœÈÛÜÈ°è\YÜÈ[\ÈHÜšX\ˆÝXHÛÛK‰Ëˆ	Ø]]›Û˜›Ø\™[™ËœÝ\U]IÎˆ	Ð][™[Y[ÈÜ™Ø[š^˜YÉËˆ	Ø]]›Û˜›Ø\™[™ËœÝ\TÝX]IÎ‚ˆ	Ô™YÚ\Ý™H™[™\ËÜ°éØ[Y[ÜÈH\ÜÚ\Ý0ê›˜ÚX\È[H[H›^ÈÚ[\\Ë‰Ëˆ	Ø]]›Û˜›Ø\™[™ËœÝ\•]IÎˆ	ÐØ]0è[ÙÛÈH\ÝÜ]YH›È›ÛÛÉËˆ	Ø]]›Û˜›Ø\™[™ËœÝ\”ÝX]IÎ‚ˆ	ÓX[[šH›Ù]ÜËÙ\špéÛÜÈH[™›Ü›XpéðíY\È\ÜÙ[˜ÚXZ\ÈÙ[\™H0èpèÛË‰Ëˆ	Ø]]›Û˜›Ø\™[™ËœÝ\Õ]IÎˆ	ÑÙ\Ý0èÛÈ\˜HÜ™\ØÙ\‰Ëˆ	Ø]]›Û˜›Ø\™[™ËœÝ\ÔÝX]IÎ‚ˆ	ÐXÛÛ\[šH[™XØYÜ™\ÈH™\\™HÝXHÜ\˜péðèÛÈ\˜H]›ÛZ\ˆÛÛHÈÚ^Ð\‰Ëˆ	Ø]]›Û˜›Ø\™[™ËœÚÚ\	Îˆ	Ô[\‰Ëˆ	Ø]]›Û˜›Ø\™[™Ë›™^	Îˆ	Ð]˜[°éØ\‰Ëˆ	Ø]]›Û˜›Ø\™[™Ë˜Ü™X]PXØÛÝ[XÝ[Û‰Îˆ	ÐÜšX\ˆZ[šHÛÛIËˆ	Ø]]›Û˜›Ø\™[™Ë›ÙÚ[XÝ[Û‰Îˆ	Ò°èH[šÈ[XHÛÛIËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™YÚ[Û˜[^˜][Û•]IÎˆ	Ô™YÚ[Û˜[^˜péðèÛÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë™\ØÔ™YÚ[Û˜[^˜][Û‰Î‚ˆ	ÒY[ÛXKpë\Ë[ÙYK\ÛÈÜ°è\š[Ë›Ü›X]ÜÈH]HHY›Ûš^˜péðèÛÈš[˜[˜ÙZ\˜HH[\™\ØK‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë›[™ÝXYÙP[™™YÚ[Û˜[ÛÛ™[[ÛœÉÎ‚ˆ	ÒY[ÛXHHÛÛ™[°éðíY\È™YÚ[Û˜Z\ÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë›[™ÝXYÙP[™™YÚ[Û˜[ÛÛ™[[ÛœÑ\ØÉÎ‚ˆ	ÑYš[˜HH^\špê›˜ÚXHØØ[H[\™\ØK[˜ÛZ[™ÈY[ÛXK\ÛÈHY°íY\ÈH^XšpéðèÛË‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\ËœÞ\Ý[S[™ÝXYÙIÎˆ	ÒY[ÛXHÈÚ\Ý[XIËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë˜ÛÝ[žT™YÚ[Û‰Îˆ	Ôpë\ÈÈ™YÚpèÛÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë[YV›Û™IÎˆ	Ñ\ÛÈÜ°è\š[ÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë™]Q›Ü›X]	Îˆ	Ñ›Ü›X]ÈH]IËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë[YQ›Ü›X]	Îˆ	Ñ›Ü›X]ÈHÜ˜IËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë™š\œÝ^SÙ•ÙYZÉÎˆ	Ôš[YZ\›ÈXHHÙ[X[˜IËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë›[X™\‘›Ü›X]	Îˆ	Ñ›Ü›X]È[pê\šXÛÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë˜Ý\œ™[˜ÞP[™š[˜[˜ÚX[Ý[™\™	Î‚ˆ	Ó[ÙYHHY›Ûš^˜péðèÛÈš[˜[˜ÙZ\˜IËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë˜Ý\œ™[˜ÞP[™š[˜[˜ÚX[Ý[™\™\ØÉÎ‚ˆ	Ñ\ÜØ\ÈYš[špéðíY\È[™›Y[˜ÚX[H\Ú›Ø\™Ë™[™\ËÜ™[HHÙ\špéÛËÜ°éØ[Y[ÜÈHØÝ[Y[ÜË‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë›XZ[Ý\œ™[˜ÞIÎˆ	Ó[ÙYHš[˜Ú\[	Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\ËœÞ[X›ÛÜÚ][Û‰Îˆ	ÔÜÚpéðèÛÈÈðë[X›ÛÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë™XÚ[X[XÙ\ÉÎˆ	ÐØ\Ø\ÈXÚ[XZ\ÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë™XÚ[X[Ù\\˜]Ü‰Îˆ	ÔÙ\\˜YÜˆXÚ[X[	Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\ËÝ\Ø[™Ù\\˜]Ü‰Îˆ	ÔÙ\\˜YÜˆHZ[\‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë˜[ÝÓ][\PÝ\œ™[˜ÚY\ÉÎˆ	Ô\›Z]\ˆpî›\\È[ÙY\ÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë˜[ÝÓ][\PÝ\œ™[˜ÚY\Ñ\ØÉÎ‚ˆ	ÓX[0ê[HH˜\ÙH™\\˜YH\˜HÙ[°è\š[ÜÈ[\›˜XÚ[Û˜Z\ÈHÛÛ™\œðèÛÈ]\˜K‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë˜\Qš[˜[˜ÚX[›Ý[™[™ÉÎˆ	Ð\XØ\ˆ\œ™YÛ™[Y[Èš[˜[˜ÙZ\›ÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ë˜\Qš[˜[˜ÚX[›Ý[™[™Ñ\ØÉÎ‚ˆ	ÔY›Ûš^˜Hðè[Ý[ÜÈH]š]H]™\™ðê›˜ÚX\ÈHÙ[]›ÜÈ[HØÝ[Y[ÜÈHÝZ\Ë‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë˜ÛÛ^]IÎ‚ˆ	Ñ›Ü›X\ÈH™XÙXš[Y[ÈÛÛ™šYÝ\°è]™Z\ÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë˜ÛÛ^\ØÜš\[Û‰Î‚ˆ	Ô\œÛÛ˜[^™HÛÛ[ÈÝXH[\™\ØH™XÙX™HYØ[Y[ÜËˆÜÈðìÙYÛÜÈ[\››ÜÈðèÛÈX[YÜÈ[ÈÚ\Ý[XKX\ÈÈ›ÛYHHÈÛÛ\Ü[Y[ÈÙ[HÙ\ˆZ\ÝYÜË‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë›Y]šXÜÕÝ[	Îˆ	Õ\ÜÈÛÛ™šYÝ\˜YÜÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë›Y]šXÜÐXÝ]™IÎˆ	Ð]]›ÜÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë›Y]šXÜÒ[[YYX]IÎˆ	Ó˜]\™^˜H[YYX]IËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë›Y]šXÜÑ]\™IÎˆ	Ó˜]\™^˜H]\˜IËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë›ØY[™Õ]IÎ‚ˆ	ÐØ\œ™YØ[™È›Ü›X\ÈH™XÙXš[Y[ÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë›ØY[™ÔÝX]IÎ‚ˆ	ÔÚ[˜Ü›Ûš^˜[™È\ÈÛÛ™šYÝ\˜péðíY\ÈH[\™\ØH›È˜XÚÙ[™‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë™\œ›Ü“ØY	Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆ\È›Ü›X\ÈH™XÙXš[Y[Ë‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë™\œ›Ü˜Y™\]Y\Ý	Î‚ˆ	ÑYÜÈ[°è[YÜÈ\˜H\ÝHÜ\˜péðèÛË‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë™\œ›Ü•[˜]]Üš^™Y	Î‚ˆ	ÔÙ\ÜðèÛÈ^\˜YKˆ˜péØHÙÚ[ˆ›Ý˜[Y[K‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë™\œ›Ü‘›Ü˜šY[‰Î‚ˆ	Õ›Øðêˆ°èÛÈÜÜÝZH\›Z\ÜðèÛÈ\˜H[\˜\ˆÛÛ™šYÝ\˜péðíY\ÈH[\™\ØK‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë™\œ›Ü“›Ý›Ý[™	Î‚ˆ	ÐÛÛ™šYÝ\˜péðèÛÈH›Ü›XHH™XÙXš[Y[È°èÛÈ[˜ÛÛ˜YK‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë™\œ›Ü“ØYÚ]Ý]\ÉÎ‚ˆ	Ñ\œ›È[ÈØ\œ™YØ\ˆ›Ü›X\ÈH™XÙXš[Y[Ë‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë™\œ›Ü”Ø]™UÚ]Ý]\ÉÎ‚ˆ	Ñ\œ›È[ÈØ[˜\ˆ›Ü›XHH™XÙXš[Y[Ë‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[ËœØ]™TÝXØÙ\ÜÉÎ‚ˆ	Ñ›Ü›XHH™XÙXš[Y[È]X[^˜YHÛÛHÝXÙ\ÜÛË‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë™\œ›Ü”Ø]™IÎ‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø[˜\ˆH›Ü›XHH™XÙXš[Y[Ë‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ëœ™\ÝÜ™PÛÛ™š\›U]IÎˆ	Ô™\Ý]\˜\ˆY°èÛÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ëœ™\ÝÜ™PÛÛ™š\›P›ÙIÎ‚ˆ	Ñ\ÝHpéðèÛÈ™\Ý]\˜HÜÈL\ÜÈH™XÙXš[Y[È\˜HHÛÛ™šYÝ\˜péðèÛÈY°èÛÈH[\™\ØK‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ëœ™\ÝÜ™PXÝ[Û‰Îˆ	Ô™\Ý]\˜\ˆY°èÛÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ëœ™\ÝÜ™TÝXØÙ\ÜÉÎ‚ˆ	ÐÛÛ™šYÝ\˜péðèÛÈY°èÛÈ\È›Ü›X\ÈH™XÙXš[Y[È™\Ý]\˜YHÛÛHÝXÙ\ÜÛË‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ëœ™\ÝÜ™Q\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[™\Ý]\˜\ˆHÛÛ™šYÝ\˜péðèÛÈY°èÛË‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë˜ÛÝ[™Yš^	Îˆ	Õ\ÜÈØ\œ™YØYÜÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë˜XÝ]™PÛÝ[	Îˆ	Ð]]›ÜÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ëœ™Yœ™\ÚXÝ[Û‰Îˆ	Ð]X[^˜\‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë[›˜[YY	Îˆ	ÔÙ[H›ÛYHYš[šYÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë›˜]\™IÎˆ	Ó˜]\™^˜IËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë›˜]\™R[[YYX]IÎˆ	Ò[YYX]ÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë›˜]\™Q]\™IÎˆ	Ñ]\›ÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë›˜]\™R[[YYX]Q\ØÜš\[Û‰Î‚ˆ	Ñ[˜H›ÈØZ^H›È[ÛY[ÈÈ™XÙXš[Y[Ë‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë›˜]\™Q]\™Q\ØÜš\[Û‰Î‚ˆ	ÑÙ\˜H˜[ÜˆH™XÙX™\ˆ\˜H[XH]H]\˜K‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ëœ™\]Z\™\ÐÛY[	Îˆ	Ñ^YÙHÛY[IËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ëœ™\]Z\™\ÐÛY[\ØÜš\[Û‰Î‚ˆ	ÓØœšYØ]0ìÜš[È]X[™È\ÝH›Ü›XH\[™HH[HÛY[HY[YšXØYË‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ëš[œÝ[Y[ÉÎˆ	ÐXÙZ]H\˜Ù[[Y[ÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ëš[œÝ[Y[Ñ\ØÜš\[Û‰Î‚ˆ	Ô\›Z]H]šY\ˆÈ™XÙXš[Y[È[H\˜Ù[\Ë‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë™\Ü^SÜ™\‰Îˆ	ÓÜ™[HH^XšpéðèÛÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[ËXÚšXØ[ÛÙIÎˆ	ÐðìÙYÛÈ0êXÛšXÛÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë™\Ü^S˜[YIÎˆ	Ó›ÛYHH^XšpéðèÛÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë˜[Y][Û“˜[YIÎˆ	Ò[™›Ü›YHÈ›ÛYHH^XšpéðèÛË‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë˜[Y][Û“˜[YS[™Ý	Î‚ˆ	Õ\ÙH[ÈY[›ÜÈˆØ\˜XÝ\™\Ë‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë˜[Y][Û“Ü™\‰Î‚ˆ	Ò[™›Ü›YH[XHÜ™[H°è[YHXZ[ÜˆÝHYÝX[HK‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë˜[Y][ÛÛÛÜ‰Î‚ˆ	Õ\ÙH[HV°è[YÈ›È›Ü›X]ÈÔ”‘ÑÐ‹‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë˜ÛÛÜ‰Îˆ	ÐÛÜˆ
+ÜÚ[Û˜[
+IËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[ËšXÛÛ‰Îˆ	ðãXÛÛ™H
+ÜÚ[Û˜[
+IËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë˜XÝ]™Q\ØÜš\[Û‰Î‚ˆ	ÐÛÛ›ÛHÙHH›Ü›XHÙHÙ\ˆ][^˜YH›ÜÈ›^ÜË‰Ëˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë™Y]X[ÙÕ]IÎˆ	ÑY]\ˆ›Ü›XHH™XÙXš[Y[ÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë™\œ›Ü”Ý]U]IÎ‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆ\ÈÛÛ™šYÝ\˜péðíY\ÉËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë™[\U]IÎ‚ˆ	Ó™[š[XH›Ü›XHH™XÙXš[Y[È[˜ÛÛ˜YIËˆ	ØÛÛ™šYÝ\˜XÛÙ\Ëœ™XÙXš[Y[Ë™[\Q\ØÜš\[Û‰Î‚ˆ	Ð]X[^™HH[H\˜HÚ[˜Ü›Ûš^˜\ˆÜÈ\ÜÈÛÛ™šYÝ\˜YÜÈH[\™\ØK‰Ëˆ	Ü›ØÙY[Y[ÜË]IÎˆ	Ô›ØÙY[Y[ÜÉËˆ	Ü›ØÙY[Y[ÜËœÝX]IÎˆ	ÑÝZX\È\˜H™[™\Ë][™[Y[ÜÈH[™YØ\ÉËˆ	Ü›ØÙY[Y[ÜËš[›Õ]IÎ‚ˆ	ÐÛÛ™šYÝ\™HÜšY[péðíY\È\˜H™[™\Ë][™[Y[ÜÈH[™YØ\Ë‰Ëˆ	Ü›ØÙY[Y[ÜË™[[Ñ]IÎˆ	ÑYÜÈ[[ÛœÝ˜]]›ÜÉËˆ	Ü›ØÙY[Y[ÜË™š[\œÓX™[	Îˆ	Ñš[›ÜÈH›ØÙY[Y[ÜÉËˆ	Ü›ØÙY[Y[ÜË™š[\[	Îˆ	ÕÙÜÉËˆ	Ü›ØÙY[Y[ÜË™š[\XÝ]™IÎˆ	Ð]]›ÜÉËˆ	Ü›ØÙY[Y[ÜË™š[\’[˜XÝ]™IÎˆ	Ò[˜]]›ÜÉËˆ	Ü›ØÙY[Y[ÜË›™]Ô›ØÙY\™IÎˆ	Ó›Ý›È›ØÙY[Y[ÉËˆ	Ü›ØÙY[Y[ÜË›™]Ô›ØÙY\™TÙ[X[XÜÉÎˆ	Ó›Ý›È›ØÙY[Y[ÉËˆ	Ü›ØÙY[Y[ÜË˜Ü™X]T›ØÙY\™IÎˆ	ÐÜšX\ˆ›ØÙY[Y[ÉËˆ	Ü›ØÙY[Y[ÜË›Ü[XÝ[Û‰Îˆ	ÐXœš\‰Ëˆ	Ü›ØÙY[Y[ÜË˜Ü™X]U[˜]˜Z[X›IÎ‚ˆ	ÐHÜšXpéðèÛÈH›ØÙY[Y[ÜÈÙ\°èH\ÜÛšXš[^˜YH˜H°ìÞ[XH]\K‰Ëˆ	Ü›ØÙY[Y[ÜË™Y][˜]˜Z[X›IÎ‚ˆ	ÐHYpéðèÛÈ\ÝH›ØÙY[Y[ÈÙ\°èH\ÜÛšXš[^˜YH˜H°ìÞ[XH]\K‰Ëˆ	Ü›ØÙY[Y[ÜË›ØY[™ÉÎˆ	ÐØ\œ™YØ[™È›ØÙY[Y[ÜÉËˆ	Ü›ØÙY[Y[ÜË™[\U]IÎˆ	Ó™[š[H›ØÙY[Y[ÈÛÛ™šYÝ\˜YÉËˆ	Ü›ØÙY[Y[ÜË™[\Q\ØÜš\[Û‰Î‚ˆ	ÐÜšYHÜšY[péðíY\È\˜H\ÚX\ˆH\]Z\H›ÜÈ[ÛY[ÜÈ[\Ü[\ÈHÜ\˜péðèÛË‰Ëˆ	Ü›ØÙY[Y[ÜË™š[\™Y[\U]IÎˆ	Ó™[š[H›ØÙY[Y[È™\ÝHš[›ÉËˆ	Ü›ØÙY[Y[ÜË™š[\™Y[\Q\ØÜš\[Û‰Î‚ˆ	Ð[\™HÈš[›È\˜H™\ˆÝ]›ÜÈ›ØÙY[Y[ÜÈ[[ÛœÝ˜]]›ÜË‰Ëˆ	Ü›ØÙY[Y[ÜË™\œ›Ü•]IÎˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÜÈ›ØÙY[Y[ÜÉËˆ	Ü›ØÙY[Y[ÜË™\œ›Ü‘\ØÜš\[Û‰Îˆ	Õ[H›Ý˜[Y[H[H[œÝ[\Ë‰Ëˆ	Ü›ØÙY[Y[ÜËœÝ]\Ñ˜Y	Îˆ	Ô˜\ØÝ[šÉËˆ	Ü›ØÙY[Y[ÜË›Ü\˜][Û”Ø[IÎˆ	Õ™[™IËˆ	Ü›ØÙY[Y[ÜË›Ü\˜][Û•XÚšXØ[Ù\šXÙIÎˆ	Ð][™[Y[È0êXÛšXÛÉËˆ	Ü›ØÙY[Y[ÜË›Ü\˜][Û”][ÝIÎˆ	ÓÜ°éØ[Y[ÉËˆ	Ü›ØÙY[Y[ÜË›Ü\˜][Û‘[]™\žIÎˆ	Ñ[™YØIËˆ	Ü›ØÙY[Y[ÜË›[ÛY[™Y›Ü™TÝ\	Îˆ	Ð[\ÈH[šXÚX\‰Ëˆ	Ü›ØÙY[Y[ÜË›[ÛY[™Y›Ü™Qš[š\Ú	Îˆ	Ð[\ÈHš[˜[^˜\‰Ëˆ	Ü›ØÙY[Y[ÜË›[ÛY[™Y›Ü™Q[]™\žIÎˆ	Ð[\ÈH[™YØIËˆ	Ü›ØÙY[Y[ÜËœÝYÙTÚ[™Ý[\‰Îˆ	Ù]\IËˆ	Ü›ØÙY[Y[ÜËœÝYÙT\˜[	Îˆ	Ù]\\ÉËˆ	Ü›ØÙY[Y[ÜËš][TÚ[™Ý[\‰Îˆ	Ú][IËˆ	Ü›ØÙY[Y[ÜËš][T\˜[	Îˆ	Ú][œÉËˆ	Ü›ØÙY[Y[ÜËœÝYÙT›ÙÜ™\ÜÉÎˆ	Ñ]\HØÝ\œ™[HHÝÝ[IËˆ	Ü›ØÙY[Y[ÜËœ›ØÙY\™TÙ\]Y[˜ÙIÎˆ	Ô›ØÙY[Y[ÈØÝ\œ™[HHÝÝ[IËˆ	Ü›ØÙY[Y[ÜË˜XÝ[ÛœÐÛÛ\]Yž™\›ÉÎˆ	ÌHÝÝ[HpéðíY\ÈÛÛ˜ÛpëY\ÉËˆ	Ü›ØÙY[Y[ÜË˜XÝ[ÛœÐÛÛ\]Y›Û™IÎˆ	ÌHHÝÝ[HpéðèÛÈÛÛ˜ÛpëYIËˆ	Ü›ØÙY[Y[ÜË˜XÝ[ÛœÐÛÛ\]Y›Ý\‰Î‚ˆ	ÞØÛÝ[HHÝÝ[HpéðíY\ÈÛÛ˜ÛpëY\ÉËˆ	Ü›ØÙY[Y[ÜË˜[œÝÙ\™YXÝ[ÛœÔÝ[[X\žKž™\›ÉÎ‚ˆ	ÌHÝÝ[HpéðíY\È™\ÜÛ™Y\Ë‰Ëˆ	Ü›ØÙY[Y[ÜË˜[œÝÙ\™YXÝ[ÛœÔÝ[[X\žK›Û™IÎˆ	ÌHHÝÝ[HpéðèÛÈ™\ÜÛ™YK‰Ëˆ	Ü›ØÙY[Y[ÜË˜[œÝÙ\™YXÝ[ÛœÔÝ[[X\žK›Ý\‰Î‚ˆ	ÞØÛÝ[HHÝÝ[HpéðíY\È™\ÜÛ™Y\Ë‰Ëˆ	Ü›ØÙY[Y[ÜË›Ü[Û˜[[™[™ÔÝ[[X\žKž™\›ÉÎ‚ˆ	Ó™[š[H][HÜÚ[Û˜[[™[K‰Ëˆ	Ü›ØÙY[Y[ÜË›Ü[Û˜[[™[™ÔÝ[[X\žK›Û™IÎˆ	ÌH][HÜÚ[Û˜[[™[K‰Ëˆ	Ü›ØÙY[Y[ÜË›Ü[Û˜[[™[™ÔÝ[[X\žK›Ý\‰Î‚ˆ	ÞØÛÝ[H][œÈÜÚ[Û˜Z\È[™[\Ë‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\]Z\™Y[™[™ÔÝ[[X\žKž™\›ÉÎ‚ˆ	Ó™[š[H][HØœšYØ]0ìÜš[È[™[K‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\]Z\™Y[™[™ÔÝ[[X\žK›Û™IÎˆ	ÌH][HØœšYØ]0ìÜš[È[™[K‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\]Z\™Y[™[™ÔÝ[[X\žK›Ý\‰Î‚ˆ	ÞØÛÝ[H][œÈØœšYØ]0ìÜš[ÜÈ[™[\Ë‰Ëˆ	Ü›ØÙY[Y[ÜËš][PÛÝ[ž™\›ÉÎˆ	Ì][œÉËˆ	Ü›ØÙY[Y[ÜËš][PÛÝ[›Û™IÎˆ	ÌH][IËˆ	Ü›ØÙY[Y[ÜËš][PÛÝ[›Ý\‰Îˆ	ÞØÛÝ[H][œÉËˆ	Ü›ØÙY[Y[ÜËœÝYÙPÛÝ[ž™\›ÉÎˆ	Ì]\\ÉËˆ	Ü›ØÙY[Y[ÜËœÝYÙPÛÝ[›Û™IÎˆ	ÌH]\IËˆ	Ü›ØÙY[Y[ÜËœÝYÙPÛÝ[›Ý\‰Îˆ	ÞØÛÝ[H]\\ÉËˆ	Ü›ØÙY[Y[ÜËœÝYÙTÙ[X[XÜÉÎˆ	Ñ]\HÛÜ™\ŸNˆÝ]_KˆÚ][PÛÝ[X™[K‰Ëˆ	Ü›ØÙY[Y[ÜË™^XÝ][Û’][TÙ[X[XÜÉÎˆ	ÞÜ™\]Z\™YX™[NˆÝ]_KˆÝ\_K‰Ëˆ	Ü›ØÙY[Y[ÜË™^XÝ][Û’][TÝ]\ÉÎˆ	ÞÝ\_H8 (ˆÜ™\]Z\™YX™[IËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙU\TÙ[X[XÜÉÎˆ	ÞÛX™[KˆÙ\ØÜš\[ÛŸK‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙU\TÚ[][]YÙ[X[XÜÉÎ‚ˆ	ÞÛX™[KˆÙ\ØÜš\[ÛŸKˆÙ[[ÓX™[K‰Ëˆ	Ü›ØÙY[Y[ÜËšYÙÙ\”Ù[X[XÜÉÎ‚ˆ	ÞÛÜ\˜][ÛŸKÛ[ÛY[KØXÝ]˜][ÛŸKÙ[™›Ü˜Ù[Y[KÜÝ]\ßIËˆ	Ü›ØÙY[Y[ÜËšYÙÙ\”Ý[[X\žTÚ[™ÛIÎˆ	ÞÛÜ\˜][ÛŸKÛ[ÛY[IËˆ	Ü›ØÙY[Y[ÜËšYÙÙ\”Ý[[X\žS][\IÎˆ	ÞÙš\œÝH8 (ˆ
+ÞÜ™[XZ[š[™ßIËˆ	Ü›ØÙY[Y[ÜË›Ü[Û“[X™\‰Îˆ	ÓÜ0éðèÛÈÚ[™^IËˆ	Ü›ØÙY[Y[ÜË™Y]Ü“™]Õ]IÎˆ	Ó›Ý›È›ØÙY[Y[ÉËˆ	Ü›ØÙY[Y[ÜË™Y]Ü‘Y]]IÎˆ	ÑY]\ˆ›ØÙY[Y[ÉËˆ	Ü›ØÙY[Y[ÜË™Ù[™\˜[[™›ÉÎˆ	Ò[™›Ü›XpéðíY\ÈÙ\˜Z\ÉËˆ	Ü›ØÙY[Y[ÜË›˜[YQšY[	Îˆ	Ó›ÛYIËˆ	Ü›ØÙY[Y[ÜË™\ØÜš\[Û‘šY[	Îˆ	Ñ\ØÜšpéðèÛÉËˆ	Ü›ØÙY[Y[ÜË›Ü\˜][ÛÛÛ^	Îˆ	ÐÛÛ^ÈÜ\˜XÚ[Û˜[	Ëˆ	Ü›ØÙY[Y[ÜË›[ÛY[šY[	Îˆ	Ó[ÛY[ÉËˆ	Ü›ØÙY[Y[ÜËœ™\]Z\™PÛÛ\][Û‰Îˆ	Ñ^YÚ\ˆÛÛ˜Û\ðèÛÈ\ÝH›ØÙY[Y[ÉËˆ	Ü›ØÙY[Y[ÜËœ™\]Z\™PÛÛ\][Û’[	Î‚ˆ	Ó˜H[YÜ˜péðèÛÈ]\˜K\ÜÙH›ØÙY[Y[ÈÙ\°èH^YÚ\ˆÛÛ˜Û\ðèÛÈ[\ÈHÛÛ[X\ˆHÜ\˜péðèÛË‰Ëˆ	Ü›ØÙY[Y[ÜËœÝYÙ\ÉÎˆ	Ñ]\\ÉËˆ	Ü›ØÙY[Y[ÜË˜YÝYÙIÎˆ	ÐYXÚ[Û˜\ˆ]\IËˆ	Ü›ØÙY[Y[ÜË™Y]ÝYÙIÎˆ	ÑY]\ˆ]\IËˆ	Ü›ØÙY[Y[ÜË™[]TÝYÙIÎˆ	Ñ^ÛZ\ˆ]\IËˆ	Ü›ØÙY[Y[ÜËš][\ÉÎˆ	Ò][œÉËˆ	Ü›ØÙY[Y[ÜË˜Y][IÎˆ	ÐYXÚ[Û˜\ˆ][IËˆ	Ü›ØÙY[Y[ÜË™Y]][IÎˆ	ÑY]\ˆ][IËˆ	Ü›ØÙY[Y[ÜË™[]R][IÎˆ	Ñ^ÛZ\ˆ][IËˆ	Ü›ØÙY[Y[ÜËš][U\IÎˆ	Õ\ÈH][IËˆ	Ü›ØÙY[Y[ÜËœÝYÙU]QšY[	Îˆ	Õ0ë][ÈH]\IËˆ	Ü›ØÙY[Y[ÜËš][U]QšY[	Îˆ	Õ0ë][ÈÝH[œÝpéðèÛÉËˆ	Ü›ØÙY[Y[ÜËš][QÝZY[˜ÙQšY[	Îˆ	Õ^ÈH\Ú[ÉËˆ	Ü›ØÙY[Y[ÜËœØ]™TÝYÙIÎˆ	ÔØ[˜\ˆ]\IËˆ	Ü›ØÙY[Y[ÜËœØ]™R][IÎˆ	ÔØ[˜\ˆ][IËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙR[œÝXÝ[Û‰Îˆ	ÓÜšY[péðèÛÉËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙPÛÛ™š\›X][Û‰Îˆ	ÐÛÛ™š\›XpéðèÛÉËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙVY\Ó›ÉÎˆ	ÔÚ[HÝH°èÛÉËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙR[œÝXÝ[Û‘\ØÜš\[Û‰Î‚ˆ	Ð\™\Ù[H[XH[œÝpéðèÛÈ[ÈÛÛX›Ü˜YÜ‹‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙPÛÛ™š\›X][Û‘\ØÜš\[Û‰Î‚ˆ	Ñ^YÙH]YHÈÛÛX›Ü˜YÜˆÛÛ™š\›YH[XHpéðèÛË‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙVY\Ó›Ñ\ØÜš\[Û‰Î‚ˆ	Ð\™\Ù[H[XH\™Ý[HØš™]]˜K‰Ëˆ	Ü›ØÙY[Y[ÜË˜[Y][Û“˜[YIÎˆ	Ò[™›Ü›YHÈ›ÛYHÈ›ØÙY[Y[Ë‰Ëˆ	Ü›ØÙY[Y[ÜË˜[Y][Û”™]šY]ÑšY[ÉÎ‚ˆ	Ô™]š\ÙHÜÈØ[\ÜÈ\ÝXØYÜÈ[\ÈHØ[˜\‹‰Ëˆ	Ü›ØÙY[Y[ÜË˜[Y][Û]X\ÝÛ™TÝYÙIÎ‚ˆ	ÐYXÚ[Û™H[ÈY[›ÜÈ[XH]\H[È›ØÙY[Y[Ë‰Ëˆ	Ü›ØÙY[Y[ÜË˜[Y][Û”ÝYÙU]IÎˆ	Ò[™›Ü›YHÈ0ë][ÈH]\K‰Ëˆ	Ü›ØÙY[Y[ÜË˜[Y][Û”ÝYÙR][IÎ‚ˆ	ÐØYH]\H™XÚ\ØH\ˆ[ÈY[›ÜÈ[H][K‰Ëˆ	Ü›ØÙY[Y[ÜË˜[Y][Û’][U]IÎˆ	Ò[™›Ü›YHÈ0ë][ÈÈ][K‰Ëˆ	Ü›ØÙY[Y[ÜË˜Ü™X]YÝXØÙ\ÜÉÎˆ	Ô›ØÙY[Y[ÈÜšXYË‰Ëˆ	Ü›ØÙY[Y[ÜË\]YÝXØÙ\ÜÉÎˆ	Ô›ØÙY[Y[È]X[^˜YË‰Ëˆ	Ü›ØÙY[Y[ÜË™\ØØ\™Ú[™Ù\Õ]IÎˆ	Ñ\ØØ\\ˆ[\˜péðíY\ÏÉËˆ	Ü›ØÙY[Y[ÜË™\ØØ\™Ú[™Ù\ÓY\ÜØYÙIÎ‚ˆ	Ð\È[\˜péðíY\È™Z]\È™\ÝH›ØÙY[Y[ÈZ[™H°èÛÈ›Ü˜[HØ[˜\Ë‰Ëˆ	Ü›ØÙY[Y[ÜËšÙY\Y][™ÉÎˆ	ÐÛÛ[X\ˆY][™ÉËˆ	Ü›ØÙY[Y[ÜË™\ØØ\™	Îˆ	Ñ\ØØ\\‰Ëˆ	Ü›ØÙY[Y[ÜË˜ÛÛ™š\›Q[]TÝYÙU]IÎˆ	Ñ^ÛZ\ˆ]\OÉËˆ	Ü›ØÙY[Y[ÜË˜ÛÛ™š\›Q[]TÝYÙSY\ÜØYÙIÎ‚ˆ	ÓÜÈ][œÈ\ÝH]\H[X°ê[HÙ\°èÛÈ™[[ÝšYÜË‰Ëˆ	Ü›ØÙY[Y[ÜË˜ÛÛ™š\›Q[]R][U]IÎˆ	Ñ^ÛZ\ˆ][OÉËˆ	Ü›ØÙY[Y[ÜË˜ÛÛ™š\›Q[]R][SY\ÜØYÙIÎ‚ˆ	Ñ\ÝH][HÙ\°èH™[[ÝšYÈÈ›ØÙY[Y[Ë‰Ëˆ	Ü›ØÙY[Y[ÜË™Y]Ü‘[[Ó›ÝXÙIÎ‚ˆ	Ð\È[\˜péðíY\ÈÙ\°èÛÈX[Y\È\[˜\È\˜[H\ÝHÙ\ÜðèÛË‰Ëˆ	Ü›ØÙY[Y[ÜË››ÔÝYÙ\ÉÎˆ	Ó™[š[XH]\HYXÚ[Û˜YIËˆ	Ü›ØÙY[Y[ÜËš][T™\]Z\™Y[	Î‚ˆ	ÐH0ìÙÚXØHš[˜[HØœšYØ]ÜšYYYHÙ\°èHYš[šYH˜H[YÜ˜péðèÛÈÜ\˜XÚ[Û˜[‰Ëˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÐXÝ[Û‰Îˆ	Ô°êK]š\ÝX[^˜\‰Ëˆ	Ü›ØÙY[Y[ÜË™[[ÛœÝ˜][Û‰Îˆ	Ñ[[ÛœÝ˜péðèÛÉËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙTÝÉÎˆ	Õ\˜\ˆ›ÝÉËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙTÚYÛ˜]\™IÎˆ	Ð\ÜÚ[˜]\˜IËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙSØØ][Û‰Îˆ	ÐØ\\˜\ˆØØ[^˜péðèÛÉËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙP˜\˜ÛÙIÎˆ	Ó\ˆðìÙYÛÈH˜\œ˜\ÉËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙR[YZIÎˆ	Ò[™›Ü›X\ˆSQRIËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙQØÝ[Y[	Îˆ	Ð[™^\ˆØÝ[Y[ÉËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙP]Y[ÉÎˆ	ÑÜ˜]˜\ˆ0è]Y[ÉËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙQœ™YU^	Îˆ	Õ^È]œ™IËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙS[X™\‰Îˆ	Ó°î›Y\›ÉËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙQ]IÎˆ	Ñ]IËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙTÚ[™ÛPÚÚXÙIÎˆ	Ñ\ØÛÛH0î›šXØIËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙS][\PÚÚXÙIÎˆ	Ñ\ØÛÛHpî›\IËˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙTÝÑ\ØÜš\[Û‰Î‚ˆ	ÔÚ[][HHØ\\˜HH[XH›ÝÈÛÛ[È]šY0ê›˜ÚXK‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙTÚYÛ˜]\™Q\ØÜš\[Û‰Î‚ˆ	ÔÚ[][HHÛÛ]HH[XH\ÜÚ[˜]\˜K‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙSØØ][Û‘\ØÜš\[Û‰Î‚ˆ	ÔÚ[][HHØ\\˜HH[XHØØ[^˜péðèÛË‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙP˜\˜ÛÙQ\ØÜš\[Û‰Î‚ˆ	ÔÚ[][HHZ]\˜HH[HðìÙYÛÈH˜\œ˜\Ë‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙR[YZQ\ØÜš\[Û‰Î‚ˆ	Ô\›Z]H[™›Ü›X\ˆ[HSQRHX[X[Y[K‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙQØÝ[Y[\ØÜš\[Û‰Î‚ˆ	ÔÚ[][HÈ[™^ÈH[HØÝ[Y[Ë‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙP]Y[Ñ\ØÜš\[Û‰Îˆ	ÔÚ[][H[XHÜ˜]˜péðèÛÈH0è]Y[Ë‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙQœ™YU^\ØÜš\[Û‰Î‚ˆ	Ô\›Z]H™YÚ\Ý˜\ˆ[XH™\ÜÜÝH[H^Ë‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙS[X™\‘\ØÜš\[Û‰Î‚ˆ	Ô\›Z]H™YÚ\Ý˜\ˆ[H˜[Üˆ[pê\šXÛË‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙQ]Q\ØÜš\[Û‰Îˆ	Ô\›Z]HÙ[XÚ[Û˜\ˆ[XH]K‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙTÚ[™ÛPÚÚXÙQ\ØÜš\[Û‰Î‚ˆ	Ô\›Z]HÙ[XÚ[Û˜\ˆ[XHÜ0éðèÛË‰Ëˆ	Ü›ØÙY[Y[ÜËœ™\ÜÛœÙS][\PÚÚXÙQ\ØÜš\[Û‰Î‚ˆ	Ô\›Z]HÙ[XÚ[Û˜\ˆ[XHÝHXZ\ÈÜ0éðíY\Ë‰Ëˆ	Ü›ØÙY[Y[ÜË\PØ]YÛÜžQÝZYIÎˆ	ÓÜšY[\ˆHÛÛ™š\›X\‰Ëˆ	Ü›ØÙY[Y[ÜË\PØ]YÛÜžPÛÛXÝ	Îˆ	ÐÛÛ]\ˆ[™›Ü›XpéðèÛÉËˆ	Ü›ØÙY[Y[ÜË\PØ]YÛÜžQ]šY[˜ÙIÎˆ	Ô™YÚ\Ý˜\ˆ]šY0ê›˜ÚXIËˆ	Ü›ØÙY[Y[ÜË\PØ]YÛÜžRY[YžIÎˆ	ÒY[YšXØ\‰Ëˆ	Ü›ØÙY[Y[ÜËš][U\TXÚÙ\’[	Î‚ˆ	Ñ\ØÛÛHÛÛ[ÈÈÛÛX›Ü˜YÜˆ˜ZH™\ÜÛ™\ˆÝH™YÚ\Ý˜\ˆ\ÝHpéðèÛË‰Ëˆ	Ü›ØÙY[Y[ÜËœXÙZÛ\‘šY[	Îˆ	ÔXÙZÛ\‰Ëˆ	Ü›ØÙY[Y[ÜË[š]šY[	Îˆ	Õ[šYYIËˆ	Ü›ØÙY[Y[ÜË˜ÚÚXÙSÜ[ÛœÉÎˆ	ÓÜ0éðíY\ÈH\ØÛÛIËˆ	Ü›ØÙY[Y[ÜË˜YÜ[Û‰Îˆ	ÐYXÚ[Û˜\ˆÜ0éðèÛÉËˆ	Ü›ØÙY[Y[ÜËœ™[[Ý™SÜ[Û‰Îˆ	Ô™[[Ý™\ˆÜ0éðèÛÉËˆ	Ü›ØÙY[Y[ÜË›Ü[Û‘šY[	Îˆ	ÓÜ0éðèÛÉËˆ	Ü›ØÙY[Y[ÜË˜[Y][ÛÚÚXÙSÜ[ÛœÉÎˆ	Ò[™›Ü›YH[ÈY[›ÜÈX\ÈÜ0éðíY\Ë‰Ëˆ	Ü›ØÙY[Y[ÜË˜Ú[™ÙU\U]IÎˆ	Õ›ØØ\ˆ\ÈH][OÉËˆ	Ü›ØÙY[Y[ÜË˜Ú[™ÙU\SY\ÜØYÙIÎ‚ˆ	Ð\ÈÜ0éðíY\ÈÛÛ™šYÝ\˜Y\ÈÙ\°èÛÈ™[[ÝšY\È\˜H\ÝH\Ë‰Ëˆ	Ü›ØÙY[Y[ÜËœÚ[][]Y\QY]Ü’[	Î‚ˆ	Ó›È[ÙÈ[[ÛœÝ˜péðèÛË\ÝHØ\\˜HÙ\°èHÚ[][YHÙ[H\Ø\ˆ™XÝ\œÛÜÈÈ\ÜÜÚ]]›Ë‰Ëˆ	Ü›ØÙY[Y[ÜËœ™]šY]Õ]IÎˆ	Ô°êK]š\ÝX[^˜péðèÛÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Õ[]Y›ØÙY\™IÎˆ	Ô›ØÙY[Y[ÈÙ[H›ÛYIËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Ò[˜ÛÛ\]T›ØÙY\™IÎ‚ˆ	Ñ\ÝH›ØÙY[Y[ÈZ[™H°èÛÈÜÜÝZH]\\È\˜H[[ÛœÝ˜\‹‰Ëˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÓÙ‰Îˆ	ÙIËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Ô›ÙÜ™\ÜÓX™[	Îˆ	ÐpéðíY\ÈÛÛ˜ÛpëY\ÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Ô[™[™ÓY\ÜØYÙIÎ‚ˆ	Ñ^\Ý[HpéðíY\ÈØœšYØ]0ìÜšX\È[™[\È™\ÝH]\K‰Ëˆ	Ü›ØÙY[Y[ÜËœ™]šY]Ô™\]Z\™Y[™[™ÉÎ‚ˆ	Ô™\ÜÛ™H\ÝHpéðèÛÈØœšYØ]0ìÜšXH\˜HÛÛ[X\‹‰Ëˆ	Ü›ØÙY[Y[ÜËœ™]šY]Ó™^ÝYÙIÎˆ	Ô°ìÞ[XH]\IËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Ñš[š\Ú[[ÉÎˆ	Ñš[˜[^˜\‰Ëˆ	Ü›ØÙY[Y[ÜËœ™]šY]Ô™]šY]ÔÝYÙ\ÉÎˆ	Ô™]š\Ø\ˆ]\\ÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÔÝ[[X\žU]IÎˆ	Ñ[[ÛœÝ˜péðèÛÈÛÛ˜ÛpëYIËˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÔÝ[[X\žTØ]™YY\ÜØYÙIÎˆ	Ó™[š[XH™\ÜÜÝH›ÚHØ[˜K‰Ëˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÔÝ[[X\žP[œÝÙ\™Y	Îˆ	ÐpéðíY\È™\ÜÛ™Y\Ë‰Ëˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÔÝ[[X\žS›ÓÜ[Û˜[[™[™ÉÎ‚ˆ	Ó™[š[H][HÜÚ[Û˜[[™[K‰Ëˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÔÝ[[X\žSÜ[Û˜[[™[™ÉÎˆ	Ò][HÜÚ[Û˜[[™[K‰Ëˆ	Ü›ØÙY[Y[ÜËœ™]šY]Ñ\ØØ\™]IÎˆ	Ñ\ØØ\\ˆ™\ÜÜÝ\ÏÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Ñ\ØØ\™Y\ÜØYÙIÎ‚ˆ	Ð\È™\ÜÜÝ\È\ÝH[[ÛœÝ˜péðèÛÈÙ\°èÛÈ\ØØ\Y\È[ÈØZ\‹‰Ëˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÐÛÛ™š\›PXÝ[Û‰Îˆ	ÐÛÛ™š\›X\ˆpéðèÛÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Õ[™\œÝÛÙ	Îˆ	ÓX\˜Ø\ˆÛÛ[È[[™YÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Õ[™\œÝÛÙÛ™IÎˆ	Ñ[[™YÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Õ^[	Îˆ	ÑYÚ]HH™\ÜÜÝIËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Ó[X™\’[	Îˆ	ÑYÚ]H[H°î›Y\›ÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÔÙ[XÝ]IÎˆ	ÔÙ[XÚ[Û˜\ˆ]IËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Ò[YZR[	Îˆ	ÑYÚ]HÈSQRIËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Õ\ÙQ[[Ò[YZIÎˆ	Õ\Ø\ˆSQRH[[ÛœÝ˜]]›ÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÕZÙTÝÉÎˆ	Õ\˜\ˆ›ÝÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÔÚ[][]TÚYÛ˜]\™IÎˆ	ÔÚ[][\ˆ\ÜÚ[˜]\˜IËˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÐØ\\™SØØ][Û‰Îˆ	ÐØ\\˜\ˆØØ[^˜péðèÛÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÔÚ[][]P˜\˜ÛÙIÎˆ	ÔÚ[][\ˆZ]\˜IËˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÔÚ[][]QØÝ[Y[	Îˆ	ÔÚ[][\ˆ[™^ÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÔÚ[][]P]Y[ÉÎˆ	ÔÚ[][\ˆÜ˜]˜péðèÛÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Ô™[[Ý™Q]šY[˜ÙIÎˆ	Ô™[[Ý™\ˆ]šY0ê›˜ÚXIËˆ	Ü›ØÙY[Y[ÜËœÚ[][]Y™\ÛÝ\˜ÙS›ÝXÙIÎ‚ˆ	Ô™XÝ\œÛÈ[[ÛœÝ˜]]›Ëˆ™[š[HYÈ™X[Ù\°èHØ\\˜YË‰Ëˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÔÝÐYY	Îˆ	Ñ›ÝÈYXÚ[Û˜YIËˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÔÚYÛ˜]\™PYY	Îˆ	Ð\ÜÚ[˜]\˜HYXÚ[Û˜YIËˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÔÚYÛ˜]\™Q[[Ñ]Z[	Î‚ˆ	Õ˜péÛÈ[[ÛœÝ˜]]›È™YÚ\Ý˜YÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÓØØ][ÛYY	Î‚ˆ	ÓØØ[^˜péðèÛÈH[[ÛœÝ˜péðèÛÈØ\\˜YIËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Ð˜\˜ÛÙPYY	Îˆ	ÐðìÙYÛÈYÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]ÑØÝ[Y[YY	Îˆ	ÑØÝ[Y[È[™^YÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Ð]Y[ÐYY	Îˆ	ðà]Y[ÈÜ˜]˜YÉËˆ	Ü›ØÙY[Y[ÜË›Ü\˜][ÛØ\Ú™YÚ\Ý\‰Îˆ	ÐØZ^IËˆ	Ü›ØÙY[Y[ÜË›Ü\˜][ÛÝ\ÝÛY\”™YÚ\Ý˜][Û‰Îˆ	ÐØY\Ý›ÈHÛY[IËˆ	Ü›ØÙY[Y[ÜËšYÙÙ\“[ÛY[™Y›Ü™TÝ\	Îˆ	Ð[\ÈH[šXÚX\‰Ëˆ	Ü›ØÙY[Y[ÜËšYÙÙ\“[ÛY[Y\”Ý\	Îˆ	Ð\0ìÜÈ[šXÚX\‰Ëˆ	Ü›ØÙY[Y[ÜËšYÙÙ\“[ÛY[™Y›Ü™Qš[š\Ú	Îˆ	Ð[\ÈHÛÛ˜ÛZ\‰Ëˆ	Ü›ØÙY[Y[ÜËšYÙÙ\“[ÛY[Y\‘š[š\Ú	Îˆ	Ð\0ìÜÈÛÛ˜ÛZ\‰Ëˆ	Ü›ØÙY[Y[ÜËšYÙÙ\“[ÛY[™Y›Ü™Q[]™\žIÎˆ	Ð[\ÈH[™YØIËˆ	Ü›ØÙY[Y[ÜËšYÙÙ\“[ÛY[Y\‘[]™\žIÎˆ	Ð\0ìÜÈH[™YØIËˆ	Ü›ØÙY[Y[ÜËšYÙÙ\“[ÛY[Û‘[X[™	Îˆ	ÔÛØˆ[X[™IËˆ	Ü›ØÙY[Y[ÜË˜XÝ]˜][Û“X[X[	Îˆ	ÓX[X[	Ëˆ	Ü›ØÙY[Y[ÜË˜XÝ]˜][Û]]ÛX]XÉÎˆ	Ð]]Ûpè]XÛÉËˆ	Ü›ØÙY[Y[ÜË˜XÝ]˜][Û“X[X[\ØÜš\[Û‰Î‚ˆ	ÓÈÛÛX›Ü˜YÜˆÙ\°èH[šXÚX\ˆ\ÝH›ØÙY[Y[È]X[™È™XÙ\Üðè\š[Ë‰Ëˆ	Ü›ØÙY[Y[ÜË˜XÝ]˜][Û]]ÛX]XÑ\ØÜš\[Û‰Î‚ˆ	Ó˜H[YÜ˜péðèÛÈ]\˜KÈ›ØÙY[Y[ÈÙ\°èH\™\Ù[YÈ›È[ÛY[ÈÛÛ™šYÝ\˜YË‰Ëˆ	Ü›ØÙY[Y[ÜË™[™›Ü˜Ù[Y[[™›Ü›X]]™IÎˆ	Ò[™›Ü›X]]›ÉËˆ	Ü›ØÙY[Y[ÜË™[™›Ü˜Ù[Y[™XÛÛ[Y[™Y	Îˆ	Ô™XÛÛY[™YÉËˆ	Ü›ØÙY[Y[ÜË™[™›Ü˜Ù[Y[™\]Z\™Y	Îˆ	ÓØœšYØ]0ìÜš[ÉËˆ	Ü›ØÙY[Y[ÜË™[™›Ü˜Ù[Y[[™›Ü›X]]™Q\ØÜš\[Û‰Î‚ˆ	Ð\™\Ù[HÈ›ØÙY[Y[ÈÙ[H^YÚ\ˆÛÛ˜Û\ðèÛË‰Ëˆ	Ü›ØÙY[Y[ÜË™[™›Ü˜Ù[Y[™XÛÛ[Y[™Y\ØÜš\[Û‰Î‚ˆ	Ô™XÛÛY[™HHÛÛ˜Û\ðèÛËX\È°èÛÈ]™H›Ü]YX\ˆHÜ\˜péðèÛË‰Ëˆ	Ü›ØÙY[Y[ÜË™[™›Ü˜Ù[Y[™\]Z\™Y\ØÜš\[Û‰Î‚ˆ	Ó˜H[YÜ˜péðèÛÈ]\˜K^YÚ\°èHÛÛ˜Û\ðèÛÈ[\ÈHÛÛ[X\‹‰Ëˆ	Ü›ØÙY[Y[ÜËÚ[‘^XÝ]IÎˆ	Ô]X[™È^XÝ]\‰Ëˆ	Ü›ØÙY[Y[ÜË˜YšYÙÙ\‰Îˆ	ÐYXÚ[Û˜\ˆØ][ÉËˆ	Ü›ØÙY[Y[ÜË™Y]šYÙÙ\‰Îˆ	ÑY]\ˆØ][ÉËˆ	Ü›ØÙY[Y[ÜË™[]UšYÙÙ\‰Îˆ	Ñ^ÛZ\ˆØ][ÉËˆ	Ü›ØÙY[Y[ÜË››ÕšYÙÙ\œÉÎˆ	Ó™[š[HØ][ÈÛÛ™šYÝ\˜YË‰Ëˆ	Ü›ØÙY[Y[ÜË››ÕšYÙÙ\œÑ\ØÜš\[Û‰Î‚ˆ	ÔÙ[HØ][ÜËÈ›ØÙY[Y[ÈšXØ\°èH\ÜÛ°ë]™[\[˜\È\˜H\ÛÈH°êK]š\ÝX[^˜péðèÛÈ[›È\ÝHpìÙ[Ë‰Ëˆ	Ü›ØÙY[Y[ÜËšYÙÙ\ÛÝ[	Îˆ	ÙØ][ÜÉËˆ	Ü›ØÙY[Y[ÜËœÙ[XÝÜ\˜][ÛÛÛ^	Îˆ	ÔÙ[XÚ[Û˜\ˆÛÛ^ÉËˆ	Ü›ØÙY[Y[ÜËœÙ[XÝšYÙÙ\“[ÛY[	Îˆ	ÔÙ[XÚ[Û˜\ˆ[ÛY[ÉËˆ	Ü›ØÙY[Y[ÜË˜XÝ]˜][Û“[ÙIÎˆ	Ó[ÙÈH^XÝpéðèÛÉËˆ	Ü›ØÙY[Y[ÜË™[™›Ü˜Ù[Y[[ÙIÎˆ	Ó°ë]™[H^Yðê›˜ÚXIËˆ	Ü›ØÙY[Y[ÜËšYÙÙ\‘[˜X›Y[	Î‚ˆ	ÐÛÛ›ÛHÙH\ÝHØ][ÈÙ\°èHÛÛœÚY\˜YÈ˜H[YÜ˜péðèÛÈ]\˜K‰Ëˆ	Ü›ØÙY[Y[ÜËœØ]™UšYÙÙ\‰Îˆ	ÔØ[˜\ˆØ][ÉËˆ	Ü›ØÙY[Y[ÜËšYÙÙ\“[ÛY[ÛX\™Y	Î‚ˆ	ÓÈ[ÛY[È›ÚH[\ÈÜœ]YH°èÛÈ0êHÛÛ\]0ë]™[ÛÛHÈÛÛ^ÈÙ[XÚ[Û˜YË‰Ëˆ	Ü›ØÙY[Y[ÜË˜[Y][Û•šYÙÙ\“Ü\˜][Û‰Î‚ˆ	Ñ\ØÛÛHÈÛÛ^ÈÜ\˜XÚ[Û˜[‰Ëˆ	Ü›ØÙY[Y[ÜË˜[Y][Û•šYÙÙ\“[ÛY[	Îˆ	Ñ\ØÛÛHÈ[ÛY[ÈH^XÝpéðèÛË‰Ëˆ	Ü›ØÙY[Y[ÜË˜[Y][Û•šYÙÙ\“[ÛY[[˜[Y	Î‚ˆ	Ñ\ØÛÛH[H[ÛY[ÈÛÛ\]0ë]™[ÛÛHÈÛÛ^Ë‰Ëˆ	Ü›ØÙY[Y[ÜË˜[Y][Û‘\XØ]UšYÙÙ\‰Î‚ˆ	Ò°èH^\ÝH[HØ][ÈÛÛH\ÝHÛÛ^Ë[ÛY[ÈH[ÙÈH^XÝpéðèÛË‰Ëˆ	Ü›ØÙY[Y[ÜË™[]UšYÙÙ\•]IÎˆ	Ñ^ÛZ\ˆØ][ÏÉËˆ	Ü›ØÙY[Y[ÜË™[]UšYÙÙ\“Y\ÜØYÙIÎ‚ˆ	ÓÈ›ØÙY[Y[ÈZ^\°èHHÙ\ˆ\™\Ù[YÈ™\ÝH[ÛY[ÈÜ\˜XÚ[Û˜[‰Ëˆ	Ü›ØÙY[Y[ÜËšYÙÙ\”Ý[[X\žS›Û™IÎˆ	ÔÙ[HØ][ÜÈÛÛ™šYÝ\˜YÜÉËˆ	Ü›ØÙY[Y[ÜËšYÙÙ\”Ý[[X\žSÛ›R[˜XÝ]™IÎˆ	ÑØ][ÜÈ[˜]]›ÜÉËˆ	Ü›ØÙY[Y[ÜË™^XÝ][ÛÛÛ™šYÝ\˜][Û‰Îˆ	ÐÛÛ™šYÝ\˜péðèÛÈH^XÝpéðèÛÉËˆ	Ü›ØÙY[Y[ÜËšYÙÙ\”Ú[][][Û“›ÝXÙIÎ‚ˆ	ÔÚ[][péðèÛÈHØ][Ëˆ™[š[XHÜ\˜péðèÛÈ™X[Ù\°èH›Ü]YXYK‰Ëˆ	Ü›ØÙY[Y[ÜË›X[X[[[Ñ^XÝ][Û‰Îˆ	Ñ^XÝpéðèÛÈX[X[H[[ÛœÝ˜péðèÛË‰Ëˆ	Ü›ØÙY[Y[ÜË›Ü\˜][Û”Ú[Ø[TÝ\™Y›Ü™IÎˆ	Ð[\ÈH[šXÚX\ˆ[XH™[™IËˆ	Ü›ØÙY[Y[ÜË›Ü\˜][Û”Ú[Ø[TÝ\™Y›Ü™Q\ØÜš\[Û‰Î‚ˆ	Ñ^XÝ]YÈ[\ÈHXœš\ˆÈ›^ÈH[XH›Ý˜H™[™K‰Ëˆ	Ü›ØÙY[Y[ÜË›[Øš[TÚ[]˜Z[X›IÎˆ	Ñ\ÜÛ°ë]™[›È\XØ]]›È[Øš[K‰Ëˆ	Ü›ØÙY[Y[ÜË›Ü\˜][Û˜[^XÝ][Û•]IÎˆ	Ð[\ÈH[šXÚX\ˆH™[™IËˆ	Ü›ØÙY[Y[ÜË›Ü\˜][Û˜[Ý[[X\žU]IÎˆ	Ô›ØÙY[Y[ÈÛÛ˜ÛpëYÉËˆ	Ü›ØÙY[Y[ÜË›Ü\˜][Û˜[›Ñ]TØ]™Y	Î‚ˆ	Ó™[š[XH™\ÜÜÝH›ÚHØ[˜H™\ÝH[YÜ˜péðèÛÈØØ[^\š[Y[[‰Ëˆ	Ü›ØÙY[Y[ÜË˜ÛÛ\]P[™Ý\Ø[IÎˆ	ÐÛÛ˜ÛZ\ˆH[šXÚX\ˆ™[™IËˆ	Ü›ØÙY[Y[ÜË™^\š[Y[[[YÜ˜][Û‰Îˆ	Ò[YÜ˜péðèÛÈ^\š[Y[[	Ëˆ	Ü›ØÙY[Y[ÜË˜ÛÛ[YUÔÝ\Ø[IÎˆ	ÐÛÛ[X\ˆ\˜HH™[™IËˆ	Ü›ØÙY[Y[ÜË˜ÛÛ[YUÚ]Ý]ÛÛ\][™ÉÎˆ	ÐÛÛ[X\ˆÙ[HÛÛ˜ÛZ\‰Ëˆ	Ü›ØÙY[Y[ÜË˜ÛÛ[YUÚ]Ý]ÛÛ\][™Õ]IÎˆ	ÐÛÛ[X\ˆÙ[HÛÛ˜ÛZ\ÉËˆ	Ü›ØÙY[Y[ÜË˜ÛÛ[YUÚ]Ý]ÛÛ\][™ÓY\ÜØYÙIÎ‚ˆ	Ñ\ÝH›ØÙY[Y[È0êH™XÛÛY[™YÈ[\ÈH[šXÚX\ˆH™[™K‰Ëˆ	Ü›ØÙY[Y[ÜË˜ÛÛ[YP[ž]Ø^IÎˆ	ÐÛÛ[X\ˆY\Û[È\ÜÚ[IËˆ	Ü›ØÙY[Y[ÜËœ™]\›•Ô›ØÙY\™IÎˆ	Õ›Û\ˆ[È›ØÙY[Y[ÉËˆ	Ü›ØÙY[Y[ÜË˜Ø[˜Ù[Ø[TÝ\]IÎˆ	ÐØ[˜Ù[\ˆ[°ëXÚ[ÈH™[™OÉËˆ	Ü›ØÙY[Y[ÜË˜Ø[˜Ù[Ø[TÝ\Y\ÜØYÙIÎ‚ˆ	Ñ\ÝH›ØÙY[Y[È0êHØœšYØ]0ìÜš[Ëˆ[ÈØZ\‹H›Ý˜H™[™H°èÛÈÙ\°èH[šXÚXYK‰Ëˆ	Ü›ØÙY[Y[ÜË˜Ø[˜Ù[Ø[IÎˆ	ÐØ[˜Ù[\ˆ™[™IËˆ	Ü›ØÙY[Y[ÜËœÙ\]Y[˜ÙT›ÙÜ™\ÜÔ™Yš^	Îˆ	Ô›ØÙY[Y[ÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Ó™YØ]]™U^X™[	Îˆ	ÓÈ]YH˜[ÝOÉËˆ	Ü›ØÙY[Y[ÜËœ™]šY]Ó™YØ]]™U^[	Îˆ	ÑYÚ]HÈ]YH˜[ÝIËˆ	Ü›ØÙY[Y[ÜË›Ü\˜][Û˜[ØY\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÜÈ›ØÙY[Y[ÜË‰Ëˆ	Ü›ØÙY[Y[ÜË›Ü\˜][Û˜[˜YÙIÎˆ	Ô›ØÙY[Y[ÈÜ\˜XÚ[Û˜[	Ëˆ	Ü›ØÙY[Y[ÜË›Ü\˜][Û˜[^XÝ][Û•]T™X[	Îˆ	Ô›ØÙY[Y[ÈÜ\˜XÚ[Û˜[	Ëˆ	Ü›ØÙY[Y[ÜË™^XÝ][Û•Ú[™TØ]™Y	Î‚ˆ	Ð\È™\ÜÜÝ\ÈHÈÜ°è\š[ÈÙ\°èÛÈØ[›ÜÈ[ÈÛÛ˜ÛZ\‹‰Ëˆ	Ü›ØÙY[Y[ÜË˜ÛÛ\]P[™ÛÛ[YIÎˆ	ÐÛÛ˜ÛZ\ˆHÛÛ[X\‰Ëˆ	Ü›ØÙY[Y[ÜË˜ÛÛ[YSÜ\˜][Û‰Îˆ	ÐÛÛ[X\ˆÜ\˜péðèÛÉËˆ	Ü›ØÙY[Y[ÜËœ›ØÙ\ÜÚ[™ÔÚÚ\	Îˆ	ÐÛÛ[X[™Ë‹‹‰Ëˆ	Ü›ØÙY[Y[ÜËœ›ØÙ\ÜÚ[™ÐØ[˜Ù[	Îˆ	ÐØ[˜Ù[[™Ë‹‹‰Ëˆ	Ü›ØÙY[Y[ÜË™^XÝ][Û”Ø]™Q\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø[˜\ˆ\È™\ÜÜÝ\Ëˆ[H›Ý˜[Y[K‰Ëˆ	Ü›ØÙY[Y[ÜËœÚÚ\ÝXØÙ\ÜÕ]IÎˆ	Ô›ØÙY[Y[ÈYÛ›Ü˜YÉËˆ	Ü›ØÙY[Y[ÜË˜Ø[˜Ù[ÝXØÙ\ÜÕ]IÎˆ	ÓÜ\˜péðèÛÈØ[˜Ù[YIËˆ	Ü›ØÙY[Y[ÜË˜ÛÛ\]TÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	Ð\È™\ÜÜÝ\È›Ü˜[H™YÚ\Ý˜Y\ÈHHÜ\˜péðèÛÈÙHÛÛ[X\‹‰Ëˆ	Ü›ØÙY[Y[ÜËœÚÚ\ÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	ÓÈ›ØÙY[Y[È›ÚHYÛ›Ü˜YÈHHÜ\˜péðèÛÈÙYÝZ\°èHÛÛ™›Ü›YHHÛÛ™šYÝ\˜péðèÛË‰Ëˆ	Ü›ØÙY[Y[ÜË˜Ø[˜Ù[ÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	ÐHÜ\˜péðèÛÈ›ÚH[˜Ù\œ˜YH[\ÈHÙYÝZ\ˆ\˜HH°ìÞ[XH]\K‰Ëˆ	Ü›ØÙY[Y[ÜËœ\œÚ\ÝYÛÛ™šYÝ\˜][Û‰Îˆ	ÐÛÛ™šYÝ\˜péðèÛÈÚ[˜Ü›Ûš^˜YIËˆ	Ü›ØÙY[Y[ÜË™Y]Ü”\œÚ\Ý[˜ÙS›ÝXÙIÎ‚ˆ	Ð\È[\˜péðíY\ÈðèÛÈØ[˜\È\˜HH[\™\ØHH™\ÜZ][HÈY[ÛXH]X[‰Ëˆ	Ü›ØÙY[Y[ÜË››ÝYžPYZ[‰Îˆ	Ó›ÝYšXØ\ˆQRSˆÜˆ\Ú	Ëˆ	Ü›ØÙY[Y[ÜË››ÝYžPYZ[’[	Î‚ˆ	Ð]š\ØHÜÈYZ[š\Ý˜YÜ™\È]]›ÜÈ]X[™ÈHÛÛ™péðèÛÈØÛÜœ™\‹‰Ëˆ	Ü›ØÙY[Y[ÜË››ÝYšXØ][ÛÛÛ™][Û‰Îˆ	Ô]X[™È›ÝYšXØ\‰Ëˆ	Ü›ØÙY[Y[ÜË››ÝYšXØ][Û[Ø^\ÉÎˆ	Ñ[HÙH^XÝpéðèÛÉËˆ	Ü›ØÙY[Y[ÜË››ÝYšXØ][Û“™YØ]]™IÎˆ	Ð[È™YÚ\Ý˜\ˆ™\ÜÜÝH™YØ]]˜IËˆ	Ü›ØÙY[Y[ÜË››ÝYšXØ][Û”ÚÚ\Y	Îˆ	Ð[ÈYÛ›Ü˜\ˆÈ›ØÙY[Y[ÉËˆ	Ü›ØÙY[Y[ÜË˜[˜[]XÜÕ]IÎˆ	Ð[°è[\ÙHH™\Ý[YÜÉËˆ	Ü›ØÙY[Y[ÜË˜[˜[]XÜÑ^XÝ][ÛœÉÎˆ	Ñ^XÝpéðíY\ÉËˆ	Ü›ØÙY[Y[ÜË˜[˜[]XÜÐÛÛ\][Û‰Îˆ	Õ^HHÛÛ˜Û\ðèÛÉËˆ	Ü›ØÙY[Y[ÜË˜[˜[]XÜÓ™YØ]]™IÎˆ	Ô™\ÜÜÝ\È™YØ]]˜\ÉËˆ	Ü›ØÙY[Y[ÜË˜[˜[]XÜÐ]™\˜YÙU[YIÎˆ	Õ[\ÈpêY[ÉËˆ	Ü›ØÙY[Y[ÜË˜[˜[]XÜÐžT]Y\Ý[Û‰Îˆ	Ô™\Ý[YÜÈÜˆ\™Ý[IËˆ	Ü›ØÙY[Y[ÜË˜[˜[]XÜÔ™XÙ[	Îˆ	Ñ^XÝpéðíY\È™XÙ[\ÉËˆ	Ü›ØÙY[Y[ÜË˜[˜[]XÜÑ[\IÎˆ	ÐZ[™H°èÛÈ0èH^XÝpéðíY\È™\ÝH\°ë[ÙË‰Ëˆ	Ü›ØÙY[Y[ÜË˜ÛÛ^Ø[IÎˆ	Õ™[™IËˆ	Ü›ØÙY[Y[ÜË˜ÛÛ^XÚšXØ[Ù\šXÙIÎˆ	Ð][™[Y[È0êXÛšXÛÉËˆ	Ü›ØÙY[Y[ÜË˜ÛÛ^Ø\Ú™YÚ\Ý\‰Îˆ	ÐØZ^IË‚ˆËÈÙ\Ý0èÛÈ8 %ÙpéðíY\Âˆ	ÙÙ\Ý[Ë]IÎˆ	ÑÙ\Ý0èÛÉËˆ	ÙÙ\Ý[ËšX‹]IÎˆ	ÓÈ]YH›Øðêˆ]Y\ˆÙ\™[˜ÚX\ÉËˆ	ÙÙ\Ý[ËšX‹œÝX]IÎ‚ˆ	ÐXÙ\ÜÙHØY\Ý›ÜË\ÜÛØ\Ëš[˜[˜ÙZ\›ÈH™Y™\°ê›˜ÚX\Ë‰Ëˆ	ÙÙ\Ý[ËšX‹\›Z[˜[œ›ÙXÝÉÎˆ	ÑÙ\™[˜ÚYHÙ]\È›Ù]ÜÈHÛÛX›Ü˜YÜ™\ÉËˆ	ÙÙ\Ý[ËšX‹\›Z[˜[™š[˜[˜ÙIÎˆ	ÑÙ\™[˜ÚYHÙ]Hš[˜[˜ÙZ\›ÉËˆ	ÙÙ\Ý[ËšX‹\›Z[˜[œ™Y™\™[˜Ù\ÉÎ‚ˆ	ÐZ\ÝHÝX\È™Y™\°ê›˜ÚX\ÈHÛÛ™šYÝ\˜péðíY\ÉËˆ	ÙÙ\Ý[Ë˜Ø][ÙË]IÎˆ	ÐØ]0è[ÙÛÉËˆ	ÙÙ\Ý[Ë˜Ø][ÙËœÝX]IÎˆ	Ô›Ù]ÜËØ]YÛÜšX\ÈH\ÝÜ]YIËˆ	ÙÙ\Ý[Ëœ[ÜK]IÎˆ	Ô\ÜÛØ\ÉËˆ	ÙÙ\Ý[Ëœ[ÜKœÝX]IÎˆ	ÐÛY[\Ë\]Z\HH\˜ÙZ\›ÜÉËˆ	ÙÙ\Ý[Ë™š[˜[˜ÙK]IÎˆ	Ñš[˜[˜ÙZ\›ÉËˆ	ÙÙ\Ý[Ë™š[˜[˜ÙKœÝX]IÎˆ	ÐÛÛ\ËYÙ[™HH™XÙXš[Y[ÜÉËˆ	ÙÙ\Ý[ËœÙ][™ÜË]IÎˆ	ÐÛÛ™šYÝ\˜péðíY\ÉËˆ	ÙÙ\Ý[ËœÙ][™ÜËœÙ[XÝÜ•]IÎˆ	ÑÙ\˜[	Ëˆ	ÙÙ\Ý[ËœÙ][™ÜËœÝX]IÎˆ	Ñ[\™\ØKY[ÛXHH[YÜ˜péðíY\ÉË‚ˆËÈÙ\Ý0èÛÈ8 %][œÈHØ]0è[ÙÛÂˆ	ÙÙ\Ý[Ë˜Ø][ÙËœ›ÙXÝÔÙ\šXÙ\ÉÎˆ	Ô›Ù]ÜÈHÙ\špéÛÜÉËˆ	ÙÙ\Ý[Ë˜Ø][ÙËœ›ÙXÝÔÙ\šXÙ\Ñ\ØÉÎ‚ˆ	ÔØpî™KØY\Ý›ÈH™]š\ðèÛÈÈØ]0è[ÙÛÉËˆ	ÙÙ\Ý[Ë˜Ø][ÙË˜Ø]YÛÜšY\ÉÎˆ	ÐØ]YÛÜšX\ÉËˆ	ÙÙ\Ý[Ë˜Ø][ÙË˜Ø]YÛÜšY\Ñ\ØÉÎˆ	ÓÜ™Ø[š^˜péðèÛÈÈØ]0è[ÙÛÉËˆ	ÙÙ\Ý[Ë˜Ø][ÙËš[™[ÜžIÎˆ	Ñ\ÝÜ]YIËˆ	ÙÙ\Ý[Ë˜Ø][ÙËš[™[ÜžQ\ØÉÎˆ	ÔØ[ÜË[˜Y\ÈHZ\Ý\ÉË‚ˆËÈÙ\Ý0èÛÈ8 %][œÈH\ÜÛØ\Âˆ	ÙÙ\Ý[Ëœ[ÜK˜ÛY[ÉÎˆ	ÐÛY[\ÉËˆ	ÙÙ\Ý[Ëœ[ÜK˜ÛY[Ñ\ØÉÎˆ	Ð˜\ÙHH][™[Y[ÈH™[XÚ[Û˜[Y[ÉËˆ	ÙÙ\Ý[Ëœ[ÜK˜ÛÛX›Ü˜]ÜœÉÎˆ	ÐÛÛX›Ü˜YÜ™\ÉËˆ	ÙÙ\Ý[Ëœ[ÜK˜ÛÛX›Ü˜]ÜœÑ\ØÉÎˆ	Ñ\]Z\KXÙ\ÜÛÜÈH™\ÜÛœØXš[YY\ÉËˆ	ÙÙ\Ý[Ëœ[ÜKœÚ^Õ\Ù\œÉÎˆ	Õ\Ýpè\š[ÜÈÈÚ^ÉËˆ	ÙÙ\Ý[Ëœ[ÜKœÚ^Õ\Ù\œÑ\ØÉÎˆ	Ð˜\ÙHÛØ˜[›ÝYÚYH[È\™š[ÕTT‰Ëˆ	ÙÙ\Ý[Ëœ[ÜKœÝ\Y\œÉÎˆ	Ñ›Ü›™XÙYÜ™\ÉËˆ	ÙÙ\Ý[Ëœ[ÜKœÝ\Y\œÑ\ØÉÎˆ	Ô\˜ÙZ\›ÜÈHÛÛ\˜\ÈÈÛÛpê\˜Ú[ÉËˆ	ÙÙ\Ý[Ëœ[ÜKœ\™›Ü›X[˜ÙIÎˆ	Ñ\Ù[\[šÈÈÛÛX›Ü˜YÜ‰Ëˆ	ÙÙ\Ý[Ëœ[ÜKœ\™›Ü›X[˜ÙQ\ØÉÎ‚ˆ	ÓY]\Ë™[™\ËÙ\špéÛÜÈH]›ÛpéðèÛÈH\]Z\IË‚ˆËÈ\Ù[\[šÈÈÛÛX›Ü˜YÜˆ8 %[Øš[Bˆ	Ü\™›Ü›X[˜ÙK›[Øš[K]IÎˆ	Ñ\Ù[\[šÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kš\›Õ]IÎˆ	Ñ\Ù[\[šÈH\]Z\IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kš\›ÔÝX]IÎ‚ˆ	ÐXÛÛ\[šHY]\Ë™[™\ËÙ\špéÛÜÈH][™[Y[ÜÈÜˆ\XÚ\[K‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kœ™Yœ™\Ú	Îˆ	Ð]X[^˜\ˆ\Ù[\[šÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K›™]ÑÛØ[	Îˆ	Ó›Ý˜HY]IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K™Y]ÛØ[	Îˆ	ÑY]\ˆY]IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K˜Ý\œ™[[Û	Îˆ	ÓpêœÈ]X[	Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[K›\Ý\Q^\ÉÎˆ	ðæ›[[ÜÈÌX\ÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KÙ^IÎˆ	ÒÚ™IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kœ\š[Ù	Îˆ	Ô\°ë[ÙÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kœ\XÚ\[	Îˆ	Ô\XÚ\[IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœÙ[XÝ\XÚ\[	Îˆ	ÔÙ[XÚ[Û˜\ˆ\XÚ\[IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœÙX\˜Ú\XÚ\[	Îˆ	Ð\ØØ\ˆ\XÚ\[IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K››Ô\XÚ\[	Îˆ	Ó™[š[H\XÚ\[H[˜ÛÛ˜YÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K››Ô\XÚ\[Y\ÜØYÙIÎ‚ˆ	ÐZ\ÝHÈš[›ÈÝHØY\Ý™HÛÛX›Ü˜YÜ™\È\˜HÛÛ[X\‹‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[K˜[XÝ]™IÎˆ	ÕÙÜÈÜÈ]]›ÜÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K˜[[˜XÝ]™IÎˆ	ÕÙÜÈÜÈ°èÛÈ]]›ÜÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K˜[\XÚ\[ÉÎˆ	ÕÙÜÈÜÈ\XÚ\[\ÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K˜XÝ]™IÎˆ	Ð]]›ÜÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kš[˜XÝ]™IÎˆ	Ó°èÛÈ]]›ÜÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K˜›Ý	Îˆ	Ð[X›ÜÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœØÛÜ™IÎˆ	ÔØÛÜ™HpêY[ÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœØÛÜ™Q\ØÉÎˆ	ÓpêYXHÛ™\˜YH\ÈY]\ÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K™ÛØ[Ô™XXÚY	Îˆ	ÓY]\È˜]Y\ÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K™ÛØ[Ô™XXÚY\ØÉÎˆ	Ó›È\°ë[ÙÈÙ[XÚ[Û˜YÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœØ[\ÉÎˆ	Õ™[™\ÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœØ[\ÓÜ\˜][ÛœÉÎˆ	ÞØÛÝ[HÜ\˜péðíY\È›È\°ë[ÙÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœÙ\šXÙPØ[ÉÎˆ	Ð][™[Y[ÜÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœÙ\šXÙPØ[Ñ\ØÉÎˆ	Ð\ÜÚ\Ý0ê›˜ÚX\È0êXÛšXØ\È›È\°ë[ÙÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kœ™\Ý[ÕX‰Îˆ	Ô™\Ý[YÜÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K™ÛØ[ÕX‰Îˆ	ÓY]\ÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kœ™\Ý[Õ]IÎˆ	ÓY]H™X[^˜YÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kœ™\Ý[ÔÝX]IÎ‚ˆ	Ñ]›ÛpéðèÛÈØ[Ý[YH\˜HÈ\°ë[ÙÈÙ[XÚ[Û˜YË‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[K™ÛØ[Õ]IÎˆ	ÓY]\ÈØY\Ý˜Y\ÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K™ÛØ[ÔÝX]IÎ‚ˆ	ÕÜ]YH[H[XHY]H\˜HÛÛœÝ[\ˆÝHY]\‹‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[K››Ô™\Ý[ÉÎˆ	Ó™[š[XHY]H]]˜H\˜H^Xš\‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[K››Ô™\Ý[Ñ\ØÉÎ‚ˆ	ÐZ\ÝHÜÈš[›ÜÈÝHØY\Ý™H[XH›Ý˜HY]K‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[K››ÑÛØ[ÉÎˆ	ÔÙ[HY]\ÈØY\Ý˜Y\ÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K››ÑÛØ[Ñ\ØÉÎ‚ˆ	ÐÜšYHY]\È\˜HXÛÛ\[š\ˆÈ\Ù[\[šÈH\]Z\K‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[K›ØY\œ›Ü‰Îˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÈ\Ù[\[šË‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[K›ØY\œ›Ü‘\ØÉÎ‚ˆ	Õ™\šYš\]YHÝXHÛÛ™^0èÛÈH[H›Ý˜[Y[K‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[KžPYØZ[‰Îˆ	Õ[\ˆ›Ý˜[Y[IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K›ØY[™ÉÎˆ	ÐØ\œ™YØ[™È\Ù[\[šÈH\]Z\IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K™ÛØ[Ø]™Y	Îˆ	ÓY]HØY\Ý˜YK‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[K™ÛØ[\]Y	Îˆ	ÓY]H]X[^˜YK‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[K™ÛØ[Ø]™Q\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø[˜\ˆHY]Kˆ[H›Ý˜[Y[K‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[K››Ñš[\™Y\XÚ\[	Î‚ˆ	Ó°èÛÈ0èH\XÚ\[\È\˜HÈš[›ÈÙ[XÚ[Û˜YË‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kš[™XØ]Ü‰Îˆ	Ò[™XØYÜ‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœÙ[XÝ[™XØ]Ü‰Îˆ	ÔÙ[XÚ[Û˜\ˆ[™XØYÜ‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[K\™Ù]˜[YIÎˆ	Õ˜[Üˆ[›ÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KÙZYÚ	Îˆ	Ô\ÛÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœÝ\]IÎˆ	Ñ]H[šXÚX[	Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[K™[™]IÎˆ	Ñ]Hš[˜[	Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[K˜\Q]IÎˆ	Ð\XØ\ˆ]IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœÝ]\ÉÎˆ	ÔÚ]XpéðèÛÈHY]IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K™ÛØ[XÝ]™IÎˆ	Ð]]˜IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K™ÛØ[]\ÙY	Îˆ	Ô]\ØYIËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K™ÛØ[ÛÜÙY	Îˆ	Ñ[˜Ù\œ˜YIËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K˜Ü™X]QÛØ[	Îˆ	ÐØY\Ý˜\ˆY]IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœØ]™QÛØ[	Îˆ	ÔØ[˜\ˆY]IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K˜Ø[˜Ù[	Îˆ	ÐØ[˜Ù[\‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kš[˜[YÜÚ]]™S[X™\‰Î‚ˆ	Ò[™›Ü›YH[H˜[ÜˆXZ[Üˆ]YH™\›ÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kš[˜[Y]T˜[™ÙIÎ‚ˆ	ÐH]Hš[˜[°èÛÈÙHÙ\ˆ[\š[Üˆ0è]H[šXÚX[‰Ëˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kœ\XÚ\[˜[˜XÚÉÎˆ	Ô\XÚ\[IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K››Ô\š[Ù	Îˆ	ÔÙ[H\°ë[ÙÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[K˜[YSÙ•\™Ù]	Îˆ	ÞÝ˜[Y_HHÝ\™Ù]IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœÝ]\ÐX›Ý™QÛØ[	Îˆ	ÐXÚ[XHHY]IËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœÝ]\Ò[”›ÙÜ™\ÜÉÎˆ	Ñ[H›ÙÜ™\ÜÛÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœÝ]\Ð]š\ÚÉÎˆ	Ñ[Hš\ØÛÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœÝ]\ÐÜš]XØ[	Îˆ	ÐÜ°ë]XÛÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[KœÝ]\Õ[šÛ›ÝÛ‰Îˆ	ÔÙ[HÝ]\ÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kš[™XØ]Ü‹œØ[\Õ˜[YIÎˆ	Õ˜[Üˆ™[™YÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kš[™XØ]Ü‹œØ[\Ô]X[]IÎˆ	Ô]X[YYHH™[™\ÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kš[™XØ]Ü‹œÙ\šXÙ\Õ˜[YIÎˆ	Õ˜[Üˆ[HÙ\špéÛÜÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kš[™XØ]Ü‹œÙ\šXÙPØ[ÉÎˆ	Ð][™[Y[ÜÈ0êXÛšXÛÜÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kš[™XØ]Ü‹™š[š\ÚYÙ\šXÙPØ[ÉÎ‚ˆ	Ð][™[Y[ÜÈš[˜[^˜YÜÉËˆ	Ü\™›Ü›X[˜ÙK›[Øš[Kš[™XØ]Ü‹œÙ\šXÙPØ[Õ˜[YIÎˆ	Õ˜[Üˆ[H][™[Y[ÜÉË‚ˆËÈÙ\Ý0èÛÈ8 %][œÈHš[˜[˜ÙZ\›Âˆ	ÙÙ\Ý[Ë™š[˜[˜ÙKœ™XÙZ]˜X›IÎˆ	ÐÛÛ\ÈH™XÙX™\‰Ëˆ	ÙÙ\Ý[Ë™š[˜[˜ÙKœ™XÙZ]˜X›Q\ØÉÎˆ	Ô™XÙX°ë]™Z\ÈHÛØœ˜[°éØ\È[HX™\ÉËˆ	ÙÙ\Ý[Ë™š[˜[˜ÙKœ^XX›IÎˆ	ÐÛÛ\ÈHYØ\‰Ëˆ	ÙÙ\Ý[Ë™š[˜[˜ÙKœ^XX›Q\ØÉÎˆ	Ñ\Ü\Ø\ÈHÛÛ\›ÛZ\ÜÛÜÉËˆ	ÙÙ\Ý[Ë™š[˜[˜ÙKœØÚY[IÎˆ	ÐYÙ[™Hš[˜[˜ÙZ\˜IËˆ	ÙÙ\Ý[Ë™š[˜[˜ÙKœØÚY[Q\ØÉÎˆ	Ô™]š\ðíY\ËšXYÈHÜ™Ypè\š[ÉËˆ	ÙÙ\Ý[Ë™š[˜[˜ÙKœ^[Y[Y]ÙÉÎˆ	Ñ›Ü›X\ÈH™XÙXš[Y[ÉËˆ	ÙÙ\Ý[Ë™š[˜[˜ÙKœ^[Y[Y]ÙÑ\ØÉÎˆ	Ñ[šZ\›ËØ\0èÛË^HÝ]›ÜÈYZ[ÜÉË‚ˆËÈÙ\Ý0èÛÈ8 %Ü\ÜÈHÛÛ™šYÝ\˜péðíY\Âˆ	ÙÙ\Ý[ËœÙ][™ÜË™Ü›Ý\˜ÛÛ\[žIÎˆ	Ñ[\™\ØIËˆ	ÙÙ\Ý[ËœÙ][™ÜË™Ü›Ý\X[PXØÙ\ÜÉÎˆ	Ñ\]Z\HHXÙ\ÜÛÉËˆ	ÙÙ\Ý[ËœÙ][™ÜË™Ü›Ý\›Ü\˜][Û‰Îˆ	ÓÜ\˜péðèÛÉËˆ	ÙÙ\Ý[ËœÙ][™ÜË™Ü›Ý\˜ÛÛ[][šXØ][Û‰Îˆ	ÐÛÛ][šXØpéðèÛÉËˆ	ÙÙ\Ý[ËœÙ][™ÜË™Ü›Ý\™ØÜÒ[YÜ˜][ÛœÉÎˆ	ÑØÝ[Y[ÜÈH[YÜ˜péðíY\ÉË‚ˆËÈÙ\Ý0èÛÈ8 %][œÈHÛÛ™šYÝ\˜péðíY\Âˆ	ÙÙ\Ý[ËœÙ][™ÜËš][K˜ÛÛ\[žK]IÎˆ	Ñ[\™\ØIËˆ	ÙÙ\Ý[ËœÙ][™ÜËš][K˜ÛÛ\[žKœÝX]IÎ‚ˆ	ÑYÜÈØY\Ý˜Z\ÈHY[YYHÈÛÛpê\˜Ú[ÉËˆ	ÙÙ\Ý[ËœÙ][™ÜËš][Kœ™YÚ[Û˜[^˜][Û‹]IÎˆ	Ô™YÚ[Û˜[^˜péðèÛÉËˆ	ÙÙ\Ý[ËœÙ][™ÜËš][Kœ™YÚ[Û˜[^˜][Û‹œÝX]IÎ‚ˆ	ÒY[ÛXK[ÙYKpë\ÈH›Ü›X]ÜÈØØZ\ÉËˆ	ÙÙ\Ý[ËœÙ][™ÜËš][K\Ù\œË]IÎˆ	Õ\Ýpè\š[ÜÈH\›Z\ÜðíY\ÉËˆ	ÙÙ\Ý[ËœÙ][™ÜËš][K\Ù\œËœÝX]IÎ‚ˆ	ÐXÙ\ÜÛÜË\™š\ÈHÙYÝ\˜[°éØHH\]Z\IËˆ	ÙÙ\Ý[ËœÙ][™ÜËš][Kœ›ØÙY\™\Ë]IÎˆ	Ô›ØÙY[Y[ÜÉËˆ	ÙÙ\Ý[ËœÙ][™ÜËš][Kœ›ØÙY\™\ËœÝX]IÎ‚ˆ	ÑÝZX\È\˜H™[™\Ë][™[Y[ÜÈH[™YØ\ÉËˆ	ÙÙ\Ý[ËœÙ][™ÜËš][K››ÝYšXØ][ÛœË]IÎˆ	Ó›ÝYšXØpéðíY\ÉËˆ	ÙÙ\Ý[ËœÙ][™ÜËš][K››ÝYšXØ][ÛœËœÝX]IÎ‚ˆ	Ñ]™[ÜÈ™XÙXšYÜÈH[\\ÈÈÚ\Ý[XIËˆ	ÙÙ\Ý[ËœÙ][™ÜËš][Kœ•[\]\Ë]IÎˆ	Ó[Ù[ÜÈH‰Ëˆ	ÙÙ\Ý[ËœÙ][™ÜËš][Kœ•[\]\ËœÝX]IÎ‚ˆ	ÓÜ°éØ[Y[ÜËÔË™XÚX›ÜÈHØÝ[Y[ÜÉËˆ	ÙÙ\Ý[ËœÙ][™ÜËš][Kš[YÜ˜][ÛœË]IÎˆ	Ò[YÜ˜péðíY\ÉËˆ	ÙÙ\Ý[ËœÙ][™ÜËš][Kš[YÜ˜][ÛœËœÝX]IÎ‚ˆ	ÔÙ\špéÛÜÈ^\››ÜÈH]]ÛXpéðíY\ÉË‚ˆËÈÙ\Ý0èÛÈ8 %š\ðèÛÈÛÛ^X[[Øš[Bˆ	ÙÙ\Ý[Ë›Ý™\šY]ËœÙ[XÝY\™XIÎˆ	ðà\™XHÙ[XÚ[Û˜YIËˆ	ÙÙ\Ý[Ë›Ý™\šY]Ë™Ù[™\˜[]IÎˆ	Õš\ðèÛÈÙ\˜[	Ëˆ	ÙÙ\Ý[Ë›Ý™\šY]Ë˜[YU[˜]˜Z[X›IÎˆ	ËKIËˆ	ÙÙ\Ý[Ë›Ý™\šY]Ë›XZ[XÝ[ÛœÉÎˆ	ÐpéðíY\Èš[˜Ú\Z\ÉËˆ	ÙÙ\Ý[Ë›Ý™\šY]Ë™\œ›Ü“Y\ÜØYÙIÎ‚ˆ	Ð\ÈpéðíY\ÈÛÛ[X[H\ÜÛ°ë]™Z\Ëˆ[H]X[^˜\ˆÜÈYÜÈ[H[œÝ[\Ë‰Ëˆ	ÙÙ\Ý[Ë˜Ø][ÙËœÝ[[X\žU]IÎˆ	Ô™\Ý[[ÈÈØ]0è[ÙÛÉËˆ	ÙÙ\Ý[Ë˜Ø][ÙË›Y]šXËœ›ÙXÝÉÎˆ	Ô›Ù]ÜÉËˆ	ÙÙ\Ý[Ë˜Ø][ÙË›Y]šXËœ›ÙXÝÔÙ\šXÙ\ÉÎˆ	Ô›Ù]ÜÈHÙ\špéÛÜÉËˆ	ÙÙ\Ý[Ë˜Ø][ÙË›Y]šXË˜Ø]YÛÜšY\ÉÎˆ	ÐØ]YÛÜšX\ÉËˆ	ÙÙ\Ý[Ë˜Ø][ÙË›Y]šXË›ÝÔÝØÚÉÎˆ	Ñ\ÝÜ]YH˜Z^ÉËˆ	ÙÙ\Ý[Ë˜Ø][ÙË›ÝÔÝØÚÐ[\Ù[X[XÉÎ‚ˆ	Ò[™XØYÜˆH][°éðèÛÈ\˜H\ÝÜ]YH˜Z^ÉËˆ	ÙÙ\Ý[Ë˜Ø][ÙË›ØY\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÈ™\Ý[[ÈÈØ]0è[ÙÛË‰Ëˆ	ÙÙ\Ý[Ë˜Ø][ÙË™[\U]IÎˆ	ÐØ]0è[ÙÛÈÙ[HYÜÈ\˜H^Xš\‰Ëˆ	ÙÙ\Ý[Ë˜Ø][ÙË™[\SY\ÜØYÙIÎ‚ˆ	ÐØY\Ý™H›Ù]ÜËÙ\špéÛÜÈÝHØ]YÛÜšX\È\˜H™Y[˜Ú\ˆÜÈ[™XØYÜ™\Ë‰Ëˆ	ÙÙ\Ý[Ë˜Ø][ÙËœ\›Z\ÜÚ[Û”™\ÝšXÝY]IÎ‚ˆ	ÐØ]0è[ÙÛÈ™\Ýš]È\˜H\ÝH\Ýpè\š[ÉËˆ	ÙÙ\Ý[Ë˜Ø][ÙËœ\›Z\ÜÚ[Û”™\ÝšXÝYY\ÜØYÙIÎ‚ˆ	ÐHpéðèÛÈH›Ù]ÜÈHÙ\špéÛÜÈ™\ÜZ]H\È\›Z\ÜðíY\È]XZ\Ë‰Ëˆ	ÙÙ\Ý[Ë˜Ø][ÙËÙXØ][ÙÉÎˆ	ÐØ]0è[ÙÛÈÙX‰Ëˆ	ÙÙ\Ý[Ë˜Ø][ÙËÙXØ][ÙÑ\ØÉÎ‚ˆ	Ñ^\špê›˜ÚXHÛÛ\]HÈØ]0è[ÙÛÈ›È˜]™YØYÜ‰Ëˆ	ÙÙ\Ý[Ë˜Ø][ÙËÙXØ][ÙÐ˜YÙIÎˆ	ÕÑP‰Ëˆ	ÙÙ\Ý[Ë˜Ø][ÙË›ÝÔÝØÚÕ]IÎˆ	Ñ\ÝÜ]YH™XÚ\ØHH][°éðèÛÉËˆ	ÙÙ\Ý[Ë˜Ø][ÙË›ÝÔÝØÚÓY\ÜØYÙIÎ‚ˆ	ÞØÛÝ[H][JœÊHX˜Z^ÈÈ[Z]HÛÛ™šYÝ\˜YÈ›ÈØ]0è[ÙÛË‰Ëˆ	ÙÙ\Ý[Ë˜Ø][ÙË›ÝÔÝØÚÐXÝ[Û‰Îˆ	Õ™\ˆ][œÉËˆ	ÙÙ\Ý[Ëœ[ÜKœÝ[[X\žU]IÎˆ	Ô™\Ý[[ÈH\ÜÛØ\ÉËˆ	ÙÙ\Ý[Ëœ[ÜK›Y]šXË˜ÛY[ÉÎˆ	ÐÛY[\ÉËˆ	ÙÙ\Ý[Ëœ[ÜK›Y]šXË˜ÛÛX›Ü˜]ÜœÉÎˆ	ÐÛÛX›Ü˜YÜ™\ÉËˆ	ÙÙ\Ý[Ëœ[ÜK›Y]šXËœÝ\Y\œÉÎˆ	Ñ›Ü›™XÙYÜ™\ÉËˆ	ÙÙ\Ý[Ëœ[ÜKœÝ\Y\œÕ[˜]˜Z[X›TÙ[X[XÉÎˆ	Ô™XÝ\œÛÈ[Hœ™]™IËˆ	ÙÙ\Ý[Ëœ[ÜK›ØY\œ›Ü‰Îˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÈ™\Ý[[ÈH\ÜÛØ\Ë‰Ëˆ	ÙÙ\Ý[Ëœ[ÜK™[\U]IÎˆ	Ó™[š[HÛÛ]ÈØ\œ™YØYÉËˆ	ÙÙ\Ý[Ëœ[ÜK™[\SY\ÜØYÙIÎ‚ˆ	ÐÛY[\ÈHÛÛX›Ü˜YÜ™\È\\™XÙ\°èÛÈ\]ZH]X[™È\Ý]™\™[HØY\Ý˜YÜË‰Ëˆ	ÙÙ\Ý[Ëœ[ÜKœÝ\Y\œÐ›ØÚÙY]IÎˆ	Ñ›Ü›™XÙYÜ™\ÈZ[™H°èÛÈ\ÜÛ°ë]™[	Ëˆ	ÙÙ\Ý[Ëœ[ÜKœÝ\Y\œÐ›ØÚÙYY\ÜØYÙIÎ‚ˆ	ÓÈ™XÝ\œÛÈÙYÝYHX\˜ØYÈÛÛ[È[Hœ™]™HH°èÛÈÜÜÝZH˜]™YØpéðèÛÈ[Øš[H]]˜K‰Ëˆ	ÙÙ\Ý[Ë™š[˜[˜ÙK˜XÝ[Û‘Ü›Ý\	Îˆ	ÐYÙ[™HH™XÝ\œÛÜÉËˆ	ÙÙ\Ý[Ë™š[˜[˜ÙKœÝ[[X\žU]IÎˆ	Ô™\Ý[[Èš[˜[˜ÙZ\›ÉËˆ	ÙÙ\Ý[Ë™š[˜[˜ÙK›Y]šXË™]™[ÉÎˆ	Ô°ìÞ[[ÜÈ]™[ÜÉËˆ	ÙÙ\Ý[Ë™š[˜[˜ÙK›Y]šXËœ™XÙZ]˜X›Q]™[ÉÎˆ	ÐH™XÙX™\‰Ëˆ	ÙÙ\Ý[Ë™š[˜[˜ÙK›Y]šXËœ^XX›Q]™[ÉÎˆ	ÐHYØ\‰Ëˆ	ÙÙ\Ý[Ë™š[˜[˜ÙK›ØY\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆHYÙ[™Hš[˜[˜ÙZ\˜K‰Ëˆ	ÙÙ\Ý[Ë™š[˜[˜ÙK™[\U]IÎˆ	ÐYÙ[™HÙ[H[°éØ[Y[ÜÈ°ìÞ[[ÜÉËˆ	ÙÙ\Ý[Ë™š[˜[˜ÙK™[\SY\ÜØYÙIÎ‚ˆ	ÐXœ˜HHYÙ[™Hš[˜[˜ÙZ\˜H\˜HÜšX\ˆ™]š\ðíY\ÈHXÛÛ\[š\ˆ™[˜Ú[Y[ÜË‰Ëˆ	ÙÙ\Ý[Ë™š[˜[˜ÙK›Ü[”ØÚY[IÎˆ	ÐXœš\ˆYÙ[™IËˆ	ÙÙ\Ý[Ë™š[˜[˜ÙK˜][[Û•]IÎˆ	ÐYÙ[™HÛÛH™[˜Ú[Y[ÜÈ°ìÞ[[ÜÉËˆ	ÙÙ\Ý[Ë™š[˜[˜ÙK˜][[Û“Y\ÜØYÙIÎ‚ˆ	ÞØÛÝ[H]™[ÊÊH™[˜ÚYÊÊHÝH™[˜Ù[™ÈÚ™H˜HYÙ[™K‰Ëˆ	ÙÙ\Ý[Ë™š[˜[˜ÙK˜›ØÚÙY™\ÛÝ\˜Ù\Õ]IÎˆ	Ô™XÝ\œÛÜÈš[˜[˜ÙZ\›ÜÈ[H]›ÛpéðèÛÉËˆ	ÙÙ\Ý[Ë™š[˜[˜ÙK˜›ØÚÙY™\ÛÝ\˜Ù\ÓY\ÜØYÙIÎ‚ˆ	ÐÛÛ\ÈH™XÙX™\‹ÛÛ\ÈHYØ\ˆH›Ü›X\ÈH™XÙXš[Y[ÈÛÛ[X[H›Ü]YXY\È›È[Øš[K‰Ë‚ˆËÈ][™[Y[È[Øš[Bˆ	Ø][™[Y[Ë›[Øš[K]IÎˆ	Ð][™[Y[ÉËˆ	Ø][™[Y[Ë›[Øš[Kš\›Õ]IÎˆ	ÓÈ]YH›Øðêˆ\ÙZ˜H˜^™\ÉËˆ	Ø][™[Y[Ë›[Øš[Kš\›ÔÝX]IÎ‚ˆ	Õ™[™KÙ\špéÛÈÝH™XÙXš[Y[È[HÝXÛÜÈ\ÜÛÜÉËˆ	Ø][™[Y[Ë›[Øš[Kš[›Õ]IÎˆ	Ð][™[Y[È[ÈÛY[IËˆ	Ø][™[Y[Ë›[Øš[Kš[›Ó[™TØ[\ÉÎˆ	Ý™[™\‹™XÙX™\‹ÛÛœÝ[\‰Ëˆ	Ø][™[Y[Ë›[Øš[Kš[›Ó[™T™]\›œÉÎˆ	Ù]›ÛpéðíY\ÈH›Ù]ÜÉËˆ	Ø][™[Y[Ë›[Øš[Kš[›Ó[™TÙ\šXÙ\ÉÎˆ	ÜÙ\špéÛÜËÜ°éØ[Y[ÜÈ]ÉËˆ	Ø][™[Y[Ë›[Øš[K˜ÚÛÜÙSÜ\˜][Û‰Îˆ	Ñ\ØÛÛHHÜ\˜péðèÛÈ\˜H[šXÚX\‹‰Ëˆ	Ø][™[Y[Ë›[Øš[KœØ[\ÓY[U]IÎˆ	Õ™[™\ÉËˆ	Ø][™[Y[Ë›[Øš[K›™]ÔØ[U]IÎˆ	Õ™[™\ÉËˆ	Ø][™[Y[Ë›[Øš[K›™]ÔØ[TÝX]IÎˆ	ÓÜ0éðíY\ÉËˆ	Ø][™[Y[Ë›[Øš[K˜ÛÛœÝ[Ø[\Õ]IÎˆ	ÐÛÛœÝ[\ˆ™[™\ÉËˆ	Ø][™[Y[Ë›[Øš[K˜ÛÛœÝ[Ø[\ÔÝX]IÎˆ	ÐÛÛœÝ[\ˆ\Ý0ìÜšXÛÈH™[™\ÉËˆ	Ø][™[Y[Ë›[Øš[K›™]ÔÙ\šXÙU]IÎˆ	ÔÙ\špéÛÜÉËˆ	Ø][™[Y[Ë›[Øš[K›™]ÔÙ\šXÙTÝX]IÎˆ	ÐÜšX\ˆÝHXÛÛ\[š\‰Ëˆ	Ø][™[Y[Ë›[Øš[KœÙ\šXÙ\ÓY[U]IÎˆ	ÔÙ\špéÛÜÉËˆ	Ø][™[Y[Ë›[Øš[K˜Ü™X]TÙ\šXÙU]IÎˆ	Ó›Ý›ÈÙ\špéÛÉËˆ	Ø][™[Y[Ë›[Øš[K˜Ü™X]TÙ\šXÙTÝX]IÎ‚ˆ	ÐXœš\ˆ›Ý›È][™[Y[È0êXÛšXÛÉËˆ	Ø][™[Y[Ë›[Øš[K˜ÛÛœÝ[Ù\šXÙ\Ò[”›ÙÜ™\ÜÕ]IÎ‚ˆ	ÐÛÛœÝ[\ˆÙ\špéÛÜÈ[H[™[Y[ÉËˆ	Ø][™[Y[Ë›[Øš[K˜ÛÛœÝ[Ù\šXÙ\Ò[”›ÙÜ™\ÜÔÝX]IÎ‚ˆ	Õ™\ˆ][™[Y[ÜÈ0êXÛšXÛÜÈ]]›ÜÉËˆ	Ø][™[Y[Ë›[Øš[KØZ][™Ð\›Ý˜[YÙ]Õ]IÎ‚ˆ	ÓÜ°éØ[Y[ÜÈYÝX\™[™È\›Ý˜péðèÛÉËˆ	Ø][™[Y[Ë›[Øš[KØZ][™Ð\›Ý˜[YÙ]ÔÝX]IÎ‚ˆ	ÐÛÛœÝ[HÙ\špéÛÜÈ]YHZ[™H™XÚ\Ø[HH\›Ý˜péðèÛÈÈÛY[IËˆ	Ø][™[Y[Ë›[Øš[Kœ™XÙZ]™U]IÎˆ	Ô™XÙX™\‰Ëˆ	Ø][™[Y[Ë›[Øš[Kœ™XÙZ]™TÝX]IÎˆ	Õ™[™\È[HX™\ÉËˆ	Ø][™[Y[Ë›[Øš[K™›ÛÝÕÙ^IÎˆ	ÐXÛÛ\[šHÚ™IËˆ	Ø][™[Y[Ë›[Øš[KœØ[\ÕÔ™XÙZ]™U]IÎˆ	Õ™[™\ÈH™XÙX™\‰Ëˆ	Ø][™[Y[Ë›[Øš[KœØ[\ÕÔ™XÙZ]™TÝX]IÎˆ	Õ™[™\È°èÛÈ\]ZYY\ÉËˆ	Ø][™[Y[Ë›[Øš[KœÙ\šXÙ\Ò[”›ÙÜ™\ÜÕ]IÎˆ	ÔÙ\špéÛÜÈ[H[™[Y[ÉËˆ	Ø][™[Y[Ë›[Øš[KœÙ\šXÙ\Ò[”›ÙÜ™\ÜÔÝX]IÎ‚ˆ	Ð][™[Y[ÜÈ0êXÛšXÛÜÈ]]›ÜÉËˆ	Ø][™[Y[Ë›[Øš[K›[Ü™SÜ[ÛœÉÎˆ	ÓXZ\ÈÜ0éðíY\ÉËˆ	Ø][™[Y[Ë›[Øš[K˜Ø\ÚÜ\˜][ÛœÕ]IÎˆ	ÐØZ^IËˆ	Ø][™[Y[Ë›[Øš[K˜Ø\ÚÜ\˜][ÛœÔÝX]IÎˆ	ÐXœš\ˆH[Ýš[Y[\‰Ëˆ	Ø][™[Y[Ë›[Øš[K˜ÛÝ[\“ØY\œ›Ü‰Îˆ	Ó°èÛÈ›ÚHÜÜðë]™[]X[^˜\ˆYÛÜ˜IËˆ	Ø][™[Y[Ë›[Øš[KœÙ\šXÙ\ÕÔ™XÙZ]™U]IÎˆ	ÔÙ\špéÛÜÈH™XÙX™\‰Ëˆ	Ø][™[Y[Ë›[Øš[KœÙ\šXÙ\ÕÔ™XÙZ]™TÝX]IÎ‚ˆ	Ð][™[Y[ÜÈ0êXÛšXÛÜÈÛÛHš[˜[˜ÙZ\›ÈX™\ÉËˆ	Ø][™[Y[Ë›[Øš[KXÚšXØ[Ù\šXÙ\Ô[™[™Ô^[Y[]IÎ‚ˆ	Ð][™[Y[ÜÈ0êXÛšXÛÜÈ[™[\ÈHYØ[Y[ÉËˆ	Ø][™[Y[Ë›[Øš[Kœ[™[™Ô^[Y[ÓØY[™Õ]IÎˆ	ÐØ\œ™YØ[™È][™[Y[ÜÉËˆ	Ø][™[Y[Ë›[Øš[Kœ[™[™Ô^[Y[ÓØY[™ÔÝX]IÎ‚ˆ	Ð\ØØ[™ÈÙ\špéÛÜÈÛÛHš[˜[˜ÙZ\›È[HX™\Ë‰Ëˆ	Ø][™[Y[Ë›[Øš[Kœ[™[™Ô^[Y[XY\•]IÎˆ	Ñš[˜[˜ÙZ\›ÈX™\ÉËˆ	Ø][™[Y[Ë›[Øš[Kœ[™[™Ô^[Y[Ý[Ü[‰Îˆ	ÕÝ[[HX™\ÉËˆ	Ø][™[Y[Ë›[Øš[Kœ[™[™Ô^[Y[ÙXÝ[Û‰Îˆ	Ð][™[Y[ÜÈÛÛHØ[ÉËˆ	Ø][™[Y[Ë›[Øš[Kœ[™[™Ô^[Y[\œ›Ü•]IÎˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\‰Ëˆ	Ø][™[Y[Ë›[Øš[Kœ[™[™Ô^[Y[\œ›Ü“Y\ÜØYÙIÎ‚ˆ	Õ[H]X[^˜\ˆÜÈ][™[Y[ÜÈ0êXÛšXÛÜÈ[H[œÝ[\Ë‰Ëˆ	Ø][™[Y[Ë›[Øš[Kœ[™[™Ô^[Y[[\U]IÎˆ	Ó™[š[HÙ\špéÛÈH™XÙX™\‰Ëˆ	Ø][™[Y[Ë›[Øš[Kœ[™[™Ô^[Y[[\SY\ÜØYÙIÎ‚ˆ	ÓÜÈ][™[Y[ÜÈ0êXÛšXÛÜÈ\Ý0èÛÈÙ[Hš[˜[˜ÙZ\›È[HX™\Ë‰Ëˆ	Ø][™[Y[Ë›[Øš[K›Û™T[™[™Ô^[Y[Ù\šXÙIÎ‚ˆ	ÌH][™[Y[ÈÛÛHš[˜[˜ÙZ\›ÈX™\ÉËˆ	Ø][™[Y[Ë›[Øš[Kœ[™[™Ô^[Y[Ù\šXÙ\ÉÎ‚ˆ	Ø][™[Y[ÜÈÛÛHš[˜[˜ÙZ\›ÈX™\ÉËˆ	Ø][™[Y[Ë›[Øš[KœÙ\šXÙS[X™\‰Îˆ	Ð][™[Y[ÉËˆ	Ø][™[Y[Ë›[Øš[K›Ü[•˜[YIÎˆ	Õ˜[Üˆ[HX™\ÉËˆ	Ø][™[Y[Ë›[Øš[KÝ[˜[YIÎˆ	Õ˜[ÜˆÝ[	Ëˆ	Ø][™[Y[Ë›[Øš[K™YQ]IÎˆ	Õ™[˜ÙH[IËˆ	Ø][™[Y[Ë›[Øš[K››ÑYQ]IÎˆ	ÔÙ[H™[˜Ú[Y[ÉËˆ	ÛÜ\˜XØ[Ë›[Øš[Kœ™]\›•]IÎˆ	Ñ]›ÛpéðíY\ÈH›ØØ\ÉËˆ	ÛÜ\˜XØ[Ë›[Øš[Kœ™]\›”ÝX]IÎˆ	Ô™YÚ\Ý˜\ˆ]›ÛpéðèÛÉËˆ	ÛÜ\˜XØ[Ë›[Øš[Kœ™]\›•[˜]˜Z[X›IÎˆ	Ñ[Hœ™]™IË‚ˆËÈ]›ÛpéðíY\È[Øš[Bˆ	Ù]›ÛXØ[Ë›[Øš[K]IÎˆ	Ñ]›ÛpéðíY\ÉËˆ	Ù]›ÛXØ[Ë›[Øš[Kš[›Õ]IÎˆ	ÓØØ[^™HH™[™IËˆ	Ù]›ÛXØ[Ë›[Øš[Kš[›ÔÝX]IÎ‚ˆ	Õ\ÙHÈðìÙYÛÈÈÛÛ\›Ý˜[H\˜H[šXÚX\ˆ[XH]›ÛpéðèÛÈÝH›ØØK‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[KœØ[PÛÙSX™[	Îˆ	ÐðìÙYÛÈÝHQH™[™IËˆ	Ù]›ÛXØ[Ë›[Øš[KœØ[PÛÙR[	Îˆ	Ñ^Žˆ‘S‹LL	Ëˆ	Ù]›ÛXØ[Ë›[Øš[KœÙX\˜ÚØ[IÎˆ	Ð\ØØ\ˆ™[™IËˆ	Ù]›ÛXØ[Ë›[Øš[KœÙX\˜Ú[™ÉÎˆ	Ð\ØØ[™Ë‹‹‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K›Ü\˜][ÛÛÛ\]Y	Îˆ	ÓÜ\˜péðèÛÈÛÛ˜ÛpëYIËˆ	Ù]›ÛXØ[Ë›[Øš[KœØ[Q›Ý[™	Îˆ	Õ™[™H[˜ÛÛ˜YIËˆ	Ù]›ÛXØ[Ë›[Øš[K˜Ú[™ÙTØ[IÎˆ	Õ›ØØ\ˆ™[™IËˆ	Ù]›ÛXØ[Ë›[Øš[K[šY[YšYYÝ\ÝÛY\‰Îˆ	ÐÛY[H°èÛÈY[YšXØYÉËˆ	Ù]›ÛXØ[Ë›[Øš[Kœ›ÙXÝÕ˜[YIÎˆ	Õ˜[ÜˆÜÈ›Ù]ÜÉËˆ	Ù]›ÛXØ[Ë›[Øš[Kœ™]\›˜[[˜ÙIÎˆ	ÔØ[È]›Û°ë]™[	Ëˆ	Ù]›ÛXØ[Ë›[Øš[Kš\Ñ[YÚX›R][\ÉÎˆ	ÔÜÜÝZH][œÈ\ÜÛ°ë]™Z\ÉËˆ	Ù]›ÛXØ[Ë›[Øš[K››Ñ[YÚX›P˜[[˜ÙIÎˆ	ÔÙ[H][œÈ\ÜÛ°ë]™Z\ÉËˆ	Ù]›ÛXØ[Ë›[Øš[K›Ü\˜][Û•\U]IÎˆ	ÓÈ]YHÙ\°èH™Z]ÏÉËˆ	Ù]›ÛXØ[Ë›[Øš[K›Ü\˜][Û•\TÝX]IÎ‚ˆ	Ñ\ØÛÛH[™H]›Û™\ˆÝH›ØØ\ˆ›Ù]ÜË‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[Kœ™]\›“Û›IÎˆ	ÔÛÛY[H]›ÛpéðèÛÉËˆ	Ù]›ÛXØ[Ë›[Øš[K™^Ú[™ÙIÎˆ	Õ›ØØIËˆ	Ù]›ÛXØ[Ë›[Øš[Kš][\Õ]IÎˆ	Ô›Ù]ÜÈ]YH™]Ü›˜[IËˆ	Ù]›ÛXØ[Ë›[Øš[Kš][\ÔÝX]IÎ‚ˆ	ÔÙ[XÚ[Û™HÜÈ][œÈH[™›Ü›YH]X[YYKÛÛ™péðèÛÈH[Ý]›Ë‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K››Ò][\ÉÎ‚ˆ	Ñ\ÝH™[™H°èÛÈÜÜÝZH][œÈ\ÜÛ°ë]™Z\È\˜H]›ÛpéðèÛË‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[KœÛÛ˜[YIÎˆ	Õ™[™YÎˆÝ˜[Y_IËˆ	Ù]›ÛXØ[Ë›[Øš[K˜]˜Z[X›U˜[YIÎˆ	Ñ\ÜÛ°ë]™[ˆÝ˜[Y_IËˆ	Ù]›ÛXØ[Ë›[Øš[Kœ]X[]IÎˆ	Ô]X[YYIËˆ	Ù]›ÛXØ[Ë›[Øš[K›X^[][T]X[]IÎˆ	Ópè^[[ÎˆÝ˜[Y_IËˆ	Ù]›ÛXØ[Ë›[Øš[K˜ÛÛ™][Û‰Îˆ	ÐÛÛ™péðèÛÈÈ›Ù]ÉËˆ	Ù]›ÛXØ[Ë›[Øš[Kœ™X\ÛÛ‰Îˆ	Ó[Ý]›ÈH]›ÛpéðèÛÉËˆ	Ù]›ÛXØ[Ë›[Øš[KœÝØÚÔ™]\›‰Îˆ	Ô™]Ü›˜\ˆ[È\ÝÜ]YIËˆ	Ù]›ÛXØ[Ë›[Øš[KœÝØÚÔ™]\›“Û‰Î‚ˆ	ÓÈØ[È\ÜÛ°ë]™[È›Ù]ÈÙ\°èH™XÛÛ\ÜÝË‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[KœÝØÚÔ™]\›“Ù™‰Î‚ˆ	ÐH]›ÛpéðèÛÈÙ\°èH™YÚ\Ý˜YHÙ[H™XÛÛ\ÜˆÈ\ÝÜ]YK‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K™^Ú[™ÙR][\Õ]IÎˆ	Ô›Ù]ÜÈH›ØØIËˆ	Ù]›ÛXØ[Ë›[Øš[K™^Ú[™ÙR][\ÔÝX]IÎ‚ˆ	ÓÜÈ›Ý›ÜÈ›Ù]ÜÈØZ\°èÛÈÈ\ÝÜ]YH[È™péÛÈ]X[‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K˜Y›ÙXÝ	Îˆ	ÐYXÚ[Û˜\ˆ›Ù]ÉËˆ	Ù]›ÛXØ[Ë›[Øš[K™^Ú[™ÙQ[\IÎ‚ˆ	ÐYXÚ[Û™HÈ›Ù]È]YHÈÛY[H™XÙX™\°èK‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[KœÙ[XÝ^Ú[™ÙT›ÙXÝ	Îˆ	Ñ\ØÛÛ\ˆ›Ù]ÈH›ØØIËˆ	Ù]›ÛXØ[Ë›[Øš[KœÙX\˜Ú›ÙXÝ	Îˆ	Ð\ØØ\ˆ›Ù]ÉËˆ	Ù]›ÛXØ[Ë›[Øš[K››Ô›ÙXÝÕ]IÎˆ	Ó™[š[H›Ù]È[˜ÛÛ˜YÉËˆ	Ù]›ÛXØ[Ë›[Øš[K››Ô›ÙXÝÓY\ÜØYÙIÎ‚ˆ	Ô™]š\ÙHH\ØØHÝHÈØY\Ý›ÈH›Ù]ÜÈ]]›ÜË‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[Kœ›ÙXÝšXÙIÎˆ	Ô™péÛÈ]X[ˆÝ˜[Y_IËˆ	Ù]›ÛXØ[Ë›[Øš[Kœ\•[š]	Îˆ	ÞÝ˜[Y_HÜˆ[šYYIËˆ	Ù]›ÛXØ[Ë›[Øš[Kœ™[[Ý™IÎˆ	Ô™[[Ý™\ˆ›Ù]ÉËˆ	Ù]›ÛXØ[Ë›[Øš[K™š[˜[˜ÚX[]IÎˆ	ÐXÙ\Èš[˜[˜ÙZ\›ÉËˆ	Ù]›ÛXØ[Ë›[Øš[Kœ™]\›™Y›ÙXÝÉÎˆ	Ô›Ù]ÜÈ]›ÛšYÜÉËˆ	Ù]›ÛXØ[Ë›[Øš[K™^Ú[™ÙT›ÙXÝÉÎˆ	Ô›Ù]ÜÈH›ØØIËˆ	Ù]›ÛXØ[Ë›[Øš[K™Y™™\™[˜ÙT™XÙZ]™IÎˆ	ÑY™\™[°éØHH™XÙX™\‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[Kœ™Y[™˜[YIÎˆ	Õ˜[ÜˆH™Y[X›ÛØ\‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K˜Ý\ÝÛY\”^\ÉÎˆ	ÓÈÛY[HYØHHY™\™[°éØK‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K˜ÛÛ\[žT™Y[™ÉÎˆ	ÐH[\™\ØH™Y[X›ÛØHÈÛY[K‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K››Ñš[˜[˜ÚX[[Ý™[Y[	Îˆ	Ó°èÛÈ]™\°èH[Ýš[Y[Èš[˜[˜ÙZ\›Ë‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[Kœ^[Y[Y]Ù	Îˆ	Ñ›Ü›XHHYØ[Y[ÈÝH™Y[X›ÛÛÉËˆ	Ù]›ÛXØ[Ë›[Øš[Kœ^[Y[[\‰Îˆ	Ñ^YÙHÙ\ÜðèÛÈHØZ^HX™\K‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[KœÙ[XÝ^[Y[	Îˆ	ÔÙ[XÚ[Û˜\ˆ›Ü›XIËˆ	Ù]›ÛXØ[Ë›[Øš[KœÙX\˜Ú^[Y[	Îˆ	Ð\ØØ\ˆ›Ü›XIËˆ	Ù]›ÛXØ[Ë›[Øš[K››Ô^[Y[Y]ÙÉÎˆ	Ó™[š[XH›Ü›XH\ÜÛ°ë]™[	Ëˆ	Ù]›ÛXØ[Ë›[Øš[K››Ô^[Y[Y]ÙÓY\ÜØYÙIÎ‚ˆ	ÐÛÛ™šYÝ\™H[XH›Ü›XHH™XÙXš[Y[È[YYX]È[\ÈHÛÛ˜ÛZ\‹‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[Kœ™]šY]Õ]IÎˆ	Ô™]š\Ø\ˆHÛÛ˜ÛZ\‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[Kœ™]šY]ÔÝX]IÎ‚ˆ	ÐÛÛ™š\›YHÜÈYÜÈ[\ÈH[Ýš[Y[\ˆ\ÝÜ]YHHØZ^K‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K››Ý\ÉÎˆ	ÓØœÙ\˜péðíY\È[\›˜\È
+ÜÚ[Û˜[
+IËˆ	Ù]›ÛXØ[Ë›[Øš[Kœ›ØÙ\ÜÚ[™ÉÎˆ	Ô›ØÙ\ÜØ[™Ë‹‹‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K˜ÛÛ\]Q^Ú[™ÙIÎˆ	ÐÛÛ˜ÛZ\ˆ›ØØIËˆ	Ù]›ÛXØ[Ë›[Øš[K˜ÛÛ\]T™]\›‰Îˆ	ÐÛÛ˜ÛZ\ˆ]›ÛpéðèÛÉËˆ	Ù]›ÛXØ[Ë›[Øš[K˜ÛÛ™š\›X][Û’[\‰Î‚ˆ	ÐHÛÛ™š\›XpéðèÛÈÙH[Ýš[Y[\ˆ\ÝÜ]YHH™YÚ\Ý˜\ˆÈXÙ\È›ÈØZ^K‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[Kœ™XÙ[]IÎˆ	ÓÜ\˜péðíY\È™XÙ[\ÉËˆ	Ù]›ÛXØ[Ë›[Øš[Kœ™XÙ[ÝX]IÎ‚ˆ	ðæ›[X\È]›ÛpéðíY\ÈH›ØØ\È\ÝH[\™\ØK‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K›ØY[™Ô™XÙ[	Îˆ	ÐØ\œ™YØ[™ÈÜ\˜péðíY\È™XÙ[\ÉËˆ	Ù]›ÛXØ[Ë›[Øš[K™[\T™XÙ[	Î‚ˆ	Ó™[š[XH]›ÛpéðèÛÈÝH›ØØHÛÛ˜ÛpëYH™XÙ[[Y[K‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[KœÝXØÙ\ÜÓY\ÜØYÙIÎˆ	ÓÜ\˜péðèÛÈØÛÙ_HÛÛ˜ÛpëYHÛÛHÝXÙ\ÜÛË‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K[™^XÝY\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[ÛÛ˜ÛZ\ˆHÜ\˜péðèÛËˆ[H›Ý˜[Y[K‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K˜[Y][Û‹œØ[T™\]Z\™Y	Î‚ˆ	Ò[™›Ü›YHÈðìÙYÛÈÝHY[YšXØYÜˆH™[™K‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K˜[Y][Û‹š[˜[Y]X[]IÎ‚ˆ	Ò[™›Ü›YH[XH]X[YYH°è[YH\˜HÜ›ÙXÝK‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K˜[Y][Û‹œ]X[]Q^ÙYYY	Î‚ˆ	ÐH]X[YYHHÜ›ÙXÝHÝ\\˜HÈØ[È]›Û°ë]™[‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K˜[Y][Û‹œ™X\ÛÛ”™\]Z\™Y	Î‚ˆ	Ò[™›Ü›YHÈ[Ý]›ÈH]›ÛpéðèÛÈHÜ›ÙXÝK‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K˜[Y][Û‹œÙ[XÝ™]\›’][IÎ‚ˆ	ÔÙ[XÚ[Û™H[ÈY[›ÜÈ[H›Ù]È\˜H]›Û™\‹‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K˜[Y][Û‹œÙ[XÝ^Ú[™ÙR][IÎ‚ˆ	ÐYXÚ[Û™H[ÈY[›ÜÈ[H›Ù]È\˜HH›ØØK‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K˜[Y][Û‹œÙ[XÝ^[Y[	Î‚ˆ	ÔÙ[XÚ[Û™HH›Ü›XH\ØYH›ÈXÙ\ÈHY™\™[°éØK‰Ëˆ	Ù]›ÛXØ[Ë›[Øš[K˜ÛÛ™][Û‹œÙX[Y	Îˆ	Ó›Ý›ÈÈXÜ˜YÉËˆ	Ù]›ÛXØ[Ë›[Øš[K˜ÛÛ™][Û‹›Ü[™Y	Îˆ	ÐX™\ÉËˆ	Ù]›ÛXØ[Ë›[Øš[K˜ÛÛ™][Û‹\ÙY	Îˆ	Õ\ØYÉËˆ	Ù]›ÛXØ[Ë›[Øš[K˜ÛÛ™][Û‹™Y™XÝ]™IÎˆ	ÐÛÛHY™Z]ÉËˆ	Ù]›ÛXØ[Ë›[Øš[K˜ÛÛ™][Û‹™[XYÙY	Îˆ	Ð]˜\šXYÉËˆ	Ù]›ÛXØ[Ë›[Øš[K˜ÛÛ™][Û‹›Ý\‰Îˆ	ÓÝ]˜HÛÛ™péðèÛÉË‚ˆËÈ™[™\È°èÛÈ\]ZYY\È[Øš[Bˆ	Ý™[™\Ó˜[Ó\]ZYY\Ëœ™XÙXš[Y[ÜÉÎˆ	Ô™XÙXš[Y[ÜÉËˆ	Ý™[™\Ó˜[Ó\]ZYY\ËœÙ[T™XÙXš[Y[ÜÉÎˆ	Ó™[š[H™XÙXš[Y[È[°éØYË‰Ëˆ	Ý™[™\Ó˜[Ó\]ZYY\Ëœ™Y™\™[˜ÚXIÎˆ	Ô™Y™\°ê›˜ÚXIËˆ	Ý™[™\Ó˜[Ó\]ZYY\Ëœ™XÙXš[Y[ÉÎˆ	Ô™XÙXš[Y[ÉËˆ	Ý™[™\Ó˜[Ó\]ZYY\Ëœ™XÙXš[Y[ÕÝ[	Îˆ	ÕÝ[	Ëˆ	Ý™[™\Ó˜[Ó\]ZYY\Ëœ™XÙXš[Y[Ô\˜ÚX[	Îˆ	Ô\˜ÚX[	Ë‚ˆËÈÙ\Ý0èÛÈ8 %˜YÙ\ÈHØX™péØ[ÈYZ[‚ˆ	ÙÙ\Ý[ËœÙ][™ÜË˜˜YÙK™^\š[Y[[	Îˆ	Ñ^\š[Y[[	Ëˆ	ÙÙ\Ý[ËœÙ][™ÜË˜˜YÙK˜ÛÛZ[™ÔÛÛÛ‰Îˆ	Ñ[Hœ™]™IËˆ	ÙÙ\Ý[ËœÙ][™ÜË˜YZ[’XY\‹]IÎˆ	ÐÛÛ™šYÝ\˜péðíY\ÈH[\™\ØIËˆ	ÙÙ\Ý[ËœÙ][™ÜË˜YZ[’XY\‹œÝX]IÎ‚ˆ	ÓÜ™Ø[š^™H[\™\ØK\]Z\KÜ\˜péðèÛÈHÛÛ][šXØpéðèÛË‰Ëˆ	ÙÙ\Ý[Ë™™X]\™R[”›ÙÜ™\ÜÉÎˆ	Ñ›^È[Øš[H[H]›ÛpéðèÛË‰Ëˆ	Ü›Ù]ËÙX“\ÝœÙ[XÝ[Û‹]SX[žIÎˆ	ÔÙ[XÚ[Û˜\ˆ][œÉËˆ	Ü›Ù]ËÙX“\ÝœÙ[XÝ[Û‹]SÛ™IÎˆ	ÔÙ[XÚ[Û˜\ˆ][IËˆ	Ü›Ù]ËÙX“\ÝœÙ[XÝ[Û‹œÝX]SX[žIÎ‚ˆ	ÓX\œ]YH›Ù]ÜÈHÙ\špéÛÜÈHYXÚ[Û™HYÈ˜H™[™HH[XH™^‹‰Ëˆ	Ü›Ù]ËÙX“\ÝœÙ[XÝ[Û‹œÝX]SÛ™IÎ‚ˆ	Ð\ØØH°è\YH\˜H[˜ÛZ\ˆ›Ù]ÈÝHÙ\špéÛÈ˜H™[™K‰Ëˆ	Ü›Ù]ËÙX“\Ý™Y]]IÎˆ	ÑY]\ˆ›Ù]ÜÉËˆ	Ü›Ù]ËÙX“\Ý™Y]œÝX]IÎ‚ˆ	ÑÙ\™[˜ÚYHÙ]HØ]0è[ÙÛÈH›Ù]ÜË\ÝÜ]YK™péÛÜÈH[XYÙ[œË‰Ëˆ	Ü›Ù]ËÙX“\Ý™Y˜][œÝX]IÎ‚ˆ	ÐÛÛœÝ[H°è\YHÈØ]0è[ÙÛÈÛÛHpéðíY\ÈH˜[ðèÛË‰Ëˆ	Ü›Ù]ËÙX“\Ý›™]Ò][IÎˆ	Ó›Ý›È][IËˆ	Ü›Ù]ËÙX“\Ýœš[‰Îˆ	Ò[\š[Z\ˆ‰Ëˆ	Ü›Ù]ËÙX“\ÝœX›XÐØ][ÙÓ[šÉÎˆ	Ó[šÈÈØ]0è[ÙÛÉËˆ	Ü›Ù]ËÙX“\ÝœX›XÐØ][ÙÔ™\\š[™ÉÎˆ	Ô™\\˜[™Ë‹‹‰Ëˆ	Ü›Ù]ËÙX“\ÝœX›XÐØ][ÙÐÛÜYY	Îˆ	Ó[šÈ0î˜›XÛÈÈØ]0è[ÙÛÈÛÜXYË‰Ëˆ	Ü›Ù]ËÙX“\ÝœX›XÐØ][ÙÑ\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[™\\˜\ˆÈ[šÈÈØ]0è[ÙÛË‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË]IÎˆ	Ô™\Ù\˜\ÈÈØ]0è[ÙÛÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœËœÝX]IÎ‚ˆ	ÐXÛÛ\[šHÛÛXÚ]péðíY\È™XÙXšY\È[ÈØ]0è[ÙÛÈš\X[‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË›ØY[™Õ]IÎˆ	ÐØ\œ™YØ[™È™\Ù\˜\ÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË›ØY[™ÔÝX]IÎ‚ˆ	ÔÚ[˜Ü›Ûš^˜[™È\ÈÛÛXÚ]péðíY\È\ÝHÛÛpê\˜Ú[Ë‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™]Z[ØY[™ÉÎˆ	ÐØ\œ™YØ[™È][\ÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™]Z[ØY[™ÔÝX]IÎ‚ˆ	Ð\ØØ[™ÈÜÈ›Ù]ÜÈHYÜÈÈÛY[K‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™]Z[]IÎˆ	Ñ][\ÈH™\Ù\˜IËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™[\IÎˆ	Ó™[š[XH™\Ù\˜H[˜ÛÛ˜YK‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™\œ›Ü‰Îˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆ\È™\Ù\˜\Ë‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœËœÝ]\ÉÎˆ	ÔÝ]\ÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË˜\IÎˆ	Ð\XØ\‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË˜ÛX\‰Îˆ	Ó[\\ˆš[›ÜÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œËœÝ]\ËœÙ[XÝYÛÝ[	Îˆ	ÞØÛÝ[HÙ[XÚ[Û˜YÜÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œËœ\š[Ù	Îˆ	Ô\°ë[ÙÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œËœÝ\	Îˆ	Ò[°ëXÚ[ÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË™[™	Îˆ	Ñš[IËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË™]IÎˆ	Ñ]IËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË™]K˜[	Îˆ	ÕÙ\È\È]\ÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË™]KÙ^IÎˆ	ÒÚ™IËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË™]KžY\Ý\™^IÎˆ	ÓÛ[IËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË™]K›\ÝÑ^\ÉÎˆ	Õ[[[ÜÈÈX\ÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË™]K›™^Ñ^\ÉÎˆ	Ô›Þ[[ÜÈÈX\ÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË™]K\Ó[Û	Îˆ	Ñ\ÝHpêœÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË™]K›™^[Û	Îˆ	Ô°ìÞ[[ÈpêœÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË™]K˜Ý\ÝÛT˜[™ÙIÎˆ	Ò[\˜[È\œÛÛ˜[^˜YÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË™]KœXÚÉÎˆ	Ñ\ØÛÛ\ˆ]IËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË™]KœXÚÔ˜[™ÙIÎˆ	ÑHXHH[XIËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË™]Kš[^	Îˆ	ÔÙ[XÚ[Û˜\ˆ]IËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË™]KœÝ\[^	Îˆ	ÔÙ[XÚ[Û˜\ˆ]H[šXÚX[	Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË™]K™[™[^	Îˆ	ÔÙ[XÚ[Û˜\ˆ]Hš[˜[	Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË™š[\œË™]Kœ˜[™ÙR[^	Îˆ	ÔÙ[XÚ[Û˜\ˆ\š[ÙÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœËœÝ]\Ëœ™XÙZ]™Y	Îˆ	Ô™XÙXšYIËˆ	ØØ][ÙÔ™\Ù\˜][ÛœËœÝ]\Ë˜[˜[\Ú\ÉÎˆ	Ñ[H[°è[\ÙIËˆ	ØØ][ÙÔ™\Ù\˜][ÛœËœÝ]\Ë˜ÛÛ™š\›YY	Îˆ	ÐÛÛ™š\›XYIËˆ	ØØ][ÙÔ™\Ù\˜][ÛœËœÝ]\Ë˜Ø[˜Ù[Y	Îˆ	ÐØ[˜Ù[YIËˆ	ØØ][ÙÔ™\Ù\˜][ÛœËœÝ]\Ë˜ÛÛ™\Y	Îˆ	ÐÛÛ™\YH[H™[™IËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË˜ÛÛ™\]IÎˆ	ÐÛÛ™\\ˆ[H™[™IËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË˜ÛÛ™\™\ØÜš\[Û‰Î‚ˆ	Õ˜[YHÈ\ÝÜ]YHHÜšXH[XH™[™HH™XÙX™\ˆÛÛH\Ý\È›Ù]ÜË‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË˜ÛÛ™\˜XÝ[Û‰Îˆ	ÐÛÛ™\\ˆ[H™[™IËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË˜ÛÛ™\œ›ØÙ\ÜÚ[™ÉÎˆ	ÐÛÛ™\[™Ë‹‹‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË˜ÛÛ™\˜ÛÛ™š\›U]IÎˆ	ÐÛÛ™\\ˆ™\Ù\˜H[H™[™OÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË˜ÛÛ™\˜ÛÛ™š\›SY\ÜØYÙIÎ‚ˆ	ÓÈ\ÝÜ]YHÙ\°èH˜[YYÈHÜÈ][œÈÙ\°èÛÈ[šXYÜÈ\˜H[XH™[™HH™XÙX™\‹‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË˜ÛÛ™\œÝXØÙ\ÜÉÎ‚ˆ	Ô™\Ù\˜HÛÛ™\YH[H™[™HH™XÙX™\‹‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË˜ÛÛ™\˜ÛÛ™\Y]IÎˆ	Õ™[™HÜšXYIËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË˜ÛÛ™\œØ[RY	Îˆ	Õ™[™IËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË˜ÛÛ™\™\œ›Ü‹œÝØÚÉÎ‚ˆ	Ñ\ÝÜ]YH[œÝYšXÚY[H\˜HÛÛ™\\ˆ\ÝH™\Ù\˜K‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË˜ÛÛ™\™\œ›Ü‹˜ÛÛ™š\›YYÛ›IÎ‚ˆ	ÐÛÛ™š\›YHH™\Ù\˜H[\ÈHÛÛ™\0ê‹[H[H™[™K‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË˜ÛÛ™\™\œ›Ü‹œ›ØÙ\ÜÚ[™ÉÎ‚ˆ	Ñ\ÝH™\Ù\˜H°èH\Ý0èHÙ[™ÈÛÛ™\YKˆ]X[^™HH[K‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË˜ÛÛ™\™\œ›Ü‹œ^[Y[ÛÛ™šYÉÎ‚ˆ	ÐÛÛ™šYÝ\™H[H\ÈH™XÙXš[Y[È]\›È[\ÈHÛÛ™\œðèÛË‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË˜ÛÛ™\™\œ›Ü‹œ›ÙXÝ	Î‚ˆ	Õ[HÜÈ›Ù]ÜÈ™\Ù\˜YÜÈ°èÛÈ\Ý0èHXZ\È\ÜÛ°ë]™[‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË˜ÛÛ™\™\œ›Ü‹™Ù[™\šXÉÎ‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[ÛÛ™\\ˆH™\Ù\˜H[H™[™K‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœËš][\ÉÎˆ	Ú][œÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœËœ›ÙXÝÉÎˆ	Ô›Ù]ÜÈ™\Ù\˜YÜÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË››Ý\ÉÎˆ	ÓØœÙ\˜péðèÛÉËˆ	ØØ][ÙÔ™\Ù\˜][ÛœË››Ó›Ý\ÉÎˆ	Ó™[š[XHØœÙ\˜péðèÛÈ[™›Ü›XYK‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœËœ™]š[Ý\ÉÎˆ	Ô0èYÚ[˜H[\š[Ü‰Ëˆ	ØØ][ÙÔ™\Ù\˜][ÛœË›™^	Îˆ	Ô°ìÞ[XH0èYÚ[˜IËˆ	Ü›Ù]ËÙX“\Ý™Y]˜˜[›™\‰Î‚ˆ	Ó[ÙÈYpéðèÛÈ]]›È8 (ˆØÛÝ[H][œÈ[˜ÛÛ˜YÜÈ8 (ˆÛ\]YH[H[H›Ù]È\˜H[\˜\‹‰Ëˆ	Ü›Ù]ËÙX“\ÝœÙX\˜Ú[	Îˆ	Ð\ØØ\ˆÜˆ›ÛYKðìÙYÛÈÝHÒÕK‹‹‰Ëˆ	Ü›Ù]ËÙX“\Ýœ™Y™\™[˜ÙTØ]™Y	Î‚ˆ	Ô™Y™\°ê›˜ÚXHHš\ÝX[^˜péðèÛÈ]X[^˜YK‰Ëˆ	Ü›Ù]ËÙX“\ÝšY]Ë™\XØ[	Îˆ	Õ™\XØ[	Ëˆ	Ü›Ù]ËÙX“\ÝšY]ËšÜš^›Û[	Îˆ	ÒÜš^›Û[	Ëˆ	Ü›Ù]ËÙX“\ÝšY]Ë›\Ý	Îˆ	Ó\ÝIËˆ	Ü›Ù]ËÙX“\ÝšY]Ë™ÜšY	Îˆ	ÑÜ˜YIËˆ	Ü›Ù]ËÙX“\Ý™š[\‹˜Ø]YÛÜžIÎˆ	ÐØ]YÛÜšXIËˆ	Ü›Ù]ËÙX“\Ý™š[\‹˜Ø]YÛÜžP[	Îˆ	ÕÙ\ÈØ]YÛÜšX\ÉËˆ	Ü›Ù]ËÙX“\Ý™š[\‹™›YÜÉÎˆ	ÓX\˜ØYÜ™\ÉËˆ	Ü›Ù]ËÙX“\Ý™š[\‹™›YÜÐ[	Îˆ	ÕÙÜÈ][œÉËˆ	Ü›Ù]ËÙX“\Ý™š[\‹™›YÜÑ˜]›Üš]\ÉÎˆ	Ñ˜]›Üš]ÜÉËˆ	Ü›Ù]ËÙX“\Ý™š[\‹™›YÜÐØ][ÙÉÎˆ	Ó›ÈØ]0è[ÙÛÉËˆ	Ü›Ù]ËÙX“\Ý™š[\‹™›YÜÑ˜]›Üš]\ÐØ][ÙÉÎˆ	Ñ˜]›Üš]ÜÈHØ]0è[ÙÛÉËˆ	Ü›Ù]ËÙX“\Ý™š[\‹œÝ]\Ð[	Îˆ	ÕÙÜÉËˆ	Ü›Ù]ËÙX“\Ý™š[\‹œÝØÚÐ[	Îˆ	ÕÙÜÉËˆ	Ü›Ù]ËÙX“\Ý™š[\‹œÝØÚÐ]˜Z[X›IÎˆ	Ñ[H\ÝÜ]YIËˆ	Ü›Ù]ËÙX“\Ý™š[\‹œÝØÚÓÝÉÎˆ	Ñ\ÝÜ]YH˜Z^ÉËˆ	Ü›Ù]ËÙX“\Ý™š[\‹œÝØÚÓÝ]	Îˆ	ÔÙ[H\ÝÜ]YIËˆ	Ü›Ù]ËÙX“\Ý™š[\‹œÝØÚÓ™YØ]]™IÎˆ	Ñ\ÝÜ]YH™YØ]]›ÉËˆ	Ü›Ù]ËÙX“\ÝœÛÜ›X™[	Îˆ	ÓÜ™[˜péðèÛÉËˆ	Ü›Ù]ËÙX“\ÝœÛÜ›˜[YIÎˆ	ÓÜ™[˜\ˆÜˆ›ÛYIËˆ	Ü›Ù]ËÙX“\ÝœÛÜœšXÙP\ØÉÎˆ	ÓY[›Üˆ™péÛÉËˆ	Ü›Ù]ËÙX“\ÝœÛÜœšXÙQ\ØÉÎˆ	ÓXZ[Üˆ™péÛÉËˆ	Ü›Ù]ËÙX“\Ýœ]ZXÚËÚ][XYÙIÎˆ	ÐÛÛH[XYÙ[IËˆ	Ü›Ù]ËÙX“\Ýœ]ZXÚË›ÝÔÝØÚÉÎˆ	Ñ\ÝÜ]YH˜Z^ÉËˆ	Ü›Ù]ËÙX“\Ý™\œ›Ü•]IÎˆ	Ó°èÛÈ›ÚHÜÜðë]™[Ø\œ™YØ\ˆÈØ]0è[ÙÛË‰Ëˆ	Ü›Ù]ËÙX“\Ýš][UÚ]Ý]˜[YIÎˆ	Ò][HÙ[H›ÛYIËˆ	Ü›Ù]ËÙX“\ÝX›Kœ›ÙXÝ	Îˆ	Ô›Ù]ÉËˆ	Ü›Ù]ËÙX“\ÝX›K˜Ø]YÛÜžIÎˆ	ÐØ]YÛÜšXIËˆ	Ü›Ù]ËÙX“\ÝX›K˜ÛÙIÎˆ	ÐðìÙYÛÉËˆ	Ü›Ù]ËÙX“\ÝX›KœšXÙIÎˆ	Ô™péÛÉËˆ	Ü›Ù]ËÙX“\Ýš][\Ô\”YÙSX™[	Îˆ	Ò][œÈÜˆ0èYÚ[˜IËˆ	Ü›Ù]ËÙX“\ÝœYÚ[˜][Û‹œÝ[[X\žIÎ‚ˆ	Ñ^Xš[™ÈÜÝ\HHÙ[™HHÝÝ[H][œÉËˆ	Ü›Ù]ËÙX“\ÝœÝØÚÓ›Ý\XØX›IÎˆ	ÔÙ[HÛÛ›ÛIËˆ	Ü›Ù]ËÙX“\ÝœÝØÚÔ]X[]IÎˆ	Ô]Ý˜[Y_IËˆ	Ü›Ù]ËÙX“\ÝœÝØÚÓÝÉÎˆ	Ñ\ÝÜ]YH˜Z^ÉËˆ	Ü›Ù]ËÙX“\ÝœÝØÚÓÝ]	Îˆ	ÔÙ[H\ÝÜ]YIËˆ	Ü›Ù]ËÙX“\ÝœÝØÚÓ™YØ]]™IÎˆ	Ñ\ÝÜ]YH™YØ]]›ÉËˆ	Ü›Ù]ËÙX“\Ý˜ÛÙU[˜]˜Z[X›IÎˆ	ÔÙ[HðìÙYÛÉËˆ	Ü›Ù]ËÙX“\ÝšY]ÐXÝ[Û‰Îˆ	Õ™\‰Ëˆ	Ü›Ù]Ë™˜]›Üš]K˜YÛÛ\	Îˆ	ÓX\˜Ø\ˆÛÛ[È˜]›Üš]ÉËˆ	Ü›Ù]Ë™˜]›Üš]Kœ™[[Ý™UÛÛ\	Îˆ	Ô™[[Ý™\ˆÜÈ˜]›Üš]ÜÉËˆ	Ü›Ù]Ë™˜]›Üš]K™[˜X›Y™YY˜XÚÉÎˆ	Ñ˜]›Üš]È]]˜YÉËˆ	Ü›Ù]Ë™˜]›Üš]K™\ØX›Y™YY˜XÚÉÎˆ	Ñ˜]›Üš]È\Ø]]˜YÉËˆ	Ü›Ù]Ë™˜]›Üš]K\]Q\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[]X[^˜\ˆÈ˜]›Üš]ÈÈ›Ù]Ë‰Ëˆ	Ü›Ù]Ë˜Ø][ÙË™[˜X›UÛÛ\	Îˆ	Ñ\ÜÛšXš[^˜\ˆ\˜HØ]0è[ÙÛÉËˆ	Ü›Ù]Ë˜Ø][ÙË™\ØX›UÛÛ\	Î‚ˆ	Ô™]\˜\ˆH\ÜÛšXš[YYH\˜HØ]0è[ÙÛÉËˆ	Ü›Ù]Ë˜Ø][ÙË™[˜X›Y™YY˜XÚÉÎˆ	Ñ\ÜÛ°ë]™[\˜HØ]0è[ÙÛÈ]]˜YÉËˆ	Ü›Ù]Ë˜Ø][ÙË™\ØX›Y™YY˜XÚÉÎˆ	Ñ\ÜÛ°ë]™[\˜HØ]0è[ÙÛÈ\Ø]]˜YÉËˆ	Ü›Ù]Ë˜Ø][ÙË\]Q\œ›Ü‰Î‚ˆ	Ó°èÛÈ›ÚHÜÜðë]™[]X[^˜\ˆH\ÜÛšXš[YYH›ÈØ]0è[ÙÛË‰Ëˆ	Ü›Ù]Ë˜Ø][ÙËœÝ]\ÓX™[	Îˆ	ÐØ]0è[ÙÛÉËˆ	Ü›Ù]Ë˜Ø][ÙË˜]˜Z[X›TÝ]\ÉÎˆ	Ñ\ÜÛ°ë]™[	Ëˆ	Ü›Ù]Ë˜Ø][ÙË[˜]˜Z[X›TÝ]\ÉÎˆ	Ò[™\ÜÛ°ë]™[	ËˆKˆ	Ù[‰ÎˆÂˆ	Ü›Ù]Ëš›Ý\›™^K˜Ú[™ÙS[ÙIÎˆ	ÐÚ[™ÙIËˆ	ØÛY[\Ëš›Ý\›™^K]IÎˆ	ÐÚÛÜÙHH™YÚ\Ý˜][Ûˆ›Ý\›™^IËˆ	ØÛY[\Ëš›Ý\›™^KœÝX]IÎ‚ˆ	ÔØ]™HÛ›HH\ÜÙ[X[ÈÜˆ[œšXÚHÝ\ÝÛY\ˆ›Ùš[H›ÝË‰Ëˆ	ØÛY[\Ëš›Ý\›™^KœÚ[\U]IÎˆ	ÔÚ[\H™YÚ\Ý˜][Û‰Ëˆ	ØÛY[\Ëš›Ý\›™^KœÚ[\TÝX]IÎ‚ˆ	Ó˜[YKØÝ[Y[Û™H[™[XZ[›ÜˆHœšXÝ[Û›\ÜÈ™YÚ\Ý˜][Û‹‰Ëˆ	ØÛY[\Ëš›Ý\›™^K˜ÛÛ\]U]IÎˆ	ÐÛÛ\]H™YÚ\Ý˜][Û‰Ëˆ	ØÛY[\Ëš›Ý\›™^K˜ÛÛ\]TÝX]IÎ‚ˆ	ÐY™\ÜËÜ™Y][™ÛÛ^›ÜˆH™]\‹\™\\™YÜ\˜][Û‹‰Ëˆ	ØÛY[\Ëš›Ý\›™^KœÝ\\ÜÙ[X[	Îˆ	Ñ\ÜÙ[X[ÉËˆ	ØÛY[\Ëš›Ý\›™^KœÝ\Y™\ÜÉÎˆ	ÐY™\ÜÉËˆ	ØÛY[\Ëš›Ý\›™^KœÝ\™[][ÛœÚ\	Îˆ	ÐÜ™Y][™™[][ÛœÚ\	Ëˆ	ØÛY[\Ëš›Ý\›™^KœÝ\	Îˆ	ÔÝ\	Ëˆ	ØÛY[\Ëš›Ý\›™^K›Ù‰Îˆ	ÛÙ‰Ëˆ	ØÛY[\Ëš›Ý\›™^Kœ™]šY]Ð™Y›Ü™TØ]™IÎˆ	Ô™]šY]ÈH]H™Y›Ü™HØ]š[™Ë‰Ëˆ	ØÛY[\Ëš›Ý\›™^K˜ÛÛ[YR[	Îˆ	ÐÛÛ[YHÚ[ˆ\ÈÝ\\È™XYK‰Ëˆ	ØÛY[\Ëœ]X[]K]IÎˆ	Ô™YÚ\Ý˜][Ûˆ]X[]IËˆ	ØÛY[\Ëœ]X[]K›]™[[š]X[	Îˆ	Ò\ÝÙ][™ÈÝ\Y	Ëˆ	ØÛY[\Ëœ]X[]K›]™[\ÜÙ[X[	Îˆ	Ñ\ÜÙ[X[›Ùš[H™XYIËˆ	ØÛY[\Ëœ]X[]K›]™[]Z[Y	Îˆ	ÕÙ[Y]Z[Y›Ùš[IËˆ	ØÛY[\Ëœ]X[]K›]™[^Ù[[	Îˆ	Ñ^Ù[[›Ùš[IËˆ	ØÛY[\Ëœ]X[]K˜XÝ[Û“˜[YIÎˆ	ØYH˜[YIËˆ	ØÛY[\Ëœ]X[]K˜XÝ[Û‘ØÝ[Y[	Îˆ	ØYHØÝ[Y[	Ëˆ	ØÛY[\Ëœ]X[]K˜XÝ[Û”Û™IÎˆ	ØYHÛ™IËˆ	ØÛY[\Ëœ]X[]K˜XÝ[Û‘[XZ[	Îˆ	ØY[ˆ[XZ[	Ëˆ	ØÛY[\Ëœ]X[]K˜XÝ[Û–š\	Îˆ	ØYHÜÝ[ÛÙIËˆ	ØÛY[\Ëœ]X[]K˜XÝ[ÛY™\ÜÉÎˆ	ØÛÛ\]HHY™\ÜÉËˆ	ØÛY[\Ëœ]X[]K˜XÝ[ÛÜ™Y]	Îˆ	ØÛÛ™šYÝ\™HÜ™Y]	Ëˆ	ØÛY[\Ëœ]X[]K˜XÝ[Û“›Ý\ÉÎˆ	ØYÛÛ^	Ëˆ	ØÛY[\Ë™›Ü›Kš[˜[Y[XZ[	Îˆ	Ñ[\ˆH˜[Y[XZ[	Ëˆ	Ü›Ù]Ëœ]X[]K]IÎˆ	Ô™YÚ\Ý˜][Ûˆ]X[]IËˆ	Ü›Ù]Ëœ]X[]K›]™[\ÜÙ[X[	Îˆ	Ñ\ÜÙ[X[	Ëˆ	Ü›Ù]Ëœ]X[]K›]™[™XYIÎˆ	Ô™XYHÈÙ[	Ëˆ	Ü›Ù]Ëœ]X[]K›]™[™\\™Y	Îˆ	ÕÙ[™\\™Y	Ëˆ	Ü›Ù]Ëœ]X[]K›]™[^Ù[[	Îˆ	Ñ^Ù[[	Ëˆ	Ü›Ù]Ëœ]X[]K›™^XÝ[ÛœÉÎˆ	Ó™^[\›Ý™[Y[È][˜Ü™X\ÙH]X[]N‰Ëˆ	Ü›Ù]Ëœ]X[]K˜ÛÛ\]SY\ÜØYÙIÎ‚ˆ	Ô™YÚ\Ý˜][Ûˆ\ÈÙ[™\\™Y›Üˆ\È]™[‰Ëˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û“˜[YIÎˆ	Ñ[\ˆ˜[YIËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û”šXÙIÎˆ	ÐYšXÙIËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[ÛØ]YÛÜžIÎˆ	ÐÚÛÜÙHØ]YÛÜžIËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û’Y[YšY\‰Îˆ	ÐYÛÙIËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û“Ü™Ø[š^˜][Û‰Îˆ	Ñ[\ˆÜ›Ý\	Ëˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û”ÝØÚÉÎˆ	ÐÛÛ™šYÝ\™HÝØÚÉËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û’[XYÙIÎˆ	ÐY[XYÙIËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û‘]Z[ÉÎˆ	ÐÛÛ\]H]Z[ÉËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û”[\ÉÎˆ	Ô™]šY]È[\ÉËˆ	Ü›Ù]Ëœ]X[]K˜XÝ[Û‘š\ØØ[	Îˆ	Ñ[\ˆ^]IËˆ	Ø\]IÎˆ	ÔÚ^Ð\	Ëˆ	ØÛÛ[[Û‹œØ]™IÎˆ	ÔØ]™IËˆ	ØÛÛ[[Û‹˜Ø[˜Ù[	Îˆ	ÐØ[˜Ù[	Ëˆ	ØÛÛ[[Û‹˜˜XÚÉÎˆ	Ð˜XÚÉËˆ	ØÛÛ[[Û‹˜ÛÜÙIÎˆ	ÐÛÜÙIËˆ	ØÛÛ[[Û‹™Y]	Îˆ	ÑY]	Ëˆ	ØÛÛ[[Û‹™[]LIÎˆ	Ñ[]IËˆ	ØÛÛ[[Û‹œÙX\˜Ú	Îˆ	ÔÙX\˜Ú	Ëˆ	ØÛÛ[[Û‹˜ÛX\‰Îˆ	ÐÛX\‰Ëˆ	ØÛÛ[[Û‹˜ÛÛ™š\›IÎˆ	ÐÛÛ™š\›IËˆ	ØÛÛ[[Û‹˜\IÎˆ	Ð\IËˆ	ØÛÛ[[Û‹˜ÛÛ[YIÎˆ	ÐÛÛ[YIËˆ	ØÛÛ[[Û‹žPYØZ[‰Îˆ	ÕžHYØZ[‰Ëˆ	ØÛÛ[[Û‹›ØY[™ÉÎˆ	ÓØY[™Ë‹‹‰Ëˆ	ØÛÛ[[Û‹››Ô™\Ý[ÉÎˆ	Ó›È™\Ý[È›Ý[™	Ëˆ	ØÛÛ[[Û‹[™^XÝY\œ›Ü‰Îˆ	Õ[™^XÝY\œ›Ü‰Ëˆ	ØÛÛ[[Û‹[˜X›UÓØY	Îˆ	ÐÛÝ[›ÝØY‰Ëˆ	ØÛÛ[[Û‹œØ]™YÝXØÙ\ÜÙ[IÎˆ	ÔÙ][™ÜÈØ]™YÝXØÙ\ÜÙ[K‰Ëˆ	ØÛÛ[[Û‹žY\ÉÎˆ	ÖY\ÉËˆ	ØÛÛ[[Û‹››ÉÎˆ	Ó›ÉËˆ	ØÛÛ[[Û‹˜XÝ]™IÎˆ	ÐXÝ]™IËˆ	ØÛÛ[[Û‹š[˜XÝ]™IÎˆ	Ò[˜XÝ]™IËˆ	ØÛÛ[[Û‹›Û›[™IÎˆ	ÓÛ›[™IËˆ	ØÛÛ[[Û‹›Ù™›[™IÎˆ	ÓÙ™›[™IËˆ	ØÛÛ[[Û‹œ™\]Z\™Y	Îˆ	Ô™\]Z\™Y	Ëˆ	ØÛÛ[[Û‹›Ü[Û˜[	Îˆ	ÓÜ[Û˜[	Ëˆ	ØÛÛ[[Û‹œÛÛÛ‰Îˆ	ÐÛÛZ[™ÈÛÛÛ‰Ëˆ	ØÛÛ[[Û‹œ™Yœ™\Ú	Îˆ	Ô™Yœ™\Ú	Ëˆ	ØÛÛ[[Û‹˜ÛÜIÎˆ	ÐÛÜIËˆ	ØÛÛ[[Û‹œÚ\™IÎˆ	ÔÚ\™IËˆ	ØÛÛ[[Û‹›[X™\‰Îˆ	Ó[X™\‰Ëˆ	ØÛÛ[[Û‹˜[	Îˆ	Ð[	Ëˆ	ØÛÛ[[Û‹˜Ý\ÝÛY\‰Îˆ	ÐÝ\ÝÛY\‰Ëˆ	ØÛÛ[[Û‹\]Y]	Îˆ	Õ\]Y]	Ëˆ	ØÛÛ[[Û‹›\Ý\]Y]	Îˆ	Ó\Ý\]Y]	Ëˆ	ØÛÛ[[Û‹››Ý[™›Ü›YY	Îˆ	Ó›Ý[™›Ü›YY	Ëˆ	Ü‹œ]X[]QY]Ü‹]IÎˆ	ÑY]]X[]IËˆ	Ü‹œ]X[]QY]Ü‹ÛÛ\	Îˆ	ÑY]]X[]IËˆ	Ü‹œ]X[]QY]Ü‹œÝX]IÎ‚ˆ	Ô™]šY]ÈH][H[™\HH™]È]X[]KˆH][HÝXÝ[[™Ø[HÝ[Ú[™H™XØ[Ý[]Y[[YYX][K‰Ëˆ	Ü‹œ]X[]QY]Ü‹˜ÛÙSX™[	Îˆ	ÐÛÙIËˆ	Ü‹œ]X[]QY]Ü‹˜Ý\œ™[X™[	Îˆ	ÐÝ\œ™[]X[]IËˆ	Ü‹œ]X[]QY]Ü‹˜Ý\œ™[[	Î‚ˆ	Ñš[™HY\ÝY[™[XZ[œÈ]˜Z[X›HÛˆHÚYH]ÛœË‰Ëˆ	Ü‹œ]X[]QY]Ü‹™šY[X™[	Îˆ	Ó™]È]X[]IËˆ	Ü‹œ]X[]QY]Ü‹š[	Îˆ	Ñ[\ˆH\Ú\™Y]X[]H›Üˆ\È][K‰Ëˆ	Ü‹œ]X[]QY]Ü‹š[˜[Y	Îˆ	Ñ[\ˆHÚÛH]X[]HÜ™X]\ˆ[ˆ™\›Ë‰Ëˆ	Ü‹œ]X[]QY]Ü‹™Y™™XÝ[	Î‚ˆ	ÕHÚ[™ÙH\]\ÈH][HÝXÝ[[™HØ[HÝ[[[YYX][K‰Ëˆ	Ü‹œ]X[]QY]Ü‹˜ÛÛ™š\›IÎˆ	Ð\H]X[]IËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹]IÎˆ	ÒY[YžHÝ\ÝÛY\‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹œÝX]IÎ‚ˆ	ÔÙ[XÝH™YÚ\Ý\™YÝ\ÝÛY\ˆÜˆÜ™X]HH™]ÈÛ™HÚ]Ý]X]š[™È\ÈÝ\‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹˜]˜Z[X›PÝ\ÝÛY\œÉÎˆ	ÐXÝ]™HÝ\ÝÛY\œÉËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹˜Ý\œ™[Ý\ÝÛY\‰Îˆ	ÐÝ\œ™[Ý\ÝÛY\‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹˜Ý\œ™[[\IÎˆ	Ó›ÈÝ\ÝÛY\ˆ[šÙY	Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹œÙX\˜ÚX™[	Î‚ˆ	ÔÙX\˜ÚÝ\ÝÛY\ˆžH˜[YKØÝ[Y[Û™HÜˆ[XZ[	Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹›ØY[™ÉÎˆ	ÓØY[™ÈXÝ]™HÝ\ÝÛY\œË‹‹‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹›ØY\œ›Ü‰Îˆ	Õ[˜X›HÈØYÝ\ÝÛY\œË‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹™\œ›Ü•]IÎˆ	Õ[˜X›HÈØYÝ\ÝÛY\œÉËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹›™]ÐÝ\ÝÛY\‰Îˆ	ÐÜ™X]HÝ\ÝÛY\‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹›Ü[š[™ÐÜ™X]IÎˆ	ÓÜ[š[™È™YÚ\Ý˜][Û‹‹‹‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹˜Ü™X]Q\œ›Ü‰Î‚ˆ	Õ[˜X›HÈÜ[ˆÝ\ÝÛY\ˆ™YÚ\Ý˜][ÛˆšYÚ›ÝË‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹™[\U]IÎˆ	Ó›ÈXÝ]™HÝ\ÝÛY\œÈ™YÚ\Ý\™Y	Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹™[\SY\ÜØYÙIÎ‚ˆ	ÐÜ™X]HHÝ\ÝÛY\ˆ›ÝÈÈÛÛ[YHÚ]Ý]X]š[™È\ÈÝ\‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹™[\TÙX\˜Ú]IÎˆ	Ó›ÈÝ\ÝÛY\ˆ›Ý[™	Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹™[\TÙX\˜ÚY\ÜØYÙIÎ‚ˆ	Ô™]šY]ÈHÙX\˜Ú\›\ÈÜˆÜ™X]HH™]ÈÝ\ÝÛY\ˆÈÛÛ[YK‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹œ™[[Ý™PÝ\ÝÛY\‰Îˆ	Ô™[[Ý™HÝ\œ™[Ý\ÝÛY\‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹[›˜[YYÝ\ÝÛY\‰Îˆ	Õ[›˜[YYÝ\ÝÛY\‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹œ\œÛÛ•\Q˜[˜XÚÉÎˆ	Ô‰Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹››ÑØÝ[Y[	Îˆ	Ó›ÈØÝ[Y[	Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹˜Ü™Y][˜X›Y	Îˆ	ÔÝÜ™HÜ™Y][˜X›Y	Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹˜Ü™Y]›ØÚÙY	Î‚ˆ	ÔÝÜ™HÜ™Y]›ØÚÙY›Üˆ™]ÈØ[\ÉËˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹˜Ü™Y]\ØX›Y	Î‚ˆ	ÐÝ\ÝÛY\ˆÚ]Ý]ÝÜ™HÜ™Y][˜X›Y	Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹œÙ[XÝY	Îˆ	ÔÙ[XÝY	Ëˆ	Ü‹˜Ý\ÝÛY\’Y[YšXØ][Û‹œÙ[XÝ	Îˆ	ÔÙ[XÝ	Ëˆ	Ü‹œ]X[]QY]Ü‹œ›ØÙ\ÜÚ[™ÉÎˆ	Ð\Z[™È]X[]K‹‹‰Ëˆ	Ü‹œ]X[]QY]Ü‹œÝXØÙ\ÜÕ]IÎˆ	Ô]X[]H\]Y	Ëˆ	Ü‹œ]X[]QY]Ü‹œÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	ÕH][HØ\È™XØ[Ý[]Y[™HØ[H[™XYH™Y›XÝÈH™]È]X[]K‰Ëˆ	Ü‹œ]X[]QY]Ü‹™\œ›Ü‰Î‚ˆ	ÐÛÝ[›Ý\]HH]X[]HšYÚ›ÝËˆžHYØZ[ˆ[ˆH[ÛY[‰Ëˆ	Ü‹˜ÛX\”Ø[K™X[ÙÐ˜\œšY\‰Îˆ	ÐÛÛ™š\›HÛX\š[™ÈHÝ\œ™[Ø[IËˆ	Ü‹˜ÛX\”Ø[K™X[ÙÕ]IÎˆ	ÐÛX\ˆÝ\œ™[Ø[OÉËˆ	Ü‹˜ÛX\”Ø[K™X[ÙÔÝX]IÎ‚ˆ	Ô™]šY]ÈHÝ[[X\žH™Y›Ü™HÛX\š[™ËˆHÝ\œ™[Ù\šXÙHÚ[™H™\Ù]ÛÈ[ÝHØ[ˆÝ\H™]ÈØ[K‰Ëˆ	Ü‹˜ÛX\”Ø[KœÝ[[X\žR][\ÉÎˆ	Ò][\ÉËˆ	Ü‹˜ÛX\”Ø[KœÝ[[X\žUÝ[	Îˆ	ÕÝ[	Ëˆ	Ü‹˜ÛX\”Ø[KœÝ[[X\žPÝ\ÝÛY\‰Îˆ	ÐÝ\ÝÛY\‰Ëˆ	Ü‹˜ÛX\”Ø[K˜ÛÛ™š\›PXÝ[Û‰Îˆ	ÐÛX\ˆØ[IËˆ	Ü‹˜ÛX\”Ø[Kš[\XÝ[	Î‚ˆ	Ò][\ËY[YšYYÝ\ÝÛY\ˆ[™[\Ü˜\žH™XÙZ\ÈÚ[™H™[[Ý™Yœ›ÛH\ÈÔË‰Ëˆ	Ü‹˜ÛX\”Ø[Kœ›ØÙ\ÜÚ[™Õ]IÎˆ	ÐÛX\š[™ÈØ[K‹‹‰Ëˆ	Ü‹˜ÛX\”Ø[Kœ›ØÙ\ÜÚ[™ÓY\ÜØYÙIÎ‚ˆ	ÔX\ÙHØZ]Ú[HH[\Ü˜\žH]Hœ›ÛH\ÈØ[H\È™[[Ý™Y‰Ëˆ	Ü‹˜ÛX\”Ø[KœÝXØÙ\ÜÕ]IÎˆ	ÔØ[HÛX\™YÝXØÙ\ÜÙ[IËˆ	Ü‹˜ÛX\”Ø[KœÝXØÙ\ÜÓY\ÜØYÙIÎˆ	ÕHÔÈ\È™XYHÈÝ\H™]ÈØ[K‰Ëˆ	Ü‹˜ÛX\”Ø[K™\œ›Ü‰Î‚ˆ	Õ[˜X›HÈÛX\ˆHØ[HšYÚ›ÝËˆX\ÙHžHYØZ[ˆÚÜK‰Ëˆ	Ü™XÙXš[Y[Ë˜[Ü‘[PX™\ÉÎˆ	ÓÝ]Ý[™[™È[[Ý[	Ëˆ	Ü™XÙXš[Y[ËœÝ[[X\žU\IÎˆ	Õ\IËˆ	Ü™XÙXš[Y[ËÝ[	Îˆ	Ñ[	Ëˆ	Ü™XÙXš[Y[Ëœ\˜ÚX[	Îˆ	Ô\X[	Ëˆ	Ü™XÙXš[Y[Ë™›Ü›X\Ô™XÙXš[Y[ÉÎˆ	Ô^[Y[Y]ÙÉËˆ	Ü™XÙXš[Y[Ëœ™\Ý[IÎˆ	Ô™[XZ[š[™ÉËˆ	Ü™XÙXš[Y[Ë˜[Ü‘›Ü›XIÎˆ	ÓY]Ù[[Ý[	Ëˆ	Ü™XÙXš[Y[Ë\Ô™XÙXš[Y[ÉÎˆ	Ô^[Y[Y]Ù	Ëˆ	Ü™XÙXš[Y[Ë˜Ø\œ™YØ[™Õ\ÜÉÎˆ	ÓØY[™È^[Y[Y]ÙË‹‹‰Ëˆ	Ü™XÙXš[Y[Ë˜YXÚ[Û˜\‘›Ü›XIÎˆ	ÐYY]Ù	Ëˆ	Ü™XÙXš[Y[Ëœ™[[Ý™\‘›Ü›XIÎˆ	Ô™[[Ý™HY]Ù	Ëˆ	Ü™XÙXš[Y[Ë›ØœÙ\˜XØ[ÉÎˆ	Ó›Ý\ÉËˆ	Ü™XÙXš[Y[Ëœ™XÙX™\•Ý[	Îˆ	Ô™XÙZ]™H[[[Ý[	Ëˆ	Ü™XÙXš[Y[Ëœ™XÙX™\”\˜ÚX[	Îˆ	Ô™XÙZ]™H\X[[[Ý[	Ëˆ	Ü™XÙXš[Y[Ë™\œ›Õ˜[Ü™\ÓXZ[Ü™\Ô]YV™\›ÉÎˆ	Ñ[\ˆ[[Ý[ÈÜ™X]\ˆ[ˆ™\›Ë‰Ëˆ	Ü™XÙXš[Y[Ë™\œ›Õ˜[Ü“XZ[Ü”]YV™\›ÉÎˆ	Ñ[\ˆ[ˆ[[Ý[Ü™X]\ˆ[ˆ™\›Ë‰Ëˆ	Ü™XÙXš[Y[Ë™\œ›Ô\˜ÚX[Y[›Ü”]YPX™\ÉÎ‚ˆ	Ñ›ÜˆH\X[™XÙZ\[\ˆ\ÜÈ[ˆHÝ]Ý[™[™È[[Ý[‰Ëˆ	Ü™XÙXš[Y[Ë™\œ›ÕÝ[YÝX[Ø[ÉÎ‚ˆ	Ñ›ÜˆH[™XÙZ\H[[Ý[]\ÝÙ]HHÝ]Ý[™[™È˜[[˜ÙK‰Ëˆ	Ü™XÙXš[Y[Ë™\œ›Ñ›Ü›XQ\XØYIÎ‚ˆ	ÑXXÚ^[Y[Y]ÙØ[ˆ™H\ÙYÛ›HÛ˜ÙK‰Ëˆ	Ü‹œ™XÙZ\\IÎˆ	Ô™XÙZ\\IËˆ	Ü‹œ™XÙZ\œ\X[™XYIÎ‚ˆ	Ô\X[™XÙZ\™XYKˆH™[XZ[š[™È˜[[˜ÙHÚ[Ý^HÜ[‹‰Ëˆ	Ü‹œ™XÙZ\œ\X[[	Î‚ˆ	Ñ[\ˆ[ˆ[[Ý[Ü™X]\ˆ[ˆ™\›È[™ÝÙ\ˆ[ˆHØ[HÝ[‰Ëˆ	Ü‹œ™XÙZ\œ\X[Yš[™Y	Îˆ	Ô\X[Yš[™Y	Ëˆ	Ü‹œ™XÙZ\˜ÛÛ™š\›T\X[	Îˆ	ÐÛÛ™š\›H\X[™XÙZ\	Ëˆ	Ü‹œ™XÙZ\˜ÛÛ™š\›T\X[Y\ÜØYÙIÎˆ	ÑÈ[ÝHØ[È™XÙZ]™IËˆ	Ü‹œ™XÙZ\šÙY\Ü[˜[[˜ÙIÎˆ	Ø[™ÙY\H™[XZ[š[™È˜[[˜ÙHÝ]Ý[™[™ÉËˆ	Ý™[™\ÐT™XÙX™\‹›Ü[’[”‰Îˆ	ÓÜ[ˆ[ˆÔÉËˆ	Ü‹›Ü[”Ø[KœÝ]\ÉÎˆ	ÓÜ[ˆØ[IËˆ	Ü‹›Ü[”Ø[Kœ™XYÛ›TÝ]\ÉÎˆ	ÕšY]ÈÛ›IËˆ	Ü‹›Ü[”Ø[Kœ™XYÛ›U]IÎˆ	ÓÜ[ˆØ[H™]šY]ÉËˆ	Ü‹›Ü[”Ø[Kœ™XYÛ›TÝX]IÎ‚ˆ	Ô›ÙXÝË]X[]Y\Ë[™šXÙ\È\™HØÚÙY]\ÈÝYÙKˆ™]šY]ÈH]H[™™XÙZ]™HHÝ]Ý[™[™È˜[[˜ÙK‰Ëˆ	Ü‹›Ü[”Ø[K™Y]Ý]\ÉÎˆ	Ò][HY][™ÉËˆ	Ü‹›Ü[”Ø[K™Y]]IÎˆ	Ô™]šY]ÈH][\È™Y›Ü™H™XÙZ]š[™ÉËˆ	Ü‹›Ü[”Ø[K™Y]ÝX]IÎ‚ˆ	ÐYÜˆ™[[Ý™H›ÙXÝÈ[™Ù\šXÙ\È[™Ú[™ÙH]X[]Y\ËˆÜšYÚ[˜[šXÙ\È\™H™\Ù\™YÈ™]È][\È\ÙHHÝ\œ™[Ø][ÙÈšXÙKˆÚ[™Ù\È\™H\YYÛ›HÚ[ˆ™XÙZ]š[™Ë‰Ëˆ	Ü‹›Ü[”Ø[Kœ\X[™XYÛ›TÝX]IÎ‚ˆ	Õ\ÈØ[H[™XYH\È™XÙZ\ËˆÈ™\Ù\™HHš[˜[˜ÚX[\ÝÜžK]È][\È™[XZ[ˆØÚÙY‰Ëˆ	Ü‹›Ü[”Ø[Kœ[™[™ÐÚ[™Ù\ÉÎˆ	Ô[™[™ÈÚ[™Ù\ÉËˆ	Ü‹›Ü[”Ø[Kœ™XÙZ]™P˜[[˜ÙIÎˆ	Ô™XÙZ]™H˜[[˜ÙIËˆ	Ü‹›Ü[”Ø[Kœ™XÙZ]™U\]YØ[IÎˆ	Ô™XÙZ]™H™]š\ÙYØ[IËˆ	Ü‹›Ü[”Ø[Kœ™XÙZ]™U]IÎˆ	Ô™XÙZ]™HØ[H˜[[˜ÙIËˆ	Ü‹›Ü[”Ø[Kœ™XÙZ\›ÝIÎˆ	Ð˜[[˜ÙH™XÙZ]™Y›ÝYÚHÙXˆÔË‰Ëˆ	Ü‹›Ü[”Ø[K\]Y™XÙZ\›ÝIÎ‚ˆ	Ô™]š\ÙYØ[H™XÙZ]™Y›ÝYÚHÙXˆÔË‰Ëˆ	Ü‹›Ü[”Ø[Kœ™XÙZ]™YY\ÜØYÙIÎˆ	ÔØ[H™XÙZ]™YÝXØÙ\ÜÙ[K‰Ëˆ	Ü‹›Ü[”Ø[Kœ™XÙZ\\œ›Ü•]IÎˆ	Õ[˜X›HÈ™XÙZ]™HHØ[IËˆ	Ü‹›Ü[”Ø[K›ÜšYÚ[˜[Ý[	Îˆ	ÓÜšYÚ[˜[Ý[	Ëˆ	Ü‹›Ü[”Ø[K›Ü[˜[[˜ÙIÎˆ	ÓÝ]Ý[™[™È˜[[˜ÙIËˆ	Ü‹›Ü[”Ø[K˜Ý\œ™[Ý[	Îˆ	Ó™]ÈÝ[	Ëˆ	Ü‹›Ü[”Ø[KÝ[Y™™\™[˜ÙIÎˆ	ÑY™™\™[˜ÙIËˆ	Ü‹›Ü[”Ø[K™[\R][\Õ]IÎˆ	ÕHØ[H]\Ý]™H][\ÉËˆ	Ü‹›Ü[”Ø[K™[\R][\ÓY\ÜØYÙIÎ‚ˆ	ÐY]X\ÝÛ™H›ÙXÝÜˆÙ\šXÙH™Y›Ü™H™XÙZ]š[™ÈHØ[K‰Ëˆ	Ü‹›Ü[”Ø[Kš[˜[Y][\Õ]IÎˆ	Ô™]šY]ÈHØ[H][\ÉËˆ	Ü‹›Ü[”Ø[Kš[˜[Y][\ÓY\ÜØYÙIÎ‚ˆ	Ñ]™\žH][H]\Ý]™HH˜[YKHÜÚ]]™H]X[]K[™H˜[YšXÙK‰Ëˆ	Ü‹›Ü[”Ø[K˜ÛÛ™š\›PÚ[™Ù\Õ]IÎˆ	ÐÛÛ™š\›H™]š\ÙY][\ÏÉËˆ	Ü‹›Ü[”Ø[K˜ÛÛ™š\›PÚ[™Ù\ÓY\ÜØYÙIÎ‚ˆ	ÕÚ[ˆ™XÙZ]š[™ËH™]š\ÙY][HÛÛ\ÜÚ][ÛˆÚ[™H\YY[™[™[ÜžH[™š[˜[˜ÙHÚ[™H™XÛÛ˜Ú[Y‰Ëˆ	Ü‹›Ü[”Ø[K˜ÛÛ[YUÔ™XÙZ\	Îˆ	ÐÛÛ[YHÈ™XÙZ\	Ëˆ	Ü‹›Ü[”Ø[K›Ý]]Y]IÎˆ	ÕHØ[H\ÈÚ[™ÙY	Ëˆ	Ü‹›Ü[”Ø[K›Ý]]YY\ÜØYÙIÎ‚ˆ	Ð[›Ý\ˆÜ\˜][ÛˆÚ[™ÙY\ÈØ[KˆÛÜÙHH™]šY]È[™Ü[ˆ]YØZ[ˆÈ\ÙHHÝ\œ™[]K‰Ëˆ	Ü‹›Ü[”Ø[K™^]]IÎˆ	Ñ^]™]šY]ÏÉËˆ	Ü‹›Ü[”Ø[K™^]Y\ÜØYÙIÎ‚ˆ	ÕHØ[HÚ[™[XZ[ˆÜ[‹ˆ›È][KšXÙKÜˆ™XÙZ\Ú[™HÚ[™ÙY‰Ëˆ	Ü‹›Ü[”Ø[K™^]XÝ[Û‰Îˆ	Ñ^]™]šY]ÉËˆ	Ü‹›Ü[”Ø[K™\ØØ\™]IÎˆ	Ñ\ØØ\™Ú[™Ù\ÏÉËˆ	Ü‹›Ü[”Ø[K™\ØØ\™Y\ÜØYÙIÎ‚ˆ	ÐÚ[™Ù\ÈXYH[ˆHÔÈÚ[›Ý™HØ]™YˆHØ[HÚ[™[XZ[ˆÜ[ˆÚ]]È™]š[Ý\È]K‰Ëˆ	Ü‹›Ü[”Ø[K™\ØØ\™XÝ[Û‰Îˆ	Ñ\ØØ\™[™^]	Ëˆ	Ü‹›Ü[”Ø[Kœ™\XÙU]IÎˆ	Ô™\XÙHHÝ\œ™[Ø[OÉËˆ	Ü‹›Ü[”Ø[Kœ™\XÙSY\ÜØYÙIÎ‚ˆ	ÕHÝ\œ™[ÔÈ]HÚ[™H™\XÙYžHHÙ[XÝYÜ[ˆØ[K‰Ëˆ	Ü‹›Ü[”Ø[Kœ™\XÙPXÝ[Û‰Îˆ	ÓÜ[ˆØ[IËˆ	Ü‹›Ü[”Ø[K›ØYYY\ÜØYÙIÎ‚ˆ	ÔØ[HØYY›Üˆ™]šY]Ëˆ[ÝHØ[ˆY™[[Ý™K[™Ú[™ÙH]X[]Y\È™Y›Ü™H™XÙZ]š[™Ë‰Ëˆ	Ü‹›Ü[”Ø[K›ØYY™XYÛ›SY\ÜØYÙIÎ‚ˆ	ÔØ[HØYY›Üˆ™]šY]Ëˆ™XØ]\ÙH][™XYH\È™XÙZ\Ë]È][\È™[XZ[ˆØÚÙY‰Ëˆ	Ü‹›Ü[”Ø[K›ØY\œ›Ü•]IÎˆ	Õ[˜X›HÈÜ[ˆHØ[IËˆ	Ü‹›Ü[”Ø[K[˜]˜Z[X›U]IÎˆ	ÔØ[H[˜]˜Z[X›IËˆ	Ü‹›Ü[”Ø[K[˜]˜Z[X›SY\ÜØYÙIÎ‚ˆ	ÕHØ[HX^H]™H™Y[ˆ™XÙZ]™YÜˆØ[˜Ù[YžH[›Ý\ˆ\Ù\‹‰Ëˆ	ØÛÛ[[Û‹™Ù[™\˜][™ÉÎˆ	ÑÙ[™\˜][™Ë‹‹‰Ëˆ	ØÛÛ[[Û‹œØ]š[™ÉÎˆ	ÔØ]š[™Ë‹‹‰Ëˆ	ØÛÛ[[Û‹œ˜[™ÙUÉÎˆ	ÝÉËˆ	ØÛÛ[[Û‹ÙYZÙ^K›[Û™^IÎˆ	Ó[Û™^IËˆ	ØÛÛ[[Û‹ÙYZÙ^KY\Ù^IÎˆ	ÕY\Ù^IËˆ	ØÛÛ[[Û‹ÙYZÙ^KÙY™\Ù^IÎˆ	ÕÙY™\Ù^IËˆ	ØÛÛ[[Û‹ÙYZÙ^K\œÙ^IÎˆ	Õ\œÙ^IËˆ	ØÛÛ[[Û‹ÙYZÙ^K™œšY^IÎˆ	ÑœšY^IËˆ	ØÛÛ[[Û‹ÙYZÙ^KœØ]\™^IÎˆ	ÔØ]\™^IËˆ	ØÛÛ[[Û‹ÙYZÙ^KœÝ[™^IÎˆ	ÔÝ[™^IËˆ	ØÛÛ[[Û‹ÙYZÙ^TÚÜ›[Û™^IÎˆ	Ó[Û‰Ëˆ	ØÛÛ[[Û‹ÙYZÙ^TÚÜY\Ù^IÎˆ	ÕYIËˆ	ØÛÛ[[Û‹ÙYZÙ^TÚÜÙY™\Ù^IÎˆ	ÕÙY	Ëˆ	ØÛÛ[[Û‹ÙYZÙ^TÚÜ\œÙ^IÎˆ	ÕIËˆ	ØÛÛ[[Û‹ÙYZÙ^TÚÜ™œšY^IÎˆ	ÑœšIËˆ	ØÛÛ[[Û‹ÙYZÙ^TÚÜœØ]\™^IÎˆ	ÔØ]	Ëˆ	ØÛÛ[[Û‹ÙYZÙ^TÚÜœÝ[™^IÎˆ	ÔÝ[‰Ëˆ	ÝÙX‹›˜]šYØ][Û‹šÛYIÎˆ	ÒÛYIËˆ	ÝÙX‹›˜]šYØ][Û‹›Ü\˜][ÛœÉÎˆ	ÓÜ\˜][ÛœÉËˆ	ÝÙX‹›˜]šYØ][Û‹›Ü\˜][ÛœËœÜÉÎˆ	ÔÚ[ÙˆØ[IËˆ	ÝÙX‹›˜]šYØ][Û‹›Ü\˜][ÛœËXÚšXØ[Ù\šXÙIÎˆ	ÕXÚšXØ[Ù\šXÙ\ÉËˆ	ÝÙX‹›˜]šYØ][Û‹›Ü\˜][ÛœËœ\˜Ú\Ù\ÉÎˆ	Ô\˜Ú\Ù\ÉËˆ	ÝÙX‹›˜]šYØ][Û‹›Ü\˜][ÛœËœ™\Ù\˜][ÛœÉÎˆ	Ô™\Ù\˜][ÛœÉËˆ	ÝÙX‹›˜]šYØ][Û‹˜Ø][ÙÉÎˆ	ÐØ][ÙÉËˆ	ÝÙX‹›˜]šYØ][Û‹˜Ø][ÙËœX›XÔYÙIÎˆ	ÔX›XÈYÙIËˆ	ÝÙX‹›˜]šYØ][Û‹˜Ø][ÙËœ™\Ù\˜][ÛœÉÎˆ	Ô™\Ù\˜][ÛœÉËˆ	ÝÙX‹›˜]šYØ][Û‹˜Ø][ÙËœ›ÙXÝÉÎˆ	Ô›ÙXÝÉËˆ	ÝÙX‹›˜]šYØ][Û‹˜Ø][ÙËœÙ\šXÙ\ÉÎˆ	ÔÙ\šXÙ\ÉËˆ	ÝÙX‹›˜]šYØ][Û‹˜Ø][ÙËœÝØÚÉÎˆ	ÔÝØÚÉËˆ	ÝÙX‹›˜]šYØ][Û‹˜Ø][ÙË˜Ø]YÛÜšY\ÉÎˆ	ÐØ]YÛÜšY\ÉËˆ	ØØ][ÙËœX›XÔYÙK]IÎˆ	ÔX›XÈØ][ÙÈYÙIËˆ	ØØ][ÙËœX›XÔYÙKœÝX]IÎ‚ˆ	ÐÝ\ÝÛZ^™K™]šY]Ë[™Ú\™H[Ý\ˆÝÜ™Yœ›Û[ˆÛ™HXÙK‰Ëˆ	ØØ][ÙËœX›XÔYÙK›Ü[‰Îˆ	ÓÜ[‰Ëˆ	ØØ][ÙËœX›XÔYÙK˜ÛÜIÎˆ	ÐÛÜH[šÉËˆ	ØØ][ÙËœX›XÔYÙKœÚ\™IÎˆ	ÔÚ\™IËˆ	ØØ][ÙËœX›XÔYÙKœX›\ÚY	Îˆ	ÔX›\ÚY	Ëˆ	ØØ][ÙËœX›XÔYÙK›Ù™›[™IÎˆ	ÓÙ™›[™IËˆ	ØØ][ÙËœX›XÔYÙKœØ]™IÎˆ	ÔØ]™HÚ[™Ù\ÉËˆ	ØØ][ÙËœX›XÔYÙK™\ØØ\™	Îˆ	Ñ\ØØ\™	Ëˆ	ØØ][ÙËœX›XÔYÙKœØ]™TÝXØÙ\ÜÔX›\ÚY	Î‚ˆ	ÔYÙHØ]™Y[™X›\ÚYÝXØÙ\ÜÙ[K‰Ëˆ	ØØ][ÙËœX›XÔYÙKœØ]™TÝXØÙ\ÜÑ˜Y	Î‚ˆ	ÐÝ\ÝÛZ^˜][ÛˆØ]™YˆX›\Ú]Ú[ˆ]\È™XYK‰Ëˆ	ØØ][ÙËœX›XÔYÙKœØ]™Q\œ›Ü‰Îˆ	ÐÛÝ[›ÝØ]™HHØ][ÙÈYÙK‰Ëˆ	ØØ][ÙËœX›XÔYÙK›Ü[‘\œ›Ü‰Îˆ	ÐÛÝ[›ÝÜ[ˆHØ][ÙÈ[ˆH™]ÈX‹‰Ëˆ	ØØ][ÙËœX›XÔYÙK›[šÐÛÜYY	Îˆ	ÔX›XÈ[šÈÛÜYY‰Ëˆ	ØØ][ÙËœX›XÔYÙKœÚ\™TÝXš™XÝ	Îˆ	ÞÝ]_HØ][ÙÉËˆ	ØØ][ÙËœX›XÔYÙKœÚ\™Q˜[˜XÚÉÎ‚ˆ	ÔÚ\š[™È\È[˜]˜Z[X›KˆHX›XÈ[šÈØ\ÈÛÜYY‰Ëˆ	ØØ][ÙËœX›XÔYÙK›ØY\œ›Ü•]IÎˆ	ÐÛÝ[›ÝØYHX›XÈYÙIËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹œX›XØ][Û‰Îˆ	ÔX›\ÚYØ][ÙÉËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹œX›XØ][Û“Û‰Î‚ˆ	ÐÝ\ÝÛY\œÈØ[ˆXØÙ\ÜÈ]›ÝYÚHX›XÈ[šË‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹œX›XØ][Û“Ù™‰Î‚ˆ	ÕH[šÈ\È™\Ù\™Y][˜]˜Z[X›K‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹˜ÛÛ[	Îˆ	Ò[›ÙXÝ[Û‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹˜ÛÛ[[	Î‚ˆ	ÔÙ]HY\ÜØYÙH]Ü[œÈ[Ý\ˆÝÜ™Yœ›Û‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹]SX™[	Îˆ	ÔÝÜ™Yœ›Û]IËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹]R[	Îˆ	Ñ^[\Nˆš[™Ú][ÝH™YY	Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹™\ØÜš\[Û“X™[	Îˆ	ÔÚÜ\ØÜš\[Û‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹™\ØÜš\[Û’[	Î‚ˆ	Ñ^Z[ˆ[ˆÛ™HÙ[[˜ÙHÚ]Ý\ÝÛY\œÈÚ[š[™‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹˜\X\˜[˜ÙIÎˆ	Ð\X\˜[˜ÙIËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹˜\X\˜[˜ÙR[	Î‚ˆ	ÐÚÛÜÙHHš\ÝX[[ÛÙ[™XØÙ[ÛÛÜ‹‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹˜XØÙ[ÛÛÜ‰Îˆ	ÐXØÙ[ÛÛÜ‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹˜Ý\ÝÛPÛÛÜ‰Îˆ	ÐÝ\ÝÛHÛÛÜ‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹š[˜[YÛÛÜ‰Î‚ˆ	Õ\ÙHHYÚXÛÛ˜\Ý^YXÚ[X[ÛÛÜ‹ÝXÚ\ÈÌL‘‘‹‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹›^[Ý]	Îˆ	ÐÛÛ[[™^[Ý]	Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹›^[Ý][	Î‚ˆ	ÐÛÛ›Û[œÚ]H[™š\ÚX›H[™›Ü›X][Û‹‰Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹˜ÛÛY›ÜX›IÎˆ	ÐÛÛY›ÜX›IËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹˜ÛÛ\XÝ	Îˆ	ÐÛÛ\XÝ	Ëˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹œÚÝÔšXÙ\ÉÎˆ	ÔÚÝÈšXÙ\ÉËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹œÚÝÐÛÛXÝ	Îˆ	ÔÚÝÈÛÛXÝ]Z[ÉËˆ	ØØ][ÙËœX›XÔYÙK™Y]Ü‹œÚÝÐY™\ÜÉÎˆ	ÔÚÝÈY™\ÜÉËˆ	ØØ][ÙËœX›XÔYÙKœÝ[K˜Û\ÜÚXÉÎˆ	ÐÛ\ÜÚXÉËˆ	ØØ][ÙËœX›XÔYÙKœÝ[K˜Û\ÜÚXÒ[	Î‚ˆ	Ô›Ù™\ÜÚ[Û˜[˜[[˜ÙY[™˜[Z[X\‹‰Ëˆ	ØØ][ÙËœX›XÔYÙKœÝ[K›Z[š[X[	Îˆ	ÓZ[š[X[	Ëˆ	ØØ][ÙËœX›XÔYÙKœÝ[K›Z[š[X[[	Î‚ˆ	Ó[Ü™HÜXÙH[™™]Ù\ˆš\ÝX[[[Y[Ë‰Ëˆ	ØØ][ÙËœX›XÔYÙKœÝ[K™^™\ÜÚ]™IÎˆ	Ñ^™\ÜÚ]™IËˆ	ØØ][ÙËœX›XÔYÙKœÝ[K™^™\ÜÚ]™R[	Î‚ˆ	ÐÛÛÜˆ[™ÛÛ˜\ÝÈYÚYÚ[Ý\ˆœ˜[™‰Ëˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]Ë]IÎˆ	Ó]™H™]šY]ÉËˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]Ë[œØ]™Y	Îˆ	Ô™]šY]Ú[™È[œØ]™YÚ[™Ù\ÉËˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]ËœØ]™Y	Îˆ	Ð\X\˜[˜ÙHØ]™YÈHØ][ÙÉËˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]Ë™\ÚÝÜ	Îˆ	Ñ\ÚÝÜ	Ëˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]Ë›[Øš[IÎˆ	Ó[Øš[IËˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]ËœÝÜ™Q˜[˜XÚÉÎˆ	Ö[Ý\ˆ\Ú[™\ÜÉËˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]Ëœ›ÙXÝÉÎˆ	Ð]˜Z[X›H›ÙXÝÉËˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]Ë˜ÚÛÜÙR][\ÉÎˆ	ÐÚÛÜÙH[Ý\ˆ][\ÉËˆ	ØØ][ÙËœX›XÔYÙKœ™]šY]Ë™[\IÎ‚ˆ	ÓX\šÈ›ÙXÝÈ\È]˜Z[X›H›ÜˆHØ][ÙË‰Ëˆ	ØØ][ÙËœX›XÔYÙK[œX›\Ú˜˜\œšY\‰Îˆ	ÐÛÛ™š\›HØ][ÙÈ[œX›\Ú[™ÉËˆ	ØØ][ÙËœX›XÔYÙK[œX›\Ú]IÎˆ	Õ[œX›\ÚØ][ÙÏÉËˆ	ØØ][ÙËœX›XÔYÙK[œX›\Ú˜›ÙIÎ‚ˆ	ÐÝ\ÝÛY\œÈÚ]H[šÈÚ[›ÈÛ™Ù\ˆÙYH›ÙXÝÈ[[]\ÈX›\ÚYYØZ[‹‰Ëˆ	ØØ][ÙËœX›XÔYÙK[œX›\Ú˜XÝ[Û‰Îˆ	Õ[œX›\Ú	Ëˆ	ØØ][ÙËœX›XÔYÙK[œX›\Úœ›ØÙ\ÜÚ[™ÉÎˆ	ÕZÚ[™ÈHØ][ÙÈÙ™›[™K‹‹‰Ëˆ	ØØ][ÙËœX›XÔYÙK[œX›\Úœ›ØÙ\ÜÚ[™Ð›ÙIÎ‚ˆ	ÔX\ÙHØZ]Ú[HÙH\]HX›XÈXØÙ\ÜË‰Ëˆ	ØØ][ÙËœX›XÔYÙK[œX›\ÚœÝXØÙ\ÜÉÎˆ	ÐØ][ÙÈ[œX›\ÚY	Ëˆ	ØØ][ÙËœX›XÔYÙK[œX›\ÚœÝXØÙ\ÜÐ›ÙIÎ‚ˆ	ÕH[šÈØ\È™\Ù\™Y[™Ø[ˆ™H™XXÝ]˜]Y]\‹‰Ëˆ	ØØ][ÙËœX›XÔYÙK[œX›\Ú™\œ›Ü‰Î‚ˆ	ÐÛÝ[›Ý[œX›\ÚˆX\ÙHžHYØZ[‹‰Ëˆ	Ü›Ù]Ë™\Ú›Ø\™š[\ÜÜ™XYÚY]ÛÛÛ‰Î‚ˆ	Ò[\ÜšXHÜ™XYÚY]
+ÛÛZ[™ÈÛÛÛŠIËˆ	ÝÙX‹›˜]šYØ][Û‹œ[ÜIÎˆ	Ô[ÜIËˆ	ÝÙX‹›˜]šYØ][Û‹œ[ÜK˜Ý\ÝÛY\œÉÎˆ	ÐÝ\ÝÛY\œÉËˆ	ÝÙX‹›˜]šYØ][Û‹œ[ÜK˜ÛÛX›Ü˜]ÜœÉÎˆ	ÕX[HY[X™\œÉËˆ	ÝÙX‹›˜]šYØ][Û‹œ[ÜKœÚ^Õ\Ù\œÉÎˆ	ÔÚ^È\Ù\œÉËˆ	ÝÙX‹›˜]šYØ][Û‹œ[ÜKœ\™›Ü›X[˜ÙIÎˆ	Ô\™›Ü›X[˜ÙIËˆ	ÝÙX‹›˜]šYØ][Û‹˜Ø\Ú	Îˆ	ÐØ\Ú™YÚ\Ý\‰Ëˆ	ÝÙX‹›˜]šYØ][Û‹™š[˜[˜ÚX[	Îˆ	Ñš[˜[˜ÚX[	Ëˆ	ÝÙX‹›˜]šYØ][Û‹™š[˜[˜ÚX[˜YÙ[™IÎˆ	Ñš[˜[˜ÚX[YÙ[™IËˆ	ÝÙX‹›˜]šYØ][Û‹œÙ][™ÜÉÎˆ	ÔÙ][™ÜÉËˆ	ÝÙX‹›˜]šYØ][Û‹œ™\ÜÉÎˆ	Ô™\ÜÉËˆ	ÝÙX‹›˜]šYØ][Û‹[˜]˜Z[X›IÎˆ	Ñ\Ý[˜][Ûˆ[˜]˜Z[X›H[ˆ\È™\œÚ[Û‹‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë]IÎˆ	ÔÚ^È\Ù\œÉËˆ	Ý\ÝX\š[ÜÔÚ^ËœÝX]IÎ‚ˆ	ÕšY]È[™YÚ\Ý\™Y\Ù\œÈÚ]XØÙ\ÜÈ™\ÝšXÝYÈHÕTTˆ›ÛK‰Ëˆ	Ý\ÝX\š[ÜÔÚ^ËœÝ[[X\žTÙ[X[XÜÉÎˆ	Ô™YÚ\Ý\™YÚ^È\Ù\œÈÝ[[X\žIËˆ	Ý\ÝX\š[ÜÔÚ^ËœÝ[[X\žU]IÎˆ	ÑÛØ˜[\Ù\ˆ˜\ÙIËˆ	Ý\ÝX\š[ÜÔÚ^ËœÝ[[X\žTÝX]IÎ‚ˆ	Ô]Y\žH›ÝXÝYžHHÕTTˆ›ÛH[ˆHÚÙ[‹‰Ëˆ	Ý\ÝX\š[ÜÔÚ^ËÝ[X™[	Îˆ	Ý\Ù\œÉËˆ	Ý\ÝX\š[ÜÔÚ^ËÝ[™YÚ\Ý\™Y	Îˆ	Ô™YÚ\Ý\™Y\Ù\œÉËˆ	Ý\ÝX\š[ÜÔÚ^ËœÙX\˜Ú[	Îˆ	ÔÙX\˜ÚžH˜[YK[XZ[Û™KÜˆ›ÛIËˆ	Ý\ÝX\š[ÜÔÚ^Ëœ™\Ý[ÓX™[	Îˆ	Ù›Ý[™	Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë™›Ü˜šY[•]IÎˆ	ÔÕTT‹[Û›HXØÙ\ÜÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë™›Ü˜šY[“Y\ÜØYÙIÎ‚ˆ	Ö[Ý\ˆ›Ùš[H\È›Ý[ÝÙYÈšY]ÈÚ^È\Ù\œË‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›ØY[™ÉÎˆ	ÓØY[™ÈÚ^È\Ù\œÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë›ØY\œ›Ü•]IÎˆ	Õ[˜X›HÈØY\Ù\œÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë›ØY\œ›Ü‰Îˆ	ÐÚXÚÈ[Ý\ˆÛÛ›™XÝ[Ûˆ[™žHYØZ[‹‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë™[\U]IÎˆ	Ó›È\Ù\œÈ›Ý[™	Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë™[\SY\ÜØYÙIÎˆ	ÐY\ÝHÙX\˜ÚÈš[™Ý\ˆ\Ù\œË‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë\Ù\‘˜[˜XÚÉÎˆ	ÔÚ^È\Ù\‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë››Ñ[XZ[	Îˆ	Ñ[XZ[›Ý›ÝšYY	Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë››ÔÛ™IÎˆ	ÔÛ™H›Ý›ÝšYY	Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ›ÛKœÝ\\‰Îˆ	ÔÕTT‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ›ÛK˜YZ[‰Îˆ	ÐYZ[š\Ý˜]Ü‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ›ÛK˜ÛÛX›Ü˜]Ü‰Îˆ	ÐÛÛX›Ü˜]Ü‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ›ÛK˜Ý\ÝÛY\‰Îˆ	ÐÝ\ÝÛY\‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ›ÛK[šÛ›ÝÛ‰Îˆ	Ó›Ý›ÝšYY	Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[]IÎˆ	Õ\Ù\ˆ]Z[ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[œÝX]IÎ‚ˆ	Ô™YÚ\Ý˜][Û‹™Y™\™[˜Ù\ËÛÛ\[šY\Ë[™[šÜÈØ]™Y[ˆÚ^Ë‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[›ØY\œ›Ü‰Îˆ	Õ[˜X›HÈØY\Ù\ˆ]Z[Ë‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[œ\œÛÛ˜[	Îˆ	Ô\œÛÛ˜[]IËˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[˜XØÛÝ[	Îˆ	ÐXØÛÝ[[™\›Z\ÜÚ[ÛœÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[œ™Y™\™[˜Ù\ÉÎˆ	Ò[™]šYX[™Y™\™[˜Ù\ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[™ÛØ˜[™Y™\™[˜Ù\ÉÎˆ	ÑÛØ˜[™Y™\™[˜Ù\ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[˜ÛÛ\[šY\ÉÎˆ	Ó[šÙYÛÛ\[šY\ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[›[šÜÉÎˆ	Ó[šÜÈ[™ÛÛ˜XÝ]IËˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[››ÐÛÛ\[šY\ÉÎˆ	Ó›È[šÙYÛÛ\[šY\Ë‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[››Ó[šÜÉÎˆ	Ó›È[šÜÈ™YÚ\Ý\™Y‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë™]Z[š[XYÙTÝÜ™Y	Îˆ	ÔÝÜ™Y[XYÙIËˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ë˜ÛÛ\]Y	Îˆ	ÓÛ˜›Ø\™[™ÈÛÛ\]Y	Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ëœ[™[™ÉÎˆ	ÓÛ˜›Ø\™[™È[™[™ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ë™X[ÙÐ˜\œšY\‰Îˆ	ÐÚ[™ÙH[š]X[Û˜›Ø\™[™ÈÝ]\ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ëœ™\Ù]]IÎˆ	Ô™\]Y\ÝÛ˜›Ø\™[™ÈYØZ[ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ëœ™\Ù]Y\ÜØYÙIÎ‚ˆ	ÓÛˆH™^XØÙ\ÜËH\Ù\ˆÚ[™YYÈÛÛ™š\›HZ\ˆ[š]X[]HYØZ[ˆ™Y›Ü™H[\š[™ÈHÞ\Ý[K‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ëœ™\Ù]XÝ[Û‰Îˆ	Ô™YÈÛ˜›Ø\™[™ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ë˜ÛÛ\]U]IÎˆ	ÓX\šÈÛ˜›Ø\™[™È\ÈÛÛ\]YÉËˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ë˜ÛÛ\]SY\ÜØYÙIÎ‚ˆ	ÕH\Ù\ˆÚ[›ÈÛ™Ù\ˆÙYH[š]X[Û˜›Ø\™[™ÈÛˆ]\™HXØÙ\ÜË‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ë˜ÛÛ\]PXÝ[Û‰Îˆ	ÓX\šÈ\ÈÛÛ\]Y	Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ëœ›ØÙ\ÜÚ[™Õ]IÎˆ	Õ\][™ÈÛ˜›Ø\™[™Ë‹‹‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ëœ›ØÙ\ÜÚ[™ÓY\ÜØYÙIÎ‚ˆ	ÔX\ÙHØZ]Ú[HH™]ÈÙ][™È\ÈØ]™Y‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™ËœÝXØÙ\ÜÕ]IÎˆ	ÓÛ˜›Ø\™[™È\]Y	Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™ËœÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	ÕH™]È[HÚ[\HH™^[YHH\Ù\ˆÚYÛœÈ[‹‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ë™\œ›Ü•]IÎˆ	Õ[˜X›HÈ\]IËˆ	Ý\ÝX\š[ÜÔÚ^Ë›Û˜›Ø\™[™Ë™\œ›Ü“Y\ÜØYÙIÎ‚ˆ	ÕžHYØZ[‹ˆ›ÈÝ\ˆ[™›Ü›X][ÛˆØ\ÈÚ[™ÙY‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ\ÜÝÛÜ™™\Ù]]IÎˆ	Ô™\Ù]\ÜÝÛÜ™	Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ\ÜÝÛÜ™™\Ù]œÝX]IÎ‚ˆ	Õ\ÙH\ÈXÝ[ÛˆÚ[ˆH\Ù\ˆ™YYÈÈ™YYš[™HZ\ˆÚYÛ‹Z[ˆ\ÜÝÛÜ™‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ\ÜÝÛÜ™™\Ù]™X[ÙÕ]IÎˆ	Ô™\Ù]\È\Ù\ˆ\ÜÝÛÜ™ÉËˆ	Ý\ÝX\š[ÜÔÚ^Ëœ\ÜÝÛÜ™™\Ù]™X[ÙÓY\ÜØYÙIÎ‚ˆ	ÕHXÝ[ÛˆÚ[™H\YY[[YYX][HÈHÙ[XÝY\Ù\‹‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ\ÜÝÛÜ™™\Ù]˜XÝ[Û‰Îˆ	Ô™\Ù]\ÜÝÛÜ™	Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ\ÜÝÛÜ™™\Ù]œÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	ÕH\ÜÝÛÜ™™\Ù]Ø\ÈÛÛ\]YÝXØÙ\ÜÙ[K‰Ëˆ	Ý\ÝX\š[ÜÔÚ^Ëœ\ÜÝÛÜ™™\Ù]™\œ›Ü“Y\ÜØYÙIÎ‚ˆ	ÐÛÝ[›Ý™\Ù]H\ÜÝÛÜ™šYÚ›ÝËˆžHYØZ[‹‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë™^YXœ›ÝÉÎˆ	Ò[š]X[Ù]\	Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë˜œ˜[™YÛ[™IÎˆ	Ò][Ý\È\™IËˆ	Ú[š]X[Û˜›Ø\™[™Ë[YP˜YÙIÎˆ	Ó\ÜÈ[ˆHZ[]IËˆ	Ú[š]X[Û˜›Ø\™[™ËšY[]TÝ\X™[	Îˆ	Ö[ÝH[™[Ý\ˆ\Ú[™\ÜÉËˆ	Ú[š]X[Û˜›Ø\™[™Ë˜\Ú[™\ÜÔÝ\X™[	Îˆ	Ö[Ý\ˆ\Ú[™\ÜÉËˆ	Ú[š]X[Û˜›Ø\™[™ËšY[]P™[™Yš]]IÎ‚ˆ	Ö[Ý\ˆÛÜšÜÜXÙK™XYH›ÜˆHØ^H[ÝHÛÜšË‰Ëˆ	Ú[š]X[Û˜›Ø\™[™ËšY[]P™[™Yš]ÝX]IÎ‚ˆ	Ó[™ÝXYÙK›Ùš[K[™\Ú[™\ÜÈ™XYH™Y›Ü™HHš\œÝØÜ™Y[‹‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë˜\Ú[™\ÜÐ™[™Yš]]IÎ‚ˆ	Ó\ÜÈ›Ú\ÙKˆ[Ü™HÙˆÚ]X]\œË‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë˜\Ú[™\ÜÐ™[™Yš]ÝX]IÎ‚ˆ	ÕÙHÚ\HH^\šY[˜ÙH\›Ý[™[Ý\ˆXÝX[\Ú[™\ÜÈ›Ý][™K‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ëœš]˜XÞS›ÝIÎ‚ˆ	Ö[ÝHØ[ˆÚ[™ÙH\È[™›Ü›X][Ûˆ]\‹‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ëœ™]šY]Ó[™ÝXYÙIÎˆ	Ô™Y™\œ™Y[™ÝXYÙIËˆ	Ú[š]X[Û˜›Ø\™[™Ëœ™]šY]Ô›Ùš[IÎˆ	Ô\œÛÛ˜[›Ùš[IËˆ	Ú[š]X[Û˜›Ø\™[™Ëœ™]šY]ÐÛÛ\[žIÎˆ	Ð\Ú[™\ÜÈY[]IËˆ	Ú[š]X[Û˜›Ø\™[™Ëœ™]šY]Ô\œÛÛ˜[^™Y	Îˆ	Ô\œÛÛ˜[^™Y^\šY[˜ÙIËˆ	Ú[š]X[Û˜›Ø\™[™Ëž[Ý\‘]Z[ÉÎˆ	Ö[Ý\ˆ]Z[ÉËˆ	Ú[š]X[Û˜›Ø\™[™Ëœ™\]Z\™Y[	Îˆ	Ô™\]Z\™YšY[ÉËˆ	Ú[š]X[Û˜›Ø\™[™Ë˜ÚÛÜÙR[	Îˆ	ÐÚÛÜÙHÛ™HÜ[ÛˆÜˆ›Ý‰Ëˆ	Ú[š]X[Û˜›Ø\™[™ËœÝ\	Îˆ	ÔÝ\	Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë›Ù‰Îˆ	ÛÙ‰Ëˆ	Ú[š]X[Û˜›Ø\™[™ËšY[]U]IÎˆ	Ó]8 &\ÈÝ\Ú]H\ÜÙ[X[ÉËˆ	Ú[š]X[Û˜›Ø\™[™ËšY[]TÝX]IÎ‚ˆ	ÐÛÛ™š\›H[Ý\ˆ[™›Ü›X][ÛˆÛÈÙHØ[ˆ\œÛÛ˜[^™H[Ý\ˆ^\šY[˜ÙK‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë˜\Ú[™\ÜÕ]IÎˆ	ÕÚ]Ù\È[Ý\ˆ\Ú[™\ÜÈÏÉËˆ	Ú[š]X[Û˜›Ø\™[™Ë˜\Ú[™\ÜÔÝX]IÎ‚ˆ	Õ\ÈÛ›HÜ™Ø[š^™\È[Ù[\È[™ÚÜÝ]Ëˆ[ÝHØ[ˆÚ[™ÙH]]\‹‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë›[™ÝXYÙT]Y\Ý[Û‰Î‚ˆ	ÕÚXÚ[™ÝXYÙHÛÝ[[ÝHZÙHÈÛÛ[YH[ÉËˆ	Ú[š]X[Û˜›Ø\™[™Ë\Ù\“˜[YIÎˆ	ÕÚ]ÚÝ[ÙHØ[[ÝOÉËˆ	Ú[š]X[Û˜›Ø\™[™Ë˜ÛÛ\[žS˜[YIÎˆ	Ð\Ú[™\ÜÈ˜[YIËˆ	Ú[š]X[Û˜›Ø\™[™ËœØ[\Õ]IÎˆ	ÔÙ[È›ÙXÝÉËˆ	Ú[š]X[Û˜›Ø\™[™ËœØ[\ÔÝX]IÎ‚ˆ	ÔÚ[ÙˆØ[KØ][ÙË[™[ÜžK[™Ø[\Ë‰Ëˆ	Ú[š]X[Û˜›Ø\™[™ËœÙ\šXÙ\Õ]IÎˆ	Ô›ÝšY\ÈXÚšXØ[Ù\šXÙ\ÉËˆ	Ú[š]X[Û˜›Ø\™[™ËœÙ\šXÙ\ÔÝX]IÎ‚ˆ	Ð\Ú[Y[ËÙ\šXÙHÜ™\œË[™›ØÙY\™\Ë‰Ëˆ	Ú[š]X[Û˜›Ø\™[™ËœÝ\	Îˆ	ÔÝ\\Ú[™ÈÚ^Ð\	Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë˜XÝ]š]T™\]Z\™Y	Î‚ˆ	ÔÙ[XÝØ[\ËXÚšXØ[Ù\šXÙ\ËÜˆ›Ý‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë\Ù\“˜[YT™\]Z\™Y	Îˆ	Ñ[\ˆ[Ý\ˆ˜[YHÈÛÛ[YK‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë˜ÛÛ\[žS˜[YT™\]Z\™Y	Î‚ˆ	Ñ[\ˆHÛÛ\[žH˜[YHÈÛÛ[YK‰Ëˆ	Ú[š]X[Û˜›Ø\™[™ËœØ]™Q\œ›Ü‰Îˆ	Õ[˜X›HÈØ]™H›ÝËˆX\ÙHžHYØZ[‹‰Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë›ØY\œ›Ü•]IÎˆ	Õ[˜X›HÈÝ\Ù]\	Ëˆ	Ú[š]X[Û˜›Ø\™[™Ë›ØY\œ›Ü“Y\ÜØYÙIÎ‚ˆ	ÐÚXÚÈ[Ý\ˆÛÛ›™XÝ[Ûˆ[™žHYØZ[‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›Ü[ÛÛ™š\›U]IÎˆ	ÐÛÛ™š\›HØ\ÚÜ[š[™ÏÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›Ü[ÛÛ™š\›SY\ÜØYÙIÎ‚ˆ	ÑÈ[ÝHØ[ÈÜ[ˆØØ\Ú\ÚßHÚ][ˆ[š]X[Ø\Ú[[Ý[ÙˆØ[[Ý[OÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›Ü[ÛÛ™š\›PXÝ[Û‰Îˆ	ÓÜ[ˆØ\Ú™YÚ\Ý\‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙTÙ\ÜÚ[ÛXÝ[Û‰Îˆ	ÐÛÜÙHØ\Ú™YÚ\Ý\‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÕ]IÎˆ	ÐÛÜÙHØ\Ú™YÚ\Ý\ˆÙ\ÜÚ[ÛÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÔÝX]IÎ‚ˆ	Ô™]šY]ÈHÝ[[X\žH™Y›Ü™HÛÛ[Z[™Ëˆ\ÈXÝ[ÛˆØ[››Ý™H[™Û™K‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÐØ\Ú\ÚÉÎˆ	ÐØ\Ú™YÚ\Ý\‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÓ[Ý™[Y[ÉÎˆ	Õ˜[œØXÝ[ÛœÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÑ^XÝY˜[[˜ÙIÎˆ	Ñ^XÝY˜[[˜ÙIËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÐÚXÚÛ\ÝÛÛ\]IÎ‚ˆ	ÓÜ\˜][Û˜[Ý[[X\žH]˜Z[X›IËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÐ˜XÚÉÎˆ	Ð˜XÚÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÐÛÛ™š\›IÎˆ	ÐÛÜÙHØ\Ú™YÚ\Ý\‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÔ›ØÙ\ÜÚ[™ÉÎˆ	ÐÛÜÚ[™Ë‹‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÔÝXØÙ\ÜÕ]IÎ‚ˆ	ÐØ\Ú™YÚ\Ý\ˆÛÜÙYÝXØÙ\ÜÙ[IËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÔÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	ÕHÙ\ÜÚ[Ûˆ\È[™Y[™™[XZ[œÈ]˜Z[X›H[ˆH\ÝÜžK‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜ÛÜÙQX[ÙÑ\œ›Ü‰Î‚ˆ	Õ[˜X›HÈÛÜÙHHØ\Ú™YÚ\Ý\‹ˆÚXÚÈ[Ý\ˆÛÛ›™XÝ[Ûˆ[™žHYØZ[‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÕ]IÎˆ	ÐØ[˜Ù[˜[œØXÝ[ÛÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÔÝX]IÎ‚ˆ	Ô™]šY]È\È˜[œØXÝ[Ûˆ[šØYÙH™Y›Ü™HØ[˜Ù[[™Ëˆ\[™[™ÈÛˆHš[˜[˜ÚX[\ÝÜžKH[žHX^H™YYÈ™[XZ[ˆ™XÛÜ™Y‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÓÜ\˜][Û‰Îˆ	Õ˜[œØXÝ[Û‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÓY]Ù	Îˆ	ÓY]Ù	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÐ[[Ý[	Îˆ	Ð[[Ý[	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÐÚXÚÛ\Ý	Î‚ˆ	ÒYˆH˜[œØXÝ[Ûˆ\È[šÙYÈ]\™H™XÙZ\ÈÜˆ™[]Y[šY\ËØ[˜Ù[][ÛˆX^H™H›ØÚÙYÈ™\Ù\™HH\ÝÜžK‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÐ˜XÚÉÎˆ	Ð˜XÚÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÐÛÛ™š\›IÎˆ	ÐØ[˜Ù[˜[œØXÝ[Û‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÔ›ØÙ\ÜÚ[™ÉÎˆ	ÐØ[˜Ù[[™Ë‹‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÔÝXØÙ\ÜÕ]IÎˆ	Õ˜[œØXÝ[ÛˆØ[˜Ù[Y	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÔÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	ÕHØ\Ú\ÝÜžH\È™Y[ˆ\]Y[™\È˜[œØXÝ[Ûˆ\È›ÈÛ™Ù\ˆXÝ]™H[ˆHÝ\œ™[Ù\ÜÚ[Û‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÑ\œ›Ü‰Î‚ˆ	Õ[˜X›HÈØ[˜Ù[\È˜[œØXÝ[ÛˆšYÚ›ÝËˆ™]šY]È™[]Yš[˜[˜ÚX[[šÜÈ[™žHYØZ[‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÓ[šÙY™XÛÜ™Ñ\œ›Ü‰Î‚ˆ	Õ\È˜[œØXÝ[Ûˆ\È[šÙYÈ]\™H™XÙZ\ÈÜˆ[šY\È[™]\Ý™[XZ[ˆ™XÛÜ™Y[ˆHš[˜[˜ÚX[\ÝÜžK‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÔ\›Z\ÜÚ[Û‘\œ›Ü‰Î‚ˆ	Ö[ÝHÈ›Ý]™H\›Z\ÜÚ[ÛˆÈØ[˜Ù[\È˜[œØXÝ[Û‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÐÛÛ›™XÝ]š]Q\œ›Ü‰Î‚ˆ	Õ[˜X›HÈ™XXÚHÙ\™\ˆšYÚ›ÝËˆÚXÚÈ[Ý\ˆÛÛ›™XÝ[Ûˆ[™žHYØZ[‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Ø[˜Ù[X[ÙÓZÙ[S[šÙY\œ›Ü‰Î‚ˆ	Õ[˜X›HÈØ[˜Ù[\È˜[œØXÝ[Ûˆ™XØ]\ÙH]X^H™H[šÙYÈÝ\ˆš[˜[˜ÚX[™XÛÜ™Ëˆ™]šY]ÈH™[]Y™XÙZ\È[™žHYØZ[‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë˜Y[žPXÝ[Û‰Îˆ	ÐY[žIËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÕ]IÎˆ	Ô™YÚ\Ý\ˆÜ\˜][Û˜[[žIËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔÝX]IÎ‚ˆ	Ñš[[ˆHÜ\˜][Ûˆ]Z[È[™™]šY]È[H™Y›Ü™HÜÝ[™ÈÈHØ\Ú™YÚ\Ý\‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÕ\SX™[	Îˆ	ÓÜ\˜][Ûˆ\IËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔÙ[XÝ	Îˆ	ÔÙ[XÝ	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÐ[[Ý[X™[	Îˆ	Ð[[Ý[	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔ™[]Y\SX™[	Îˆ	Ô™[]YY]Ù	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔ™Y™\™[˜ÙSX™[	Îˆ	Ô™Y™\™[˜ÙHÈ™XÙZ\	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔ™Y™\™[˜ÙR[	Îˆ	Ñ^[\NˆSÕ‹LIËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÓØœÙ\˜][Û“X™[	Îˆ	Ó›ÝIËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÓØœÙ\˜][Û’[	Î‚ˆ	Ñ\ØÜšX™HH™X\ÛÛˆ›ÜˆH[Ý™[Y[ÛX\›K‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÓ[šÙYØ[SX™[	Îˆ	Ó[šÙYÈHØ[IËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÓ[šÙYØ[R[	Î‚ˆ	Õ\ÙH\È›Üˆ™]™\œØ[ÈÜˆØ\Ù\È™[]YÈH™]š[Ý\ÈÙ\šXÙK‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔ™]šY]ÐXÝ[Û‰Îˆ	Ô™]šY]È[žIËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÕ\T™\]Z\™Y	Îˆ	ÔÙ[XÝHÜ\˜][Ûˆ\K‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔ™[]Y\T™\]Z\™Y	Î‚ˆ	ÔÙ[XÝH™[]YY]Ù‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÐ[[Ý[™\]Z\™Y	Îˆ	Ñ[\ˆH˜[Y[[Ý[‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔ™]šY]Õ]IÎˆ	ÐÛÛ™š\›HÜ\˜][Û˜[[žOÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔ™]šY]ÔÝX]IÎ‚ˆ	Ô™]šY]ÈH]Z[È™[ÝÈ™Y›Ü™HÜÝ[™ÈH[Ý™[Y[ÈHØ\Ú™YÚ\Ý\‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÐÚXÚÛ\Ý	Îˆ	ÔÝ[[X\žH™XYH›ÜˆÛÛ™š\›X][Û‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÑY]XÝ[Û‰Îˆ	ÑY]]Z[ÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÐÛÛ™š\›PXÝ[Û‰Îˆ	Ô™YÚ\Ý\ˆ[Ý™[Y[	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔ›ØÙ\ÜÚ[™ÉÎˆ	Ô™YÚ\Ý\š[™Ë‹‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÑ\œ›Ü‰Î‚ˆ	ÕH[Ý™[Y[ÛÝ[›Ý™H™YÚ\Ý\™YˆÚXÚÈH]Z[È[™žHYØZ[‹‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔÝXØÙ\ÜÕ]IÎ‚ˆ	Ó[Ý™[Y[™YÚ\Ý\™YÝXØÙ\ÜÙ[IËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÔÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	ÕH[žH\È[™XYHš\ÚX›H[ˆH\ÝÜžH[™Ø\ÚÝ[[X\žK‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÐ]˜Z[X›SY]ÙÉÎˆ	ÐXÝ]™HY]ÙÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ë›][˜ÚX[ÙÓ[šÙYØ[UYÉÎˆ	Ó[šÙYÈØ[IËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžUÙ^SÛ›IÎˆ	ÕÙ^HÛ›IËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžT\š[Ù	Îˆ	Ô\š[Ù	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžT\š[ÙÙ^IÎˆ	ÕÙ^IËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžT\š[Ù\ÝÑ^\ÉÎˆ	Ó\ÝÈ^\ÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžT\š[Ù\ÝÌ^\ÉÎˆ	Ó\ÝÌ^\ÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžT\š[Ù\Ó[Û	Îˆ	Õ\È[Û	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžT\š[Ù\Ý[Û	Îˆ	Ó\Ý[Û	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžT\š[ÙÝ\ÝÛT˜[™ÙIÎˆ	ÐÝ\ÝÛH˜[™ÙIËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžS˜]\™IÎˆ	Ñ\™XÝ[Û‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžTÝ]\ÉÎˆ	ÔÝ]\ÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžSÜ\˜][Û‰Îˆ	ÓÜ\˜][Û‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžSY]Ù	Îˆ	ÓY]Ù	Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžTÝ\]IÎˆ	ÔÝ\]IËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžQ[™]IÎˆ	Ñ[™]IËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžTÝ\]R[	Îˆ	ÔÙ[XÝÝ\]IËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžQ[™]R[	Îˆ	ÔÙ[XÝ[™]IËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžPÛX\‘š[\œÉÎˆ	ÐÛX\ˆš[\œÉËˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžS›Ô™\Ý[Ñš[\™Y	Î‚ˆ	Ó›È˜[œØXÝ[ÛœÈ›Ý[™›ÜˆHÙ[XÝYš[\œË‰Ëˆ	ØØZ^K›Ü\˜XÛÙ\Ëš\ÝÜžS›Ô™\Ý[ÕÙ^IÎ‚ˆ	Ó›È˜[œØXÝ[ÛœÈ™YÚ\Ý\™YÙ^K‰Ëˆ	ÝÙX‹œÝ[™[Û™Kœ][ÝIÎˆ	Ô][ÝIËˆ	ÝÙX‹œÝ[™[Û™KœÙ\šXÙSÜ™\‰Îˆ	ÔÙ\šXÙHÜ™\‰Ëˆ	ÝÙX‹œÚ[™^[™ÚYX˜\‰Îˆ	Ñ^[™˜]šYØ][Û‰Ëˆ	ÝÙX‹œÚ[˜ÛÛ\ÙTÚYX˜\‰Îˆ	ÐÛÛ\ÙH˜]šYØ][Û‰Ëˆ	ÝÙX‹œÚ[˜Ý\œ™[ÛÛ[Y\˜ÙIÎˆ	ÐÝ\œ™[\Ú[™\ÜÉËˆ	ÝÙX‹œÚ[œÙ\ÜÚ[ÛÛÛ^	Îˆ	ÔÙ\ÜÚ[ÛˆÛÛ^	Ëˆ	ÝÙX‹œÚ[ÛÜšÜÜXÙIÎˆ	ÓÜ\˜][Û˜[ÛÜšÜÜXÙIËˆ	ÝÙX‹œÚ[™\œÚ[Û‰Îˆ	Õ™\œÚ[Û‰Ëˆ	ÝÙX‹šXY\‹œ›Ùš[IÎˆ	Ô›Ùš[IËˆ	ÝÙX‹šXY\‹œ›Ùš[UÛÛ\	Îˆ	Ó^H›Ùš[IËˆ	ÝÙX‹šXY\‹\Ù\“Y[IÎˆ	Õ\Ù\‰Ëˆ	ÝÙX‹šXY\‹›^T›Ùš[IÎˆ	Ó^H›Ùš[IËˆ	ÝÙX‹šXY\‹[YK™\šÉÎˆ	Ñ\šÈ[YIËˆ	ÝÙX‹šXY\‹[YK™\šË™[˜X›IÎˆ	Ñ[˜X›H\šÈ[YIËˆ	ÝÙX‹šXY\‹[YK™\šË™\ØX›IÎˆ	Ñ\ØX›H\šÈ[YIËˆ	ÝÙX‹šXY\‹›ÙÛÝ]	Îˆ	ÔÚYÛˆÝ]	Ëˆ	ÝÙX‹›ÙÛÝ]™X[ÙË]IÎˆ	Ñ[™Ù\ÜÚ[Ûˆ›ÝÏÉËˆ	ÝÙX‹›ÙÛÝ]™X[ÙËœÝX]IÎ‚ˆ	Ô™]šY]ÈHÝ\œ™[ÛÛ^™Y›Ü™HÚYÛš[™ÈÝ]ˆ[ÝHÚ[™]\›ˆÈHX›XÈÙÚ[ˆØÜ™Y[ˆ[ˆ\Èœ›ÝÜÙ\‹‰Ëˆ	ÝÙX‹›ÙÛÝ]™X[ÙË\Ù\‰Îˆ	Õ\Ù\‰Ëˆ	ÝÙX‹›ÙÛÝ]™X[ÙË˜Ý\œ™[ÛÛ[Y\˜ÙIÎˆ	ÐÝ\œ™[\Ú[™\ÜÉËˆ	ÝÙX‹›ÙÛÝ]™X[ÙË›™^Ý\	Îˆ	Ó™^Ý\	Ëˆ	ÝÙX‹›ÙÛÝ]™X[ÙË›™^Ý\˜[YIÎˆ	ÔX›XÈÙÚ[ˆØÜ™Y[‰Ëˆ	ÝÙX‹›ÙÛÝ]™X[ÙË˜ÚXÚÛ\Ý	Î‚ˆ	ÕHÝ\œ™[Ù\ÜÚ[ÛˆÚ[[™Û›H[ˆ\Èœ›ÝÜÙ\‹‰Ëˆ	ÝÙX‹›ÙÛÝ]™X[ÙË˜˜XÚÉÎˆ	ÔÝ^HÚYÛ™Y[‰Ëˆ	ÝÙX‹›ÙÛÝ]™X[ÙË˜ÛÛ™š\›IÎˆ	ÔÚYÛˆÝ]›ÝÉËˆ	ÝÙX‹›ÙÛÝ]™X[ÙËœ›ØÙ\ÜÚ[™ÉÎˆ	Ñ[™[™ÈÙ\ÜÚ[Û‹‹‹‰Ëˆ	ÝÙX‹›ÙÛÝ]™X[ÙËœÝXØÙ\ÜÕ]IÎˆ	ÔÙ\ÜÚ[Ûˆ[™YÝXØÙ\ÜÙ[IËˆ	ÝÙX‹›ÙÛÝ]™X[ÙËœÝXØÙ\ÜÓY\ÜØYÙIÎ‚ˆ	Ô™\\š[™ÈH™]\›ˆÈHX›XÈÙÚ[ˆØÜ™Y[‹‰Ëˆ	ÝÙX‹›ÙÛÝ]™X[ÙË™\œ›Ü‰Î‚ˆ	Õ[˜X›HÈ[™HÙ\ÜÚ[ÛˆšYÚ›ÝËˆX\ÙHžHYØZ[ˆ[ˆH[ÛY[‰Ëˆ	ÝÛÜšÜÜXÙRÛYK]IÎˆ	Ó^H^H[ˆÚ^Ð\	Ëˆ	ÝÛÜšÜÜXÙRÛYK™Ü™Y][™ÉÎˆ	Ò[ËÛ˜[Y_IËˆ	ÝÛÜšÜÜXÙRÛYK[šÛ›ÝÛ•\Ù\‰Îˆ	Ý\Ù\‰Ëˆ	ÝÛÜšÜÜXÙRÛYK˜ÛÛ\[žQ˜[˜XÚÉÎˆ	ÐÝ\œ™[\Ú[™\ÜÉËˆ	ÝÛÜšÜÜXÙRÛYK›Ü\˜][Û˜[]IÎˆ	ÕÙ^NˆÙ]_IËˆ	ÝÛÜšÜÜXÙRÛYKœ™Yœ™\ÚÛÛ\	Îˆ	Ô™Yœ™\Ú^HÝ[[X\žIËˆ	ÝÛÜšÜÜXÙRÛYK›ØY[™Ë]IÎˆ	ÓØY[™È^HÝ[[X\žIËˆ	ÝÛÜšÜÜXÙRÛYK›ØY[™ËœÝX]IÎ‚ˆ	Ñ™]Ú[™ÈHÝ\œ™[Ú]X][Ûˆ›Üˆ\È\Ú[™\ÜË‰Ëˆ	ÝÛÜšÜÜXÙRÛYK™\œ›Ü‹]IÎˆ	ÐÛÝ[›ÝØYH^HÝ[[X\žK‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK]IÎˆ	Ó^H\Ú›Ø\™	Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœÝX]IÎ‚ˆ	Õ˜XÚÈ[Ý\ˆÛØ[ËØ[\ËÙ\šXÙ\Ë[™ÛÜšÈš[Üš]Y\Ë‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK›ØY[™ÉÎˆ	ÓØY[™È[Ý\ˆÜ\˜][Û˜[\Ú›Ø\™	Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK™\œ›Ü‹\Ù\‰Î‚ˆ	ÕÙHÛÝ[›ÝY[YžH[Ý\ˆ\œÛÛ˜[\Ú›Ø\™‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK˜][[Û‹]IÎˆ	ÕÛÜšÈš[Üš]Y\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYK˜][[Û‹˜ÛX\‰Î‚ˆ	Ñ]™\ž][™È\È\È]HXÜ›ÜÜÈ[Ý\ˆÛÜšÈ\™X\Ë‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK˜][[Û‹œ[™[™ÉÎˆ	ÞØÛÝ[H][\È™YY][[Û‹‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK˜][[Û‹›Ý™\™YTØ[\ÉÎˆ	ÓÝ™\™YHØ[\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYK˜][[Û‹›Ý™\™YTÙ\šXÙ\ÉÎˆ	Ó]H[]™\šY\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYK˜][[Û‹œ™\Ù\˜][ÛœÉÎˆ	Ô™\Ù\˜][ÛœÈÈ™]šY]ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœØ[\Ë]IÎˆ	Ó^HØ[\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœØ[\Ëœ\š[Ù	Îˆ	Ô™\Ý[Èœ›ÛHÜÝ\HÈÙ[™IËˆ	ØÛÛX›Ü˜]Ü’ÛYKœØ[\Ë˜ÛÝ[	Îˆ	ÔØ[\È\È[Û	Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœØ[\ËÝ[	Îˆ	ÕÝ[ÛÛ	Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœØ[\Ëœ™XÙZ]™Y	Îˆ	Ð[™XYH™XÙZ]™Y	Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœØ[\Ë›Ü[“[Û	Îˆ	ÓÝ]Ý[™[™È\È[Û	Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœØ[\Ë›ØY\œ›Ü‰Îˆ	ÕÙHÛÝ[›ÝØY[Ý\ˆØ[\ÈÝ[[X\žK‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\Ë]IÎˆ	Õ[œÙ]YØ[\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\ËœÝX]IÎˆ	ÓÛ›HØ[\È™YÚ\Ý\™YžH[ÝK‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\Ë›ØY\œ›Ü‰Î‚ˆ	ÕÙHÛÝ[›ÝØY[Ý\ˆÝ]Ý[™[™ÈØ[\Ë‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\Ë™[\IÎ‚ˆ	Ö[ÝH]™H›ÈØ[\È]ØZ][™ÈÙ][Y[‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\Ë›[Ü™IÎˆ	ÞØÛÝ[H[Ü™HÝ]Ý[™[™ÈØ[\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\Ë˜Ý\ÝÛY\‘˜[˜XÚÉÎˆ	ÐÝ\ÝÛY\ˆ›Ý›ÝšYY	Ëˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\ËœØ[Q˜[˜XÚÉÎˆ	ÔØ[IËˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\Ë››ÑYQ]IÎˆ	Ó›ÈYH]IËˆ	ØÛÛX›Ü˜]Ü’ÛYK›Ü[”Ø[\Ë›Ý™\™YIÎˆ	ÓÝ™\™YIËˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ë]IÎˆ	Ó^HÙ\šXÙ\ÈžHÝ]\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\ËœÝX]IÎ‚ˆ	Ñ\ÝšX][ÛˆÙˆÙ\šXÙHØ[È\ÜÚYÛ™YÈ[ÝK‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ë›Ü[‰Îˆ	ÓÜ[ˆÙ\šXÙHØ[ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ë›ØY\œ›Ü‰Îˆ	ÕÙHÛÝ[›ÝØY[Ý\ˆÙ\šXÙ\Ë‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ë™[\IÎ‚ˆ	Ó›ÈÙ\šXÙHØ[\ÈÝ\œ™[H\ÜÚYÛ™YÈ[ÝK‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\ËÝ[	Îˆ	ÕÝ[\ÜÚYÛ™Y	Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ëš[”›ÙÜ™\ÜÉÎˆ	Ò[ˆ›ÙÜ™\ÜÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ë™YUÙ^IÎˆ	ÑYHÙ^IËˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ë›Ý™\™YIÎˆ	ÓÝ™\™YIËˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ë›[Ü™TÝ]\Ù\ÉÎ‚ˆ	ÞØÛÝ[H[Ü™HÝ]\Ù\ÈÚ]XÝ]š]IËˆ	ØÛÛX›Ü˜]Ü’ÛYKœÙ\šXÙ\Ë[šÛ›ÝÛ”Ý]\ÉÎˆ	Ó›ÈÝ]\ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœË]IÎˆ	Ô™\Ù\˜][Ûˆ]Y]YIËˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœËœÝX]IÎ‚ˆ	ÐØ][ÙÈ™\]Y\ÝÈ]Ø[ˆ™XÛÛYHØ[\Ë‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœË›Ü[‰Îˆ	ÓÜ[ˆ™\Ù\˜][ÛœÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœË›ØY\œ›Ü‰Î‚ˆ	ÕÙHÛÝ[›ÝØY™\Ù\˜][ÛœË‰Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœËœ[™[™ÉÎˆ	Ô[™[™ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœËœ™XÙZ]™Y	Îˆ	Ô™XÙZ]™Y	Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœË˜[˜[\Ú\ÉÎˆ	Õ[™\ˆ™]šY]ÉËˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœË˜ÛÛ™š\›YY	Îˆ	ÐÛÛ™š\›YY	Ëˆ	ØÛÛX›Ü˜]Ü’ÛYKœ™\Ù\˜][ÛœË˜ÛÛ™\Y	Îˆ	ÐÛÛ™\Y	Ëˆ	Ü\™›Ü›X[˜ÙKšÛYK]IÎˆ	Ó^HÛØ[ÉËˆ	Ü\™›Ü›X[˜ÙKšÛYKœÝX]IÎ‚ˆ	Õ˜XÚÈ[Ý\ˆÛØ[È[™™\Ý[È\]YžHÚ^Ð\‰Ëˆ	Ü\™›Ü›X[˜ÙKšÛYK™\Ú›Ø\™]IÎˆ	ÑÛØ[œËˆ™\Ý[	Ëˆ	Ü\™›Ü›X[˜ÙKšÛYKœ\š[Ù	Îˆ	Ô™\Ý[Èœ›ÛHÜÝ\HÈÙ[™IËˆ	Ü\™›Ü›X[˜ÙKšÛYK˜XØÙ\ÜÚXš[]SX™[	Îˆ	Ó^HÛØ[È\Ú›Ø\™	Ëˆ	Ü\™›Ü›X[˜ÙKšÛYK›ØY[™ÉÎˆ	ÓØY[™È[Ý\ˆÛØ[ÉËˆ	Ü\™›Ü›X[˜ÙKšÛYK›ØY\œ›Ü‰Îˆ	ÐÛÝ[›Ý\]H[Ý\ˆÛØ[Ë‰Ëˆ	Ü\™›Ü›X[˜ÙKšÛYK™[\U]IÎˆ	Ó›ÈXÝ]™HÛØ[\È[Û	Ëˆ	Ü\™›Ü›X[˜ÙKšÛYK™[\TÝX]IÎ‚ˆ	ÕÚ[ˆHÛØ[\È\ÜÚYÛ™YÈ[ÝK]È™\Ý[Ú[\X\ˆ\™K‰Ëˆ	Ü\™›Ü›X[˜ÙKšÛYKœ™\Ý[	Îˆ	Ô™\Ý[	Ëˆ	Ü\™›Ü›X[˜ÙKšÛYK\™Ù]	Îˆ	ÑÛØ[	Ëˆ	Ü\™›Ü›X[˜ÙKš[™XØ]Ü‹œØ[\Õ˜[YIÎˆ	ÔØ[\È[[Ý[	Ëˆ	Ü\™›Ü›X[˜ÙKš[™XØ]Ü‹œØ[\Ô]X[]IÎˆ	Ó[X™\ˆÙˆØ[\ÉËˆ	Ü\™›Ü›X[˜ÙKš[™XØ]Ü‹œÙ\šXÙ\Õ˜[YIÎˆ	ÔÙ\šXÙ\È[[Ý[	Ëˆ	Ü\™›Ü›X[˜ÙKš[™XØ]Ü‹œÙ\šXÙPØ[ÉÎˆ	ÕXÚšXØ[Ù\šXÙ\ÉËˆ	Ü\™›Ü›X[˜ÙKš[™XØ]Ü‹™š[š\ÚYÙ\šXÙPØ[ÉÎˆ	ÐÛÛ\]YÙ\šXÙ\ÉËˆ	Ü\™›Ü›X[˜ÙKš[™XØ]Ü‹œÙ\šXÙPØ[Õ˜[YIÎˆ	ÔÙ\šXÙHØ[È[[Ý[	Ëˆ	ÝÛÜšÜÜXÙRÛYKœÙXÝ[Û‹Ù^IÎˆ	ÕÙ^HÝ]\ÉËˆ	ÝÛÜšÜÜXÙRÛYKœÙXÝ[Û‹˜][[Û‰Îˆ	Ó™YYÈ[Ý\ˆ][[Û‰Ëˆ	ÝÛÜšÜÜXÙRÛYKœÙXÝ[Û‹œ]ZXÚÐXÝ[ÛœÉÎˆ	Ô]ZXÚÈXÝ[ÛœÉËˆ	ÝÛÜšÜÜXÙRÛYK™[\KÙ^IÎ‚ˆ	Ó›ÈÝ[[X\žH›ØÚÈ\È]˜Z[X›H›Üˆ[Ý\ˆ\›Z\ÜÚ[ÛœË‰Ëˆ	Ù\Ú›Ø\™[šXÚ[Ë›[Øš[QÜ™Y][™ÔÝX]IÎ‚ˆ	ÔÙYHHXZ[ˆXÝ]š]H›ÜˆÙ[\™\Ø_HÙ^K‰Ëˆ	ÝÛÜšÜÜXÙRÛYK™[\K˜][[Û‰Îˆ	Ó›È[\Ü[[™[™È][\ÈšYÚ›ÝË‰Ëˆ	ÝÛÜšÜÜXÙRÛYK™[\Kœ]ZXÚÐXÝ[ÛœÉÎ‚ˆ	Ó›È]ZXÚÈXÝ[Ûˆ\È]˜Z[X›H›Üˆ[Ý\ˆ\›Z\ÜÚ[ÛœË‰Ëˆ	ÝÛÜšÜÜXÙRÛYK˜Ø\Ú]IÎˆ	ÐØ\Ú™YÚ\Ý\‰Ëˆ	ÝÛÜšÜÜXÙRÛYK˜Ø\Ú›Ü[‰Îˆ	ÓÜ[‰Ëˆ	ÝÛÜšÜÜXÙRÛYK˜Ø\Ú˜ÛÜÙY	Îˆ	ÐÛÜÙY	Ëˆ	ÝÛÜšÜÜXÙRÛYK˜Ø\Ú›Ü[™Y]	Îˆ	ÜÚ[˜ÙHÝ[Y_IËˆ	ÝÛÜšÜÜXÙRÛYK˜Ø\Ú›Ü[™Y]Ú]]IÎˆ	ÜÚ[˜ÙHÙ]_H]Ý[Y_IËˆ	ÝÛÜšÜÜXÙRÛYK˜Ø\Úœ™\ÜÛœÚX›IÎˆ	ÓÜ[™YžHÛ˜[Y_IËˆ	ÝÛÜšÜÜXÙRÛ}ï­¢G§²ÚîÆ­yÒs¢s7FvRrÀ¢w&ö6VF–ÖVçF÷2ç7FvT6÷VçBæ÷F†W"s¢w¶6÷VçGÒ7FvW2rÀ¢w&ö6VF–ÖVçF÷2ç7FvU6VÖçF–72s¢u7FvR¶÷&FW'Ó¢·F—FÆWÒâ¶—FVÔ6÷VçDÆ&VÇÒârÀ¢w&ö6VF–ÖVçF÷2æW†V7WF–öä—FVÕ6VÖçF–72s¢w·&WV—&VDÆ&VÇÓ¢·F—FÆWÒâ·G—WÒârÀ¢w&ö6VF–ÖVçF÷2æW†V7WF–öä—FVÕ7FGW2s¢w·G—WÒ(
+"·&WV—&VDÆ&VÇÒrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6UG—U6VÖçF–72s¢w¶Æ&VÇÒâ¶FW67&—F–öçÒârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6UG—U6–×VÆFVE6VÖçF–72s ¢w¶Æ&VÇÒâ¶FW67&—F–öçÒâ¶FVÖôÆ&VÇÒârÀ¢w&ö6VF–ÖVçF÷2çG&–vvW%6VÖçF–72s ¢w¶÷W&F–öçÒÂ¶ÖöÖVçGÒÂ¶7F—fF–öçÒÂ¶Væf÷&6VÖVçGÒÂ·7FGW7ÒrÀ¢w&ö6VF–ÖVçF÷2çG&–vvW%7VÖÖ'•6–ævÆRs¢w¶÷W&F–öçÒÂ¶ÖöÖVçGÒrÀ¢w&ö6VF–ÖVçF÷2çG&–vvW%7VÖÖ'”×VÇF—ÆRs¢w¶f—'7GÒ(
+"··&VÖ–æ–æwÒrÀ¢w&ö6VF–ÖVçF÷2æ÷F–öäçVÖ&W"s¢t÷F–öâ¶–æFW‡ÒrÀ¢w&ö6VF–ÖVçF÷2æVF—F÷$æWuF—FÆRs¢tæWr&ö6VGW&RrÀ¢w&ö6VF–ÖVçF÷2æVF—F÷$VF—EF—FÆRs¢tVF—B&ö6VGW&RrÀ¢w&ö6VF–ÖVçF÷2ævVæW&Ä–æfòs¢tvVæW&Â–æf÷&ÖF–öârÀ¢w&ö6VF–ÖVçF÷2ææÖTf–VÆBs¢tæÖRrÀ¢w&ö6VF–ÖVçF÷2æFW67&—F–öäf–VÆBs¢tFW67&—F–öârÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öä6öçFW‡Bs¢t÷W&F–öæÂ6öçFW‡BrÀ¢w&ö6VF–ÖVçF÷2æÖöÖVçDf–VÆBs¢tÖöÖVçBrÀ¢w&ö6VF–ÖVçF÷2ç&WV—&T6ö×ÆWF–öâs¢u&WV—&R&ö6VGW&R6ö×ÆWF–öârÀ¢w&ö6VF–ÖVçF÷2ç&WV—&T6ö×ÆWF–öä†VÇs ¢t–âgWGW&R–çFVw&F–öâÂF†—2&ö6VGW&RÖ’&WV—&R6ö×ÆWF–öâ&Vf÷&R6öçF–çV–ærF†R÷W&F–öâârÀ¢w&ö6VF–ÖVçF÷2ç7FvW2s¢u7FvW2rÀ¢w&ö6VF–ÖVçF÷2æFE7FvRs¢tFB7FvRrÀ¢w&ö6VF–ÖVçF÷2æVF—E7FvRs¢tVF—B7FvRrÀ¢w&ö6VF–ÖVçF÷2æFVÆWFU7FvRs¢tFVÆWFR7FvRrÀ¢w&ö6VF–ÖVçF÷2æ—FV×2s¢t—FV×2rÀ¢w&ö6VF–ÖVçF÷2æFD—FVÒs¢tFB—FVÒrÀ¢w&ö6VF–ÖVçF÷2æVF—D—FVÒs¢tVF—B—FVÒrÀ¢w&ö6VF–ÖVçF÷2æFVÆWFT—FVÒs¢tFVÆWFR—FVÒrÀ¢w&ö6VF–ÖVçF÷2æ—FVÕG—Rs¢t—FVÒG—RrÀ¢w&ö6VF–ÖVçF÷2ç7FvUF—FÆTf–VÆBs¢u7FvRF—FÆRrÀ¢w&ö6VF–ÖVçF÷2æ—FVÕF—FÆTf–VÆBs¢uF—FÆR÷"–ç7G'V7F–öârÀ¢w&ö6VF–ÖVçF÷2æ—FVÔwV–Fæ6Tf–VÆBs¢u7W÷'F–ærFW‡BrÀ¢w&ö6VF–ÖVçF÷2ç6fU7FvRs¢u6fR7FvRrÀ¢w&ö6VF–ÖVçF÷2ç6fT—FVÒs¢u6fR—FVÒrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T–ç7G'V7F–öâs¢t–ç7G'V7F–öârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T6öæf—&ÖF–öâs¢t6öæf—&ÖF–öârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6U–W4æòs¢u–W2÷"æòrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T–ç7G'V7F–öäFW67&—F–öâs ¢u6†÷w2â–ç7G'V7F–öâFòF†R7FfbÖVÖ&W"ârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T6öæf—&ÖF–öäFW67&—F–öâs ¢u&WV—&W2F†R7FfbÖVÖ&W"Fò6öæf—&Òâ7F–öâârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6U–W4æôFW67&—F–öâs¢u6†÷w2âö&¦V7F—fRVW7F–öâârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öäæÖRs¢tVçFW"F†R&ö6VGW&RæÖRârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öå&Wf–Wtf–VÆG2s ¢u&Wf–WrF†R†–v†Æ–v‡FVBf–VÆG2&Vf÷&R6f–ærârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öäDÆV7DöæU7FvRs ¢tFBBÆV7BöæR7FvRFòF†R&ö6VGW&RârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öå7FvUF—FÆRs¢tVçFW"F†R7FvRF—FÆRârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öå7FvT—FVÒs¢tV6‚7FvRæVVG2BÆV7BöæR—FVÒârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öä—FVÕF—FÆRs¢tVçFW"F†R—FVÒF—FÆRârÀ¢w&ö6VF–ÖVçF÷2æ7&VFVE7V66W72s¢u&ö6VGW&R7&VFVBârÀ¢w&ö6VF–ÖVçF÷2çWFFVE7V66W72s¢u&ö6VGW&RWFFVBârÀ¢w&ö6VF–ÖVçF÷2æF—66&D6†ævW5F—FÆRs¢tF—66&B6†ævW3òrÀ¢w&ö6VF–ÖVçF÷2æF—66&D6†ævW4ÖW76vRs ¢uF†R6†ævW2ÖFRFòF†—2&ö6VGW&R†fRæ÷B&VVâ6fVB–WBârÀ¢w&ö6VF–ÖVçF÷2æ¶VWVF—F–ærs¢t¶VWVF—F–ærrÀ¢w&ö6VF–ÖVçF÷2æF—66&Bs¢tF—66&BrÀ¢w&ö6VF–ÖVçF÷2æ6öæf—&ÔFVÆWFU7FvUF—FÆRs¢tFVÆWFR7FvSòrÀ¢w&ö6VF–ÖVçF÷2æ6öæf—&ÔFVÆWFU7FvTÖW76vRs ¢uF†R—FV×2–âF†—27FvRv–ÆÂÇ6ò&R&VÖ÷fVBârÀ¢w&ö6VF–ÖVçF÷2æ6öæf—&ÔFVÆWFT—FVÕF—FÆRs¢tFVÆWFR—FVÓòrÀ¢w&ö6VF–ÖVçF÷2æ6öæf—&ÔFVÆWFT—FVÔÖW76vRs ¢uF†—2—FVÒv–ÆÂ&R&VÖ÷fVBg&öÒF†R&ö6VGW&RârÀ¢w&ö6VF–ÖVçF÷2æVF—F÷$FVÖôæ÷F–6Rs ¢t6†ævW2v–ÆÂ&R¶WBöæÇ’GW&–ærF†—26W76–öâârÀ¢w&ö6VF–ÖVçF÷2ææõ7FvW2s¢tæò7FvW2FFVBrÀ¢w&ö6VF–ÖVçF÷2æ—FVÕ&WV—&VD†VÇs ¢uF†Rf–æÂ&WV—&VB&V†f–÷"v–ÆÂ&RFVf–æVB–âF†R÷W&F–öæÂ–çFVw&F–öâârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wt7F–öâs¢u&Wf–WrrÀ¢w&ö6VF–ÖVçF÷2æFVÖöç7G&F–öâs¢tFVÖòrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6U†÷Fòs¢uF¶R†÷FòrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6U6–væGW&Rs¢u6–væGW&RrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TÆö6F–öâs¢t6GW&RÆö6F–öârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T&&6öFRs¢u&VB&&6öFRrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T–ÖV’s¢tVçFW"”ÔT’rÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TFö7VÖVçBs¢tGF6‚Fö7VÖVçBrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TVF–òs¢u&V6÷&BVF–òrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6Tg&VUFW‡Bs¢tg&VRFW‡BrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TçVÖ&W"s¢tçVÖ&W"rÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TFFRs¢tFFRrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6U6–ævÆT6†ö–6Rs¢u6–ævÆR6†ö–6RrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T×VÇF—ÆT6†ö–6Rs¢t×VÇF—ÆR6†ö–6RrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6U†÷FôFW67&—F–öâs ¢u6–×VÆFW26GW&–ær†÷Fò2Wf–FVæ6RârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6U6–væGW&TFW67&—F–öâs ¢u6–×VÆFW26öÆÆV7F–ær6–væGW&RârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TÆö6F–öäFW67&—F–öâs ¢u6–×VÆFW26GW&–ærÆö6F–öâârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T&&6öFTFW67&—F–öâs¢u6–×VÆFW2&VF–ær&&6öFRârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T–ÖV”FW67&—F–öâs ¢tÆÆ÷w2VçFW&–ærâ”ÔT’ÖçVÆÇ’ârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TFö7VÖVçDFW67&—F–öâs ¢u6–×VÆFW2GF6†–ærFö7VÖVçBârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TVF–ôFW67&—F–öâs¢u6–×VÆFW2âVF–ò&V6÷&F–ærârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6Tg&VUFW‡DFW67&—F–öâs ¢tÆÆ÷w2&V6÷&F–ærFW‡B&W7öç6RârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TçVÖ&W$FW67&—F–öâs ¢tÆÆ÷w2&V6÷&F–ærçVÖW&–2fÇVRârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TFFTFW67&—F–öâs¢tÆÆ÷w26VÆV7F–ærFFRârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6U6–ævÆT6†ö–6TFW67&—F–öâs ¢tÆÆ÷w26VÆV7F–æröæR÷F–öâârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T×VÇF—ÆT6†ö–6TFW67&—F–öâs ¢tÆÆ÷w26VÆV7F–æröæR÷"Ö÷&R÷F–öç2ârÀ¢w&ö6VF–ÖVçF÷2çG—T6FVv÷'”wV–FRs¢twV–FRæB6öæf—&ÒrÀ¢w&ö6VF–ÖVçF÷2çG—T6FVv÷'”6öÆÆV7Bs¢t6öÆÆV7B–æf÷&ÖF–öârÀ¢w&ö6VF–ÖVçF÷2çG—T6FVv÷'”Wf–FVæ6Rs¢u&V6÷&BWf–FVæ6RrÀ¢w&ö6VF–ÖVçF÷2çG—T6FVv÷'”–FVçF–g’s¢t–FVçF–g’rÀ¢w&ö6VF–ÖVçF÷2æ—FVÕG—U–6¶W$†VÇs ¢t6†ö÷6R†÷rF†R7FfbÖVÖ&W"v–ÆÂ&W7öæBFò÷"&V6÷&BF†—27F–öâârÀ¢w&ö6VF–ÖVçF÷2çÆ6V†öÆFW$f–VÆBs¢uÆ6V†öÆFW"rÀ¢w&ö6VF–ÖVçF÷2çVæ—Df–VÆBs¢uVæ—BrÀ¢w&ö6VF–ÖVçF÷2æ6†ö–6T÷F–öç2s¢t6†ö–6R÷F–öç2rÀ¢w&ö6VF–ÖVçF÷2æFD÷F–öâs¢tFB÷F–öârÀ¢w&ö6VF–ÖVçF÷2ç&VÖ÷fT÷F–öâs¢u&VÖ÷fR÷F–öârÀ¢w&ö6VF–ÖVçF÷2æ÷F–öäf–VÆBs¢t÷F–öârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öä6†ö–6T÷F–öç2s¢tVçFW"BÆV7BGvò÷F–öç2ârÀ¢w&ö6VF–ÖVçF÷2æ6†ævUG—UF—FÆRs¢t6†ævR—FVÒG—SòrÀ¢w&ö6VF–ÖVçF÷2æ6†ævUG—TÖW76vRs ¢uF†R6öæf–wW&VB÷F–öç2v–ÆÂ&R&VÖ÷fVBf÷"F†—2G—RârÀ¢w&ö6VF–ÖVçF÷2ç6–×VÆFVEG—TVF—F÷$†VÇs ¢t–âFVÖòÖöFRÂF†—26GW&Rv–ÆÂ&R6–×VÆFVBv—F†÷WBW6–ærFWf–6R&W6÷W&6W2ârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WuF—FÆRs¢u&Wf–WrrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WuVçF—FÆVE&ö6VGW&Rs¢uVçF—FÆVB&ö6VGW&RrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wt–æ6ö×ÆWFU&ö6VGW&Rs ¢uF†—2&ö6VGW&RFöW2æ÷B†fR7FvW2FòFVÖöç7G&FR–WBârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wtöbs¢vöbrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu&öw&W74Æ&VÂs¢t6ö×ÆWFVB7F–öç2rÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WuVæF–ætÖW76vRs ¢uF†W&R&R&WV—&VB7F–öç2VæF–ær–âF†—27FvRârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu&WV—&VEVæF–ærs ¢tç7vW"F†—2&WV—&VB7F–öâFò6öçF–çVRârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtæW‡E7FvRs¢tæW‡B7FvRrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wtf–æ—6„FVÖòs¢tf–æ—6‚rÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu&Wf–Wu7FvW2s¢u&Wf–Wr7FvW2rÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu7VÖÖ'•F—FÆRs¢tFVÖò6ö×ÆWFVBrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu7VÖÖ'•6fVDÖW76vRs¢tæò&W7öç6Rv26fVBârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu7VÖÖ'”ç7vW&VBs¢tç7vW&VB7F–öç2ârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu7VÖÖ'”æô÷F–öæÅVæF–ærs ¢tæò÷F–öæÂ—FV×2VæF–ærârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu7VÖÖ'”÷F–öæÅVæF–ærs¢t÷F–öæÂ—FVÒVæF–ærârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtF—66&EF—FÆRs¢tF—66&B&W7öç6W3òrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtF—66&DÖW76vRs ¢uF†R&W7öç6W2g&öÒF†—2FVÖòv–ÆÂ&RF—66&FVBv†VâÆVf–ærârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wt6öæf—&Ô7F–öâs¢t6öæf—&Ò7F–öârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WuVæFW'7FööBs¢tÖ&²2VæFW'7FööBrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WuVæFW'7FööDFöæRs¢uVæFW'7FööBrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WuFW‡D†–çBs¢tVçFW"F†R&W7öç6RrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtçVÖ&W$†–çBs¢tVçFW"çVÖ&W"rÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu6VÆV7DFFRs¢u6VÆV7BFFRrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wt–ÖV”†–çBs¢tVçFW"”ÔT’rÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WuW6TFVÖô–ÖV’s¢uW6RFVÖò”ÔT’rÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WuF¶U†÷Fòs¢uF¶R†÷FòrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu6–×VÆFU6–væGW&Rs¢u6–×VÆFR6–væGW&RrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wt6GW&TÆö6F–öâs¢t6GW&RÆö6F–öârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu6–×VÆFT&&6öFRs¢u6–×VÆFR&VF–ærrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu6–×VÆFTFö7VÖVçBs¢u6–×VÆFRGF6†ÖVçBrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu6–×VÆFTVF–òs¢u6–×VÆFR&V6÷&F–ærrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu&VÖ÷fTWf–FVæ6Rs¢u&VÖ÷fRWf–FVæ6RrÀ¢w&ö6VF–ÖVçF÷2ç6–×VÆFVE&W6÷W&6Tæ÷F–6Rs ¢tFVÖò&W6÷W&6Râæò&VÂFFv–ÆÂ&R6GW&VBârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu†÷FôFFVBs¢u†÷FòFFVBrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu6–væGW&TFFVBs¢u6–væGW&RFFVBrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu6–væGW&TFVÖôFWF–Âs¢tFVÖò7G&ö¶R&V6÷&FVBrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtÆö6F–öäFFVBs¢tFVÖòÆö6F–öâ6GW&VBrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wt&&6öFTFFVBs¢t6öFR&VBrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtFö7VÖVçDFFVBs¢tFö7VÖVçBGF6†VBrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtVF–ôFFVBs¢tVF–ò&V6÷&FVBrÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öä66…&Vv—7FW"s¢t66‚&Vv—7FW"rÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öä7W7FöÖW%&Vv—7G&F–öâs¢t7W7FöÖW"&Vv—7G&F–öârÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$ÖöÖVçD&Vf÷&U7F'Bs¢t&Vf÷&R7F'F–ærrÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$ÖöÖVçDgFW%7F'Bs¢tgFW"7F'F–ærrÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$ÖöÖVçD&Vf÷&Tf–æ—6‚s¢t&Vf÷&R6ö×ÆWF–ærrÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$ÖöÖVçDgFW$f–æ—6‚s¢tgFW"6ö×ÆWF–ærrÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$ÖöÖVçD&Vf÷&TFVÆ—fW'’s¢t&Vf÷&RFVÆ—fW'’rÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$ÖöÖVçDgFW$FVÆ—fW'’s¢tgFW"FVÆ—fW'’rÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$ÖöÖVçDöäFVÖæBs¢töâFVÖæBrÀ¢w&ö6VF–ÖVçF÷2æ7F—fF–öäÖçVÂs¢tÖçVÂrÀ¢w&ö6VF–ÖVçF÷2æ7F—fF–öäWFöÖF–2s¢tWFöÖF–2rÀ¢w&ö6VF–ÖVçF÷2æ7F—fF–öäÖçVÄFW67&—F–öâs ¢uF†R7FfbÖVÖ&W"6â7F'BF†—2&ö6VGW&Rv†VâæVVFVBârÀ¢w&ö6VF–ÖVçF÷2æ7F—fF–öäWFöÖF–4FW67&—F–öâs ¢t–âgWGW&R–çFVw&F–öâÂF†R&ö6VGW&Rv–ÆÂ&R6†÷vâBF†R6öæf–wW&VBÖöÖVçBârÀ¢w&ö6VF–ÖVçF÷2æVæf÷&6VÖVçD–æf÷&ÖF—fRs¢t–æf÷&ÖF—fRrÀ¢w&ö6VF–ÖVçF÷2æVæf÷&6VÖVçE&V6öÖÖVæFVBs¢u&V6öÖÖVæFVBrÀ¢w&ö6VF–ÖVçF÷2æVæf÷&6VÖVçE&WV—&VBs¢u&WV—&VBrÀ¢w&ö6VF–ÖVçF÷2æVæf÷&6VÖVçD–æf÷&ÖF—fTFW67&—F–öâs ¢u6†÷w2F†R&ö6VGW&Rv—F†÷WB&WV—&–ær6ö×ÆWF–öâârÀ¢w&ö6VF–ÖVçF÷2æVæf÷&6VÖVçE&V6öÖÖVæFVDFW67&—F–öâs ¢u&V6öÖÖVæG26ö×ÆWF–öâÂ'WB6†÷VÆBæ÷B&Æö6²F†R÷W&F–öâârÀ¢w&ö6VF–ÖVçF÷2æVæf÷&6VÖVçE&WV—&VDFW67&—F–öâs ¢t–âgWGW&R–çFVw&F–öâÂ—Bv–ÆÂ&WV—&R6ö×ÆWF–öâ&Vf÷&R6öçF–çV–ærârÀ¢w&ö6VF–ÖVçF÷2çv†VäW†V7WFRs¢uv†VâFòW†V7WFRrÀ¢w&ö6VF–ÖVçF÷2æFEG&–vvW"s¢tFBG&–vvW"rÀ¢w&ö6VF–ÖVçF÷2æVF—EG&–vvW"s¢tVF—BG&–vvW"rÀ¢w&ö6VF–ÖVçF÷2æFVÆWFUG&–vvW"s¢tFVÆWFRG&–vvW"rÀ¢w&ö6VF–ÖVçF÷2ææõG&–vvW'2s¢tæòG&–vvW'26öæf–wW&VBârÀ¢w&ö6VF–ÖVçF÷2ææõG&–vvW'4FW67&—F–öâs ¢uv—F†÷WBG&–vvW'2ÂF†R&ö6VGW&Rv–ÆÂöæÇ’&Rf–Æ&ÆRf÷"W6RæB&Wf–Wr–ç6–FRF†—2ÖöGVÆRârÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$6÷VçBs¢wG&–vvW'2rÀ¢w&ö6VF–ÖVçF÷2ç6VÆV7D÷W&F–öä6öçFW‡Bs¢u6VÆV7B6öçFW‡BrÀ¢w&ö6VF–ÖVçF÷2ç6VÆV7EG&–vvW$ÖöÖVçBs¢u6VÆV7BÖöÖVçBrÀ¢w&ö6VF–ÖVçF÷2æ7F—fF–öäÖöFRs¢tW†V7WF–öâÖöFRrÀ¢w&ö6VF–ÖVçF÷2æVæf÷&6VÖVçDÖöFRs¢tVæf÷&6VÖVçBÆWfVÂrÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$Væ&ÆVD†VÇs ¢t6öçG&öÇ2v†WF†W"F†—2G&–vvW"v–ÆÂ&R6öç6–FW&VB–âgWGW&R–çFVw&F–öâârÀ¢w&ö6VF–ÖVçF÷2ç6fUG&–vvW"s¢u6fRG&–vvW"rÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$ÖöÖVçD6ÆV&VBs ¢uF†RÖöÖVçBv26ÆV&VB&V6W6R—B—2æ÷B6ö×F–&ÆRv—F‚F†R6VÆV7FVB6öçFW‡BârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öåG&–vvW$÷W&F–öâs ¢t6†ö÷6RF†R÷W&F–öæÂ6öçFW‡BârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öåG&–vvW$ÖöÖVçBs¢t6†ö÷6RF†RW†V7WF–öâÖöÖVçBârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öåG&–vvW$ÖöÖVçD–çfÆ–Bs ¢t6†ö÷6RÖöÖVçB6ö×F–&ÆRv—F‚F†R6öçFW‡BârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öäGWÆ–6FUG&–vvW"s ¢tG&–vvW"v—F‚F†—26öçFW‡BÂÖöÖVçBæBW†V7WF–öâÖöFRÇ&VG’W†—7G2ârÀ¢w&ö6VF–ÖVçF÷2æFVÆWFUG&–vvW%F—FÆRs¢tFVÆWFRG&–vvW#òrÀ¢w&ö6VF–ÖVçF÷2æFVÆWFUG&–vvW$ÖW76vRs ¢uF†R&ö6VGW&Rv–ÆÂæòÆöævW"&R6†÷vâBF†—2÷W&F–öæÂÖöÖVçBârÀ¢w&ö6VF–ÖVçF÷2çG&–vvW%7VÖÖ'”æöæRs¢tæòG&–vvW'26öæf–wW&VBrÀ¢w&ö6VF–ÖVçF÷2çG&–vvW%7VÖÖ'”öæÇ”–æ7F—fRs¢t–æ7F—fRG&–vvW'2rÀ¢w&ö6VF–ÖVçF÷2æW†V7WF–öä6öæf–wW&F–öâs¢tW†V7WF–öâ6öæf–wW&F–öârÀ¢w&ö6VF–ÖVçF÷2çG&–vvW%6–×VÆF–öäæ÷F–6Rs ¢uG&–vvW"6–×VÆF–öââæò&VÂ÷W&F–öâv–ÆÂ&R&Æö6¶VBârÀ¢w&ö6VF–ÖVçF÷2æÖçVÄFVÖôW†V7WF–öâs¢tÖçVÂFVÖòW†V7WF–öâârÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öåö–çE6ÆU7F'D&Vf÷&Rs¢t&Vf÷&R7F'F–ær6ÆRrÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öåö–çE6ÆU7F'D&Vf÷&TFW67&—F–öâs ¢u'Vç2&Vf÷&R÷Væ–ærF†RæWr6ÆRfÆ÷rârÀ¢w&ö6VF–ÖVçF÷2æÖö&–ÆUö–çDf–Æ&ÆRs¢tf–Æ&ÆR–âF†RÖö&–ÆRârÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öæÄW†V7WF–öåF—FÆRs¢t&Vf÷&R7F'F–ærF†R6ÆRrÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öæÅ7VÖÖ'•F—FÆRs¢u&ö6VGW&R6ö×ÆWFVBrÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öæÄæôFF6fVBs ¢tæò&W7öç6Rv26fVB–âF†—2Æö6ÂW‡W&–ÖVçFÂ–çFVw&F–öâârÀ¢w&ö6VF–ÖVçF÷2æ6ö×ÆWFTæE7F'E6ÆRs¢t6ö×ÆWFRæB7F'B6ÆRrÀ¢w&ö6VF–ÖVçF÷2æW‡W&–ÖVçFÄ–çFVw&F–öâs¢tW‡W&–ÖVçFÂ–çFVw&F–öârÀ¢w&ö6VF–ÖVçF÷2æ6öçF–çVUFõ7F'E6ÆRs¢t6öçF–çVRFò6ÆRrÀ¢w&ö6VF–ÖVçF÷2æ6öçF–çVUv—F†÷WD6ö×ÆWF–ærs¢t6öçF–çVRv—F†÷WB6ö×ÆWF–ærrÀ¢w&ö6VF–ÖVçF÷2æ6öçF–çVUv—F†÷WD6ö×ÆWF–æuF—FÆRs ¢t6öçF–çVRv—F†÷WB6ö×ÆWF–æsòrÀ¢w&ö6VF–ÖVçF÷2æ6öçF–çVUv—F†÷WD6ö×ÆWF–ætÖW76vRs ¢uF†—2&ö6VGW&R—2&V6öÖÖVæFVB&Vf÷&R7F'F–ærF†R6ÆRârÀ¢w&ö6VF–ÖVçF÷2æ6öçF–çVTç—v’s¢t6öçF–çVRç—v’rÀ¢w&ö6VF–ÖVçF÷2ç&WGW&åFõ&ö6VGW&Rs¢u&WGW&âFò&ö6VGW&RrÀ¢w&ö6VF–ÖVçF÷2æ6æ6VÅ6ÆU7F'EF—FÆRs¢t6æ6VÂ6ÆR7F'CòrÀ¢w&ö6VF–ÖVçF÷2æ6æ6VÅ6ÆU7F'DÖW76vRs ¢uF†—2&ö6VGW&R—2&WV—&VBâ–b–÷RÆVfRÂF†RæWr6ÆRv–ÆÂæ÷B&R7F'FVBârÀ¢w&ö6VF–ÖVçF÷2æ6æ6VÅ6ÆRs¢t6æ6VÂ6ÆRrÀ¢w&ö6VF–ÖVçF÷2ç6WVVæ6U&öw&W75&Vf—‚s¢u&ö6VGW&RrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtæVvF—fUFW‡DÆ&VÂs¢uv†Bv2Ö—76–æsòrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtæVvF—fUFW‡D†–çBs¢tFW67&–&Rv†Bv2Ö—76–ærrÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öæÄÆöDW'&÷"s¢t6÷VÆBæ÷BÆöB&ö6VGW&W2ârÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öæÄ&FvRs¢t÷W&F–öæÂ&ö6VGW&RrÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öæÄW†V7WF–öåF—FÆU&VÂs¢t÷W&F–öæÂ&ö6VGW&RrÀ¢w&ö6VF–ÖVçF÷2æW†V7WF–öåv–ÆÄ&U6fVBs ¢tç7vW'2æBF–ÖW7F×2v–ÆÂ&R6fVBv†Vâ–÷Rf–æ—6‚ârÀ¢w&ö6VF–ÖVçF÷2æ6ö×ÆWFTæD6öçF–çVRs¢t6ö×ÆWFRæB6öçF–çVRrÀ¢w&ö6VF–ÖVçF÷2æ6öçF–çVT÷W&F–öâs¢t6öçF–çVR÷W&F–öârÀ¢w&ö6VF–ÖVçF÷2ç&ö6W76–æu6¶—s¢t6öçF–çV–ærââârÀ¢w&ö6VF–ÖVçF÷2ç&ö6W76–æt6æ6VÂs¢t6æ6VÆÆ–ærââârÀ¢w&ö6VF–ÖVçF÷2æW†V7WF–öå6fTW'&÷"s ¢t6÷VÆBæ÷B6fRF†Rç7vW'2âÆV6RG'’v–âârÀ¢w&ö6VF–ÖVçF÷2ç6¶—7V66W75F—FÆRs¢u&ö6VGW&R6¶—VBrÀ¢w&ö6VF–ÖVçF÷2æ6æ6VÅ7V66W75F—FÆRs¢t÷W&F–öâ6æ6VÆÆVBrÀ¢w&ö6VF–ÖVçF÷2æ6ö×ÆWFU7V66W74ÖW76vRs ¢uF†Rç7vW'2vW&R6fVBæBF†R÷W&F–öâ6â6öçF–çVRârÀ¢w&ö6VF–ÖVçF÷2ç6¶—7V66W74ÖW76vRs ¢uF†R&ö6VGW&Rv26¶—VBæBF†R÷W&F–öâv–ÆÂ6öçF–çVRVæFW"F†R7W'&VçB6öæf–wW&F–öâârÀ¢w&ö6VF–ÖVçF÷2æ6æ6VÅ7V66W74ÖW76vRs ¢uF†R÷W&F–öâv26Æ÷6VB&Vf÷&RÖ÷f–ærFòF†RæW‡B7FWârÀ¢w&ö6VF–ÖVçF÷2çW'6—7FVD6öæf–wW&F–öâs¢u7–æ6VB6öæf–wW&F–öârÀ¢w&ö6VF–ÖVçF÷2æVF—F÷%W'6—7FVæ6Tæ÷F–6Rs ¢t6†ævW2&R6fVBf÷"F†R6ö×ç’–âF†R7W'&VçBÆæwVvRârÀ¢w&ö6VF–ÖVçF÷2ææ÷F–g”FÖ–âs¢u6VæBW6‚æ÷F–f–6F–öâFòDÔ”ârÀ¢w&ö6VF–ÖVçF÷2ææ÷F–g”FÖ–ä†VÇs ¢tæ÷F–f–W27F—fRFÖ–æ—7G&F÷'2v†VâF†R6öæF—F–öâö67W'2ârÀ¢w&ö6VF–ÖVçF÷2ææ÷F–f–6F–öä6öæF—F–öâs¢uv†VâFòæ÷F–g’rÀ¢w&ö6VF–ÖVçF÷2ææ÷F–f–6F–öäÇv—2s¢töâWfW'’W†V7WF–öârÀ¢w&ö6VF–ÖVçF÷2ææ÷F–f–6F–öäæVvF—fRs¢uv†Vââç7vW"—2æVvF—fRrÀ¢w&ö6VF–ÖVçF÷2ææ÷F–f–6F–öå6¶—VBs¢uv†VâF†R&ö6VGW&R—26¶—VBrÀ¢w&ö6VF–ÖVçF÷2ææÇ—F–75F—FÆRs¢u&W7VÇG2æÇ—6—2rÀ¢w&ö6VF–ÖVçF÷2ææÇ—F–74W†V7WF–öç2s¢tW†V7WF–öç2rÀ¢w&ö6VF–ÖVçF÷2ææÇ—F–746ö×ÆWF–öâs¢t6ö×ÆWF–öâ&FRrÀ¢w&ö6VF–ÖVçF÷2ææÇ—F–74æVvF—fRs¢tæVvF—fRç7vW'2rÀ¢w&ö6VF–ÖVçF÷2ææÇ—F–74fW&vUF–ÖRs¢tfW&vRF–ÖRrÀ¢w&ö6VF–ÖVçF÷2ææÇ—F–74'•VW7F–öâs¢u&W7VÇG2'’VW7F–öârÀ¢w&ö6VF–ÖVçF÷2ææÇ—F–75&V6VçBs¢u&V6VçBW†V7WF–öç2rÀ¢w&ö6VF–ÖVçF÷2ææÇ—F–74V×G’s ¢uF†W&R&RæòW†V7WF–öç2–âF†—2W&–öB–WBârÀ¢w&ö6VF–ÖVçF÷2æ6öçFW‡E6ÆRs¢u6ÆRrÀ¢w&ö6VF–ÖVçF÷2æ6öçFW‡EFV6†æ–6Å6W'f–6Rs¢uFV6†æ–6Â6W'f–6RrÀ¢w&ö6VF–ÖVçF÷2æ6öçFW‡D66…&Vv—7FW"s¢t66‚&Vv—7FW"rÀ¢vWF‚æÆöv–å&WV—&VDf–VÆG2s¢uÆV6Rf–ÆÂ–âVÖ–ÂæB77v÷&BrÀ¢vWF‚æÆöv–åF—FÆTÖö&–ÆRs¢u6–vâ–ârÀ¢vWF‚æÆöv–å7V'F—FÆTÖö&–ÆRs ¢uFò66W72–÷W"66÷VçBÂVçFW%Æç–÷W"VÖ–ÂæB77v÷&BrÀ¢vWF‚æVÖ–Âs¢tVÖ–ÂrÀ¢vWF‚ç77v÷&Bs¢u77v÷&BrÀ¢vWF‚æf÷&v÷E77v÷&Bs¢tf÷&v÷B77v÷&CòrÀ¢vWF‚æ6öçF–çVRs¢t6öçF–çVRrÀ¢vWF‚ææô66÷VçBs¢tFöåÂwB†fRâ66÷VçB–WCòrÀ¢vWF‚æ7&VFT66÷VçBs¢t7&VFR66÷VçBrÀ¢vWF‚ç6–vä–åv—F„ÆRs¢u6–vâ–âv—F‚ÆRrÀ¢vWF‚ç6–vä–åv—F„vöövÆRs¢u6–vâ–âv—F‚vöövÆRrÀ¢vWF‚ævöövÆTÆöv–äW'&÷"s¢t6÷VÆBæ÷B6ö×ÆWFRvöövÆR6–vâÖ–âârÀ¢vWF‚ç6W76–öâçfÆ–FF–æuF—FÆRs¢u6–væ–ær–âFò6—†ôrÀ¢vWF‚ç6W76–öâçfÆ–FF–ætÖW76vRs¢ufÆ–FF–ær–÷W"6W76–öâ6V7W&VÇ’ââârÀ¢w7Æ6‚ç&W&–æuv÷&·76Rs¢u&W&–ær–÷W"v÷&·76RââârÀ¢w7Æ6‚çfÆ–FF–æu6W76–öâs¢ufÆ–FF–ær–÷W"6W76–öâââârÀ¢w7Æ6‚ç7–æ6–æt66÷VçBs¢u7–æ6–ær–÷W"FFââârÀ¢w7Æ6‚æ6öææV7FVEFvÆ–æRs¢tWfW'—F†–ær6öææV7FVBâWfW'—F†–ær–â6öçG&öÂârÀ¢vWF‚ç6W76–öâçFV×÷&'”W'&÷%F—FÆRs¢t6÷VÆBæ÷BfÆ–FFR–÷W"6W76–öârÀ¢vWF‚ç6W76–öâçFV×÷&'”W'&÷$ÖW76vRs ¢u–÷W"6W76–öâv2&W6W'fVBâ6†V6²–÷W"6öææV7F–öâæBG'’v–âârÀ¢wvV$WF„vFRçFV×÷&'”W'&÷"çF—FÆRs¢t6÷VÆBæ÷BfÆ–FFR–÷W"6W76–öârÀ¢wvV$WF„vFRçFV×÷&'”W'&÷"æÖW76vRs ¢t6†V6²–÷W"6öææV7F–öâ÷"v—Bf÷"F†R&6¶VæBFò&W7öæBÂF†VâG'’v–âârÀ¢vWF‚æÆTÆöv–äÖö6²s¢tÆR6–vâÖ–â†Öö6¶VB’rÀ¢vWF‚çFW&×5&Vf—‚s ¢t'’6Æ–6¶–ær$6öçF–çVR"Â’6öæf—&ÒF†B’†fR&VBæBw&VRv—F‚F†RrÀ¢vWF‚çFW&×2s¢uFW&×2öbW6RæB&—f7’öÆ–7’rÀ¢vWF‚æÖö&–ÆTVçG'’çF—FÆRs¢u–÷W"'W6–æW72Â6öææV7FVBârÀ¢vWF‚æÖö&–ÆTVçG'’ç7V'F—FÆRs ¢u6ÆW2Â–çfVçF÷'’æBÖævVÖVçBÖ÷f–ærFövWF†W"(	Bv†W&WfW"–÷R&RârÀ¢vWF‚æÖö&–ÆTVçG'’ç6ÆW2s¢u6ÆW2rÀ¢vWF‚æÖö&–ÆTVçG'’ç7Fö6²s¢t–çfVçF÷'’rÀ¢vWF‚æÖö&–ÆTVçG'’æÖævVÖVçBs¢tÖævVÖVçBrÀ¢vWF‚æÖö&–ÆTVçG'’æ6öçF–çVUF—FÆRs¢t†÷rv÷VÆB–÷RÆ–¶RFò6öçF–çVSòrÀ¢vWF‚æÖö&–ÆTVçG'’æÆöv–ä7F–öâs¢u6–vâ–âFò×’66÷VçBrÀ¢vWF‚æÖö&–ÆTVçG'’æ7&VFT7F–öâs¢t7&VFR×’66÷VçBrÀ¢vWF‚æÖö&–ÆTVçG'’ç6V7W&—G”æ÷FRs ¢u6V7W&R66W72v—F‚–÷W"FFÇv—2&÷FV7FVBârÀ¢vWF‚æÖö&–ÆTÆöv–âçF—FÆRs¢uvVÆ6öÖR&6²rÀ¢vWF‚æÖö&–ÆTÆöv–âç7V'F—FÆRs¢u6–vâ–âFò6öçF–çVRv†W&R–÷RÆVgBöfbârÀ¢vWF‚æÖö&–ÆTÆöv–âæf÷&ÕF—FÆRs¢t66W72–÷W"v÷&·76RrÀ¢vWF‚æÖö&–ÆTÆöv–âæVÖ–Ä†–çBs¢w–÷T6ö×ç’æ6öÒrÀ¢vWF‚æÖö&–ÆTÆöv–âç77v÷&D†–çBs¢tVçFW"–÷W"77v÷&BrÀ¢vWF‚æÖö&–ÆTÆöv–âç6†÷u77v÷&Bs¢u6†÷r77v÷&BrÀ¢vWF‚æÖö&–ÆTÆöv–âæ†–FU77v÷&Bs¢t†–FR77v÷&BrÀ¢vWF‚æÖö&–ÆTÆöv–âç7V&Ö—Bs¢u6–vâ–ârÀ¢vWF‚æÖö&–ÆTÆöv–âç6ö6–ÄF—f–FW"s¢v÷"6öçF–çVRv—F‚rÀ¢vWF‚æÖö&–ÆTÆöv–âæ7&VFU&ö×Bs¢tæWrFò6—†ôòrÀ¢vWF‚æÖö&–ÆT7&VFRçF—FÆRs¢t7&VFR–÷W"v÷&·76RrÀ¢vWF‚æÖö&–ÆT7&VFRç7V'F—FÆRs ¢u7F'B6–×ÆRâ6—†ôw&÷w2v—F‚–÷W"'W6–æW72ârÀ¢vWF‚æÖö&–ÆT7&VFRæf÷&ÕF—FÆRs¢u–÷W"66÷VçB7F'G2†W&RrÀ¢vWF‚æÖö&–ÆT7&VFRæf÷&Ôæ÷FRs¢t—BF¶W2ÆW72F†âÖ–çWFRârÀ¢vWF‚æÖö&–ÆT7&VFRæÆöv–äÆ&VÂs¢tÆöv–ârÀ¢vWF‚æÖö&–ÆT7&VFRæÆöv–ä†–çBs¢t6†ö÷6R–÷W"66W72Æöv–ârÀ¢vWF‚æÖö&–ÆT7&VFRç77v÷&DÆ&VÂs¢u77v÷&BrÀ¢vWF‚æÖö&–ÆT7&VFRç77v÷&D†–çBs¢tBÆV7B‚6†&7FW'2rÀ¢vWF‚æÖö&–ÆT7&VFRæ6öæf—&Õ77v÷&DÆ&VÂs¢t6öæf—&Ò77v÷&BrÀ¢vWF‚æÖö&–ÆT7&VFRæ6öæf—&Õ77v÷&D†–çBs¢u&WVB–÷W"77v÷&BrÀ¢vWF‚æÖö&–ÆT7&VFRæ66WEFW&×2s¢t’w&VRFòF†RFW&×2æB&—f7’öÆ–7’ârÀ¢vWF‚æÖö&–ÆT7&VFRç7V&Ö—Bs¢t7&VFR66÷VçBrÀ¢vWF‚æÖö&–ÆT7&VFRæÆöv–å&ö×Bs¢tÇ&VG’†fRâ66÷VçCò6–vâ–ârÀ¢vWF‚æÖö&–ÆT7&VFRæ66WEFW&×4W'&÷"s ¢t66WBF†RFW&×2æB6öæF—F–öç2Fò6öçF–çVRârÀ¢vWF‚æÖö&–ÆT7&VFRç&WV—&VDf–VÆG4W'&÷"s¢tf–ÆÂ–âÆÂf–VÆG2ârÀ¢vWF‚æÖö&–ÆT7&VFRç77v÷&DÆVæwF„W'&÷"s ¢uF†R77v÷&B×W7B&RBÆV7B‚6†&7FW'2ÆöærârÀ¢vWF‚æÖö&–ÆT7&VFRç77v÷&DÖ—6ÖF6„–æÆ–æRs¢u77v÷&G2Fòæ÷BÖF6‚ârÀ¢vWF‚æÖö&–ÆT7&VFRç77v÷&DÖ—6ÖF6„W'&÷"s ¢uF†R77v÷&G2&RF–ffW&VçBâ6†V6²F†VÒæBG'’v–âârÀ¢vWF‚æVçG'’çF—FÆRs¢uvVÆ6öÖRFò6—†ôrÀ¢vWF‚æVçG'’ç7V'F—FÆRs ¢t&Vf÷&R6öçF–çV–ærÂ6†ö÷6R†÷r–÷RvçBFò66W72F†RârÀ¢vWF‚æVçG'’æ†466÷VçEF—FÆRs¢t’Ç&VG’†fRâ66÷VçBrÀ¢vWF‚æVçG'’æ†466÷VçE7V'F—FÆRs ¢u6–vâ–âv—F‚–÷W"VÖ–ÂæB77v÷&BFò66W72–÷W"6ö×ç’ârÀ¢vWF‚æVçG'’æÆöv–ä7F–öâs¢u6–vâ–ârÀ¢vWF‚æVçG'’ææWt66÷VçEF—FÆRs¢t’ÒæWr†W&RrÀ¢vWF‚æVçG'’ææWt66÷VçE7V'F—FÆRs ¢u6VRV–6²÷fW'f–WræB7&VFR–÷W"66÷VçBFòvWB7F'FVBârÀ¢vWF‚æVçG'’ææWt66÷VçD7F–öâs¢tW‡Æ÷&R6—†ôrÀ¢vWF‚æöæ&ö&F–ærçF—FÆRs¢u7F'Bv—F‚F†RW76VçF–Ç2rÀ¢vWF‚æöæ&ö&F–ærç7V'F—FÆRs ¢u6VRF‡&VRV–6²ö–çG2&Vf÷&R7&VF–ær–÷W"66÷VçBârÀ¢vWF‚æöæ&ö&F–ærç7FWF—FÆRs¢t÷&væ—¦VB6W'f–6RrÀ¢vWF‚æöæ&ö&F–ærç7FW7V'F—FÆRs ¢u&Vv—7FW"6ÆW2ÂV÷FW2æB6W'f–6R÷&FW'2–â6–×ÆRfÆ÷rârÀ¢vWF‚æöæ&ö&F–ærç7FW%F—FÆRs¢t6FÆöræB7Fö6²–â–÷W"ö6¶WBrÀ¢vWF‚æöæ&ö&F–ærç7FW%7V'F—FÆRs ¢t¶VW&öGV7G2Â6W'f–6W2æB¶W’–æf÷&ÖF–öâÇv—2B†æBârÀ¢vWF‚æöæ&ö&F–ærç7FW5F—FÆRs¢tÖævVÖVçBFòw&÷rrÀ¢vWF‚æöæ&ö&F–ærç7FW57V'F—FÆRs ¢uG&6²–æF–6F÷'2æB&W&R–÷W"÷W&F–öâFòWföÇfRv—F‚6—†ôârÀ¢vWF‚æöæ&ö&F–ærç6¶—s¢u6¶—rÀ¢vWF‚æöæ&ö&F–ærææW‡Bs¢tæW‡BrÀ¢vWF‚æöæ&ö&F–æræ7&VFT66÷VçD7F–öâs¢t7&VFR×’66÷VçBrÀ¢vWF‚æöæ&ö&F–æræÆöv–ä7F–öâs¢t’Ç&VG’†fRâ66÷VçBrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ6öçFW‡EF—FÆRs¢t6öæf–wW&&ÆR–ÖVçBÖWF†öG2rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ6öçFW‡DFW67&—F–öâs ¢t7W7FöÖ—¦R†÷r–÷W"6ö×ç’&V6V—fW2–ÖVçG2â–çFW&æÂ6öFW27F’f—†VB'’F†R7—7FVÒÂv†–ÆRæÖW2æB&V†f–÷"6â&RF§W7FVBârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæÖWG&–75F÷FÂs¢t6öæf–wW&VBG—W2rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæÖWG&–747F—fRs¢t7F—fRrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæÖWG&–74–ÖÖVF–FRs¢t–ÖÖVF–FRæGW&RrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæÖWG&–74gWGW&Rs¢tgWGW&RæGW&RrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæÆöF–æuF—FÆRs¢tÆöF–ær–ÖVçBÖWF†öG2rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæÆöF–æu7V'F—FÆRs ¢u7–æ6–ær6ö×ç’6WGF–æw2g&öÒF†R&6¶VæBârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷$ÆöBs¢t6÷VÆBæ÷BÆöB–ÖVçBÖWF†öG2ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷$&E&WVW7Bs ¢t–çfÆ–BFFf÷"F†—2÷W&F–öâârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷%VæWF†÷&—¦VBs ¢u6W76–öâW‡—&VBâÆV6R6–vâ–âv–âârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷$f÷&&–FFVâs ¢u–÷RFòæ÷B†fRW&Ö—76–öâFò6†ævR6ö×ç’6WGF–æw2ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷$æ÷Df÷VæBs ¢u–ÖVçBÖWF†öB6öæf–wW&F–öâæ÷Bf÷VæBârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷$ÆöEv—F…7FGW2s ¢tW'&÷"ÆöF–ær–ÖVçBÖWF†öG2ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷%6fUv—F…7FGW2s ¢tW'&÷"6f–ær–ÖVçBÖWF†öBârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç6fU7V66W72s ¢u–ÖVçBÖWF†öBWFFVB7V66W76gVÆÇ’ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷%6fRs¢t6÷VÆBæ÷B6fR–ÖVçBÖWF†öBârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç&W7F÷&T6öæf—&ÕF—FÆRs¢u&W7F÷&RFVfVÇG2rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç&W7F÷&T6öæf—&Ô&öG’s ¢uF†—27F–öâ&W7F÷&W2F†R–ÖVçBG—W2FòF†R6ö×ç’FVfVÇB6WGWârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç&W7F÷&T7F–öâs¢u&W7F÷&RFVfVÇG2rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç&W7F÷&U7V66W72s ¢tFVfVÇB–ÖVçBÖWF†öB6WGW&W7F÷&VB7V66W76gVÆÇ’ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç&W7F÷&TW'&÷"s ¢t6÷VÆBæ÷B&W7F÷&RFVfVÇB6WGWârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ6÷VçE&Vf—‚s¢tÆöFVBG—W2rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ7F—fT6÷VçBs¢t7F—fRrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç&Vg&W6„7F–öâs¢u&Vg&W6‚rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòçVææÖVBs¢uVææÖVBG—RrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòææGW&Rs¢tæGW&RrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòææGW&T–ÖÖVF–FRs¢t–ÖÖVF–FRrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòææGW&TgWGW&Rs¢tgWGW&RrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòææGW&T–ÖÖVF–FTFW67&—F–öâs ¢tVçFW'266‚fÆ÷rBF†RF–ÖRöb&V6V—BârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòææGW&TgWGW&TFW67&—F–öâs ¢t7&VFW2âÖ÷VçB&V6V—f&ÆRöâgWGW&RFFRârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç&WV—&W46Æ–VçBs¢u&WV—&W27W7FöÖW"rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç&WV—&W46Æ–VçDFW67&—F–öâs ¢u&WV—&VBv†VâF†—2ÖWF†öBFWVæG2öââ–FVçF–f–VB7W7FöÖW"ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ–ç7FÆÆÖVçG2s¢tÆÆ÷w2–ç7FÆÆÖVçG2rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ–ç7FÆÆÖVçG4FW67&—F–öâs ¢tÆÆ÷w27Æ—GF–ærF†R&V6V—B–çFò–ç7FÆÆÖVçG2ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæF—7Æ”÷&FW"s¢tF—7Æ’÷&FW"rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòçFV6†æ–6Ä6öFRs¢uFV6†æ–6Â6öFRrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæF—7Æ”æÖRs¢tF—7Æ’æÖRrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòçfÆ–FF–öäæÖRs¢tVçFW"F—7Æ’æÖRârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòçfÆ–FF–öäæÖTÆVæwF‚s ¢uW6RBÆV7B"6†&7FW'2ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòçfÆ–FF–öä÷&FW"s ¢tVçFW"fÆ–B÷&FW"w&VFW"F†â÷"WVÂFòârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòçfÆ–FF–öä6öÆ÷"s ¢uW6RfÆ–B„U‚–â5%$tt$"f÷&ÖBârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ6öÆ÷"s¢t6öÆ÷"†÷F–öæÂ’rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ–6öâs¢t–6öâ†÷F–öæÂ’rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ7F—fTFW67&—F–öâs ¢t6öçG&öÇ2v†WF†W"F†RÖWF†öB6â&RW6VB–âv÷&¶fÆ÷w2ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæVF—DF–ÆöuF—FÆRs¢tVF—B–ÖVçBÖWF†öBrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷%7FFUF—FÆRs¢t6÷VÆBæ÷BÆöB6WGF–æw2rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæV×G•F—FÆRs¢tæò–ÖVçBÖWF†öG2f÷VæBrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæV×G”FW67&—F–öâs ¢u&Vg&W6‚F†R67&VVâFò7–æ2F†R6öæf–wW&VB6ö×ç’G—W2ârÀ ¢òòÖævVÖVçB(	B6V7F–öç0¢vvW7FòçF—FÆRs¢tÖævVÖVçBrÀ¢vvW7Fòæ‡V"çF—FÆRs¢uv†Bv÷VÆB–÷RÆ–¶RFòÖævSòrÀ¢vvW7Fòæ‡V"ç7V'F—FÆRs ¢t66W726FÆör&V6÷&G2ÂV÷ÆRÂf–ææ6W2ÂæB&VfW&Væ6W2ârÀ¢vvW7Fòæ‡V"çFW&Ö–æÂç&öGV7G2s¢tÖævR–÷W"&öGV7G2æB6öÆÆ&÷&F÷'2rÀ¢vvW7Fòæ‡V"çFW&Ö–æÂæf–ææ6Rs¢tÖævR–÷W"f–ææ6W2rÀ¢vvW7Fòæ‡V"çFW&Ö–æÂç&VfW&Væ6W2s¢tF§W7B–÷W"&VfW&Væ6W2æB6WGF–æw2rÀ¢vvW7Fòæ6FÆörçF—FÆRs¢t6FÆörrÀ¢vvW7Fòæ6FÆörç7V'F—FÆRs¢u&öGV7G2Â6FVv÷&–W2æB–çfVçF÷'’rÀ¢vvW7FòçV÷ÆRçF—FÆRs¢uV÷ÆRrÀ¢vvW7FòçV÷ÆRç7V'F—FÆRs¢t7W7FöÖW'2ÂFVÒæB'FæW'2rÀ¢vvW7Fòæf–ææ6RçF—FÆRs¢tf–ææ6RrÀ¢vvW7Fòæf–ææ6Rç7V'F—FÆRs¢t66÷VçG2Â66†VGVÆRæB&V6V—G2rÀ¢vvW7Fòç6WGF–æw2çF—FÆRs¢u6WGF–æw2rÀ¢vvW7Fòç6WGF–æw2ç6VÆV7F÷%F—FÆRs¢tvVæW&ÂrÀ¢vvW7Fòç6WGF–æw2ç7V'F—FÆRs¢t6ö×ç’ÂÆæwVvRæB–çFVw&F–öç2rÀ ¢òòÖævVÖVçB(	B6FÆör—FV×0¢vvW7Fòæ6FÆörç&öGV7G56W'f–6W2s¢u&öGV7G2b6W'f–6W2rÀ¢vvW7Fòæ6FÆörç&öGV7G56W'f–6W4FW62s¢t†VÇF‚Â&V6÷&G2æB6FÆör&Wf–WrrÀ¢vvW7Fòæ6FÆöræ6FVv÷&–W2s¢t6FVv÷&–W2rÀ¢vvW7Fòæ6FÆöræ6FVv÷&–W4FW62s¢t6FÆör÷&væ—¦F–öârÀ¢vvW7Fòæ6FÆöræ–çfVçF÷'’s¢t–çfVçF÷'’rÀ¢vvW7Fòæ6FÆöræ–çfVçF÷'”FW62s¢t&Ææ6W2ÂVçG&–W2æBF§W7FÖVçG2rÀ ¢òòÖævVÖVçB(	BV÷ÆR—FV×0¢vvW7FòçV÷ÆRæ6Æ–VçG2s¢t7W7FöÖW'2rÀ¢vvW7FòçV÷ÆRæ6Æ–VçG4FW62s¢u6W'f–6RæB&VÆF–öç6†—&6RrÀ¢vvW7FòçV÷ÆRæ6öÆÆ&÷&F÷'2s¢t6öÆÆ&÷&F÷'2rÀ¢vvW7FòçV÷ÆRæ6öÆÆ&÷&F÷'4FW62s¢uFVÒÂ66W72æB&W7öç6–&–Æ—F–W2rÀ¢vvW7FòçV÷ÆRç6—†õW6W'2s¢u6—†òW6W'2rÀ¢vvW7FòçV÷ÆRç6—†õW6W'4FW62s¢tvÆö&Â&6R&÷FV7FVB'’F†R5UU"&öÆRrÀ¢vvW7FòçV÷ÆRç7WÆ–W'2s¢u7WÆ–W'2rÀ¢vvW7FòçV÷ÆRç7WÆ–W'4FW62s¢u'FæW'2æB'W6–æW72W&6†6W2rÀ ¢òòÖævVÖVçB(	Bf–ææ6R—FV×0¢vvW7Fòæf–ææ6Rç&V6V—f&ÆRs¢t66÷VçG2&V6V—f&ÆRrÀ¢vvW7Fòæf–ææ6Rç&V6V—f&ÆTFW62s¢u&V6V—f&ÆW2æB÷Vâ&–ÆÆ–æw2rÀ¢vvW7Fòæf–ææ6Rç–&ÆRs¢t66÷VçG2–&ÆRrÀ¢vvW7Fòæf–ææ6Rç–&ÆTFW62s¢tW‡Vç6W2æB6öÖÖ—FÖVçG2rÀ¢vvW7Fòæf–ææ6Rç66†VGVÆRs¢tf–ææ6–Â66†VGVÆRrÀ¢vvW7Fòæf–ææ6Rç66†VGVÆTFW62s¢tf÷&V67G2Â7&VF—BæB–ç7FÆÆÖVçG2rÀ¢vvW7Fòæf–ææ6Rç–ÖVçDÖWF†öG2s¢u–ÖVçBÖWF†öG2rÀ¢vvW7Fòæf–ææ6Rç–ÖVçDÖWF†öG4FW62s¢t66‚Â6&BÂ—‚æB÷F†W"ÖVç2rÀ ¢òòÖævVÖVçB(	B6WGF–æw2w&÷W0¢vvW7Fòç6WGF–æw2æw&÷Wæ6ö×ç’s¢t6ö×ç’rÀ¢vvW7Fòç6WGF–æw2æw&÷WçFVÔ66W72s¢uFVÒb66W72rÀ¢vvW7Fòç6WGF–æw2æw&÷Wæ÷W&F–öâs¢t÷W&F–öârÀ¢vvW7Fòç6WGF–æw2æw&÷Wæ6öÖ×Væ–6F–öâs¢t6öÖ×Væ–6F–öârÀ¢vvW7Fòç6WGF–æw2æw&÷WæFö74–çFVw&F–öç2s¢tFö7VÖVçG2b–çFVw&F–öç2rÀ ¢òòÖævVÖVçB(	B6WGF–æw2—FV×0¢vvW7Fòç6WGF–æw2æ—FVÒæ6ö×ç’çF—FÆRs¢t6ö×ç’rÀ¢vvW7Fòç6WGF–æw2æ—FVÒæ6ö×ç’ç7V'F—FÆRs ¢t'W6–æW72&Vv—7G&F–öâæB–FVçF—G’rÀ¢vvW7Fòç6WGF–æw2æ—FVÒç&Vv–öæÆ—¦F–öâçF—FÆRs¢u&Vv–öæÆ—¦F–öârÀ¢vvW7Fòç6WGF–æw2æ—FVÒç&Vv–öæÆ—¦F–öâç7V'F—FÆRs ¢tÆæwVvRÂ7W'&Væ7’Â6÷VçG'’æBÆö6Âf÷&ÖG2rÀ¢vvW7Fòç6WGF–æw2æ—FVÒçW6W'2çF—FÆRs¢uW6W'2bW&Ö—76–öç2rÀ¢vvW7Fòç6WGF–æw2æ—FVÒçW6W'2ç7V'F—FÆRs¢t66W72Â&öf–ÆW2æBFVÒ6V7W&—G’rÀ¢vvW7Fòç6WGF–æw2æ—FVÒç&ö6VGW&W2çF—FÆRs¢u&ö6VGW&W2rÀ¢vvW7Fòç6WGF–æw2æ—FVÒç&ö6VGW&W2ç7V'F—FÆRs ¢twV–FW2f÷"6ÆW2Â6W'f–6W2æBFVÆ—fW&–W2rÀ¢vvW7Fòç6WGF–æw2æ—FVÒææ÷F–f–6F–öç2çF—FÆRs¢tæ÷F–f–6F–öç2rÀ¢vvW7Fòç6WGF–æw2æ—FVÒææ÷F–f–6F–öç2ç7V'F—FÆRs ¢u&V6V—fVBWfVçG2æB7—7FVÒÆW'G2rÀ¢vvW7Fòç6WGF–æw2æ—FVÒçFeFV×ÆFW2çF—FÆRs¢uDbFV×ÆFW2rÀ¢vvW7Fòç6WGF–æw2æ—FVÒçFeFV×ÆFW2ç7V'F—FÆRs ¢uV÷FW2Âv÷&²÷&FW'2Â&V6V—G2æBFö7VÖVçG2rÀ¢vvW7Fòç6WGF–æw2æ—FVÒæ–çFVw&F–öç2çF—FÆRs¢t–çFVw&F–öç2rÀ¢vvW7Fòç6WGF–æw2æ—FVÒæ–çFVw&F–öç2ç7V'F—FÆRs ¢tW‡FW&æÂ6W'f–6W2æBWFöÖF–öç2rÀ ¢òòÖævVÖVçB(	B6öçFW‡GVÂÖö&–ÆR÷fW'f–Wp¢vvW7Fòæ÷fW'f–Wrç6VÆV7FVD&Vs¢u6VÆV7FVB&VrÀ¢vvW7Fòæ÷fW'f–WrævVæW&ÅF—FÆRs¢t÷fW'f–WrrÀ¢vvW7Fòæ÷fW'f–WrçfÇVUVæf–Æ&ÆRs¢rÒÒrÀ¢vvW7Fòæ÷fW'f–WræÖ–ä7F–öç2s¢tÖ–â7F–öç2rÀ¢vvW7Fòæ÷fW'f–WræW'&÷$ÖW76vRs ¢t7F–öç2&R7F–ÆÂf–Æ&ÆRâG'’&Vg&W6†–ærF†RFF–âÖöÖVçBârÀ¢vvW7Fòæ6FÆörç7VÖÖ'•F—FÆRs¢t6FÆör7VÖÖ'’rÀ¢vvW7Fòæ6FÆöræÖWG&–2ç&öGV7G2s¢u&öGV7G2rÀ¢vvW7Fòæ6FÆöræÖWG&–2ç&öGV7G56W'f–6W2s¢u&öGV7G2æB6W'f–6W2rÀ¢vvW7Fòæ6FÆöræÖWG&–2æ6FVv÷&–W2s¢t6FVv÷&–W2rÀ¢vvW7Fòæ6FÆöræÖWG&–2æÆ÷u7Fö6²s¢tÆ÷r7Fö6²rÀ¢vvW7Fòæ6FÆöræÆ÷u7Fö6´ÆW'E6VÖçF–2s¢tGFVçF–öâ–æF–6F÷"f÷"Æ÷r7Fö6²rÀ¢vvW7Fòæ6FÆöræÆöDW'&÷"s¢t6÷VÆBæ÷BÆöBF†R6FÆör7VÖÖ'’ârÀ¢vvW7Fòæ6FÆöræV×G•F—FÆRs¢tæò6FÆörFFFò6†÷rrÀ¢vvW7Fòæ6FÆöræV×G”ÖW76vRs ¢tFB&öGV7G2Â6W'f–6W2÷"6FVv÷&–W2Fòf–ÆÂF†R–æF–6F÷'2ârÀ¢vvW7Fòæ6FÆörçW&Ö—76–öå&W7G&–7FVEF—FÆRs ¢t6FÆör&W7G&–7FVBf÷"F†—2W6W"rÀ¢vvW7Fòæ6FÆörçW&Ö—76–öå&W7G&–7FVDÖW76vRs ¢uF†R&öGV7G2b6W'f–6W27F–öâ&W7V7G27W'&VçBW&Ö—76–öç2ârÀ¢vvW7Fòæ6FÆöræÆ÷u7Fö6µF—FÆRs¢t–çfVçF÷'’æVVG2GFVçF–öârÀ¢vvW7Fòæ6FÆöræÆ÷u7Fö6´ÖW76vRs ¢w¶6÷VçGÒ—FVÒ‡2’&VÆ÷rF†R6öæf–wW&VB6FÆörF‡&W6†öÆBârÀ¢vvW7Fòæ6FÆöræÆ÷u7Fö6´7F–öâs¢uf–Wr—FV×2rÀ¢vvW7FòçV÷ÆRç7VÖÖ'•F—FÆRs¢uV÷ÆR7VÖÖ'’rÀ¢vvW7FòçV÷ÆRæÖWG&–2æ6Æ–VçG2s¢t7W7FöÖW'2rÀ¢vvW7FòçV÷ÆRæÖWG&–2æ6öÆÆ&÷&F÷'2s¢t6öÆÆ&÷&F÷'2rÀ¢vvW7FòçV÷ÆRæÖWG&–2ç7WÆ–W'2s¢u7WÆ–W'2rÀ¢vvW7FòçV÷ÆRç7WÆ–W'5Væf–Æ&ÆU6VÖçF–2s¢t6öÖ–ær6ööâ&W6÷W&6RrÀ¢vvW7FòçV÷ÆRæÆöDW'&÷"s¢t6÷VÆBæ÷BÆöBF†RV÷ÆR7VÖÖ'’ârÀ¢vvW7FòçV÷ÆRæV×G•F—FÆRs¢tæò6öçF7G2ÆöFVBrÀ¢vvW7FòçV÷ÆRæV×G”ÖW76vRs ¢t7W7FöÖW'2æB6öÆÆ&÷&F÷'2v–ÆÂV"†W&Rv†Vâ&Vv—7FW&VBârÀ¢vvW7FòçV÷ÆRç7WÆ–W'4&Æö6¶VEF—FÆRs¢u7WÆ–W'2æ÷Bf–Æ&ÆR–WBrÀ¢vvW7FòçV÷ÆRç7WÆ–W'4&Æö6¶VDÖW76vRs ¢uF†R&W6÷W&6R&VÖ–ç2Ö&¶VB26öÖ–ær6ööâæB†2æò7F—fRÖö&–ÆRæf–vF–öâârÀ¢vvW7Fòæf–ææ6Ræ7F–öäw&÷Ws¢u66†VGVÆRæB&W6÷W&6W2rÀ¢vvW7Fòæf–ææ6Rç7VÖÖ'•F—FÆRs¢tf–ææ6–Â7VÖÖ'’rÀ¢vvW7Fòæf–ææ6RæÖWG&–2æWfVçG2s¢uW6öÖ–ærWfVçG2rÀ¢vvW7Fòæf–ææ6RæÖWG&–2ç&V6V—f&ÆTWfVçG2s¢u&V6V—f&ÆRrÀ¢vvW7Fòæf–ææ6RæÖWG&–2ç–&ÆTWfVçG2s¢u–&ÆRrÀ¢vvW7Fòæf–ææ6RæÆöDW'&÷"s¢t6÷VÆBæ÷BÆöBF†Rf–ææ6–Â66†VGVÆRârÀ¢vvW7Fòæf–ææ6RæV×G•F—FÆRs¢tæòW6öÖ–ær66†VGVÆRVçG&–W2rÀ¢vvW7Fòæf–ææ6RæV×G”ÖW76vRs ¢t÷VâF†Rf–ææ6–Â66†VGVÆRFò7&VFRf÷&V67G2æBG&6²GVRFFW2ârÀ¢vvW7Fòæf–ææ6Ræ÷Vå66†VGVÆRs¢t÷Vâ66†VGVÆRrÀ¢vvW7Fòæf–ææ6RæGFVçF–öåF—FÆRs¢u66†VGVÆRv—F‚W6öÖ–ærGVRFFW2rÀ¢vvW7Fòæf–ææ6RæGFVçF–öäÖW76vRs ¢w¶6÷VçGÒ÷fW&GVR÷"GVR×FöF’WfVçB‡2’–âF†R66†VGVÆRârÀ¢vvW7Fòæf–ææ6Ræ&Æö6¶VE&W6÷W&6W5F—FÆRs¢tf–ææ6–Â&W6÷W&6W2–â&öw&W72rÀ¢vvW7Fòæf–ææ6Ræ&Æö6¶VE&W6÷W&6W4ÖW76vRs ¢t66÷VçG2&V6V—f&ÆRÂ66÷VçG2–&ÆRæB–ÖVçBÖWF†öG2&VÖ–âÆö6¶VBöâÖö&–ÆRârÀ ¢òò6W'f–6RÖö&–ÆP¢vFVæF–ÖVçFòæÖö&–ÆRçF—FÆRs¢u6W'f–6RrÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ†W&õF—FÆRs¢uv†BFò–÷RvçBFòFóòrÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ†W&õ7V'F—FÆRs ¢u6ÆRÂ6W'f–6R÷"&V6V—B–âfWr7FW2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ–çG&õF—FÆRs¢t7W7FöÖW"6W'f–6RrÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ–çG&ôÆ–æU6ÆW2s¢w6VÆÂÂ6öÆÆV7BÂ&Wf–WrrÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ–çG&ôÆ–æU&WGW&ç2s¢w&öGV7B&WGW&ç2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ–çG&ôÆ–æU6W'f–6W2s¢w6W'f–6W2ÂW7F–ÖFW2ÂæBÖ÷&RrÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ6†ö÷6T÷W&F–öâs¢t6†ö÷6RF†R÷W&F–öâFò7F'BârÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6ÆW4ÖVçUF—FÆRs¢u6ÆW2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRææWu6ÆUF—FÆRs¢u6ÆW2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRææWu6ÆU7V'F—FÆRs¢t÷F–öç2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ6öç7VÇE6ÆW5F—FÆRs¢uf–Wr6ÆW2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ6öç7VÇE6ÆW57V'F—FÆRs¢uf–Wr6ÆW2†—7F÷'’rÀ¢vFVæF–ÖVçFòæÖö&–ÆRææWu6W'f–6UF—FÆRs¢u6W'f–6W2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRææWu6W'f–6U7V'F—FÆRs¢t7&VFR÷"G&6²rÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6W'f–6W4ÖVçUF—FÆRs¢u6W'f–6W2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ7&VFU6W'f–6UF—FÆRs¢tæWr6W'f–6RrÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ7&VFU6W'f–6U7V'F—FÆRs¢t÷VâæWrFV6†æ–6Â6W'f–6RrÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ6öç7VÇE6W'f–6W4–å&öw&W75F—FÆRs ¢uf–Wr6W'f–6W2–â&öw&W72rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ6öç7VÇE6W'f–6W4–å&öw&W757V'F—FÆRs ¢u6VR7F—fRFV6†æ–6Â6W'f–6W2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRç&V6V—fUF—FÆRs¢u&V6V—fRrÀ¢vFVæF–ÖVçFòæÖö&–ÆRç&V6V—fU7V'F—FÆRs¢t÷Vâ6ÆW2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæföÆÆ÷uFöF’s¢uG&6²FöF’rÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6ÆW5Fõ&V6V—fUF—FÆRs¢u6ÆW2Fò&V6V—fRrÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6ÆW5Fõ&V6V—fU7V'F—FÆRs¢uVç6WGFÆVB6ÆW2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6W'f–6W4–å&öw&W75F—FÆRs¢u6W'f–6W2–â&öw&W72rÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6W'f–6W4–å&öw&W757V'F—FÆRs ¢t7F—fRFV6†æ–6Â6W'f–6W2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæÖ÷&T÷F–öç2s¢tÖ÷&R÷F–öç2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ66„÷W&F–öç5F—FÆRs¢t66‚rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ66„÷W&F–öç57V'F—FÆRs¢t÷VâæBÖ÷fRrÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ6÷VçFW$ÆöDW'&÷"s¢t6÷VÆBæ÷BWFFR&–v‡Bæ÷rrÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6W'f–6W5Fõ&V6V—fUF—FÆRs¢u6W'f–6W2Fò&V6V—fRrÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6W'f–6W5Fõ&V6V—fU7V'F—FÆRs ¢uFV6†æ–6Â6W'f–6W2v—F‚÷Vâf–ææ6–Â&Ææ6RrÀ¢vFVæF–ÖVçFòæÖö&–ÆRçFV6†æ–6Å6W'f–6W5VæF–æu–ÖVçEF—FÆRs ¢uFV6†æ–6Â6W'f–6W2VæF–ær–ÖVçBrÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçG4ÆöF–æuF—FÆRs ¢tÆöF–ærFV6†æ–6Â6W'f–6W2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçG4ÆöF–æu7V'F—FÆRs ¢tfWF6†–ær6W'f–6W2v—F‚÷Vâf–ææ6–Â&Ææ6RârÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçD†VFW%F—FÆRs¢t÷Vâf–ææ6–Â&Ææ6RrÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçEF÷FÄ÷Vâs¢uF÷FÂ÷VârÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçE6V7F–öâs¢u6W'f–6W2v—F‚&Ææ6RrÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçDW'&÷%F—FÆRs¢t6÷VÆBæ÷BÆöBrÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçDW'&÷$ÖW76vRs ¢uG'’&Vg&W6†–ærFV6†æ–6Â6W'f–6W2–âÖöÖVçBârÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçDV×G•F—FÆRs¢tæò6W'f–6W2Fò&V6V—fRrÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçDV×G”ÖW76vRs ¢uFV6†æ–6Â6W'f–6W2†fRæò÷Vâf–ææ6–Â&Ææ6RârÀ¢vFVæF–ÖVçFòæÖö&–ÆRæöæUVæF–æu–ÖVçE6W'f–6Rs ¢s6W'f–6Rv—F‚÷Vâf–ææ6–Â&Ææ6RrÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçE6W'f–6W2s ¢w6W'f–6W2v—F‚÷Vâf–ææ6–Â&Ææ6RrÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6W'f–6TçVÖ&W"s¢u6W'f–6RrÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ÷VåfÇVRs¢t÷VâÖ÷VçBrÀ¢vFVæF–ÖVçFòæÖö&–ÆRçF÷FÅfÇVRs¢uF÷FÂÖ÷VçBrÀ¢vFVæF–ÖVçFòæÖö&–ÆRæGVTFFRs¢tGVRöârÀ¢vFVæF–ÖVçFòæÖö&–ÆRææôGVTFFRs¢tæòGVRFFRrÀ¢v÷W&6òæÖö&–ÆRç&WGW&åF—FÆRs¢u&WGW&ç2æBW†6†ævW2rÀ¢v÷W&6òæÖö&–ÆRç&WGW&å7V'F—FÆRs¢u&Vv—7FW"&WGW&ârÀ¢v÷W&6òæÖö&–ÆRç&WGW&åVæf–Æ&ÆRs¢t6öÖ–ær6ööârÀ ¢òòÖö&–ÆR&WGW&ç0¢vFWföÇV6òæÖö&–ÆRçF—FÆRs¢u&WGW&ç2rÀ¢vFWföÇV6òæÖö&–ÆRæ–çG&õF—FÆRs¢tf–æBF†R6ÆRrÀ¢vFWföÇV6òæÖö&–ÆRæ–çG&õ7V'F—FÆRs ¢uW6RF†R&V6V—B6öFRFò7F'B&WGW&â÷"W†6†ævRârÀ¢vFWföÇV6òæÖö&–ÆRç6ÆT6öFTÆ&VÂs¢u6ÆR6öFR÷"”BrÀ¢vFWföÇV6òæÖö&–ÆRç6ÆT6öFT†–çBs¢tW†×ÆS¢4ÄRÓ#BrÀ¢vFWföÇV6òæÖö&–ÆRç6V&6…6ÆRs¢tf–æB6ÆRrÀ¢vFWföÇV6òæÖö&–ÆRç6V&6†–ærs¢u6V&6†–ærââârÀ¢vFWföÇV6òæÖö&–ÆRæ÷W&F–öä6ö×ÆWFVBs¢t÷W&F–öâ6ö×ÆWFVBrÀ¢vFWföÇV6òæÖö&–ÆRç6ÆTf÷VæBs¢u6ÆRf÷VæBrÀ¢vFWföÇV6òæÖö&–ÆRæ6†ævU6ÆRs¢t6†ævR6ÆRrÀ¢vFWföÇV6òæÖö&–ÆRçVæ–FVçF–f–VD7W7FöÖW"s¢uVæ–FVçF–f–VB7W7FöÖW"rÀ¢vFWföÇV6òæÖö&–ÆRç&öGV7G5fÇVRs¢u&öGV7BfÇVRrÀ¢vFWföÇV6òæÖö&–ÆRç&WGW&ä&Ææ6Rs¢u&WGW&æ&ÆR&Ææ6RrÀ¢vFWföÇV6òæÖö&–ÆRæ†4VÆ–v–&ÆT—FV×2s¢t—FV×2&Rf–Æ&ÆRrÀ¢vFWföÇV6òæÖö&–ÆRææôVÆ–v–&ÆT&Ææ6Rs¢tæò—FV×2f–Æ&ÆRrÀ¢vFWföÇV6òæÖö&–ÆRæ÷W&F–öåG—UF—FÆRs¢uv†Bv–ÆÂ&RFöæSòrÀ¢vFWföÇV6òæÖö&–ÆRæ÷W&F–öåG—U7V'F—FÆRs ¢t6†ö÷6R&WGvVVâ&WGW&æ–ær÷"W†6†æv–ær&öGV7G2ârÀ¢vFWföÇV6òæÖö&–ÆRç&WGW&äöæÇ’s¢u&WGW&âöæÇ’rÀ¢vFWföÇV6òæÖö&–ÆRæW†6†ævRs¢tW†6†ævRrÀ¢vFWföÇV6òæÖö&–ÆRæ—FV×5F—FÆRs¢u&öGV7G2&V–ær&WGW&æVBrÀ¢vFWföÇV6òæÖö&–ÆRæ—FV×57V'F—FÆRs ¢u6VÆV7BF†R—FV×2æBVçFW"VçF—G’Â6öæF—F–öâæB&V6öâârÀ¢vFWföÇV6òæÖö&–ÆRææô—FV×2s¢uF†—26ÆR†2æò—FV×2f–Æ&ÆRf÷"&WGW&âârÀ¢vFWföÇV6òæÖö&–ÆRç6öÆEfÇVRs¢u6öÆC¢·fÇVWÒrÀ¢vFWföÇV6òæÖö&–ÆRæf–Æ&ÆUfÇVRs¢tf–Æ&ÆS¢·fÇVWÒrÀ¢vFWföÇV6òæÖö&–ÆRçVçF—G’s¢uVçF—G’rÀ¢vFWföÇV6òæÖö&–ÆRæÖ†–×VÕVçF—G’s¢tÖ†–×VÓ¢·fÇVWÒrÀ¢vFWföÇV6òæÖö&–ÆRæ6öæF—F–öâs¢u&öGV7B6öæF—F–öârÀ¢vFWföÇV6òæÖö&–ÆRç&V6öâs¢u&V6öâf÷"&WGW&ârÀ¢vFWföÇV6òæÖö&–ÆRç7Fö6µ&WGW&âs¢u&WGW&âFò–çfVçF÷'’rÀ¢vFWföÇV6òæÖö&–ÆRç7Fö6µ&WGW&äöâs ¢uF†Rf–Æ&ÆR&öGV7B&Ææ6Rv–ÆÂ&R&W7F÷&VBârÀ¢vFWföÇV6òæÖö&–ÆRç7Fö6µ&WGW&äöfbs ¢uF†R&WGW&âv–ÆÂ&R&V6÷&FVBv—F†÷WB&W7F÷&–ær–çfVçF÷'’ârÀ¢vFWföÇV6òæÖö&–ÆRæW†6†ævT—FV×5F—FÆRs¢tW†6†ævR&öGV7G2rÀ¢vFWföÇV6òæÖö&–ÆRæW†6†ævT—FV×57V'F—FÆRs ¢tæWr&öGV7G2v–ÆÂÆVfR–çfVçF÷'’BF†R7W'&VçB&–6RârÀ¢vFWföÇV6òæÖö&–ÆRæFE&öGV7Bs¢tFB&öGV7BrÀ¢vFWföÇV6òæÖö&–ÆRæW†6†ævTV×G’s ¢tFBF†R&öGV7BF†R7W7FöÖW"v–ÆÂ&V6V—fRârÀ¢vFWföÇV6òæÖö&–ÆRç6VÆV7DW†6†ævU&öGV7Bs¢t6†ö÷6RW†6†ævR&öGV7BrÀ¢vFWföÇV6òæÖö&–ÆRç6V&6…&öGV7Bs¢u6V&6‚&öGV7G2rÀ¢vFWföÇV6òæÖö&–ÆRææõ&öGV7G5F—FÆRs¢tæò&öGV7G2f÷VæBrÀ¢vFWföÇV6òæÖö&–ÆRææõ&öGV7G4ÖW76vRs ¢u&Wf–WrF†R6V&6‚÷"F†R7F—fR&öGV7B6FÆörârÀ¢vFWföÇV6òæÖö&–ÆRç&öGV7E&–6Rs¢t7W'&VçB&–6S¢·fÇVWÒrÀ¢vFWföÇV6òæÖö&–ÆRçW%Væ—Bs¢w·fÇVWÒW"Væ—BrÀ¢vFWföÇV6òæÖö&–ÆRç&VÖ÷fRs¢u&VÖ÷fR&öGV7BrÀ¢vFWföÇV6òæÖö&–ÆRæf–ææ6–ÅF—FÆRs¢tf–ææ6–Â6WGFÆVÖVçBrÀ¢vFWföÇV6òæÖö&–ÆRç&WGW&æVE&öGV7G2s¢u&WGW&æVB&öGV7G2rÀ¢vFWföÇV6òæÖö&–ÆRæW†6†ævU&öGV7G2s¢tW†6†ævR&öGV7G2rÀ¢vFWföÇV6òæÖö&–ÆRæF–ffW&Væ6U&V6V—fRs¢tF–ffW&Væ6RFò&V6V—fRrÀ¢vFWföÇV6òæÖö&–ÆRç&VgVæEfÇVRs¢u&VgVæBÖ÷VçBrÀ¢vFWföÇV6òæÖö&–ÆRæ7W7FöÖW%—2s¢uF†R7W7FöÖW"—2F†RF–ffW&Væ6RârÀ¢vFWföÇV6òæÖö&–ÆRæ6ö×ç•&VgVæG2s¢uF†R6ö×ç’&VgVæG2F†R7W7FöÖW"ârÀ¢vFWföÇV6òæÖö&–ÆRææôf–ææ6–ÄÖ÷fVÖVçBs ¢uF†W&Rv–ÆÂ&Ræòf–ææ6–ÂÖ÷fVÖVçBârÀ¢vFWföÇV6òæÖö&–ÆRç–ÖVçDÖWF†öBs¢u–ÖVçB÷"&VgVæBÖWF†öBrÀ¢vFWföÇV6òæÖö&–ÆRç–ÖVçD†VÇW"s¢u&WV—&W2â÷Vâ66‚6W76–öâârÀ¢vFWföÇV6òæÖö&–ÆRç6VÆV7E–ÖVçBs¢u6VÆV7BÖWF†öBrÀ¢vFWföÇV6òæÖö&–ÆRç6V&6…–ÖVçBs¢u6V&6‚ÖWF†öG2rÀ¢vFWföÇV6òæÖö&–ÆRææõ–ÖVçDÖWF†öG2s¢tæòÖWF†öG2f–Æ&ÆRrÀ¢vFWföÇV6òæÖö&–ÆRææõ–ÖVçDÖWF†öG4ÖW76vRs ¢t6öæf–wW&Râ–ÖÖVF–FR–ÖVçBÖWF†öB&Vf÷&R6ö×ÆWF–ærârÀ¢vFWföÇV6òæÖö&–ÆRç&Wf–WuF—FÆRs¢u&Wf–WræB6ö×ÆWFRrÀ¢vFWföÇV6òæÖö&–ÆRç&Wf–Wu7V'F—FÆRs ¢t6öæf—&ÒF†RFF&Vf÷&RÖ÷f–ær–çfVçF÷'’æB66‚ârÀ¢vFWföÇV6òæÖö&–ÆRææ÷FW2s¢t–çFW&æÂæ÷FW2†÷F–öæÂ’rÀ¢vFWföÇV6òæÖö&–ÆRç&ö6W76–ærs¢u&ö6W76–ærââârÀ¢vFWföÇV6òæÖö&–ÆRæ6ö×ÆWFTW†6†ævRs¢t6ö×ÆWFRW†6†ævRrÀ¢vFWföÇV6òæÖö&–ÆRæ6ö×ÆWFU&WGW&âs¢t6ö×ÆWFR&WGW&ârÀ¢vFWföÇV6òæÖö&–ÆRæ6öæf—&ÖF–öä†VÇW"s ¢t6öæf—&ÖF–öâÖ’Ö÷fR–çfVçF÷'’æB&V6÷&BF†R66‚6WGFÆVÖVçBârÀ¢vFWföÇV6òæÖö&–ÆRç&V6VçEF—FÆRs¢u&V6VçB÷W&F–öç2rÀ¢vFWföÇV6òæÖö&–ÆRç&V6VçE7V'F—FÆRs ¢tÆFW7B&WGW&ç2æBW†6†ævW2f÷"F†—2'W6–æW72ârÀ¢vFWföÇV6òæÖö&–ÆRæÆöF–æu&V6VçBs¢tÆöF–ær&V6VçB÷W&F–öç2rÀ¢vFWföÇV6òæÖö&–ÆRæV×G•&V6VçBs ¢tæò&WGW&ç2÷"W†6†ævW2vW&R6ö×ÆWFVB&V6VçFÇ’ârÀ¢vFWföÇV6òæÖö&–ÆRç7V66W74ÖW76vRs ¢t÷W&F–öâ¶6öFWÒ6ö×ÆWFVB7V66W76gVÆÇ’ârÀ¢vFWföÇV6òæÖö&–ÆRçVæW‡V7FVDW'&÷"s ¢uF†R÷W&F–öâ6÷VÆBæ÷B&R6ö×ÆWFVBâÆV6RG'’v–âârÀ¢vFWföÇV6òæÖö&–ÆRçfÆ–FF–öâç6ÆU&WV—&VBs ¢tVçFW"F†R6ÆR6öFR÷"–FVçF–f–W"ârÀ¢vFWföÇV6òæÖö&–ÆRçfÆ–FF–öâæ–çfÆ–EVçF—G’s ¢tVçFW"fÆ–BVçF—G’f÷"·&öGV7GÒârÀ¢vFWföÇV6òæÖö&–ÆRçfÆ–FF–öâçVçF—G”W†6VVFVBs ¢uF†RVçF—G’öb·&öGV7GÒW†6VVG2F†R&WGW&æ&ÆR&Ææ6RârÀ¢vFWföÇV6òæÖö&–ÆRçfÆ–FF–öâç&V6öå&WV—&VBs ¢tVçFW"F†R&WGW&â&V6öâf÷"·&öGV7GÒârÀ¢vFWföÇV6òæÖö&–ÆRçfÆ–FF–öâç6VÆV7E&WGW&ä—FVÒs ¢u6VÆV7BBÆV7BöæR&öGV7BFò&WGW&âârÀ¢vFWföÇV6òæÖö&–ÆRçfÆ–FF–öâç6VÆV7DW†6†ævT—FVÒs ¢tFBBÆV7BöæR&öGV7BFòF†RW†6†ævRârÀ¢vFWföÇV6òæÖö&–ÆRçfÆ–FF–öâç6VÆV7E–ÖVçBs ¢u6VÆV7BF†RÖWF†öBW6VBFò6WGFÆRF†RF–ffW&Væ6RârÀ¢vFWföÇV6òæÖö&–ÆRæ6öæF—F–öâç6VÆVBs¢tæWrò6VÆVBrÀ¢vFWföÇV6òæÖö&–ÆRæ6öæF—F–öâæ÷VæVBs¢t÷VæVBrÀ¢vFWföÇV6òæÖö&–ÆRæ6öæF—F–öâçW6VBs¢uW6VBrÀ¢vFWföÇV6òæÖö&–ÆRæ6öæF—F–öâæFVfV7F—fRs¢tFVfV7F—fRrÀ¢vFWföÇV6òæÖö&–ÆRæ6öæF—F–öâæFÖvVBs¢tFÖvVBrÀ¢vFWföÇV6òæÖö&–ÆRæ6öæF—F–öâæ÷F†W"s¢t÷F†W"6öæF—F–öârÀ ¢òò÷Vâ6ÆW2Öö&–ÆP¢wfVæF4æôÆ—V–FF2ç&V6V&–ÖVçF÷2s¢u&V6V—G2rÀ¢wfVæF4æôÆ—V–FF2ç6VÕ&V6V&–ÖVçF÷2s¢tæò&V6V—B&V6÷&FVBârÀ¢wfVæF4æôÆ—V–FF2ç&VfW&Væ6–s¢u&VfW&Væ6RrÀ¢wfVæF4æôÆ—V–FF2ç&V6V&–ÖVçFòs¢u&V6V—BrÀ¢wfVæF4æôÆ—V–FF2ç&V6V&–ÖVçFõF÷FÂs¢tgVÆÂrÀ¢wfVæF4æôÆ—V–FF2ç&V6V&–ÖVçFõ&6–Âs¢u'F–ÂrÀ ¢òòÖævVÖVçB(	B&FvW2æBFÖ–â†VFW ¢vvW7Fòç6WGF–æw2æ&FvRæW‡W&–ÖVçFÂs¢tW‡W&–ÖVçFÂrÀ¢vvW7Fòç6WGF–æw2æ&FvRæ6öÖ–æu6ööâs¢t6öÖ–ær6ööârÀ¢vvW7Fòç6WGF–æw2æFÖ–ä†VFW"çF—FÆRs¢t6ö×ç’6WGF–æw2rÀ¢vvW7Fòç6WGF–æw2æFÖ–ä†VFW"ç7V'F—FÆRs ¢t÷&væ—¦R6ö×ç’ÂFVÒÂ÷W&F–öâæB6öÖ×Væ–6F–öâârÀ¢vvW7Fòæ6FÆörçvV$6FÆörs¢uvV"6FÆörrÀ¢vvW7Fòæ6FÆörçvV$6FÆötFW62s¢tgVÆÂ6FÆörW‡W&–Væ6R–âF†R'&÷w6W"rÀ¢vvW7Fòæ6FÆörçvV$6FÆöt&FvRs¢utT"rÀ¢vvW7FòæfVGW&T–å&öw&W72s¢tÖö&–ÆRfÆ÷r–â&öw&W72ârÀ¢w&öGWFòçvV$Æ—7Bç6VÆV7F–öâçF—FÆTÖç’s¢u6VÆV7B—FV×2rÀ¢w&öGWFòçvV$Æ—7Bç6VÆV7F–öâçF—FÆTöæRs¢u6VÆV7B—FVÒrÀ¢w&öGWFòçvV$Æ—7Bç6VÆV7F–öâç7V'F—FÆTÖç’s ¢t6†V6²&öGV7G2æB6W'f–6W2æBFBWfW'—F†–ærFòF†R6ÆRBöæ6RârÀ¢w&öGWFòçvV$Æ—7Bç6VÆV7F–öâç7V'F—FÆTöæRs ¢uV–6²6V&6‚FòFB&öGV7B÷"6W'f–6RFòF†R6ÆRârÀ¢w&öGWFòçvV$Æ—7BæVF—BçF—FÆRs¢tVF—B&öGV7G2rÀ¢w&öGWFòçvV$Æ—7BæVF—Bç7V'F—FÆRs ¢tÖævR–÷W"&öGV7B6FÆörÂ7Fö6²Â&–6W2æB–ÖvW2ârÀ¢w&öGWFòçvV$Æ—7BæFVfVÇBç7V'F—FÆRs ¢uV–6²6FÆörÆöö·Wv—F‚6÷VçFW"7F–öç2ârÀ¢w&öGWFòçvV$Æ—7BææWt—FVÒs¢tæWr—FVÒrÀ¢w&öGWFòçvV$Æ—7Bç&–çEFbs¢u&–çBDbrÀ¢w&öGWFòçvV$Æ—7BçV&Æ–46FÆötÆ–æ²s¢t6FÆörÆ–æ²rÀ¢w&öGWFòçvV$Æ—7BçV&Æ–46FÆöu&W&–ærs¢u&W&–ærââârÀ¢w&öGWFòçvV$Æ—7BçV&Æ–46FÆöt6÷–VBs¢uV&Æ–26FÆörÆ–æ²6÷–VBârÀ¢w&öGWFòçvV$Æ—7BçV&Æ–46FÆötW'&÷"s¢t6÷VÆBæ÷B&W&RF†R6FÆörÆ–æ²ârÀ¢v6FÆöu&W6W'fF–öç2çF—FÆRs¢t6FÆör&W6W'fF–öç2rÀ¢v6FÆöu&W6W'fF–öç2ç7V'F—FÆRs ¢uG&6²&WVW7G2&V6V—fVBF‡&÷Vv‚F†Rf—'GVÂ6FÆörârÀ¢v6FÆöu&W6W'fF–öç2æÆöF–æuF—FÆRs¢tÆöF–ær&W6W'fF–öç2rÀ¢v6FÆöu&W6W'fF–öç2æÆöF–æu7V'F—FÆRs ¢u7–æ6–ær&WVW7G2f÷"F†—2'W6–æW72ârÀ¢v6FÆöu&W6W'fF–öç2æFWF–ÄÆöF–ærs¢tÆöF–ærFWF–Ç2rÀ¢v6FÆöu&W6W'fF–öç2æFWF–ÄÆöF–æu7V'F—FÆRs ¢tfWF6†–ær&öGV7G2æB7W7FöÖW"–æf÷&ÖF–öâârÀ¢v6FÆöu&W6W'fF–öç2æFWF–ÅF—FÆRs¢u&W6W'fF–öâFWF–Ç2rÀ¢v6FÆöu&W6W'fF–öç2æV×G’s¢tæò&W6W'fF–öç2f÷VæBârÀ¢v6FÆöu&W6W'fF–öç2æW'&÷"s¢t6÷VÆBæ÷BÆöB&W6W'fF–öç2ârÀ¢v6FÆöu&W6W'fF–öç2ç7FGW2s¢u7FGW2rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æÇ’s¢tÇ’rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æ6ÆV"s¢t6ÆV"f–ÇFW'2rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2ç7FGW2ç6VÆV7FVD6÷VçBs¢w¶6÷VçGÒ6VÆV7FVBrÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2çW&–öBs¢uW&–öBrÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2ç7F'Bs¢u7F'BrÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æVæBs¢tVæBrÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRs¢tFFRrÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRæÆÂs¢tÆÂFFW2rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRçFöF’s¢uFöF’rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRç–W7FW&F’s¢u–W7FW&F’rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRæÆ7CtF—2s¢tÆ7BrF—2rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRææW‡CtF—2s¢tæW‡BrF—2rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRçF†—4ÖöçF‚s¢uF†—2ÖöçF‚rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRææW‡DÖöçF‚s¢tæW‡BÖöçF‚rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRæ7W7FöÕ&ævRs¢t7W7FöÒ&ævRrÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRç–6²s¢u–6²FFRrÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRç–6µ&ævRs¢tg&öÒF’FòF’rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRæ†VÇFW‡Bs¢u6VÆV7BFFRrÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRç7F'D†VÇFW‡Bs¢u6VÆV7B7F'BFFRrÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRæVæD†VÇFW‡Bs¢u6VÆV7BVæBFFRrÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRç&ævT†VÇFW‡Bs¢u6VÆV7BW&–öBrÀ¢v6FÆöu&W6W'fF–öç2ç7FGW2ç&V6V—fVBs¢u&V6V—fVBrÀ¢v6FÆöu&W6W'fF–öç2ç7FGW2ææÇ—6—2s¢uVæFW"&Wf–WrrÀ¢v6FÆöu&W6W'fF–öç2ç7FGW2æ6öæf—&ÖVBs¢t6öæf—&ÖVBrÀ¢v6FÆöu&W6W'fF–öç2ç7FGW2æ6æ6VÆÆVBs¢t6æ6VÆÆVBrÀ¢v6FÆöu&W6W'fF–öç2ç7FGW2æ6öçfW'FVBs¢t6öçfW'FVBFò6ÆRrÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'BçF—FÆRs¢t6öçfW'BFò6ÆRrÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'BæFW67&—F–öâs ¢ufÆ–FFW27Fö6²æB7&VFW2â66÷VçG2×&V6V—f&ÆR6ÆRv—F‚F†W6R&öGV7G2ârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'Bæ7F–öâs¢t6öçfW'BFò6ÆRrÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'Bç&ö6W76–ærs¢t6öçfW'F–ærââârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'Bæ6öæf—&ÕF—FÆRs¢t6öçfW'B&W6W'fF–öâFò6ÆSòrÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'Bæ6öæf—&ÔÖW76vRs ¢u7Fö6²v–ÆÂ&RfÆ–FFVBæBF†R—FV×2v–ÆÂ&R6VçBFòâ66÷VçG2×&V6V—f&ÆR6ÆRârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'Bç7V66W72s ¢u&W6W'fF–öâ6öçfW'FVBFòâ66÷VçG2×&V6V—f&ÆR6ÆRârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'Bæ6öçfW'FVEF—FÆRs¢u6ÆR7&VFVBrÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'Bç6ÆT–Bs¢u6ÆRrÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'BæW'&÷"ç7Fö6²s ¢t–ç7Vff–6–VçB7Fö6²Fò6öçfW'BF†—2&W6W'fF–öâârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'BæW'&÷"æ6öæf—&ÖVDöæÇ’s ¢t6öæf—&ÒF†R&W6W'fF–öâ&Vf÷&R6öçfW'F–ær—BFò6ÆRârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'BæW'&÷"ç&ö6W76–ærs ¢uF†—2&W6W'fF–öâ—2Ç&VG’&V–ær6öçfW'FVBâ&Vg&W6‚F†R67&VVâârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'BæW'&÷"ç–ÖVçD6öæf–rs ¢t6öæf–wW&RgWGW&R–ÖVçBG—R&Vf÷&R6öçfW'6–öâârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'BæW'&÷"ç&öGV7Bs ¢töæRöbF†R&W6W'fVB&öGV7G2—2æòÆöævW"f–Æ&ÆRârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'BæW'&÷"ævVæW&–2s ¢uF†R&W6W'fF–öâ6÷VÆBæ÷B&R6öçfW'FVBFò6ÆRârÀ¢v6FÆöu&W6W'fF–öç2æ—FV×2s¢v—FV×2rÀ¢v6FÆöu&W6W'fF–öç2ç&öGV7G2s¢u&W6W'fVB&öGV7G2rÀ¢v6FÆöu&W6W'fF–öç2ææ÷FW2s¢tæ÷FW2rÀ¢v6FÆöu&W6W'fF–öç2ææôæ÷FW2s¢tæòæ÷FW2&÷f–FVBârÀ¢v6FÆöu&W6W'fF–öç2ç&Wf–÷W2s¢u&Wf–÷W2vRrÀ¢v6FÆöu&W6W'fF–öç2ææW‡Bs¢tæW‡BvRrÀ¢w&öGWFòçvV$Æ—7BæVF—Bæ&ææW"s ¢tVF—BÖöFR7F—fR(
+"¶6÷VçGÒ—FV×2f÷VæB(
+"6Æ–6²&öGV7BFò6†ævR—BârÀ¢w&öGWFòçvV$Æ—7Bç6V&6„†–çBs¢u6V&6‚'’æÖRÂ6öFR÷"4µRââârÀ¢w&öGWFòçvV$Æ—7Bç&VfW&Væ6U6fVBs¢uf–Wr&VfW&Væ6RWFFVBârÀ¢w&öGWFòçvV$Æ—7Bçf–WrçfW'F–6Âs¢ufW'F–6ÂrÀ¢w&öGWFòçvV$Æ—7Bçf–Wræ†÷&—¦öçFÂs¢t†÷&—¦öçFÂrÀ¢w&öGWFòçvV$Æ—7Bçf–WræÆ—7Bs¢tÆ—7BrÀ¢w&öGWFòçvV$Æ—7Bçf–Wræw&–Bs¢tw&–BrÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"æ6FVv÷'’s¢t6FVv÷'’rÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"æ6FVv÷'”ÆÂs¢tÆÂ6FVv÷&–W2rÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"æfÆw2s¢tfÆw2rÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"æfÆw4ÆÂs¢tÆÂ—FV×2rÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"æfÆw4ff÷&—FW2s¢tff÷&—FW2rÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"æfÆw46FÆörs¢t–â6FÆörrÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"æfÆw4ff÷&—FW46FÆörs¢tff÷&—FW2æB6FÆörrÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"ç7FGW4ÆÂs¢tÆÂrÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"ç7Fö6´ÆÂs¢tÆÂrÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"ç7Fö6´f–Æ&ÆRs¢t–â7Fö6²rÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"ç7Fö6´Æ÷rs¢tÆ÷r7Fö6²rÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"ç7Fö6´÷WBs¢t÷WBöb7Fö6²rÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"ç7Fö6´æVvF—fRs¢tæVvF—fR7Fö6²rÀ¢w&öGWFòçvV$Æ—7Bç6÷'BæÆ&VÂs¢u6÷'BrÀ¢w&öGWFòçvV$Æ—7Bç6÷'BææÖRs¢u6÷'B'’æÖRrÀ¢w&öGWFòçvV$Æ—7Bç6÷'Bç&–6T62s¢tÆ÷vW7B&–6RrÀ¢w&öGWFòçvV$Æ—7Bç6÷'Bç&–6TFW62s¢t†–v†W7B&–6RrÀ¢w&öGWFòçvV$Æ—7BçV–6²çv—F„–ÖvRs¢uv—F‚–ÖvRrÀ¢w&öGWFòçvV$Æ—7BçV–6²æÆ÷u7Fö6²s¢tÆ÷r7Fö6²rÀ¢w&öGWFòçvV$Æ—7BæW'&÷%F—FÆRs¢t6÷VÆBæ÷BÆöBF†R6FÆörârÀ¢w&öGWFòçvV$Æ—7Bæ—FVÕv—F†÷WDæÖRs¢uVææÖVB—FVÒrÀ¢w&öGWFòçvV$Æ—7BçF&ÆRç&öGV7Bs¢u&öGV7BrÀ¢w&öGWFòçvV$Æ—7BçF&ÆRæ6FVv÷'’s¢t6FVv÷'’rÀ¢w&öGWFòçvV$Æ—7BçF&ÆRæ6öFRs¢t6öFRrÀ¢w&öGWFòçvV$Æ—7BçF&ÆRç&–6Rs¢u&–6RrÀ¢w&öGWFòçvV$Æ—7Bæ—FV×5W%vTÆ&VÂs¢t—FV×2W"vRrÀ¢w&öGWFòçvV$Æ—7Bçv–æF–öâç7VÖÖ'’s ¢u6†÷v–ær·7F'GÒFò¶VæGÒöb·F÷FÇÒ—FV×2rÀ¢w&öGWFòçvV$Æ—7Bç7Fö6´æ÷DÆ–6&ÆRs¢tæò7Fö6²6öçG&öÂrÀ¢w&öGWFòçvV$Æ—7Bç7Fö6µVçF—G’s¢uG’·fÇVWÒrÀ¢w&öGWFòçvV$Æ—7Bç7Fö6´Æ÷rs¢tÆ÷r7Fö6²rÀ¢w&öGWFòçvV$Æ—7Bç7Fö6´÷WBs¢t÷WBöb7Fö6²rÀ¢w&öGWFòçvV$Æ—7Bç7Fö6´æVvF—fRs¢tæVvF—fR7Fö6²rÀ¢w&öGWFòçvV$Æ—7Bæ6öFUVæf–Æ&ÆRs¢tæò6öFRrÀ¢w&öGWFòçvV$Æ—7Bçf–Wt7F–öâs¢uf–WrrÀ¢w&öGWFòæff÷&—FRæFEFööÇF—s¢tÖ&²2ff÷&—FRrÀ¢w&öGWFòæff÷&—FRç&VÖ÷fUFööÇF—s¢u&VÖ÷fRg&öÒff÷&—FW2rÀ¢w&öGWFòæff÷&—FRæVæ&ÆVDfVVF&6²s¢tff÷&—FRVæ&ÆVBrÀ¢w&öGWFòæff÷&—FRæF—6&ÆVDfVVF&6²s¢tff÷&—FRF—6&ÆVBrÀ¢w&öGWFòæff÷&—FRçWFFTW'&÷"s ¢t6÷VÆBæ÷BWFFRF†R&öGV7Bff÷&—FRfÆrârÀ¢w&öGWFòæ6FÆöræVæ&ÆUFööÇF—s¢tÖ¶Rf–Æ&ÆRf÷"6FÆörrÀ¢w&öGWFòæ6FÆöræF—6&ÆUFööÇF—s¢u&VÖ÷fRg&öÒ6FÆörf–Æ&–Æ—G’rÀ¢w&öGWFòæ6FÆöræVæ&ÆVDfVVF&6²s¢tf–Æ&ÆRf÷"6FÆörVæ&ÆVBrÀ¢w&öGWFòæ6FÆöræF—6&ÆVDfVVF&6²s¢tf–Æ&ÆRf÷"6FÆörF—6&ÆVBrÀ¢w&öGWFòæ6FÆörçWFFTW'&÷"s¢t6÷VÆBæ÷BWFFR6FÆörf–Æ&–Æ—G’ârÀ¢w&öGWFòæ6FÆörç7FGW4Æ&VÂs¢t6FÆörrÀ¢w&öGWFòæ6FÆöræf–Æ&ÆU7FGW2s¢tf–Æ&ÆRrÀ¢w&öGWFòæ6FÆörçVæf–Æ&ÆU7FGW2s¢uVæf–Æ&ÆRrÀ¢ÒÀ¢vW2s¢°¢w&öGWFòæ¦÷W&æW’æ6†ævTÖöFRs¢t6Ö&–"rÀ¢v6Æ–VçFW2æ¦÷W&æW’çF—FÆRs¢tVÆ–vRÆ¦÷&æFFR&Vv—7G&òrÀ¢v6Æ–VçFW2æ¦÷W&æW’ç7V'F—FÆRs ¢twV&F6öÆòÆòW6Væ6–ÂòVç&—VV6RVÂW&f–ÂFVÂ6Æ–VçFR†÷&ârÀ¢v6Æ–VçFW2æ¦÷W&æW’ç6–×ÆUF—FÆRs¢u&Vv—7G&ò6–×ÆRrÀ¢v6Æ–VçFW2æ¦÷W&æW’ç6–×ÆU7V'F—FÆRs ¢tæöÖ'&RÂFö7VÖVçFòÂFVÌ:–föæò’6÷'&Vò&&Vv—7G&"6–âg&–66œ;6âârÀ¢v6Æ–VçFW2æ¦÷W&æW’æ6ö×ÆWFUF—FÆRs¢u&Vv—7G&ò6ö×ÆWFòrÀ¢v6Æ–VçFW2æ¦÷W&æW’æ6ö×ÆWFU7V'F—FÆRs ¢tF—&V66œ;6âÂ7,:–F—Fò’6öçFW‡Fò&Væ÷W&6œ;6âÜ:2&W&FârÀ¢v6Æ–VçFW2æ¦÷W&æW’ç7FWW76VçF–Âs¢tW6Væ6–ÆW2rÀ¢v6Æ–VçFW2æ¦÷W&æW’ç7FWFG&W72s¢tF—&V66œ;6ârÀ¢v6Æ–VçFW2æ¦÷W&æW’ç7FW&VÆF–öç6†—s¢t7,:–F—Fò’&VÆ6œ;6ârÀ¢v6Æ–VçFW2æ¦÷W&æW’ç7FWs¢u6òrÀ¢v6Æ–VçFW2æ¦÷W&æW’æöbs¢vFRrÀ¢v6Æ–VçFW2æ¦÷W&æW’ç&Wf–Wt&Vf÷&U6fRs¢u&Wf—6Æ÷2FF÷2çFW2FRwV&F"ârÀ¢v6Æ–VçFW2æ¦÷W&æW’æ6öçF–çVT†–çBs¢tfç¦7VæFòW7FR6òW7L:’Æ—7FòârÀ¢v6Æ–VçFW2çVÆ—G’çF—FÆRs¢t6Æ–FBFVÂ&Vv—7G&òrÀ¢v6Æ–VçFW2çVÆ—G’æÆWfVÄ–æ—F–Âs¢t6öÖVç¦æFò†÷&rÀ¢v6Æ–VçFW2çVÆ—G’æÆWfVÄW76VçF–Âs¢uW&f–ÂW6Væ6–ÂÆ—7FòrÀ¢v6Æ–VçFW2çVÆ—G’æÆWfVÄFWF–ÆVBs¢uW&f–Â&–VâFWFÆÆFòrÀ¢v6Æ–VçFW2çVÆ—G’æÆWfVÄW†6VÆÆVçBs¢uW&f–ÂW†6VÆVçFRrÀ¢v6Æ–VçFW2çVÆ—G’æ7F–öäæÖRs¢v–æf÷&Ö"æöÖ'&RrÀ¢v6Æ–VçFW2çVÆ—G’æ7F–öäFö7VÖVçBs¢v–æf÷&Ö"Fö7VÖVçFòrÀ¢v6Æ–VçFW2çVÆ—G’æ7F–öå†öæRs¢v–æf÷&Ö"FVÌ:–föæòrÀ¢v6Æ–VçFW2çVÆ—G’æ7F–öäVÖ–Âs¢v–æf÷&Ö"6÷'&VòrÀ¢v6Æ–VçFW2çVÆ—G’æ7F–öå¦—s¢v–æf÷&Ö"<;6F–vò÷7FÂrÀ¢v6Æ–VçFW2çVÆ—G’æ7F–öäFG&W72s¢v6ö×ÆWF"F—&V66œ;6ârÀ¢v6Æ–VçFW2çVÆ—G’æ7F–öä7&VF—Bs¢v6öæf–wW&"7,:–F—FòrÀ¢v6Æ–VçFW2çVÆ—G’æ7F–öäæ÷FW2s¢vw&Vv"6öçFW‡FòrÀ¢v6Æ–VçFW2æf÷&Òæ–çfÆ–DVÖ–Âs¢t–æw&W6Vâ6÷'&Vòl:Æ–FòrÀ¢w&öGWFòçVÆ—G’çF—FÆRs¢t6Æ–FBFVÂ&Vv—7G&òrÀ¢w&öGWFòçVÆ—G’æÆWfVÄW76VçF–Âs¢tW6Væ6–ÂrÀ¢w&öGWFòçVÆ—G’æÆWfVÅ&VG’s¢tÆ—7Fò&fVæFW"rÀ¢w&öGWFòçVÆ—G’æÆWfVÅ&W&VBs¢t&–Vâ&W&FòrÀ¢w&öGWFòçVÆ—G’æÆWfVÄW†6VÆÆVçBs¢tW†6VÆVçFRrÀ¢w&öGWFòçVÆ—G’ææW‡D7F–öç2s¢u,;7†–Ö2ÖV¦÷&2VRVÖVçFâÆ6Æ–FC¢rÀ¢w&öGWFòçVÆ—G’æ6ö×ÆWFTÖW76vRs ¢u&Vv—7G&ò&–Vâ&W&Fò&W7FRæ—fVÂârÀ¢w&öGWFòçVÆ—G’æ7F–öäæÖRs¢t–æf÷&Ö"æöÖ'&RrÀ¢w&öGWFòçVÆ—G’æ7F–öå&–6Rs¢tw&Vv"&V6–òrÀ¢w&öGWFòçVÆ—G’æ7F–öä6FVv÷'’s¢tVÆVv—"6FVv÷,:ÖrÀ¢w&öGWFòçVÆ—G’æ7F–öä–FVçF–f–W"s¢tw&Vv"<;6F–vòrÀ¢w&öGWFòçVÆ—G’æ7F–öä÷&væ—¦F–öâs¢t–æf÷&Ö"w'WòrÀ¢w&öGWFòçVÆ—G’æ7F–öå7Fö6²s¢t6öæf–wW&"7Fö6²rÀ¢w&öGWFòçVÆ—G’æ7F–öä–ÖvRs¢tw&Vv"–ÖvVârÀ¢w&öGWFòçVÆ—G’æ7F–öäFWF–Ç2s¢t6ö×ÆWF"FWFÆÆW2rÀ¢w&öGWFòçVÆ—G’æ7F–öå'VÆW2s¢u&Wf—6"&VvÆ2rÀ¢w&öGWFòçVÆ—G’æ7F–öäf—66Âs¢t–æf÷&Ö"FF÷2f—66ÆW2rÀ¢vçF—FÆRs¢u6—†ôrÀ¢v6öÖÖöâç6fRs¢twV&F"rÀ¢v6öÖÖöâæ6æ6VÂs¢t6æ6VÆ"rÀ¢v6öÖÖöâæ&6²s¢uföÇfW"rÀ¢v6öÖÖöâæ6Æ÷6Rs¢t6W'&"rÀ¢v6öÖÖöâæVF—Bs¢tVF—F"rÀ¢v6öÖÖöâæFVÆWEÇScRs¢tVÆ–Ö–æ"rÀ¢v6öÖÖöâç6V&6‚s¢t'W66"rÀ¢v6öÖÖöâæ6ÆV"s¢tÆ–×–"rÀ¢v6öÖÖöâæ6öæf—&Òs¢t6öæf—&Ö"rÀ¢v6öÖÖöâæÇ’s¢tÆ–6"rÀ¢v6öÖÖöâæ6öçF–çVRs¢t6öçF–çV"rÀ¢v6öÖÖöâçG'”v–âs¢t–çFVçF"FRçVWfòrÀ¢v6öÖÖöâæÆöF–ærs¢t6&væFòââârÀ¢v6öÖÖöâææõ&W7VÇG2s¢tæò6RVæ6öçG&&öâ&W7VÇFF÷2rÀ¢v6öÖÖöâçVæW‡V7FVDW'&÷"s¢tW'&÷"–æW7W&FòrÀ¢v6öÖÖöâçVæ&ÆUFôÆöBs¢tæò6RVFò6&v"ârÀ¢v6öÖÖöâç6fVE7V66W76gVÆÇ’s¢t6öæf–wW&6œ;6âwV&FF6÷'&V7FÖVçFRârÀ¢v6öÖÖöâç–W2s¢u<:ÒrÀ¢v6öÖÖöâææòs¢tæòrÀ¢v6öÖÖöâæ7F—fRs¢t7F—fòrÀ¢v6öÖÖöâæ–æ7F—fRs¢t–æ7F—fòrÀ¢v6öÖÖöâæöæÆ–æRs¢töæÆ–æRrÀ¢v6öÖÖöâæöffÆ–æRs¢töffÆ–æRrÀ¢v6öÖÖöâç&WV—&VBs¢tö&Æ–vF÷&–òrÀ¢v6öÖÖöâæ÷F–öæÂs¢t÷6–öæÂrÀ¢v6öÖÖöâç6ööâs¢u,;7†–ÖÖVçFRrÀ¢v6öÖÖöâç&Vg&W6‚s¢t7GVÆ—¦"rÀ¢v6öÖÖöâæ6÷’s¢t6÷–"rÀ¢v6öÖÖöâç6†&Rs¢t6ö×'F—"rÀ¢v6öÖÖöâæçVÖ&W"s¢tì;¦ÖW&òrÀ¢v6öÖÖöâæÆÂs¢uFöF÷2rÀ¢v6öÖÖöâæ7W7FöÖW"s¢t6Æ–VçFRrÀ¢v6öÖÖöâçWFFVDBs¢t7GVÆ—¦FòVÂrÀ¢v6öÖÖöâæÆ7EWFFVDBs¢|9¦ÇF–Ö7GVÆ—¦6œ;6âÆ2rÀ¢v6öÖÖöâææ÷D–æf÷&ÖVBs¢tæò–æf÷&ÖFòrÀ¢wGbçVçF—G”VF—F÷"çF—FÆRs¢tVF—F"6çF–FBrÀ¢wGbçVçF—G”VF—F÷"çFööÇF—s¢tVF—F"6çF–FBrÀ¢wGbçVçF—G”VF—F÷"ç7V'F—FÆRs ¢u&Wf—6VÂ'L:Ö7VÆò’Æ–6ÆçVWf6çF–FBâVÂ7V'F÷FÂFVÂ'L:Ö7VÆò’VÂF÷FÂFRÆfVçF6R&V6Æ7VÆ,:âFR–æÖVF–FòârÀ¢wGbçVçF—G”VF—F÷"æ6öFTÆ&VÂs¢t<;6F–vòrÀ¢wGbçVçF—G”VF—F÷"æ7W'&VçDÆ&VÂs¢t6çF–FB7GVÂrÀ¢wGbçVçF—G”VF—F÷"æ7W'&VçD†–çBs ¢tVÂ§W7FRf–æò6–wVRF—7öæ–&ÆRVâÆ÷2&÷FöæW2ÆFW&ÆW2ârÀ¢wGbçVçF—G”VF—F÷"æf–VÆDÆ&VÂs¢tçVWf6çF–FBrÀ¢wGbçVçF—G”VF—F÷"æ†–çBs ¢t–æw&W6Æ6çF–FBFW6VF&W7FR'L:Ö7VÆòârÀ¢wGbçVçF—G”VF—F÷"æ–çfÆ–Bs¢t–æw&W6Væ6çF–FBVçFW&Ö–÷"VR6W&òârÀ¢wGbçVçF—G”VF—F÷"æVffV7D†–çBs ¢tVÂ6Ö&–ò7GVÆ—¦FR–æÖVF–FòVÂ7V'F÷FÂFVÂ'L:Ö7VÆò’VÂF÷FÂFRÆfVçFârÀ¢wGbçVçF—G”VF—F÷"æ6öæf—&Òs¢tÆ–6"6çF–FBrÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâçF—FÆRs¢t–FVçF–f–6"6Æ–VçFRrÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâç7V'F—FÆRs ¢u6VÆV66–öæVâ6Æ–VçFR&Vv—7G&Fòò7&VVæòçVWfò6–â6Æ—"FRW7FWFârÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâæf–Æ&ÆT7W7FöÖW'2s¢t6Æ–VçFW27F—f÷2rÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâæ7W'&VçD7W7FöÖW"s¢t6Æ–VçFR7GVÂrÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâæ7W'&VçDV×G’s¢tæ–æ|;¦â6Æ–VçFRf–æ7VÆFòrÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâç6V&6„Æ&VÂs ¢t'W66"6Æ–VçFR÷"æöÖ'&RÂFö7VÖVçFòÂFVÌ:–föæòò6÷'&VòrÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâæÆöF–ærs¢t6&væFò6Æ–VçFW27F—f÷2ââârÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâæÆöDW'&÷"s ¢tæò6RVF–W&öâ6&v"Æ÷26Æ–VçFW2ârÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâæW'&÷%F—FÆRs ¢tæò6RVF–W&öâ6&v"Æ÷26Æ–VçFW2rÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâææWt7W7FöÖW"s¢u&Vv—7G&"6Æ–VçFRrÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâæ÷Væ–æt7&VFRs¢t'&–VæFò&Vv—7G&òââârÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâæ7&VFTW'&÷"s ¢tæò6RVFò'&—"VÂ&Vv—7G&òFVÂ6Æ–VçFR†÷&ârÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâæV×G•F—FÆRs ¢tæò†’6Æ–VçFW27F—f÷2&Vv—7G&F÷2rÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâæV×G”ÖW76vRs ¢u&Vv—7G&Â6Æ–VçFR†÷&&6öçF–çV"6–â6Æ—"FRW7FWFârÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâæV×G•6V&6…F—FÆRs ¢tæò6RVæ6öçG,;2æ–æ|;¦â6Æ–VçFRrÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâæV×G•6V&6„ÖW76vRs ¢u&Wf—6Æ÷2L:—&Ö–æ÷2FR,;§7VVFò&Vv—7G&VâçVWfò6Æ–VçFR&6öçF–çV"ârÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâç&VÖ÷fT7W7FöÖW"s¢uV—F"6Æ–VçFR7GVÂrÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâçVææÖVD7W7FöÖW"s¢t6Æ–VçFR6–âæöÖ'&RrÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâçW'6öåG—TfÆÆ&6²s¢ubrÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâææôFö7VÖVçBs¢u6–âFö7VÖVçFòrÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâæ7&VF—DVæ&ÆVBs¢t7,:–F—Fò†&–Æ—FFòrÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâæ7&VF—D&Æö6¶VBs ¢t7,:–F—Fò&Æ÷VVFò&çVWf2fVçF2rÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâæ7&VF—DF—6&ÆVBs ¢t6Æ–VçFR6–â7,:–F—Fò†&–Æ—FFòrÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâç6VÆV7FVBs¢u6VÆV66–öæFòrÀ¢wGbæ7W7FöÖW$–FVçF–f–6F–öâç6VÆV7Bs¢u6VÆV66–öæ"rÀ¢wGbçVçF—G”VF—F÷"ç&ö6W76–ærs¢tÆ–6æFò6çF–FBââârÀ¢wGbçVçF—G”VF—F÷"ç7V66W75F—FÆRs¢t6çF–FB7GVÆ—¦FrÀ¢wGbçVçF—G”VF—F÷"ç7V66W74ÖW76vRs ¢tVÂ'L:Ö7VÆògVR&V6Æ7VÆFò’ÆfVçF–&VfÆV¦ÆçVWf6çF–FBârÀ¢wGbçVçF—G”VF—F÷"æW'&÷"s ¢tæògVR÷6–&ÆR7GVÆ—¦"Æ6çF–FB†÷&â–çL:–çFÆòFRçVWfòVâVæ÷2–ç7FçFW2ârÀ¢wGbæ6ÆV%6ÆRæF–Æöt&'&–W"s¢t6öæf—&Ö"Æ–×–W¦FRÆfVçF7GVÂrÀ¢wGbæ6ÆV%6ÆRæF–ÆöuF—FÆRs¢|+ôÆ–×–"fVçF7GVÃòrÀ¢wGbæ6ÆV%6ÆRæF–Æöu7V'F—FÆRs ¢u&Wf—6RVÂ&W7VÖVâçFW2FRÆ–×–"âÆFVæ6œ;6â7GVÂ6R&V–æ–6–,:&'&—"VæçVWffVçFârÀ¢wGbæ6ÆV%6ÆRç7VÖÖ'”—FV×2s¢t'L:Ö7VÆ÷2rÀ¢wGbæ6ÆV%6ÆRç7VÖÖ'•F÷FÂs¢uF÷FÂrÀ¢wGbæ6ÆV%6ÆRç7VÖÖ'”7W7FöÖW"s¢t6Æ–VçFRrÀ¢wGbæ6ÆV%6ÆRæ6öæf—&Ô7F–öâs¢tÆ–×–"fVçFrÀ¢wGbæ6ÆV%6ÆRæ–×7D†–çBs ¢tÆ÷2'L:Ö7VÆ÷2ÂVÂ6Æ–VçFR–FVçF–f–6Fò’Æ÷26ö'&÷2FV×÷&ÆW26RVÆ–Ö–æ,:âFRW7FREbârÀ¢wGbæ6ÆV%6ÆRç&ö6W76–æuF—FÆRs¢tÆ–×–æFòfVçFââârÀ¢wGbæ6ÆV%6ÆRç&ö6W76–ætÖW76vRs ¢tW7W&Ö–VçG&26RVÆ–Ö–æâÆ÷2FF÷2FV×÷&ÆW2FRW7FfVçFârÀ¢wGbæ6ÆV%6ÆRç7V66W75F—FÆRs¢ufVçFÆ–×–F6÷'&V7FÖVçFRrÀ¢wGbæ6ÆV%6ÆRç7V66W74ÖW76vRs ¢tVÂEbW7L:Æ—7Fò&–æ–6–"VæçVWffVçFârÀ¢wGbæ6ÆV%6ÆRæW'&÷"s ¢tæògVR÷6–&ÆRÆ–×–"ÆfVçF†÷&â–çL:–çFÆòFRçVWfòVâVæ÷2–ç7FçFW2ârÀ¢w&V6V&–ÖVçFòçfÆ÷$VÔ&W'Fòs¢ufÆ÷"VæF–VçFRrÀ¢w&V6V&–ÖVçFòç7VÖÖ'•G—Rs¢uF—òrÀ¢w&V6V&–ÖVçFòçF÷FÂs¢uF÷FÂrÀ¢w&V6V&–ÖVçFòç&6–Âs¢u&6–ÂrÀ¢w&V6V&–ÖVçFòæf÷&Ö5&V6V&–ÖVçFòs¢tf÷&Ö2FR6ö'&òrÀ¢w&V6V&–ÖVçFòç&W7FçFRs¢u&W7FçFRrÀ¢w&V6V&–ÖVçFòçfÆ÷$f÷&Ös¢ufÆ÷"FRÆf÷&ÖrÀ¢w&V6V&–ÖVçFòçF—õ&V6V&–ÖVçFòs¢tf÷&ÖFR6ö'&òrÀ¢w&V6V&–ÖVçFòæ6'&VvæFõF—÷2s¢t6&væFòf÷&Ö2FR6ö'&òââârÀ¢w&V6V&–ÖVçFòæF–6–öæ$f÷&Ös¢t;F—"f÷&ÖrÀ¢w&V6V&–ÖVçFòç&VÖ÷fW$f÷&Ös¢tVÆ–Ö–æ"f÷&ÖrÀ¢w&V6V&–ÖVçFòæö'6W'f6òs¢tö'6W'f6œ;6ârÀ¢w&V6V&–ÖVçFòç&V6V&W%F÷FÂs¢t6ö'&"F÷FÂrÀ¢w&V6V&–ÖVçFòç&V6V&W%&6–Âs¢t6ö'&"&6–ÂrÀ¢w&V6V&–ÖVçFòæW'&õfÆ÷&W4Ö–÷&W5VU¦W&òs ¢t–çG&öGW¦6fÆ÷&W2Ö–÷&W2VR6W&òârÀ¢w&V6V&–ÖVçFòæW'&õfÆ÷$Ö–÷%VU¦W&òs¢t–çG&öGW¦6VâfÆ÷"Ö–÷"VR6W&òârÀ¢w&V6V&–ÖVçFòæW'&õ&6–ÄÖVæ÷%VT&W'Fòs ¢u&Vâ6ö'&ò&6–ÂÂ–çG&öGW¦6ÖVæ÷2VRVÂ6ÆFòVæF–VçFRârÀ¢w&V6V&–ÖVçFòæW'&õF÷FÄ–wVÅ6ÆFòs ¢u&Vâ6ö'&òF÷FÂÂVÂfÆ÷"FV&RÆ—V–F"VÂ6ÆFòVæF–VçFRârÀ¢w&V6V&–ÖVçFòæW'&ôf÷&ÖGWÆ–6Fs ¢t6Ff÷&ÖFR6ö'&òVVFRWF–Æ—¦'6R6öÆòVæfW¢ârÀ¢wGbç&V6V—BçG—Rs¢uF—òFR6ö'&òrÀ¢wGbç&V6V—Bç'F–Å&VG’s ¢t6ö'&ò&6–ÂÆ—7FòâVÂ6ÆFò&W7FçFRVVF,:VæF–VçFRârÀ¢wGbç&V6V—Bç'F–Ä†–çBs ¢t–çG&öGW¦6VâfÆ÷"Ö–÷"VR6W&ò’ÖVæ÷"VRVÂF÷FÂFRÆfVçFârÀ¢wGbç&V6V—Bç'F–ÄFVf–æVBs¢u&6–ÂFVf–æ–FòrÀ¢wGbç&V6V—Bæ6öæf—&Õ'F–Âs¢t6öæf—&Ö"6ö'&ò&6–ÂrÀ¢wGbç&V6V—Bæ6öæf—&Õ'F–ÄÖW76vRs¢|+ôFW6V6ö'&"rÀ¢wGbç&V6V—Bæ¶VW÷Vä&Ææ6Rs¢w’ÖçFVæW"VæF–VçFRVÂ6ÆFò&W7FçFRrÀ¢wfVæF4&V6V&W"æ÷Vä–åGbs¢t'&—"VâVÂEbrÀ¢wGbæ÷Vå6ÆRç7FGW2s¢ufVçFVæF–VçFRrÀ¢wGbæ÷Vå6ÆRç&VDöæÇ•7FGW2s¢u6öÆò6öç7VÇFrÀ¢wGbæ÷Vå6ÆRç&VDöæÇ•F—FÆRs¢t6öç7VÇFFRfVçFVæF–VçFRrÀ¢wGbæ÷Vå6ÆRç&VDöæÇ•7V'F—FÆRs ¢tÆ÷2&öGV7F÷2ÂÆ26çF–FFW2’Æ÷2&V6–÷2W7L:â&Æ÷VVF÷2VâW7FWFâ&Wf—6RÆ÷2FF÷2’6ö'&RVÂ6ÆFòârÀ¢wGbæ÷Vå6ÆRæVF—E7FGW2s¢tVF–6œ;6âFR'L:Ö7VÆ÷2rÀ¢wGbæ÷Vå6ÆRæVF—EF—FÆRs¢u&Wf—6RÆ÷2'L:Ö7VÆ÷2çFW2FR6ö'&"rÀ¢wGbæ÷Vå6ÆRæVF—E7V'F—FÆRs ¢t;FòVÆ–Ö–æR&öGV7F÷2’6W'f–6–÷2’6Ö&–R6çF–FFW2â6R6öç6W'fâÆ÷2&V6–÷2÷&–v–æÆW3²Æ÷2'L:Ö7VÆ÷2çVWf÷2W6âVÂ&V6–ò7GVÂFVÂ6L:ÆövòâÆ÷26Ö&–÷26RÆ–6â6öÆòÂ6ö'&"ârÀ¢wGbæ÷Vå6ÆRç'F–Å&VDöæÇ•7V'F—FÆRs ¢tW7FfVçF–F–VæR6ö'&÷2â&6öç6W'f"VÂ†—7F÷&–Âf–ææ6–W&òÂ7W2'L:Ö7VÆ÷2W&ÖæV6Vâ&Æ÷VVF÷2ârÀ¢wGbæ÷Vå6ÆRçVæF–æt6†ævW2s¢t6Ö&–÷2VæF–VçFW2rÀ¢wGbæ÷Vå6ÆRç&V6V—fT&Ææ6Rs¢t6ö'&"6ÆFòrÀ¢wGbæ÷Vå6ÆRç&V6V—fUWFFVE6ÆRs¢t6ö'&"fVçF&Wf—6FrÀ¢wGbæ÷Vå6ÆRç&V6V—fUF—FÆRs¢t6ö'&"6ÆFòFRÆfVçFrÀ¢wGbæ÷Vå6ÆRç&V6V—Dæ÷FRs¢u6ÆFò6ö'&FòFW6FRVÂEbvV"ârÀ¢wGbæ÷Vå6ÆRçWFFVE&V6V—Dæ÷FRs ¢ufVçF&Wf—6F’6ö'&FFW6FRVÂEbvV"ârÀ¢wGbæ÷Vå6ÆRç&V6V—fVDÖW76vRs¢ufVçF6ö'&F6÷'&V7FÖVçFRârÀ¢wGbæ÷Vå6ÆRç&V6V—DW'&÷%F—FÆRs¢tæò6RVFò6ö'&"ÆfVçFrÀ¢wGbæ÷Vå6ÆRæ÷&–v–æÅF÷FÂs¢uF÷FÂ÷&–v–æÂrÀ¢wGbæ÷Vå6ÆRæ÷Vä&Ææ6Rs¢u6ÆFòVæF–VçFRrÀ¢wGbæ÷Vå6ÆRæ7W'&VçEF÷FÂs¢tçVWfòF÷FÂrÀ¢wGbæ÷Vå6ÆRçF÷FÄF–ffW&Væ6Rs¢tF–fW&Væ6–rÀ¢wGbæ÷Vå6ÆRæV×G”—FV×5F—FÆRs¢tÆfVçFFV&RFVæW"'L:Ö7VÆ÷2rÀ¢wGbæ÷Vå6ÆRæV×G”—FV×4ÖW76vRs ¢t;FÂÖVæ÷2Vâ&öGV7Fòò6W'f–6–òçFW2FR6ö'&"ÆfVçFârÀ¢wGbæ÷Vå6ÆRæ–çfÆ–D—FV×5F—FÆRs¢u&Wf—6RÆ÷2'L:Ö7VÆ÷2FRÆfVçFrÀ¢wGbæ÷Vå6ÆRæ–çfÆ–D—FV×4ÖW76vRs ¢uFöF÷2Æ÷2'L:Ö7VÆ÷2FV&VâFVæW"æöÖ'&RÂ6çF–FB÷6—F—f’&V6–òl:Æ–FòârÀ¢wGbæ÷Vå6ÆRæ6öæf—&Ô6†ævW5F—FÆRs¢|+ô6öæf—&Ö"'L:Ö7VÆ÷2&Wf—6F÷3òrÀ¢wGbæ÷Vå6ÆRæ6öæf—&Ô6†ævW4ÖW76vRs ¢tÂ6ö'&"Â6RÆ–6,:ÆçVWf6ö×÷6–6œ;6âFR'L:Ö7VÆ÷2’6R6öæ6–Æ–,:âVÂ–çfVçF&–ò’Æ2f–æç¦2ârÀ¢wGbæ÷Vå6ÆRæ6öçF–çVUFõ&V6V—Bs¢t6öçF–çV"Â6ö'&òrÀ¢wGbæ÷Vå6ÆRæ÷WFFFVEF—FÆRs¢tÆfVçF†6Ö&–FòrÀ¢wGbæ÷Vå6ÆRæ÷WFFFVDÖW76vRs ¢t÷G&÷W&6œ;6âÖöF–f–<;2W7FfVçFâ6–W'&RÆ6öç7VÇF’:'&ÆFRçVWfò&W6"Æ÷2FF÷27GVÆW2ârÀ¢wGbæ÷Vå6ÆRæW†—EF—FÆRs¢|+õ6Æ—"FRÆ6öç7VÇFòrÀ¢wGbæ÷Vå6ÆRæW†—DÖW76vRs ¢tÆfVçF6VwV—,:VæF–VçFRâæò6RÖöF–f–6,:æ–æ|;¦â'L:Ö7VÆòÂ&V6–òæ’6ö'&òârÀ¢wGbæ÷Vå6ÆRæW†—D7F–öâs¢u6Æ—"FRÆ6öç7VÇFrÀ¢wGbæ÷Vå6ÆRæF—66&EF—FÆRs¢|+ôFW66'F"6Ö&–÷3òrÀ¢wGbæ÷Vå6ÆRæF—66&DÖW76vRs ¢tÆ÷26Ö&–÷2&VÆ—¦F÷2VâVÂEbæò6RwV&F,:ââÆfVçF6VwV—,:VæF–VçFR6öâÆ÷2FF÷2çFW&–÷&W2ârÀ¢wGbæ÷Vå6ÆRæF—66&D7F–öâs¢tFW66'F"’6Æ—"rÀ¢wGbæ÷Vå6ÆRç&WÆ6UF—FÆRs¢|+õ&VV×Æ¦"ÆfVçF7GVÃòrÀ¢wGbæ÷Vå6ÆRç&WÆ6TÖW76vRs ¢tÆ÷2FF÷27GVÆW2FVÂEb6W,:â&VV×Æ¦F÷2÷"ÆfVçFVæF–VçFR6VÆV66–öæFârÀ¢wGbæ÷Vå6ÆRç&WÆ6T7F–öâs¢t'&—"fVçFrÀ¢wGbæ÷Vå6ÆRæÆöFVDÖW76vRs ¢ufVçF6&vF&&Wf—6œ;6ââVVFR;F—"ÂVÆ–Ö–æ"’6Ö&–"6çF–FFW2çFW2FR6ö'&"ârÀ¢wGbæ÷Vå6ÆRæÆöFVE&VDöæÇ”ÖW76vRs ¢ufVçF6&vF&6öç7VÇFâ6öÖò–F–VæR6ö'&÷2Â7W2'L:Ö7VÆ÷2W&ÖæV6Vâ&Æ÷VVF÷2ârÀ¢wGbæ÷Vå6ÆRæÆöDW'&÷%F—FÆRs¢tæò6RVFò'&—"ÆfVçFrÀ¢wGbæ÷Vå6ÆRçVæf–Æ&ÆUF—FÆRs¢ufVçFæòF—7öæ–&ÆRrÀ¢wGbæ÷Vå6ÆRçVæf–Æ&ÆTÖW76vRs ¢tÆfVçFVVFR†&W"6–Fò6ö'&Fò6æ6VÆF÷"÷G&òW7V&–òârÀ¢v6öÖÖöâævVæW&F–ærs¢tvVæW&æFòââârÀ¢v6öÖÖöâç6f–ærs¢twV&FæFòââârÀ¢v6öÖÖöâç&ævUFòs¢vrÀ¢v6öÖÖöâçvVV¶F’æÖöæF’s¢tÇVæW2rÀ¢v6öÖÖöâçvVV¶F’çGVW6F’s¢tÖ'FW2rÀ¢v6öÖÖöâçvVV¶F’çvVFæW6F’s¢tÖœ:—&6öÆW2rÀ¢v6öÖÖöâçvVV¶F’çF‡W'6F’s¢t§VWfW2rÀ¢v6öÖÖöâçvVV¶F’æg&–F’s¢uf–W&æW2rÀ¢v6öÖÖöâçvVV¶F’ç6GW&F’s¢u<:&FòrÀ¢v6öÖÖöâçvVV¶F’ç7VæF’s¢tFöÖ–ævòrÀ¢v6öÖÖöâçvVV¶F•6†÷'BæÖöæF’s¢tÇVârÀ¢v6öÖÖöâçvVV¶F•6†÷'BçGVW6F’s¢tÖ"rÀ¢v6öÖÖöâçvVV¶F•6†÷'BçvVFæW6F’s¢tÖœ:’rÀ¢v6öÖÖöâçvVV¶F•6†÷'BçF‡W'6F’s¢t§VRrÀ¢v6öÖÖöâçvVV¶F•6†÷'Bæg&–F’s¢uf–RrÀ¢v6öÖÖöâçvVV¶F•6†÷'Bç6GW&F’s¢u<:"rÀ¢v6öÖÖöâçvVV¶F•6†÷'Bç7VæF’s¢tFöÒrÀ¢wvV"ææf–vF–öâæ†öÖRs¢t–æ–6–òrÀ¢wvV"ææf–vF–öâæ÷W&F–öç2s¢t÷W&6–öæW2rÀ¢wvV"ææf–vF–öâæ÷W&F–öç2ç÷2s¢uVçFòFRfVçFrÀ¢wvV"ææf–vF–öâæ÷W&F–öç2çFV6†æ–6Å6W'f–6Rs¢u6W'f–6–÷2L:–6æ–6÷2rÀ¢wvV"ææf–vF–öâæ÷W&F–öç2çW&6†6W2s¢t6ö×&2rÀ¢wvV"ææf–vF–öâæ÷W&F–öç2ç&W6W'fF–öç2s¢u&W6W'f2rÀ¢wvV"ææf–vF–öâæ6FÆörs¢t6L:ÆövòrÀ¢wvV"ææf–vF–öâæ6FÆörçV&Æ–5vRs¢u:v–æ;¦&Æ–6rÀ¢wvV"ææf–vF–öâæ6FÆörç&W6W'fF–öç2s¢u&W6W'f2rÀ¢wvV"ææf–vF–öâæ6FÆörç&öGV7G2s¢u&öGV7F÷2rÀ¢wvV"ææf–vF–öâæ6FÆörç6W'f–6W2s¢u6W'f–6–÷2rÀ¢wvV"ææf–vF–öâæ6FÆörç7Fö6²s¢t–çfVçF&–òrÀ¢wvV"ææf–vF–öâæ6FÆöræ6FVv÷&–W2s¢t6FVv÷,:Ö2rÀ¢v6FÆörçV&Æ–5vRçF—FÆRs¢u:v–æ;¦&Æ–6FVÂ6L:ÆövòrÀ¢v6FÆörçV&Æ–5vRç7V'F—FÆRs ¢uW'6öæÆ—¦Âf—7VÆ—¦’6ö×'FRGRf—G&–æVâVâ6öÆòÇVv"ârÀ¢v6FÆörçV&Æ–5vRæ÷Vâs¢t'&—"rÀ¢v6FÆörçV&Æ–5vRæ6÷’s¢t6÷–"VæÆ6RrÀ¢v6FÆörçV&Æ–5vRç6†&Rs¢t6ö×'F—"rÀ¢v6FÆörçV&Æ–5vRçV&Æ—6†VBs¢uV&Æ–6FòrÀ¢v6FÆörçV&Æ–5vRæöffÆ–æRs¢tgVW&FRÌ:ÖæVrÀ¢v6FÆörçV&Æ–5vRç6fRs¢twV&F"6Ö&–÷2rÀ¢v6FÆörçV&Æ–5vRæF—66&Bs¢tFW66'F"rÀ¢v6FÆörçV&Æ–5vRç6fU7V66W75V&Æ—6†VBs ¢u:v–æwV&FF’V&Æ–6F6÷'&V7FÖVçFRârÀ¢v6FÆörçV&Æ–5vRç6fU7V66W74G&gBs ¢uW'6öæÆ—¦6œ;6âwV&FFâV&Ì:Ö6Æ7VæFòW7L:’Æ—7FârÀ¢v6FÆörçV&Æ–5vRç6fTW'&÷"s ¢tæògVR÷6–&ÆRwV&F"Æ:v–æFVÂ6L:ÆövòârÀ¢v6FÆörçV&Æ–5vRæ÷VäW'&÷"s ¢tæògVR÷6–&ÆR'&—"VÂ6L:ÆövòVâVæçVWfW7F;ârÀ¢v6FÆörçV&Æ–5vRæÆ–æ´6÷–VBs¢tVæÆ6R;¦&Æ–6ò6÷–FòârÀ¢v6FÆörçV&Æ–5vRç6†&U7V&¦V7Bs¢t6L:ÆövòFR·F—FÆWÒrÀ¢v6FÆörçV&Æ–5vRç6†&TfÆÆ&6²s ¢t6ö×'F—"æòW7L:F—7öæ–&ÆRâ6R6÷œ;2VÂVæÆ6R;¦&Æ–6òârÀ¢v6FÆörçV&Æ–5vRæÆöDW'&÷%F—FÆRs ¢tæògVR÷6–&ÆR6&v"Æ:v–æ;¦&Æ–6rÀ¢v6FÆörçV&Æ–5vRæVF—F÷"çV&Æ–6F–öâs¢t6L:ÆövòV&Æ–6FòrÀ¢v6FÆörçV&Æ–5vRæVF—F÷"çV&Æ–6F–öäöâs ¢tÆ÷26Æ–VçFW2VVFVâ66VFW"ÖVF–çFRVÂVæÆ6R;¦&Æ–6òârÀ¢v6FÆörçV&Æ–5vRæVF—F÷"çV&Æ–6F–öäöfbs ¢tVÂVæÆ6R6R6öç6W'fÂW&òæòW7L:F—7öæ–&ÆRârÀ¢v6FÆörçV&Æ–5vRæVF—F÷"æ6öçFVçBs¢u&W6VçF6œ;6ârÀ¢v6FÆörçV&Æ–5vRæVF—F÷"æ6öçFVçD†VÇs ¢tFVf–æRVÂÖVç6¦RVR'&RGRf—G&–æârÀ¢v6FÆörçV&Æ–5vRæVF—F÷"çF—FÆTÆ&VÂs¢uL:×GVÆòFRÆf—G&–ærÀ¢v6FÆörçV&Æ–5vRæVF—F÷"çF—FÆT†–çBs¢tV¢ã¢Væ7VVçG&ÆòVRæV6W6—F2rÀ¢v6FÆörçV&Æ–5vRæVF—F÷"æFW67&—F–öäÆ&VÂs¢tFW67&—6œ;6â'&WfRrÀ¢v6FÆörçV&Æ–5vRæVF—F÷"æFW67&—F–öä†–çBs ¢tW‡Æ–6VâVæg&6R\:’Væ6öçG&,:VÂ6Æ–VçFRârÀ¢v6FÆörçV&Æ–5vRæVF—F÷"æV&æ6Rs¢t&–Væ6–rÀ¢v6FÆörçV&Æ–5vRæVF—F÷"æV&æ6T†VÇs ¢tVÆ–vRVÂW7F–Æòf—7VÂ’VÂ6öÆ÷"FW7F6FòârÀ¢v6FÆörçV&Æ–5vRæVF—F÷"æ66VçD6öÆ÷"s¢t6öÆ÷"FW7F6FòrÀ¢v6FÆörçV&Æ–5vRæVF—F÷"æ7W7FöÔ6öÆ÷"s¢t6öÆ÷"W'6öæÆ—¦FòrÀ¢v6FÆörçV&Æ–5vRæVF—F÷"æ–çfÆ–D6öÆ÷"s ¢uW6Vâ6öÆ÷"†W†FV6–ÖÂ6öâ'VVâ6öçG&7FRÂ6öÖò3#d$dbârÀ¢v6FÆörçV&Æ–5vRæVF—F÷"æÆ–÷WBs¢t6öçFVæ–Fò’F—6\;òrÀ¢v6FÆörçV&Æ–5vRæVF—F÷"æÆ–÷WD†VÇs ¢t6öçG&öÆÆFVç6–FB’Æ–æf÷&Ö6œ;6âf—6–&ÆRârÀ¢v6FÆörçV&Æ–5vRæVF—F÷"æ6öÖf÷'F&ÆRs¢t<;6ÖöFòrÀ¢v6FÆörçV&Æ–5vRæVF—F÷"æ6ö×7Bs¢t6ö×7FòrÀ¢v6FÆörçV&Æ–5vRæVF—F÷"ç6†÷u&–6W2s¢tÖ÷7G&"&V6–÷2rÀ¢v6FÆörçV&Æ–5vRæVF—F÷"ç6†÷t6öçF7Bs¢tÖ÷7G&"6öçF7F÷2rÀ¢v6FÆörçV&Æ–5vRæVF—F÷"ç6†÷tFG&W72s¢tÖ÷7G&"F—&V66œ;6ârÀ¢v6FÆörçV&Æ–5vRç7G–ÆRæ6Æ76–2s¢t6Ì:6–6òrÀ¢v6FÆörçV&Æ–5vRç7G–ÆRæ6Æ76–4†VÇs ¢u&öfW6–öæÂÂWV–Æ–'&Fò’fÖ–Æ–"ârÀ¢v6FÆörçV&Æ–5vRç7G–ÆRæÖ–æ–ÖÂs¢tÖ–æ–ÖÆ—7FrÀ¢v6FÆörçV&Æ–5vRç7G–ÆRæÖ–æ–ÖÄ†VÇs ¢tÜ:2W76–ò’ÖVæ÷2VÆVÖVçF÷2f—7VÆW2ârÀ¢v6FÆörçV&Æ–5vRç7G–ÆRæW‡&W76—fRs¢tW‡&W6—fòrÀ¢v6FÆörçV&Æ–5vRç7G–ÆRæW‡&W76—fT†VÇs ¢t6öÆ÷"’6öçG&7FR&FW7F6"ÆÖ&6ârÀ¢v6FÆörçV&Æ–5vRç&Wf–WrçF—FÆRs¢uf—7F&Wf–Vâf—fòrÀ¢v6FÆörçV&Æ–5vRç&Wf–WrçVç6fVBs ¢uf—7VÆ—¦æFò6Ö&–÷2;¦âæòwV&FF÷2rÀ¢v6FÆörçV&Æ–5vRç&Wf–Wrç6fVBs¢t&–Væ6–wV&FFVâVÂ6L:ÆövòrÀ¢v6FÆörçV&Æ–5vRç&Wf–WræFW6·F÷s¢tW67&—F÷&–òrÀ¢v6FÆörçV&Æ–5vRç&Wf–WræÖö&–ÆRs¢tÜ;7f–ÂrÀ¢v6FÆörçV&Æ–5vRç&Wf–Wrç7F÷&TfÆÆ&6²s¢uGR6öÖW&6–òrÀ¢v6FÆörçV&Æ–5vRç&Wf–Wrç&öGV7G2s¢u&öGV7F÷2F—7öæ–&ÆW2rÀ¢v6FÆörçV&Æ–5vRç&Wf–Wræ6†ö÷6T—FV×2s¢tVÆ–vRGW2'L:Ö7VÆ÷2rÀ¢v6FÆörçV&Æ–5vRç&Wf–WræV×G’s ¢tÖ&6&öGV7F÷26öÖòF—7öæ–&ÆW2&VÂ6L:ÆövòârÀ¢v6FÆörçV&Æ–5vRçVçV&Æ—6‚æ&'&–W"s¢t6öæf—&Ö"&WF—&FFVÂ6L:ÆövòrÀ¢v6FÆörçV&Æ–5vRçVçV&Æ—6‚çF—FÆRs¢|+õ&WF—&"VÂ6L:ÆövóòrÀ¢v6FÆörçV&Æ–5vRçVçV&Æ—6‚æ&öG’s ¢tÆ÷26Æ–VçFW26öâVÂVæÆ6RFV¦,:âFRfW"Æ÷2&öGV7F÷2†7FVæçVWfV&Æ–66œ;6âârÀ¢v6FÆörçV&Æ–5vRçVçV&Æ—6‚æ7F–öâs¢u&WF—&"rÀ¢v6FÆörçV&Æ–5vRçVçV&Æ—6‚ç&ö6W76–ærs ¢u&WF—&æFòVÂ6L:ÆövòFRÌ:ÖæVââârÀ¢v6FÆörçV&Æ–5vRçVçV&Æ—6‚ç&ö6W76–æt&öG’s ¢tW7W&Ö–VçG&27GVÆ—¦Ö÷2VÂ66W6ò;¦&Æ–6òârÀ¢v6FÆörçV&Æ–5vRçVçV&Æ—6‚ç7V66W72s¢t6L:Æövò&WF—&FòrÀ¢v6FÆörçV&Æ–5vRçVçV&Æ—6‚ç7V66W74&öG’s ¢tVÂVæÆ6R6R6öç6W'l;2’öG,:&V7F—f'6RFW7\:—2ârÀ¢v6FÆörçV&Æ–5vRçVçV&Æ—6‚æW'&÷"s ¢tæògVR÷6–&ÆR&WF—&"VÂ6L:Æövòâ–çL:–çFÆòFRçVWfòârÀ¢w&öGWFòæF6†&ö&Bæ–×÷'E7&VG6†VWE6ööâs ¢t–×÷'F"÷"†ö¦FR<:Æ7VÆò‡,;7†–ÖÖVçFR’rÀ¢wvV"ææf–vF–öâçV÷ÆRs¢uW'6öæ2rÀ¢wvV"ææf–vF–öâçV÷ÆRæ7W7FöÖW'2s¢t6Æ–VçFW2rÀ¢wvV"ææf–vF–öâçV÷ÆRæ6öÆÆ&÷&F÷'2s¢t6öÆ&÷&F÷&W2rÀ¢wvV"ææf–vF–öâçV÷ÆRç6—†õW6W'2s¢uW7V&–÷2FR6—†òrÀ¢wvV"ææf–vF–öâçV÷ÆRçW&f÷&Öæ6Rs¢tFW6V×\;òrÀ¢wvV"ææf–vF–öâæ66‚s¢t6¦rÀ¢wvV"ææf–vF–öâæf–ææ6–Âs¢tf–ææ6–W&òrÀ¢wvV"ææf–vF–öâæf–ææ6–ÂævVæFs¢tvVæFf–ææ6–W&rÀ¢wvV"ææf–vF–öâç6WGF–æw2s¢t6öæf–wW&6œ;6ârÀ¢wvV"ææf–vF–öâç&W÷'G2s¢t–æf÷&ÖW2rÀ¢wvV"ææf–vF–öâçVæf–Æ&ÆRs¢tFW7F–æòæòF—7öæ–&ÆRVâW7FfW'6œ;6âârÀ¢wW7V&–÷56—†òçF—FÆRs¢uW7V&–÷2FR6—†òrÀ¢wW7V&–÷56—†òç7V'F—FÆRs ¢t6öç7VÇFFöF÷2Æ÷2W7V&–÷2&Vv—7G&F÷26öâ66W6òW†6ÇW6—fò&VÂW&f–Â5UU"ârÀ¢wW7V&–÷56—†òç7VÖÖ'•6VÖçF–72s¢u&W7VÖVâFRW7V&–÷2&Vv—7G&F÷2Vâ6—†òrÀ¢wW7V&–÷56—†òç7VÖÖ'•F—FÆRs¢t&6RvÆö&ÂFRW7V&–÷2rÀ¢wW7V&–÷56—†òç7VÖÖ'•7V'F—FÆRs ¢t6öç7VÇF&÷FVv–F÷"VÂW&f–Â5UU"FVÂFö¶VâârÀ¢wW7V&–÷56—†òçF÷FÄÆ&VÂs¢wW7V&–÷2rÀ¢wW7V&–÷56—†òçF÷FÅ&Vv—7FW&VBs¢uW7V&–÷2&Vv—7G&F÷2rÀ¢wW7V&–÷56—†òç6V&6„†–çBs¢t'W66"÷"æöÖ'&RÂ6÷'&VòÂ6VÇVÆ"òW&f–ÂrÀ¢wW7V&–÷56—†òç&W7VÇG4Æ&VÂs¢vVæ6öçG&F÷2rÀ¢wW7V&–÷56—†òæf÷&&–FFVåF—FÆRs¢t66W6òW†6ÇW6—fò&5UU"rÀ¢wW7V&–÷56—†òæf÷&&–FFVäÖW76vRs ¢uGRW&f–ÂæòF–VæRW&Ö—6ò&6öç7VÇF"Æ÷2W7V&–÷2FR6—†òârÀ¢wW7V&–÷56—†òæÆöF–ærs¢t6&væFòW7V&–÷2FR6—†òrÀ¢wW7V&–÷56—†òæÆöDW'&÷%F—FÆRs¢tæògVR÷6–&ÆR6&v"Æ÷2W7V&–÷2rÀ¢wW7V&–÷56—†òæÆöDW'&÷"s¢ufW&–f–6GR6öæW†œ;6âR–çL:–çFÆòFRçVWfòârÀ¢wW7V&–÷56—†òæV×G•F—FÆRs¢tæò6RVæ6öçG&&öâW7V&–÷2rÀ¢wW7V&–÷56—†òæV×G”ÖW76vRs ¢t§W7FÆ,;§7VVF&6öç7VÇF"÷G&÷2W7V&–÷2ârÀ¢wW7V&–÷56—†òçW6W$fÆÆ&6²s¢uW7V&–òFR6—†òrÀ¢wW7V&–÷56—†òææôVÖ–Âs¢t6÷'&Vòæò–æf÷&ÖFòrÀ¢wW7V&–÷56—†òææõ†öæRs¢t6VÇVÆ"æò–æf÷&ÖFòrÀ¢wW7V&–÷56—†òç&öÆRç7WW"s¢u5UU"rÀ¢wW7V&–÷56—†òç&öÆRæFÖ–âs¢tFÖ–æ—7G&F÷"rÀ¢wW7V&–÷56—†òç&öÆRæ6öÆÆ&÷&F÷"s¢t6öÆ&÷&F÷"rÀ¢wW7V&–÷56—†òç&öÆRæ7W7FöÖW"s¢t6Æ–VçFRrÀ¢wW7V&–÷56—†òç&öÆRçVæ¶æ÷vâs¢tæò–æf÷&ÖFòrÀ¢wW7V&–÷56—†òæFWF–ÂçF—FÆRs¢tFWFÆÆW2FVÂW7V&–òrÀ¢wW7V&–÷56—†òæFWF–Âç7V'F—FÆRs ¢u&Vv—7G&òÂ&VfW&Væ6–2ÂV×&W62’l:Öæ7VÆ÷2wV&FF÷2Vâ6—†òârÀ¢wW7V&–÷56—†òæFWF–ÂæÆöDW'&÷"s¢tæògVR÷6–&ÆR6&v"Æ÷2FWFÆÆW2ârÀ¢wW7V&–÷56—†òæFWF–ÂçW'6öæÂs¢tFF÷2W'6öæÆW2rÀ¢wW7V&–÷56—†òæFWF–Âæ66÷VçBs¢t7VVçF’W&Ö—6÷2rÀ¢wW7V&–÷56—†òæFWF–Âç&VfW&Væ6W2s¢u&VfW&Væ6–2–æF—f–GVÆW2rÀ¢wW7V&–÷56—†òæFWF–ÂævÆö&Å&VfW&Væ6W2s¢u&VfW&Væ6–2vÆö&ÆW2rÀ¢wW7V&–÷56—†òæFWF–Âæ6ö×æ–W2s¢tV×&W62f–æ7VÆF2rÀ¢wW7V&–÷56—†òæFWF–ÂæÆ–æ·2s¢ul:Öæ7VÆ÷2’FF÷26öçG&7GVÆW2rÀ¢wW7V&–÷56—†òæFWF–Âææô6ö×æ–W2s¢tæò†’V×&W62f–æ7VÆF2ârÀ¢wW7V&–÷56—†òæFWF–ÂææôÆ–æ·2s¢tæò†’l:Öæ7VÆ÷2&Vv—7G&F÷2ârÀ¢wW7V&–÷56—†òæFWF–Âæ–ÖvU7F÷&VBs¢t–ÖvVâÆÖ6VæFrÀ¢wW7V&–÷56—†òæöæ&ö&F–æræ6ö×ÆWFVBs¢töæ&ö&F–ær6ö×ÆWFFòrÀ¢wW7V&–÷56—†òæöæ&ö&F–ærçVæF–ærs¢töæ&ö&F–ærVæF–VçFRrÀ¢wW7V&–÷56—†òæöæ&ö&F–æræF–Æöt&'&–W"s ¢t6Ö&–"W7FFòFVÂöæ&ö&F–ær–æ–6–ÂrÀ¢wW7V&–÷56—†òæöæ&ö&F–ærç&W6WEF—FÆRs ¢|+õ6öÆ–6—F"çVWfÖVçFRVÂöæ&ö&F–æsòrÀ¢wW7V&–÷56—†òæöæ&ö&F–ærç&W6WDÖW76vRs ¢tVâVÂ,;7†–Öò66W6òÂVÂW7V&–òFV&W,:6öæf—&Ö"çVWfÖVçFR7W2FF÷2–æ–6–ÆW2çFW2FRVçG&"Â6—7FVÖârÀ¢wW7V&–÷56—†òæöæ&ö&F–ærç&W6WD7F–öâs¢u&WWF—"öæ&ö&F–ærrÀ¢wW7V&–÷56—†òæöæ&ö&F–æræ6ö×ÆWFUF—FÆRs ¢|+ôÖ&6"VÂöæ&ö&F–ær6öÖò6ö×ÆWFFóòrÀ¢wW7V&–÷56—†òæöæ&ö&F–æræ6ö×ÆWFTÖW76vRs ¢tVÂW7V&–òFV¦,:FRfW"VÂöæ&ö&F–ær–æ–6–ÂVâ7W2,;7†–Ö÷266W6÷2ârÀ¢wW7V&–÷56—†òæöæ&ö&F–æræ6ö×ÆWFT7F–öâs¢tÖ&6"6öÖò6ö×ÆWFFòrÀ¢wW7V&–÷56—†òæöæ&ö&F–ærç&ö6W76–æuF—FÆRs¢t7GVÆ—¦æFòöæ&ö&F–ærââârÀ¢wW7V&–÷56—†òæöæ&ö&F–ærç&ö6W76–ætÖW76vRs ¢tW7W&Ö–VçG&26RwV&FÆçVWf6öæf–wW&6œ;6âârÀ¢wW7V&–÷56—†òæöæ&ö&F–ærç7V66W75F—FÆRs¢töæ&ö&F–ær7GVÆ—¦FòrÀ¢wW7V&–÷56—†òæöæ&ö&F–ærç7V66W74ÖW76vRs ¢tÆçVWf&VvÆ6RÆ–6,:VâVÂ,;7†–Öò66W6òFVÂW7V&–òârÀ¢wW7V&–÷56—†òæöæ&ö&F–æræW'&÷%F—FÆRs¢tæògVR÷6–&ÆR7GVÆ—¦"rÀ¢wW7V&–÷56—†òæöæ&ö&F–æræW'&÷$ÖW76vRs ¢t–çL:–çFÆòFRçVWfòâæò6RÖöF–f–<;2æ–æwVæ÷G&–æf÷&Ö6œ;6âârÀ¢wW7V&–÷56—†òç77v÷&E&W6WBçF—FÆRs¢u&W7F&ÆV6W"6öçG&6\;rÀ¢wW7V&–÷56—†òç77v÷&E&W6WBç7V'F—FÆRs ¢uW6W7F66œ;6â7VæFòVÂW7V&–òæV6W6—FR&VFVf–æ—"7R6öçG&6\;FR66W6òârÀ¢wW7V&–÷56—†òç77v÷&E&W6WBæF–ÆöuF—FÆRs ¢|+õ&W7F&ÆV6W"Æ6öçG&6\;FRW7FRW7V&–óòrÀ¢wW7V&–÷56—†òç77v÷&E&W6WBæF–ÆötÖW76vRs ¢tÆ66œ;6â6RÆ–6,:–æÖVF–FÖVçFRÂW7V&–ò6VÆV66–öæFòârÀ¢wW7V&–÷56—†òç77v÷&E&W6WBæ7F–öâs¢u&W7F&ÆV6W"6öçG&6\;rÀ¢wW7V&–÷56—†òç77v÷&E&W6WBç7V66W74ÖW76vRs ¢tVÂ&W7F&ÆV6–Ö–VçFòFR6öçG&6\;6R6ö×ÆWL;26÷'&V7FÖVçFRârÀ¢wW7V&–÷56—†òç77v÷&E&W6WBæW'&÷$ÖW76vRs ¢tæògVR÷6–&ÆR&W7F&ÆV6W"Æ6öçG&6\;†÷&â–çL:–çFÆòFRçVWfòârÀ¢v–æ—F–Äöæ&ö&F–æræW–V'&÷rs¢t6öæf–wW&6œ;6â–æ–6–ÂrÀ¢v–æ—F–Äöæ&ö&F–æræ'&æEFvÆ–æRs¢uFöFò6öÖ–Vç¦\:ÒrÀ¢v–æ—F–Äöæ&ö&F–ærçF–ÖT&FvRs¢tÖVæ÷2FRÖ–çWFòrÀ¢v–æ—F–Äöæ&ö&F–æræ–FVçF—G•7FWÆ&VÂs¢uL;¢’GRV×&W6rÀ¢v–æ—F–Äöæ&ö&F–æræ'W6–æW757FWÆ&VÂs¢uGRæVvö6–òrÀ¢v–æ—F–Äöæ&ö&F–æræ–FVçF—G”&VæVf—EF—FÆRs ¢uGRW76–òÂÆ—7Fò&G&&¦"GRÖæW&ârÀ¢v–æ—F–Äöæ&ö&F–æræ–FVçF—G”&VæVf—E7V'F—FÆRs ¢t–F–öÖÂW&f–Â’V×&W6Æ—7F÷2çFW2FRÆ&–ÖW&çFÆÆârÀ¢v–æ—F–Äöæ&ö&F–æræ'W6–æW74&VæVf—EF—FÆRs ¢tÖVæ÷2'V–FòâÜ:2FRÆòVR–×÷'FârÀ¢v–æ—F–Äöæ&ö&F–æræ'W6–æW74&VæVf—E7V'F—FÆRs ¢t÷&væ—¦Ö÷2ÆW‡W&–Væ6–6V|;¦âÆ'WF–æ&VÂFRGRæVvö6–òârÀ¢v–æ—F–Äöæ&ö&F–ærç&—f7”æ÷FRs ¢uöG,:2ÖöF–f–6"W7F–æf÷&Ö6œ;6âÜ:2FVÆçFRârÀ¢v–æ—F–Äöæ&ö&F–ærç&Wf–WtÆæwVvRs¢t–F–öÖ&VfW&–FòrÀ¢v–æ—F–Äöæ&ö&F–ærç&Wf–Wu&öf–ÆRs¢uW&f–ÂW'6öæÂrÀ¢v–æ—F–Äöæ&ö&F–ærç&Wf–Wt6ö×ç’s¢t–FVçF–FBFRÆV×&W6rÀ¢v–æ—F–Äöæ&ö&F–ærç&Wf–WuW'6öæÆ—¦VBs¢tW‡W&–Væ6–W'6öæÆ—¦FrÀ¢v–æ—F–Äöæ&ö&F–ærç–÷W$FWF–Ç2s¢uGW2FF÷2rÀ¢v–æ—F–Äöæ&ö&F–ærç&WV—&VD†–çBs¢t6×÷2ö&Æ–vF÷&–÷2rÀ¢v–æ—F–Äöæ&ö&F–æræ6†ö÷6T†–çBs¢tVÆ–vRVæ÷6œ;6âòÖ&2ârÀ¢v–æ—F–Äöæ&ö&F–ærç7FWs¢u6òrÀ¢v–æ—F–Äöæ&ö&F–æræöbs¢vFRrÀ¢v–æ—F–Äöæ&ö&F–æræ–FVçF—G•F—FÆRs¢tV×V6VÖ÷2÷"ÆòW6Væ6–ÂrÀ¢v–æ—F–Äöæ&ö&F–æræ–FVçF—G•7V'F—FÆRs ¢t6öæf—&ÖGW2FF÷2&W'6öæÆ—¦"GRW‡W&–Væ6–ârÀ¢v–æ—F–Äöæ&ö&F–æræ'W6–æW75F—FÆRs¢|+õ\:’†6RGRæVvö6–óòrÀ¢v–æ—F–Äöæ&ö&F–æræ'W6–æW757V'F—FÆRs ¢tW7Fò6öÆò÷&væ—¦Ü;6GVÆ÷2’66W6÷2âöG,:26Ö&–&ÆòFW7\:—2ârÀ¢v–æ—F–Äöæ&ö&F–æræÆæwVvUVW7F–öâs¢|+ôVâ\:’–F–öÖFW6V26öçF–çV#òrÀ¢v–æ—F–Äöæ&ö&F–ærçW6W$æÖRs¢|+ô<;6ÖòöFVÖ÷2ÆÆÖ'FSòrÀ¢v–æ—F–Äöæ&ö&F–æræ6ö×ç”æÖRs¢tæöÖ'&RFRGRæVvö6–òrÀ¢v–æ—F–Äöæ&ö&F–ærç6ÆW5F—FÆRs¢ufVæFR&öGV7F÷2rÀ¢v–æ—F–Äöæ&ö&F–ærç6ÆW57V'F—FÆRs ¢uVçFòFRfVçFÂ6L:ÆövòÂ–çfVçF&–ò’fVçF2ârÀ¢v–æ—F–Äöæ&ö&F–ærç6W'f–6W5F—FÆRs¢u&W7F6W'f–6–÷2L:–6æ–6÷2rÀ¢v–æ—F–Äöæ&ö&F–ærç6W'f–6W57V'F—FÆRs ¢tFVæ6–öæW2Â;7&FVæW2FR6W'f–6–ò’&ö6VF–Ö–VçF÷2ârÀ¢v–æ—F–Äöæ&ö&F–ærç7F'Bs¢t6öÖVç¦"W6"6—†ôrÀ¢v–æ—F–Äöæ&ö&F–æræ7F—f—G•&WV—&VBs ¢u6VÆV66–öæfVçF2Â6W'f–6–÷2L:–6æ–6÷2òÖ&÷2ârÀ¢v–æ—F–Äöæ&ö&F–ærçW6W$æÖU&WV—&VBs¢t–æw&W6GRæöÖ'&R&6öçF–çV"ârÀ¢v–æ—F–Äöæ&ö&F–æræ6ö×ç”æÖU&WV—&VBs ¢t–æw&W6VÂæöÖ'&RFRÆV×&W6&6öçF–çV"ârÀ¢v–æ—F–Äöæ&ö&F–ærç6fTW'&÷"s ¢tæògVR÷6–&ÆRwV&F"†÷&â–çL:–çFÆòFRçVWfòârÀ¢v–æ—F–Äöæ&ö&F–æræÆöDW'&÷%F—FÆRs ¢tæògVR÷6–&ÆR–æ–6–"Æ6öæf–wW&6œ;6ârÀ¢v–æ—F–Äöæ&ö&F–æræÆöDW'&÷$ÖW76vRs ¢ufW&–f–6GR6öæW†œ;6âR–çL:–çFÆòFRçVWfòârÀ¢v6—†æ÷W&6öW2æ÷Vä6öæf—&ÕF—FÆRs¢|+ô6öæf—&Ö"W'GW&FR6¦òrÀ¢v6—†æ÷W&6öW2æ÷Vä6öæf—&ÔÖW76vRs ¢|+ôFW6V2'&—"¶66„FW6·Ò6öâföæFò–æ–6–ÂFR¶Ö÷VçGÓòrÀ¢v6—†æ÷W&6öW2æ÷Vä6öæf—&Ô7F–öâs¢t'&—"6¦rÀ¢v6—†æ÷W&6öW2æ6Æ÷6U6W76–öä7F–öâs¢t6W'&"6¦rÀ¢v6—†æ÷W&6öW2æ6Æ÷6TF–ÆöuF—FÆRs¢|+ô6W'&"Æ6W6œ;6âFR6¦òrÀ¢v6—†æ÷W&6öW2æ6Æ÷6TF–Æöu7V'F—FÆRs ¢u&Wf—6RVÂ&W7VÖVâçFW2FR6öçF–çV"âW7F66œ;6âæò6RVVFRFW6†6W"ârÀ¢v6—†æ÷W&6öW2æ6Æ÷6TF–Æöt66„FW6²s¢t6¦rÀ¢v6—†æ÷W&6öW2æ6Æ÷6TF–ÆötÖ÷fVÖVçG2s¢tÖ÷f–Ö–VçF÷2rÀ¢v6—†æ÷W&6öW2æ6Æ÷6TF–ÆötW‡V7FVD&Ææ6Rs¢u6ÆFòW7W&FòrÀ¢v6—†æ÷W&6öW2æ6Æ÷6TF–Æöt6†V6¶Æ—7D6ö×ÆWFRs ¢u&W7VÖVâ÷W&F—fòF—7öæ–&ÆRrÀ¢v6—†æ÷W&6öW2æ6Æ÷6TF–Æöt&6²s¢uföÇfW"rÀ¢v6—†æ÷W&6öW2æ6Æ÷6TF–Æöt6öæf—&Òs¢t6W'&"6¦rÀ¢v6—†æ÷W&6öW2æ6Æ÷6TF–Æöu&ö6W76–ærs¢t6W'&æFòââârÀ¢v6—†æ÷W&6öW2æ6Æ÷6TF–Æöu7V66W75F—FÆRs¢t6¦6W'&F6÷'&V7FÖVçFRrÀ¢v6—†æ÷W&6öW2æ6Æ÷6TF–Æöu7V66W74ÖW76vRs ¢tÆ6W6œ;6â†f–æÆ—¦Fò’W&ÖæV6RF—7öæ–&ÆRVâVÂ†—7F÷&–ÂârÀ¢v6—†æ÷W&6öW2æ6Æ÷6TF–ÆötW'&÷"s ¢tæò6RVFò6W'&"Æ6¦â6ö×'VV&R7R6öæW†œ;6âR–çL:–çFVÆòFRçVWfòârÀ¢v6—†æ÷W&6öW2æ6æ6VÄF–ÆöuF—FÆRs¢|+ô6æ6VÆ"Ö÷f–Ö–VçFóòrÀ¢v6—†æ÷W&6öW2æ6æ6VÄF–Æöu7V'F—FÆRs ¢u&Wf—6RÆ÷2l:Öæ7VÆ÷2FRW7F÷W&6œ;6âçFW2FR6æ6VÆ&Æâ6V|;¦âVÂ†—7F÷&–Âf–ææ6–W&òÂVÂ&Vv—7G&òVVFRæV6W6—F"ÖçFVæW'6RârÀ¢v6—†æ÷W&6öW2æ6æ6VÄF–Æöt÷W&F–öâs¢t÷W&6œ;6ârÀ¢v6—†æ÷W&6öW2æ6æ6VÄF–ÆötÖWF†öBs¢tf÷&ÖrÀ¢v6—†æ÷W&6öW2æ6æ6VÄF–ÆötÖ÷VçBs¢t–×÷'FRrÀ¢v6—†æ÷W&6öW2æ6æ6VÄF–Æöt6†V6¶Æ—7Bs ¢u6’VÂÖ÷f–Ö–VçFòW7L:f–æ7VÆFò6ö'&÷2ò&Vv—7G&÷2gWGW&÷2ÂÆ6æ6VÆ6œ;6âVVFR&Æ÷VV'6R&&W6W'f"VÂ†—7F÷&–ÂârÀ¢v6—†æ÷W&6öW2æ6æ6VÄF–Æöt&6²s¢uföÇfW"rÀ¢v6—†æ÷W&6öW2æ6æ6VÄF–Æöt6öæf—&Òs¢t6æ6VÆ"÷W&6œ;6ârÀ¢v6—†æ÷W&6öW2æ6æ6VÄF–Æöu&ö6W76–ærs¢t6æ6VÆæFòââârÀ¢v6—†æ÷W&6öW2æ6æ6VÄF–Æöu7V66W75F—FÆRs¢tÖ÷f–Ö–VçFò6æ6VÆFòrÀ¢v6—†æ÷W&6öW2æ6æ6VÄF–Æöu7V66W74ÖW76vRs ¢tVÂ†—7F÷&–ÂFR6¦6R7GVÆ—¬;2’W7F÷W&6œ;6â–æò6VwV—,:7F—fVâÆ6W6œ;6â7GVÂârÀ¢v6—†æ÷W&6öW2æ6æ6VÄF–ÆötW'&÷"s ¢tæò6RVFò6æ6VÆ"VÂÖ÷f–Ö–VçFò†÷&â&Wf—6RÆ÷2l:Öæ7VÆ÷2f–ææ6–W&÷2R–çL:–çFVÆòçVWfÖVçFRârÀ¢v6—†æ÷W&6öW2æ6æ6VÄF–ÆötÆ–æ¶VE&V6÷&G4W'&÷"s ¢tW7FRÖ÷f–Ö–VçFòW7L:f–æ7VÆFò6ö'&÷2ò&Vv—7G&÷2gWGW&÷2’FV&RW&ÖæV6W"&Vv—7G&FòVâVÂ†—7F÷&–Âf–ææ6–W&òârÀ¢v6—†æ÷W&6öW2æ6æ6VÄF–ÆöuW&Ö—76–öäW'&÷"s ¢tæòF–VæW2W&Ö—6ò&6æ6VÆ"W7FRÖ÷f–Ö–VçFòârÀ¢v6—†æ÷W&6öW2æ6æ6VÄF–Æöt6öææV7F—f—G”W'&÷"s ¢tæògVR÷6–&ÆR6ö×Væ–6'6R6öâVÂ6W'f–F÷"†÷&â&Wf—6R7R6öæW†œ;6âR–çL:–çFVÆòçVWfÖVçFRârÀ¢v6—†æ÷W&6öW2æ6æ6VÄF–ÆötÆ–¶VÇ”Æ–æ¶VDW'&÷"s ¢tæògVR÷6–&ÆR6æ6VÆ"W7FRÖ÷f–Ö–VçFò÷'VRVVFRW7F"f–æ7VÆFò÷G&÷2&Vv—7G&÷2f–ææ6–W&÷2â&Wf—6RÆ÷26ö'&÷2&VÆ6–öæF÷2R–çL:–çFVÆòçVWfÖVçFRârÀ¢v6—†æ÷W&6öW2æFDVçG'”7F–öâs¢tw&Vv"Æç¦Ö–VçFòrÀ¢v6—†æ÷W&6öW2æÆVæ6„F–ÆöuF—FÆRs¢u&Vv—7G&"Æç¦Ö–VçFò÷W&F—fòrÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æöu7V'F—FÆRs ¢t6ö×ÆWFRÆ÷2FF÷2FRÆ÷W&6œ;6â’&Wl:×6VÆ÷2çFW2FR&Vv—7G&&ÆVâÆ6¦ârÀ¢v6—†æ÷W&6öW2æÆVæ6„F–ÆöuG—TÆ&VÂs¢uF—òFR÷W&6œ;6ârÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æöu6VÆV7Bs¢u6VÆV66–öæRrÀ¢v6—†æ÷W&6öW2æÆVæ6„F–ÆötÖ÷VçDÆ&VÂs¢t–×÷'FRrÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æöu&VÆFVEG—TÆ&VÂs¢tf÷&Ö&VÆ6–öæFrÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æöu&VfW&Væ6TÆ&VÂs¢u&VfW&Væ6–ò6ö×&ö&çFRrÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æöu&VfW&Væ6T†–çBs¢tV¢ã¢ÔõbÓrÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æötö'6W'fF–öäÆ&VÂs¢tö'6W'f6œ;6ârÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æötö'6W'fF–öä†–çBs ¢tFW67&–&6öâ6Æ&–FBVÂÖ÷F—fòFVÂÖ÷f–Ö–VçFòârÀ¢v6—†æ÷W&6öW2æÆVæ6„F–ÆötÆ–æ¶VE6ÆTÆ&VÂs ¢uF–VæRl:Öæ7VÆò6öâVæfVçFrÀ¢v6—†æ÷W&6öW2æÆVæ6„F–ÆötÆ–æ¶VE6ÆT†–çBs ¢|9§6VÆòVâ&WfW'6–öæW2ò6—GV6–öæW2&VÆ6–öæF26öâVæFVæ6œ;6âçFW&–÷"ârÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æöu&Wf–Wt7F–öâs¢u&Wf—6"Æç¦Ö–VçFòrÀ¢v6—†æ÷W&6öW2æÆVæ6„F–ÆöuG—U&WV—&VBs ¢u6VÆV66–öæRVÂF—òFR÷W&6œ;6âârÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æöu&VÆFVEG—U&WV—&VBs ¢u6VÆV66–öæRÆf÷&Ö&VÆ6–öæFârÀ¢v6—†æ÷W&6öW2æÆVæ6„F–ÆötÖ÷VçE&WV—&VBs¢t–æw&W6RVâ–×÷'FRl:Æ–FòârÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æöu&Wf–WuF—FÆRs ¢|+ô6öæf—&Ö"Æç¦Ö–VçFò÷W&F—fóòrÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æöu&Wf–Wu7V'F—FÆRs ¢u&Wf—6RÆ÷2FF÷26öçF–çV6œ;6âçFW2FR&Vv—7G&"VÂÖ÷f–Ö–VçFòVâÆ6¦ârÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æöt6†V6¶Æ—7Bs¢u&W7VÖVâÆ—7Fò&6öæf—&Ö"ârÀ¢v6—†æ÷W&6öW2æÆVæ6„F–ÆötVF—D7F–öâs¢tVF—F"FF÷2rÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æöt6öæf—&Ô7F–öâs¢u&Vv—7G&"Ö÷f–Ö–VçFòrÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æöu&ö6W76–ærs¢u&Vv—7G&æFòââârÀ¢v6—†æ÷W&6öW2æÆVæ6„F–ÆötW'&÷"s ¢tæògVR÷6–&ÆR&Vv—7G&"VÂÖ÷f–Ö–VçFòâ&Wf—6RÆ÷2FF÷2R–çL:–çFVÆòçVWfÖVçFRârÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æöu7V66W75F—FÆRs ¢tÖ÷f–Ö–VçFò&Vv—7G&Fò6÷'&V7FÖVçFRrÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æöu7V66W74ÖW76vRs ¢tVÂÆç¦Ö–VçFò–&V6RVâVÂ†—7F÷&–Â’VâVÂ&W7VÖVâFR6¦ârÀ¢v6—†æ÷W&6öW2æÆVæ6„F–Æötf–Æ&ÆTÖWF†öG2s¢tf÷&Ö27F—f2rÀ¢v6—†æ÷W&6öW2æÆVæ6„F–ÆötÆ–æ¶VE6ÆUFrs¢uf–æ7VÆFòfVçFrÀ¢v6—†æ÷W&6öW2æ†—7F÷'•FöF”öæÇ’s¢u6öÆò†÷’rÀ¢v6—†æ÷W&6öW2æ†—7F÷'•W&–öBs¢uW,:ÖöFòrÀ¢v6—†æ÷W&6öW2æ†—7F÷'•W&–öEFöF’s¢t†÷’rÀ¢v6—†æ÷W&6öW2æ†—7F÷'•W&–öDÆ7CtF—2s¢|9¦ÇF–Ö÷2rL:Ö2rÀ¢v6—†æ÷W&6öW2æ†—7F÷'•W&–öDÆ7C3F—2s¢|9¦ÇF–Ö÷23L:Ö2rÀ¢v6—†æ÷W&6öW2æ†—7F÷'•W&–öEF†—4ÖöçF‚s¢tW7FRÖW2rÀ¢v6—†æ÷W&6öW2æ†—7F÷'•W&–öDÆ7DÖöçF‚s¢tÖW26FòrÀ¢v6—†æ÷W&6öW2æ†—7F÷'•W&–öD7W7FöÕ&ævRs¢t–çFW'fÆòW'6öæÆ—¦FòrÀ¢v6—†æ÷W&6öW2æ†—7F÷'”æGW&Rs¢tæGW&ÆW¦rÀ¢v6—†æ÷W&6öW2æ†—7F÷'•7FGW2s¢tW7FFòrÀ¢v6—†æ÷W&6öW2æ†—7F÷'”÷W&F–öâs¢t÷W&6œ;6ârÀ¢v6—†æ÷W&6öW2æ†—7F÷'”ÖWF†öBs¢tf÷&ÖrÀ¢v6—†æ÷W&6öW2æ†—7F÷'•7F'DFFRs¢tfV6†–æ–6–ÂrÀ¢v6—†æ÷W&6öW2æ†—7F÷'”VæDFFRs¢tfV6†f–æÂrÀ¢v6—†æ÷W&6öW2æ†—7F÷'•7F'DFFT†VÇs¢u6VÆV66–öæ"fV6†–æ–6–ÂrÀ¢v6—†æ÷W&6öW2æ†—7F÷'”VæDFFT†VÇs¢u6VÆV66–öæ"fV6†f–æÂrÀ¢v6—†æ÷W&6öW2æ†—7F÷'”6ÆV$f–ÇFW'2s¢tÆ–×–"f–ÇG&÷2rÀ¢v6—†æ÷W&6öW2æ†—7F÷'”æõ&W7VÇG4f–ÇFW&VBs ¢tæò6RVæ6öçG&&öâÖ÷f–Ö–VçF÷26öâÆ÷2f–ÇG&÷2Æ–6F÷2ârÀ¢v6—†æ÷W&6öW2æ†—7F÷'”æõ&W7VÇG5FöF’s ¢tæò6R&Vv—7G&&öâÖ÷f–Ö–VçF÷2†÷’ârÀ¢wvV"ç7FæFÆöæRçV÷FRs¢u&W7WVW7FòrÀ¢wvV"ç7FæFÆöæRç6W'f–6T÷&FW"s¢t÷&FVâFR6W'f–6–òrÀ¢wvV"ç6†VÆÂæW‡æE6–FV&"s¢tW‡æF—"æfVv6œ;6ârÀ¢wvV"ç6†VÆÂæ6öÆÆ6U6–FV&"s¢t6öçG&W"æfVv6œ;6ârÀ¢wvV"ç6†VÆÂæ7W'&VçD6öÖÖW&6Rs¢t6öÖW&6–ò7GVÂrÀ¢wvV"ç6†VÆÂç6W76–öä6öçFW‡Bs¢t6öçFW‡FòFRÆ6W6œ;6ârÀ¢wvV"ç6†VÆÂçv÷&·76Rs¢uv÷&·76R÷W&F—fòrÀ¢wvV"ç6†VÆÂçfW'6–öâs¢ufW'6œ;6ârÀ¢wvV"æ†VFW"ç&öf–ÆRs¢uW&f–ÂrÀ¢wvV"æ†VFW"ç&öf–ÆUFööÇF—s¢tÖ’W&f–ÂrÀ¢wvV"æ†VFW"çW6W$ÖVçRs¢uW7V&–òrÀ¢wvV"æ†VFW"æ×•&öf–ÆRs¢tÖ’W&f–ÂrÀ¢wvV"æ†VFW"çF†VÖRæF&²s¢uFVÖ÷67W&òrÀ¢wvV"æ†VFW"çF†VÖRæF&²æVæ&ÆRs¢t7F—f"FVÖ÷67W&òrÀ¢wvV"æ†VFW"çF†VÖRæF&²æF—6&ÆRs¢tFW67F—f"FVÖ÷67W&òrÀ¢wvV"æ†VFW"æÆöv÷WBs¢u6Æ—"rÀ¢wvV"æÆöv÷WBæF–ÆörçF—FÆRs¢|+ô6W'&"Æ6W6œ;6â†÷&òrÀ¢wvV"æÆöv÷WBæF–Æörç7V'F—FÆRs ¢u&Wf—6RVÂ6öçFW‡FòçFW2FR6Æ—"âföÇfW,:ÆçFÆÆ;¦&Æ–6FR–æ–6–òFR6W6œ;6âVâW7FRæfVvF÷"ârÀ¢wvV"æÆöv÷WBæF–ÆörçW6W"s¢uW7V&–òrÀ¢wvV"æÆöv÷WBæF–Æöræ7W'&VçD6öÖÖW&6Rs¢t6öÖW&6–ò7GVÂrÀ¢wvV"æÆöv÷WBæF–ÆörææW‡E7FWs¢u6–wV–VçFR6òrÀ¢wvV"æÆöv÷WBæF–ÆörææW‡E7FWfÇVRs¢uçFÆÆ;¦&Æ–6FR–æ–6–òFR6W6œ;6ârÀ¢wvV"æÆöv÷WBæF–Æöræ6†V6¶Æ—7Bs ¢tÆ6W6œ;6â7GVÂ6R6W'&,:6öÆòVâW7FRæfVvF÷"ârÀ¢wvV"æÆöv÷WBæF–Æöræ&6²s¢u6VwV—"6öæV7FFòrÀ¢wvV"æÆöv÷WBæF–Æöræ6öæf—&Òs¢u6Æ—"†÷&rÀ¢wvV"æÆöv÷WBæF–Æörç&ö6W76–ærs¢t6W'&æFò6W6œ;6âââârÀ¢wvV"æÆöv÷WBæF–Æörç7V66W75F—FÆRs¢u6W6œ;6â6W'&F6÷'&V7FÖVçFRrÀ¢wvV"æÆöv÷WBæF–Æörç7V66W74ÖW76vRs ¢u&W&æFòVÂ&Vw&W6òÆçFÆÆ;¦&Æ–6FR–æ–6–òFR6W6œ;6âârÀ¢wvV"æÆöv÷WBæF–ÆöræW'&÷"s ¢tæògVR÷6–&ÆR6W'&"Æ6W6œ;6â†÷&â–çL:–çFVÆòçVWfÖVçFRVâVæ÷2–ç7FçFW2ârÀ¢wv÷&·76T†öÖRçF—FÆRs¢tÖ’L:ÖVâ6—†ôrÀ¢wv÷&·76T†öÖRæw&VWF–ærs¢t†öÆÂ¶æÖWÒrÀ¢wv÷&·76T†öÖRçVæ¶æ÷våW6W"s¢wW7V&–òrÀ¢wv÷&·76T†öÖRæ6ö×ç”fÆÆ&6²s¢t6öÖW&6–ò7GVÂrÀ¢wv÷&·76T†öÖRæ÷W&F–öæÄFFRs¢t†÷“¢¶FFWÒrÀ¢wv÷&·76T†öÖRç&Vg&W6…FööÇF—s¢t7GVÆ—¦"&W7VÖVâFVÂL:ÖrÀ¢wv÷&·76T†öÖRæÆöF–ærçF—FÆRs¢t6&væFò&W7VÖVâFVÂL:ÖrÀ¢wv÷&·76T†öÖRæÆöF–ærç7V'F—FÆRs ¢t'W66æFòÆ6—GV6œ;6â7GVÂFRW7FR6öÖW&6–òârÀ¢wv÷&·76T†öÖRæW'&÷"çF—FÆRs¢tæògVR÷6–&ÆR6&v"VÂ&W7VÖVâFVÂL:ÖârÀ¢v6öÆÆ&÷&F÷$†öÖRçF—FÆRs¢tÖ’æVÂrÀ¢v6öÆÆ&÷&F÷$†öÖRç7V'F—FÆRs ¢u6–wVRGW2ÖWF2ÂfVçF2Â6W'f–6–÷2’&–÷&–FFW2FRG&&¦òârÀ¢v6öÆÆ&÷&F÷$†öÖRæÆöF–ærs¢t6&væFòGRæVÂ÷W&F—fòrÀ¢v6öÆÆ&÷&F÷$†öÖRæW'&÷"çW6W"s ¢tæògVR÷6–&ÆR–FVçF–f–6"GRæVÂW'6öæÂârÀ¢v6öÆÆ&÷&F÷$†öÖRæGFVçF–öâçF—FÆRs¢u&–÷&–FFW2FVÂG&&¦òrÀ¢v6öÆÆ&÷&F÷$†öÖRæGFVçF–öâæ6ÆV"s ¢uFöFòW7L:ÂL:ÖVâGW2g&VçFW2FRG&&¦òârÀ¢v6öÆÆ&÷&F÷$†öÖRæGFVçF–öâçVæF–ærs¢w¶6÷VçGÒVçF÷2æV6W6—FâFVæ6œ;6âârÀ¢v6öÆÆ&÷&F÷$†öÖRæGFVçF–öâæ÷fW&GVU6ÆW2s¢ufVçF2fVæ6–F2rÀ¢v6öÆÆ&÷&F÷$†öÖRæGFVçF–öâæ÷fW&GVU6W'f–6W2s¢tVçG&Vv2G&6F2rÀ¢v6öÆÆ&÷&F÷$†öÖRæGFVçF–öâç&W6W'fF–öç2s¢u&W6W'f2&&Wf—6"rÀ¢v6öÆÆ&÷&F÷$†öÖRç6ÆW2çF—FÆRs¢tÖ—2fVçF2rÀ¢v6öÆÆ&÷&F÷$†öÖRç6ÆW2çW&–öBs¢u&W7VÇFF÷2FR·7F'GÒ¶VæGÒrÀ¢v6öÆÆ&÷&F÷$†öÖRç6ÆW2æ6÷VçBs¢ufVçF2FVÂÖW2rÀ¢v6öÆÆ&÷&F÷$†öÖRç6ÆW2çF÷FÂs¢uF÷FÂfVæF–FòrÀ¢v6öÆÆ&÷&F÷$†öÖRç6ÆW2ç&V6V—fVBs¢u–&V6–&–FòrÀ¢v6öÆÆ&÷&F÷$†öÖRç6ÆW2æ÷VäÖöçF‚s¢uVæF–VçFRVâVÂÖW2rÀ¢v6öÆÆ&÷&F÷$†öÖRç6ÆW2æÆöDW'&÷"s ¢tæògVR÷6–&ÆR6&v"VÂ&W7VÖVâFRGW2fVçF2ârÀ¢v6öÆÆ&÷&F÷$†öÖRæ÷Vå6ÆW2çF—FÆRs¢ufVçF2;¦âæòÆ—V–FF2rÀ¢v6öÆÆ&÷&F÷$†öÖRæ÷Vå6ÆW2ç7V'F—FÆRs¢u6öÆòfVçF2&Vv—7G&F2÷"F’ârÀ¢v6öÆÆ&÷&F÷$†öÖRæ÷Vå6ÆW2æÆöDW'&÷"s ¢tæògVR÷6–&ÆR6&v"GW2fVçF2VæF–VçFW2ârÀ¢v6öÆÆ&÷&F÷$†öÖRæ÷Vå6ÆW2æV×G’s ¢tæòF–VæW2fVçF2VæF–VçFW2FRÆ—V–F6œ;6âârÀ¢v6öÆÆ&÷&F÷$†öÖRæ÷Vå6ÆW2æÖ÷&Rs¢t†’¶6÷VçGÒfVçF2VæF–VçFW2Ü:2rÀ¢v6öÆÆ&÷&F÷$†öÖRæ÷Vå6ÆW2æ7W7FöÖW$fÆÆ&6²s¢t6Æ–VçFRæò–æf÷&ÖFòrÀ¢v6öÆÆ&÷&F÷$†öÖRæ÷Vå6ÆW2ç6ÆTfÆÆ&6²s¢ufVçFrÀ¢v6öÆÆ&÷&F÷$†öÖRæ÷Vå6ÆW2ææôGVTFFRs¢u6–âfVæ6–Ö–VçFòrÀ¢v6öÆÆ&÷&F÷$†öÖRæ÷Vå6ÆW2æ÷fW&GVRs¢ufVæ6–FrÀ¢v6öÆÆ&÷&F÷$†öÖRç6W'f–6W2çF—FÆRs¢tÖ—26W'f–6–÷2÷"W7FFòrÀ¢v6öÆÆ&÷&F÷$†öÖRç6W'f–6W2ç7V'F—FÆRs ¢tF—7G&–'V6œ;6âFRÆ2FVæ6–öæW2FöæFRW&W2VÂL:–6æ–6òârÀ¢v6öÆÆ&÷&F÷$†öÖRç6W'f–6W2æ÷Vâs¢t'&—"FVæ6–öæW2rÀ¢v6öÆÆ&÷&F÷$†öÖRç6W'f–6W2æÆöDW'&÷"s ¢tæògVR÷6–&ÆR6&v"GW26W'f–6–÷2ârÀ¢v6öÆÆ&÷&F÷$†öÖRç6W'f–6W2æV×G’s ¢tæòF–VæW2FVæ6–öæW26–væF27GVÆÖVçFRârÀ¢v6öÆÆ&÷&F÷$†öÖRç6W'f–6W2çF÷FÂs¢uF÷FÂ6–væFòrÀ¢v6öÆÆ&÷&F÷$†öÖRç6W'f–6W2æ–å&öw&W72s¢tVâ7W'6òrÀ¢v6öÆÆ&÷&F÷$†öÖRç6W'f–6W2æGVUFöF’s¢tVçG&Vv2†÷’rÀ¢v6öÆÆ&÷&F÷$†öÖRç6W'f–6W2æ÷fW&GVRs¢tG&6F÷2rÀ¢v6öÆÆ&÷&F÷$†öÖRç6W'f–6W2æÖ÷&U7FGW6W2s ¢t†’¶6÷VçGÒW7FF÷2Ü:26öâ7F—f–FBrÀ¢v6öÆÆ&÷&F÷$†öÖRç6W'f–6W2çVæ¶æ÷vå7FGW2s¢u6–âW7FFòrÀ¢v6öÆÆ&÷&F÷$†öÖRç&W6W'fF–öç2çF—FÆRs¢t6öÆFR&W6W'f2rÀ¢v6öÆÆ&÷&F÷$†öÖRç&W6W'fF–öç2ç7V'F—FÆRs ¢u6öÆ–6—GVFW2FVÂ6L:ÆövòVRVVFVâ6öçfW'F—'6RVâfVçF2ârÀ¢v6öÆÆ&÷&F÷$†öÖRç&W6W'fF–öç2æ÷Vâs¢t'&—"&W6W'f2rÀ¢v6öÆÆ&÷&F÷$†öÖRç&W6W'fF–öç2æÆöDW'&÷"s ¢tæògVR÷6–&ÆR6&v"Æ2&W6W'f2ârÀ¢v6öÆÆ&÷&F÷$†öÖRç&W6W'fF–öç2çVæF–ærs¢uVæF–VçFW2rÀ¢v6öÆÆ&÷&F÷$†öÖRç&W6W'fF–öç2ç&V6V—fVBs¢u&V6–&–F2rÀ¢v6öÆÆ&÷&F÷$†öÖRç&W6W'fF–öç2ææÇ—6—2s¢tVâì:Æ—6—2rÀ¢v6öÆÆ&÷&F÷$†öÖRç&W6W'fF–öç2æ6öæf—&ÖVBs¢t6öæf—&ÖF2rÀ¢v6öÆÆ&÷&F÷$†öÖRç&W6W'fF–öç2æ6öçfW'FVBs¢t6öçfW'F–F2rÀ¢wW&f÷&Öæ6Ræ†öÖRçF—FÆRs¢tÖ—2ÖWF2rÀ¢wW&f÷&Öæ6Ræ†öÖRç7V'F—FÆRs ¢t6ö×;GW2ÖWF2’Æ÷2&W7VÇFF÷27GVÆ—¦F÷2÷"6—†ôârÀ¢wW&f÷&Öæ6Ræ†öÖRæF6†&ö&EF—FÆRs¢tÖWFg2â&W7VÇFFòrÀ¢wW&f÷&Öæ6Ræ†öÖRçW&–öBs¢u&W7VÇFF÷2FR·7F'GÒ¶VæGÒrÀ¢wW&f÷&Öæ6Ræ†öÖRæ66W76–&–Æ—G”Æ&VÂs¢tF6†&ö&BFRÖ—2ÖWF2rÀ¢wW&f÷&Öæ6Ræ†öÖRæÆöF–ærs¢t6&væFòGW2ÖWF2rÀ¢wW&f÷&Öæ6Ræ†öÖRæÆöDW'&÷"s¢tæògVR÷6–&ÆR7GVÆ—¦"GW2ÖWF2ârÀ¢wW&f÷&Öæ6Ræ†öÖRæV×G•F—FÆRs¢tæ–æwVæÖWF7F—fW7FRÖW2rÀ¢wW&f÷&Öæ6Ræ†öÖRæV×G•7V'F—FÆRs ¢t7VæFò6RFR6–væRVæÖWFÂ7R&W7VÇFFò&V6W,:\:ÒârÀ¢wW&f÷&Öæ6Ræ†öÖRç&W7VÇBs¢u&W7VÇFFòrÀ¢wW&f÷&Öæ6Ræ†öÖRçF&vWBs¢tÖWFrÀ¢wW&f÷&Öæ6Ræ–æF–6F÷"ç6ÆW5fÇVRs¢ufÆ÷"fVæF–FòrÀ¢wW&f÷&Öæ6Ræ–æF–6F÷"ç6ÆW5VçF—G’s¢t6çF–FBFRfVçF2rÀ¢wW&f÷&Öæ6Ræ–æF–6F÷"ç6W'f–6W5fÇVRs¢ufÆ÷"Vâ6W'f–6–÷2rÀ¢wW&f÷&Öæ6Ræ–æF–6F÷"ç6W'f–6T6ÆÇ2s¢tFVæ6–öæW2L:–6æ–62rÀ¢wW&f÷&Öæ6Ræ–æF–6F÷"æf–æ—6†VE6W'f–6T6ÆÇ2s¢tFVæ6–öæW2f–æÆ—¦F2rÀ¢wW&f÷&Öæ6Ræ–æF–6F÷"ç6W'f–6T6ÆÇ5fÇVRs¢ufÆ÷"VâFVæ6–öæW2rÀ¢wv÷&·76T†öÖRç6V7F–öâçFöF’s¢u6—GV6œ;6âFR†÷’rÀ¢wv÷&·76T†öÖRç6V7F–öâæGFVçF–öâs¢tæV6W6—FGRFVæ6œ;6ârÀ¢wv÷&·76T†öÖRç6V7F–öâçV–6´7F–öç2s¢t66–öæW2,:–F2rÀ¢wv÷&·76T†öÖRæV×G’çFöF’s ¢tæ–æ|;¦â&Æ÷VRFVÂ&W7VÖVâW7L:F—7öæ–&ÆR&GW2W&Ö—6÷2ârÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆTw&VWF–æu7V'F—FÆRs ¢t6öç7VÇFÆ÷2&–æ6—ÆW2Ö÷f–Ö–VçF÷2FR¶V×&W6Ò†÷’ârÀ¢wv÷&·76T†öÖRæV×G’æGFVçF–öâs¢tæò†’VæF–VçFW2–×÷'FçFW2÷"†÷&ârÀ¢wv÷&·76T†öÖRæV×G’çV–6´7F–öç2s ¢tæò†’66–öæW2,:–F2F—7öæ–&ÆW2&GW2W&Ö—6÷2ârÀ¢wv÷&·76T†öÖRæ66‚çF—FÆRs¢t6¦rÀ¢wv÷&·76T†öÖRæ66‚æ÷Vâs¢t&–W'FrÀ¢wv÷&·76T†öÖRæ66‚æ6Æ÷6VBs¢t6W'&FrÀ¢wv÷&·76T†öÖRæ66‚æ÷VæVDBs¢vFW6FR·F–ÖWÒrÀ¢wv÷&·76T†öÖRæ66‚æ÷VæVDEv—F„FFRs¢vFW6FR¶FFWÒÆ2·F–ÖWÒrÀ¢wv÷&·76T†öÖRæ66‚ç&W7öç6–&ÆRs¢t&–W'F÷"¶æÖWÒrÀ¢wv÷&·76T†öÖRçFV6†æ–6ÂçF—FÆRs¢u6W'f–6–÷2rÀ¢wv÷&·76T†öÖRçFV6†æ–6Âæ7F—fRæöæRs¢sVâ7W'6òrÀ¢wv÷&·76T†öÖRçFV6†æ–6Âæ7F—fRæ÷F†W"s¢w¶6÷VçGÒVâ7W'6òrÀ¢wv÷&·76T†öÖRæf–ææ6–Âç&V6V—f&ÆUFöF’s¢u÷"6ö'&"†÷’rÀ¢wv÷&·76T†öÖRæf–ææ6–Âç–&ÆUFöF’s¢u÷"v"†÷’rÀ¢wv÷&·76T†öÖRæf–ææ6–Âæ6÷VçBæöæRs¢s7VVçFrÀ¢wv÷&·76T†öÖRæf–ææ6–Âæ6÷VçBæ÷F†W"s¢w¶6÷VçGÒ7VVçF2rÀ¢wv÷&·76T†öÖRç7Fö6²çF—FÆRs¢u7Fö6²rÀ¢wv÷&·76T†öÖRç7Fö6²ææô7&—F–6Âs¢u6–âÆW'F27,:×F–62rÀ¢wv÷&·76T†öÖRç7Fö6²æ&VÆ÷tÖ–æ–×VÒæöæRs¢s÷"FV&¦òFVÂÜ:Öæ–ÖòrÀ¢wv÷&·76T†öÖRç7Fö6²æ&VÆ÷tÖ–æ–×VÒæ÷F†W"s¢w¶6÷VçGÒ÷"FV&¦òFVÂÜ:Öæ–ÖòrÀ¢wv÷&·76T†öÖRç7Fö6²çv—F†÷WE7Fö6²æöæRs¢s6–â7Fö6²rÀ¢wv÷&·76T†öÖRç7Fö6²çv—F†÷WE7Fö6²æ÷F†W"s¢w¶6÷VçGÒ6–â7Fö6²rÀ¢wv÷&·76T†öÖRç7Fö6²ææVvF—fRæöæRs¢sæVvF—fòrÀ¢wv÷&·76T†öÖRç7Fö6²ææVvF—fRæ÷F†W"s¢w¶6÷VçGÒæVvF—f÷2rÀ¢wv÷&·76T†öÖRæGFVçF–öâæÆFU6W'f–6W2æöæRs¢s6W'f–6–òG&6FòrÀ¢wv÷&·76T†öÖRæGFVçF–öâæÆFU6W'f–6W2æ÷F†W"s¢w¶6÷VçGÒ6W'f–6–÷2G&6F÷2rÀ¢wv÷&·76T†öÖRæGFVçF–öâçv—F–æt&÷fÂæöæRs ¢s&W7WVW7FòW7W&æFò&ö&6œ;6ârÀ¢wv÷&·76T†öÖRæGFVçF–öâçv—F–æt&÷fÂæ÷F†W"s ¢w¶6÷VçGÒ&W7WVW7F÷2W7W&æFò&ö&6œ;6ârÀ¢wv÷&·76T†öÖRæGFVçF–öâç&VG”f÷%–6·WæöæRs ¢sWV—òÆ—7Fò&&WF—&FrÀ¢wv÷&·76T†öÖRæGFVçF–öâç&VG”f÷%–6·Wæ÷F†W"s ¢w¶6÷VçGÒWV—÷2Æ—7F÷2&&WF—&FrÀ¢wv÷&·76T†öÖRæGFVçF–öâæ÷fW&GVU&V6V—f&ÆRæöæRs ¢s7VVçF÷"6ö'&"fVæ6–FrÀ¢wv÷&·76T†öÖRæGFVçF–öâæ÷fW&GVU&V6V—f&ÆRæ÷F†W"s ¢w¶6÷VçGÒ7VVçF2÷"6ö'&"fVæ6–F2rÀ¢wv÷&·76T†öÖRæGFVçF–öâæ÷fW&GVU–&ÆRæöæRs¢s7VVçF÷"v"fVæ6–FrÀ¢wv÷&·76T†öÖRæGFVçF–öâæ÷fW&GVU–&ÆRæ÷F†W"s ¢w¶6÷VçGÒ7VVçF2÷"v"fVæ6–F2rÀ¢wv÷&·76T†öÖRæGFVçF–öâç7Fö6´æVvF—fRæöæRs ¢s&öGV7Fò6öâ7Fö6²æVvF—fòrÀ¢wv÷&·76T†öÖRæGFVçF–öâç7Fö6´æVvF—fRæ÷F†W"s ¢w¶6÷VçGÒ&öGV7F÷26öâ7Fö6²æVvF—fòrÀ¢wv÷&·76T†öÖRæGFVçF–öâç7Fö6µv—F†÷WBæöæRs¢s&öGV7Fò6–â7Fö6²rÀ¢wv÷&·76T†öÖRæGFVçF–öâç7Fö6µv—F†÷WBæ÷F†W"s¢w¶6÷VçGÒ&öGV7F÷26–â7Fö6²rÀ¢wv÷&·76T†öÖRæGFVçF–öâç7Fö6´&VÆ÷ræöæRs ¢s&öGV7Fò÷"FV&¦òFVÂ7Fö6²Ü:Öæ–ÖòrÀ¢wv÷&·76T†öÖRæGFVçF–öâç7Fö6´&VÆ÷ræ÷F†W"s ¢w¶6÷VçGÒ&öGV7F÷2÷"FV&¦òFVÂ7Fö6²Ü:Öæ–ÖòrÀ¢wv÷&·76T†öÖRæ7F–öâæ÷VåFV6†æ–6Å6W'f–6W2s¢t'&—"6—7FVæ6–2rÀ¢wv÷&·76T†öÖRæ7F–öâæ÷Väf–ææ6–Âs¢t'&—"f–ææ6–W&òrÀ¢wv÷&·76T†öÖRæ7F–öâæ÷Vå7Fö6²s¢t'&—"7Fö6²rÀ¢wv÷&·76T†öÖRçV–6´7F–öâææWu6ÆRs¢tçVWffVçFrÀ¢wv÷&·76T†öÖRçV–6´7F–öâææWuFV6†æ–6Å6W'f–6Rs¢tçVWfò6W'f–6–òrÀ¢wv÷&·76T†öÖRçV–6´7F–öâæ66‚s¢t6¦rÀ¢wv÷&·76T†öÖRçV–6´7F–öâæf–ææ6–ÄvVæFs¢tvVæFf–ææ6–W&rÀ¢w7G&V²çF—FÆRs¢u&6†rÀ¢w7G&V²æÖö&–ÆRs¢tÖö&–ÆRrÀ¢w7G&V²çvV"s¢uvV"rÀ¢w7G&V²ç6†&VBs¢tvVæW&ÂrÀ¢w7G&V²æÆöævW7Bs¢u,:–6÷&BrÀ¢w7G&V²æöæTF’s¢sL:ÖrÀ¢w7G&V²æF—2s¢w¶6÷VçGÒL:Ö2rÀ¢w7G&V²æF—4öe7G&V²s¢w¶6÷VçGÒL:Ö2FR&6†rÀ¢w7G&V²æ¶VWW6–ærs¢uW66—†ôFöF÷2Æ÷2L:Ö2&ÖçFVæW"GR&6†ârÀ¢w7G&V²ç7F'FVEFöF’s¢uGR&6†V×W¬;2†÷’ârÀ¢w7G&V²æÆöF–ærs¢t6&væFòGW2L:Ö2FR&6†ârÀ¢w7G&V²æÆöDW'&÷"s¢tæò6RVFò6&v"GR&6†ârÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6ö×ç”f–ÇFW%FööÇF—s ¢tf–ÇG&"6öÖW&6–÷3¢¶6öÖW&6–÷ÒrÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6ö×ç”f–ÇFW%F—FÆRs¢tf–ÇG&"6öÖW&6–÷2rÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6ö×ç”f–ÇFW%7V'F—FÆRs ¢tVÆ–vRVâ6öÖW&6–ò&fW"VÂF6†&ö&BârÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6ö×ç”f–ÇFW$ÆÂs¢uFöF÷2rÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6ö×ç”f–ÇFW%6V&6„†–çBs¢t'W66"6öÖW&6–òrÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6ö×ç”f–ÇFW$V×G•F—FÆRs ¢tæ–æ|;¦â6öÖW&6–òF—7öæ–&ÆRrÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6ö×ç”f–ÇFW$V×G”ÖW76vRs ¢tæòVæ6öçG&Ö÷2l:Öæ7VÆ÷27F—f÷2&W7FRW7V&–òârÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6ö×ç”f–ÇFW$ÆöDW'&÷"s ¢tæò6RVF–W&öâ6&v"Æ÷26öÖW&6–÷2F—7öæ–&ÆW2†÷&ârÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6ö×ç”f–ÇFW%7v—F6„W'&÷"s ¢tæò6RVFò6Ö&–"VÂ6öÖW&6–ò†÷&â–çL:–çFÆòFRçVWfòârÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆTF6†&ö&Df–ÇFW%F—FÆRs¢tf–ÇG&"F6†&ö&BrÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆTF6†&ö&Df–ÇFW%7V'F—FÆRs ¢tVÆ–vRVÂ6öÖW&6–ò’Â6’†6RfÇFÂ&Vf–æ÷"6öÆ&÷&F÷"ârÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆTF6†&ö&Df–ÇFW$6ö×ç”Æ&VÂs¢t6öÖW&6–òrÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆTF6†&ö&Df–ÇFW$6ö×ç”†VÇW"s ¢tFVf–æR\:’6öÖW&6–òÆ–ÖVçFÆ÷2–æF–6F÷&W2Ö÷7G&F÷2ârÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6öÆÆ&÷&F÷$f–ÇFW$Æ&VÂs¢t6öÆ&÷&F÷"rÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6öÆÆ&÷&F÷$f–ÇFW$ÆÂs¢uFöF÷2Æ÷26öÆ&÷&F÷&W2rÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6öÆÆ&÷&F÷$f–ÇFW$†VÇW"s ¢t×VW7G&Æ÷2–æF–6F÷&W2FVÂ6öÆ&÷&F÷"6VÆV66–öæFòVâVÂF6†&ö&BârÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6öÆÆ&÷&F÷$f–ÇFW$F—6&ÆVD†VÇW"s ¢tVÆ–vRVâ6öÖW&6–òW7V<:Öf–6ò&f–ÇG&"6öÆ&÷&F÷&W2ârÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6öÆÆ&÷&F÷$f–ÇFW$ÆöF–æt†VÇW"s ¢t6&væFò6öÆ&÷&F÷&W2FVÂ6öÖW&6–ò7GVÂârÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6öÆÆ&÷&F÷$f–ÇFW%F—FÆRs¢tf–ÇG&"6öÆ&÷&F÷"rÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6öÆÆ&÷&F÷$f–ÇFW%7V'F—FÆRs ¢tVÆ–vRVâ6öÆ&÷&F÷"&&Vf–æ"Æ÷2–æF–6F÷&W2ârÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6öÆÆ&÷&F÷$f–ÇFW%6V&6„†–çBs¢t'W66"6öÆ&÷&F÷"rÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6öÆÆ&÷&F÷$f–ÇFW$V×G•F—FÆRs ¢tæ–æ|;¦â6öÆ&÷&F÷"F—7öæ–&ÆRrÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6öÆÆ&÷&F÷$f–ÇFW$V×G”ÖW76vRs ¢tæòVæ6öçG&Ö÷26öÆ&÷&F÷&W27F—f÷2VâW7FR6öÖW&6–òârÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6öÆÆ&÷&F÷$f–ÇFW$ÆöDW'&÷"s ¢tæò6RVF–W&öâ6&v"Æ÷26öÆ&÷&F÷&W2FRW7FR6öÖW&6–ò†÷&ârÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT6öÆÆ&÷&F÷$f–ÇFW%6VÆV7FVDfÆÆ&6²s ¢t6öÆ&÷&F÷"6VÆV66–öæFòrÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT–æg&7G'V7GW&U&WVW7G5F—FÆRs¢u&WVW7G2FVÂ&6¶VæBrÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT–æg&7G'V7GW&U&WVW7G57V'F—FÆRs ¢u&W7VW7F2Ööæ—F÷&VF2VâÆfVçFæ6VÆV66–öæFFVÂ&6¶VæBârÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT–æg&7G'V7GW&U&WVW7G4f–ÇFW%F—FÆRs ¢tf–ÇG&"&WVW7G2FVÂ&6¶VæBrÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT–æg&7G'V7GW&U&WVW7G4f–ÇFW%7V'F—FÆRs ¢t–æF–6ÆfVçFæVRVçG&VâVÂ6öçFVòFRÆ÷2W7FF÷2#ÂC’SârÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT–æg&7G'V7GW&U&WVW7G4f–ÇFW%fÇVTÆ&VÂs¢t6çF–FBrÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT–æg&7G'V7GW&U&WVW7G4f–ÇFW%Væ—DÆ&VÂs¢uVæ–FBrÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT–æg&7G'V7GW&U&WVW7G4f–ÇFW$Ö–çWFW2s¢tÖ–çWF÷2rÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT–æg&7G'V7GW&U&WVW7G4f–ÇFW$†÷W'2s¢t†÷&2rÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT–æg&7G'V7GW&U&WVW7G4f–ÇFW$Ç’s ¢tÆ–6"fVçFærÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT–æg&7G'V7GW&U&WVW7G4Ö–çWFU6–æwVÆ"s¢vÖ–çWFòrÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT–æg&7G'V7GW&U&WVW7G4Ö–çWFUÇW&Âs¢vÖ–çWF÷2rÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT–æg&7G'V7GW&U&WVW7G4†÷W%6–æwVÆ"s¢v†÷&rÀ¢vF6†&ö&D–æ–6–òæÖö&–ÆT–æg&7G'V7GW&U&WVW7G4†÷W%ÇW&Âs¢v†÷&2rÀ¢vÖö&–ÆRææbæF6‚s¢vF6‚rÀ¢vÖö&–ÆRææbæ†öÖRs¢t–æ–6–òrÀ¢vÖö&–ÆRææbæÖævVÖVçBs¢tvW7Fœ;6ârÀ¢vÖö&–ÆRææbç6W'f–6Rs¢tFVæ6œ;6ârÀ¢vV×&W6æ6öæf–wW&6òçF—FÆRs¢tV×&W6rÀ¢vV×&W6æ6öæf–wW&6òæÆöDW'&÷"s ¢tæò6RVF–W&öâ6&v"Æ÷2FF÷2FRÆV×&W6ârÀ¢vV×&W6æ6öæf–wW&6òç6fU7V66W72s ¢tFF÷2FRÆV×&W67GVÆ—¦F÷26÷'&V7FÖVçFRârÀ¢vV×&W6æ6öæf–wW&6òç6fTW'&÷"s ¢tæò6RVF–W&öâwV&F"Æ÷2FF÷2FRÆV×&W6ârÀ¢vV×&W6æ6öæf–wW&6òç7VÖÖ'•F—FÆRs¢tFF÷2FVÂ6öÖW&6–òrÀ¢vV×&W6æ6öæf–wW&6òç7VÖÖ'•7V'F—FÆRs ¢t7GVÆ—¦Æ–æf÷&Ö6œ;6âW6FVâFö7VÖVçF÷2’FVæ6œ;6âârÀ¢vV×&W6æ6öæf–wW&6òæ–FVçF—G•F—FÆRs¢t–FVçF–FBFRÆV×&W6rÀ¢vV×&W6æ6öæf–wW&6òæ–FVçF—G•7V'F—FÆRs ¢u&Wf—6Æ÷2FF÷2&–æ6—ÆW2çFW2FRwV&F"Æ÷26Ö&–÷2ârÀ¢vV×&W6æ6öæf–wW&6òæÆVvÄæÖRs¢u&¬;6â6ö6–ÂrÀ¢vV×&W6æ6öæf–wW&6òæÆVvÄæÖT†–çBs¢tæöÖ'&RÆVvÂFRÆV×&W6rÀ¢vV×&W6æ6öæf–wW&6òçG&FTæÖRs¢tæöÖ'&R6öÖW&6–ÂrÀ¢vV×&W6æ6öæf–wW&6òçG&FTæÖT†–çBs ¢tæöÖ'&R6öÖW&6–ÂW6FòVâÆFVæ6œ;6ârÀ¢vV×&W6æ6öæf–wW&6òæFö7VÖVçBs¢tFö7VÖVçFòFRÆV×&W6rÀ¢vV×&W6æ6öæf–wW&6òæFö7VÖVçD†–çBs ¢t–FVçF–f–66œ;6âf—66ÂòFö7VÖVçFòWV—fÆVçFRrÀ¢vV×&W6æ6öæf–wW&6òç&WV—&VDf–VÆBs¢t6ö×ÆWFW7FR6×òârÀ¢vV×&W6æ6öæf–wW&6òç&VG•FôVF—Bs¢tFF÷2Æ—7F÷2&VF–6œ;6âârÀ¢vV×&W6æ6öæf–wW&6òçv—F–ætFFs¢tW7W&æFòFF÷2FRÆV×&W6ârÀ¢vV×&W6æ6öæf–wW&6òç7FGW57V'F—FÆRs ¢tÆ–æf÷&Ö6œ;6âwV&FF&V6RVâFö7VÖVçF÷2’6ö×&ö&çFW2FVÂ6öÖW&6–òârÀ¢vV×&W6æ6öæf–wW&6òç6fT6†ævW2s¢twV&F"6Ö&–÷2rÀ¢vV×&W6æ6öæf–wW&6òæÆövõF—FÆRs¢tÆövòFRÆV×&W6rÀ¢vV×&W6æ6öæf–wW&6òæÆövõ7V'F—FÆRs ¢tw&VvVæ–ÖvVâì:×F–FÂ&VfW&–&ÆVÖVçFR7VG&FârÀ¢vV×&W6æ6öæf–wW&6òæÆövõ&Vv—7FW&VBs ¢t–ÖvVâÆ—7F&wV&F"VâVÂW&f–ÂFVÂ6öÖW&6–òârÀ¢vV×&W6æ6öæf–wW&6òæÆövõ6VÆV7Bs¢u6VÆV66–öæ"ÆövòrÀ¢vV×&W6æ6öæf–wW&6òæÆövô6†ævRs¢t6Ö&–"ÆövòrÀ¢vV×&W6æ6öæf–wW&6òæÆövõ&VÖ÷fRs¢tVÆ–Ö–æ"rÀ¢vV×&W6æ6öæf–wW&6òæÆövõ6†VWEF—FÆRs¢u&Vv—7G&"ÆövòrÀ¢vV×&W6æ6öæf–wW&6òæÆövõ6†VWE7V'F—FÆRs ¢tVÆ–vRVæ–ÖvVâFRÆvÆW,:ÖòFöÖVæf÷FòârÀ¢vV×&W6æ6öæf–wW&6òæÆövôg&öÔvÆÆW'’s¢tVÆVv—"FRÆvÆW,:ÖrÀ¢vV×&W6æ6öæf–wW&6òæÆövôg&öÔ6ÖW&s¢uW6"<:Ö&rÀ¢vV×&W6æ6öæf–wW&6òæÆövôÆöDW'&÷"s¢tæò6RVFò6&v"VÂÆövòârÀ¢vV×&W6æ6öæf–wW&6òæÆövõFöôÆ&vRs¢tVÆ–vRVæ–ÖvVâFR†7FÔ"ârÀ¢vV×&W6æ6öæf–wW&6òæÆövõ6VÖçF–72s¢tÆövò&Vv—7G&FòFRÆV×&W6ârÀ¢vV×&W6æ6öæf–wW&6òæÆövôV×G•6VÖçF–72s¢tæ–æ|;¦âÆövò&Vv—7G&FòârÀ¢vFVæF–ÖVçFõFV6æ–6òç7FGW2s¢tW7FFòrÀ¢vFVæF–ÖVçFõFV6æ–6òæf–ÇFW'2ç–ÖVçE7FGW2æÆ&VÂs¢tW7FFòFRvòrÀ¢vFVæF–ÖVçFõFV6æ–6òæf–ÇFW'2ç–ÖVçE7FGW2çFööÇF—s ¢tf–ÇG&"÷"W7FFòFRvòrÀ¢vFVæF–ÖVçFõFV6æ–6òæf–ÇFW'2ç–ÖVçE7FGW2æ†VÇW"s ¢tf–ÇG&RFVæ6–öæW2÷"6ÆFò&–W'FòòÆ—V–FFòârÀ¢vFVæF–ÖVçFõFV6æ–6òæf–ÇFW'2ç–ÖVçE7FGW2æÆÂs¢uFöF÷2Æ÷2v÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæf–ÇFW'2ç–ÖVçE7FGW2æ÷Vâs¢t&–W'FòrÀ¢vFVæF–ÖVçFõFV6æ–6òæf–ÇFW'2ç–ÖVçE7FGW2ç–Bs¢tÆ—V–FFòrÀ¢vFVæF–ÖVçFõFV6æ–6òæf–ÇFW'2æ×VÇF•6VÆV7FVBs¢w¶6÷VçGÒ6VÆV66–öæF÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæf–ÇFW'2çFV6†æ–6–âæÆ&VÂs¢uL:–6æ–6ò&W7öç6&ÆRrÀ¢vFVæF–ÖVçFõFV6æ–6òæf–ÇFW'2çFV6†æ–6–âçFööÇF—s ¢tf–ÇG&"÷"L:–6æ–6ò&W7öç6&ÆRrÀ¢vFVæF–ÖVçFõFV6æ–6òæf–ÇFW'2çFV6†æ–6–âæÆÂs¢uFöF÷2Æ÷2L:–6æ–6÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæf–ÇFW'2çFV6†æ–6–âææöæRs¢u6–âL:–6æ–6ò&W7öç6&ÆRrÀ¢vFVæF–ÖVçFõFV6æ–6òæf–ÇFW'2çFV6†æ–6–âç6VÆV7FVDfÆÆ&6²s ¢uL:–6æ–6ò6VÆV66–öæFòrÀ¢vFVæF–ÖVçFõFV6æ–6òæf–ÇFW'2ç7FGW2çFööÇF—s¢tf–ÇG&"÷"W7FFòrÀ¢vFVæF–ÖVçFõFV6æ–6òæf–ÇFW'2ç7FGW2æÆÂs¢uFöF÷2Æ÷2W7FF÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæf–ÇFW'2ç7FGW2æÆÅv—F„6÷VçBs ¢uFöF÷2Æ÷2W7FF÷2‡¶6÷VçGÒ’rÀ¢vFVæF–ÖVçFõFV6æ–6òæf–ÇFW'2ç7FGW2ç6VÆV7FVDfÆÆ&6²s¢tW7FFò6VÆV66–öæFòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÆ—7Fæ÷VäFWF–Ç2s¢ufW"FWFÆÆW2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÆ—7FæFWF–Ç4F–ÆörçF—FÆRs¢tFWFÆÆW2FVÂ6W'f–6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òæÆ—7FæFWF–Ç4F–Æörç7V'F—FÆRs ¢u&Wf—6Rf–æç¦2Âfæ6RR†—7F÷&–Â6ö×ÆWFòçFW2FR6öçF–çV"6öâ÷G&66œ;6âârÀ¢vFVæF–ÖVçFõFV6æ–6òæÆ—7FæFWF–Ç4F–Æöræ&'&–W$Æ&VÂs ¢t6W'&"FWFÆÆW2FVÂ6W'f–6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–Æöræ&'&–W$Æ&VÂs ¢t6W'&"f–ÇG&òFRfV6†rÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–Æöræf–ÇFW$Æ&VÂs¢tfV6†rÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–ÆörçF—FÆRs¢tf–ÇG&"÷"fV6†rÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–Æörç7V'F—FÆRs ¢tFVf–æRVÂ–çFW'fÆòFR7GVÆ—¦6œ;6âFRÆ2FVæ6–öæW2ârÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–Æöræf–VÆDÆ&VÂs¢t6×òrÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–Æöræf–VÆEfÇVUWFFVDBs ¢t7GVÆ—¦6œ;6ârÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–Æöræ7W'&VçE&ævTÆ&VÂs¢t–çFW'fÆòrÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–ÆöræÆÄFFW2s¢uFöF2Æ2fV6†2rÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–ÆöræFFTg&öÒs¢tFW6FR¶FFWÒrÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–ÆöræFFUVçF–Âs¢t†7F¶FFWÒrÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–ÆöræFFU&ævRs¢w·7F'GÒ†7F¶VæGÒrÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–Æörç7F'DÆ&VÂs¢t–æ–6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–ÆöræVæDÆ&VÂs¢tf–ârÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–ÆöræFFT†–çBs¢vFBôÔÒ÷———’rÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–ÆörçV–6µFöF’s¢t†÷’rÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–ÆörçV–6´Æ7CtF—2s¢|9¦ÇF–Ö÷2rL:Ö2rÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–ÆörçV–6´æW‡CtF—2s¢u,;7†–Ö÷2rL:Ö2rÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–ÆörçV–6´÷fW&GVRs¢ufVæ6–F÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–ÆörçV–6´Æ7C3F—2s ¢|9¦ÇF–Ö÷23L:Ö2rÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–ÆörçV–6µF†—4ÖöçF‚s¢tW7FRÖW2rÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–Æöræ6ÆV$7F–öâs¢tÆ–×–"rÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–Æöræ6æ6VÄ7F–öâs¢t6æ6VÆ"rÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–ÆöræÇ”7F–öâs¢tÆ–6"rÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–Æörç7F'D–çfÆ–Bs ¢t–æw&W6VæfV6†–æ–6–Âl:Æ–FârÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–ÆöræVæD–çfÆ–Bs ¢t–æw&W6VæfV6†f–æÂl:Æ–FârÀ¢vFVæF–ÖVçFõFV6æ–6òçvV"æFFTf–ÇFW$F–ÆöræVæD&Vf÷&U7F'Bs ¢tÆfV6†f–æÂæòVVFR6W"çFW&–÷"Æ–æ–6–ÂârÀ¢vFVæF–ÖVçFõFV6æ–6òæ7W7FöÖW$æ÷D–æf÷&ÖVBs¢t6Æ–VçFRæò–æf÷&ÖFòrÀ¢vFVæF–ÖVçFõFV6æ–6òæW‡V7FVDFVÆ—fW'’s¢tVçG&Vv&Wf—7FrÀ¢vFVæF–ÖVçFõFV6æ–6òæWV—ÖVçBs¢tWV—òrÀ¢vFVæF–ÖVçFõFV6æ–6òç&W÷'FVD—77VRs¢tFVfV7FòrÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2çF—FÆRs¢tW7FFòFVÂ6W'f–6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ç7V'F—FÆRs ¢u6–wVRÆWF7GVÂFVÂ6W'f–6–òL:–6æ–6ò÷"VÂÆ–æ²;¦&Æ–6òârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ç&öw&W75F—FÆRs¢u&öw&W6òFVÂ6W'f–6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ç&öw&W756†÷'Bs¢u&öw&W6òFVÂ6W'f–6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ç6W'f–6TFFs¢tFF÷2FVÂ6W'f–6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2æ†—7F÷'’s¢t†—7F÷&–ÂFRW7FFòrÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ææô†—7F÷'’s ¢tæò†’6Ö&–÷2FRW7FFò&Vv—7G&F÷2ârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2æÆöF–ærs ¢t6&væFòW7FFòFVÂ6W'f–6–òââârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2æW'&÷%F—FÆRs¢tæò6RVFò6&v"VÂW7FFòrÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2æ–çfÆ–DÆ–æ²s ¢tÆ–æ²–çl:Æ–FòâFö¶Vâò6öÖW&6–òæò–æf÷&ÖFòârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2æÆ–æµF—FÆRs¢tÆ–æ²;¦&Æ–6òFRW7FFòrÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2æÆ–æ´6÷–VBs ¢tÆ–æ²6÷–FòÂ÷'FVÆW2ârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2æÆ–æ´6÷–VE6†÷'Bs ¢tÆ–æ²FRW7FFò6÷–FòârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2æÆ–æ´†VÇs ¢tVçl:ÖW7FRÆ–æ²Â6Æ–VçFR&6VwV—"VÂW7FFò7GVÂFVÂ6W'f–6–òârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2æÆ–æ´Ö—76–ærs ¢tVÂ&6¶VæBæòFWföÇfœ;2VâÆ–æ²ârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2æÆ–æ´W'&÷"s ¢tæò6RVFòvVæW&"VÂÆ–æ²FRW7FFòrÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ç6†&TÖW76vRs ¢u6–wVRVÂW7FFòFRGR6W'f–6–òVâVÂ6–wV–VçFRÆ–æ³¢rÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ç6†&U7V&¦V7Bs¢tW7FFòFVÂ6W'f–6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ç6†&TfÆÆ&6²s ¢tæò6RVFò'&—"VÂ6ö×'F—"âVÂÆ–æ²gVR6÷–FòârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2çV&Æ–5W&ÄÖ—76–ærs ¢tÆU$Â;¦&Æ–6FRÆÆ–66œ;6âæòW7L:6öæf–wW&FârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2æ7F–öâs¢tW7FFò;¦&Æ–6òrÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2æ7F–öå6†÷'Bs¢tW7FFòrÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ç6–væGW&UVæF–æuF—FÆRs ¢tf—&ÖFR&ö&6œ;6âVæF–VçFRrÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ç6–væGW&UVæF–ætFW67&—F–öâs ¢uVVFW26VwV—"VÂW7FFòæ÷&ÖÆÖVçFRâ&&ö&"VÂ6W'f–6–òÂFö6VÂ&÷L;6â’f—&ÖVâÆ6–wV–VçFR:v–æârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ç6–væGW&U&VæWuF—FÆRs ¢tçVWff—&ÖæV6W6&–rÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ç6–væGW&U&VæWtFW67&—F–öâs ¢tVÂ6W'f–6–ògVRÖöF–f–6FòFW7\:—2FRÆ;¦ÇF–Ö&ö&6œ;6ââVVFW26VwV—"VÂW7FFòæ÷&ÖÆÖVçFR’f—&Ö"ÆfW'6œ;6â7GVÂ7VæFòV–W&2&ö&&ÆârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ç6–væGW&T7F–öâs¢tf—&Ö"&ö&6œ;6ârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ç6–væGW&TÆ–æ´Ö—76–ærs ¢tVÂ&6¶VæBæòFWföÇfœ;2VâÆ–æ²FRf—&ÖârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ç6–væGW&TÆ–æ´W'&÷"s ¢tæò6RVFò'&—"Æf—&ÖârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ç&W7öç6–&ÆUVæ—Bs¢uVæ–FB&W7öç6&ÆRrÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2æöff–6–Ä6†ææVÂs¢t6æÂöf–6–ÂrÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2çWFFVD'”'W6–æW72s ¢tW7FFò7GVÆ—¦Fò÷"VÂ6öÖW&6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2æ6ö×ç”FF6÷W&6Rs ¢tFF÷2&÷÷&6–öæF÷2÷"VÂW7F&ÆV6–Ö–VçFòârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2æöff–6–Å6W'f–6T6†ææVÂs ¢t6æÂöf–6–ÂFR6VwV–Ö–VçFòFVÂ6W'f–6–òârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2æW‡FW&æÄÆ–æµVæf–Æ&ÆRs ¢tæògVR÷6–&ÆR'&—"W7FR6öçF7FòVâW7FRF—7÷6—F—fòârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæÆöF–ærs¢t6&væFò6W'f–6–÷2L:–6æ–6÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæV×G”f–ÇFW&VDÖW76vRs ¢tæò6RVæ6öçG&&öâ6W'f–6–÷26öâÆ÷2f–ÇG&÷26VÆV66–öæF÷2ârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç6V&6„†–çBs ¢t'W66"÷"6Æ–VçFRÂW7FFòÂWV—òòì;¦ÖW&òrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæGfæ6VDf–ÇFW'2s¢tf–ÇG&÷2fç¦F÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæGfæ6VDf–ÇFW'47F—fRs ¢tf–ÇG&÷2fç¦F÷27F—f÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæ6ÆV$f–ÇFW'2s¢tÆ–×–"f–ÇG&÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç6÷'E&V6VçBs¢tÜ:2&V6–VçFW2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç&W7VÇD6÷VçDöæRs¢s6W'f–6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç&W7VÇD6÷VçDÖç’s¢w¶6÷VçGÒ6W'f–6–÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçW&–öE7VÖÖ'•F—FÆRs¢u&W7VÖVâFVÂW,:ÖöFòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç7VÖÖ'•6W'f–6TöæRs¢w6W'f–6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç7VÖÖ'•6W'f–6TÖç’s¢w6W'f–6–÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç7VÖÖ'”÷VäöæRs¢v&–W'FòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç7VÖÖ'”÷VäÖç’s¢v&–W'F÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç7VÖÖ'•6–væVDöæRs¢vf—&ÖFòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç7VÖÖ'•6–væVDÖç’s¢vf—&ÖF÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç7VÖÖ'”÷VåfÇVRs¢w·fÇVWÒ&–W'FòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç7VÖÖ'”÷VåfÇVT6F–öâs¢v&–W'FòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæf–ÇFW%6†VWEF—FÆRs¢tf–ÇG&"6W'f–6–÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæf–ÇFW%W&–öBs¢uW,:ÖöFòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæf–ÇFW%–ÖVçE7FGW2s¢tW7FFòFVÂvòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæf–ÇFW$FFRs¢tfV6†rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæf–ÇFW%7F'DFFRs¢t–æ–6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæf–ÇFW$VæDFFRs¢tf–ârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæFFUFöF’s¢t†÷’rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæFFTÆÂs¢uFöF2Æ2fV6†2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæFFU&ævRs¢w·7F'GÒ†7F¶VæGÒrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæFFTg&öÒs¢tFW6FR¶FFWÒrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæFFUVçF–Âs¢t†7F¶FFWÒrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæFFTÆ7CtF—2s¢|9¦ÇF–Ö÷2rL:Ö2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæFFTæW‡CtF—2s¢u,;7†–Ö÷2rL:Ö2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæFFT÷fW&GVRs¢ufVæ6–F÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæf–ÇFW%FV6†æ–6–âs¢uL:–6æ–6ò&W7öç6&ÆRrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç6V&6…FV6†æ–6–âs¢t'W66"L:–6æ–6òrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæÆÅFV6†æ–6–ç2s¢uFöF÷2Æ÷2L:–6æ–6÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç6VÆV7FVEFV6†æ–6–âs¢uL:–6æ–6ò6VÆV66–öæFòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRææõFV6†æ–6–äf÷VæBs¢tæò6RVæ6öçG,;2L:–6æ–6òârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçf–WtöæU6W'f–6Rs¢ufW"6W'f–6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçf–WtÖç•6W'f–6W2s¢ufW"¶6÷VçGÒ6W'f–6–÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç6†&UFeFööÇF—s¢t6ö×'F—"6W'f–6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçFe6V7F–öåF—FÆRs¢tFö7VÖVçFòFVÂ6W'f–6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçFe6V7F–öäFW67&—F–öâs ¢uDbÆ—7Fò&Vçf–"Â6Æ–VçFR6öâÆ÷2FF÷2FVÂ6W'f–6–òârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçFe6V7F–öävVæW&F–ærs ¢u&W&æFòVÂDb&6ö×'F—"ârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç6†&UFd7F–öâs¢t6ö×'F—"DbrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçFdÆöF–æuF—FÆRs¢tvVæW&æFòDbFVÂ6W'f–6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçFdÆöF–æu7V'F—FÆRs ¢tW7W&Ö–VçG&26R&W&VÂFö7VÖVçFòârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæFWF–ÄÆöDW'&÷"s ¢tæò6RVF–W&öâ6&v"Æ÷2FF÷27GVÆ—¦F÷2FVÂ6W'f–6–òârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçFdF÷væÆöFVBs¢uDbFW66&vFò6÷'&V7FÖVçFRârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçFeW&Ö—76–öäFVæ–VBs ¢tæòF–VæW2W&Ö—6ò&6ö×'F—"W7FR6W'f–6–òârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçFdæ÷Df÷VæBs¢u6W'f–6–òæòVæ6öçG&FòârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçFd–çfÆ–Df–ÆRs ¢tVÂ&6†—fò&V6–&–FòæòW2l:Æ–FòârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçFe6†&UVæf–Æ&ÆRs ¢tæò6RVFò6ö×'F—"VÂFö7VÖVçFòârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçFe6†&TW'&÷"s ¢tæò6RVFò6ö×'F—"VÂFö7VÖVçFòârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçFdvVæW&F–öäW'&÷"s ¢tæò6RVFòvVæW&"VÂDbFVÂ6W'f–6–òârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçV&Æ–57FGW4FW67&—F–öâs ¢uf—6–&ÆR&VÂ6Æ–VçFRVâVÂÆ–æ²FR6VwV–Ö–VçFòârÀ¢vFVæF–ÖVçFõFV6æ–6òçV&Æ–57FGW2ç6†&TÆ–æ´7F–öâs¢t6ö×'F—"Æ–æ²rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç–ÖVçD÷Vâs¢tf–ææ6–W&ò&–W'FòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç–ÖVçE6WGFÆVBs¢tf–ææ6–W&òÆ—V–FFòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç6–væVBs¢tf—&ÖFòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç6–væGW&UVæF–ærs¢tf—&ÖVæF–VçFRrÀ¢vFVæF–ÖVçFõFV6æ–6òæ7W7FöÖW$æ÷E6–væVBs¢t6Æ–VçFRæòf—&Ü;2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæ7W7FöÖW$æ÷E6–væVBs¢t6Æ–VçFRæòf—&Ü;2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæFVÆ—fW'”ÆFRs¢tVçG&VvG&6FrÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRçF—FÆRs¢tf—&ÖæV6W6&–rÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRæÖW76vRs ¢u&fç¦"·7FGW7ÒÂVçl:ÖVÂÆ–æ²FRf—&ÖÂ6Æ–VçFRÂf—&ÖVâW7FRF—7÷6—F—fòò&Vv—7G&VÂ'—72ârÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRç6VæDÆ–æ²s¢tVçf–"Æ–æ²Â6Æ–VçFRrÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRç6–vä†W&Rs¢tf—&Ö"VâW7FRF—7÷6—F—fòrÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRæ'—72s¢tfç¦"6–âf—&ÖrÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRæFWf–6UF—FÆRs¢u&V6övW"f—&ÖrÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRæFWf–6TÖW76vRs ¢u&Vv—7G&Æf—&Ö&fç¦"·7FGW7ÒârÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRæFWf–6U6–væW"s¢tæöÖ'&RFRV–Vâf—&ÖrÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRæFWf–6TFö7VÖVçBs¢tFö7VÖVçFò÷6–öæÂrÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRæFWf–6U6–væGW&Tf–VÆBs¢tf—&ÖrÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRæFWf–6Tö'6W'fF–öâs ¢tö'6W'f6œ;6â÷6–öæÂrÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRæFWf–6U6fRs¢u&Vv—7G&"f—&ÖrÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRæFWf–6U6–væW%&WV—&VBs ¢t–æf÷&ÖVÂæöÖ'&RFRV–Vâf—&ÖârÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRæFWf–6U6–væGW&U&WV—&VBs ¢tf—&ÖVâVÂ7VG&ò–æF–6FòârÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRæFWf–6U6–væGW&U6fVBs ¢tf—&Ö&Vv—7G&F’W7FFò7GVÆ—¦FòârÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRæFWf–6U6–væGW&TW'&÷"s ¢tæò6RVFò&Vv—7G&"Æf—&ÖrÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRçV&Æ–5W&ÄÖ—76–ærs ¢tÆU$Â;¦&Æ–6FRÆÆ–66œ;6âæòW7L:6öæf–wW&FârÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRæÆ–æ´Ö—76–ærs ¢tVÂ&6¶VæBæòFWföÇfœ;2VÂÆ–æ²FRf—&ÖârÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRæÆ–æ´6÷–VBs¢tÆ–æ²FRf—&Ö6÷–FòârÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRæÆ–æ´W'&÷"s ¢tæò6RVFòvVæW&"VÂÆ–æ²FRf—&ÖrÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRç6†&TÖW76vRs ¢u&&ö&"VÂ6W'f–6–òÂf—&Ö÷"VÂÆ–æ²&¦ó¢rÀ¢vFVæF–ÖVçFõFV6æ–6òç6–væGW&TvFRç6†&U7V&¦V7Bs¢tf—&ÖFVÂ6W'f–6–òrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçfÆ÷$÷&–v–æÂs¢ufÆ÷"÷&–v–æÂrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçfÆ÷$¦&V6V&–Fòs¢ufÆ÷"–&V6–&–FòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçfÆ÷$VÔ&W'Fòs¢ufÆ÷"&–W'FòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæÆ—V–FF–öâs¢tÆ—V–F6œ;6ârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæÆ—V–FFVBs¢tÆ—V–FFrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRææ÷DÆ—V–FFVBs¢tæòÆ—V–FFrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç&öGV7G2s¢u&öGV7F÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç6W'f–6W2s¢u6W'f–6–÷2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæ6†ævU7FGW47F–öâs¢t6Ö&–"W7FFòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæ7&VFUF—FÆRs¢tçVWfFVæ6œ;6âL:–6æ–6rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæ7&VFT†VFW%F—FÆRs¢t–æ–6–"6—7FVæ6–rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæ7&VFT†VFW%7V'F—FÆRs ¢t6Æ–VçFRÂWV—ò’FVfV7FòVâVæçFÆÆ,:–F&Ö÷7G&F÷"ârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç&W7öç6–&ÆRs¢u&W7öç6&ÆRrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç6W'f–6T6†—s¢t6—7FVæ6–rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçV÷FT6†—s¢u&W7WVW7FòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRææô—FV×46†—s¢u6–â:×FV×2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæÖ–äFF6V7F–öâs¢tFF÷2&–æ6—ÆW2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæ–çFW&æÄFW67&—F–öâs¢tFW67&—6œ;6â–çFW&ærÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæ–çFW&æÄFW67&—F–öä†–çBs ¢tV¢ã¢6Ö&–òFRçFÆÆ•†öæRrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæWV—ÖVçEG—Rs¢uF—òFRWV—òrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæ'&æBs¢tÖ&6rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæÖöFVÂs¢tÖöFVÆòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç6W&–ÄçVÖ&W"s¢tì+¢FR6W&–RrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæ–ÖV’s¢t”ÔT’rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæ66W76÷&–W4æ÷FW2s¢t66W6÷&–÷2òö'6W'f6–öæW2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæ66W76÷&–W4æ÷FW4†–çBs ¢tV¢ã¢6–â6&vF÷"Â6öâgVæFÂçFÆÆ&÷FââârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçFV6†æ–6Å&W÷'E6V7F–öâs¢u&VÆFòL:–6æ–6òrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæ7W7FöÖW$—77VRs ¢tFVfV7Fò&VÆFFò÷"VÂ6Æ–VçFRrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæ7W7FöÖW$—77VT†–çBs ¢tFW67&–&RVÂ&ö&ÆVÖ–æf÷&ÖFòVâVÂÖ÷7G&F÷"ârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæ–æ—F–ÄF–væ÷6—2s¢tF–vì;77F–6òL:–6æ–6ò–æ–6–ÂrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæ–æ—F–ÄF–væ÷6—4†–çBs ¢t÷6–öæÂVâW7FR&–ÖW"ÖöÖVçFòârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæFFW56V7F–öâs¢tfV6†2rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçfÆ–F—G’s¢ufÆ–FW¢rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæf–ææ6–ÄGVTFFRs¢ufVæ6–Ö–VçFòf–ææ6–W&òrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæf–ææ6–Å&Wf–Wu6V7F–öâs¢uf—7Ff–ææ6–W&rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRæf–ææ6–Å&Wf–WtFW67&—F–öâs ¢tVÂfÆ÷"VVF&–W'Fò†7F&Vv—7G&"Vâ6ö'&òârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRçfÆ÷$6öæf—&ÖFòs¢t6öæf—&ÖFòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç–ÖVçE7F×æõfÇVRs¢u4”âdÄõ"rÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç–ÖVçE7F×÷Vâs¢t$”U%DòrÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç6f–æu6W'f–6Rs¢t–æ–6–æFòFVæ6œ;6âââârÀ¢vFVæF–ÖVçFõFV6æ–6òæÖö&–ÆRç7F'E6W'f–6T7F–öâs¢t–æ–6–"FVæ6œ;6âL:–6æ–6rÀ¢vWF‚æÆöv–å&WV—&VDf–VÆG2s ¢t6ö×ÆWFVÂ6÷'&VòVÆV7G,;6æ–6ò’Æ6öçG&6\;rÀ¢vWF‚æÆöv–åF—FÆTÖö&–ÆRs¢tVçG&"rÀ¢vWF‚æÆöv–å7V'F—FÆTÖö&–ÆRs ¢u&66VFW"GR7VVçFÂ–æw&W6ÆçGR6÷'&Vò’6öçG&6\;rÀ¢vWF‚æVÖ–Âs¢t6÷'&VòVÆV7G,;6æ–6òrÀ¢vWF‚ç77v÷&Bs¢t6öçG&6\;rÀ¢vWF‚æf÷&v÷E77v÷&Bs¢|+ôöÇf–F7FRGR6öçG&6\;òrÀ¢vWF‚æ6öçF–çVRs¢t6öçF–çV"rÀ¢vWF‚ææô66÷VçBs¢|+ô;¦âæòF–VæW2Væ7VVçFòrÀ¢vWF‚æ7&VFT66÷VçBs¢t7&V"7VVçFrÀ¢vWF‚ç6–vä–åv—F„ÆRs¢tVçG&"6öâÆRrÀ¢vWF‚ç6–vä–åv—F„vöövÆRs¢tVçG&"6öâvöövÆRrÀ¢vWF‚ævöövÆTÆöv–äW'&÷"s ¢tæò6RVFò6ö×ÆWF"VÂ–æ–6–òFR6W6œ;6â6öâvöövÆRârÀ¢vWF‚ç6W76–öâçfÆ–FF–æuF—FÆRs¢tVçG&æFò6—†ôrÀ¢vWF‚ç6W76–öâçfÆ–FF–ætÖW76vRs¢ufÆ–FæFòGR6W6œ;6âFRf÷&Ö6VwW&ââârÀ¢w7Æ6‚ç&W&–æuv÷&·76Rs¢u&W&æFòGRW76–òââârÀ¢w7Æ6‚çfÆ–FF–æu6W76–öâs¢ufÆ–FæFòGR6W6œ;6âââârÀ¢w7Æ6‚ç7–æ6–æt66÷VçBs¢u6–æ7&öæ—¦æFòGW2FF÷2ââârÀ¢w7Æ6‚æ6öææV7FVEFvÆ–æRs¢uFöFò6öæV7FFòâFöFò&¦ò6öçG&öÂârÀ¢vWF‚ç6W76–öâçFV×÷&'”W'&÷%F—FÆRs¢tæò6RVFòfÆ–F"GR6W6œ;6ârÀ¢vWF‚ç6W76–öâçFV×÷&'”W'&÷$ÖW76vRs ¢uGR6W6œ;6âgVR&W6W'fFâfW&–f–6GR6öæW†œ;6âR–çL:–çFÆòFRçVWfòârÀ¢wvV$WF„vFRçFV×÷&'”W'&÷"çF—FÆRs¢tæò6RVFòfÆ–F"GR6W6œ;6ârÀ¢wvV$WF„vFRçFV×÷&'”W'&÷"æÖW76vRs ¢ufW&–f–6GR6öæW†œ;6âòW7W&VRVÂ&6¶VæB&W7öæF’gVVÇfR–çFVçF&ÆòârÀ¢vWF‚æÆTÆöv–äÖö6²s¢t–æ–6–òFR6W6œ;6â6öâÆR†Öö6¶VB’rÀ¢vWF‚çFW&×5&Vf—‚s ¢tÂ†6W"6Æ–2Vâ$6öçF–çV""ÂFV6Æ&òVRÆ\:Ò’6WFòÆ÷2rÀ¢vWF‚çFW&×2s¢uL:—&Ö–æ÷2FRW6ò’öÌ:×F–6FR&—f6–FBrÀ¢vWF‚æÖö&–ÆTVçG'’çF—FÆRs¢uGRæVvö6–òÂ6öæV7FFòârÀ¢vWF‚æÖö&–ÆTVçG'’ç7V'F—FÆRs ¢ufVçF2Â–çfVçF&–ò’vW7Fœ;6âÂÖ—6Öò&—FÖò(	BW7L:—2FöæFRW7L:—2ârÀ¢vWF‚æÖö&–ÆTVçG'’ç6ÆW2s¢ufVçF2rÀ¢vWF‚æÖö&–ÆTVçG'’ç7Fö6²s¢t–çfVçF&–òrÀ¢vWF‚æÖö&–ÆTVçG'’æÖævVÖVçBs¢tvW7Fœ;6ârÀ¢vWF‚æÖö&–ÆTVçG'’æ6öçF–çVUF—FÆRs¢|+ô<;6ÖòV–W&W26öçF–çV#òrÀ¢vWF‚æÖö&–ÆTVçG'’æÆöv–ä7F–öâs¢tVçG&"VâÖ’7VVçFrÀ¢vWF‚æÖö&–ÆTVçG'’æ7&VFT7F–öâs¢t7&V"Ö’7VVçFrÀ¢vWF‚æÖö&–ÆTVçG'’ç6V7W&—G”æ÷FRs ¢t66W6ò6VwW&ò’FF÷26–V×&R&÷FVv–F÷2ârÀ¢vWF‚æÖö&–ÆTÆöv–âçF—FÆRs¢t&–VçfVæ–FòFRçVWfòrÀ¢vWF‚æÖö&–ÆTÆöv–âç7V'F—FÆRs¢tVçG&&6öçF–çV"FöæFRÆòFV¦7FRârÀ¢vWF‚æÖö&–ÆTÆöv–âæf÷&ÕF—FÆRs¢t66VFRGRW76–òrÀ¢vWF‚æÖö&–ÆTÆöv–âæVÖ–Ä†–çBs¢wGTV×&W6æ6öÒrÀ¢vWF‚æÖö&–ÆTÆöv–âç77v÷&D†–çBs¢t–æw&W6GR6öçG&6\;rÀ¢vWF‚æÖö&–ÆTÆöv–âç6†÷u77v÷&Bs¢tÖ÷7G&"6öçG&6\;rÀ¢vWF‚æÖö&–ÆTÆöv–âæ†–FU77v÷&Bs¢tö7VÇF"6öçG&6\;rÀ¢vWF‚æÖö&–ÆTÆöv–âç7V&Ö—Bs¢tVçG&"rÀ¢vWF‚æÖö&–ÆTÆöv–âç6ö6–ÄF—f–FW"s¢vò6öçF–ì;¦6öârÀ¢vWF‚æÖö&–ÆTÆöv–âæ7&VFU&ö×Bs¢|+õ&–ÖW&fW¢Vâ6—†ôòrÀ¢vWF‚æÖö&–ÆT7&VFRçF—FÆRs¢t7&VGRW76–òrÀ¢vWF‚æÖö&–ÆT7&VFRç7V'F—FÆRs ¢tV×–W¦6–×ÆRâ6—†ô7&V6R§VçFò6öâGRæVvö6–òârÀ¢vWF‚æÖö&–ÆT7&VFRæf÷&ÕF—FÆRs¢uGR7VVçFV×–W¦\:ÒrÀ¢vWF‚æÖö&–ÆT7&VFRæf÷&Ôæ÷FRs¢uFöÖÖVæ÷2FRVâÖ–çWFòârÀ¢vWF‚æÖö&–ÆT7&VFRæÆöv–äÆ&VÂs¢uW7V&–òrÀ¢vWF‚æÖö&–ÆT7&VFRæÆöv–ä†–çBs¢tVÆ–vRGRW7V&–òFR66W6òrÀ¢vWF‚æÖö&–ÆT7&VFRç77v÷&DÆ&VÂs¢t6öçG&6\;rÀ¢vWF‚æÖö&–ÆT7&VFRç77v÷&D†–çBs¢tÜ:Öæ–ÖòFR‚6&7FW&W2rÀ¢vWF‚æÖö&–ÆT7&VFRæ6öæf—&Õ77v÷&DÆ&VÂs¢t6öæf—&ÖÆ6öçG&6\;rÀ¢vWF‚æÖö&–ÆT7&VFRæ6öæf—&Õ77v÷&D†–çBs¢u&W—FRGR6öçG&6\;rÀ¢vWF‚æÖö&–ÆT7&VFRæ66WEFW&×2s ¢t6WFòÆ÷2L:—&Ö–æ÷2’ÆöÌ:×F–6FR&—f6–FBârÀ¢vWF‚æÖö&–ÆT7&VFRç7V&Ö—Bs¢t7&V"7VVçFrÀ¢vWF‚æÖö&–ÆT7&VFRæÆöv–å&ö×Bs¢|+õ–F–VæW2Væ7VVçFòVçG&"rÀ¢vWF‚æÖö&–ÆT7&VFRæ66WEFW&×4W'&÷"s ¢t6WFÆ÷2L:—&Ö–æ÷2’6öæF–6–öæW2&6öçF–çV"ârÀ¢vWF‚æÖö&–ÆT7&VFRç&WV—&VDf–VÆG4W'&÷"s¢t6ö×ÆWFFöF÷2Æ÷26×÷2ârÀ¢vWF‚æÖö&–ÆT7&VFRç77v÷&DÆVæwF„W'&÷"s ¢tÆ6öçG&6\;FV&RFVæW"ÂÖVæ÷2‚6&7FW&W2ârÀ¢vWF‚æÖö&–ÆT7&VFRç77v÷&DÖ—6ÖF6„–æÆ–æRs¢tÆ26öçG&6\;2æò6ö–æ6–FVâârÀ¢vWF‚æÖö&–ÆT7&VFRç77v÷&DÖ—6ÖF6„W'&÷"s ¢tÆ26öçG&6\;26öâF–fW&VçFW2âfW&–l:Ö6Æ2R–çL:–çFÆòFRçVWfòârÀ¢vWF‚æVçG'’çF—FÆRs¢t&–VçfVæ–Fò6—†ôrÀ¢vWF‚æVçG'’ç7V'F—FÆRs ¢tçFW2FR6öçF–çV"ÂVÆ–vR<;6ÖòV–W&W266VFW"ÆârÀ¢vWF‚æVçG'’æ†466÷VçEF—FÆRs¢u–FVævòVæ7VVçFrÀ¢vWF‚æVçG'’æ†466÷VçE7V'F—FÆRs ¢tVçG&6öâGR6÷'&Vò’6öçG&6\;&66VFW"GRV×&W6ârÀ¢vWF‚æVçG'’æÆöv–ä7F–öâs¢tVçG&"rÀ¢vWF‚æVçG'’ææWt66÷VçEF—FÆRs¢u6÷’çVWfò\:ÒrÀ¢vWF‚æVçG'’ææWt66÷VçE7V'F—FÆRs ¢tÖ—&Vâ&W7VÖVâ,:–Fò’7&VGR7VVçF&6öÖVç¦"ârÀ¢vWF‚æVçG'’ææWt66÷VçD7F–öâs¢t6öæö6W"6—†ôrÀ¢vWF‚æöæ&ö&F–ærçF—FÆRs¢tV×–W¦÷"ÆòW6Væ6–ÂrÀ¢vWF‚æöæ&ö&F–ærç7V'F—FÆRs ¢tÖ—&G&W2VçF÷2,:–F÷2çFW2FR7&V"GR7VVçFârÀ¢vWF‚æöæ&ö&F–ærç7FWF—FÆRs¢tFVæ6œ;6â÷&væ—¦FrÀ¢vWF‚æöæ&ö&F–ærç7FW7V'F—FÆRs ¢u&Vv—7G&fVçF2Â&W7WVW7F÷2’6—7FVæ6–2VâVâfÇV¦ò6–×ÆRârÀ¢vWF‚æöæ&ö&F–ærç7FW%F—FÆRs¢t6L:Æövò’7Fö6²VâVÂ&öÇ6–ÆÆòrÀ¢vWF‚æöæ&ö&F–ærç7FW%7V'F—FÆRs ¢tÖçL:–â&öGV7F÷2Â6W'f–6–÷2R–æf÷&Ö6œ;6âW6Væ6–Â6–V×&RÖæòârÀ¢vWF‚æöæ&ö&F–ærç7FW5F—FÆRs¢tvW7Fœ;6â&7&V6W"rÀ¢vWF‚æöæ&ö&F–ærç7FW57V'F—FÆRs ¢t6ö×;–æF–6F÷&W2’&W&GR÷W&6œ;6â&WföÇV6–öæ"6öâ6—†ôârÀ¢vWF‚æöæ&ö&F–ærç6¶—s¢u6ÇF"rÀ¢vWF‚æöæ&ö&F–ærææW‡Bs¢tfç¦"rÀ¢vWF‚æöæ&ö&F–æræ7&VFT66÷VçD7F–öâs¢t7&V"Ö’7VVçFrÀ¢vWF‚æöæ&ö&F–æræÆöv–ä7F–öâs¢u–FVævòVæ7VVçFrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ6öçFW‡EF—FÆRs¢tf÷&Ö2FR6ö'&ò6öæf–wW&&ÆW2rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ6öçFW‡DFW67&—F–öâs ¢uW'6öæÆ—¦<;6ÖòGRV×&W6&V6–&Rv÷2âÆ÷2<;6F–v÷2–çFW&æ÷26RÖçF–VæVâf–¦÷2÷"VÂ6—7FVÖÂW&òVÂæöÖ'&R’VÂ6ö×÷'FÖ–VçFò6RVVFVâ§W7F"ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæÖWG&–75F÷FÂs¢uF—÷26öæf–wW&F÷2rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæÖWG&–747F—fRs¢t7F—f÷2rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæÖWG&–74–ÖÖVF–FRs¢tæGW&ÆW¦–æÖVF–FrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæÖWG&–74gWGW&Rs¢tæGW&ÆW¦gWGW&rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæÆöF–æuF—FÆRs¢t6&væFòf÷&Ö2FR6ö'&òrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæÆöF–æu7V'F—FÆRs ¢u6–æ7&öæ—¦æFòÆ6öæf–wW&6œ;6âFRÆV×&W6FW6FRVÂ&6¶VæBârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷$ÆöBs ¢tæò6RVF–W&öâ6&v"Æ2f÷&Ö2FR6ö'&òârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷$&E&WVW7Bs ¢tFF÷2–çl:Æ–F÷2&W7F÷W&6œ;6âârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷%VæWF†÷&—¦VBs ¢u6W6œ;6âW‡—&Fâ–æ–6–6W6œ;6âçVWfÖVçFRârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷$f÷&&–FFVâs ¢tæòF–VæW2W&Ö—6ò&6Ö&–"Æ6öæf–wW&6œ;6âFRÆV×&W6ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷$æ÷Df÷VæBs ¢tæò6RVæ6öçG,;2Æ6öæf–wW&6œ;6âFRÆf÷&ÖFR6ö'&òârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷$ÆöEv—F…7FGW2s ¢tW'&÷"Â6&v"f÷&Ö2FR6ö'&òârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷%6fUv—F…7FGW2s ¢tW'&÷"ÂwV&F"Æf÷&ÖFR6ö'&òârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç6fU7V66W72s ¢tf÷&ÖFR6ö'&ò7GVÆ—¦F6÷'&V7FÖVçFRârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷%6fRs ¢tæò6RVFòwV&F"Æf÷&ÖFR6ö'&òârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç&W7F÷&T6öæf—&ÕF—FÆRs ¢u&W7FW&"fÆ÷&W2&VFWFW&Ö–æF÷2rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç&W7F÷&T6öæf—&Ô&öG’s ¢tW7F66œ;6â&W7FW&Æ÷2F—÷2FR6ö'&òÆ6öæf–wW&6œ;6â&VFWFW&Ö–æFFRÆV×&W6ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç&W7F÷&T7F–öâs ¢u&W7FW&"fÆ÷&W2&VFWFW&Ö–æF÷2rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç&W7F÷&U7V66W72s ¢tÆ6öæf–wW&6œ;6â&VFWFW&Ö–æFFRf÷&Ö2FR6ö'&ògVR&W7FW&F6÷'&V7FÖVçFRârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç&W7F÷&TW'&÷"s ¢tæò6RVFò&W7FW&"Æ6öæf–wW&6œ;6â&VFWFW&Ö–æFârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ6÷VçE&Vf—‚s¢uF—÷26&vF÷2rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ7F—fT6÷VçBs¢t7F—f÷2rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç&Vg&W6„7F–öâs¢t7GVÆ—¦"rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòçVææÖVBs¢u6–âæöÖ'&RFVf–æ–FòrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòææGW&Rs¢tæGW&ÆW¦rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòææGW&T–ÖÖVF–FRs¢t–æÖVF–FòrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòææGW&TgWGW&Rs¢tgWGW&òrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòææGW&T–ÖÖVF–FTFW67&—F–öâs ¢t–æw&W6Vâ6¦VâVÂÖöÖVçFòFVÂ6ö'&òârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòææGW&TgWGW&TFW67&—F–öâs ¢tvVæW&VâfÆ÷"÷"6ö'&"&VæfV6†gWGW&ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç&WV—&W46Æ–VçBs¢u&WV–W&R6Æ–VçFRrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòç&WV—&W46Æ–VçDFW67&—F–öâs ¢tö&Æ–vF÷&–ò7VæFòW7Ff÷&ÖFWVæFRFRVâ6Æ–VçFR–FVçF–f–6FòârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ–ç7FÆÆÖVçG2s¢uW&Ö—FR7V÷F2rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ–ç7FÆÆÖVçG4FW67&—F–öâs ¢uW&Ö—FRF—f–F—"VÂ6ö'&òVâ7V÷F2ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæF—7Æ”÷&FW"s¢t÷&FVâFRf—7VÆ—¦6œ;6ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòçFV6†æ–6Ä6öFRs¢t<;6F–vòL:–6æ–6òrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæF—7Æ”æÖRs¢tæöÖ'&R&Ö÷7G&"rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòçfÆ–FF–öäæÖRs ¢t–æw&W6VÂæöÖ'&R&Ö÷7G&"ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòçfÆ–FF–öäæÖTÆVæwF‚s ¢uW6ÂÖVæ÷2"6&7FW&W2ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòçfÆ–FF–öä÷&FW"s ¢t–æw&W6Vâ÷&FVâl:Æ–FòÖ–÷"ò–wVÂârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòçfÆ–FF–öä6öÆ÷"s ¢uW6Vâ„U‚l:Æ–Fò6öâf÷&ÖFò5%$tt$"ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ6öÆ÷"s¢t6öÆ÷"†÷6–öæÂ’rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ–6öâs¢|8Ö6öæò†÷6–öæÂ’rÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæ7F—fTFW67&—F–öâs ¢t6öçG&öÆ6’Æf÷&ÖVVFRWF–Æ—¦'6RVâÆ÷2fÇV¦÷2ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæVF—DF–ÆöuF—FÆRs¢tVF—F"f÷&ÖFR6ö'&òrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæW'&÷%7FFUF—FÆRs ¢tæò6RVFò6&v"Æ6öæf–wW&6œ;6ârÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæV×G•F—FÆRs¢tæò6RVæ6öçG&&öâf÷&Ö2FR6ö'&òrÀ¢v6öæf–wW&6öW2ç&V6V&–ÖVçFòæV×G”FW67&—F–öâs ¢t7GVÆ—¦ÆçFÆÆ&6–æ7&öæ—¦"Æ÷2F—÷26öæf–wW&F÷2FRÆV×&W6ârÀ¢w&ö6VF–ÖVçF÷2çF—FÆRs¢u&ö6VF–Ö–VçF÷2rÀ¢w&ö6VF–ÖVçF÷2ç7V'F—FÆRs¢tw\:Ö2&fVçF2ÂFVæ6–öæW2’VçG&Vv2rÀ¢w&ö6VF–ÖVçF÷2æ–çG&õF—FÆRs ¢t6öæf–wW&÷&–VçF6–öæW2&fVçF2ÂFVæ6–öæW2’VçG&Vv2ârÀ¢w&ö6VF–ÖVçF÷2æFVÖôFFs¢tFF÷2FVÖ÷7G&F—f÷2rÀ¢w&ö6VF–ÖVçF÷2æf–ÇFW'4Æ&VÂs¢tf–ÇG&÷2FR&ö6VF–Ö–VçF÷2rÀ¢w&ö6VF–ÖVçF÷2æf–ÇFW$ÆÂs¢uFöF÷2rÀ¢w&ö6VF–ÖVçF÷2æf–ÇFW$7F—fRs¢t7F—f÷2rÀ¢w&ö6VF–ÖVçF÷2æf–ÇFW$–æ7F—fRs¢t–æ7F—f÷2rÀ¢w&ö6VF–ÖVçF÷2ææWu&ö6VGW&Rs¢tçVWfò&ö6VF–Ö–VçFòrÀ¢w&ö6VF–ÖVçF÷2ææWu&ö6VGW&U6VÖçF–72s¢tçVWfò&ö6VF–Ö–VçFòrÀ¢w&ö6VF–ÖVçF÷2æ7&VFU&ö6VGW&Rs¢t7&V"&ö6VF–Ö–VçFòrÀ¢w&ö6VF–ÖVçF÷2æ÷Vä7F–öâs¢t'&—"rÀ¢w&ö6VF–ÖVçF÷2æ7&VFUVæf–Æ&ÆRs ¢tÆ7&V6œ;6âFR&ö6VF–Ö–VçF÷2W7F,:F—7öæ–&ÆRVâÆ,;7†–ÖWFârÀ¢w&ö6VF–ÖVçF÷2æVF—EVæf–Æ&ÆRs ¢tÆVF–6œ;6âFRW7FR&ö6VF–Ö–VçFòW7F,:F—7öæ–&ÆRVâÆ,;7†–ÖWFârÀ¢w&ö6VF–ÖVçF÷2æÆöF–ærs¢t6&væFò&ö6VF–Ö–VçF÷2rÀ¢w&ö6VF–ÖVçF÷2æV×G•F—FÆRs¢tæ–æ|;¦â&ö6VF–Ö–VçFò6öæf–wW&FòrÀ¢w&ö6VF–ÖVçF÷2æV×G”FW67&—F–öâs ¢t7&V÷&–VçF6–öæW2&÷–"ÂWV—òVâÆ÷2ÖöÖVçF÷2–×÷'FçFW2FRÆ÷W&6œ;6âârÀ¢w&ö6VF–ÖVçF÷2æf–ÇFW&VDV×G•F—FÆRs¢tæ–æ|;¦â&ö6VF–Ö–VçFòVâW7FRf–ÇG&òrÀ¢w&ö6VF–ÖVçF÷2æf–ÇFW&VDV×G”FW67&—F–öâs ¢t6Ö&–VÂf–ÇG&ò&fW"÷G&÷2&ö6VF–Ö–VçF÷2FVÖ÷7G&F—f÷2ârÀ¢w&ö6VF–ÖVçF÷2æW'&÷%F—FÆRs¢tæògVR÷6–&ÆR6&v"Æ÷2&ö6VF–Ö–VçF÷2rÀ¢w&ö6VF–ÖVçF÷2æW'&÷$FW67&—F–öâs¢t–çL:–çFÆòçVWfÖVçFRVâVæ÷2–ç7FçFW2ârÀ¢w&ö6VF–ÖVçF÷2ç7FGW4G&gBs¢t&÷'&F÷"rÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öå6ÆRs¢ufVçFrÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öåFV6†æ–6Å6W'f–6Rs¢tFVæ6œ;6âL:–6æ–6rÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öåV÷FRs¢u&W7WVW7FòrÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öäFVÆ—fW'’s¢tVçG&VvrÀ¢w&ö6VF–ÖVçF÷2æÖöÖVçD&Vf÷&U7F'Bs¢tçFW2FR–æ–6–"rÀ¢w&ö6VF–ÖVçF÷2æÖöÖVçD&Vf÷&Tf–æ—6‚s¢tçFW2FRf–æÆ—¦"rÀ¢w&ö6VF–ÖVçF÷2æÖöÖVçD&Vf÷&TFVÆ—fW'’s¢tçFW2FRÆVçG&VvrÀ¢w&ö6VF–ÖVçF÷2ç7FvU6–æwVÆ"s¢vWFrÀ¢w&ö6VF–ÖVçF÷2ç7FvUÇW&Âs¢vWF2rÀ¢w&ö6VF–ÖVçF÷2æ—FVÕ6–æwVÆ"s¢|:×FVÒrÀ¢w&ö6VF–ÖVçF÷2æ—FVÕÇW&Âs¢|:×FV×2rÀ¢w&ö6VF–ÖVçF÷2ç7FvU&öw&W72s¢tWF¶7W'&VçGÒFR·F÷FÇÒrÀ¢w&ö6VF–ÖVçF÷2ç&ö6VGW&U6WVVæ6Rs¢u&ö6VF–Ö–VçFò¶7W'&VçGÒFR·F÷FÇÒrÀ¢w&ö6VF–ÖVçF÷2æ7F–öç46ö×ÆWFVBç¦W&òs¢sFR·F÷FÇÒ66–öæW26öæ6ÇV–F2rÀ¢w&ö6VF–ÖVçF÷2æ7F–öç46ö×ÆWFVBæöæRs¢sFR·F÷FÇÒ66œ;6â6öæ6ÇV–FrÀ¢w&ö6VF–ÖVçF÷2æ7F–öç46ö×ÆWFVBæ÷F†W"s ¢w¶6÷VçGÒFR·F÷FÇÒ66–öæW26öæ6ÇV–F2rÀ¢w&ö6VF–ÖVçF÷2æç7vW&VD7F–öç57VÖÖ'’ç¦W&òs ¢sFR·F÷FÇÒ66–öæW2&W7öæF–F2ârÀ¢w&ö6VF–ÖVçF÷2æç7vW&VD7F–öç57VÖÖ'’æöæRs ¢sFR·F÷FÇÒ66œ;6â&W7öæF–FârÀ¢w&ö6VF–ÖVçF÷2æç7vW&VD7F–öç57VÖÖ'’æ÷F†W"s ¢w¶6÷VçGÒFR·F÷FÇÒ66–öæW2&W7öæF–F2ârÀ¢w&ö6VF–ÖVçF÷2æ÷F–öæÅVæF–æu7VÖÖ'’ç¦W&òs ¢tæ–æ|;¦â:×FVÒ÷6–öæÂVæF–VçFRârÀ¢w&ö6VF–ÖVçF÷2æ÷F–öæÅVæF–æu7VÖÖ'’æöæRs¢s:×FVÒ÷6–öæÂVæF–VçFRârÀ¢w&ö6VF–ÖVçF÷2æ÷F–öæÅVæF–æu7VÖÖ'’æ÷F†W"s ¢w¶6÷VçGÒ:×FV×2÷6–öæÆW2VæF–VçFW2ârÀ¢w&ö6VF–ÖVçF÷2ç&WV—&VEVæF–æu7VÖÖ'’ç¦W&òs ¢tæ–æ|;¦â:×FVÒö&Æ–vF÷&–òVæF–VçFRârÀ¢w&ö6VF–ÖVçF÷2ç&WV—&VEVæF–æu7VÖÖ'’æöæRs¢s:×FVÒö&Æ–vF÷&–òVæF–VçFRârÀ¢w&ö6VF–ÖVçF÷2ç&WV—&VEVæF–æu7VÖÖ'’æ÷F†W"s ¢w¶6÷VçGÒ:×FV×2ö&Æ–vF÷&–÷2VæF–VçFW2ârÀ¢w&ö6VF–ÖVçF÷2æ—FVÔ6÷VçBç¦W&òs¢s:×FV×2rÀ¢w&ö6VF–ÖVçF÷2æ—FVÔ6÷VçBæöæRs¢s:×FVÒrÀ¢w&ö6VF–ÖVçF÷2æ—FVÔ6÷VçBæ÷F†W"s¢w¶6÷VçGÒ:×FV×2rÀ¢w&ö6VF–ÖVçF÷2ç7FvT6÷VçBç¦W&òs¢sWF2rÀ¢w&ö6VF–ÖVçF÷2ç7FvT6÷VçBæöæRs¢sWFrÀ¢w&ö6VF–ÖVçF÷2ç7FvT6÷VçBæ÷F†W"s¢w¶6÷VçGÒWF2rÀ¢w&ö6VF–ÖVçF÷2ç7FvU6VÖçF–72s¢tWF¶÷&FW'Ó¢·F—FÆWÒâ¶—FVÔ6÷VçDÆ&VÇÒârÀ¢w&ö6VF–ÖVçF÷2æW†V7WF–öä—FVÕ6VÖçF–72s¢w·&WV—&VDÆ&VÇÓ¢·F—FÆWÒâ·G—WÒârÀ¢w&ö6VF–ÖVçF÷2æW†V7WF–öä—FVÕ7FGW2s¢w·G—WÒ(
+"·&WV—&VDÆ&VÇÒrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6UG—U6VÖçF–72s¢w¶Æ&VÇÒâ¶FW67&—F–öçÒârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6UG—U6–×VÆFVE6VÖçF–72s ¢w¶Æ&VÇÒâ¶FW67&—F–öçÒâ¶FVÖôÆ&VÇÒârÀ¢w&ö6VF–ÖVçF÷2çG&–vvW%6VÖçF–72s ¢w¶÷W&F–öçÒÂ¶ÖöÖVçGÒÂ¶7F—fF–öçÒÂ¶Væf÷&6VÖVçGÒÂ·7FGW7ÒrÀ¢w&ö6VF–ÖVçF÷2çG&–vvW%7VÖÖ'•6–ævÆRs¢w¶÷W&F–öçÒÂ¶ÖöÖVçGÒrÀ¢w&ö6VF–ÖVçF÷2çG&–vvW%7VÖÖ'”×VÇF—ÆRs¢w¶f—'7GÒ(
+"··&VÖ–æ–æwÒrÀ¢w&ö6VF–ÖVçF÷2æ÷F–öäçVÖ&W"s¢t÷6œ;6â¶–æFW‡ÒrÀ¢w&ö6VF–ÖVçF÷2æVF—F÷$æWuF—FÆRs¢tçVWfò&ö6VF–Ö–VçFòrÀ¢w&ö6VF–ÖVçF÷2æVF—F÷$VF—EF—FÆRs¢tVF—F"&ö6VF–Ö–VçFòrÀ¢w&ö6VF–ÖVçF÷2ævVæW&Ä–æfòs¢t–æf÷&Ö6œ;6âvVæW&ÂrÀ¢w&ö6VF–ÖVçF÷2ææÖTf–VÆBs¢tæöÖ'&RrÀ¢w&ö6VF–ÖVçF÷2æFW67&—F–öäf–VÆBs¢tFW67&—6œ;6ârÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öä6öçFW‡Bs¢t6öçFW‡Fò÷W&F—fòrÀ¢w&ö6VF–ÖVçF÷2æÖöÖVçDf–VÆBs¢tÖöÖVçFòrÀ¢w&ö6VF–ÖVçF÷2ç&WV—&T6ö×ÆWF–öâs ¢tW†–v—"6öæ6ÇW6œ;6âFRW7FR&ö6VF–Ö–VçFòrÀ¢w&ö6VF–ÖVçF÷2ç&WV—&T6ö×ÆWF–öä†VÇs ¢tVâVæ–çFVw&6œ;6âgWGW&ÂW7FR&ö6VF–Ö–VçFòöG,:W†–v—"6öæ6ÇW6œ;6âçFW2FR6öçF–çV"Æ÷W&6œ;6âârÀ¢w&ö6VF–ÖVçF÷2ç7FvW2s¢tWF2rÀ¢w&ö6VF–ÖVçF÷2æFE7FvRs¢tw&Vv"WFrÀ¢w&ö6VF–ÖVçF÷2æVF—E7FvRs¢tVF—F"WFrÀ¢w&ö6VF–ÖVçF÷2æFVÆWFU7FvRs¢tVÆ–Ö–æ"WFrÀ¢w&ö6VF–ÖVçF÷2æ—FV×2s¢|8×FV×2rÀ¢w&ö6VF–ÖVçF÷2æFD—FVÒs¢tw&Vv":×FVÒrÀ¢w&ö6VF–ÖVçF÷2æVF—D—FVÒs¢tVF—F":×FVÒrÀ¢w&ö6VF–ÖVçF÷2æFVÆWFT—FVÒs¢tVÆ–Ö–æ":×FVÒrÀ¢w&ö6VF–ÖVçF÷2æ—FVÕG—Rs¢uF—òFR:×FVÒrÀ¢w&ö6VF–ÖVçF÷2ç7FvUF—FÆTf–VÆBs¢uL:×GVÆòFRÆWFrÀ¢w&ö6VF–ÖVçF÷2æ—FVÕF—FÆTf–VÆBs¢uL:×GVÆòò–ç7G'V66œ;6ârÀ¢w&ö6VF–ÖVçF÷2æ—FVÔwV–Fæ6Tf–VÆBs¢uFW‡FòFR÷–òrÀ¢w&ö6VF–ÖVçF÷2ç6fU7FvRs¢twV&F"WFrÀ¢w&ö6VF–ÖVçF÷2ç6fT—FVÒs¢twV&F":×FVÒrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T–ç7G'V7F–öâs¢t÷&–VçF6œ;6ârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T6öæf—&ÖF–öâs¢t6öæf—&Ö6œ;6ârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6U–W4æòs¢u<:ÒòæòrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T–ç7G'V7F–öäFW67&—F–öâs ¢u&W6VçFVæ–ç7G'V66œ;6âÂ6öÆ&÷&F÷"ârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T6öæf—&ÖF–öäFW67&—F–öâs ¢tW†–vRVRVÂ6öÆ&÷&F÷"6öæf—&ÖRVæ66œ;6âârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6U–W4æôFW67&—F–öâs¢u&W6VçFVæ&VwVçFö&¦WF—fârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öäæÖRs¢t–æw&W6VÂæöÖ'&RFVÂ&ö6VF–Ö–VçFòârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öå&Wf–Wtf–VÆG2s ¢u&Wf—6Æ÷26×÷2FW7F6F÷2çFW2FRwV&F"ârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öäDÆV7DöæU7FvRs ¢tw&VvÂÖVæ÷2VæWFÂ&ö6VF–Ö–VçFòârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öå7FvUF—FÆRs¢t–æw&W6VÂL:×GVÆòFRÆWFârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öå7FvT—FVÒs ¢t6FWFFV&RFVæW"ÂÖVæ÷2Vâ:×FVÒârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öä—FVÕF—FÆRs¢t–æw&W6VÂL:×GVÆòFVÂ:×FVÒârÀ¢w&ö6VF–ÖVçF÷2æ7&VFVE7V66W72s¢u&ö6VF–Ö–VçFò7&VFòârÀ¢w&ö6VF–ÖVçF÷2çWFFVE7V66W72s¢u&ö6VF–Ö–VçFò7GVÆ—¦FòârÀ¢w&ö6VF–ÖVçF÷2æF—66&D6†ævW5F—FÆRs¢|+ôFW66'F"6Ö&–÷3òrÀ¢w&ö6VF–ÖVçF÷2æF—66&D6†ævW4ÖW76vRs ¢tÆ÷26Ö&–÷2&VÆ—¦F÷2VâW7FR&ö6VF–Ö–VçFò;¦âæò6R†âwV&FFòârÀ¢w&ö6VF–ÖVçF÷2æ¶VWVF—F–ærs¢t6öçF–çV"VF—FæFòrÀ¢w&ö6VF–ÖVçF÷2æF—66&Bs¢tFW66'F"rÀ¢w&ö6VF–ÖVçF÷2æ6öæf—&ÔFVÆWFU7FvUF—FÆRs¢|+ôVÆ–Ö–æ"WFòrÀ¢w&ö6VF–ÖVçF÷2æ6öæf—&ÔFVÆWFU7FvTÖW76vRs ¢tÆ÷2:×FV×2FRW7FWFFÖ&œ:–â6W,:â&VÖ÷f–F÷2ârÀ¢w&ö6VF–ÖVçF÷2æ6öæf—&ÔFVÆWFT—FVÕF—FÆRs¢|+ôVÆ–Ö–æ":×FVÓòrÀ¢w&ö6VF–ÖVçF÷2æ6öæf—&ÔFVÆWFT—FVÔÖW76vRs ¢tW7FR:×FVÒ6W,:&VÖ÷f–FòFVÂ&ö6VF–Ö–VçFòârÀ¢w&ö6VF–ÖVçF÷2æVF—F÷$FVÖôæ÷F–6Rs ¢tÆ÷26Ö&–÷26RÖçFVæG,:â6öÆòGW&çFRW7F6W6œ;6âârÀ¢w&ö6VF–ÖVçF÷2ææõ7FvW2s¢tæ–æwVæWFw&VvFrÀ¢w&ö6VF–ÖVçF÷2æ—FVÕ&WV—&VD†VÇs ¢tÆÌ;6v–6f–æÂFRö&Æ–vF÷&–VFB6RFVf–æ—,:VâÆ–çFVw&6œ;6â÷W&F—fârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wt7F–öâs¢u&Wf—7VÆ—¦"rÀ¢w&ö6VF–ÖVçF÷2æFVÖöç7G&F–öâs¢tFVÖ÷7G&6œ;6ârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6U†÷Fòs¢uFöÖ"f÷FòrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6U6–væGW&Rs¢tf—&ÖrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TÆö6F–öâs¢t6GW&"V&–66œ;6ârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T&&6öFRs¢tÆVW"<;6F–vòFR&'&2rÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T–ÖV’s¢t–æf÷&Ö"”ÔT’rÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TFö7VÖVçBs¢tF§VçF"Fö7VÖVçFòrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TVF–òs¢tw&&"VF–òrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6Tg&VUFW‡Bs¢uFW‡FòÆ–'&RrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TçVÖ&W"s¢tì;¦ÖW&òrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TFFRs¢tfV6†rÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6U6–ævÆT6†ö–6Rs¢tVÆV66œ;6â;¦æ–6rÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T×VÇF—ÆT6†ö–6Rs¢tVÆV66œ;6âÜ;¦ÇF—ÆRrÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6U†÷FôFW67&—F–öâs ¢u6–×VÆÆ6GW&FRVæf÷Fò6öÖòWf–FVæ6–ârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6U6–væGW&TFW67&—F–öâs ¢u6–×VÆÆ&V6öÆV66œ;6âFRVæf—&ÖârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TÆö6F–öäFW67&—F–öâs ¢u6–×VÆÆ6GW&FRVæV&–66œ;6âârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T&&6öFTFW67&—F–öâs ¢u6–×VÆÆÆV7GW&FRVâ<;6F–vòFR&'&2ârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T–ÖV”FW67&—F–öâs ¢uW&Ö—FR–æf÷&Ö"Vâ”ÔT’ÖçVÆÖVçFRârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TFö7VÖVçDFW67&—F–öâs ¢u6–×VÆF§VçF"VâFö7VÖVçFòârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TVF–ôFW67&—F–öâs¢u6–×VÆVæw&&6œ;6âFRVF–òârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6Tg&VUFW‡DFW67&—F–öâs ¢uW&Ö—FR&Vv—7G&"Væ&W7VW7FVâFW‡FòârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TçVÖ&W$FW67&—F–öâs ¢uW&Ö—FR&Vv—7G&"VâfÆ÷"çVÜ:—&–6òârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6TFFTFW67&—F–öâs¢uW&Ö—FR6VÆV66–öæ"VæfV6†ârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6U6–ævÆT6†ö–6TFW67&—F–öâs ¢uW&Ö—FR6VÆV66–öæ"Væ÷6œ;6âârÀ¢w&ö6VF–ÖVçF÷2ç&W7öç6T×VÇF—ÆT6†ö–6TFW67&—F–öâs ¢uW&Ö—FR6VÆV66–öæ"VæòÜ:2÷6–öæW2ârÀ¢w&ö6VF–ÖVçF÷2çG—T6FVv÷'”wV–FRs¢t÷&–VçF"’6öæf—&Ö"rÀ¢w&ö6VF–ÖVçF÷2çG—T6FVv÷'”6öÆÆV7Bs¢u&V6öÆV7F"–æf÷&Ö6œ;6ârÀ¢w&ö6VF–ÖVçF÷2çG—T6FVv÷'”Wf–FVæ6Rs¢u&Vv—7G&"Wf–FVæ6–rÀ¢w&ö6VF–ÖVçF÷2çG—T6FVv÷'”–FVçF–g’s¢t–FVçF–f–6"rÀ¢w&ö6VF–ÖVçF÷2æ—FVÕG—U–6¶W$†VÇs ¢tVÆ–vR<;6ÖòVÂ6öÆ&÷&F÷"&W7öæFW,:ò&Vv—7G&,:W7F66œ;6âârÀ¢w&ö6VF–ÖVçF÷2çÆ6V†öÆFW$f–VÆBs¢uÆ6V†öÆFW"rÀ¢w&ö6VF–ÖVçF÷2çVæ—Df–VÆBs¢uVæ–FBrÀ¢w&ö6VF–ÖVçF÷2æ6†ö–6T÷F–öç2s¢t÷6–öæW2FRVÆV66œ;6ârÀ¢w&ö6VF–ÖVçF÷2æFD÷F–öâs¢tw&Vv"÷6œ;6ârÀ¢w&ö6VF–ÖVçF÷2ç&VÖ÷fT÷F–öâs¢tVÆ–Ö–æ"÷6œ;6ârÀ¢w&ö6VF–ÖVçF÷2æ÷F–öäf–VÆBs¢t÷6œ;6ârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öä6†ö–6T÷F–öç2s¢t–æw&W6ÂÖVæ÷2F÷2÷6–öæW2ârÀ¢w&ö6VF–ÖVçF÷2æ6†ævUG—UF—FÆRs¢|+ô6Ö&–"F—òFR:×FVÓòrÀ¢w&ö6VF–ÖVçF÷2æ6†ævUG—TÖW76vRs ¢tÆ2÷6–öæW26öæf–wW&F26W,:â&VÖ÷f–F2&W7FRF—òârÀ¢w&ö6VF–ÖVçF÷2ç6–×VÆFVEG—TVF—F÷$†VÇs ¢tVâÖöFòFVÖ÷7G&6œ;6âÂW7F6GW&6W,:6–×VÆF6–âW6"&V7W'6÷2FVÂF—7÷6—F—fòârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WuF—FÆRs¢u&Wf—7VÆ—¦6œ;6ârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WuVçF—FÆVE&ö6VGW&Rs¢u&ö6VF–Ö–VçFò6–âæöÖ'&RrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wt–æ6ö×ÆWFU&ö6VGW&Rs ¢tW7FR&ö6VF–Ö–VçFò;¦âæòF–VæRWF2&FVÖ÷7G&"ârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wtöbs¢vFRrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu&öw&W74Æ&VÂs¢t66–öæW26öæ6ÇV–F2rÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WuVæF–ætÖW76vRs ¢t†’66–öæW2ö&Æ–vF÷&–2VæF–VçFW2VâW7FWFârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu&WV—&VEVæF–ærs ¢u&W7öæFRW7F66œ;6âö&Æ–vF÷&–&6öçF–çV"ârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtæW‡E7FvRs¢u6–wV–VçFRWFrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wtf–æ—6„FVÖòs¢tf–æÆ—¦"rÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu&Wf–Wu7FvW2s¢u&Wf—6"WF2rÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu7VÖÖ'•F—FÆRs¢tFVÖ÷7G&6œ;6â6öæ6ÇV–FrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu7VÖÖ'•6fVDÖW76vRs ¢tæ–æwVæ&W7VW7FgVRwV&FFârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu7VÖÖ'”ç7vW&VBs¢t66–öæW2&W7öæF–F2ârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu7VÖÖ'”æô÷F–öæÅVæF–ærs ¢tæ–æ|;¦â:×FVÒ÷6–öæÂVæF–VçFRârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu7VÖÖ'”÷F–öæÅVæF–ærs¢|8×FVÒ÷6–öæÂVæF–VçFRârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtF—66&EF—FÆRs¢|+ôFW66'F"&W7VW7F3òrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtF—66&DÖW76vRs ¢tÆ2&W7VW7F2FRW7FFVÖ÷7G&6œ;6â6W,:âFW66'FF2Â6Æ—"ârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wt6öæf—&Ô7F–öâs¢t6öæf—&Ö"66œ;6ârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WuVæFW'7FööBs¢tÖ&6"6öÖòVçFVæF–FòrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WuVæFW'7FööDFöæRs¢tVçFVæF–FòrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WuFW‡D†–çBs¢t–æw&W6Æ&W7VW7FrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtçVÖ&W$†–çBs¢t–æw&W6Vâì;¦ÖW&òrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu6VÆV7DFFRs¢u6VÆV66–öæ"fV6†rÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wt–ÖV”†–çBs¢t–æw&W6VÂ”ÔT’rÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WuW6TFVÖô–ÖV’s¢uW6"”ÔT’FVÖ÷7G&F—fòrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WuF¶U†÷Fòs¢uFöÖ"f÷FòrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu6–×VÆFU6–væGW&Rs¢u6–×VÆ"f—&ÖrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wt6GW&TÆö6F–öâs¢t6GW&"V&–66œ;6ârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu6–×VÆFT&&6öFRs¢u6–×VÆ"ÆV7GW&rÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu6–×VÆFTFö7VÖVçBs¢u6–×VÆ"æW†òrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu6–×VÆFTVF–òs¢u6–×VÆ"w&&6œ;6ârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu&VÖ÷fTWf–FVæ6Rs¢u&VÖ÷fW"Wf–FVæ6–rÀ¢w&ö6VF–ÖVçF÷2ç6–×VÆFVE&W6÷W&6Tæ÷F–6Rs ¢u&V7W'6òFVÖ÷7G&F—fòâæ–æ|;¦âFFò&VÂ6W,:6GW&FòârÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu†÷FôFFVBs¢tf÷Fòw&VvFrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu6–væGW&TFFVBs¢tf—&Öw&VvFrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wu6–væGW&TFVÖôFWF–Âs¢uG&¦òFVÖ÷7G&F—fò&Vv—7G&FòrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtÆö6F–öäFFVBs¢uV&–66œ;6âFRFVÖ÷7G&6œ;6â6GW&FrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–Wt&&6öFTFFVBs¢t<;6F–vòÆ\:ÖFòrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtFö7VÖVçDFFVBs¢tFö7VÖVçFòF§VçFFòrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtVF–ôFFVBs¢tVF–òw&&FòrÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öä66…&Vv—7FW"s¢t6¦rÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öä7W7FöÖW%&Vv—7G&F–öâs¢u&Vv—7G&òFR6Æ–VçFRrÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$ÖöÖVçD&Vf÷&U7F'Bs¢tçFW2FR–æ–6–"rÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$ÖöÖVçDgFW%7F'Bs¢tFW7\:—2FR–æ–6–"rÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$ÖöÖVçD&Vf÷&Tf–æ—6‚s¢tçFW2FR6öæ6ÇV—"rÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$ÖöÖVçDgFW$f–æ—6‚s¢tFW7\:—2FR6öæ6ÇV—"rÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$ÖöÖVçD&Vf÷&TFVÆ—fW'’s¢tçFW2FRÆVçG&VvrÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$ÖöÖVçDgFW$FVÆ—fW'’s¢tFW7\:—2FRÆVçG&VvrÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$ÖöÖVçDöäFVÖæBs¢t&¦òFVÖæFrÀ¢w&ö6VF–ÖVçF÷2æ7F—fF–öäÖçVÂs¢tÖçVÂrÀ¢w&ö6VF–ÖVçF÷2æ7F—fF–öäWFöÖF–2s¢tWFöÜ:F–6òrÀ¢w&ö6VF–ÖVçF÷2æ7F—fF–öäÖçVÄFW67&—F–öâs ¢tVÂ6öÆ&÷&F÷"öG,:–æ–6–"W7FR&ö6VF–Ö–VçFò7VæFò6VæV6W6&–òârÀ¢w&ö6VF–ÖVçF÷2æ7F—fF–öäWFöÖF–4FW67&—F–öâs ¢tVâVæ–çFVw&6œ;6âgWGW&ÂVÂ&ö6VF–Ö–VçFò6W,:&W6VçFFòVâVÂÖöÖVçFò6öæf–wW&FòârÀ¢w&ö6VF–ÖVçF÷2æVæf÷&6VÖVçD–æf÷&ÖF—fRs¢t–æf÷&ÖF—fòrÀ¢w&ö6VF–ÖVçF÷2æVæf÷&6VÖVçE&V6öÖÖVæFVBs¢u&V6öÖVæFFòrÀ¢w&ö6VF–ÖVçF÷2æVæf÷&6VÖVçE&WV—&VBs¢tö&Æ–vF÷&–òrÀ¢w&ö6VF–ÖVçF÷2æVæf÷&6VÖVçD–æf÷&ÖF—fTFW67&—F–öâs ¢u&W6VçFVÂ&ö6VF–Ö–VçFò6–âW†–v—"6öæ6ÇW6œ;6âârÀ¢w&ö6VF–ÖVçF÷2æVæf÷&6VÖVçE&V6öÖÖVæFVDFW67&—F–öâs ¢u&V6öÖ–VæFÆ6öæ6ÇW6œ;6âÂW&òæòFV&R&Æ÷VV"Æ÷W&6œ;6âârÀ¢w&ö6VF–ÖVçF÷2æVæf÷&6VÖVçE&WV—&VDFW67&—F–öâs ¢tVâVæ–çFVw&6œ;6âgWGW&ÂW†–v—,:6öæ6ÇW6œ;6âçFW2FR6öçF–çV"ârÀ¢w&ö6VF–ÖVçF÷2çv†VäW†V7WFRs¢t7\:æFòV¦V7WF"rÀ¢w&ö6VF–ÖVçF÷2æFEG&–vvW"s¢tw&Vv"vF–ÆÆòrÀ¢w&ö6VF–ÖVçF÷2æVF—EG&–vvW"s¢tVF—F"vF–ÆÆòrÀ¢w&ö6VF–ÖVçF÷2æFVÆWFUG&–vvW"s¢tVÆ–Ö–æ"vF–ÆÆòrÀ¢w&ö6VF–ÖVçF÷2ææõG&–vvW'2s¢tæ–æ|;¦âvF–ÆÆò6öæf–wW&FòârÀ¢w&ö6VF–ÖVçF÷2ææõG&–vvW'4FW67&—F–öâs ¢u6–âvF–ÆÆ÷2ÂVÂ&ö6VF–Ö–VçFòW7F,:F—7öæ–&ÆR6öÆò&W6ò’&Wf—7VÆ—¦6œ;6âFVçG&òFRW7FRÜ;6GVÆòârÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$6÷VçBs¢vvF–ÆÆ÷2rÀ¢w&ö6VF–ÖVçF÷2ç6VÆV7D÷W&F–öä6öçFW‡Bs¢u6VÆV66–öæ"6öçFW‡FòrÀ¢w&ö6VF–ÖVçF÷2ç6VÆV7EG&–vvW$ÖöÖVçBs¢u6VÆV66–öæ"ÖöÖVçFòrÀ¢w&ö6VF–ÖVçF÷2æ7F—fF–öäÖöFRs¢tÖöFòFRV¦V7V6œ;6ârÀ¢w&ö6VF–ÖVçF÷2æVæf÷&6VÖVçDÖöFRs¢tæ—fVÂFRW†–vVæ6–rÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$Væ&ÆVD†VÇs ¢t6öçG&öÆ6’W7FRvF–ÆÆò6W,:6öç6–FW&FòVâVæ–çFVw&6œ;6âgWGW&ârÀ¢w&ö6VF–ÖVçF÷2ç6fUG&–vvW"s¢twV&F"vF–ÆÆòrÀ¢w&ö6VF–ÖVçF÷2çG&–vvW$ÖöÖVçD6ÆV&VBs ¢tVÂÖöÖVçFògVRÆ–×–Fò÷'VRæòW26ö×F–&ÆR6öâVÂ6öçFW‡Fò6VÆV66–öæFòârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öåG&–vvW$÷W&F–öâs¢tVÆ–vRVÂ6öçFW‡Fò÷W&F—fòârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öåG&–vvW$ÖöÖVçBs¢tVÆ–vRVÂÖöÖVçFòFRV¦V7V6œ;6âârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öåG&–vvW$ÖöÖVçD–çfÆ–Bs ¢tVÆ–vRVâÖöÖVçFò6ö×F–&ÆR6öâVÂ6öçFW‡FòârÀ¢w&ö6VF–ÖVçF÷2çfÆ–FF–öäGWÆ–6FUG&–vvW"s ¢u–W†—7FRVâvF–ÆÆò6öâW7FR6öçFW‡FòÂÖöÖVçFò’ÖöFòFRV¦V7V6œ;6âârÀ¢w&ö6VF–ÖVçF÷2æFVÆWFUG&–vvW%F—FÆRs¢|+ôVÆ–Ö–æ"vF–ÆÆóòrÀ¢w&ö6VF–ÖVçF÷2æFVÆWFUG&–vvW$ÖW76vRs ¢tVÂ&ö6VF–Ö–VçFòFV¦,:FRÖ÷7G&'6RVâW7FRÖöÖVçFò÷W&F—fòârÀ¢w&ö6VF–ÖVçF÷2çG&–vvW%7VÖÖ'”æöæRs¢u6–âvF–ÆÆ÷26öæf–wW&F÷2rÀ¢w&ö6VF–ÖVçF÷2çG&–vvW%7VÖÖ'”öæÇ”–æ7F—fRs¢tvF–ÆÆ÷2–æ7F—f÷2rÀ¢w&ö6VF–ÖVçF÷2æW†V7WF–öä6öæf–wW&F–öâs¢t6öæf–wW&6œ;6âFRV¦V7V6œ;6ârÀ¢w&ö6VF–ÖVçF÷2çG&–vvW%6–×VÆF–öäæ÷F–6Rs ¢u6–×VÆ6œ;6âFRvF–ÆÆòâæ–æwVæ÷W&6œ;6â&VÂ6W,:&Æ÷VVFârÀ¢w&ö6VF–ÖVçF÷2æÖçVÄFVÖôW†V7WF–öâs¢tV¦V7V6œ;6âÖçVÂFRFVÖ÷7G&6œ;6âârÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öåö–çE6ÆU7F'D&Vf÷&Rs¢tçFW2FR–æ–6–"VæfVçFrÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öåö–çE6ÆU7F'D&Vf÷&TFW67&—F–öâs ¢u6RV¦V7WFçFW2FR'&—"VÂfÇV¦òFRVæçVWffVçFârÀ¢w&ö6VF–ÖVçF÷2æÖö&–ÆUö–çDf–Æ&ÆRs¢tF—7öæ–&ÆRVâÆÆ–66œ;6âÜ;7f–ÂârÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öæÄW†V7WF–öåF—FÆRs¢tçFW2FR–æ–6–"ÆfVçFrÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öæÅ7VÖÖ'•F—FÆRs¢u&ö6VF–Ö–VçFò6öæ6ÇV–FòrÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öæÄæôFF6fVBs ¢tæ–æwVæ&W7VW7FgVRwV&FFVâW7F–çFVw&6œ;6âÆö6ÂW‡W&–ÖVçFÂârÀ¢w&ö6VF–ÖVçF÷2æ6ö×ÆWFTæE7F'E6ÆRs¢t6öæ6ÇV—"R–æ–6–"fVçFrÀ¢w&ö6VF–ÖVçF÷2æW‡W&–ÖVçFÄ–çFVw&F–öâs¢t–çFVw&6œ;6âW‡W&–ÖVçFÂrÀ¢w&ö6VF–ÖVçF÷2æ6öçF–çVUFõ7F'E6ÆRs¢t6öçF–çV"ÆfVçFrÀ¢w&ö6VF–ÖVçF÷2æ6öçF–çVUv—F†÷WD6ö×ÆWF–ærs¢t6öçF–çV"6–â6öæ6ÇV—"rÀ¢w&ö6VF–ÖVçF÷2æ6öçF–çVUv—F†÷WD6ö×ÆWF–æuF—FÆRs¢|+ô6öçF–çV"6–â6öæ6ÇV—#òrÀ¢w&ö6VF–ÖVçF÷2æ6öçF–çVUv—F†÷WD6ö×ÆWF–ætÖW76vRs ¢tW7FR&ö6VF–Ö–VçFòW2&V6öÖVæFFòçFW2FR–æ–6–"ÆfVçFârÀ¢w&ö6VF–ÖVçF÷2æ6öçF–çVTç—v’s¢t6öçF–çV"FRFöF÷2ÖöF÷2rÀ¢w&ö6VF–ÖVçF÷2ç&WGW&åFõ&ö6VGW&Rs¢uföÇfW"Â&ö6VF–Ö–VçFòrÀ¢w&ö6VF–ÖVçF÷2æ6æ6VÅ6ÆU7F'EF—FÆRs¢|+ô6æ6VÆ"–æ–6–òFRfVçFòrÀ¢w&ö6VF–ÖVçF÷2æ6æ6VÅ6ÆU7F'DÖW76vRs ¢tW7FR&ö6VF–Ö–VçFòW2ö&Æ–vF÷&–òâÂ6Æ—"ÂÆçVWffVçFæò6W,:–æ–6–FârÀ¢w&ö6VF–ÖVçF÷2æ6æ6VÅ6ÆRs¢t6æ6VÆ"fVçFrÀ¢w&ö6VF–ÖVçF÷2ç6WVVæ6U&öw&W75&Vf—‚s¢u&ö6VF–Ö–VçFòrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtæVvF—fUFW‡DÆ&VÂs¢|+õ\:’fÇL;3òrÀ¢w&ö6VF–ÖVçF÷2ç&Wf–WtæVvF—fUFW‡D†–çBs¢tFW67&–&R\:’fÇL;2rÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öæÄÆöDW'&÷"s ¢tæògVR÷6–&ÆR6&v"Æ÷2&ö6VF–Ö–VçF÷2ârÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öæÄ&FvRs¢u&ö6VF–Ö–VçFò÷W&F—fòrÀ¢w&ö6VF–ÖVçF÷2æ÷W&F–öæÄW†V7WF–öåF—FÆU&VÂs¢u&ö6VF–Ö–VçFò÷W&F—fòrÀ¢w&ö6VF–ÖVçF÷2æW†V7WF–öåv–ÆÄ&U6fVBs ¢tÆ2&W7VW7F2’Æ÷2†÷&&–÷26RwV&F,:âÂf–æÆ—¦"ârÀ¢w&ö6VF–ÖVçF÷2æ6ö×ÆWFTæD6öçF–çVRs¢t6öæ6ÇV—"’6öçF–çV"rÀ¢w&ö6VF–ÖVçF÷2æ6öçF–çVT÷W&F–öâs¢t6öçF–çV"÷W&6œ;6ârÀ¢w&ö6VF–ÖVçF÷2ç&ö6W76–æu6¶—s¢t6öçF–çVæFòââârÀ¢w&ö6VF–ÖVçF÷2ç&ö6W76–æt6æ6VÂs¢t6æ6VÆæFòââârÀ¢w&ö6VF–ÖVçF÷2æW†V7WF–öå6fTW'&÷"s ¢tæògVR÷6–&ÆRwV&F"Æ2&W7VW7F2â–çL:–çFÆòFRçVWfòârÀ¢w&ö6VF–ÖVçF÷2ç6¶—7V66W75F—FÆRs¢u&ö6VF–Ö–VçFòöÖ—F–FòrÀ¢w&ö6VF–ÖVçF÷2æ6æ6VÅ7V66W75F—FÆRs¢t÷W&6œ;6â6æ6VÆFrÀ¢w&ö6VF–ÖVçF÷2æ6ö×ÆWFU7V66W74ÖW76vRs ¢tÆ2&W7VW7F2gVW&öâwV&FF2’Æ÷W&6œ;6âVVFR6öçF–çV"ârÀ¢w&ö6VF–ÖVçF÷2ç6¶—7V66W74ÖW76vRs ¢tVÂ&ö6VF–Ö–VçFògVRöÖ—F–Fò’Æ÷W&6œ;6â6öçF–çV,:6V|;¦âÆ6öæf–wW&6œ;6â7GVÂârÀ¢w&ö6VF–ÖVçF÷2æ6æ6VÅ7V66W74ÖW76vRs ¢tÆ÷W&6œ;6â6R6W',;2çFW2FRfç¦"Â6–wV–VçFR6òârÀ¢w&ö6VF–ÖVçF÷2çW'6—7FVD6öæf–wW&F–öâs¢t6öæf–wW&6œ;6â6–æ7&öæ—¦FrÀ¢w&ö6VF–ÖVçF÷2æVF—F÷%W'6—7FVæ6Tæ÷F–6Rs ¢tÆ÷26Ö&–÷26RwV&Fâ&ÆV×&W6VâVÂ–F–öÖ7GVÂârÀ¢w&ö6VF–ÖVçF÷2ææ÷F–g”FÖ–âs¢tæ÷F–f–6"ÂDÔ”â÷"W6‚rÀ¢w&ö6VF–ÖVçF÷2ææ÷F–g”FÖ–ä†VÇs ¢tæ÷F–f–6Æ÷2FÖ–æ—7G&F÷&W27F—f÷27VæFòö7W'&RÆ6öæF–6œ;6âârÀ¢w&ö6VF–ÖVçF÷2ææ÷F–f–6F–öä6öæF—F–öâs¢t7\:æFòæ÷F–f–6"rÀ¢w&ö6VF–ÖVçF÷2ææ÷F–f–6F–öäÇv—2s¢tVâ6FV¦V7V6œ;6ârÀ¢w&ö6VF–ÖVçF÷2ææ÷F–f–6F–öäæVvF—fRs¢tÂ&Vv—7G&"Væ&W7VW7FæVvF—frÀ¢w&ö6VF–ÖVçF÷2ææ÷F–f–6F–öå6¶—VBs¢tÂöÖ—F—"VÂ&ö6VF–Ö–VçFòrÀ¢w&ö6VF–ÖVçF÷2ææÇ—F–75F—FÆRs¢tì:Æ—6—2FR&W7VÇFF÷2rÀ¢w&ö6VF–ÖVçF÷2ææÇ—F–74W†V7WF–öç2s¢tV¦V7V6–öæW2rÀ¢w&ö6VF–ÖVçF÷2ææÇ—F–746ö×ÆWF–öâs¢uF6FR6öæ6ÇW6œ;6ârÀ¢w&ö6VF–ÖVçF÷2ææÇ—F–74æVvF—fRs¢u&W7VW7F2æVvF—f2rÀ¢w&ö6VF–ÖVçF÷2ææÇ—F–74fW&vUF–ÖRs¢uF–V×òÖVF–òrÀ¢w&ö6VF–ÖVçF÷2ææÇ—F–74'•VW7F–öâs¢u&W7VÇFF÷2÷"&VwVçFrÀ¢w&ö6VF–ÖVçF÷2ææÇ—F–75&V6VçBs¢tV¦V7V6–öæW2&V6–VçFW2rÀ¢w&ö6VF–ÖVçF÷2ææÇ—F–74V×G’s¢t;¦âæò†’V¦V7V6–öæW2VâW7FRW,:ÖöFòârÀ¢w&ö6VF–ÖVçF÷2æ6öçFW‡E6ÆRs¢ufVçFrÀ¢w&ö6VF–ÖVçF÷2æ6öçFW‡EFV6†æ–6Å6W'f–6Rs¢tFVæ6œ;6âL:–6æ–6rÀ¢w&ö6VF–ÖVçF÷2æ6öçFW‡D66…&Vv—7FW"s¢t6¦rÀ ¢òòvW7Fœ;6â(	B6V66–öæW0¢vvW7FòçF—FÆRs¢tvW7Fœ;6ârÀ¢vvW7Fòæ‡V"çF—FÆRs¢|+õ\:’V–W&W2vW7F–öæ#òrÀ¢vvW7Fòæ‡V"ç7V'F—FÆRs ¢t66VFR6L:Æöv÷2ÂW'6öæ2Âf–æç¦2’&VfW&Væ6–2ârÀ¢vvW7Fòæ‡V"çFW&Ö–æÂç&öGV7G2s¢tvW7F–öæGW2&öGV7F÷2’6öÆ&÷&F÷&W2rÀ¢vvW7Fòæ‡V"çFW&Ö–æÂæf–ææ6Rs¢tvW7F–öæGW2f–æç¦2rÀ¢vvW7Fòæ‡V"çFW&Ö–æÂç&VfW&Væ6W2s ¢t§W7FGW2&VfW&Væ6–2’6öæf–wW&6–öæW2rÀ¢vvW7Fòæ6FÆörçF—FÆRs¢t6L:ÆövòrÀ¢vvW7Fòæ6FÆörç7V'F—FÆRs¢u&öGV7F÷2Â6FVv÷,:Ö2R–çfVçF&–òrÀ¢vvW7FòçV÷ÆRçF—FÆRs¢uW'6öæ2rÀ¢vvW7FòçV÷ÆRç7V'F—FÆRs¢t6Æ–VçFW2ÂWV—ò’6ö6–÷2rÀ¢vvW7Fòæf–ææ6RçF—FÆRs¢tf–ææ6–W&òrÀ¢vvW7Fòæf–ææ6Rç7V'F—FÆRs¢t7VVçF2ÂvVæF’&V6–&÷2rÀ¢vvW7Fòç6WGF–æw2çF—FÆRs¢t6öæf–wW&6œ;6ârÀ¢vvW7Fòç6WGF–æw2ç6VÆV7F÷%F—FÆRs¢tvVæW&ÂrÀ¢vvW7Fòç6WGF–æw2ç7V'F—FÆRs¢tV×&W6Â–F–öÖR–çFVw&6–öæW2rÀ ¢òòvW7Fœ;6â(	B:×FV×2FR6L:Æövð¢vvW7Fòæ6FÆörç&öGV7G56W'f–6W2s¢u&öGV7F÷2’6W'f–6–÷2rÀ¢vvW7Fòæ6FÆörç&öGV7G56W'f–6W4FW62s ¢u6ÇVBÂ&Vv—7G&÷2’&Wf—6œ;6âFVÂ6L:ÆövòrÀ¢vvW7Fòæ6FÆöræ6FVv÷&–W2s¢t6FVv÷,:Ö2rÀ¢vvW7Fòæ6FÆöræ6FVv÷&–W4FW62s¢t÷&væ—¦6œ;6âFVÂ6L:ÆövòrÀ¢vvW7Fòæ6FÆöræ–çfVçF÷'’s¢t–çfVçF&–òrÀ¢vvW7Fòæ6FÆöræ–çfVçF÷'”FW62s¢u6ÆF÷2ÂVçG&F2’§W7FW2rÀ ¢òòvW7Fœ;6â(	B:×FV×2FRW'6öæ0¢vvW7FòçV÷ÆRæ6Æ–VçG2s¢t6Æ–VçFW2rÀ¢vvW7FòçV÷ÆRæ6Æ–VçG4FW62s¢t&6RFRFVæ6œ;6â’&VÆ6œ;6ârÀ¢vvW7FòçV÷ÆRæ6öÆÆ&÷&F÷'2s¢t6öÆ&÷&F÷&W2rÀ¢vvW7FòçV÷ÆRæ6öÆÆ&÷&F÷'4FW62s¢tWV—òÂ66W6÷2’&W7öç6&–Æ–FFW2rÀ¢vvW7FòçV÷ÆRç6—†õW6W'2s¢uW7V&–÷2FR6—†òrÀ¢vvW7FòçV÷ÆRç6—†õW6W'4FW62s¢t&6RvÆö&Â&÷FVv–F÷"VÂW&f–Â5UU"rÀ¢vvW7FòçV÷ÆRç7WÆ–W'2s¢u&÷fVVF÷&W2rÀ¢vvW7FòçV÷ÆRç7WÆ–W'4FW62s¢u6ö6–÷2’6ö×&2FVÂ6öÖW&6–òrÀ ¢òòvW7Fœ;6â(	B:×FV×2FRf–ææ6–W&ð¢vvW7Fòæf–ææ6Rç&V6V—f&ÆRs¢t7VVçF2÷"6ö'&"rÀ¢vvW7Fòæf–ææ6Rç&V6V—f&ÆTFW62s¢t6ö'&÷2’f7GW&2VæF–VçFW2rÀ¢vvW7Fòæf–ææ6Rç–&ÆRs¢t7VVçF2÷"v"rÀ¢vvW7Fòæf–ææ6Rç–&ÆTFW62s¢tv7F÷2’6ö×&öÖ—6÷2rÀ¢vvW7Fòæf–ææ6Rç66†VGVÆRs¢tvVæFf–ææ6–W&rÀ¢vvW7Fòæf–ææ6Rç66†VGVÆTFW62s¢u&Wf—6–öæW2Âf–Fò’7,:–F—F÷2rÀ¢vvW7Fòæf–ææ6Rç–ÖVçDÖWF†öG2s¢tf÷&Ö2FR6ö'&òrÀ¢vvW7Fòæf–ææ6Rç–ÖVçDÖWF†öG4FW62s ¢tVfV7F—fòÂF&¦WFÂ—‚’÷G&÷2ÖVF–÷2rÀ ¢òòvW7Fœ;6â(	Bw'W÷2FR6öæf–wW&6œ;6à¢vvW7Fòç6WGF–æw2æw&÷Wæ6ö×ç’s¢tV×&W6rÀ¢vvW7Fòç6WGF–æw2æw&÷WçFVÔ66W72s¢tWV—ò’66W6òrÀ¢vvW7Fòç6WGF–æw2æw&÷Wæ÷W&F–öâs¢t÷W&6œ;6ârÀ¢vvW7Fòç6WGF–æw2æw&÷Wæ6öÖ×Væ–6F–öâs¢t6ö×Væ–66œ;6ârÀ¢vvW7Fòç6WGF–æw2æw&÷WæFö74–çFVw&F–öç2s¢tFö7VÖVçF÷2R–çFVw&6–öæW2rÀ ¢òòvW7Fœ;6â(	B:×FV×2FR6öæf–wW&6œ;6à¢vvW7Fòç6WGF–æw2æ—FVÒæ6ö×ç’çF—FÆRs¢tV×&W6rÀ¢vvW7Fòç6WGF–æw2æ—FVÒæ6ö×ç’ç7V'F—FÆRs ¢tFF÷2FR&Vv—7G&òR–FVçF–FBFVÂ6öÖW&6–òrÀ¢vvW7Fòç6WGF–æw2æ—FVÒç&Vv–öæÆ—¦F–öâçF—FÆRs¢u&Vv–öæÆ—¦6œ;6ârÀ¢vvW7Fòç6WGF–æw2æ—FVÒç&Vv–öæÆ—¦F–öâç7V'F—FÆRs ¢t–F–öÖÂÖöæVFÂ:×2’f÷&ÖF÷2Æö6ÆW2rÀ¢vvW7Fòç6WGF–æw2æ—FVÒçW6W'2çF—FÆRs¢uW7V&–÷2’W&Ö—6÷2rÀ¢vvW7Fòç6WGF–æw2æ—FVÒçW6W'2ç7V'F—FÆRs ¢t66W6÷2ÂW&f–ÆW2’6VwW&–FBFVÂWV—òrÀ¢vvW7Fòç6WGF–æw2æ—FVÒç&ö6VGW&W2çF—FÆRs¢u&ö6VF–Ö–VçF÷2rÀ¢vvW7Fòç6WGF–æw2æ—FVÒç&ö6VGW&W2ç7V'F—FÆRs ¢tw\:Ö2&fVçF2Â6W'f–6–÷2’VçG&Vv2rÀ¢vvW7Fòç6WGF–æw2æ—FVÒææ÷F–f–6F–öç2çF—FÆRs¢tæ÷F–f–66–öæW2rÀ¢vvW7Fòç6WGF–æw2æ—FVÒææ÷F–f–6F–öç2ç7V'F—FÆRs ¢tWfVçF÷2&V6–&–F÷2’ÆW'F2FVÂ6—7FVÖrÀ¢vvW7Fòç6WGF–æw2æ—FVÒçFeFV×ÆFW2çF—FÆRs¢uÆçF–ÆÆ2DbrÀ¢vvW7Fòç6WGF–æw2æ—FVÒçFeFV×ÆFW2ç7V'F—FÆRs ¢u&W7WVW7F÷2Âõ2Â&V6–&÷2’Fö7VÖVçF÷2rÀ¢vvW7Fòç6WGF–æw2æ—FVÒæ–çFVw&F–öç2çF—FÆRs¢t–çFVw&6–öæW2rÀ¢vvW7Fòç6WGF–æw2æ—FVÒæ–çFVw&F–öç2ç7V'F—FÆRs ¢u6W'f–6–÷2W‡FW&æ÷2’WFöÖF—¦6–öæW2rÀ ¢òòvW7Fœ;6â(	Bf—6œ;6â6öçFW‡GVÂÜ;7f–À¢vvW7Fòæ÷fW'f–Wrç6VÆV7FVD&Vs¢|8&V6VÆV66–öæFrÀ¢vvW7Fòæ÷fW'f–WrævVæW&ÅF—FÆRs¢uf—7FvVæW&ÂrÀ¢vvW7Fòæ÷fW'f–WrçfÇVUVæf–Æ&ÆRs¢rÒÒrÀ¢vvW7Fòæ÷fW'f–WræÖ–ä7F–öç2s¢t66–öæW2&–æ6—ÆW2rÀ¢vvW7Fòæ÷fW'f–WræW'&÷$ÖW76vRs ¢tÆ266–öæW26–wVVâF—7öæ–&ÆW2â–çFVçF7GVÆ—¦"Æ÷2FF÷2VâVæ÷2–ç7FçFW2ârÀ¢vvW7Fòæ6FÆörç7VÖÖ'•F—FÆRs¢u&W7VÖVâFVÂ6L:ÆövòrÀ¢vvW7Fòæ6FÆöræÖWG&–2ç&öGV7G2s¢u&öGV7F÷2rÀ¢vvW7Fòæ6FÆöræÖWG&–2ç&öGV7G56W'f–6W2s¢u&öGV7F÷2’6W'f–6–÷2rÀ¢vvW7Fòæ6FÆöræÖWG&–2æ6FVv÷&–W2s¢t6FVv÷,:Ö2rÀ¢vvW7Fòæ6FÆöræÖWG&–2æÆ÷u7Fö6²s¢u7Fö6²&¦òrÀ¢vvW7Fòæ6FÆöræÆ÷u7Fö6´ÆW'E6VÖçF–2s ¢t–æF–6F÷"FRFVæ6œ;6â&7Fö6²&¦òrÀ¢vvW7Fòæ6FÆöræÆöDW'&÷"s ¢tæògVR÷6–&ÆR6&v"VÂ&W7VÖVâFVÂ6L:ÆövòârÀ¢vvW7Fòæ6FÆöræV×G•F—FÆRs¢t6L:Æövò6–âFF÷2&Ö÷7G&"rÀ¢vvW7Fòæ6FÆöræV×G”ÖW76vRs ¢u&Vv—7G&&öGV7F÷2Â6W'f–6–÷2ò6FVv÷,:Ö2&6ö×ÆWF"Æ÷2–æF–6F÷&W2ârÀ¢vvW7Fòæ6FÆörçW&Ö—76–öå&W7G&–7FVEF—FÆRs ¢t6L:Æövò&W7G&–æv–Fò&W7FRW7V&–òrÀ¢vvW7Fòæ6FÆörçW&Ö—76–öå&W7G&–7FVDÖW76vRs ¢tÆ66œ;6âFR&öGV7F÷2’6W'f–6–÷2&W7WFÆ÷2W&Ö—6÷27GVÆW2ârÀ¢vvW7Fòæ6FÆöræÆ÷u7Fö6µF—FÆRs¢tVÂ–çfVçF&–òæV6W6—FFVæ6œ;6ârÀ¢vvW7Fòæ6FÆöræÆ÷u7Fö6´ÖW76vRs ¢w¶6÷VçGÒVÆVÖVçFò‡2’÷"FV&¦òFVÂÌ:ÖÖ—FR6öæf–wW&FòVâVÂ6L:ÆövòârÀ¢vvW7Fòæ6FÆöræÆ÷u7Fö6´7F–öâs¢ufW"VÆVÖVçF÷2rÀ¢vvW7FòçV÷ÆRç7VÖÖ'•F—FÆRs¢u&W7VÖVâFRW'6öæ2rÀ¢vvW7FòçV÷ÆRæÖWG&–2æ6Æ–VçG2s¢t6Æ–VçFW2rÀ¢vvW7FòçV÷ÆRæÖWG&–2æ6öÆÆ&÷&F÷'2s¢t6öÆ&÷&F÷&W2rÀ¢vvW7FòçV÷ÆRæÖWG&–2ç7WÆ–W'2s¢u&÷fVVF÷&W2rÀ¢vvW7FòçV÷ÆRç7WÆ–W'5Væf–Æ&ÆU6VÖçF–2s¢u&V7W'6ò,;7†–ÖÖVçFRrÀ¢vvW7FòçV÷ÆRæÆöDW'&÷"s¢tæògVR÷6–&ÆR6&v"VÂ&W7VÖVâFRW'6öæ2ârÀ¢vvW7FòçV÷ÆRæV×G•F—FÆRs¢tæ–æ|;¦â6öçF7Fò6&vFòrÀ¢vvW7FòçV÷ÆRæV×G”ÖW76vRs ¢t6Æ–VçFW2’6öÆ&÷&F÷&W2&V6W,:â\:Ò7VæFòW7L:–â&Vv—7G&F÷2ârÀ¢vvW7FòçV÷ÆRç7WÆ–W'4&Æö6¶VEF—FÆRs¢u&÷fVVF÷&W2;¦âæòW7L:F—7öæ–&ÆRrÀ¢vvW7FòçV÷ÆRç7WÆ–W'4&Æö6¶VDÖW76vRs ¢tVÂ&V7W'6ò6–wVRÖ&6Fò6öÖò,;7†–ÖÖVçFR’æòF–VæRæfVv6œ;6âÜ;7f–Â7F—fârÀ¢vvW7Fòæf–ææ6Ræ7F–öäw&÷Ws¢tvVæF’&V7W'6÷2rÀ¢vvW7Fòæf–ææ6Rç7VÖÖ'•F—FÆRs¢u&W7VÖVâf–ææ6–W&òrÀ¢vvW7Fòæf–ææ6RæÖWG&–2æWfVçG2s¢u,;7†–Ö÷2WfVçF÷2rÀ¢vvW7Fòæf–ææ6RæÖWG&–2ç&V6V—f&ÆTWfVçG2s¢u÷"6ö'&"rÀ¢vvW7Fòæf–ææ6RæÖWG&–2ç–&ÆTWfVçG2s¢u÷"v"rÀ¢vvW7Fòæf–ææ6RæÆöDW'&÷"s¢tæògVR÷6–&ÆR6&v"ÆvVæFf–ææ6–W&ârÀ¢vvW7Fòæf–ææ6RæV×G•F—FÆRs¢tvVæF6–âÆç¦Ö–VçF÷2,;7†–Ö÷2rÀ¢vvW7Fòæf–ææ6RæV×G”ÖW76vRs ¢t'&RÆvVæFf–ææ6–W&&7&V"&Wf—6–öæW2’6VwV—"fVæ6–Ö–VçF÷2ârÀ¢vvW7Fòæf–ææ6Ræ÷Vå66†VGVÆRs¢t'&—"vVæFrÀ¢vvW7Fòæf–ææ6RæGFVçF–öåF—FÆRs¢tvVæF6öâfVæ6–Ö–VçF÷2,;7†–Ö÷2rÀ¢vvW7Fòæf–ææ6RæGFVçF–öäÖW76vRs ¢w¶6÷VçGÒWfVçFò‡2’fVæ6–Fò‡2’ò6öâfVæ6–Ö–VçFò†÷’VâÆvVæFârÀ¢vvW7Fòæf–ææ6Ræ&Æö6¶VE&W6÷W&6W5F—FÆRs¢u&V7W'6÷2f–ææ6–W&÷2VâWföÇV6œ;6ârÀ¢vvW7Fòæf–ææ6Ræ&Æö6¶VE&W6÷W&6W4ÖW76vRs ¢t7VVçF2÷"6ö'&"Â7VVçF2÷"v"’f÷&Ö2FR6ö'&ò6öçF–ì;¦â&Æ÷VVF2VâÖö&–ÆRârÀ ¢òòFVæ6œ;6âÖö&–ÆP¢vFVæF–ÖVçFòæÖö&–ÆRçF—FÆRs¢tFVæ6œ;6ârÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ†W&õF—FÆRs¢|+õ\:’FW6V2†6W#òrÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ†W&õ7V'F—FÆRs¢ufVçFÂ6W'f–6–òò6ö'&òVâö6÷26÷2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ–çG&õF—FÆRs¢tFVæ6œ;6âÂ6Æ–VçFRrÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ–çG&ôÆ–æU6ÆW2s¢wfVæFW"Â6ö'&"Â6öç7VÇF"rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ–çG&ôÆ–æU&WGW&ç2s¢vFWföÇV6–öæW2FR&öGV7F÷2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ–çG&ôÆ–æU6W'f–6W2s¢w6W'f–6–÷2Â&W7WVW7F÷2ÂWF2ârÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ6†ö÷6T÷W&F–öâs¢tVÆ–vRÆ÷W&6œ;6â&–æ–6–"ârÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6ÆW4ÖVçUF—FÆRs¢ufVçF2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRææWu6ÆUF—FÆRs¢ufVçF2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRææWu6ÆU7V'F—FÆRs¢t÷6–öæW2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ6öç7VÇE6ÆW5F—FÆRs¢t6öç7VÇF"fVçF2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ6öç7VÇE6ÆW57V'F—FÆRs¢t6öç7VÇF"†—7F÷&–ÂFRfVçF2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRææWu6W'f–6UF—FÆRs¢u6W'f–6–÷2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRææWu6W'f–6U7V'F—FÆRs¢t7&V"ò6ö×;"rÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6W'f–6W4ÖVçUF—FÆRs¢u6W'f–6–÷2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ7&VFU6W'f–6UF—FÆRs¢tçVWfò6W'f–6–òrÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ7&VFU6W'f–6U7V'F—FÆRs¢t'&—"çVWfFVæ6œ;6âL:–6æ–6rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ6öç7VÇE6W'f–6W4–å&öw&W75F—FÆRs ¢t6öç7VÇF"6W'f–6–÷2Vâ7W'6òrÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ6öç7VÇE6W'f–6W4–å&öw&W757V'F—FÆRs ¢ufW"FVæ6–öæW2L:–6æ–627F—f2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRç&V6V—fUF—FÆRs¢t6ö'&"rÀ¢vFVæF–ÖVçFòæÖö&–ÆRç&V6V—fU7V'F—FÆRs¢ufVçF2&–W'F2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæföÆÆ÷uFöF’s¢u6VwV–Ö–VçFòFR†÷’rÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6ÆW5Fõ&V6V—fUF—FÆRs¢ufVçF2÷"6ö'&"rÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6ÆW5Fõ&V6V—fU7V'F—FÆRs¢ufVçF2æòÆ—V–FF2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6W'f–6W4–å&öw&W75F—FÆRs¢u6W'f–6–÷2Vâ7W'6òrÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6W'f–6W4–å&öw&W757V'F—FÆRs ¢tFVæ6–öæW2L:–6æ–627F—f2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæÖ÷&T÷F–öç2s¢tÜ:2÷6–öæW2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ66„÷W&F–öç5F—FÆRs¢t6¦rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ66„÷W&F–öç57V'F—FÆRs¢t'&—"’Ö÷fW"rÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ6÷VçFW$ÆöDW'&÷"s¢tæògVR÷6–&ÆR7GVÆ—¦"†÷&rÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6W'f–6W5Fõ&V6V—fUF—FÆRs¢u6W'f–6–÷2÷"6ö'&"rÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6W'f–6W5Fõ&V6V—fU7V'F—FÆRs ¢tFVæ6–öæW2L:–6æ–626öâf–ææ6–W&ò&–W'FòrÀ¢vFVæF–ÖVçFòæÖö&–ÆRçFV6†æ–6Å6W'f–6W5VæF–æu–ÖVçEF—FÆRs ¢tFVæ6–öæW2L:–6æ–62VæF–VçFW2FRvòrÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçG4ÆöF–æuF—FÆRs¢t6&væFòFVæ6–öæW2rÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçG4ÆöF–æu7V'F—FÆRs ¢t'W66æFò6W'f–6–÷26öâf–ææ6–W&ò&–W'FòârÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçD†VFW%F—FÆRs¢tf–ææ6–W&ò&–W'FòrÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçEF÷FÄ÷Vâs¢uF÷FÂ&–W'FòrÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçE6V7F–öâs¢tFVæ6–öæW26öâ6ÆFòrÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçDW'&÷%F—FÆRs¢tæògVR÷6–&ÆR6&v"rÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçDW'&÷$ÖW76vRs ¢t–çFVçF7GVÆ—¦"Æ2FVæ6–öæW2L:–6æ–62Vâ–ç7FçFW2ârÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçDV×G•F—FÆRs¢tæ–æ|;¦â6W'f–6–ò÷"6ö'&"rÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçDV×G”ÖW76vRs ¢tÆ2FVæ6–öæW2L:–6æ–62æòF–VæVâf–ææ6–W&ò&–W'FòârÀ¢vFVæF–ÖVçFòæÖö&–ÆRæöæUVæF–æu–ÖVçE6W'f–6Rs ¢sFVæ6œ;6â6öâf–ææ6–W&ò&–W'FòrÀ¢vFVæF–ÖVçFòæÖö&–ÆRçVæF–æu–ÖVçE6W'f–6W2s ¢vFVæ6–öæW26öâf–ææ6–W&ò&–W'FòrÀ¢vFVæF–ÖVçFòæÖö&–ÆRç6W'f–6TçVÖ&W"s¢tFVæ6œ;6ârÀ¢vFVæF–ÖVçFòæÖö&–ÆRæ÷VåfÇVRs¢ufÆ÷"&–W'FòrÀ¢vFVæF–ÖVçFòæÖö&–ÆRçF÷FÅfÇVRs¢ufÆ÷"F÷FÂrÀ¢vFVæF–ÖVçFòæÖö&–ÆRæGVTFFRs¢ufVæ6RVÂrÀ¢vFVæF–ÖVçFòæÖö&–ÆRææôGVTFFRs¢u6–âfVæ6–Ö–VçFòrÀ¢v÷W&6òæÖö&–ÆRç&WGW&åF—FÆRs¢tFWföÇV6–öæW2’6Ö&–÷2rÀ¢v÷W&6òæÖö&–ÆRç&WGW&å7V'F—FÆRs¢u&Vv—7G&"FWföÇV6œ;6ârÀ¢v÷W&6òæÖö&–ÆRç&WGW&åVæf–Æ&ÆRs¢u,;7†–ÖÖVçFRrÀ ¢òòFWföÇV6–öæW2Öö&–ÆP¢vFWföÇV6òæÖö&–ÆRçF—FÆRs¢tFWföÇV6–öæW2rÀ¢vFWföÇV6òæÖö&–ÆRæ–çG&õF—FÆRs¢tÆö6Æ—¦ÆfVçFrÀ¢vFWföÇV6òæÖö&–ÆRæ–çG&õ7V'F—FÆRs ¢uW6VÂ<;6F–vòFVÂ6ö×&ö&çFR&–æ–6–"VæFWföÇV6œ;6âò6Ö&–òârÀ¢vFWföÇV6òæÖö&–ÆRç6ÆT6öFTÆ&VÂs¢t<;6F–vòò”BFRÆfVçFrÀ¢vFWföÇV6òæÖö&–ÆRç6ÆT6öFT†–çBs¢tV¢ã¢dTâÓ#BrÀ¢vFWföÇV6òæÖö&–ÆRç6V&6…6ÆRs¢t'W66"fVçFrÀ¢vFWföÇV6òæÖö&–ÆRç6V&6†–ærs¢t'W66æFòââârÀ¢vFWföÇV6òæÖö&–ÆRæ÷W&F–öä6ö×ÆWFVBs¢t÷W&6œ;6â6öæ6ÇV–FrÀ¢vFWföÇV6òæÖö&–ÆRç6ÆTf÷VæBs¢ufVçFVæ6öçG&FrÀ¢vFWföÇV6òæÖö&–ÆRæ6†ævU6ÆRs¢t6Ö&–"fVçFrÀ¢vFWföÇV6òæÖö&–ÆRçVæ–FVçF–f–VD7W7FöÖW"s¢t6Æ–VçFRæò–FVçF–f–6FòrÀ¢vFWföÇV6òæÖö&–ÆRç&öGV7G5fÇVRs¢ufÆ÷"FRÆ÷2&öGV7F÷2rÀ¢vFWföÇV6òæÖö&–ÆRç&WGW&ä&Ææ6Rs¢u6ÆFòFWföÇf–&ÆRrÀ¢vFWföÇV6òæÖö&–ÆRæ†4VÆ–v–&ÆT—FV×2s¢t†’'L:Ö7VÆ÷2F—7öæ–&ÆW2rÀ¢vFWföÇV6òæÖö&–ÆRææôVÆ–v–&ÆT&Ææ6Rs¢u6–â'L:Ö7VÆ÷2F—7öæ–&ÆW2rÀ¢vFWföÇV6òæÖö&–ÆRæ÷W&F–öåG—UF—FÆRs¢|+õ\:’6R†,:òrÀ¢vFWföÇV6òæÖö&–ÆRæ÷W&F–öåG—U7V'F—FÆRs ¢tVÆ–vRVçG&RFWföÇfW"ò6Ö&–"&öGV7F÷2ârÀ¢vFWföÇV6òæÖö&–ÆRç&WGW&äöæÇ’s¢u6öÆòFWföÇV6œ;6ârÀ¢vFWföÇV6òæÖö&–ÆRæW†6†ævRs¢t6Ö&–òrÀ¢vFWföÇV6òæÖö&–ÆRæ—FV×5F—FÆRs¢u&öGV7F÷2VR&Vw&W6ârÀ¢vFWföÇV6òæÖö&–ÆRæ—FV×57V'F—FÆRs ¢u6VÆV66–öæÆ÷2'L:Ö7VÆ÷2R–æf÷&Ö6çF–FBÂ6öæF–6œ;6â’Ö÷F—fòârÀ¢vFWföÇV6òæÖö&–ÆRææô—FV×2s ¢tW7FfVçFæòF–VæR'L:Ö7VÆ÷2F—7öæ–&ÆW2&FWföÇV6œ;6âârÀ¢vFWföÇV6òæÖö&–ÆRç6öÆEfÇVRs¢ufVæF–Fó¢·fÇVWÒrÀ¢vFWföÇV6òæÖö&–ÆRæf–Æ&ÆUfÇVRs¢tF—7öæ–&ÆS¢·fÇVWÒrÀ¢vFWföÇV6òæÖö&–ÆRçVçF—G’s¢t6çF–FBrÀ¢vFWföÇV6òæÖö&–ÆRæÖ†–×VÕVçF—G’s¢tÜ:†–Öó¢·fÇVWÒrÀ¢vFWföÇV6òæÖö&–ÆRæ6öæF—F–öâs¢t6öæF–6œ;6âFVÂ&öGV7FòrÀ¢vFWföÇV6òæÖö&–ÆRç&V6öâs¢tÖ÷F—fòFRÆFWföÇV6œ;6ârÀ¢vFWföÇV6òæÖö&–ÆRç7Fö6µ&WGW&âs¢u&Vw&W6"Â–çfVçF&–òrÀ¢vFWföÇV6òæÖö&–ÆRç7Fö6µ&WGW&äöâs ¢tVÂ6ÆFòF—7öæ–&ÆRFVÂ&öGV7Fò6W,:&WVW7FòârÀ¢vFWföÇV6òæÖö&–ÆRç7Fö6µ&WGW&äöfbs ¢tÆFWföÇV6œ;6â6R&Vv—7G&,:6–â&WöæW"VÂ–çfVçF&–òârÀ¢vFWföÇV6òæÖö&–ÆRæW†6†ævT—FV×5F—FÆRs¢u&öGV7F÷2FVÂ6Ö&–òrÀ¢vFWföÇV6òæÖö&–ÆRæW†6†ævT—FV×57V'F—FÆRs ¢tÆ÷2çVWf÷2&öGV7F÷26ÆG,:âFVÂ–çfVçF&–òÂ&V6–ò7GVÂârÀ¢vFWföÇV6òæÖö&–ÆRæFE&öGV7Bs¢tw&Vv"&öGV7FòrÀ¢vFWföÇV6òæÖö&–ÆRæW†6†ævTV×G’s ¢tw&VvVÂ&öGV7FòVR&V6–&—,:VÂ6Æ–VçFRârÀ¢vFWföÇV6òæÖö&–ÆRç6VÆV7DW†6†ævU&öGV7Bs¢tVÆVv—"&öGV7FòFVÂ6Ö&–òrÀ¢vFWföÇV6òæÖö&–ÆRç6V&6…&öGV7Bs¢t'W66"&öGV7FòrÀ¢vFWföÇV6òæÖö&–ÆRææõ&öGV7G5F—FÆRs¢tæò6RVæ6öçG&&öâ&öGV7F÷2rÀ¢vFWföÇV6òæÖö&–ÆRææõ&öGV7G4ÖW76vRs ¢u&Wf—6Æ,;§7VVFòVÂ6L:ÆövòFR&öGV7F÷27F—f÷2ârÀ¢vFWföÇV6òæÖö&–ÆRç&öGV7E&–6Rs¢u&V6–ò7GVÃ¢·fÇVWÒrÀ¢vFWföÇV6òæÖö&–ÆRçW%Væ—Bs¢w·fÇVWÒ÷"Væ–FBrÀ¢vFWföÇV6òæÖö&–ÆRç&VÖ÷fRs¢uV—F"&öGV7FòrÀ¢vFWföÇV6òæÖö&–ÆRæf–ææ6–ÅF—FÆRs¢t§W7FRf–ææ6–W&òrÀ¢vFWföÇV6òæÖö&–ÆRç&WGW&æVE&öGV7G2s¢u&öGV7F÷2FWgVVÇF÷2rÀ¢vFWföÇV6òæÖö&–ÆRæW†6†ævU&öGV7G2s¢u&öGV7F÷2FVÂ6Ö&–òrÀ¢vFWföÇV6òæÖö&–ÆRæF–ffW&Væ6U&V6V—fRs¢tF–fW&Væ6–÷"6ö'&"rÀ¢vFWföÇV6òæÖö&–ÆRç&VgVæEfÇVRs¢ufÆ÷"&VVÖ&öÇ6"rÀ¢vFWföÇV6òæÖö&–ÆRæ7W7FöÖW%—2s¢tVÂ6Æ–VçFRvÆF–fW&Væ6–ârÀ¢vFWföÇV6òæÖö&–ÆRæ6ö×ç•&VgVæG2s¢tÆV×&W6&VVÖ&öÇ6Â6Æ–VçFRârÀ¢vFWföÇV6òæÖö&–ÆRææôf–ææ6–ÄÖ÷fVÖVçBs¢tæò†',:Ö÷f–Ö–VçFòf–ææ6–W&òârÀ¢vFWföÇV6òæÖö&–ÆRç–ÖVçDÖWF†öBs¢tf÷&ÖFRvòò&VVÖ&öÇ6òrÀ¢vFWföÇV6òæÖö&–ÆRç–ÖVçD†VÇW"s¢u&WV–W&RVæ6W6œ;6âFR6¦&–W'FârÀ¢vFWföÇV6òæÖö&–ÆRç6VÆV7E–ÖVçBs¢u6VÆV66–öæ"f÷&ÖrÀ¢vFWföÇV6òæÖö&–ÆRç6V&6…–ÖVçBs¢t'W66"f÷&ÖrÀ¢vFWföÇV6òæÖö&–ÆRææõ–ÖVçDÖWF†öG2s¢tæò†’f÷&Ö2F—7öæ–&ÆW2rÀ¢vFWföÇV6òæÖö&–ÆRææõ–ÖVçDÖWF†öG4ÖW76vRs ¢t6öæf–wW&Væf÷&ÖFR6ö'&ò–æÖVF–FòçFW2FR6öæ6ÇV—"ârÀ¢vFWföÇV6òæÖö&–ÆRç&Wf–WuF—FÆRs¢u&Wf—6"’6öæ6ÇV—"rÀ¢vFWföÇV6òæÖö&–ÆRç&Wf–Wu7V'F—FÆRs ¢t6öæf—&ÖÆ÷2FF÷2çFW2FRÖ÷fW"–çfVçF&–ò’6¦ârÀ¢vFWföÇV6òæÖö&–ÆRææ÷FW2s¢tö'6W'f6–öæW2–çFW&æ2†÷6–öæÂ’rÀ¢vFWföÇV6òæÖö&–ÆRç&ö6W76–ærs¢u&ö6W6æFòââârÀ¢vFWföÇV6òæÖö&–ÆRæ6ö×ÆWFTW†6†ævRs¢t6öæ6ÇV—"6Ö&–òrÀ¢vFWföÇV6òæÖö&–ÆRæ6ö×ÆWFU&WGW&âs¢t6öæ6ÇV—"FWföÇV6œ;6ârÀ¢vFWföÇV6òæÖö&–ÆRæ6öæf—&ÖF–öä†VÇW"s ¢tÆ6öæf—&Ö6œ;6âVVFRÖ÷fW"–çfVçF&–ò’&Vv—7G&"VÂ§W7FRVâ6¦ârÀ¢vFWföÇV6òæÖö&–ÆRç&V6VçEF—FÆRs¢t÷W&6–öæW2&V6–VçFW2rÀ¢vFWföÇV6òæÖö&–ÆRç&V6VçE7V'F—FÆRs ¢|9¦ÇF–Ö2FWföÇV6–öæW2’6Ö&–÷2FRW7FV×&W6ârÀ¢vFWföÇV6òæÖö&–ÆRæÆöF–æu&V6VçBs¢t6&væFò÷W&6–öæW2&V6–VçFW2rÀ¢vFWföÇV6òæÖö&–ÆRæV×G•&V6VçBs ¢tæò6R6öæ6ÇW–W&öâFWföÇV6–öæW2ò6Ö&–÷2&V6–VçFVÖVçFRârÀ¢vFWföÇV6òæÖö&–ÆRç7V66W74ÖW76vRs¢t÷W&6œ;6â¶6öFWÒ6öæ6ÇV–F6öâ:—†—FòârÀ¢vFWföÇV6òæÖö&–ÆRçVæW‡V7FVDW'&÷"s ¢tæògVR÷6–&ÆR6öæ6ÇV—"Æ÷W&6œ;6ââ–çL:–çFÆòFRçVWfòârÀ¢vFWföÇV6òæÖö&–ÆRçfÆ–FF–öâç6ÆU&WV—&VBs ¢t–æf÷&ÖVÂ<;6F–vòò–FVçF–f–6F÷"FRÆfVçFârÀ¢vFWföÇV6òæÖö&–ÆRçfÆ–FF–öâæ–çfÆ–EVçF—G’s ¢t–æf÷&ÖVæ6çF–FBl:Æ–F&·&öGV7GÒârÀ¢vFWföÇV6òæÖö&–ÆRçfÆ–FF–öâçVçF—G”W†6VVFVBs ¢tÆ6çF–FBFR·&öGV7GÒ7WW&VÂ6ÆFòFWföÇf–&ÆRârÀ¢vFWföÇV6òæÖö&–ÆRçfÆ–FF–öâç&V6öå&WV—&VBs ¢t–æf÷&ÖVÂÖ÷F—fòFRFWföÇV6œ;6âFR·&öGV7GÒârÀ¢vFWföÇV6òæÖö&–ÆRçfÆ–FF–öâç6VÆV7E&WGW&ä—FVÒs ¢u6VÆV66–öæÂÖVæ÷2Vâ&öGV7Fò&FWföÇfW"ârÀ¢vFWföÇV6òæÖö&–ÆRçfÆ–FF–öâç6VÆV7DW†6†ævT—FVÒs ¢tw&VvÂÖVæ÷2Vâ&öGV7Fò&VÂ6Ö&–òârÀ¢vFWföÇV6òæÖö&–ÆRçfÆ–FF–öâç6VÆV7E–ÖVçBs ¢u6VÆV66–öæÆf÷&ÖW6F&§W7F"ÆF–fW&Væ6–ârÀ¢vFWföÇV6òæÖö&–ÆRæ6öæF—F–öâç6VÆVBs¢tçVWfòò6VÆÆFòrÀ¢vFWföÇV6òæÖö&–ÆRæ6öæF—F–öâæ÷VæVBs¢t&–W'FòrÀ¢vFWföÇV6òæÖö&–ÆRæ6öæF—F–öâçW6VBs¢uW6FòrÀ¢vFWföÇV6òæÖö&–ÆRæ6öæF—F–öâæFVfV7F—fRs¢t6öâFVfV7FòrÀ¢vFWföÇV6òæÖö&–ÆRæ6öæF—F–öâæFÖvVBs¢tfW&–FòrÀ¢vFWföÇV6òæÖö&–ÆRæ6öæF—F–öâæ÷F†W"s¢t÷G&6öæF–6œ;6ârÀ ¢òòfVçF2æòÆ—V–FF2Öö&–ÆP¢wfVæF4æôÆ—V–FF2ç&V6V&–ÖVçF÷2s¢t6ö'&÷2rÀ¢wfVæF4æôÆ—V–FF2ç6VÕ&V6V&–ÖVçF÷2s¢tæ–æ|;¦â6ö'&ò&Vv—7G&FòârÀ¢wfVæF4æôÆ—V–FF2ç&VfW&Væ6–s¢u&VfW&Væ6–rÀ¢wfVæF4æôÆ—V–FF2ç&V6V&–ÖVçFòs¢t6ö'&òrÀ¢wfVæF4æôÆ—V–FF2ç&V6V&–ÖVçFõF÷FÂs¢uF÷FÂrÀ¢wfVæF4æôÆ—V–FF2ç&V6V&–ÖVçFõ&6–Âs¢u&6–ÂrÀ ¢òòvW7Fœ;6â(	B&FvW2’Væ6&W¦FòFÖ–à¢vvW7Fòç6WGF–æw2æ&FvRæW‡W&–ÖVçFÂs¢tW‡W&–ÖVçFÂrÀ¢vvW7Fòç6WGF–æw2æ&FvRæ6öÖ–æu6ööâs¢u,;7†–ÖÖVçFRrÀ¢vvW7Fòç6WGF–æw2æFÖ–ä†VFW"çF—FÆRs¢t6öæf–wW&6œ;6âFRÆV×&W6rÀ¢vvW7Fòç6WGF–æw2æFÖ–ä†VFW"ç7V'F—FÆRs ¢t÷&væ—¦V×&W6ÂWV—òÂ÷W&6œ;6â’6ö×Væ–66œ;6âârÀ¢vvW7Fòæ6FÆörçvV$6FÆörs¢t6L:ÆövòvV"rÀ¢vvW7Fòæ6FÆörçvV$6FÆötFW62s ¢tW‡W&–Væ6–6ö×ÆWFFVÂ6L:ÆövòVâVÂæfVvF÷"rÀ¢vvW7Fòæ6FÆörçvV$6FÆöt&FvRs¢utT"rÀ¢vvW7FòæfVGW&T–å&öw&W72s¢tfÇV¦òÜ;7f–ÂVâWföÇV6œ;6âârÀ¢w&öGWFòçvV$Æ—7Bç6VÆV7F–öâçF—FÆTÖç’s¢u6VÆV66–öæ":×FV×2rÀ¢w&öGWFòçvV$Æ—7Bç6VÆV7F–öâçF—FÆTöæRs¢u6VÆV66–öæ":×FVÒrÀ¢w&öGWFòçvV$Æ—7Bç6VÆV7F–öâç7V'F—FÆTÖç’s ¢tÖ&6&öGV7F÷2’6W'f–6–÷2’w&VvFöFòÆfVçFFRVæ6öÆfW¢ârÀ¢w&öGWFòçvV$Æ—7Bç6VÆV7F–öâç7V'F—FÆTöæRs ¢t,;§7VVF,:–F&–æ6ÇV—"Vâ&öGV7Fòò6W'f–6–òVâÆfVçFârÀ¢w&öGWFòçvV$Æ—7BæVF—BçF—FÆRs¢tVF—F"&öGV7F÷2rÀ¢w&öGWFòçvV$Æ—7BæVF—Bç7V'F—FÆRs ¢tvW7F–öæGR6L:ÆövòFR&öGV7F÷2Â7Fö6²Â&V6–÷2R–Ü:vVæW2ârÀ¢w&öGWFòçvV$Æ—7BæFVfVÇBç7V'F—FÆRs ¢t6öç7VÇF,:–FFVÂ6L:Æövò6öâ66–öæW2FRÖ÷7G&F÷"ârÀ¢w&öGWFòçvV$Æ—7BææWt—FVÒs¢tçVWfò:×FVÒrÀ¢w&öGWFòçvV$Æ—7Bç&–çEFbs¢t–×&–Ö—"DbrÀ¢w&öGWFòçvV$Æ—7BçV&Æ–46FÆötÆ–æ²s¢tVæÆ6RFVÂ6L:ÆövòrÀ¢w&öGWFòçvV$Æ—7BçV&Æ–46FÆöu&W&–ærs¢u&W&æFòââârÀ¢w&öGWFòçvV$Æ—7BçV&Æ–46FÆöt6÷–VBs ¢tVæÆ6R;¦&Æ–6òFVÂ6L:Æövò6÷–FòârÀ¢w&öGWFòçvV$Æ—7BçV&Æ–46FÆötW'&÷"s ¢tæògVR÷6–&ÆR&W&"VÂVæÆ6RFVÂ6L:ÆövòârÀ¢v6FÆöu&W6W'fF–öç2çF—FÆRs¢u&W6W'f2FVÂ6L:ÆövòrÀ¢v6FÆöu&W6W'fF–öç2ç7V'F—FÆRs ¢t6ö×;Æ26öÆ–6—GVFW2&V6–&–F2÷"VÂ6L:Æövòf—'GVÂârÀ¢v6FÆöu&W6W'fF–öç2æÆöF–æuF—FÆRs¢t6&væFò&W6W'f2rÀ¢v6FÆöu&W6W'fF–öç2æÆöF–æu7V'F—FÆRs ¢u6–æ7&öæ—¦æFòÆ26öÆ–6—GVFW2FRW7FR6öÖW&6–òârÀ¢v6FÆöu&W6W'fF–öç2æFWF–ÄÆöF–ærs¢t6&væFòFWFÆÆW2rÀ¢v6FÆöu&W6W'fF–öç2æFWF–ÄÆöF–æu7V'F—FÆRs ¢t'W66æFòÆ÷2&öGV7F÷2’FF÷2FVÂ6Æ–VçFRârÀ¢v6FÆöu&W6W'fF–öç2æFWF–ÅF—FÆRs¢tFWFÆÆW2FRÆ&W6W'frÀ¢v6FÆöu&W6W'fF–öç2æV×G’s¢tæò6RVæ6öçG&&öâ&W6W'f2ârÀ¢v6FÆöu&W6W'fF–öç2æW'&÷"s¢tæògVR÷6–&ÆR6&v"Æ2&W6W'f2ârÀ¢v6FÆöu&W6W'fF–öç2ç7FGW2s¢tW7FFòrÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æÇ’s¢tÆ–6"rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æ6ÆV"s¢tÆ–×–"f–ÇG&÷2rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2ç7FGW2ç6VÆV7FVD6÷VçBs¢w¶6÷VçGÒ6VÆV66–öæF÷2rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2çW&–öBs¢uW,:ÖöFòrÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2ç7F'Bs¢t–æ–6–òrÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æVæBs¢tf–ârÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRs¢tfV6†rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRæÆÂs¢uFöF2Æ2fV6†2rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRçFöF’s¢t†÷’rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRç–W7FW&F’s¢t–W"rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRæÆ7CtF—2s¢uVÇF–Ö÷2rF–2rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRææW‡CtF—2s¢u&÷†–Ö÷2rF–2rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRçF†—4ÖöçF‚s¢tW7FRÖW2rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRææW‡DÖöçF‚s¢u,;7†–ÖòÖW2rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRæ7W7FöÕ&ævRs¢t–çFW'fÆòW'6öæÆ—¦FòrÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRç–6²s¢tVÆVv—"fV6†rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRç–6µ&ævRs¢tFRF–FÂF–rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRæ†VÇFW‡Bs¢u6VÆV66–öæ"fV6†rÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRç7F'D†VÇFW‡Bs ¢u6VÆV66–öæ"fV6†–æ–6–ÂrÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRæVæD†VÇFW‡Bs¢u6VÆV66–öæ"fV6†f–æÂrÀ¢v6FÆöu&W6W'fF–öç2æf–ÇFW'2æFFRç&ævT†VÇFW‡Bs¢u6VÆV66–öæ"W&–öFòrÀ¢v6FÆöu&W6W'fF–öç2ç7FGW2ç&V6V—fVBs¢u&V6–&–FrÀ¢v6FÆöu&W6W'fF–öç2ç7FGW2ææÇ—6—2s¢tVâì:Æ—6—2rÀ¢v6FÆöu&W6W'fF–öç2ç7FGW2æ6öæf—&ÖVBs¢t6öæf—&ÖFrÀ¢v6FÆöu&W6W'fF–öç2ç7FGW2æ6æ6VÆÆVBs¢t6æ6VÆFrÀ¢v6FÆöu&W6W'fF–öç2ç7FGW2æ6öçfW'FVBs¢t6öçfW'F–FVâfVçFrÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'BçF—FÆRs¢t6öçfW'F—"VâfVçFrÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'BæFW67&—F–öâs ¢ufÆ–FVÂ7Fö6²’7&VVæfVçF÷"6ö'&"6öâW7F÷2&öGV7F÷2ârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'Bæ7F–öâs¢t6öçfW'F—"VâfVçFrÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'Bç&ö6W76–ærs¢t6öçf—'F–VæFòââârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'Bæ6öæf—&ÕF—FÆRs ¢|+ô6öçfW'F—"Æ&W6W'fVâfVçFòrÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'Bæ6öæf—&ÔÖW76vRs ¢u6RfÆ–F,:VÂ7Fö6²’Æ÷2:×FV×26RVçf–,:âVæfVçF÷"6ö'&"ârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'Bç7V66W72s ¢u&W6W'f6öçfW'F–FVâVæfVçF÷"6ö'&"ârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'Bæ6öçfW'FVEF—FÆRs¢ufVçF7&VFrÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'Bç6ÆT–Bs¢ufVçFrÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'BæW'&÷"ç7Fö6²s ¢u7Fö6²–ç7Vf–6–VçFR&6öçfW'F—"W7F&W6W'fârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'BæW'&÷"æ6öæf—&ÖVDöæÇ’s ¢t6öæf—&ÖRÆ&W6W'fçFW2FR6öçfW'F—&ÆVâfVçFârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'BæW'&÷"ç&ö6W76–ærs ¢tW7F&W6W'f–6RW7L:6öçf—'F–VæFòâ7GVÆ–6RÆçFÆÆârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'BæW'&÷"ç–ÖVçD6öæf–rs ¢t6öæf–wW&RVâF—òFR6ö'&ògWGW&òçFW2FRÆ6öçfW'6œ;6âârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'BæW'&÷"ç&öGV7Bs ¢uVæòFRÆ÷2&öGV7F÷2&W6W'fF÷2–æòW7L:F—7öæ–&ÆRârÀ¢v6FÆöu&W6W'fF–öç2æ6öçfW'BæW'&÷"ævVæW&–2s ¢tæògVR÷6–&ÆR6öçfW'F—"Æ&W6W'fVâfVçFârÀ¢v6FÆöu&W6W'fF–öç2æ—FV×2s¢|:×FV×2rÀ¢v6FÆöu&W6W'fF–öç2ç&öGV7G2s¢u&öGV7F÷2&W6W'fF÷2rÀ¢v6FÆöu&W6W'fF–öç2ææ÷FW2s¢tö'6W'f6œ;6ârÀ¢v6FÆöu&W6W'fF–öç2ææôæ÷FW2s¢tæò6R–æf÷&Ü;2æ–æwVæö'6W'f6œ;6âârÀ¢v6FÆöu&W6W'fF–öç2ç&Wf–÷W2s¢u:v–æçFW&–÷"rÀ¢v6FÆöu&W6W'fF–öç2ææW‡Bs¢u:v–æ6–wV–VçFRrÀ¢w&öGWFòçvV$Æ—7BæVF—Bæ&ææW"s ¢tÖöFòVF–6œ;6â7F—fò(
+"¶6÷VçGÒ:×FV×2Væ6öçG&F÷2(
+"†¢6Æ–2VâVâ&öGV7Fò&6Ö&–&ÆòârÀ¢w&öGWFòçvV$Æ—7Bç6V&6„†–çBs¢t'W66"÷"æöÖ'&RÂ<;6F–vòò4µRââârÀ¢w&öGWFòçvV$Æ—7Bç&VfW&Væ6U6fVBs ¢u&VfW&Væ6–FRf—7VÆ—¦6œ;6â7GVÆ—¦FârÀ¢w&öGWFòçvV$Æ—7Bçf–WrçfW'F–6Âs¢ufW'F–6ÂrÀ¢w&öGWFòçvV$Æ—7Bçf–Wræ†÷&—¦öçFÂs¢t†÷&—¦öçFÂrÀ¢w&öGWFòçvV$Æ—7Bçf–WræÆ—7Bs¢tÆ—7FrÀ¢w&öGWFòçvV$Æ—7Bçf–Wræw&–Bs¢t7VG,:Ö7VÆrÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"æ6FVv÷'’s¢t6FVv÷,:ÖrÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"æ6FVv÷'”ÆÂs¢uFöF2Æ26FVv÷,:Ö2rÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"æfÆw2s¢tÖ&6F÷&W2rÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"æfÆw4ÆÂs¢uFöF÷2Æ÷2:×FV×2rÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"æfÆw4ff÷&—FW2s¢tff÷&—F÷2rÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"æfÆw46FÆörs¢tVâ6L:ÆövòrÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"æfÆw4ff÷&—FW46FÆörs¢tff÷&—F÷2’6L:ÆövòrÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"ç7FGW4ÆÂs¢uFöF÷2rÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"ç7Fö6´ÆÂs¢uFöF÷2rÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"ç7Fö6´f–Æ&ÆRs¢tVâ7Fö6²rÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"ç7Fö6´Æ÷rs¢u7Fö6²&¦òrÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"ç7Fö6´÷WBs¢u6–â7Fö6²rÀ¢w&öGWFòçvV$Æ—7Bæf–ÇFW"ç7Fö6´æVvF—fRs¢u7Fö6²æVvF—fòrÀ¢w&öGWFòçvV$Æ—7Bç6÷'BæÆ&VÂs¢t÷&FVârÀ¢w&öGWFòçvV$Æ—7Bç6÷'BææÖRs¢t÷&FVæ"÷"æöÖ'&RrÀ¢w&öGWFòçvV$Æ—7Bç6÷'Bç&–6T62s¢tÖVæ÷"&V6–òrÀ¢w&öGWFòçvV$Æ—7Bç6÷'Bç&–6TFW62s¢tÖ–÷"&V6–òrÀ¢w&öGWFòçvV$Æ—7BçV–6²çv—F„–ÖvRs¢t6öâ–ÖvVârÀ¢w&öGWFòçvV$Æ—7BçV–6²æÆ÷u7Fö6²s¢u7Fö6²&¦òrÀ¢w&öGWFòçvV$Æ—7BæW'&÷%F—FÆRs¢tæò6RVFò6&v"VÂ6L:ÆövòârÀ¢w&öGWFòçvV$Æ—7Bæ—FVÕv—F†÷WDæÖRs¢|8×FVÒ6–âæöÖ'&RrÀ¢w&öGWFòçvV$Æ—7BçF&ÆRç&öGV7Bs¢u&öGV7FòrÀ¢w&öGWFòçvV$Æ—7BçF&ÆRæ6FVv÷'’s¢t6FVv÷,:ÖrÀ¢w&öGWFòçvV$Æ—7BçF&ÆRæ6öFRs¢t<;6F–vòrÀ¢w&öGWFòçvV$Æ—7BçF&ÆRç&–6Rs¢u&V6–òrÀ¢w&öGWFòçvV$Æ—7Bæ—FV×5W%vTÆ&VÂs¢|8×FV×2÷":v–ærÀ¢w&öGWFòçvV$Æ—7Bçv–æF–öâç7VÖÖ'’s ¢tÖ÷7G&æFò·7F'GÒ¶VæGÒFR·F÷FÇÒ:×FV×2rÀ¢w&öGWFòçvV$Æ—7Bç7Fö6´æ÷DÆ–6&ÆRs¢u6–â6öçG&öÂrÀ¢w&öGWFòçvV$Æ—7Bç7Fö6µVçF—G’s¢t6çBâ·fÇVWÒrÀ¢w&öGWFòçvV$Æ—7Bç7Fö6´Æ÷rs¢u7Fö6²&¦òrÀ¢w&öGWFòçvV$Æ—7Bç7Fö6´÷WBs¢u6–â7Fö6²rÀ¢w&öGWFòçvV$Æ—7Bç7Fö6´æVvF—fRs¢u7Fö6²æVvF—fòrÀ¢w&öGWFòçvV$Æ—7Bæ6öFUVæf–Æ&ÆRs¢u6–â<;6F–vòrÀ¢w&öGWFòçvV$Æ—7Bçf–Wt7F–öâs¢ufW"rÀ¢w&öGWFòæff÷&—FRæFEFööÇF—s¢tÖ&6"6öÖòff÷&—FòrÀ¢w&öGWFòæff÷&—FRç&VÖ÷fUFööÇF—s¢uV—F"FRff÷&—F÷2rÀ¢w&öGWFòæff÷&—FRæVæ&ÆVDfVVF&6²s¢tff÷&—Fò7F—fFòrÀ¢w&öGWFòæff÷&—FRæF—6&ÆVDfVVF&6²s¢tff÷&—FòFW67F—fFòrÀ¢w&öGWFòæff÷&—FRçWFFTW'&÷"s ¢tæò6RVFò7GVÆ—¦"VÂff÷&—FòFVÂ&öGV7FòârÀ¢w&öGWFòæ6FÆöræVæ&ÆUFööÇF—s¢tF—7öæ–&–Æ—¦"&6L:ÆövòrÀ¢w&öGWFòæ6FÆöræF—6&ÆUFööÇF—s ¢uV—F"FRÆF—7öæ–&–Æ–FB&6L:ÆövòrÀ¢w&öGWFòæ6FÆöræVæ&ÆVDfVVF&6²s¢tF—7öæ–&ÆR&6L:Æövò7F—fFòrÀ¢w&öGWFòæ6FÆöræF—6&ÆVDfVVF&6²s¢tF—7öæ–&ÆR&6L:ÆövòFW67F—fFòrÀ¢w&öGWFòæ6FÆörçWFFTW'&÷"s ¢tæò6RVFò7GVÆ—¦"ÆF—7öæ–&–Æ–FBVâVÂ6L:ÆövòârÀ¢w&öGWFòæ6FÆörç7FGW4Æ&VÂs¢t6L:ÆövòrÀ¢w&öGWFòæ6FÆöræf–Æ&ÆU7FGW2s¢tF—7öæ–&ÆRrÀ¢w&öGWFòæ6FÆörçVæf–Æ&ÆU7FGW2s¢tæòF—7öæ–&ÆRrÀ¢ÒÀ§Ó° 
