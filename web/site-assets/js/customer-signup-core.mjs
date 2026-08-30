@@ -128,6 +128,30 @@ export function normalizeCustomerSignupValidationResponse(payload) {
     code: safeText(response.code, 80),
     message: safeText(response.message, 280),
     company: normalizeCustomerSignupCompany(response.empresa),
+    customer: normalizeCustomerSignupCustomer(response.cliente),
+  });
+}
+
+export function normalizeCustomerSignupCustomer(raw) {
+  const customer = raw && typeof raw === 'object' ? raw : {};
+  const uf = safeText(customer.uf, 3).toUpperCase();
+  return Object.freeze({
+    tipoCadastro: safeText(customer.tipoCadastro, 32).toUpperCase() === 'COMPLETO' ? 'COMPLETO' : 'SIMPLES',
+    percentualQualidadeCadastro: Math.max(0, Math.min(100, Number(customer.percentualQualidadeCadastro) || 0)),
+    tipoPessoa: safeText(customer.tipoPessoa, 8).toUpperCase() === 'PJ' ? 'PJ' : 'PF',
+    documento: safeText(customer.documento, 24),
+    nome: safeText(customer.nome, 160),
+    telefone: safeText(customer.telefone, 32),
+    email: safeText(customer.email, 254).toLowerCase(),
+    cep: safeText(customer.cep, 16),
+    logradouro: safeText(customer.logradouro, 180),
+    numero: safeText(customer.numero, 24),
+    complemento: safeText(customer.complemento, 100),
+    bairro: safeText(customer.bairro, 100),
+    cidade: safeText(customer.cidade, 100),
+    uf,
+    enderecoCompleto: safeText(customer.enderecoCompleto, 280),
+    observacoes: safeText(customer.observacoes, 600),
   });
 }
 
@@ -176,25 +200,29 @@ export function calculateCustomerSignupQuality(values) {
 }
 
 export function buildCustomerSignupPayload(values, link) {
-  const tipoCadastro = values.tipoCadastro === 'COMPLETO' ? 'COMPLETO' : 'SIMPLES';
+  const hasDetailedData = ['cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'observacoes']
+    .some((key) => Boolean(text(values[key], key === 'observacoes' ? 600 : 180)));
+  const tipoCadastro = values.tipoCadastro === 'COMPLETO' || hasDetailedData ? 'COMPLETO' : 'SIMPLES';
   const nome = text(values.nome, 160);
   const documento = text(values.documento, 24);
   const email = text(values.email, 254).toLowerCase();
   if (!nome || !documento || values.consentimento !== true) throw new CustomerSignupValidationError('required');
   if (!validEmail(email)) throw new CustomerSignupValidationError('emailInvalid');
+  const percentualQualidadeCadastro = calculateCustomerSignupQuality({ ...values, tipoCadastro }).percentage;
   const payload = {
     idUnicoDaEmpresa: link.companyId, token: link.token, tipoCadastro,
-    percentualQualidadeCadastro: calculateCustomerSignupQuality(values).percentage,
+    percentualQualidadeCadastro,
+    documentoOriginal: text(values.documentoOriginal || link.documento, 24),
     tipoPessoa: values.tipoPessoa === 'PJ' ? 'PJ' : 'PF', documento, nome,
     telefone: text(values.telefone, 32), email,
-    cep: tipoCadastro === 'COMPLETO' ? text(values.cep, 16) : '',
-    logradouro: tipoCadastro === 'COMPLETO' ? text(values.logradouro, 180) : '',
-    numero: tipoCadastro === 'COMPLETO' ? text(values.numero, 24) : '',
-    complemento: tipoCadastro === 'COMPLETO' ? text(values.complemento, 100) : '',
-    bairro: tipoCadastro === 'COMPLETO' ? text(values.bairro, 100) : '',
-    cidade: tipoCadastro === 'COMPLETO' ? text(values.cidade, 100) : '',
-    uf: tipoCadastro === 'COMPLETO' ? text(values.uf, 3).toUpperCase() : '',
-    observacoes: tipoCadastro === 'COMPLETO' ? text(values.observacoes, 600) : '',
+    cep: text(values.cep, 16),
+    logradouro: text(values.logradouro, 180),
+    numero: text(values.numero, 24),
+    complemento: text(values.complemento, 100),
+    bairro: text(values.bairro, 100),
+    cidade: text(values.cidade, 100),
+    uf: text(values.uf, 3).toUpperCase(),
+    observacoes: text(values.observacoes, 600),
     origem: 'PUBLIC_HTML', enviadoEm: new Date().toISOString(),
   };
   payload.enderecoCompleto = [payload.logradouro, payload.numero, payload.complemento, payload.bairro, payload.cidade, payload.uf, payload.cep].filter(Boolean).join(', ');
@@ -203,7 +231,13 @@ export function buildCustomerSignupPayload(values, link) {
 
 export function buildCustomerSignupValidationRequest({ apiBaseUrl, link }) {
   const base = normalizeApiBaseUrl(apiBaseUrl);
-  return Object.freeze({ endpoint: `${base}/public/api/auto-customer/token?idUnicoDaEmpresa=${encodeURIComponent(link.companyId)}&token=${encodeURIComponent(link.token)}`, options: Object.freeze({ method: 'GET', credentials: 'omit', cache: 'no-store', headers: Object.freeze({ Accept: 'application/json' }) }) });
+  const doc = text(link.documento, 24);
+  const params = new URLSearchParams({
+    idUnicoDaEmpresa: link.companyId,
+    token: link.token,
+  });
+  if (doc) params.set('doc', doc);
+  return Object.freeze({ endpoint: `${base}/public/api/auto-customer/token?${params.toString()}`, options: Object.freeze({ method: 'GET', credentials: 'omit', cache: 'no-store', headers: Object.freeze({ Accept: 'application/json' }) }) });
 }
 
 export function buildCustomerSignupRequest({ apiBaseUrl, link, values }) {

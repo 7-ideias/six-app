@@ -20,6 +20,8 @@ class ClientesUsuarioMobileScreen extends StatefulWidget {
       _ClientesUsuarioMobileScreenState();
 }
 
+enum _ClienteStatusFilter { todos, ativos, inativos }
+
 class _ClientesUsuarioMobileScreenState
     extends State<ClientesUsuarioMobileScreen> {
   SixMobileColorScheme get _colors => context.sixMobileColors;
@@ -48,6 +50,7 @@ class _ClientesUsuarioMobileScreenState
   String? _erro;
   ClienteUsuarioListResponse? _response;
   String _filter = '';
+  _ClienteStatusFilter _statusFilter = _ClienteStatusFilter.todos;
 
   List<ClienteUsuario> get _clientes =>
       _response?.clientes ?? <ClienteUsuario>[];
@@ -59,10 +62,17 @@ class _ClientesUsuarioMobileScreenState
       RegExp(r'[^a-z0-9]'),
       '',
     );
-    if (term.isEmpty) return _clientes;
-
     return _clientes
         .where((ClienteUsuario cliente) {
+          if (_statusFilter == _ClienteStatusFilter.ativos && !cliente.ativo) {
+            return false;
+          }
+          if (_statusFilter == _ClienteStatusFilter.inativos && cliente.ativo) {
+            return false;
+          }
+          if (term.isEmpty) {
+            return true;
+          }
           final String source =
               '${cliente.nome} ${cliente.documento} ${cliente.telefone} ${cliente.email} ${cliente.cidade} ${cliente.uf}'
                   .toLowerCase()
@@ -366,6 +376,192 @@ class _ClientesUsuarioMobileScreenState
     );
   }
 
+  Future<void> _openStatusFilter() async {
+    final _ClienteStatusFilter? selected =
+        await showModalBottomSheet<_ClienteStatusFilter>(
+          context: context,
+          useSafeArea: true,
+          backgroundColor: Colors.transparent,
+          barrierColor: Color(0x47000000),
+          builder: (BuildContext bottomSheetContext) {
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Container(
+                  padding: EdgeInsets.fromLTRB(18, 12, 18, 18),
+                  decoration: BoxDecoration(
+                    color: _surfaceColor,
+                    border: Border.all(color: _borderColor),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(28),
+                    ),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: _navigationShadowColor,
+                        blurRadius: 24,
+                        offset: Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Center(
+                        child: Container(
+                          width: 42,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: _borderColor,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 18),
+                      Text(
+                        _t('clientes.statusFilterTitle', 'Filtrar clientes'),
+                        style: TextStyle(
+                          color: _titleTextColor,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        _t(
+                          'clientes.statusFilterSubtitle',
+                          'Escolha quais cadastros deseja visualizar.',
+                        ),
+                        style: TextStyle(color: _mutedTextColor, height: 1.25),
+                      ),
+                      SizedBox(height: 18),
+                      _statusFilterOption(
+                        bottomSheetContext: bottomSheetContext,
+                        value: _ClienteStatusFilter.todos,
+                        icon: Icons.groups_2_outlined,
+                        title: _t('common.all', 'Todos'),
+                        subtitle: _t(
+                          'clientes.statusFilterAllSubtitle',
+                          'Exibe clientes ativos e inativos.',
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      _statusFilterOption(
+                        bottomSheetContext: bottomSheetContext,
+                        value: _ClienteStatusFilter.ativos,
+                        icon: Icons.check_circle_outline_rounded,
+                        title: _t('common.activePlural', 'Ativos'),
+                        subtitle: _t(
+                          'clientes.statusFilterActiveSubtitle',
+                          'Mostra apenas clientes ativos.',
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      _statusFilterOption(
+                        bottomSheetContext: bottomSheetContext,
+                        value: _ClienteStatusFilter.inativos,
+                        icon: Icons.remove_circle_outline_rounded,
+                        title: _t('common.inactivePlural', 'Inativos'),
+                        subtitle: _t(
+                          'clientes.statusFilterInactiveSubtitle',
+                          'Mostra apenas clientes inativos.',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+
+    if (selected == null || selected == _statusFilter || !mounted) {
+      return;
+    }
+
+    setState(() => _statusFilter = selected);
+  }
+
+  Widget _statusFilterOption({
+    required BuildContext bottomSheetContext,
+    required _ClienteStatusFilter value,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    final bool selected = _statusFilter == value;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => Navigator.of(bottomSheetContext).pop(value),
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 180),
+          padding: EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: selected ? _softAccentColor : _softSurfaceColor,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected ? _strongBorderColor : _borderColor,
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: selected ? _accentColor.withValues(alpha: 0.14) : null,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: _accentColor),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _titleTextColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _mutedTextColor,
+                        fontSize: 12,
+                        height: 1.25,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8),
+              Icon(
+                selected
+                    ? Icons.check_circle_rounded
+                    : Icons.chevron_right_rounded,
+                color: selected ? _accentColor : _mutedTextColor,
+                size: 22,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     context.select<LocaleSettingsProvider, String>(
@@ -384,6 +580,15 @@ class _ClientesUsuarioMobileScreenState
       scrollEffectOffset: 28,
       scrolledSurfaceOpacity: 0.70,
       actions: <Widget>[
+        IconButton(
+          tooltip: _statusFilterTooltip(),
+          onPressed: _loading ? null : _openStatusFilter,
+          icon: Icon(
+            _statusFilter == _ClienteStatusFilter.todos
+                ? Icons.filter_alt_outlined
+                : Icons.filter_alt_rounded,
+          ),
+        ),
         IconButton(
           tooltip: 'Novo cliente',
           onPressed: _loading ? null : _openCreateOptions,
@@ -1236,23 +1441,7 @@ class _ClientesUsuarioMobileScreenState
                                     ?.copyWith(fontWeight: FontWeight.w900),
                               ),
                               SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: <Widget>[
-                                  _status(cliente.ativo),
-                                  _sheetInfoChip(
-                                    Icons.person_outline_rounded,
-                                    _personTypeLabel(cliente.tipoPessoa),
-                                  ),
-                                  _sheetInfoChip(
-                                    Icons.assignment_outlined,
-                                    _registrationTypeLabel(
-                                      cliente.tipoCadastro,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              _status(cliente.ativo),
                             ],
                           ),
                         ),
@@ -1471,37 +1660,6 @@ class _ClientesUsuarioMobileScreenState
     );
   }
 
-  Widget _sheetInfoChip(IconData icon, String label) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      constraints: BoxConstraints(maxWidth: 188),
-      decoration: BoxDecoration(
-        color: _softSurfaceColor,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _borderColor),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 14, color: _accentColor),
-          SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: _titleTextColor,
-                fontSize: 11.5,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _historyRow(String label, String value) {
     return Padding(
       padding: EdgeInsets.only(bottom: 10),
@@ -1536,25 +1694,6 @@ class _ClientesUsuarioMobileScreenState
   }
 
   String _boolLabel(bool value) => value ? 'Sim' : 'Não';
-
-  String _personTypeLabel(String tipoPessoa) {
-    final String normalized = tipoPessoa.trim().toUpperCase();
-    switch (normalized) {
-      case 'PJ':
-        return 'Pessoa jurídica';
-      case 'PF':
-      default:
-        return 'Pessoa física';
-    }
-  }
-
-  String _registrationTypeLabel(String tipoCadastro) {
-    final String normalized = tipoCadastro.trim().toUpperCase();
-    if (normalized == 'COMPLETO') {
-      return 'Cadastro completo';
-    }
-    return 'Cadastro simples';
-  }
 
   String _registrationOriginLabel(String origemAutoCadastro) {
     final String normalized = origemAutoCadastro.trim().toLowerCase();
@@ -1616,6 +1755,17 @@ class _ClientesUsuarioMobileScreenState
     }
 
     return '$sign$buffer';
+  }
+
+  String _statusFilterTooltip() {
+    switch (_statusFilter) {
+      case _ClienteStatusFilter.ativos:
+        return _t('clientes.filterActiveTooltip', 'Filtrar: ativos');
+      case _ClienteStatusFilter.inativos:
+        return _t('clientes.filterInactiveTooltip', 'Filtrar: inativos');
+      case _ClienteStatusFilter.todos:
+        return _t('clientes.filterAllTooltip', 'Filtrar clientes');
+    }
   }
 }
 
