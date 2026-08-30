@@ -16,6 +16,7 @@ class UsuarioModel {
   final EnderecoModel? objEndereco;
   final PreferenciasIndividuaisDoUsuarioModel preferenciasIndividuaisDoUsuario;
   final bool enviarPreferenciasIndividuaisDoUsuario;
+  final bool fezOnboardingInicial;
 
   UsuarioModel({
     required this.nome,
@@ -33,6 +34,7 @@ class UsuarioModel {
     this.objEndereco,
     PreferenciasIndividuaisDoUsuarioModel? preferenciasIndividuaisDoUsuario,
     bool? enviarPreferenciasIndividuaisDoUsuario,
+    this.fezOnboardingInicial = false,
   }) : preferenciasIndividuaisDoUsuario =
            preferenciasIndividuaisDoUsuario ??
            PreferenciasIndividuaisDoUsuarioModel.padrao(),
@@ -68,6 +70,7 @@ class UsuarioModel {
             json['preferenciasIndividuaisDoUsuario'],
           ),
       enviarPreferenciasIndividuaisDoUsuario: true,
+      fezOnboardingInicial: json['fezOnboardingInicial'] == true,
     );
   }
 
@@ -112,6 +115,7 @@ class UsuarioModel {
     EnderecoModel? objEndereco,
     PreferenciasIndividuaisDoUsuarioModel? preferenciasIndividuaisDoUsuario,
     bool? enviarPreferenciasIndividuaisDoUsuario,
+    bool? fezOnboardingInicial,
   }) {
     return UsuarioModel(
       nome: nome ?? this.nome,
@@ -133,6 +137,8 @@ class UsuarioModel {
       enviarPreferenciasIndividuaisDoUsuario:
           enviarPreferenciasIndividuaisDoUsuario ??
           this.enviarPreferenciasIndividuaisDoUsuario,
+      fezOnboardingInicial:
+          fezOnboardingInicial ?? this.fezOnboardingInicial,
     );
   }
 

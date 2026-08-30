@@ -8,6 +8,8 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 
+import 'usuario_sixo_detalhe_mobile_screen.dart';
+
 class UsuariosSixoMobileScreen extends StatefulWidget {
   const UsuariosSixoMobileScreen({super.key, this.service});
 
@@ -83,6 +85,18 @@ class _UsuariosSixoMobileScreenState extends State<UsuariosSixoMobileScreen> {
         _loading = false;
       });
     }
+  }
+
+  Future<void> _openUser(AdminUsuarioEmpresaAtiva user) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => UsuarioSixoDetalheMobileScreen(
+          usuario: user,
+          service: _service,
+        ),
+      ),
+    );
+    if (mounted) await _loadUsers();
   }
 
   List<AdminUsuarioEmpresaAtiva> get _filteredUsers {
@@ -361,6 +375,7 @@ class _UsuariosSixoMobileScreenState extends State<UsuariosSixoMobileScreen> {
               child: _MobileSixoUserCard(
                 user: users[index],
                 roleLabel: _roleLabel(context, users[index].papel),
+                onTap: () => _openUser(users[index]),
               ),
             ),
           ),
@@ -392,10 +407,15 @@ class _UsuariosSixoMobileScreenState extends State<UsuariosSixoMobileScreen> {
 }
 
 class _MobileSixoUserCard extends StatelessWidget {
-  const _MobileSixoUserCard({required this.user, required this.roleLabel});
+  const _MobileSixoUserCard({
+    required this.user,
+    required this.roleLabel,
+    required this.onTap,
+  });
 
   final AdminUsuarioEmpresaAtiva user;
   final String roleLabel;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -405,15 +425,20 @@ class _MobileSixoUserCard extends StatelessWidget {
         : user.nomeExibicao.trim();
     return Semantics(
       container: true,
+      button: true,
       label: '$name, $roleLabel',
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: colors.surface,
+      child: Material(
+        color: colors.surface,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: colors.border),
+          side: BorderSide(color: colors.border),
         ),
-        child: Row(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             CircleAvatar(
@@ -490,7 +515,11 @@ class _MobileSixoUserCard extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right_rounded, color: colors.mutedText),
           ],
+            ),
+          ),
         ),
       ),
     );

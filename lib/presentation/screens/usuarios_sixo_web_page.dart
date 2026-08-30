@@ -6,6 +6,8 @@ import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 
+import 'usuario_sixo_detalhe_web_page.dart';
+
 class UsuariosSixoWebPage extends StatefulWidget {
   const UsuariosSixoWebPage({super.key, this.service});
 
@@ -25,6 +27,7 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
   bool _loadFailed = false;
   List<AdminUsuarioEmpresaAtiva> _users =
       const <AdminUsuarioEmpresaAtiva>[];
+  AdminUsuarioEmpresaAtiva? _selectedUser;
 
   @override
   void initState() {
@@ -110,6 +113,20 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
       });
     }
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+
+    if (isSuper && _selectedUser != null) {
+      return UsuarioSixoDetalheWebPage(
+        usuario: _selectedUser!,
+        service: _service,
+        onBack: () {
+          setState(() => _selectedUser = null);
+          _loadUsers();
+        },
+        onChanged: (_) {
+          _loadUsers();
+        },
+      );
+    }
 
     return Material(
       color: tokens.workspaceBackground,
@@ -327,6 +344,7 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
                 child: _WebSixoUserCard(
                   user: user,
                   roleLabel: _roleLabel(context, user.papel),
+                  onTap: () => setState(() => _selectedUser = user),
                 ),
               );
             },
@@ -360,10 +378,15 @@ class _UsuariosSixoWebPageState extends State<UsuariosSixoWebPage> {
 }
 
 class _WebSixoUserCard extends StatelessWidget {
-  const _WebSixoUserCard({required this.user, required this.roleLabel});
+  const _WebSixoUserCard({
+    required this.user,
+    required this.roleLabel,
+    required this.onTap,
+  });
 
   final AdminUsuarioEmpresaAtiva user;
   final String roleLabel;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -373,15 +396,20 @@ class _WebSixoUserCard extends StatelessWidget {
         : user.nomeExibicao.trim();
     return Semantics(
       container: true,
+      button: true,
       label: '$name, $roleLabel',
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: tokens.cardBackground,
+      child: Material(
+        color: tokens.cardBackground,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: tokens.cardBorder),
+          side: BorderSide(color: tokens.cardBorder),
         ),
-        child: Row(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Row(
           children: <Widget>[
             CircleAvatar(
               radius: 24,
@@ -464,7 +492,11 @@ class _WebSixoUserCard extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(width: 10),
+            Icon(Icons.chevron_right_rounded, color: tokens.mutedText),
           ],
+            ),
+          ),
         ),
       ),
     );

@@ -11,10 +11,12 @@ import '../../domain/services/regionalizacao/regionalizacao_service.dart';
 import '../../domain/services/usuario/usuario_service.dart';
 import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/locale_settings_provider.dart';
+import '../../providers/onboarding_inicial_provider.dart';
 import '../components/mobile/sixoapp_mobile_loading_scene.dart';
 import '../navigation/mobile_navigation_controller.dart';
 import 'auth_entry_mobile.dart';
 import 'mobile_main_shell.dart';
+import 'onboarding_inicial_mobile_screen.dart';
 
 class AuthGateMobile extends StatefulWidget {
   const AuthGateMobile({super.key});
@@ -72,21 +74,22 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
           break;
       }
 
-      try {
-        await EmpresaService().buscarDadosDaEmpresa();
-        if (mounted) {
-          await context
-              .read<ColaboradorAutorizacoesProvider>()
-              .carregarAutorizacoesDoUsuarioLogado(force: true);
-          await _applyAuthenticatedLocale();
-        }
-        await FirebasePushNotificationService().syncTokenForLoggedUser();
-      } catch (e) {
-        debugPrint('[AuthGateMobile] Erro ao restaurar dados da empresa: $e');
+      await EmpresaService().buscarDadosDaEmpresa();
+      if (mounted) {
+        await context
+            .read<ColaboradorAutorizacoesProvider>()
+            .carregarAutorizacoesDoUsuarioLogado(force: true);
+        await _applyAuthenticatedLocale();
+        await context.read<OnboardingInicialProvider>().carregar(force: true);
       }
+      await FirebasePushNotificationService().syncTokenForLoggedUser();
 
       if (!mounted) return;
-      _goToHome();
+      if (context.read<OnboardingInicialProvider>().precisaFazerOnboarding) {
+        _goToOnboarding();
+      } else {
+        _goToHome();
+      }
     } catch (error) {
       debugPrint('[AuthGateMobile] Falha temporária inesperada: $error');
       if (mounted) {
@@ -127,6 +130,27 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
           initialIndex: MobileNavigationController.dashIndex,
         ),
       ),
+    );
+  }
+
+  void _goToOnboarding() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => OnboardingInicialMobileScreen(
+          onCompleted: _replaceWithHome,
+        ),
+      ),
+    );
+  }
+
+  void _replaceWithHome(BuildContext onboardingContext) {
+    Navigator.of(onboardingContext).pushAndRemoveUntil<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => const MobileMainShell(
+          initialIndex: MobileNavigationController.dashIndex,
+        ),
+      ),
+      (Route<dynamic> route) => false,
     );
   }
 

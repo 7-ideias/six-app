@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../l10n/six_i18n.dart';
 import '../../core/utils/browser_location.dart';
 import '../auth/web_auth_gate_controller.dart';
 import '../components/six_web_splash_scene.dart';
+import '../../providers/onboarding_inicial_provider.dart';
+import 'onboarding_inicial_web_page.dart';
 import '../services/web_authenticated_bootstrap_service.dart';
 import '../theme/web_theme_tokens.dart';
 
@@ -167,7 +170,7 @@ class _WebAuthGateState extends State<WebAuthGate> {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
       child: switch (status) {
-        WebAuthGateStatus.authenticated => widget.child,
+        WebAuthGateStatus.authenticated => _authenticatedContent(),
         WebAuthGateStatus.temporaryError => _WebAuthGateTemporaryError(
           key: const ValueKey<String>('web-auth-gate-temporary-error'),
           onRetry: _activeController.retry,
@@ -187,6 +190,20 @@ class _WebAuthGateState extends State<WebAuthGate> {
         ),
       },
     );
+  }
+
+  Widget _authenticatedContent() {
+    final OnboardingInicialProvider onboarding = context
+        .watch<OnboardingInicialProvider>();
+    if (onboarding.precisaFazerOnboarding) {
+      return OnboardingInicialWebPage(
+        key: const ValueKey<String>('initial-onboarding-web'),
+        onCompleted: () {
+          if (mounted) setState(() {});
+        },
+      );
+    }
+    return widget.child;
   }
 }
 

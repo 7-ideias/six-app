@@ -29,6 +29,7 @@ import 'package:sixpos/presentation/navigation/web_auth_route_utils.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
+import 'package:sixpos/providers/onboarding_inicial_provider.dart';
 import 'package:sixpos/providers/produtos_list_provider.dart';
 import 'package:sixpos/providers/streak_provider.dart';
 import 'package:sixpos/providers/theme_provider.dart';
@@ -77,6 +78,7 @@ void main() async {
           create: (_) => ColaboradorAutorizacoesProvider(),
         ),
         ChangeNotifierProvider(create: (_) => StreakProvider()),
+        ChangeNotifierProvider(create: (_) => OnboardingInicialProvider()),
         ChangeNotifierProvider(
           lazy: false,
           create:

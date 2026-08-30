@@ -479,6 +479,72 @@ const Map<String, Map<String, String>> _fallbacks = {
     'usuariosSixo.role.collaborator': 'Colaborador',
     'usuariosSixo.role.customer': 'Cliente',
     'usuariosSixo.role.unknown': 'Não informado',
+    'usuariosSixo.detail.title': 'Detalhes do usuário',
+    'usuariosSixo.detail.subtitle':
+        'Cadastro, preferências, empresas e vínculos salvos no Sixo.',
+    'usuariosSixo.detail.loadError':
+        'Não foi possível carregar os detalhes.',
+    'usuariosSixo.detail.personal': 'Dados pessoais',
+    'usuariosSixo.detail.account': 'Conta e permissões',
+    'usuariosSixo.detail.preferences': 'Preferências individuais',
+    'usuariosSixo.detail.globalPreferences': 'Preferências globais',
+    'usuariosSixo.detail.companies': 'Empresas vinculadas',
+    'usuariosSixo.detail.links': 'Vínculos e dados contratuais',
+    'usuariosSixo.detail.noCompanies': 'Nenhuma empresa vinculada.',
+    'usuariosSixo.detail.noLinks': 'Nenhum vínculo cadastrado.',
+    'usuariosSixo.detail.imageStored': 'Imagem armazenada',
+    'usuariosSixo.onboarding.completed': 'Onboarding concluído',
+    'usuariosSixo.onboarding.pending': 'Onboarding pendente',
+    'usuariosSixo.onboarding.dialogBarrier':
+        'Alterar status do onboarding inicial',
+    'usuariosSixo.onboarding.resetTitle': 'Solicitar novo onboarding?',
+    'usuariosSixo.onboarding.resetMessage':
+        'No próximo acesso, o usuário deverá confirmar novamente seus dados iniciais antes de entrar no sistema.',
+    'usuariosSixo.onboarding.resetAction': 'Refazer onboarding',
+    'usuariosSixo.onboarding.completeTitle':
+        'Marcar onboarding como concluído?',
+    'usuariosSixo.onboarding.completeMessage':
+        'O usuário deixará de ver o onboarding inicial nos próximos acessos.',
+    'usuariosSixo.onboarding.completeAction': 'Marcar como concluído',
+    'usuariosSixo.onboarding.processingTitle': 'Atualizando onboarding...',
+    'usuariosSixo.onboarding.processingMessage':
+        'Aguarde enquanto a nova configuração é salva.',
+    'usuariosSixo.onboarding.successTitle': 'Onboarding atualizado',
+    'usuariosSixo.onboarding.successMessage':
+        'A nova regra já valerá no próximo acesso do usuário.',
+    'usuariosSixo.onboarding.errorTitle': 'Não foi possível atualizar',
+    'usuariosSixo.onboarding.errorMessage':
+        'Tente novamente. Nenhuma outra informação foi alterada.',
+    'initialOnboarding.eyebrow': 'Configuração inicial',
+    'initialOnboarding.step': 'Etapa',
+    'initialOnboarding.of': 'de',
+    'initialOnboarding.identityTitle': 'Vamos começar pelo essencial',
+    'initialOnboarding.identitySubtitle':
+        'Confirme seus dados para personalizarmos sua experiência.',
+    'initialOnboarding.businessTitle': 'O que seu negócio faz?',
+    'initialOnboarding.businessSubtitle':
+        'Isso apenas organiza módulos e atalhos. Você poderá alterar depois.',
+    'initialOnboarding.languageQuestion':
+        'Em qual idioma deseja continuar?',
+    'initialOnboarding.userName': 'Como podemos chamar você?',
+    'initialOnboarding.companyName': 'Nome do seu negócio',
+    'initialOnboarding.salesTitle': 'Vende produtos',
+    'initialOnboarding.salesSubtitle': 'PDV, catálogo, estoque e vendas.',
+    'initialOnboarding.servicesTitle': 'Presta serviços técnicos',
+    'initialOnboarding.servicesSubtitle':
+        'Atendimentos, ordens de serviço e procedimentos.',
+    'initialOnboarding.start': 'Começar a usar o SixoApp',
+    'initialOnboarding.activityRequired':
+        'Selecione vendas, serviços técnicos ou ambos.',
+    'initialOnboarding.userNameRequired': 'Informe seu nome para continuar.',
+    'initialOnboarding.companyNameRequired':
+        'Informe o nome da empresa para continuar.',
+    'initialOnboarding.saveError':
+        'Não foi possível salvar agora. Tente novamente.',
+    'initialOnboarding.loadErrorTitle':
+        'Não foi possível iniciar a configuração',
+    'initialOnboarding.loadErrorMessage':
+        'Verifique sua conexão e tente novamente.',
     'caixa.operacoes.openConfirmTitle': 'Confirmar abertura de caixa?',
     'caixa.operacoes.openConfirmMessage':
         'Deseja abrir {cashDesk} com troco inicial de {amount}?',
@@ -2735,6 +2801,71 @@ const Map<String, Map<String, String>> _fallbacks = {
     'usuariosSixo.role.collaborator': 'Collaborator',
     'usuariosSixo.role.customer': 'Customer',
     'usuariosSixo.role.unknown': 'Not provided',
+    'usuariosSixo.detail.title': 'User details',
+    'usuariosSixo.detail.subtitle':
+        'Registration, preferences, companies, and links saved in Sixo.',
+    'usuariosSixo.detail.loadError': 'Unable to load user details.',
+    'usuariosSixo.detail.personal': 'Personal data',
+    'usuariosSixo.detail.account': 'Account and permissions',
+    'usuariosSixo.detail.preferences': 'Individual preferences',
+    'usuariosSixo.detail.globalPreferences': 'Global preferences',
+    'usuariosSixo.detail.companies': 'Linked companies',
+    'usuariosSixo.detail.links': 'Links and contract data',
+    'usuariosSixo.detail.noCompanies': 'No linked companies.',
+    'usuariosSixo.detail.noLinks': 'No links registered.',
+    'usuariosSixo.detail.imageStored': 'Stored image',
+    'usuariosSixo.onboarding.completed': 'Onboarding completed',
+    'usuariosSixo.onboarding.pending': 'Onboarding pending',
+    'usuariosSixo.onboarding.dialogBarrier':
+        'Change initial onboarding status',
+    'usuariosSixo.onboarding.resetTitle': 'Request onboarding again?',
+    'usuariosSixo.onboarding.resetMessage':
+        'On the next access, the user will need to confirm their initial data again before entering the system.',
+    'usuariosSixo.onboarding.resetAction': 'Redo onboarding',
+    'usuariosSixo.onboarding.completeTitle':
+        'Mark onboarding as completed?',
+    'usuariosSixo.onboarding.completeMessage':
+        'The user will no longer see initial onboarding on future access.',
+    'usuariosSixo.onboarding.completeAction': 'Mark as completed',
+    'usuariosSixo.onboarding.processingTitle': 'Updating onboarding...',
+    'usuariosSixo.onboarding.processingMessage':
+        'Please wait while the new setting is saved.',
+    'usuariosSixo.onboarding.successTitle': 'Onboarding updated',
+    'usuariosSixo.onboarding.successMessage':
+        'The new rule will apply the next time the user signs in.',
+    'usuariosSixo.onboarding.errorTitle': 'Unable to update',
+    'usuariosSixo.onboarding.errorMessage':
+        'Try again. No other information was changed.',
+    'initialOnboarding.eyebrow': 'Initial setup',
+    'initialOnboarding.step': 'Step',
+    'initialOnboarding.of': 'of',
+    'initialOnboarding.identityTitle': 'Let’s start with the essentials',
+    'initialOnboarding.identitySubtitle':
+        'Confirm your information so we can personalize your experience.',
+    'initialOnboarding.businessTitle': 'What does your business do?',
+    'initialOnboarding.businessSubtitle':
+        'This only organizes modules and shortcuts. You can change it later.',
+    'initialOnboarding.languageQuestion':
+        'Which language would you like to continue in?',
+    'initialOnboarding.userName': 'What should we call you?',
+    'initialOnboarding.companyName': 'Business name',
+    'initialOnboarding.salesTitle': 'Sells products',
+    'initialOnboarding.salesSubtitle':
+        'Point of sale, catalog, inventory, and sales.',
+    'initialOnboarding.servicesTitle': 'Provides technical services',
+    'initialOnboarding.servicesSubtitle':
+        'Appointments, service orders, and procedures.',
+    'initialOnboarding.start': 'Start using SixoApp',
+    'initialOnboarding.activityRequired':
+        'Select sales, technical services, or both.',
+    'initialOnboarding.userNameRequired':
+        'Enter your name to continue.',
+    'initialOnboarding.companyNameRequired':
+        'Enter the company name to continue.',
+    'initialOnboarding.saveError': 'Unable to save now. Please try again.',
+    'initialOnboarding.loadErrorTitle': 'Unable to start setup',
+    'initialOnboarding.loadErrorMessage':
+        'Check your connection and try again.',
     'caixa.operacoes.openConfirmTitle': 'Confirm cash opening?',
     'caixa.operacoes.openConfirmMessage':
         'Do you want to open {cashDesk} with an initial cash amount of {amount}?',
@@ -4798,6 +4929,74 @@ const Map<String, Map<String, String>> _fallbacks = {
     'usuariosSixo.role.collaborator': 'Colaborador',
     'usuariosSixo.role.customer': 'Cliente',
     'usuariosSixo.role.unknown': 'No informado',
+    'usuariosSixo.detail.title': 'Detalles del usuario',
+    'usuariosSixo.detail.subtitle':
+        'Registro, preferencias, empresas y vínculos guardados en Sixo.',
+    'usuariosSixo.detail.loadError':
+        'No fue posible cargar los detalles.',
+    'usuariosSixo.detail.personal': 'Datos personales',
+    'usuariosSixo.detail.account': 'Cuenta y permisos',
+    'usuariosSixo.detail.preferences': 'Preferencias individuales',
+    'usuariosSixo.detail.globalPreferences': 'Preferencias globales',
+    'usuariosSixo.detail.companies': 'Empresas vinculadas',
+    'usuariosSixo.detail.links': 'Vínculos y datos contractuales',
+    'usuariosSixo.detail.noCompanies': 'No hay empresas vinculadas.',
+    'usuariosSixo.detail.noLinks': 'No hay vínculos registrados.',
+    'usuariosSixo.detail.imageStored': 'Imagen almacenada',
+    'usuariosSixo.onboarding.completed': 'Onboarding completado',
+    'usuariosSixo.onboarding.pending': 'Onboarding pendiente',
+    'usuariosSixo.onboarding.dialogBarrier':
+        'Cambiar estado del onboarding inicial',
+    'usuariosSixo.onboarding.resetTitle': '¿Solicitar nuevamente el onboarding?',
+    'usuariosSixo.onboarding.resetMessage':
+        'En el próximo acceso, el usuario deberá confirmar nuevamente sus datos iniciales antes de entrar al sistema.',
+    'usuariosSixo.onboarding.resetAction': 'Repetir onboarding',
+    'usuariosSixo.onboarding.completeTitle':
+        '¿Marcar el onboarding como completado?',
+    'usuariosSixo.onboarding.completeMessage':
+        'El usuario dejará de ver el onboarding inicial en sus próximos accesos.',
+    'usuariosSixo.onboarding.completeAction': 'Marcar como completado',
+    'usuariosSixo.onboarding.processingTitle': 'Actualizando onboarding...',
+    'usuariosSixo.onboarding.processingMessage':
+        'Espera mientras se guarda la nueva configuración.',
+    'usuariosSixo.onboarding.successTitle': 'Onboarding actualizado',
+    'usuariosSixo.onboarding.successMessage':
+        'La nueva regla se aplicará en el próximo acceso del usuario.',
+    'usuariosSixo.onboarding.errorTitle': 'No fue posible actualizar',
+    'usuariosSixo.onboarding.errorMessage':
+        'Inténtalo de nuevo. No se modificó ninguna otra información.',
+    'initialOnboarding.eyebrow': 'Configuración inicial',
+    'initialOnboarding.step': 'Paso',
+    'initialOnboarding.of': 'de',
+    'initialOnboarding.identityTitle': 'Empecemos por lo esencial',
+    'initialOnboarding.identitySubtitle':
+        'Confirma tus datos para personalizar tu experiencia.',
+    'initialOnboarding.businessTitle': '¿Qué hace tu negocio?',
+    'initialOnboarding.businessSubtitle':
+        'Esto solo organiza módulos y accesos. Podrás cambiarlo después.',
+    'initialOnboarding.languageQuestion':
+        '¿En qué idioma deseas continuar?',
+    'initialOnboarding.userName': '¿Cómo podemos llamarte?',
+    'initialOnboarding.companyName': 'Nombre de tu negocio',
+    'initialOnboarding.salesTitle': 'Vende productos',
+    'initialOnboarding.salesSubtitle':
+        'Punto de venta, catálogo, inventario y ventas.',
+    'initialOnboarding.servicesTitle': 'Presta servicios técnicos',
+    'initialOnboarding.servicesSubtitle':
+        'Atenciones, órdenes de servicio y procedimientos.',
+    'initialOnboarding.start': 'Comenzar a usar SixoApp',
+    'initialOnboarding.activityRequired':
+        'Selecciona ventas, servicios técnicos o ambos.',
+    'initialOnboarding.userNameRequired':
+        'Ingresa tu nombre para continuar.',
+    'initialOnboarding.companyNameRequired':
+        'Ingresa el nombre de la empresa para continuar.',
+    'initialOnboarding.saveError':
+        'No fue posible guardar ahora. Inténtalo de nuevo.',
+    'initialOnboarding.loadErrorTitle':
+        'No fue posible iniciar la configuración',
+    'initialOnboarding.loadErrorMessage':
+        'Verifica tu conexión e inténtalo de nuevo.',
     'caixa.operacoes.openConfirmTitle': '¿Confirmar apertura de caja?',
     'caixa.operacoes.openConfirmMessage':
         '¿Deseas abrir {cashDesk} con fondo inicial de {amount}?',
