@@ -79,6 +79,34 @@ import {
     return state.validation?.company?.displayName || copy('title');
   }
 
+  function customerHasDetailedData(customer) {
+    if (!customer) return false;
+    return customer.tipoCadastro === 'COMPLETO'
+      || ['cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf', 'observacoes']
+        .some((key) => String(customer[key] || '').trim());
+  }
+
+  function applyExistingCustomerData() {
+    const customer = state.validation?.customer;
+    if (!customer) return;
+    const form = elements.form.elements;
+    form.documentoOriginal.value = customer.documento || state.link.documento || '';
+    form.tipoPessoa.value = customer.tipoPessoa === 'PJ' ? 'PJ' : 'PF';
+    form.nome.value = customer.nome;
+    form.documento.value = customer.documento;
+    form.telefone.value = customer.telefone;
+    form.email.value = customer.email;
+    form.cep.value = customer.cep;
+    form.logradouro.value = customer.logradouro;
+    form.numero.value = customer.numero;
+    form.complemento.value = customer.complemento;
+    form.bairro.value = customer.bairro;
+    form.cidade.value = customer.cidade;
+    form.uf.value = customer.uf;
+    form.observacoes.value = customer.observacoes;
+    form.tipoCadastro.value = customerHasDetailedData(customer) ? 'COMPLETO' : 'SIMPLES';
+  }
+
   function safeExternalUrl(value) {
     try {
       const url = new URL(String(value || ''));
@@ -261,6 +289,7 @@ import {
           link: state.link,
         }),
       );
+      applyExistingCustomerData();
       renderCompanyIdentity();
       showForm();
     } catch (error) { showLoadError(customerSignupErrorKey(error)); }
@@ -296,6 +325,7 @@ import {
     try {
       state.apiConfig = resolvePublicApiConfig(window.SIXAPP_PUBLIC_CONFIG);
       state.link = extractCustomerSignupLink(window.location.search);
+      elements.form.elements.documentoOriginal.value = state.link.documento;
       elements.form.elements.tipoPessoa.value = state.link.tipoPessoa;
       elements.form.elements.documento.value = state.link.documento;
     } catch (error) {

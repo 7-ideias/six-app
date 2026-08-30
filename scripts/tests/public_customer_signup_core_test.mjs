@@ -55,11 +55,30 @@ test('resposta de validacao preserva metadados e empresa opcional', () => {
       nomeFantasia: 'Loja Teste',
       telefone: '4730000000',
     },
+    cliente: {
+      tipoCadastro: 'COMPLETO',
+      tipoPessoa: 'PJ',
+      documento: '12345678000199',
+      nome: 'Cliente Atual',
+      telefone: '47999999999',
+      email: 'cliente@teste.com',
+      cep: '89000-000',
+      logradouro: 'Rua A',
+      numero: '15',
+      complemento: 'Sala 3',
+      bairro: 'Centro',
+      cidade: 'Blumenau',
+      uf: 'sc',
+      observacoes: 'Receber por WhatsApp',
+    },
   });
 
   assert.equal(response.code, 'AUTO_CUSTOMER_TOKEN_VALID');
   assert.equal(response.company.displayName, 'Loja Teste');
   assert.equal(response.company.phone, '4730000000');
+  assert.equal(response.customer.documento, '12345678000199');
+  assert.equal(response.customer.uf, 'SC');
+  assert.equal(response.customer.tipoCadastro, 'COMPLETO');
 });
 
 test('payload publico mantem contrato tecnico e endereco consolidado', () => {
@@ -86,6 +105,7 @@ test('payload publico mantem contrato tecnico e endereco consolidado', () => {
 
   assert.equal(payload.idUnicoDaEmpresa, companyId);
   assert.equal(payload.token, token);
+  assert.equal(payload.documentoOriginal, '12345678900');
   assert.equal(payload.uf, 'SC');
   assert.equal(
     payload.enderecoCompleto,
