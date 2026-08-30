@@ -1,11 +1,13 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/utils/pdf_download.dart';
 import 'package:sixpos/data/models/etiqueta_models.dart';
 import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/services/etiqueta/etiqueta_api_client.dart';
+import 'package:sixpos/presentation/components/web/six_web_label_pdf_generate_dialog.dart';
 import 'package:sixpos/domain/services/etiqueta/etiqueta_service.dart';
 import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
 import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
@@ -78,76 +80,75 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
   Widget build(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool compact = MediaQuery.sizeOf(context).width < 860;
-    return Material(
-      color: tokens.workspaceBackground,
-      child: Column(
-        children: <Widget>[
-          SixWebDashboardHeader(
-            icon: Icons.print_outlined,
-            title: _tr(
-              'labels.print.title',
-              'Imprimir etiquetas',
-              'Print labels',
-              'Imprimir etiquetas',
+    return PopScope(
+      canPop: !_generating,
+      child: Shortcuts(
+        shortcuts: const <ShortcutActivator, Intent>{
+          SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
+        },
+        child: Actions(
+          actions: <Type, Action<Intent>>{
+            DismissIntent: CallbackAction<DismissIntent>(
+              onInvoke: (DismissIntent intent) {
+                if (_generating) return null;
+                widget.onClose?.call();
+                return null;
+              },
             ),
-            subtitle: _tr(
-              'labels.print.subtitle',
-              'Escolha o modelo, selecione os produtos e informe quantas etiquetas deseja para cada item.',
-              'Choose a template, select products and set how many labels you need for each item.',
-              'Elija la plantilla, seleccione productos e indique cuántas etiquetas necesita de cada artículo.',
-            ),
-            onBack: widget.onClose,
-            actions: <Widget>[
-              FilledButton.icon(
-                onPressed:
-                    _generating ||
-                            _selected.isEmpty ||
-                            _selectedTemplate == null
-                        ? null
-                        : _generatePdf,
-                icon:
-                    _generating
-                        ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : const Icon(Icons.picture_as_pdf_outlined),
-                label: Text(
-                  _generating
-                      ? _tr(
-                        'labels.print.generating',
-                        'Gerando...',
-                        'Generating...',
-                        'Generando...',
-                      )
-                      : _tr(
-                        'labels.print.generatePdf',
-                        'Gerar PDF',
-                        'Generate PDF',
-                        'Generar PDF',
+          },
+          child: Focus(
+            autofocus: true,
+            child: Semantics(
+              namesRoute: true,
+              label: _tr(
+                'labels.print.title',
+                'Imprimir etiquetas',
+                'Print labels',
+                'Imprimir etiquetas',
+              ),
+              child: Material(
+                color: tokens.workspaceBackground,
+                child: Column(
+                  children: <Widget>[
+                    SixWebDashboardHeader(
+                      icon: Icons.print_outlined,
+                      title: _tr(
+                        'labels.print.title',
+                        'Imprimir etiquetas',
+                        'Print labels',
+                        'Imprimir etiquetas',
                       ),
+                      subtitle: _tr(
+                        'labels.print.subtitle',
+                        'Escolha o modelo, selecione os produtos e informe quantas etiquetas deseja para cada item.',
+                        'Choose a template, select products and set how many labels you need for each item.',
+                        'Elija la plantilla, seleccione productos e indique cuántas etiquetas necesita de cada artículo.',
+                      ),
+                      onBack: _generating ? null : widget.onClose,
+                      actions: <Widget>[_generateButton()],
+                    ),
+                    if (_error != null) _errorBanner(_error!),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.all(compact ? 16 : 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            _configurationCard(compact),
+                            const SizedBox(height: 16),
+                            _productsCard(compact),
+                            const SizedBox(height: 16),
+                            _summaryBar(compact),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-          if (_error != null) _errorBanner(_error!),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(compact ? 16 : 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  _configurationCard(compact),
-                  const SizedBox(height: 16),
-                  _productsCard(compact),
-                  const SizedBox(height: 16),
-                  _summaryBar(compact),
-                ],
-              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -767,6 +768,23 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
 
   Future<void> _generatePdf() async {
     final EtiquetaModelo? model = _selectedTemplate;
+    if (model == null ||
+        model.id?.trim().isEmpty != false ||
+        _selected.isEmpty) {
+      return;
+    }
+    await showSixWebLabelPdfGenerateDialog(
+      context: context,
+      templateName: model.nome,
+      productCount: _selected.length,
+      totalLabels: _totalLabels,
+      estimatedPages: _estimatedPages,
+      onConfirm: _executePdfGeneration,
+    );
+  }
+
+  Future<void> _executePdfGeneration() async {
+    final EtiquetaModelo? model = _selectedTemplate;
     final String templateId = model?.id ?? '';
     if (templateId.isEmpty || _selected.isEmpty) return;
     final List<EtiquetaImpressaoItem> items = _selected.values
@@ -807,28 +825,9 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
         nomeArquivo: pdf.nomeArquivo,
         mimeType: pdf.mimeType,
       );
+      if (!downloaded) throw StateError('DOWNLOAD_UNAVAILABLE');
       if (!mounted) return;
       setState(() => _lastPdf = pdf);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            downloaded
-                ? _tr(
-                  'labels.print.downloadStarted',
-                  'PDF gerado e download iniciado.',
-                  'PDF generated and download started.',
-                  'PDF generado y descarga iniciada.',
-                )
-                : _tr(
-                  'labels.print.downloadUnavailable',
-                  'O PDF foi gerado, mas o download não pôde ser iniciado.',
-                  'The PDF was generated, but the download could not be started.',
-                  'El PDF fue generado, pero no se pudo iniciar la descarga.',
-                ),
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     } catch (error, stackTrace) {
       _logPdfGenerationFailure(
         error: error,
@@ -837,8 +836,8 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
         templateName: model?.nome,
         items: items,
       );
-      if (!mounted) return;
-      setState(() => _error = _pdfErrorMessage(error));
+      if (mounted) setState(() => _error = null);
+      throw Exception(_pdfErrorMessage(error));
     } finally {
       if (mounted) setState(() => _generating = false);
     }
@@ -879,6 +878,14 @@ class _EtiquetaImpressaoWebPageState extends State<EtiquetaImpressaoWebPage> {
         'Há um código de barras incompatível com a simbologia escolhida no modelo.',
         'A barcode is incompatible with the symbology selected in the template.',
         'Hay un código de barras incompatible con la simbología elegida en la plantilla.',
+      );
+    }
+    if (raw.contains('DOWNLOAD_UNAVAILABLE')) {
+      return _tr(
+        'labels.print.downloadUnavailable',
+        'O PDF foi gerado, mas o download não pôde ser iniciado.',
+        'The PDF was generated, but the download could not be started.',
+        'El PDF fue generado, pero no se pudo iniciar la descarga.',
       );
     }
     return _tr(

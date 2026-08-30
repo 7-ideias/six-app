@@ -221,6 +221,7 @@ extension _PdvWeb on _PaginaPrincipalWebState {
       _clienteIdentificado = null;
       _clienteIdentificadoController.text = venda.nomeCliente.trim();
       _vendaNaoLiquidadaEmConsulta = venda;
+      _procedimentoVendaWebJaAvaliado = true;
       _recebendoVendaNaoLiquidada = false;
       _clearAllItemVisualState();
       _atualizarCamposDerivados();

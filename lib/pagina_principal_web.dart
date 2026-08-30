@@ -32,6 +32,7 @@ import 'package:sixpos/presentation/screens/produto_lista_sub_painel_web.dart';
 import 'package:sixpos/presentation/screens/categorias_produtos_servicos_web_page.dart';
 import 'package:sixpos/presentation/screens/recebimento_pagamento_web.dart';
 import 'package:sixpos/presentation/components/web/six_web_logout_dialog.dart';
+import 'package:sixpos/presentation/components/web/six_web_pdv_clear_sale_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_pdv_quantity_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
 import 'package:sixpos/presentation/components/web/six_web_theme_menu_entry.dart';
@@ -145,6 +146,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   bool _registrandoReceberDepois = false;
   bool _recebendoVendaNaoLiquidada = false;
   bool _overlayRecebimentoAberto = false;
+  bool _procedimentoVendaWebJaAvaliado = false;
   bool _sincronizandoTotalVendasAReceber = false;
   bool _modoExpandidoFrenteCaixa = false;
   bool _carregandoSessaoCaixaPdv = false;
@@ -287,34 +289,33 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       duration: const Duration(milliseconds: 700),
     );
 
-    _bellRotationAnimation =
-        TweenSequence<double>([
-          TweenSequenceItem<double>(
-            tween: Tween<double>(begin: 0, end: -0.10),
-            weight: 1,
-          ),
-          TweenSequenceItem<double>(
-            tween: Tween<double>(begin: -0.10, end: 0.10),
-            weight: 2,
-          ),
-          TweenSequenceItem<double>(
-            tween: Tween<double>(begin: 0.10, end: -0.08),
-            weight: 2,
-          ),
-          TweenSequenceItem<double>(
-            tween: Tween<double>(begin: -0.08, end: 0.08),
-            weight: 2,
-          ),
-          TweenSequenceItem<double>(
-            tween: Tween<double>(begin: 0.08, end: 0),
-            weight: 1,
-          ),
-        ]).animate(
-          CurvedAnimation(
-            parent: _bellAnimationController,
-            curve: Curves.easeInOut,
-          ),
-        );
+    _bellRotationAnimation = TweenSequence<double>([
+      TweenSequenceItem<double>(
+        tween: Tween<double>(begin: 0, end: -0.10),
+        weight: 1,
+      ),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(begin: -0.10, end: 0.10),
+        weight: 2,
+      ),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(begin: 0.10, end: -0.08),
+        weight: 2,
+      ),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(begin: -0.08, end: 0.08),
+        weight: 2,
+      ),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(begin: 0.08, end: 0),
+        weight: 1,
+      ),
+    ]).animate(
+      CurvedAnimation(
+        parent: _bellAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
 
     _barcodeInteractionFocusScopeNode.addListener(
       _onBarcodeInteractionFocusChanged,
@@ -565,9 +566,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final Color corStatus = _corStatusBackend(tokens);
-    final String tooltip = _ultimaValidacaoBackend == null
-        ? _textoStatusBackend()
-        : '${_textoStatusBackend()} • última validação: ${_ultimaValidacaoBackend!.toIso8601String()}';
+    final String tooltip =
+        _ultimaValidacaoBackend == null
+            ? _textoStatusBackend()
+            : '${_textoStatusBackend()} • última validação: ${_ultimaValidacaoBackend!.toIso8601String()}';
 
     return Tooltip(
       message: tooltip,
@@ -678,9 +680,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   Future<void> _abrirAssistenteIA() async {
-    final String barrierLabel = MaterialLocalizations.of(
-      context,
-    ).modalBarrierDismissLabel;
+    final String barrierLabel =
+        MaterialLocalizations.of(context).modalBarrierDismissLabel;
     bool expanded = false;
     bool minimizarSolicitado = false;
 
@@ -694,65 +695,61 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       barrierLabel: barrierLabel,
       barrierColor: Colors.black.withValues(alpha: 0.20),
       transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder:
-          (
-            BuildContext dialogContext,
-            Animation<double> _,
-            Animation<double> __,
+      pageBuilder: (
+        BuildContext dialogContext,
+        Animation<double> _,
+        Animation<double> __,
+      ) {
+        return StatefulBuilder(
+          builder: (
+            BuildContext context,
+            void Function(VoidCallback fn) setDialogState,
           ) {
-            return StatefulBuilder(
-              builder:
-                  (
-                    BuildContext context,
-                    void Function(VoidCallback fn) setDialogState,
-                  ) {
-                    return SafeArea(
-                      minimum: const EdgeInsets.all(14),
-                      child: Center(
-                        child: AiAssistantPanel(
-                          modulo: _moduloAtualParaIA(),
-                          telaAtual: _telaAtualParaIA(),
-                          expanded: expanded,
-                          onClose: () {
-                            minimizarSolicitado = false;
-                            Navigator.of(dialogContext).pop();
-                          },
-                          onMinimize: () {
-                            minimizarSolicitado = true;
-                            Navigator.of(dialogContext).pop();
-                          },
-                          onToggleExpanded: () =>
-                              setDialogState(() => expanded = !expanded),
-                        ),
-                      ),
-                    );
+            return SafeArea(
+              minimum: const EdgeInsets.all(14),
+              child: Center(
+                child: AiAssistantPanel(
+                  modulo: _moduloAtualParaIA(),
+                  telaAtual: _telaAtualParaIA(),
+                  expanded: expanded,
+                  onClose: () {
+                    minimizarSolicitado = false;
+                    Navigator.of(dialogContext).pop();
                   },
+                  onMinimize: () {
+                    minimizarSolicitado = true;
+                    Navigator.of(dialogContext).pop();
+                  },
+                  onToggleExpanded:
+                      () => setDialogState(() => expanded = !expanded),
+                ),
+              ),
             );
           },
-      transitionBuilder:
-          (
-            BuildContext _,
-            Animation<double> animation,
-            Animation<double> __,
-            Widget child,
-          ) {
-            final Animation<Offset> slideAnimation =
-                Tween<Offset>(
-                  begin: const Offset(0, 0.04),
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                    reverseCurve: Curves.easeInCubic,
-                  ),
-                );
+        );
+      },
+      transitionBuilder: (
+        BuildContext _,
+        Animation<double> animation,
+        Animation<double> __,
+        Widget child,
+      ) {
+        final Animation<Offset> slideAnimation = Tween<Offset>(
+          begin: const Offset(0, 0.04),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          ),
+        );
 
-            return FadeTransition(
-              opacity: animation,
-              child: SlideTransition(position: slideAnimation, child: child),
-            );
-          },
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(position: slideAnimation, child: child),
+        );
+      },
     );
 
     if (!mounted) return;
@@ -791,6 +788,12 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   bool get _deveExibirVendaEmAndamentoFlutuante {
     return _moduloAtual != ModuloCentralPDV.vendas &&
         _possuiVendaEmAndamentoParaRetomar;
+  }
+
+  bool get _deveExecutarProcedimentoNaPrimeiraInclusaoNoCarrinho {
+    return _vendaNaoLiquidadaEmConsulta == null &&
+        !_procedimentoVendaWebJaAvaliado &&
+        _produtosSelecionados.isEmpty;
   }
 
   double _totalVendaEmAndamentoFlutuante(double totalAtual) {
@@ -959,49 +962,50 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                   return;
               }
             },
-            itemBuilder: (BuildContext context) =>
-                <PopupMenuEntry<_WebHeaderUserAction>>[
-                  PopupMenuItem<_WebHeaderUserAction>(
-                    value: _WebHeaderUserAction.profile,
-                    child: Row(
-                      children: <Widget>[
-                        Icon(
-                          Icons.person_outline_rounded,
-                          size: 18,
-                          color: accent,
+            itemBuilder:
+                (BuildContext context) =>
+                    <PopupMenuEntry<_WebHeaderUserAction>>[
+                      PopupMenuItem<_WebHeaderUserAction>(
+                        value: _WebHeaderUserAction.profile,
+                        child: Row(
+                          children: <Widget>[
+                            Icon(
+                              Icons.person_outline_rounded,
+                              size: 18,
+                              color: accent,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              context.t(
+                                'web.header.myProfile',
+                                fallback: 'Meu perfil',
+                              ),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: tokens.primaryText,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 10),
-                        Text(
-                          context.t(
-                            'web.header.myProfile',
-                            fallback: 'Meu perfil',
-                          ),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: tokens.primaryText,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      ),
+                      const SixWebThemeMenuEntry<_WebHeaderUserAction>(),
+                      PopupMenuItem<_WebHeaderUserAction>(
+                        value: _WebHeaderUserAction.logout,
+                        child: Row(
+                          children: <Widget>[
+                            Icon(Icons.logout_rounded, size: 18, color: accent),
+                            const SizedBox(width: 10),
+                            Text(
+                              context.t('web.header.logout', fallback: 'Sair'),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: tokens.primaryText,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                  const SixWebThemeMenuEntry<_WebHeaderUserAction>(),
-                  PopupMenuItem<_WebHeaderUserAction>(
-                    value: _WebHeaderUserAction.logout,
-                    child: Row(
-                      children: <Widget>[
-                        Icon(Icons.logout_rounded, size: 18, color: accent),
-                        const SizedBox(width: 10),
-                        Text(
-                          context.t('web.header.logout', fallback: 'Sair'),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: tokens.primaryText,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                      ),
+                    ],
             child: AnimatedContainer(
               key: const Key('web-header-user-action'),
               duration: WebThemeTokens.transitionDuration,
@@ -1144,95 +1148,99 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                 ),
                 const SizedBox(height: 16),
                 Expanded(
-                  child: _notificacoes.isEmpty
-                      ? Center(
-                          child: Text(
-                            'Nenhuma notificação recebida.',
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        )
-                      : ListView.separated(
-                          controller: _notificacoesScrollController,
-                          primary: false,
-                          itemCount: _notificacoes.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (BuildContext context, int index) {
-                            final Map<String, dynamic> item =
-                                _notificacoes[index];
-                            final String ordemId =
-                                item['ordemId']?.toString() ?? '-';
-                            final String status =
-                                item['status']?.toString() ?? '-';
-                            final String mensagem =
-                                item['mensagem']?.toString() ?? 'Sem mensagem';
-                            final String recebidoEm =
-                                item['recebidoEm']?.toString() ?? '';
-
-                            return Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.surface,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                  color: theme.colorScheme.outlineVariant,
-                                ),
+                  child:
+                      _notificacoes.isEmpty
+                          ? Center(
+                            child: Text(
+                              'Nenhuma notificação recebida.',
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Row(
-                                    children: <Widget>[
-                                      Container(
-                                        width: 42,
-                                        height: 42,
-                                        decoration: BoxDecoration(
-                                          color: theme.colorScheme.primary
-                                              .withValues(alpha: 0.10),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
+                            ),
+                          )
+                          : ListView.separated(
+                            controller: _notificacoesScrollController,
+                            primary: false,
+                            itemCount: _notificacoes.length,
+                            separatorBuilder:
+                                (_, __) => const SizedBox(height: 12),
+                            itemBuilder: (BuildContext context, int index) {
+                              final Map<String, dynamic> item =
+                                  _notificacoes[index];
+                              final String ordemId =
+                                  item['ordemId']?.toString() ?? '-';
+                              final String status =
+                                  item['status']?.toString() ?? '-';
+                              final String mensagem =
+                                  item['mensagem']?.toString() ??
+                                  'Sem mensagem';
+                              final String recebidoEm =
+                                  item['recebidoEm']?.toString() ?? '';
+
+                              return Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: theme.colorScheme.outlineVariant,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Row(
+                                      children: <Widget>[
+                                        Container(
+                                          width: 42,
+                                          height: 42,
+                                          decoration: BoxDecoration(
+                                            color: theme.colorScheme.primary
+                                                .withValues(alpha: 0.10),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.campaign_rounded,
+                                            color: theme.colorScheme.primary,
                                           ),
                                         ),
-                                        child: Icon(
-                                          Icons.campaign_rounded,
-                                          color: theme.colorScheme.primary,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          mensagem,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 14,
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            mensagem,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 14,
+                                            ),
                                           ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text('Ordem: $ordemId'),
+                                    const SizedBox(height: 4),
+                                    Text('Status: $status'),
+                                    if (recebidoEm.isNotEmpty) ...<Widget>[
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Recebido em: $recebidoEm',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color:
+                                              theme
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
                                         ),
                                       ),
                                     ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text('Ordem: $ordemId'),
-                                  const SizedBox(height: 4),
-                                  Text('Status: $status'),
-                                  if (recebidoEm.isNotEmpty) ...<Widget>[
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Recebido em: $recebidoEm',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
                                   ],
-                                ],
-                              ),
-                            );
-                          },
-                        ),
+                                ),
+                              );
+                            },
+                          ),
                 ),
               ],
             ),
@@ -1354,14 +1362,14 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     }
 
     if (result is ProdutoModel) {
-      _adicionarProdutoSelecionado(result);
+      await _adicionarProdutoSelecionado(result);
     } else if (result is List) {
       final List<ProdutoModel> produtos = result
           .whereType<ProdutoModel>()
           .toList(growable: false);
 
       if (produtos.isNotEmpty) {
-        _adicionarProdutosSelecionados(produtos);
+        await _adicionarProdutosSelecionados(produtos);
       }
     }
 
@@ -1384,13 +1392,6 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   }
 
   Future<void> _iniciarVenda() async {
-    if (!_possuiVendaEmAndamentoParaRetomar) {
-      final ProcedureFlowResult result = await _procedureCoordinator.execute(
-        context: context,
-        operationPoint: ProcedureOperationPoint.saleStartBefore,
-      );
-      if (!mounted || !result.shouldContinue) return;
-    }
     setState(() {
       _moduloAtual = ModuloCentralPDV.vendas;
     });
@@ -1898,14 +1899,16 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return;
       }
 
-      final double targetOffset = revealStart.offset
-          .clamp(position.minScrollExtent, position.maxScrollExtent)
-          .toDouble();
+      final double targetOffset =
+          revealStart.offset
+              .clamp(position.minScrollExtent, position.maxScrollExtent)
+              .toDouble();
       _gradeItensScrollController.animateTo(
         targetOffset,
-        duration: _prefereReducaoDeMovimento
-            ? const Duration(milliseconds: 120)
-            : const Duration(milliseconds: 220),
+        duration:
+            _prefereReducaoDeMovimento
+                ? const Duration(milliseconds: 120)
+                : const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
       );
     });
@@ -1922,6 +1925,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       _clienteIdentificado = null;
       _clienteIdentificadoController.clear();
       _vendaNaoLiquidadaEmConsulta = null;
+      _procedimentoVendaWebJaAvaliado = false;
       _recebendoVendaNaoLiquidada = false;
       _clearAllItemVisualState();
       _moduloAtual = moduloDestino;
@@ -1943,33 +1947,21 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     }
 
     final AppLocalizations? l10n = AppLocalizations.of(context);
-    final bool? confirmar = await showDialog<bool>(
+    final bool confirmar = await showSixWebPdvClearSaleDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            l10n?.pdvWebClearSaleConfirmTitle ?? 'Limpar venda atual?',
-          ),
-          content: Text(
-            l10n?.pdvWebClearSaleConfirmMessage ??
-                'Os itens e dados preenchidos nesta venda serão removidos.',
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(l10n?.pdvWebBackAction ?? 'Voltar'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(l10n?.pdvWebClearSaleAction ?? 'Limpar venda'),
-            ),
-          ],
-        );
+      itemCount: _produtosSelecionados.length,
+      totalLabel: _formatCurrency(_calcularTotal()),
+      customerLabel:
+          _clienteSelecionadoNaVenda
+              ? _clienteAtualLabel()
+              : (l10n?.pdvWebCustomerNotInformedStatus ??
+                  'Cliente não identificado'),
+      onConfirm: () async {
+        _limparDadosTemporariosVenda(moduloDestino: ModuloCentralPDV.vendas);
       },
     );
 
-    if (confirmar == true) {
-      _limparDadosTemporariosVenda(moduloDestino: ModuloCentralPDV.vendas);
+    if (confirmar) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _focarCodigoBarras();
@@ -1990,9 +1982,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                   possuiAlteracoes
                       ? 'pdv.openSale.discardTitle'
                       : 'pdv.openSale.exitTitle',
-                  fallback: possuiAlteracoes
-                      ? 'Descartar alterações?'
-                      : 'Sair da consulta?',
+                  fallback:
+                      possuiAlteracoes
+                          ? 'Descartar alterações?'
+                          : 'Sair da consulta?',
                 ),
               ),
               content: Text(
@@ -2000,9 +1993,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                   possuiAlteracoes
                       ? 'pdv.openSale.discardMessage'
                       : 'pdv.openSale.exitMessage',
-                  fallback: possuiAlteracoes
-                      ? 'As alterações feitas no PDV não serão salvas. A venda continuará em aberto com os dados anteriores.'
-                      : 'A venda continuará em aberto. Nenhum item, preço ou recebimento será alterado.',
+                  fallback:
+                      possuiAlteracoes
+                          ? 'As alterações feitas no PDV não serão salvas. A venda continuará em aberto com os dados anteriores.'
+                          : 'A venda continuará em aberto. Nenhum item, preço ou recebimento será alterado.',
                 ),
               ),
               actions: <Widget>[
@@ -2017,9 +2011,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                       possuiAlteracoes
                           ? 'pdv.openSale.discardAction'
                           : 'pdv.openSale.exitAction',
-                      fallback: possuiAlteracoes
-                          ? 'Descartar e sair'
-                          : 'Sair da consulta',
+                      fallback:
+                          possuiAlteracoes
+                              ? 'Descartar e sair'
+                              : 'Sair da consulta',
                     ),
                   ),
                 ),
@@ -2041,11 +2036,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     });
   }
 
-  void _adicionarProdutoSelecionado(ProdutoModel produto) {
+  Future<void> _adicionarProdutoSelecionado(ProdutoModel produto) async {
     if (_vendaNaoLiquidadaEmConsulta != null &&
         !_vendaNaoLiquidadaPermiteEdicaoItens) {
       return;
     }
+    final bool deveExecutarProcedimento =
+        _deveExecutarProcedimentoNaPrimeiraInclusaoNoCarrinho;
     late final _PdvItemMutationResult mutation;
     setState(() {
       mutation = _adicionarProdutoNaListaSemSetState(produto);
@@ -2061,15 +2058,23 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     if (mutation.isNewItem) {
       _scrollToItemIfNeeded(mutation.itemKey);
     }
+
+    await _executarProcedimentoAposPrimeiroItemSeNecessario(
+      deveExecutarProcedimento,
+    );
   }
 
-  void _adicionarProdutosSelecionados(List<ProdutoModel> produtos) {
+  Future<void> _adicionarProdutosSelecionados(
+    List<ProdutoModel> produtos,
+  ) async {
     if ((_vendaNaoLiquidadaEmConsulta != null &&
             !_vendaNaoLiquidadaPermiteEdicaoItens) ||
         produtos.isEmpty) {
       return;
     }
 
+    final bool deveExecutarProcedimento =
+        _deveExecutarProcedimentoNaPrimeiraInclusaoNoCarrinho;
     final List<_PdvItemMutationResult> mutations = <_PdvItemMutationResult>[];
     setState(() {
       for (final ProdutoModel produto in produtos) {
@@ -2092,6 +2097,44 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         _scrollToItemIfNeeded(mutation.itemKey);
       }
     }
+
+    await _executarProcedimentoAposPrimeiroItemSeNecessario(
+      deveExecutarProcedimento,
+    );
+  }
+
+  Future<void> _executarProcedimentoAposPrimeiroItemSeNecessario(
+    bool deveExecutarProcedimento,
+  ) async {
+    if (!deveExecutarProcedimento || !mounted) {
+      return;
+    }
+
+    final ProcedureFlowResult result = await _procedureCoordinator.execute(
+      context: context,
+      operationPoint: ProcedureOperationPoint.saleStartBefore,
+    );
+    if (!mounted) {
+      return;
+    }
+
+    if (result.shouldContinue) {
+      setState(() {
+        _procedimentoVendaWebJaAvaliado = true;
+      });
+      _restaurarFocoLeituraRapidaSeCabivel();
+      return;
+    }
+
+    setState(() {
+      _produtosSelecionados.clear();
+      _formasPagamentoConfirmadas = <FormaPagamentoSelecionada>[];
+      _descricoesFormaPagamentoPorCodigo = <String, String>{};
+      _pagamentoParcialConfirmado = false;
+      _clearAllItemVisualState();
+      _atualizarCamposDerivados();
+    });
+    _restaurarFocoLeituraRapidaSeCabivel();
   }
 
   _PdvItemMutationResult _adicionarProdutoNaListaSemSetState(
@@ -2345,8 +2388,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       _clienteIdentificado = cliente;
       _clienteIdentificadoController.text =
           cliente?.nome.trim().isNotEmpty == true
-          ? cliente!.nome.trim()
-          : cliente?.documento.trim() ?? '';
+              ? cliente!.nome.trim()
+              : cliente?.documento.trim() ?? '';
     });
 
     _restaurarFocoLeituraRapidaSeCabivel();
@@ -2417,8 +2460,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   List<ItemVendaAtual> _montarItensDaVendaParaOperacao() {
     return _produtosSelecionados
         .map((Map<String, dynamic> produto) {
-          final String idProduto = (produto['id'] ?? produto['codigo'] ?? '')
-              .toString();
+          final String idProduto =
+              (produto['id'] ?? produto['codigo'] ?? '').toString();
 
           return ItemVendaAtual(
             idProduto: idProduto,
@@ -2663,9 +2706,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         onSuccess: _limparVendaAposSucessoRecebimento,
         valorTotalVenda: _calcularTotal(),
         itensResumo: _montarItensResumoPagamento(),
-        clienteNome: _clienteIdentificado?.nome.trim().isNotEmpty == true
-            ? _clienteIdentificado!.nome.trim()
-            : _clienteIdentificadoController.text.trim(),
+        clienteNome:
+            _clienteIdentificado?.nome.trim().isNotEmpty == true
+                ? _clienteIdentificado!.nome.trim()
+                : _clienteIdentificadoController.text.trim(),
         numeroVenda: '',
         idColaborador: 'idUnicoDoColaborador',
         nomeColaborador: 'Nome do colaborador',
@@ -2804,9 +2848,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             onSuccess: _limparVendaAposSucessoRecebimento,
             valorTotalVenda: _calcularTotal(),
             itensResumo: _montarItensResumoPagamento(),
-            clienteNome: _clienteIdentificado?.nome.trim().isNotEmpty == true
-                ? _clienteIdentificado!.nome.trim()
-                : _clienteIdentificadoController.text.trim(),
+            clienteNome:
+                _clienteIdentificado?.nome.trim().isNotEmpty == true
+                    ? _clienteIdentificado!.nome.trim()
+                    : _clienteIdentificadoController.text.trim(),
             numeroVenda: '',
             idColaborador: 'idUnicoDoColaborador',
             nomeColaborador: 'Nome do colaborador',
@@ -2976,8 +3021,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      final ColaboradorAutorizacoesProvider autorizacoesProvider = context
-          .read<ColaboradorAutorizacoesProvider>();
+      final ColaboradorAutorizacoesProvider autorizacoesProvider =
+          context.read<ColaboradorAutorizacoesProvider>();
       final List<WebNavigationItem> currentNavigationItems =
           _webNavigationItemsPermitidos(autorizacoesProvider);
       final WebNavigationDestination? destinoAindaAtual =
@@ -3206,9 +3251,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool inicio = _moduloAtual == ModuloCentralPDV.seletor;
         final bool compact = constraints.maxWidth < 760;
-        final EdgeInsets padding = inicio
-            ? EdgeInsets.zero
-            : EdgeInsets.all(compact ? 12 : 16);
+        final EdgeInsets padding =
+            inicio ? EdgeInsets.zero : EdgeInsets.all(compact ? 12 : 16);
 
         return Padding(
           padding: padding,
@@ -3256,8 +3300,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     final ThemeData theme = Theme.of(context);
     _pdvTheme = WebPdvTheme.resolve(theme);
     final double total = _calcularTotal();
-    final LocaleSettingsProvider regionalizacao = context
-        .watch<LocaleSettingsProvider>();
+    final LocaleSettingsProvider regionalizacao =
+        context.watch<LocaleSettingsProvider>();
     final bool modoExpandidoAtivo =
         _moduloAtual == ModuloCentralPDV.vendas && _modoExpandidoFrenteCaixa;
     final WebThemeTokens webTokens = WebThemeTokens.of(context);
@@ -3272,8 +3316,8 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       );
     }
 
-    final ColaboradorAutorizacoesProvider autorizacoesProvider = context
-        .watch<ColaboradorAutorizacoesProvider>();
+    final ColaboradorAutorizacoesProvider autorizacoesProvider =
+        context.watch<ColaboradorAutorizacoesProvider>();
     final List<WebNavigationItem> webNavigationItems =
         _webNavigationItemsPermitidos(autorizacoesProvider);
 

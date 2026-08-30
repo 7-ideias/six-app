@@ -21,21 +21,17 @@ class WebOperationalProcedurePresenter
       return const ProcedurePresentationResult.cancelled();
     }
     final ProcedureFlowResult result =
-        await showDialog<ProcedureFlowResult>(
+        await showOperationalProcedureExecutionWebDialog(
           context: context,
-          barrierDismissible: false,
-          builder: (_) => OperationalProcedureExecutionWebDialog(
-            procedure: procedure,
-            configuration: configuration.copyWith(
-              procedureIndex: currentIndex,
-              totalProcedures: total,
-            ),
+          procedure: procedure,
+          configuration: configuration.copyWith(
+            procedureIndex: currentIndex,
+            totalProcedures: total,
           ),
         ) ??
         const ProcedureFlowResult.cancelled();
-    final String? executionId = result.executionIds.isEmpty
-        ? null
-        : result.executionIds.first;
+    final String? executionId =
+        result.executionIds.isEmpty ? null : result.executionIds.first;
     return switch (result.outcome) {
       ProcedureFlowOutcome.continueOperation =>
         ProcedurePresentationResult.completed(
