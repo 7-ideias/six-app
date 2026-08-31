@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../../core/services/mobile_session_restoration_service.dart';
 import '../../core/services/firebase_push_notification_service.dart';
 import '../../core/services/notificacao_evento_sync_service.dart';
+import '../../core/services/push_destination_resolver.dart';
+import '../../core/services/push_navigation_service.dart';
 import '../../core/services/websocket_service.dart';
 import '../../data/models/streak_models.dart';
 import '../../providers/locale_settings_provider.dart';
@@ -13,8 +15,12 @@ import '../../providers/streak_provider.dart';
 import '../navigation/mobile_navigation_controller.dart';
 import 'auth_entry_mobile.dart';
 import 'atendimento_mobile_screen.dart';
+import 'atendimentos_tecnicos_mobile_screen.dart';
+import 'clientes_usuario_mobile_screen.dart';
 import 'gestao_mobile_screen.dart';
 import 'home_page_mobile_screen.dart';
+import 'notificacoes_mobile_screen.dart';
+import 'vendas_nao_liquidadas_mobile_screen.dart';
 
 class MobileMainShell extends StatefulWidget {
   const MobileMainShell({
@@ -41,6 +47,7 @@ class _MobileMainShellState extends State<MobileMainShell>
   late final AnimationController _transitionController;
   late final Animation<double> _entryAnimation;
   late final List<Widget?> _pages;
+  late final PushNavigationExecutor _pushNavigationExecutor;
   late int _selectedIndex;
   int _transitionDirection = 0;
   final MobileSessionRestorationService _sessionRestorationService =
@@ -65,6 +72,7 @@ class _MobileMainShellState extends State<MobileMainShell>
       parent: _transitionController,
       curve: _transitionCurve,
     );
+    _pushNavigationExecutor = _executePushNavigation;
     _pages = List<Widget?>.filled(3, null);
     _pages[widget.initialIndex] = _createPage(widget.initialIndex);
     _selectedIndex = widget.initialIndex;
@@ -72,6 +80,7 @@ class _MobileMainShellState extends State<MobileMainShell>
     WidgetsBinding.instance.addObserver(this);
     _navigationController.addListener(_onNavigationChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      PushNavigationService().bindExecutor(_pushNavigationExecutor);
       _registrarOfensivaMobile();
       unawaited(_resumeRealtimeSession());
     });
@@ -81,6 +90,7 @@ class _MobileMainShellState extends State<MobileMainShell>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _navigationController.removeListener(_onNavigationChanged);
+    PushNavigationService().unbindExecutor(_pushNavigationExecutor);
     _navigationController.dispose();
     _transitionController.dispose();
     super.dispose();
@@ -215,6 +225,68 @@ class _MobileMainShellState extends State<MobileMainShell>
     );
   }
 
+  Future<void> _executePushNavigation(ResolvedPushNavigation navigation) async {
+    if (!mounted || _redirectingToLogin) {
+      throw StateError('Mobile shell indisponivel para push.');
+    }
+
+    final PushNavigationShellTab? shellTab = navigation.shellTab;
+    if (shellTab != null) {
+      final int targetIndex = _tabIndexFor(shellTab);
+      if (_navigationController.value != targetIndex) {
+        _navigationController.select(targetIndex);
+        await _waitForNextFrame();
+      }
+    }
+
+    final NavigatorState? navigator =
+        PushNavigationService.navigatorKey.currentState;
+    if (navigator == null) {
+      throw StateError('Navigator global indisponivel para push.');
+    }
+
+    await navigator.push<void>(
+      MaterialPageRoute<void>(
+        settings: RouteSettings(name: navigation.destinationKey),
+        builder: (_) => _pageForNavigation(navigation),
+      ),
+    );
+  }
+
+  int _tabIndexFor(PushNavigationShellTab shellTab) {
+    switch (shellTab) {
+      case PushNavigationShellTab.dash:
+        return MobileNavigationController.dashIndex;
+      case PushNavigationShellTab.management:
+        return MobileNavigationController.managementIndex;
+      case PushNavigationShellTab.service:
+        return MobileNavigationController.serviceIndex;
+    }
+  }
+
+  Widget _pageForNavigation(ResolvedPushNavigation navigation) {
+    switch (navigation.destination) {
+      case PushNavigationDestination.notificationsInbox:
+        return const NotificacoesMobileScreen();
+      case PushNavigationDestination.salesPending:
+        return const VendasNaoLiquidadasMobileScreen();
+      case PushNavigationDestination.technicalOrders:
+        return AtendimentosTecnicosMobileScreen(
+          initialFeedbackMessage: navigation.intent.feedbackMessage,
+        );
+      case PushNavigationDestination.customersList:
+        return const ClientesUsuarioMobileScreen();
+    }
+  }
+
+  Future<void> _waitForNextFrame() {
+    final Completer<void> completer = Completer<void>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      completer.complete();
+    });
+    return completer.future;
+  }
+
   @override
   Widget build(BuildContext context) {
     final MediaQueryData mediaQuery = MediaQuery.of(context);
@@ -223,19 +295,23 @@ class _MobileMainShellState extends State<MobileMainShell>
 
     return MobileNavigationScope(
       controller: _navigationController,
-      child: reduceMotion
-          ? _buildIndexedPages()
-          : AnimatedBuilder(
-              animation: _entryAnimation,
-              child: _buildIndexedPages(),
-              builder: (BuildContext context, Widget? child) {
-                final double progress = _entryAnimation.value;
-                final double dx =
-                    (1 - progress) * _slideDistance * _transitionDirection;
+      child:
+          reduceMotion
+              ? _buildIndexedPages()
+              : AnimatedBuilder(
+                animation: _entryAnimation,
+                child: _buildIndexedPages(),
+                builder: (BuildContext context, Widget? child) {
+                  final double progress = _entryAnimation.value;
+                  final double dx =
+                      (1 - progress) * _slideDistance * _transitionDirection;
 
-                return Transform.translate(offset: Offset(dx, 0), child: child);
-              },
-            ),
+                  return Transform.translate(
+                    offset: Offset(dx, 0),
+                    child: child,
+                  );
+                },
+              ),
     );
   }
 

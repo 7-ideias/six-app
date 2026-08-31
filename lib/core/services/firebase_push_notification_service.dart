@@ -12,6 +12,8 @@ import 'auth_service.dart';
 import 'http_client_factory.dart';
 import 'notification_service.dart';
 import 'notificacao_service.dart';
+import 'push_navigation_service.dart';
+import 'push_destination_resolver.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -32,6 +34,7 @@ class FirebasePushNotificationService {
   static bool _listenersConfigurados = false;
   static bool _backgroundHandlerRegistrado = false;
   static StreamSubscription<String>? _tokenRefreshSubscription;
+  static Future<void>? _initializeOnAppStartFuture;
 
   final AuthService _authService;
   final http.Client _httpClient;
@@ -61,7 +64,23 @@ class FirebasePushNotificationService {
     }
   }
 
-  static Future<void> initializeOnAppStart() async {
+  static Future<void> initializeOnAppStart() {
+    final Future<void>? atual = _initializeOnAppStartFuture;
+    if (atual != null) {
+      return atual;
+    }
+
+    final Future<void> inicializacao = _initializeOnAppStartInternal();
+    _initializeOnAppStartFuture = inicializacao;
+    return inicializacao.whenComplete(() {
+      if (!_listenersConfigurados &&
+          identical(_initializeOnAppStartFuture, inicializacao)) {
+        _initializeOnAppStartFuture = null;
+      }
+    });
+  }
+
+  static Future<void> _initializeOnAppStartInternal() async {
     if (!await initializeBeforeRunApp()) {
       return;
     }
@@ -70,15 +89,23 @@ class FirebasePushNotificationService {
       return;
     }
 
-    await initNotifications();
+    await initNotifications(
+      onPayloadTap: (Map<String, dynamic> payload) {
+        return PushNavigationService().handlePayload(
+          payload,
+          source: PushNavigationSource.localNotificationTap,
+          notificationId: _intValue(payload['notificationId']),
+        );
+      },
+    );
 
     FirebaseMessaging.onMessage.listen(_onForegroundMessage);
-    FirebaseMessaging.onMessageOpenedApp.listen(registrarRemoteMessage);
+    FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
 
-    final RemoteMessage? initialMessage = await FirebaseMessaging.instance
-        .getInitialMessage();
+    final RemoteMessage? initialMessage =
+        await FirebaseMessaging.instance.getInitialMessage();
     if (initialMessage != null) {
-      registrarRemoteMessage(initialMessage);
+      _onInitialMessage(initialMessage);
     }
 
     _listenersConfigurados = true;
@@ -288,12 +315,13 @@ class FirebasePushNotificationService {
   }
 
   static void _onForegroundMessage(RemoteMessage message) {
-    registrarRemoteMessage(message);
+    final Map<String, dynamic> payload = _payloadFrom(message);
+    NotificacaoService().registrarPayload(payload);
 
     final String title = _titleFrom(message);
     final String body = _bodyFrom(message);
 
-    showNotification(title, body, payload: jsonEncode(message.data));
+    showNotification(title, body, payload: jsonEncode(payload));
   }
 
   static void registrarRemoteMessage(RemoteMessage message) {
@@ -320,6 +348,28 @@ class FirebasePushNotificationService {
       if (message.sentTime != null)
         'sentTime': message.sentTime!.toIso8601String(),
     };
+  }
+
+  static void _onMessageOpenedApp(RemoteMessage message) {
+    final Map<String, dynamic> payload = _payloadFrom(message);
+    NotificacaoService().registrarPayload(payload);
+    unawaited(
+      PushNavigationService().handlePayload(
+        payload,
+        source: PushNavigationSource.firebaseNotificationTap,
+      ),
+    );
+  }
+
+  static void _onInitialMessage(RemoteMessage message) {
+    final Map<String, dynamic> payload = _payloadFrom(message);
+    NotificacaoService().registrarPayload(payload);
+    unawaited(
+      PushNavigationService().handlePayload(
+        payload,
+        source: PushNavigationSource.firebaseInitialMessage,
+      ),
+    );
   }
 
   static String _titleFrom(RemoteMessage message) {
@@ -357,5 +407,15 @@ class FirebasePushNotificationService {
       default:
         return 'MOBILE';
     }
+  }
+
+  static int? _intValue(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    if (value == null) {
+      return null;
+    }
+    return int.tryParse(value.toString());
   }
 }
