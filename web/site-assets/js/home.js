@@ -698,6 +698,71 @@
     });
   }
 
+  function setupJourneyMotion() {
+    var tracks = Array.prototype.slice.call(document.querySelectorAll('[data-journey-motion]'));
+    if (!tracks.length) return;
+    var motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+    var reducedMotion = Boolean(motionQuery && motionQuery.matches);
+    var activeState = new WeakMap();
+
+    function replay(track) {
+      track.classList.remove('is-journey-active');
+      void track.offsetWidth;
+      track.classList.add('is-journey-active');
+      activeState.set(track, true);
+    }
+
+    function reset(track) {
+      track.classList.remove('is-journey-active');
+      activeState.set(track, false);
+    }
+
+    if (!('IntersectionObserver' in window)) {
+      tracks.forEach(function (track) { track.classList.add('is-journey-active'); });
+      return;
+    }
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (reducedMotion) {
+          entry.target.classList.add('is-journey-active');
+          return;
+        }
+        if (entry.intersectionRatio >= 0.32 && activeState.get(entry.target) !== true) {
+          replay(entry.target);
+        } else if (entry.intersectionRatio < 0.08 && activeState.get(entry.target) !== false) {
+          reset(entry.target);
+        }
+      });
+    }, { threshold: [0, 0.08, 0.32], rootMargin: '0px 0px -6% 0px' });
+
+    tracks.forEach(function (track) {
+      activeState.set(track, false);
+      observer.observe(track);
+    });
+
+    function handleMotionChange(event) {
+      reducedMotion = event.matches;
+      tracks.forEach(function (track) {
+        if (reducedMotion) {
+          track.classList.add('is-journey-active');
+          activeState.set(track, true);
+        } else {
+          reset(track);
+        }
+      });
+    }
+
+    if (motionQuery) {
+      if (motionQuery.addEventListener) motionQuery.addEventListener('change', handleMotionChange);
+      else if (motionQuery.addListener) motionQuery.addListener(handleMotionChange);
+    }
+
+    window.sixappImpactJourneyMotion = {
+      replay: function () { tracks.forEach(replay); }
+    };
+  }
+
   function setupHeroCarousel() {
     var root = document.querySelector('[data-hero-carousel]');
     if (!root) return;
@@ -1035,6 +1100,7 @@
   setupMobileMenu();
   setupHeader();
   setupReveal();
+  setupJourneyMotion();
   setupHeroCarousel();
   setupCarousel();
   setupLanguageSwitcher();

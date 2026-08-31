@@ -2157,3 +2157,133 @@ html.has-js .public-home-page [data-reveal].is-visible {
 .public-home-page [data-hero-carousel].is-reduced-motion .impact-hero-toggle {
   display: none;
 }
+
+
+/* A jornada entra em cena em sequência e volta a animar a cada reaparição. */
+.public-home-page .impact-journey-track[data-journey-motion] li:nth-child(1) { --journey-delay: 0ms; }
+.public-home-page .impact-journey-track[data-journey-motion] li:nth-child(2) { --journey-delay: 105ms; }
+.public-home-page .impact-journey-track[data-journey-motion] li:nth-child(3) { --journey-delay: 210ms; }
+.public-home-page .impact-journey-track[data-journey-motion] li:nth-child(4) { --journey-delay: 315ms; }
+.public-home-page .impact-journey-track[data-journey-motion] li:nth-child(5) { --journey-delay: 420ms; }
+.public-home-page .impact-journey-track[data-journey-motion] li:nth-child(6) { --journey-delay: 525ms; }
+.public-home-page .impact-journey-track[data-journey-motion] li:nth-child(7) { --journey-delay: 630ms; }
+
+html.has-js .public-home-page .impact-journey-track[data-journey-motion]::before {
+  clip-path: inset(0 100% 0 0);
+  opacity: 0.22;
+  background-size: 220% 100%;
+}
+
+html.has-js .public-home-page .impact-journey-track[data-journey-motion]::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: 52px;
+  left: 4%;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #071125;
+  border-radius: 50%;
+  background: #ffffff;
+  opacity: 0;
+  box-shadow: 0 0 0 4px rgba(37, 217, 238, 0.2), 0 0 22px rgba(37, 217, 238, 0.92);
+  pointer-events: none;
+}
+
+html.has-js .public-home-page .impact-journey-track[data-journey-motion] li {
+  opacity: 0.18;
+  transform: translateY(20px) scale(0.94);
+  transform-origin: 50% 58px;
+}
+
+.public-home-page .impact-journey-track[data-journey-motion] i {
+  position: relative;
+  isolation: isolate;
+}
+
+.public-home-page .impact-journey-track[data-journey-motion] i::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -8px;
+  border: 1px solid currentColor;
+  border-radius: 22px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+html.has-js .public-home-page .impact-journey-track.is-journey-active::before {
+  animation:
+    impact-journey-line-draw 1180ms cubic-bezier(0.22, 0.72, 0.24, 1) both,
+    impact-journey-line-flow 2600ms linear 1180ms infinite;
+}
+
+html.has-js .public-home-page .impact-journey-track.is-journey-active::after {
+  animation: impact-journey-runner 2800ms cubic-bezier(0.45, 0, 0.55, 1) 1160ms infinite;
+}
+
+html.has-js .public-home-page .impact-journey-track.is-journey-active li {
+  animation: impact-journey-step-enter 650ms cubic-bezier(0.18, 0.8, 0.28, 1.18) var(--journey-delay) both;
+}
+
+html.has-js .public-home-page .impact-journey-track.is-journey-active li i {
+  animation: impact-journey-icon-idle 2400ms ease-in-out calc(var(--journey-delay) + 760ms) infinite;
+}
+
+html.has-js .public-home-page .impact-journey-track.is-journey-active li i::after {
+  animation: impact-journey-ring 2400ms ease-out calc(var(--journey-delay) + 760ms) infinite;
+}
+
+@keyframes impact-journey-line-draw {
+  0% { clip-path: inset(0 100% 0 0); opacity: 0.2; }
+  100% { clip-path: inset(0 0 0 0); opacity: 1; }
+}
+
+@keyframes impact-journey-line-flow {
+  to { background-position: -220% 0; }
+}
+
+@keyframes impact-journey-step-enter {
+  0% { opacity: 0; transform: translateY(22px) scale(0.92); }
+  64% { opacity: 1; transform: translateY(-5px) scale(1.025); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes impact-journey-icon-idle {
+  0%, 100% { transform: translateY(0) rotate(0deg); box-shadow: 0 0 0 7px #071125, 0 15px 30px rgba(0, 4, 14, 0.28); }
+  45% { transform: translateY(-5px) rotate(-2deg); box-shadow: 0 0 0 7px #071125, 0 19px 38px rgba(0, 4, 14, 0.36), 0 0 24px rgba(37, 217, 238, 0.16); }
+  65% { transform: translateY(-3px) rotate(2deg); }
+}
+
+@keyframes impact-journey-ring {
+  0%, 58% { opacity: 0; transform: scale(0.76); }
+  72% { opacity: 0.42; }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+
+@keyframes impact-journey-runner {
+  0% { left: 4%; opacity: 0; transform: scale(0.45); }
+  8% { opacity: 1; transform: scale(1); }
+  90% { opacity: 1; }
+  100% { left: calc(96% - 10px); opacity: 0; transform: scale(0.55); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.has-js .public-home-page .impact-journey-track[data-journey-motion]::before {
+    clip-path: none;
+    opacity: 1;
+    animation: none !important;
+  }
+
+  html.has-js .public-home-page .impact-journey-track[data-journey-motion]::after {
+    display: none;
+  }
+
+  html.has-js .public-home-page .impact-journey-track[data-journey-motion] li,
+  html.has-js .public-home-page .impact-journey-track[data-journey-motion] li i,
+  html.has-js .public-home-page .impact-journey-track[data-journey-motion] li i::after {
+    opacity: 1;
+    transform: none;
+    animation: none !important;
+  }
+}
