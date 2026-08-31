@@ -24,3 +24,34 @@ test('home nao aceita preco nem html arbitrario pela URL ou API', () => {
   assert.equal(plansSource.includes("URLSearchParams(window.location.search)"), false);
   assert.match(plansSource, /plan\.rawAmount/);
 });
+
+
+test('hero apresenta seis situacoes reais em um carrossel dedicado', () => {
+  assert.equal((html.match(/data-hero-slide/g) || []).length, 6);
+  assert.equal((html.match(/data-hero-caption/g) || []).length, 6);
+  assert.equal((html.match(/data-hero-dot(?!s)/g) || []).length, 6);
+  assert.match(html, /01-alerta-dono\.png/);
+  assert.match(html, /02-atendimento-domiciliar\.png/);
+  assert.match(html, /hero\.webp/);
+  assert.match(html, /04-servico-em-campo\.png/);
+  assert.match(html, /05-cliente-aprova-web\.png/);
+  assert.match(html, /06-agenda-financeira\.png/);
+});
+
+test('hero troca a cada dois segundos com pausa, swipe e movimento reduzido', () => {
+  assert.match(homeSource, /var interval = 2000/);
+  assert.match(homeSource, /data-hero-toggle/);
+  assert.match(homeSource, /touchStartY/);
+  assert.match(homeSource, /Math\.abs\(distanceX\) <= Math\.abs\(distanceY\)/);
+  assert.match(homeSource, /prefers-reduced-motion: reduce/);
+  assert.match(homeSource, /sixappImpactHeroCarousel/);
+});
+
+test('microcopy do hero permanece completa em portugues, ingles e espanhol', () => {
+  assert.equal((homeSource.match(/'hero\.scene\.one\.title'/g) || []).length, 3);
+  assert.equal((homeSource.match(/'hero\.scene\.six\.title'/g) || []).length, 3);
+  assert.equal((homeSource.match(/'hero\.carousel\.pause'/g) || []).length, 3);
+  assert.match(homeSource, /O alerta encontra o dono onde ele estiver/);
+  assert.match(homeSource, /The alert finds the owner wherever work is happening/);
+  assert.match(homeSource, /La alerta encuentra al dueño donde esté trabajando/);
+});

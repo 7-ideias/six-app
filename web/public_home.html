@@ -10,16 +10,16 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="Nada escapa. Tudo avança. | SixoApp">
   <meta property="og:description" content="Checklist, alertas, agenda financeira, links web, assinatura e acompanhamento em uma operação conectada.">
-  <meta property="og:image" content="/site-assets/images/home-impact/hero.webp">
+  <meta property="og:image" content="/site-assets/images/home-impact/hero-carousel/01-alerta-dono.png">
   <meta property="og:image:width" content="1672">
   <meta property="og:image:height" content="941">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Nada escapa. Tudo avança. | SixoApp">
   <meta name="twitter:description" content="O básico registra. A operação certa faz o próximo passo acontecer.">
-  <meta name="twitter:image" content="/site-assets/images/home-impact/hero.webp">
+  <meta name="twitter:image" content="/site-assets/images/home-impact/hero-carousel/01-alerta-dono.png">
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/site-assets/images/sixoapp-mark.png">
-  <link rel="preload" as="image" href="/site-assets/images/home-impact/hero.webp" type="image/webp" fetchpriority="high">
+  <link rel="preload" as="image" href="/site-assets/images/home-impact/hero-carousel/01-alerta-dono.png" type="image/webp" fetchpriority="high">
   <link rel="stylesheet" href="/site-assets/css/public-base.css">
   <link rel="stylesheet" href="/site-assets/css/home.css">
   <link rel="stylesheet" href="/site-assets/css/home-impact.css">
@@ -81,14 +81,43 @@
           </div>
         </div>
 
-        <div class="impact-hero-visual" data-reveal="hero-visual">
-          <figure class="impact-hero-frame">
-            <img src="/site-assets/images/home-impact/hero.webp" width="1672" height="941" alt="Profissional em uma assistência técnica conectado ao cliente e à operação" data-i18n-alt="hero.image.alt" fetchpriority="high" decoding="async">
+        <div class="impact-hero-visual" data-reveal="hero-visual" data-hero-carousel aria-label="Situações reais de uma operação conectada" data-i18n-aria="hero.carousel.aria">
+          <figure class="impact-hero-frame" data-hero-viewport>
+            <div class="impact-hero-slides">
+              <img class="impact-hero-slide is-active" data-hero-slide src="/site-assets/images/home-impact/hero-carousel/01-alerta-dono.png" alt="Dono de empresa recebe um alerta no celular enquanto coordena outra atividade" data-i18n-alt="hero.scene.one.alt" fetchpriority="high" decoding="async" aria-hidden="false">
+              <img class="impact-hero-slide" data-hero-slide src="/site-assets/images/home-impact/hero-carousel/02-atendimento-domiciliar.png" alt="Técnico realiza atendimento de ar-condicionado na casa de uma cliente" data-i18n-alt="hero.scene.two.alt" loading="eager" decoding="async" aria-hidden="true">
+              <img class="impact-hero-slide" data-hero-slide src="/site-assets/images/home-impact/hero.webp" width="1672" height="941" alt="Profissional atende cliente presencialmente em uma assistência técnica" data-i18n-alt="hero.scene.three.alt" loading="eager" decoding="async" aria-hidden="true">
+              <img class="impact-hero-slide" data-hero-slide src="/site-assets/images/home-impact/hero-carousel/04-servico-em-campo.png" alt="Técnico organiza ferramentas e checklist antes de um atendimento externo" data-i18n-alt="hero.scene.four.alt" loading="eager" decoding="async" aria-hidden="true">
+              <img class="impact-hero-slide" data-hero-slide src="/site-assets/images/home-impact/hero-carousel/05-cliente-aprova-web.png" alt="Cliente acompanha orçamento e status pelo celular enquanto o serviço acontece" data-i18n-alt="hero.scene.five.alt" loading="eager" decoding="async" aria-hidden="true">
+              <img class="impact-hero-slide" data-hero-slide src="/site-assets/images/home-impact/hero-carousel/06-agenda-financeira.png" alt="Empresária revisa a agenda financeira enquanto acompanha a operação" data-i18n-alt="hero.scene.six.alt" loading="eager" decoding="async" aria-hidden="true">
+            </div>
             <span class="impact-frame-shade" aria-hidden="true"></span>
+
+            <div class="impact-hero-control-rail" aria-label="Controles das situações" data-i18n-aria="hero.carousel.controls.aria">
+              <div class="impact-hero-dots">
+                <button class="is-active" type="button" data-hero-dot aria-current="true" aria-label="Ver cena 1: alerta de controle" data-i18n-aria="hero.carousel.gotoOne"><span aria-hidden="true"></span></button>
+                <button type="button" data-hero-dot aria-label="Ver cena 2: atendimento domiciliar" data-i18n-aria="hero.carousel.gotoTwo"><span aria-hidden="true"></span></button>
+                <button type="button" data-hero-dot aria-label="Ver cena 3: atendimento presencial" data-i18n-aria="hero.carousel.gotoThree"><span aria-hidden="true"></span></button>
+                <button type="button" data-hero-dot aria-label="Ver cena 4: checklist em campo" data-i18n-aria="hero.carousel.gotoFour"><span aria-hidden="true"></span></button>
+                <button type="button" data-hero-dot aria-label="Ver cena 5: cliente conectado" data-i18n-aria="hero.carousel.gotoFive"><span aria-hidden="true"></span></button>
+                <button type="button" data-hero-dot aria-label="Ver cena 6: agenda financeira" data-i18n-aria="hero.carousel.gotoSix"><span aria-hidden="true"></span></button>
+              </div>
+              <span class="impact-hero-counter" aria-hidden="true"><strong data-hero-current>01</strong> / 06</span>
+              <button class="impact-hero-toggle" type="button" data-hero-toggle aria-label="Pausar carrossel de situações" title="Pausar carrossel de situações">
+                <span aria-hidden="true" data-hero-toggle-icon>Ⅱ</span>
+                <span hidden data-hero-pause-copy data-i18n="hero.carousel.pause">Pausar carrossel de situações</span>
+                <span hidden data-hero-play-copy data-i18n="hero.carousel.play">Reproduzir carrossel de situações</span>
+              </button>
+            </div>
+
+            <div class="impact-scene-copy is-active" data-hero-caption aria-hidden="false"><small data-i18n="hero.scene.one.label">Alerta de controle</small><strong data-i18n="hero.scene.one.title">O alerta encontra o dono onde ele estiver.</strong></div>
+            <div class="impact-scene-copy" data-hero-caption aria-hidden="true"><small data-i18n="hero.scene.two.label">Atendimento domiciliar</small><strong data-i18n="hero.scene.two.title">Checklist guiando cada etapa em campo.</strong></div>
+            <div class="impact-scene-copy" data-hero-caption aria-hidden="true"><small data-i18n="hero.scene.three.label">Atendimento presencial</small><strong data-i18n="hero.scene.three.title">Entrada, etiqueta e orçamento no mesmo fluxo.</strong></div>
+            <div class="impact-scene-copy" data-hero-caption aria-hidden="true"><small data-i18n="hero.scene.four.label">Checklist em campo</small><strong data-i18n="hero.scene.four.title">Cada visita começa com o próximo passo claro.</strong></div>
+            <div class="impact-scene-copy" data-hero-caption aria-hidden="true"><small data-i18n="hero.scene.five.label">Cliente conectado</small><strong data-i18n="hero.scene.five.title">Orçamento, status, assinatura e feedback pelo link.</strong></div>
+            <div class="impact-scene-copy" data-hero-caption aria-hidden="true"><small data-i18n="hero.scene.six.label">Visão à frente</small><strong data-i18n="hero.scene.six.title">Agenda financeira no app e na web.</strong></div>
           </figure>
-          <div class="impact-signal-card impact-signal-alert"><span class="impact-signal-icon is-alert" aria-hidden="true">!</span><div><small data-i18n="hero.signal.alert.label">Alerta de controle</small><strong data-i18n="hero.signal.alert.value">Enviado no momento certo</strong></div></div>
-          <div class="impact-signal-card impact-signal-budget"><span class="impact-signal-icon is-link" aria-hidden="true">↗</span><div><small data-i18n="hero.signal.budget.label">Orçamento web</small><strong data-i18n="hero.signal.budget.value">Cliente visualizando</strong></div></div>
-          <div class="impact-signal-card impact-signal-signature"><span class="impact-signal-icon is-done" aria-hidden="true">✓</span><div><small data-i18n="hero.signal.signature.label">Documento</small><strong data-i18n="hero.signal.signature.value">Assinatura concluída</strong></div></div>
+          <span class="sr-only" aria-live="polite" aria-atomic="true" data-hero-live></span>
         </div>
       </div>
       <div class="impact-hero-manifest layout" aria-label="Manifesto" data-i18n-aria="manifest.aria">

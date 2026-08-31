@@ -1905,3 +1905,255 @@ html.has-js .public-home-page [data-reveal].is-visible {
     transform: none !important;
   }
 }
+
+
+/* Hero com seis situações reais — carrossel rápido e independente. */
+.public-home-page .impact-hero-slides {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.public-home-page .impact-hero-frame .impact-hero-slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% center;
+  opacity: 0;
+  transform: scale(1.045);
+  filter: saturate(1.06) contrast(1.04);
+  transition: opacity 520ms cubic-bezier(0.22, 0.72, 0.28, 1);
+  pointer-events: none;
+}
+
+.public-home-page .impact-hero-frame .impact-hero-slide:nth-child(2) { object-position: 58% center; }
+.public-home-page .impact-hero-frame .impact-hero-slide:nth-child(3) { object-position: 67% center; }
+.public-home-page .impact-hero-frame .impact-hero-slide:nth-child(4) { object-position: 56% center; }
+.public-home-page .impact-hero-frame .impact-hero-slide:nth-child(5) { object-position: 50% center; }
+.public-home-page .impact-hero-frame .impact-hero-slide:nth-child(6) { object-position: 61% center; }
+
+.public-home-page .impact-hero-frame .impact-hero-slide.is-active {
+  z-index: 1;
+  opacity: 1;
+  animation: impact-hero-scene-drift 2520ms cubic-bezier(0.2, 0.65, 0.28, 1) both;
+  will-change: opacity, transform;
+}
+
+@keyframes impact-hero-scene-drift {
+  from { transform: scale(1.045) translate3d(0, 0, 0); }
+  to { transform: scale(1.085) translate3d(-0.7%, -0.45%, 0); }
+}
+
+.public-home-page .impact-frame-shade {
+  z-index: 2;
+  background: linear-gradient(90deg, rgba(6, 16, 34, 0.46), transparent 38%), linear-gradient(0deg, rgba(6, 16, 34, 0.66), transparent 55%);
+}
+
+.public-home-page .impact-hero-control-rail {
+  position: absolute;
+  z-index: 4;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(186, 248, 255, 0.2);
+  border-radius: 14px;
+  background: rgba(6, 16, 34, 0.7);
+  box-shadow: 0 14px 42px rgba(0, 4, 16, 0.24);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.public-home-page .impact-hero-dots {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(20px, 1fr));
+  gap: 7px;
+  min-width: 0;
+}
+
+.public-home-page .impact-hero-dots button {
+  min-width: 0;
+  height: 24px;
+  padding: 9px 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.public-home-page .impact-hero-dots button > span {
+  position: relative;
+  display: block;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(224, 241, 255, 0.24);
+}
+
+.public-home-page .impact-hero-dots button > span::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: scaleX(0);
+  transform-origin: left;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--impact-cyan), #7187ff);
+}
+
+.public-home-page .impact-hero-dots button.is-active > span::after {
+  animation: impact-hero-progress 2000ms linear forwards;
+}
+
+.public-home-page [data-hero-carousel].is-paused .impact-hero-dots button.is-active > span::after,
+.public-home-page [data-hero-carousel].is-paused .impact-hero-slide.is-active {
+  animation-play-state: paused;
+}
+
+.public-home-page [data-hero-carousel].is-paused .impact-hero-slide.is-active {
+  transition: none;
+}
+
+@keyframes impact-hero-progress {
+  to { transform: scaleX(1); }
+}
+
+.public-home-page .impact-hero-counter {
+  color: rgba(229, 242, 255, 0.62);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+}
+
+.public-home-page .impact-hero-counter strong {
+  color: #ffffff;
+}
+
+.public-home-page .impact-hero-toggle {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(186, 248, 255, 0.22);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.public-home-page .impact-hero-toggle:hover {
+  border-color: var(--impact-cyan);
+  background: rgba(37, 217, 238, 0.12);
+}
+
+.public-home-page .impact-scene-copy {
+  position: absolute;
+  z-index: 4;
+  right: 20px;
+  bottom: 20px;
+  left: 20px;
+  max-width: 440px;
+  padding: 17px 19px;
+  border: 1px solid rgba(186, 248, 255, 0.2);
+  border-radius: 16px 16px 16px 5px;
+  background: rgba(6, 16, 34, 0.78);
+  opacity: 0;
+  transform: translateY(12px);
+  box-shadow: 0 18px 54px rgba(0, 4, 16, 0.34);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  transition: opacity 300ms ease, transform 360ms ease;
+  pointer-events: none;
+}
+
+.public-home-page .impact-scene-copy.is-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.public-home-page .impact-scene-copy small,
+.public-home-page .impact-scene-copy strong {
+  display: block;
+}
+
+.public-home-page .impact-scene-copy small {
+  margin-bottom: 5px;
+  color: var(--impact-cyan);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.public-home-page .impact-scene-copy strong {
+  color: #ffffff;
+  font-family: var(--impact-display);
+  font-size: clamp(16px, 1.45vw, 21px);
+  line-height: 1.24;
+}
+
+@media (max-width: 620px) {
+  .public-home-page .impact-hero-frame .impact-hero-slide:nth-child(1) { object-position: 50% center; }
+  .public-home-page .impact-hero-frame .impact-hero-slide:nth-child(2) { object-position: 58% center; }
+  .public-home-page .impact-hero-frame .impact-hero-slide:nth-child(3) { object-position: 72% center; }
+  .public-home-page .impact-hero-frame .impact-hero-slide:nth-child(4) { object-position: 61% center; }
+  .public-home-page .impact-hero-frame .impact-hero-slide:nth-child(5) { object-position: 38% center; }
+  .public-home-page .impact-hero-frame .impact-hero-slide:nth-child(6) { object-position: 66% center; }
+
+  .public-home-page .impact-hero-control-rail {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 7px 9px;
+  }
+
+  .public-home-page .impact-hero-dots {
+    gap: 5px;
+  }
+
+  .public-home-page .impact-hero-counter {
+    display: none;
+  }
+
+  .public-home-page .impact-hero-toggle {
+    width: 30px;
+    height: 30px;
+  }
+
+  .public-home-page .impact-scene-copy {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    max-width: none;
+    padding: 14px 15px;
+  }
+
+  .public-home-page .impact-scene-copy strong {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-home-page .impact-hero-frame .impact-hero-slide.is-active,
+  .public-home-page .impact-hero-dots button.is-active > span::after {
+    animation: none !important;
+  }
+
+  .public-home-page .impact-hero-frame .impact-hero-slide,
+  .public-home-page .impact-scene-copy {
+    transition: none !important;
+  }
+}
+
+.public-home-page [data-hero-carousel].is-reduced-motion .impact-hero-toggle {
+  display: none;
+}

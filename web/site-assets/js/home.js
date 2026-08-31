@@ -38,6 +38,34 @@
       'hero.signal.budget.value': 'Cliente visualizando',
       'hero.signal.signature.label': 'Documento',
       'hero.signal.signature.value': 'Assinatura concluída',
+      'hero.carousel.aria': "Situações reais de uma operação conectada",
+      'hero.carousel.controls.aria': "Controles das situações",
+      'hero.carousel.pause': "Pausar carrossel de situações",
+      'hero.carousel.play': "Reproduzir carrossel de situações",
+      'hero.carousel.gotoOne': "Ver cena 1: alerta de controle",
+      'hero.carousel.gotoTwo': "Ver cena 2: atendimento domiciliar",
+      'hero.carousel.gotoThree': "Ver cena 3: atendimento presencial",
+      'hero.carousel.gotoFour': "Ver cena 4: checklist em campo",
+      'hero.carousel.gotoFive': "Ver cena 5: cliente conectado",
+      'hero.carousel.gotoSix': "Ver cena 6: agenda financeira",
+      'hero.scene.one.alt': "Dono de empresa recebe um alerta no celular enquanto coordena outra atividade",
+      'hero.scene.one.label': "Alerta de controle",
+      'hero.scene.one.title': "O alerta encontra o dono onde ele estiver.",
+      'hero.scene.two.alt': "Técnico realiza atendimento de ar-condicionado na casa de uma cliente",
+      'hero.scene.two.label': "Atendimento domiciliar",
+      'hero.scene.two.title': "Checklist guiando cada etapa em campo.",
+      'hero.scene.three.alt': "Profissional atende cliente presencialmente em uma assistência técnica",
+      'hero.scene.three.label': "Atendimento presencial",
+      'hero.scene.three.title': "Entrada, etiqueta e orçamento no mesmo fluxo.",
+      'hero.scene.four.alt': "Técnico organiza ferramentas e checklist antes de um atendimento externo",
+      'hero.scene.four.label': "Checklist em campo",
+      'hero.scene.four.title': "Cada visita começa com o próximo passo claro.",
+      'hero.scene.five.alt': "Cliente acompanha orçamento e status pelo celular enquanto o serviço acontece",
+      'hero.scene.five.label': "Cliente conectado",
+      'hero.scene.five.title': "Orçamento, status, assinatura e feedback pelo link.",
+      'hero.scene.six.alt': "Empresária revisa a agenda financeira enquanto acompanha a operação",
+      'hero.scene.six.label': "Visão à frente",
+      'hero.scene.six.title': "Agenda financeira no app e na web.",
       'manifest.aria': 'Manifesto da operação',
       'manifest.one': 'Nada fora do radar.',
       'manifest.two': 'Nenhum cliente no escuro.',
@@ -187,6 +215,34 @@
       'hero.signal.budget.value': 'Customer viewing',
       'hero.signal.signature.label': 'Document',
       'hero.signal.signature.value': 'Signature completed',
+      'hero.carousel.aria': "Real scenes from a connected operation",
+      'hero.carousel.controls.aria': "Scene controls",
+      'hero.carousel.pause': "Pause situation carousel",
+      'hero.carousel.play': "Play situation carousel",
+      'hero.carousel.gotoOne': "View scene 1: control alert",
+      'hero.carousel.gotoTwo': "View scene 2: at-home service",
+      'hero.carousel.gotoThree': "View scene 3: in-person service",
+      'hero.carousel.gotoFour': "View scene 4: on-site checklist",
+      'hero.carousel.gotoFive': "View scene 5: connected customer",
+      'hero.carousel.gotoSix': "View scene 6: financial agenda",
+      'hero.scene.one.alt': "Business owner notices a phone alert while coordinating another activity",
+      'hero.scene.one.label': "Control alert",
+      'hero.scene.one.title': "The alert finds the owner wherever work is happening.",
+      'hero.scene.two.alt': "Technician services an air conditioner in a customer home",
+      'hero.scene.two.label': "At-home service",
+      'hero.scene.two.title': "A checklist guides every step in the field.",
+      'hero.scene.three.alt': "Professional assists a customer in person at a technical service shop",
+      'hero.scene.three.label': "In-person service",
+      'hero.scene.three.title': "Intake, label, and quote in the same flow.",
+      'hero.scene.four.alt': "Technician organizes tools and a checklist before an on-site visit",
+      'hero.scene.four.label': "On-site checklist",
+      'hero.scene.four.title': "Every visit starts with a clear next step.",
+      'hero.scene.five.alt': "Customer follows a quote and status on the phone while service is underway",
+      'hero.scene.five.label': "Connected customer",
+      'hero.scene.five.title': "Quote, status, signature, and feedback through one link.",
+      'hero.scene.six.alt': "Business owner reviews the financial agenda while following the operation",
+      'hero.scene.six.label': "Looking ahead",
+      'hero.scene.six.title': "Financial agenda across app and web.",
       'manifest.aria': 'Operational manifesto',
       'manifest.one': 'Nothing off the radar.',
       'manifest.two': 'No customer left in the dark.',
@@ -336,6 +392,34 @@
       'hero.signal.budget.value': 'Cliente visualizando',
       'hero.signal.signature.label': 'Documento',
       'hero.signal.signature.value': 'Firma completada',
+      'hero.carousel.aria': "Situaciones reales de una operación conectada",
+      'hero.carousel.controls.aria': "Controles de las situaciones",
+      'hero.carousel.pause': "Pausar carrusel de situaciones",
+      'hero.carousel.play': "Reproducir carrusel de situaciones",
+      'hero.carousel.gotoOne': "Ver escena 1: alerta de control",
+      'hero.carousel.gotoTwo': "Ver escena 2: atención a domicilio",
+      'hero.carousel.gotoThree': "Ver escena 3: atención presencial",
+      'hero.carousel.gotoFour': "Ver escena 4: lista en campo",
+      'hero.carousel.gotoFive': "Ver escena 5: cliente conectado",
+      'hero.carousel.gotoSix': "Ver escena 6: agenda financiera",
+      'hero.scene.one.alt': "Dueño de empresa recibe una alerta en el móvil mientras coordina otra actividad",
+      'hero.scene.one.label': "Alerta de control",
+      'hero.scene.one.title': "La alerta encuentra al dueño donde esté trabajando.",
+      'hero.scene.two.alt': "Técnico realiza el mantenimiento del aire acondicionado en casa de una cliente",
+      'hero.scene.two.label': "Atención a domicilio",
+      'hero.scene.two.title': "Una lista guía cada etapa en campo.",
+      'hero.scene.three.alt': "Profesional atiende a un cliente presencialmente en un servicio técnico",
+      'hero.scene.three.label': "Atención presencial",
+      'hero.scene.three.title': "Ingreso, etiqueta y presupuesto en el mismo flujo.",
+      'hero.scene.four.alt': "Técnico organiza herramientas y una lista antes de una visita externa",
+      'hero.scene.four.label': "Lista en campo",
+      'hero.scene.four.title': "Cada visita comienza con el próximo paso claro.",
+      'hero.scene.five.alt': "Cliente sigue el presupuesto y el estado desde el móvil mientras avanza el servicio",
+      'hero.scene.five.label': "Cliente conectado",
+      'hero.scene.five.title': "Presupuesto, estado, firma y feedback mediante un enlace.",
+      'hero.scene.six.alt': "Empresaria revisa la agenda financiera mientras acompaña la operación",
+      'hero.scene.six.label': "Visión de futuro",
+      'hero.scene.six.title': "Agenda financiera en la app y en la web.",
       'manifest.aria': 'Manifiesto de la operación',
       'manifest.one': 'Nada fuera del radar.',
       'manifest.two': 'Ningún cliente a oscuras.',
@@ -518,6 +602,7 @@
     });
 
     storeLocale(normalized);
+    if (window.sixappImpactHeroCarousel) window.sixappImpactHeroCarousel.refresh();
     if (window.sixappImpactCarousel) window.sixappImpactCarousel.refresh();
     window.dispatchEvent(new CustomEvent('sixapp:locale-changed', {
       detail: { language: normalized }
@@ -611,6 +696,192 @@
       node.style.transitionDelay = String(Math.min((index % 3) * 55, 110)) + 'ms';
       observer.observe(node);
     });
+  }
+
+  function setupHeroCarousel() {
+    var root = document.querySelector('[data-hero-carousel]');
+    if (!root) return;
+    var slides = Array.prototype.slice.call(root.querySelectorAll('[data-hero-slide]'));
+    var captions = Array.prototype.slice.call(root.querySelectorAll('[data-hero-caption]'));
+    var dots = Array.prototype.slice.call(root.querySelectorAll('[data-hero-dot]'));
+    var toggle = root.querySelector('[data-hero-toggle]');
+    var toggleIcon = root.querySelector('[data-hero-toggle-icon]');
+    var pauseCopy = root.querySelector('[data-hero-pause-copy]');
+    var playCopy = root.querySelector('[data-hero-play-copy]');
+    var current = root.querySelector('[data-hero-current]');
+    var live = root.querySelector('[data-hero-live]');
+    var viewport = root.querySelector('[data-hero-viewport]');
+    var motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+    var interval = 2000;
+    var index = 0;
+    var timer = null;
+    var userPaused = false;
+    var pointerInside = false;
+    var focusInside = false;
+    var keyboardFocusMode = false;
+    var viewportVisible = true;
+    var reducedMotion = Boolean(motionQuery && motionQuery.matches);
+    var touchStartX = null;
+    var touchStartY = null;
+
+    if (!slides.length || slides.length !== captions.length || slides.length !== dots.length) return;
+
+    function wrap(value) {
+      return (value + slides.length) % slides.length;
+    }
+
+    function isEffectivelyPaused() {
+      return userPaused || pointerInside || focusInside || !viewportVisible || document.hidden || reducedMotion;
+    }
+
+    function updateToggle() {
+      if (!toggle) return;
+      var label = userPaused ? (playCopy && playCopy.textContent) : (pauseCopy && pauseCopy.textContent);
+      toggle.setAttribute('aria-label', label || (userPaused ? 'Reproduzir carrossel' : 'Pausar carrossel'));
+      toggle.setAttribute('title', label || '');
+      if (toggleIcon) toggleIcon.textContent = userPaused ? '▶' : 'Ⅱ';
+    }
+
+    function restartDotProgress() {
+      var activeDot = dots[index];
+      if (!activeDot || reducedMotion) return;
+      activeDot.classList.remove('is-active');
+      void activeDot.offsetWidth;
+      activeDot.classList.add('is-active');
+    }
+
+    function syncAutoplay(restartProgress) {
+      if (timer) window.clearTimeout(timer);
+      timer = null;
+      var paused = isEffectivelyPaused();
+      root.classList.toggle('is-paused', paused);
+      root.classList.toggle('is-reduced-motion', reducedMotion);
+      updateToggle();
+      if (paused) return;
+      if (restartProgress) restartDotProgress();
+      timer = window.setTimeout(function () {
+        activate(index + 1, { announce: false });
+      }, interval);
+    }
+
+    function announce() {
+      if (!live) return;
+      var label = captions[index].textContent.replace(/\s+/g, ' ').trim();
+      live.textContent = String(index + 1) + ' / ' + String(slides.length) + ' — ' + label;
+    }
+
+    function activate(nextIndex, options) {
+      options = options || {};
+      index = wrap(nextIndex);
+      slides.forEach(function (slide, slideIndex) {
+        var active = slideIndex === index;
+        slide.classList.toggle('is-active', active);
+        slide.setAttribute('aria-hidden', active ? 'false' : 'true');
+      });
+      captions.forEach(function (caption, captionIndex) {
+        var active = captionIndex === index;
+        caption.classList.toggle('is-active', active);
+        caption.setAttribute('aria-hidden', active ? 'false' : 'true');
+      });
+      dots.forEach(function (dot, dotIndex) {
+        var active = dotIndex === index;
+        dot.classList.toggle('is-active', active);
+        if (active) dot.setAttribute('aria-current', 'true');
+        else dot.removeAttribute('aria-current');
+      });
+      if (current) current.textContent = String(index + 1).padStart(2, '0');
+      if (options.announce) announce();
+      syncAutoplay(true);
+    }
+
+    dots.forEach(function (dot, dotIndex) {
+      dot.addEventListener('click', function () {
+        activate(dotIndex, { announce: true });
+      });
+    });
+
+    if (toggle) {
+      toggle.addEventListener('click', function () {
+        userPaused = !userPaused;
+        if (!userPaused) {
+          pointerInside = false;
+          focusInside = false;
+        }
+        syncAutoplay(!userPaused);
+      });
+    }
+
+    root.addEventListener('mouseenter', function () {
+      pointerInside = true;
+      syncAutoplay(false);
+    });
+    root.addEventListener('mouseleave', function () {
+      pointerInside = false;
+      syncAutoplay(true);
+    });
+    root.addEventListener('pointerdown', function () {
+      keyboardFocusMode = false;
+      focusInside = false;
+    }, { passive: true });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Tab') keyboardFocusMode = true;
+    });
+    root.addEventListener('focusin', function () {
+      focusInside = keyboardFocusMode;
+      syncAutoplay(false);
+    });
+    root.addEventListener('focusout', function () {
+      window.setTimeout(function () {
+        focusInside = keyboardFocusMode && root.contains(document.activeElement);
+        syncAutoplay(!focusInside);
+      }, 0);
+    });
+
+    if (viewport) {
+      viewport.addEventListener('touchstart', function (event) {
+        var touch = event.changedTouches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+      }, { passive: true });
+      viewport.addEventListener('touchend', function (event) {
+        if (touchStartX === null || touchStartY === null) return;
+        var touch = event.changedTouches[0];
+        var distanceX = touch.clientX - touchStartX;
+        var distanceY = touch.clientY - touchStartY;
+        touchStartX = null;
+        touchStartY = null;
+        if (Math.abs(distanceX) < 52 || Math.abs(distanceX) <= Math.abs(distanceY)) return;
+        activate(index + (distanceX < 0 ? 1 : -1), { announce: true });
+      }, { passive: true });
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      syncAutoplay(!document.hidden);
+    });
+
+    if ('IntersectionObserver' in window) {
+      var visibilityObserver = new IntersectionObserver(function (entries) {
+        viewportVisible = entries[0] ? entries[0].isIntersecting : true;
+        syncAutoplay(viewportVisible);
+      }, { threshold: 0.2 });
+      visibilityObserver.observe(root);
+    }
+
+    function handleMotionChange(event) {
+      reducedMotion = event.matches;
+      syncAutoplay(!reducedMotion);
+    }
+    if (motionQuery) {
+      if (motionQuery.addEventListener) motionQuery.addEventListener('change', handleMotionChange);
+      else if (motionQuery.addListener) motionQuery.addListener(handleMotionChange);
+    }
+
+    window.sixappImpactHeroCarousel = {
+      refresh: function () { updateToggle(); },
+      currentIndex: function () { return index; },
+      isPaused: function () { return isEffectivelyPaused(); }
+    };
+    activate(0, { announce: false });
   }
 
   function setupCarousel() {
@@ -764,6 +1035,7 @@
   setupMobileMenu();
   setupHeader();
   setupReveal();
+  setupHeroCarousel();
   setupCarousel();
   setupLanguageSwitcher();
   applyLanguage(selectedLanguage());
