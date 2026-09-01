@@ -3,9 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sixpos/core/services/catalogo_publico_service.dart';
 import 'package:sixpos/core/services/catalogo_reserva_service.dart';
-import 'package:sixpos/data/models/catalogo_publico_configuracao_model.dart';
 import 'package:sixpos/data/models/catalogo_reserva_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
@@ -40,14 +38,11 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
   ];
 
   final CatalogoReservaService _service = CatalogoReservaService();
-  final CatalogoPublicoService _catalogoPublicoService =
-      CatalogoPublicoService();
   final UsuarioService _usuarioService = UsuarioService();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
 
   CatalogoReservaPaginaModel? _pagina;
   CatalogoReservaDetalheModel? _detalhe;
-  CatalogoPublicoConfiguracaoModel? _configuracaoCatalogoVirtual;
   Set<CatalogoReservaStatus> _filtrosStatus = <CatalogoReservaStatus>{};
   DateTimeRange? _filtroPeriodo;
   String _periodoSelecionado = _periodoProximos7Dias;
@@ -60,7 +55,6 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
   bool _atualizandoStatus = false;
   bool _convertendo = false;
   bool _abrindoCatalogoVirtual = false;
-  bool _carregandoConfiguracaoCatalogoVirtual = true;
   bool _aplicandoPreferencias = false;
   bool _usuarioAlterouFiltros = false;
 
@@ -116,7 +110,6 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
       await _restaurarPreferenciasCatalogoReservasBackend();
       await _carregar();
     });
-    Future<void>.microtask(_carregarConfiguracaoCatalogoVirtual);
   }
 
   Future<void> _carregar({int pagina = 0, String? selecionarId}) async {
@@ -157,42 +150,12 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
   }
 
   Future<void> _abrirCatalogoVirtual() async {
-    if (_abrindoCatalogoVirtual || _carregandoConfiguracaoCatalogoVirtual) {
-      return;
-    }
+    if (_abrindoCatalogoVirtual) return;
     setState(() => _abrindoCatalogoVirtual = true);
     try {
-      await openCatalogoVirtualWeb(
-        context,
-        service: _catalogoPublicoService,
-        initialConfiguration: _configuracaoCatalogoVirtual,
-      );
-      await _carregarConfiguracaoCatalogoVirtual(mostrarCarregamento: false);
+      await showCatalogoVirtualWebDialog(context);
     } finally {
       if (mounted) setState(() => _abrindoCatalogoVirtual = false);
-    }
-  }
-
-  Future<void> _carregarConfiguracaoCatalogoVirtual({
-    bool mostrarCarregamento = true,
-  }) async {
-    if (mostrarCarregamento && mounted) {
-      setState(() => _carregandoConfiguracaoCatalogoVirtual = true);
-    }
-    try {
-      final CatalogoPublicoConfiguracaoModel configuration =
-          await loadCatalogoVirtualWebConfiguration(
-            service: _catalogoPublicoService,
-          );
-      if (!mounted) return;
-      setState(() => _configuracaoCatalogoVirtual = configuration);
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _configuracaoCatalogoVirtual = null);
-    } finally {
-      if (mounted) {
-        setState(() => _carregandoConfiguracaoCatalogoVirtual = false);
-      }
     }
   }
 
@@ -872,13 +835,9 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
             children: <Widget>[
               FilledButton.icon(
                 onPressed:
-                    _abrindoCatalogoVirtual ||
-                            _carregandoConfiguracaoCatalogoVirtual
-                        ? null
-                        : _abrirCatalogoVirtual,
+                    _abrindoCatalogoVirtual ? null : _abrirCatalogoVirtual,
                 icon:
-                    _abrindoCatalogoVirtual ||
-                            _carregandoConfiguracaoCatalogoVirtual
+                    _abrindoCatalogoVirtual
                         ? SizedBox(
                           width: 18,
                           height: 18,
@@ -890,12 +849,8 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
                         : const Icon(Icons.storefront_outlined, size: 18),
                 label: Text(
                   context.t(
-                    _configuracaoCatalogoVirtual?.ativo == false
-                        ? 'catalogReservations.configureCatalog'
-                        : 'catalogReservations.openCatalog',
-                    fallback: _configuracaoCatalogoVirtual?.ativo == false
-                        ? 'Configurar catálogo virtual'
-                        : 'Ver catálogo virtual',
+                    'catalogReservations.openCatalog',
+                    fallback: 'Abrir catálogo virtual',
                   ),
                 ),
                 style: FilledButton.styleFrom(

@@ -2441,8 +2441,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalogReservations.title': 'Reservas do catálogo',
     'catalogReservations.subtitle':
         'Acompanhe solicitações recebidas pelo catálogo virtual.',
-    'catalogReservations.openCatalog': 'Ver catálogo virtual',
-    'catalogReservations.configureCatalog': 'Configurar catálogo virtual',
+    'catalogReservations.openCatalog': 'Abrir catálogo virtual',
     'catalogReservations.loadingTitle': 'Carregando reservas',
     'catalogReservations.loadingSubtitle':
         'Sincronizando as solicitações deste comércio.',
@@ -4731,8 +4730,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalogReservations.title': 'Catalog reservations',
     'catalogReservations.subtitle':
         'Track requests received through the virtual catalog.',
-    'catalogReservations.openCatalog': 'View online catalog',
-    'catalogReservations.configureCatalog': 'Configure online catalog',
+    'catalogReservations.openCatalog': 'Open online catalog',
     'catalogReservations.loadingTitle': 'Loading reservations',
     'catalogReservations.loadingSubtitle':
         'Syncing requests for this business.',
@@ -7093,8 +7091,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalogReservations.title': 'Reservas del catálogo',
     'catalogReservations.subtitle':
         'Acompaña las solicitudes recibidas por el catálogo virtual.',
-    'catalogReservations.openCatalog': 'Ver catálogo virtual',
-    'catalogReservations.configureCatalog': 'Configurar catálogo virtual',
+    'catalogReservations.openCatalog': 'Abrir catálogo virtual',
     'catalogReservations.loadingTitle': 'Cargando reservas',
     'catalogReservations.loadingSubtitle':
         'Sincronizando las solicitudes de este comercio.',
