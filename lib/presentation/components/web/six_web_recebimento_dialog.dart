@@ -404,10 +404,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Color accent =
-        theme.brightness == Brightness.dark
-            ? const Color(0xFF60A5FA)
-            : const Color(0xFF2563EB);
+    final Color accent = tokens.info;
     final Color surface =
         theme.brightness == Brightness.dark
             ? const Color(0xFF17253A)
@@ -422,7 +419,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
     );
     final ButtonStyle primaryActionStyle = FilledButton.styleFrom(
       backgroundColor: accent,
-      foregroundColor: Colors.white,
+      foregroundColor: tokens.onInfo,
       disabledBackgroundColor: tokens.disabledBackground,
       disabledForegroundColor: tokens.disabledForeground,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
@@ -949,10 +946,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
   Widget _formasRecebimentoSection() {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Color accent =
-        theme.brightness == Brightness.dark
-            ? const Color(0xFF60A5FA)
-            : const Color(0xFF2563EB);
+    final Color accent = tokens.info;
     final ButtonStyle addMethodStyle = OutlinedButton.styleFrom(
       foregroundColor:
           theme.brightness == Brightness.dark ? accent : tokens.primaryText,
@@ -1699,10 +1693,7 @@ class _RecebimentoProcessingOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Color accent =
-        theme.brightness == Brightness.dark
-            ? const Color(0xFF60A5FA)
-            : const Color(0xFF2563EB);
+    final Color accent = tokens.info;
 
     return IgnorePointer(
       child: Container(

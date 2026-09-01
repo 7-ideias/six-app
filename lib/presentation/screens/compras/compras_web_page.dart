@@ -307,7 +307,7 @@ class _ComprasWebPageState extends State<ComprasWebPage> {
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
             backgroundColor: tokens.info,
-            foregroundColor: const Color(0xFF08111F),
+            foregroundColor: tokens.onInfo,
             disabledBackgroundColor: tokens.disabledBackground,
             disabledForegroundColor: tokens.disabledForeground,
             minimumSize: const Size(0, 44),

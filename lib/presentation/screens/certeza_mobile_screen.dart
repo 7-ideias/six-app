@@ -63,13 +63,15 @@ class CertezaMobileScreen extends StatelessWidget {
           height: 48,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              foregroundColor:
+                  Theme.of(context).colorScheme.onPrimaryContainer,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
             onPressed: () => Navigator.pop(context),
-            child: const Text('VOLTAR', style: TextStyle(color: Colors.white)),
+            child: const Text('VOLTAR'),
           ),
         ),
       ),

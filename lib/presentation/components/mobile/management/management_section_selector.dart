@@ -69,7 +69,7 @@ class _SectionSegment extends StatelessWidget {
         MediaQuery.disableAnimationsOf(context) ||
         MediaQuery.accessibleNavigationOf(context);
     final Color foregroundColor =
-        isSelected ? SixMobilePalette.onPrimary : colors.titleText;
+        isSelected ? colors.onAccent : colors.titleText;
     final Color segmentColor = isSelected ? colors.accent : colors.surface;
     final Color segmentBorderColor = isSelected ? colors.accent : colors.border;
 

@@ -36,7 +36,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
           SwitchListTile(
             title: const Text("Controle de estoque"),
             value: controleEstoque,
-            activeColor: Colors.deepPurple,
+            activeColor: Theme.of(context).colorScheme.primary,
             onChanged: (value) {
               setState(() {
                 controleEstoque = value;
@@ -46,14 +46,17 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
           const Divider(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Flexible(
+            children: [
+              const Flexible(
                 child: Text(
                   "Escolha qual status do pedido vai indicar que suas peças não estão mais no estoque.",
                   style: TextStyle(fontSize: 14),
                 ),
               ),
-              Icon(Icons.info_outline, color: Colors.deepPurple),
+              Icon(
+                Icons.info_outline,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -68,7 +71,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
               ),
               value: entry.key,
               groupValue: statusSelecionado,
-              activeColor: Colors.deepPurple,
+              activeColor: Theme.of(context).colorScheme.primary,
               onChanged: (value) {
                 setState(() {
                   statusSelecionado = value;
@@ -85,7 +88,9 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
           height: 48,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              foregroundColor:
+                  Theme.of(context).colorScheme.onPrimaryContainer,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -93,7 +98,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
             onPressed: () {
               // salvar configuração de estoque
             },
-            child: const Text("salvar", style: TextStyle(color: Colors.white)),
+            child: const Text("salvar"),
           ),
         ),
       ),

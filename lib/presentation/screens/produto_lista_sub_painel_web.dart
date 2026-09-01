@@ -1084,14 +1084,11 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
     required OutlinedBorder shape,
   }) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final bool dark = colorScheme.brightness == Brightness.dark;
     return FilledButton.styleFrom(
       padding: padding,
       shape: shape,
       backgroundColor: tokens.info,
-      foregroundColor:
-          dark ? tokens.workspaceBackground : colorScheme.onPrimary,
+      foregroundColor: tokens.onInfo,
       disabledBackgroundColor: tokens.disabledBackground,
       disabledForegroundColor: tokens.disabledForeground,
     ).copyWith(overlayColor: _catalogFilledButtonOverlay(tokens));

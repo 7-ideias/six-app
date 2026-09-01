@@ -31,7 +31,7 @@ class _MateriaisMobileScreenState extends State<MateriaisMobileScreen> {
             title: const Text('Materiais'),
             value: 'Materiais',
             groupValue: _selecionado,
-            activeColor: Colors.deepPurple,
+            activeColor: Theme.of(context).colorScheme.primary,
             onChanged: (value) {
               setState(() {
                 _selecionado = value;
@@ -42,7 +42,7 @@ class _MateriaisMobileScreenState extends State<MateriaisMobileScreen> {
             title: const Text('Produtos'),
             value: 'Produtos',
             groupValue: _selecionado,
-            activeColor: Colors.deepPurple,
+            activeColor: Theme.of(context).colorScheme.primary,
             onChanged: (value) {
               setState(() {
                 _selecionado = value;
@@ -53,7 +53,7 @@ class _MateriaisMobileScreenState extends State<MateriaisMobileScreen> {
             title: const Text('Peças'),
             value: 'Peças',
             groupValue: _selecionado,
-            activeColor: Colors.deepPurple,
+            activeColor: Theme.of(context).colorScheme.primary,
             onChanged: (value) {
               setState(() {
                 _selecionado = value;
@@ -69,7 +69,9 @@ class _MateriaisMobileScreenState extends State<MateriaisMobileScreen> {
           height: 48,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              foregroundColor:
+                  Theme.of(context).colorScheme.onPrimaryContainer,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -77,7 +79,7 @@ class _MateriaisMobileScreenState extends State<MateriaisMobileScreen> {
             onPressed: () {
               // salvar opção selecionada
             },
-            child: const Text("salvar", style: TextStyle(color: Colors.white)),
+            child: const Text("salvar"),
           ),
         ),
       ),

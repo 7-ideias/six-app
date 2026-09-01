@@ -272,7 +272,7 @@ class _VendasNaoLiquidadasMobileScreenState
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: SixMobilePalette.error,
-                    foregroundColor: SixMobilePalette.onPrimary,
+                    foregroundColor: SixMobilePalette.onError,
                     minimumSize: Size.fromHeight(50),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
@@ -1077,7 +1077,7 @@ class _VendasNaoLiquidadasMobileScreenState
         filled
             ? FilledButton.styleFrom(
               backgroundColor: _accentColor,
-              foregroundColor: SixMobilePalette.onPrimary,
+              foregroundColor: SixMobilePalette.onAccent,
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             )
             : OutlinedButton.styleFrom(

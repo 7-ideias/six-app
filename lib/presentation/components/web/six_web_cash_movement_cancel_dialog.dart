@@ -369,7 +369,7 @@ class _SixWebCashMovementCancelDialogState
                 onPressed: _isBusy ? null : _confirm,
                 style: FilledButton.styleFrom(
                   backgroundColor: tokens.danger,
-                  foregroundColor: Theme.of(context).colorScheme.onError,
+                  foregroundColor: tokens.onDanger,
                 ),
                 icon: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 160),

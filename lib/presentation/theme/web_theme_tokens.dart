@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../design_system/helpers/six_color_contrast.dart';
+
 @immutable
 class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
   const WebThemeTokens({
@@ -23,9 +25,13 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
     required this.secondaryText,
     required this.mutedText,
     required this.success,
+    required this.onSuccess,
     required this.warning,
+    required this.onWarning,
     required this.danger,
+    required this.onDanger,
     required this.info,
+    required this.onInfo,
     required this.disabledBackground,
     required this.disabledForeground,
     required this.financialPositive,
@@ -58,9 +64,13 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
   final Color secondaryText;
   final Color mutedText;
   final Color success;
+  final Color onSuccess;
   final Color warning;
+  final Color onWarning;
   final Color danger;
+  final Color onDanger;
   final Color info;
+  final Color onInfo;
   final Color disabledBackground;
   final Color disabledForeground;
   final Color financialPositive;
@@ -120,6 +130,11 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
   }
 
   static WebThemeTokens light(ColorScheme colorScheme) {
+    const Color success = Color(0xFF0F766E);
+    const Color warning = Color(0xFFB45309);
+    const Color danger = Color(0xFFDC2626);
+    const Color info = Color(0xFF2563EB);
+
     return WebThemeTokens(
       workspaceBackground: const Color(0xFFF8FAFC),
       sidebarBackground: const Color(0xFFFFFFFF),
@@ -143,10 +158,14 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
       primaryText: const Color(0xFF0F172A),
       secondaryText: const Color(0xFF475569),
       mutedText: const Color(0xFF64748B),
-      success: const Color(0xFF0F766E),
-      warning: const Color(0xFFB45309),
-      danger: const Color(0xFFDC2626),
-      info: const Color(0xFF2563EB),
+      success: success,
+      onSuccess: SixColorContrast.onColor(success),
+      warning: warning,
+      onWarning: SixColorContrast.onColor(warning),
+      danger: danger,
+      onDanger: SixColorContrast.onColor(danger),
+      info: info,
+      onInfo: SixColorContrast.onColor(info),
       disabledBackground: const Color(0xFFE2E8F0),
       disabledForeground: const Color(0xFF94A3B8),
       financialPositive: const Color(0xFF047857),
@@ -163,6 +182,10 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
     const Color surface = Color(0xFF0F1B2D);
     const Color muted = Color(0xFF142238);
     const Color elevated = Color(0xFF1A2B44);
+    const Color success = Color(0xFF34D399);
+    const Color warning = Color(0xFFFBBF24);
+    const Color danger = Color(0xFFF87171);
+    const Color info = Color(0xFF60A5FA);
     final Color brandSelected = _blend(
       colorScheme.secondary.withValues(alpha: 0.16),
       muted,
@@ -188,10 +211,14 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
       primaryText: const Color(0xFFEAF2FF),
       secondaryText: const Color(0xFFB9C7DA),
       mutedText: const Color(0xFF7F8EA3),
-      success: const Color(0xFF34D399),
-      warning: const Color(0xFFFBBF24),
-      danger: const Color(0xFFF87171),
-      info: const Color(0xFF60A5FA),
+      success: success,
+      onSuccess: SixColorContrast.onColor(success),
+      warning: warning,
+      onWarning: SixColorContrast.onColor(warning),
+      danger: danger,
+      onDanger: SixColorContrast.onColor(danger),
+      info: info,
+      onInfo: SixColorContrast.onColor(info),
       disabledBackground: const Color(0xFF1A2433),
       disabledForeground: const Color(0xFF64748B),
       financialPositive: const Color(0xFF34D399),
@@ -228,9 +255,13 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
     Color? secondaryText,
     Color? mutedText,
     Color? success,
+    Color? onSuccess,
     Color? warning,
+    Color? onWarning,
     Color? danger,
+    Color? onDanger,
     Color? info,
+    Color? onInfo,
     Color? disabledBackground,
     Color? disabledForeground,
     Color? financialPositive,
@@ -260,9 +291,13 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
       secondaryText: secondaryText ?? this.secondaryText,
       mutedText: mutedText ?? this.mutedText,
       success: success ?? this.success,
+      onSuccess: onSuccess ?? this.onSuccess,
       warning: warning ?? this.warning,
+      onWarning: onWarning ?? this.onWarning,
       danger: danger ?? this.danger,
+      onDanger: onDanger ?? this.onDanger,
       info: info ?? this.info,
+      onInfo: onInfo ?? this.onInfo,
       disabledBackground: disabledBackground ?? this.disabledBackground,
       disabledForeground: disabledForeground ?? this.disabledForeground,
       financialPositive: financialPositive ?? this.financialPositive,
@@ -276,6 +311,11 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
   @override
   WebThemeTokens lerp(ThemeExtension<WebThemeTokens>? other, double t) {
     if (other is! WebThemeTokens) return this;
+
+    final Color interpolatedSuccess = Color.lerp(success, other.success, t)!;
+    final Color interpolatedWarning = Color.lerp(warning, other.warning, t)!;
+    final Color interpolatedDanger = Color.lerp(danger, other.danger, t)!;
+    final Color interpolatedInfo = Color.lerp(info, other.info, t)!;
 
     return WebThemeTokens(
       workspaceBackground:
@@ -301,10 +341,14 @@ class WebThemeTokens extends ThemeExtension<WebThemeTokens> {
       primaryText: Color.lerp(primaryText, other.primaryText, t)!,
       secondaryText: Color.lerp(secondaryText, other.secondaryText, t)!,
       mutedText: Color.lerp(mutedText, other.mutedText, t)!,
-      success: Color.lerp(success, other.success, t)!,
-      warning: Color.lerp(warning, other.warning, t)!,
-      danger: Color.lerp(danger, other.danger, t)!,
-      info: Color.lerp(info, other.info, t)!,
+      success: interpolatedSuccess,
+      onSuccess: SixColorContrast.onColor(interpolatedSuccess),
+      warning: interpolatedWarning,
+      onWarning: SixColorContrast.onColor(interpolatedWarning),
+      danger: interpolatedDanger,
+      onDanger: SixColorContrast.onColor(interpolatedDanger),
+      info: interpolatedInfo,
+      onInfo: SixColorContrast.onColor(interpolatedInfo),
       disabledBackground:
           Color.lerp(disabledBackground, other.disabledBackground, t)!,
       disabledForeground:

@@ -60,7 +60,7 @@ class _SituacaoDoPedidoMobileScreenState
                         : const TextStyle(),
               ),
               controlAffinity: ListTileControlAffinity.leading,
-              activeColor: Colors.deepPurple,
+              activeColor: Theme.of(context).colorScheme.primary,
             );
           }).toList(),
           const SizedBox(height: 80),
@@ -71,7 +71,7 @@ class _SituacaoDoPedidoMobileScreenState
           // Ajuda ou tooltip
         },
         backgroundColor: const Color(0xFFDAE529),
-        child: const Icon(Icons.lightbulb_outline, color: Colors.white),
+        child: const Icon(Icons.lightbulb_outline, color: Colors.black),
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -79,7 +79,9 @@ class _SituacaoDoPedidoMobileScreenState
           height: 48,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              foregroundColor:
+                  Theme.of(context).colorScheme.onPrimaryContainer,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -87,7 +89,7 @@ class _SituacaoDoPedidoMobileScreenState
             onPressed: () {
               // salvar status
             },
-            child: const Text("salvar", style: TextStyle(color: Colors.white)),
+            child: const Text("salvar"),
           ),
         ),
       ),

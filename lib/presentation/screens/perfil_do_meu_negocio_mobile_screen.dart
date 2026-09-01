@@ -211,7 +211,7 @@ class _PerfilDoMeuNegocioMobileScreenState
                 backgroundColor: _primaryColor,
                 foregroundColor: Colors.white,
                 disabledBackgroundColor: const Color(0xFF94A3B8),
-                disabledForegroundColor: Colors.white,
+                disabledForegroundColor: _primaryColor,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),

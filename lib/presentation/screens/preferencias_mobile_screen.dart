@@ -74,7 +74,10 @@ class _PreferencesMobileScreenState extends State<PreferencesMobileScreen> {
         itemBuilder: (context, index) {
           final item = items[index];
           return ListTile(
-            leading: Icon(item.icon, color: Colors.deepPurple),
+            leading: Icon(
+              item.icon,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             title: Text(
               item.title,
               style: const TextStyle(fontWeight: FontWeight.bold),

@@ -2101,7 +2101,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
     final tokens = WebThemeTokens.of(context);
     return FilledButton.styleFrom(
       backgroundColor: tokens.info,
-      foregroundColor: const Color(0xFF08111F),
+      foregroundColor: tokens.onInfo,
       disabledBackgroundColor: tokens.disabledBackground,
       disabledForegroundColor: tokens.disabledForeground,
       minimumSize: const Size(0, 46),
@@ -3035,7 +3035,7 @@ class _OperacoesCaixaWebPageState extends State<OperacoesCaixaWebPage> {
               danger
                   ? FilledButton.styleFrom(
                     backgroundColor: tokens.danger,
-                    foregroundColor: Theme.of(context).colorScheme.onError,
+                    foregroundColor: tokens.onDanger,
                   )
                   : null,
           child: Text(confirmLabel),

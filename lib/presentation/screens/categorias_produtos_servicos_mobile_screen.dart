@@ -937,7 +937,7 @@ class _CategoriasProdutosServicosMobileScreenState
                     child: FloatingActionButton.extended(
                       onPressed: _loading ? null : () => _abrirFormulario(),
                       backgroundColor: _accentColor,
-                      foregroundColor: SixMobilePalette.onPrimary,
+                      foregroundColor: SixMobilePalette.onAccent,
                       elevation: 5,
                       icon: Icon(Icons.add_rounded),
                       label: Text(
@@ -1469,7 +1469,7 @@ class _ConfirmDeleteCategorySheet extends StatelessWidget {
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
                     backgroundColor: SixMobilePalette.error,
-                    foregroundColor: SixMobilePalette.onPrimary,
+                    foregroundColor: SixMobilePalette.onError,
                   ),
                   onPressed: onConfirm,
                   icon: Icon(Icons.delete_outline_rounded),

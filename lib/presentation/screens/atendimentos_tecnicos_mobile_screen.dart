@@ -2213,7 +2213,7 @@ class _AtendimentosTecnicosMobileScreenState
         filled
             ? FilledButton.styleFrom(
               backgroundColor: _accentColor,
-              foregroundColor: SixMobilePalette.onPrimary,
+              foregroundColor: SixMobilePalette.onAccent,
               minimumSize: Size.fromHeight(46),
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -3503,7 +3503,7 @@ class _AtendimentosTecnicosMobileScreenState
         highlighted
             ? FilledButton.styleFrom(
               backgroundColor: _accentColor,
-              foregroundColor: SixMobilePalette.onPrimary,
+              foregroundColor: SixMobilePalette.onAccent,
               padding: EdgeInsets.zero,
               minimumSize: Size(52, 52),
               fixedSize: Size(52, 52),
@@ -3527,7 +3527,7 @@ class _AtendimentosTecnicosMobileScreenState
               child: CircularProgressIndicator(
                 strokeWidth: 2.2,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  highlighted ? SixMobilePalette.onPrimary : _accentColor,
+                  highlighted ? SixMobilePalette.onAccent : _accentColor,
                 ),
               ),
             )

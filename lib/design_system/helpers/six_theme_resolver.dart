@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/aparencia_models.dart';
+import 'six_color_contrast.dart';
 
 enum DensidadeVisualSistema {
   compacta,
@@ -115,38 +116,86 @@ class SixThemeResolver extends ChangeNotifier {
 
   /// Gera um ColorScheme baseado na paleta atual
   ColorScheme getLightScheme() {
+    final Color accessiblePrimary = SixColorContrast.ensureForeground(
+      primary,
+      surface,
+    );
+    final Color accessibleSecondary = SixColorContrast.ensureForeground(
+      secondary,
+      surface,
+    );
+    final Color accessibleAccent = SixColorContrast.ensureForeground(
+      accent,
+      surface,
+    );
+    final Color accessibleAlert = SixColorContrast.ensureForeground(
+      alert,
+      surface,
+    );
+
     return ColorScheme.light(
-      primary: primary,
-      onPrimary: _getContrastColor(primary),
-      secondary: secondary,
-      onSecondary: _getContrastColor(secondary),
-      tertiary: accent,
-      onTertiary: _getContrastColor(accent),
-      error: alert,
-      onError: _getContrastColor(alert),
+      primary: accessiblePrimary,
+      onPrimary: SixColorContrast.onColor(accessiblePrimary),
+      primaryContainer: primary,
+      onPrimaryContainer: SixColorContrast.onColor(primary),
+      secondary: accessibleSecondary,
+      onSecondary: SixColorContrast.onColor(accessibleSecondary),
+      secondaryContainer: secondary,
+      onSecondaryContainer: SixColorContrast.onColor(secondary),
+      tertiary: accessibleAccent,
+      onTertiary: SixColorContrast.onColor(accessibleAccent),
+      tertiaryContainer: accent,
+      onTertiaryContainer: SixColorContrast.onColor(accent),
+      error: accessibleAlert,
+      onError: SixColorContrast.onColor(accessibleAlert),
+      errorContainer: alert,
+      onErrorContainer: SixColorContrast.onColor(alert),
       surface: surface,
-      onSurface: textPrimary,
+      onSurface: SixColorContrast.ensureForeground(textPrimary, surface),
     );
   }
 
   ColorScheme getDarkScheme() {
+    // Superfície canônica do SIX Web. Ela também é suficientemente próxima das
+    // superfícies mobile para servir como referência segura para as paletas de
+    // empresa no modo escuro.
+    const Color darkSurface = Color(0xFF0F1B2D);
+    final Color accessiblePrimary = SixColorContrast.ensureForeground(
+      primary,
+      darkSurface,
+    );
+    final Color accessibleSecondary = SixColorContrast.ensureForeground(
+      secondary,
+      darkSurface,
+    );
+    final Color accessibleAccent = SixColorContrast.ensureForeground(
+      accent,
+      darkSurface,
+    );
+    final Color accessibleAlert = SixColorContrast.ensureForeground(
+      alert,
+      darkSurface,
+    );
+
     return ColorScheme.dark(
-      primary: primary,
-      onPrimary: _getContrastColor(primary),
-      secondary: secondary,
-      onSecondary: _getContrastColor(secondary),
-      tertiary: accent,
-      onTertiary: _getContrastColor(accent),
-      error: alert,
-      onError: _getContrastColor(alert),
-      surface: const Color(0xFF121212), // Padrão Material Dark
+      primary: accessiblePrimary,
+      onPrimary: SixColorContrast.onColor(accessiblePrimary),
+      primaryContainer: primary,
+      onPrimaryContainer: SixColorContrast.onColor(primary),
+      secondary: accessibleSecondary,
+      onSecondary: SixColorContrast.onColor(accessibleSecondary),
+      secondaryContainer: secondary,
+      onSecondaryContainer: SixColorContrast.onColor(secondary),
+      tertiary: accessibleAccent,
+      onTertiary: SixColorContrast.onColor(accessibleAccent),
+      tertiaryContainer: accent,
+      onTertiaryContainer: SixColorContrast.onColor(accent),
+      error: accessibleAlert,
+      onError: SixColorContrast.onColor(accessibleAlert),
+      errorContainer: alert,
+      onErrorContainer: SixColorContrast.onColor(alert),
+      surface: darkSurface,
       onSurface: Colors.white,
     );
-  }
-
-  Color _getContrastColor(Color color) {
-    return ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-        ? Colors.white
-        : Colors.black;
   }
 }

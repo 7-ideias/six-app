@@ -67,7 +67,7 @@ class _FilterButton extends StatelessWidget {
             ? SixMobilePalette.accent
             : SixMobilePalette.softNeutralSurface;
     final Color foregroundColor =
-        selected ? SixMobilePalette.onPrimary : SixMobilePalette.titleText;
+        selected ? SixMobilePalette.onAccent : SixMobilePalette.titleText;
 
     return Semantics(
       button: true,
