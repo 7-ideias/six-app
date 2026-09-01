@@ -58,7 +58,7 @@ void main() {
         );
 
         expect(_scaffoldBackground(tester), themeCase.colors.background);
-        expect(find.text('Nova venda'), findsWidgets);
+        expect(find.text('Vendas'), findsWidgets);
         expect(find.text('Vendas a receber'), findsOneWidget);
         expect(find.text('Consultar vendas'), findsOneWidget);
         expect(find.text('Em breve'), findsWidgets);

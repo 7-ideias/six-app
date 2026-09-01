@@ -6,7 +6,11 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sixpos/data/datasources/operational_procedure_mock_data_source.dart';
 import 'package:sixpos/data/models/atendimento_tecnico_models.dart';
+import 'package:sixpos/data/models/colaborador_usuario_model.dart';
+import 'package:sixpos/data/models/dominio_models.dart';
+import 'package:sixpos/data/models/operational_procedure_flow_models.dart';
 import 'package:sixpos/data/models/regionalizacao_models.dart';
+import 'package:sixpos/data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import 'package:sixpos/data/services/regionalizacao/regionalizacao_api_client.dart';
 import 'package:sixpos/domain/models/regionalizacao_models.dart';
 import 'package:sixpos/domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
@@ -47,8 +51,14 @@ void main() {
     await _pumpAtendimento(tester);
 
     expect(find.text('O que você deseja fazer?'), findsOneWidget);
-    expect(find.text('Nova venda'), findsOneWidget);
-    expect(find.text('Serviços'), findsOneWidget);
+    expect(find.text('Vendas'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('servicos-action-new-service')),
+        matching: find.text('Serviços'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Receber'), findsOneWidget);
     expect(find.text('Acompanhe hoje'), findsNothing);
     expect(find.text('Mais opções'), findsNothing);
@@ -73,7 +83,7 @@ void main() {
   ) async {
     await _pumpAtendimento(tester, size: const Size(320, 940), textScale: 1.35);
 
-    expect(find.text('Nova venda'), findsOneWidget);
+    expect(find.text('Vendas'), findsOneWidget);
     _expectActionCardHierarchy(tester);
     expect(tester.takeException(), isNull);
   });
@@ -406,7 +416,7 @@ void main() {
   ) async {
     final List<String> navigations = await _pumpNovaVenda(tester);
 
-    expect(find.text('Nova venda'), findsWidgets);
+    expect(find.text('Vendas'), findsWidgets);
     expect(find.text('Vendas a receber'), findsOneWidget);
     expect(find.text('Consultar vendas'), findsOneWidget);
     expect(find.text('Consultar histórico de vendas'), findsOneWidget);
@@ -439,7 +449,7 @@ void main() {
     for (final double width in <double>[320, 360, 390, 430]) {
       await _pumpNovaVenda(tester, size: Size(width, 760));
 
-      expect(find.text('Nova venda'), findsWidgets);
+      expect(find.text('Vendas'), findsWidgets);
       expect(find.text('Vendas a receber'), findsOneWidget);
       expect(find.text('Consultar vendas'), findsOneWidget);
       expect(find.text('Em breve'), findsNothing);
@@ -452,7 +462,13 @@ void main() {
   ) async {
     final List<Widget> navigations = await _pumpServicos(tester);
 
-    expect(find.text('Novo serviço'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('servicos-action-new-service')),
+        matching: find.text('Serviços'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Consultar serviços em andamento'), findsOneWidget);
     expect(find.text('Orçamentos aguardando aprovação'), findsOneWidget);
     expect(find.text('Serviços já encerrados'), findsOneWidget);
@@ -498,6 +514,79 @@ void main() {
     expect(closedPage.listContext.titleFallback, 'Serviços já encerrados');
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'novo serviço do menu técnico dispara o procedimento operacional',
+    (WidgetTester tester) async {
+      int triggerCalls = 0;
+      final OperationalProcedureFlowCoordinator procedureCoordinator =
+          OperationalProcedureFlowCoordinator(
+            dataSource: const OperationalProcedureMockDataSource(
+              delay: Duration.zero,
+              scenario: OperationalProcedureMockScenario.success,
+            ),
+            runner: (_, __, ___) async {
+              triggerCalls++;
+              return const ProcedureFlowResult.cancelled();
+            },
+          );
+
+      await _pumpServicos(tester, procedureCoordinator: procedureCoordinator);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('servicos-action-new-service')),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(triggerCalls, 1);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey<String>('servicos-action-new-service')),
+          matching: find.text('Serviços'),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'novo atendimento da lista técnica dispara o procedimento operacional',
+    (WidgetTester tester) async {
+      int triggerCalls = 0;
+      final OperationalProcedureFlowCoordinator procedureCoordinator =
+          OperationalProcedureFlowCoordinator(
+            dataSource: const OperationalProcedureMockDataSource(
+              delay: Duration.zero,
+              scenario: OperationalProcedureMockScenario.success,
+            ),
+            runner: (_, __, ___) async {
+              triggerCalls++;
+              return const ProcedureFlowResult.cancelled();
+            },
+          );
+
+      await _pumpAtendimentosTecnicosLista(
+        tester,
+        service: _FakeAtendimentoTecnicoService(
+          const <AtendimentoTecnicoModel>[],
+        ),
+        colaboradorApiClient: const _FakeColaboradorUsuarioApiClient(
+          <ColaboradorUsuarioResumo>[],
+        ),
+        procedureCoordinator: procedureCoordinator,
+      );
+
+      await tester.tap(find.byTooltip('Novo atendimento'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(triggerCalls, 1);
+      expect(find.text('Atendimentos técnicos'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('falha nos contadores não bloqueia ações principais', (
     WidgetTester tester,
@@ -707,6 +796,7 @@ Future<List<String>> _pumpAtendimento(
 Future<List<Widget>> _pumpServicos(
   WidgetTester tester, {
   Size size = const Size(390, 900),
+  OperationalProcedureFlowCoordinator? procedureCoordinator,
 }) async {
   final List<Widget> navigations = <Widget>[];
 
@@ -727,6 +817,7 @@ Future<List<Widget>> _pumpServicos(
           devicePixelRatio: 1,
         ),
         child: OpcoesServicosAtendimentoMobileScreen(
+          procedureCoordinator: procedureCoordinator,
           onNavigate: (_, Widget page) => navigations.add(page),
         ),
       ),
@@ -736,6 +827,50 @@ Future<List<Widget>> _pumpServicos(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 700));
   return navigations;
+}
+
+Future<void> _pumpAtendimentosTecnicosLista(
+  WidgetTester tester, {
+  required AtendimentoTecnicoService service,
+  required ColaboradorUsuarioApiClient colaboradorApiClient,
+  required OperationalProcedureFlowCoordinator procedureCoordinator,
+  Size size = const Size(390, 900),
+}) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  addTearDown(() {
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+  });
+
+  await tester.pumpWidget(
+    ChangeNotifierProvider<LocaleSettingsProvider>(
+      create:
+          (_) => LocaleSettingsProvider(
+            regionalizacaoService: RegionalizacaoService(
+              apiClient: _FakeRegionalizacaoApiClient(),
+            ),
+          ),
+      child: MaterialApp(
+        home: MediaQuery(
+          data: MediaQueryData(
+            disableAnimations: true,
+            accessibleNavigation: true,
+            size: size,
+            devicePixelRatio: 1,
+          ),
+          child: AtendimentosTecnicosMobileScreen(
+            service: service,
+            colaboradorApiClient: colaboradorApiClient,
+            procedureCoordinator: procedureCoordinator,
+          ),
+        ),
+      ),
+    ),
+  );
+
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 700));
 }
 
 Future<List<String>> _pumpNovaVenda(
@@ -863,8 +998,45 @@ class _FakeAtendimentoTecnicoService extends AtendimentoTecnicoService {
   final List<AtendimentoTecnicoModel> atendimentos;
 
   @override
+  Future<AtendimentoTecnicoDominiosBaseModel> buscarDominiosBase() async {
+    return _dominiosAtendimentoTecnico;
+  }
+
+  @override
   Future<List<AtendimentoTecnicoModel>> listar({String? status}) async {
     return atendimentos;
+  }
+}
+
+class _FakeColaboradorUsuarioApiClient implements ColaboradorUsuarioApiClient {
+  const _FakeColaboradorUsuarioApiClient(this.colaboradores);
+
+  final List<ColaboradorUsuarioResumo> colaboradores;
+
+  @override
+  Future<List<ColaboradorUsuarioResumo>> listarColaboradores() async {
+    return colaboradores;
+  }
+
+  @override
+  Future<List<ColaboradorUsuarioResumo>>
+  listarTecnicosAssistenciaTecnica() async {
+    return colaboradores
+        .where(
+          (ColaboradorUsuarioResumo item) =>
+              item.ehTecnicoAssistenciaTecnica && item.ativo,
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<ColaboradorUsuarioDetalhe> buscarColaborador(String idUnicoDoUsuario) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> editarColaborador(Map<String, dynamic> payload) {
+    throw UnimplementedError();
   }
 }
 
@@ -903,6 +1075,15 @@ extension on ConfiguracaoRegionalizacaoSistema {
     };
   }
 }
+
+final AtendimentoTecnicoDominiosBaseModel _dominiosAtendimentoTecnico =
+    AtendimentoTecnicoDominiosBaseModel(
+      tiposOperacao: const <DominioOpcaoModel>[],
+      statusAtendimentoTecnico: const <DominioOpcaoModel>[],
+      statusOrcamentoAtendimento: const <DominioOpcaoModel>[],
+      tiposItem: const <DominioOpcaoModel>[],
+      statusEstoqueAtendimento: const <DominioOpcaoModel>[],
+    );
 
 AtendimentoTecnicoModel _atendimento({
   required String numero,

@@ -11,6 +11,8 @@ import '../../core/services/auth_service.dart';
 import '../../core/utils/produto_helper.dart';
 import '../../data/models/caixa_models.dart';
 import '../../data/models/operacao_models.dart';
+import '../../data/models/operational_procedure_flow_models.dart';
+import '../../data/models/operational_procedure_models.dart';
 import '../../data/models/produto_imagem_model.dart';
 import '../../data/models/produto_model.dart';
 import '../../data/models/recebimento_forma_input.dart';
@@ -19,6 +21,8 @@ import '../../data/services/caixa/venda_nao_liquidada_api_client.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
 import '../../domain/services/caixa/caixa_service.dart';
 import '../../domain/services/operacao/operacao_service.dart';
+import '../../domain/services/operational_procedures/operational_procedure_pending_execution_store.dart';
+import '../../domain/services/operational_procedures/operational_procedure_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
@@ -26,6 +30,7 @@ import '../../providers/usuario_provider.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
 import '../components/mobile/six_mobile_recebimento_bottom_sheet.dart';
 import '../components/mobile_motion.dart';
+import '../coordinators/operational_procedure_flow_coordinator.dart';
 import 'operacoes_caixa_mobile_screen.dart';
 import 'produto_list_mobile_screen.dart';
 
@@ -52,6 +57,8 @@ class PdvMobileScreen extends StatefulWidget {
     this.currentUserIdProvider,
     this.currentUserNameProvider,
     this.nowProvider,
+    this.procedureCoordinator,
+    this.operationalProcedureService,
   });
 
   final VendaNaoLiquidadaModel? vendaNaoLiquidada;
@@ -65,6 +72,8 @@ class PdvMobileScreen extends StatefulWidget {
   final PdvMobileCurrentUserIdProvider? currentUserIdProvider;
   final PdvMobileCurrentUserNameProvider? currentUserNameProvider;
   final PdvMobileNowProvider? nowProvider;
+  final OperationalProcedureFlowCoordinator? procedureCoordinator;
+  final OperationalProcedureService? operationalProcedureService;
 
   @override
   State<PdvMobileScreen> createState() => _PdvMobileScreenState();
@@ -84,6 +93,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
   late final OperacaoService _operacaoService;
   late final CaixaService _caixaService;
   late final VendaNaoLiquidadaApiClient _vendaNaoLiquidadaApiClient;
+  late final OperationalProcedureFlowCoordinator _procedureCoordinator;
+  late final OperationalProcedureService _operationalProcedureService;
   final List<_VendaItemMobile> _itens = <_VendaItemMobile>[];
 
   bool _enviando = false;
@@ -120,8 +131,13 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     _caixaService = widget.caixaService ?? CaixaModule.caixaService;
     _vendaNaoLiquidadaApiClient =
         widget.vendaNaoLiquidadaApiClient ?? VendaNaoLiquidadaApiClient();
+    _procedureCoordinator =
+        widget.procedureCoordinator ?? OperationalProcedureFlowCoordinator();
+    _operationalProcedureService =
+        widget.operationalProcedureService ?? OperationalProcedureService();
     final venda = widget.vendaNaoLiquidada;
     if (venda != null) {
+      OperationalProcedurePendingExecutionStore.instance.beginSaleFlow();
       _itens.addAll(
         venda.itens.map(_VendaItemMobile.fromVendaNaoLiquidadaItem),
       );
@@ -397,6 +413,10 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       return;
     }
 
+    if (!await _executarProcedimentoAntesDeFinalizarVenda()) {
+      return;
+    }
+
     if (_editandoVendaNaoLiquidada) {
       await _liquidarVendaNaoLiquidada(resultado);
       return;
@@ -544,6 +564,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     );
 
     if (confirmou == true) {
+      if (!await _executarProcedimentoAntesDeFinalizarVenda()) {
+        return;
+      }
       await _enviarVenda(
         receberDepois: true,
         formasPagamento: <FormaPagamentoSelecionada>[],
@@ -591,8 +614,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
       await _operacaoService.finalizarVenda(input);
       if (!mounted) return;
-      _limparVenda();
       _mostrarSnack(mensagemSucesso);
+      Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) _mostrarSnack(e.toString().replaceAll('Exception: ', ''));
     } finally {
@@ -619,6 +642,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           idSessaoCaixa: _idSessaoCaixaAtual,
         ),
       );
+      await _vincularExecucoesPendentesAVendaExistente(venda);
 
       if (!mounted) return;
       _mostrarSnack(
@@ -631,6 +655,45 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       if (mounted) _mostrarSnack(e.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _enviando = false);
+    }
+  }
+
+  Future<bool> _executarProcedimentoAntesDeFinalizarVenda() async {
+    final ProcedureFlowResult result = await _procedureCoordinator.execute(
+      context: context,
+      operationPoint: ProcedureOperationPoint.saleFinishBefore,
+    );
+    if (!mounted) {
+      return false;
+    }
+    return result.shouldContinue;
+  }
+
+  Future<void> _vincularExecucoesPendentesAVendaExistente(
+    VendaNaoLiquidadaModel venda,
+  ) async {
+    final String saleId = venda.idOperacaoApp.trim();
+    final List<String> executionIds =
+        OperationalProcedurePendingExecutionStore
+            .instance
+            .pendingSaleExecutionIds;
+    if (saleId.isEmpty || executionIds.isEmpty) {
+      return;
+    }
+
+    try {
+      await _operationalProcedureService.linkExecutionsToSale(
+        executionIds: executionIds,
+        saleId: saleId,
+      );
+      OperationalProcedurePendingExecutionStore.instance.markSaleLinked(
+        executionIds,
+      );
+    } catch (error) {
+      debugPrint(
+        '[PdvMobileScreen] venda liquidada, mas vínculo dos procedimentos '
+        'ficou pendente: $error',
+      );
     }
   }
 
@@ -745,7 +808,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       title:
           _editandoVendaNaoLiquidada
               ? 'Receber venda'
-              : (temItens ? 'Balcão de venda' : 'Nova venda'),
+              : (temItens
+                  ? 'Balcão de venda'
+                  : _txt('atendimento.mobile.newSaleTitle', 'Vendas')),
       backgroundColor: SixMobilePalette.background,
       primaryColor: SixMobilePalette.primary,
       secondaryColor: SixMobilePalette.secondary,
@@ -1293,7 +1358,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
           _buildMinimalShoppingIllustration(),
           SizedBox(height: 16),
           Text(
-            _editandoVendaNaoLiquidada ? 'Venda em aberto' : 'Nova venda',
+            _editandoVendaNaoLiquidada
+                ? 'Venda em aberto'
+                : _txt('atendimento.mobile.newSaleTitle', 'Vendas'),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: SixMobilePalette.titleText,

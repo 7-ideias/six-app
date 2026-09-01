@@ -92,8 +92,8 @@ class _CatalogHealthMobileView extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   context.t(
-                                    'catalogHealth.mobile.newService',
-                                    fallback: 'Novo serviço',
+                                    'workspaceHome.quickAction.newTechnicalService',
+                                    fallback: 'Serviços',
                                   ),
                                 ),
                               ),

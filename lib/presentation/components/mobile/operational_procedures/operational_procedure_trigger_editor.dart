@@ -9,10 +9,12 @@ class OperationalProcedureTriggerEditorSheet extends StatefulWidget {
     super.key,
     this.trigger,
     required this.existingTriggers,
+    required this.procedureOperationType,
   });
 
   final ProcedureTrigger? trigger;
   final List<ProcedureTrigger> existingTriggers;
+  final ProcedureOperationType procedureOperationType;
 
   @override
   State<OperationalProcedureTriggerEditorSheet> createState() =>
@@ -21,7 +23,7 @@ class OperationalProcedureTriggerEditorSheet extends StatefulWidget {
 
 class _OperationalProcedureTriggerEditorSheetState
     extends State<OperationalProcedureTriggerEditorSheet> {
-  ProcedureOperationType? _operationType;
+  late final ProcedureOperationType _operationType;
   ProcedureTriggerMoment? _moment;
   late ProcedureTriggerActivationMode _activationMode;
   late ProcedureEnforcementMode _enforcementMode;
@@ -32,8 +34,11 @@ class _OperationalProcedureTriggerEditorSheetState
   void initState() {
     super.initState();
     final ProcedureTrigger? trigger = widget.trigger;
-    _operationType = trigger?.operationType;
+    _operationType = widget.procedureOperationType;
     _moment = trigger?.triggerMoment;
+    if (_moment != null && !isTriggerMomentValid(_operationType, _moment!)) {
+      _moment = null;
+    }
     _activationMode =
         trigger?.activationMode ?? ProcedureTriggerActivationMode.automatic;
     _enforcementMode =
@@ -76,30 +81,9 @@ class _OperationalProcedureTriggerEditorSheetState
               'procedimentos.operationContext',
               fallback: 'Contexto operacional',
             ),
-            value:
-                _operationType == null
-                    ? context.t(
-                      'procedimentos.selectOperationContext',
-                      fallback: 'Selecionar contexto',
-                    )
-                    : operationTypeLabel(context, _operationType!),
-            icon:
-                _operationType == null
-                    ? Icons.storefront_outlined
-                    : operationTypeIcon(_operationType!),
-            onTap: _selectOperation,
-          ),
-          SizedBox(height: 6),
-          Text(
-            context.t(
-              'procedimentos.mobilePointAvailable',
-              fallback: 'Disponível no aplicativo mobile.',
-            ),
-            style: TextStyle(
-              color: SixMobilePalette.mutedText,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
+            value: operationTypeLabel(context, _operationType),
+            icon: operationTypeIcon(_operationType),
+            onTap: null,
           ),
           SizedBox(height: 10),
           _SelectorTile(
@@ -112,7 +96,7 @@ class _OperationalProcedureTriggerEditorSheetState
                     )
                     : triggerMomentLabel(context, _moment!),
             icon: Icons.schedule_outlined,
-            onTap: _operationType == null ? null : _selectMoment,
+            onTap: _selectMoment,
           ),
           SizedBox(height: 14),
           _ChoiceSection<ProcedureTriggerActivationMode>(
@@ -186,41 +170,12 @@ class _OperationalProcedureTriggerEditorSheetState
     );
   }
 
-  Future<void> _selectOperation() async {
-    final ProcedureOperationType? selected =
-        await _showOptions<ProcedureOperationType>(
-          title: context.t(
-            'procedimentos.operationContext',
-            fallback: 'Contexto operacional',
-          ),
-          values: publishedMobileOperationTypes(current: _operationType),
-          selected: _operationType,
-          labelBuilder: operationTypeLabel,
-          iconBuilder: operationTypeIcon,
-        );
-    if (selected == null) return;
-    setState(() {
-      _operationType = selected;
-      if (_moment != null && !isTriggerMomentValid(selected, _moment!)) {
-        _moment = null;
-        _error = context.t(
-          'procedimentos.triggerMomentCleared',
-          fallback: 'Escolha um novo momento compatível com o contexto.',
-        );
-      } else {
-        _error = null;
-      }
-    });
-  }
-
   Future<void> _selectMoment() async {
-    final ProcedureOperationType? operation = _operationType;
-    if (operation == null) return;
     final ProcedureTriggerMoment? selected =
         await _showOptions<ProcedureTriggerMoment>(
           title: context.t('procedimentos.momentField', fallback: 'Momento'),
           values: publishedMobileMomentsForOperation(
-            operation,
+            _operationType,
             current: _moment,
           ),
           selected: _moment,
@@ -269,17 +224,7 @@ class _OperationalProcedureTriggerEditorSheetState
   }
 
   void _save() {
-    final ProcedureOperationType? operation = _operationType;
     final ProcedureTriggerMoment? moment = _moment;
-    if (operation == null) {
-      setState(() {
-        _error = context.t(
-          'procedimentos.validationTriggerOperation',
-          fallback: 'Selecione o contexto operacional.',
-        );
-      });
-      return;
-    }
     if (moment == null) {
       setState(() {
         _error = context.t(
@@ -290,10 +235,11 @@ class _OperationalProcedureTriggerEditorSheetState
       return;
     }
     final ProcedureOperationPoint? operationPoint = procedureOperationPointFor(
-      operation,
+      _operationType,
       moment,
     );
-    if (!isTriggerMomentValid(operation, moment) || operationPoint == null) {
+    if (!isTriggerMomentValid(_operationType, moment) ||
+        operationPoint == null) {
       setState(() {
         _error = context.t(
           'procedimentos.validationTriggerMomentInvalid',
@@ -307,7 +253,7 @@ class _OperationalProcedureTriggerEditorSheetState
     final ProcedureTrigger trigger = ProcedureTrigger(
       id: widget.trigger?.id ?? '',
       operationPoint: operationPoint,
-      operationType: operation,
+      operationType: _operationType,
       triggerMoment: moment,
       activationMode: _activationMode,
       enforcementMode: _enforcementMode,
@@ -460,8 +406,10 @@ class _SelectorTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool interactive = onTap != null;
     return Semantics(
-      button: onTap != null,
+      button: interactive,
+      readOnly: !interactive,
       label: '$label: $value',
       child: Material(
         color: SixMobilePalette.softNeutralSurface,
@@ -505,10 +453,11 @@ class _SelectorTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: SixMobilePalette.mutedText,
-                ),
+                if (interactive)
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: SixMobilePalette.mutedText,
+                  ),
               ],
             ),
           ),

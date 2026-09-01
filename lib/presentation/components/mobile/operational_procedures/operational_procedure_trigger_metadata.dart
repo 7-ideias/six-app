@@ -50,11 +50,12 @@ List<ProcedureTriggerMoment> triggerMomentsForOperation(
 List<ProcedureOperationType> publishedMobileOperationTypes({
   ProcedureOperationType? current,
 }) {
-  final List<ProcedureOperationType> values = procedureOperationPointCatalog
-      .publishedFor(ProcedurePlatform.mobile)
-      .map((ProcedureOperationPoint point) => point.operationType)
-      .toSet()
-      .toList();
+  final List<ProcedureOperationType> values =
+      procedureOperationPointCatalog
+          .publishedFor(ProcedurePlatform.mobile)
+          .map((ProcedureOperationPoint point) => point.operationType)
+          .toSet()
+          .toList();
   if (current != null && !values.contains(current)) values.add(current);
   return values;
 }
@@ -63,14 +64,38 @@ List<ProcedureTriggerMoment> publishedMobileMomentsForOperation(
   ProcedureOperationType operationType, {
   ProcedureTriggerMoment? current,
 }) {
-  final List<ProcedureTriggerMoment> values = procedureOperationPointCatalog
-      .publishedFor(ProcedurePlatform.mobile)
-      .where(
-        (ProcedureOperationPoint point) => point.operationType == operationType,
-      )
-      .map((ProcedureOperationPoint point) => point.triggerMoment)
-      .toSet()
-      .toList();
+  final List<ProcedureTriggerMoment> values =
+      procedureOperationPointCatalog
+          .publishedFor(ProcedurePlatform.mobile)
+          .where(
+            (ProcedureOperationPoint point) =>
+                point.operationType == operationType,
+          )
+          .map((ProcedureOperationPoint point) => point.triggerMoment)
+          .toSet()
+          .toList();
+  if (current != null && !values.contains(current)) values.add(current);
+  return values;
+}
+
+List<ProcedureMoment> publishedMobileProcedureMomentsForOperation(
+  ProcedureOperationType operationType, {
+  ProcedureMoment? current,
+}) {
+  final List<ProcedureMoment> values =
+      procedureOperationPointCatalog
+          .publishedFor(ProcedurePlatform.mobile)
+          .where(
+            (ProcedureOperationPoint point) =>
+                point.operationType == operationType,
+          )
+          .map(
+            (ProcedureOperationPoint point) =>
+                procedureMomentForTriggerMoment(point.triggerMoment),
+          )
+          .whereType<ProcedureMoment>()
+          .toSet()
+          .toList();
   if (current != null && !values.contains(current)) values.add(current);
   return values;
 }
@@ -166,6 +191,10 @@ String operationPointLabel(
       'procedimentos.operationPointSaleStartBefore',
       fallback: 'Antes de iniciar uma venda',
     ),
+    ProcedureOperationPoint.saleFinishBefore => context.t(
+      'procedimentos.operationPointSaleFinishBefore',
+      fallback: 'Antes de finalizar uma venda',
+    ),
     ProcedureOperationPoint.technicalServiceStartBefore => context.t(
       'procedimentos.operationPointTechnicalServiceStartBefore',
       fallback: 'Antes de iniciar um atendimento técnico',
@@ -185,6 +214,10 @@ String operationPointDescription(
     ProcedureOperationPoint.saleStartBefore => context.t(
       'procedimentos.operationPointSaleStartBeforeDescription',
       fallback: 'Executado antes de abrir o fluxo de uma nova venda.',
+    ),
+    ProcedureOperationPoint.saleFinishBefore => context.t(
+      'procedimentos.operationPointSaleFinishBeforeDescription',
+      fallback: 'Executado antes de concluir a venda em andamento.',
     ),
     ProcedureOperationPoint.technicalServiceStartBefore => context.t(
       'procedimentos.operationPointTechnicalServiceStartBeforeDescription',

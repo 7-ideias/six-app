@@ -61,7 +61,11 @@ void main() {
         );
 
         expect(_scaffoldBackground(tester), themeCase.colors.background);
-        expect(find.text('Novo serviço'), findsOneWidget);
+        final Finder serviceCardLabel = find.descendant(
+          of: find.byKey(const ValueKey<String>('servicos-action-new-service')),
+          matching: find.text('Serviços'),
+        );
+        expect(serviceCardLabel, findsOneWidget);
         expect(find.text('Consultar serviços em andamento'), findsOneWidget);
         expect(find.text('Orçamentos aguardando aprovação'), findsOneWidget);
         expect(find.text('Serviços já encerrados'), findsOneWidget);
@@ -74,7 +78,7 @@ void main() {
         expect(
           _hasMaterialAncestorColor(
             tester,
-            find.text('Novo serviço'),
+            serviceCardLabel,
             themeCase.colors.surface,
           ),
           isTrue,

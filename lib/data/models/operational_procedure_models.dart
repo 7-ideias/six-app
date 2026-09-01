@@ -2,6 +2,7 @@ enum ProcedureStatus { draft, active, inactive }
 
 enum ProcedureOperationPoint {
   saleStartBefore,
+  saleFinishBefore,
   technicalServiceStartBefore,
   cashRegisterStartBefore,
 }
@@ -12,6 +13,7 @@ extension ProcedureOperationPointDetails on ProcedureOperationPoint {
   String get id {
     return switch (this) {
       ProcedureOperationPoint.saleStartBefore => 'sale.start.before',
+      ProcedureOperationPoint.saleFinishBefore => 'sale.finish.before',
       ProcedureOperationPoint.technicalServiceStartBefore =>
         'technical-service.start.before',
       ProcedureOperationPoint.cashRegisterStartBefore =>
@@ -22,6 +24,7 @@ extension ProcedureOperationPointDetails on ProcedureOperationPoint {
   ProcedureOperationType get operationType {
     return switch (this) {
       ProcedureOperationPoint.saleStartBefore => ProcedureOperationType.sale,
+      ProcedureOperationPoint.saleFinishBefore => ProcedureOperationType.sale,
       ProcedureOperationPoint.technicalServiceStartBefore =>
         ProcedureOperationType.technicalService,
       ProcedureOperationPoint.cashRegisterStartBefore =>
@@ -33,6 +36,8 @@ extension ProcedureOperationPointDetails on ProcedureOperationPoint {
     return switch (this) {
       ProcedureOperationPoint.saleStartBefore =>
         ProcedureTriggerMoment.beforeStart,
+      ProcedureOperationPoint.saleFinishBefore =>
+        ProcedureTriggerMoment.beforeFinish,
       ProcedureOperationPoint.technicalServiceStartBefore =>
         ProcedureTriggerMoment.beforeStart,
       ProcedureOperationPoint.cashRegisterStartBefore =>
@@ -43,6 +48,7 @@ extension ProcedureOperationPointDetails on ProcedureOperationPoint {
   bool get mobileAvailable {
     return switch (this) {
       ProcedureOperationPoint.saleStartBefore ||
+      ProcedureOperationPoint.saleFinishBefore ||
       ProcedureOperationPoint.technicalServiceStartBefore ||
       ProcedureOperationPoint.cashRegisterStartBefore => true,
     };
@@ -51,6 +57,7 @@ extension ProcedureOperationPointDetails on ProcedureOperationPoint {
   bool get webAvailable {
     return switch (this) {
       ProcedureOperationPoint.saleStartBefore ||
+      ProcedureOperationPoint.saleFinishBefore ||
       ProcedureOperationPoint.technicalServiceStartBefore ||
       ProcedureOperationPoint.cashRegisterStartBefore => true,
     };
@@ -90,6 +97,7 @@ const ProcedureOperationPointCatalog procedureOperationPointCatalog =
 const List<ProcedureOperationPoint> publishedMobileProcedureOperationPoints =
     <ProcedureOperationPoint>[
       ProcedureOperationPoint.saleStartBefore,
+      ProcedureOperationPoint.saleFinishBefore,
       ProcedureOperationPoint.technicalServiceStartBefore,
       ProcedureOperationPoint.cashRegisterStartBefore,
     ];
@@ -117,6 +125,63 @@ enum ProcedureOperationType {
 }
 
 enum ProcedureMoment { beforeStart, beforeFinish, beforeDelivery }
+
+const Map<ProcedureOperationType, List<ProcedureMoment>>
+procedureMomentOptions = <ProcedureOperationType, List<ProcedureMoment>>{
+  ProcedureOperationType.sale: <ProcedureMoment>[
+    ProcedureMoment.beforeStart,
+    ProcedureMoment.beforeFinish,
+  ],
+  ProcedureOperationType.technicalService: <ProcedureMoment>[
+    ProcedureMoment.beforeStart,
+    ProcedureMoment.beforeFinish,
+    ProcedureMoment.beforeDelivery,
+  ],
+  ProcedureOperationType.quote: <ProcedureMoment>[
+    ProcedureMoment.beforeStart,
+    ProcedureMoment.beforeFinish,
+  ],
+  ProcedureOperationType.delivery: <ProcedureMoment>[
+    ProcedureMoment.beforeDelivery,
+  ],
+  ProcedureOperationType.cashRegister: <ProcedureMoment>[
+    ProcedureMoment.beforeStart,
+    ProcedureMoment.beforeFinish,
+  ],
+  ProcedureOperationType.customerRegistration: <ProcedureMoment>[
+    ProcedureMoment.beforeFinish,
+  ],
+};
+
+List<ProcedureMoment> procedureMomentsForOperation(
+  ProcedureOperationType operationType,
+) {
+  return procedureMomentOptions[operationType] ?? const <ProcedureMoment>[];
+}
+
+ProcedureTriggerMoment? procedureTriggerMomentForMoment(
+  ProcedureMoment moment,
+) {
+  return switch (moment) {
+    ProcedureMoment.beforeStart => ProcedureTriggerMoment.beforeStart,
+    ProcedureMoment.beforeFinish => ProcedureTriggerMoment.beforeFinish,
+    ProcedureMoment.beforeDelivery => ProcedureTriggerMoment.beforeDelivery,
+  };
+}
+
+ProcedureMoment? procedureMomentForTriggerMoment(
+  ProcedureTriggerMoment moment,
+) {
+  return switch (moment) {
+    ProcedureTriggerMoment.beforeStart => ProcedureMoment.beforeStart,
+    ProcedureTriggerMoment.beforeFinish => ProcedureMoment.beforeFinish,
+    ProcedureTriggerMoment.beforeDelivery => ProcedureMoment.beforeDelivery,
+    ProcedureTriggerMoment.afterStart ||
+    ProcedureTriggerMoment.afterFinish ||
+    ProcedureTriggerMoment.afterDelivery ||
+    ProcedureTriggerMoment.onDemand => null,
+  };
+}
 
 enum ProcedureTriggerMoment {
   beforeStart,

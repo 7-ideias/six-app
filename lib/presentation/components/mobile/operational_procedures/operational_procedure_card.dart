@@ -9,11 +9,11 @@ class OperationalProcedureCard extends StatelessWidget {
   const OperationalProcedureCard({
     super.key,
     required this.procedure,
-    required this.onTap,
+    this.onTap,
   });
 
   final OperationalProcedure procedure;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -34,9 +34,10 @@ class OperationalProcedureCard extends StatelessWidget {
     );
 
     return Semantics(
-      button: true,
+      button: onTap != null,
       container: true,
       excludeSemantics: true,
+      readOnly: onTap == null,
       onTap: onTap,
       label:
           '${procedure.name}, $status, $operationType, $moment, '
@@ -129,12 +130,14 @@ class OperationalProcedureCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    SizedBox(width: 8),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: SixMobilePalette.mutedText,
-                      size: 24,
-                    ),
+                    if (onTap != null) ...<Widget>[
+                      SizedBox(width: 8),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: SixMobilePalette.mutedText,
+                        size: 24,
+                      ),
+                    ],
                   ],
                 ),
               ],

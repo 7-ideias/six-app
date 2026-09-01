@@ -209,6 +209,24 @@ void main() {
     expect(find.text('Novo procedimento'), findsOneWidget);
   });
 
+  testWidgets('shows procedures as read-only for non-admin users', (
+    tester,
+  ) async {
+    await _pumpProcedures(
+      tester,
+      permissionsProvider: _TestColaboradorAutorizacoesProvider(isAdmin: false),
+    );
+
+    expect(find.text('Ajustes restritos para este usuário'), findsOneWidget);
+    expect(find.text('Novo procedimento'), findsNothing);
+    expect(find.byIcon(Icons.insights_rounded), findsNothing);
+
+    final OperationalProcedureCard firstCard = tester.widget(
+      find.byType(OperationalProcedureCard).first,
+    );
+    expect(firstCard.onTap, isNull);
+  });
+
   testWidgets('demo badge keeps readable colors in dark mode', (tester) async {
     await _pumpComponent(
       tester,
@@ -326,6 +344,7 @@ Future<void> _pumpProcedures(
   OperationalProcedureMockScenario scenario =
       OperationalProcedureMockScenario.success,
   MediaQueryData? mediaQueryData,
+  ColaboradorAutorizacoesProvider? permissionsProvider,
 }) async {
   final Widget screen = OperationalProceduresMobileScreen(
     dataSource: OperationalProcedureMockDataSource(
@@ -333,6 +352,13 @@ Future<void> _pumpProcedures(
       delay: Duration.zero,
     ),
   );
+  final Widget wrappedScreen =
+      permissionsProvider == null
+          ? screen
+          : ChangeNotifierProvider<ColaboradorAutorizacoesProvider>.value(
+            value: permissionsProvider,
+            child: screen,
+          );
 
   await tester.pumpWidget(
     MaterialApp(
@@ -343,7 +369,7 @@ Future<void> _pumpProcedures(
               disableAnimations: true,
               accessibleNavigation: true,
             ),
-        child: screen,
+        child: wrappedScreen,
       ),
     ),
   );
@@ -454,4 +480,14 @@ OperationalProcedure _procedure({
     createdAt: DateTime(2026, 7, 22, 10),
     updatedAt: DateTime(2026, 7, 22, 10, 30),
   );
+}
+
+class _TestColaboradorAutorizacoesProvider
+    extends ColaboradorAutorizacoesProvider {
+  _TestColaboradorAutorizacoesProvider({required this.isAdmin});
+
+  final bool isAdmin;
+
+  @override
+  bool get ehAdministrador => isAdmin;
 }

@@ -70,10 +70,10 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
     _ordemCardsController =
         MobileCardOrderPreferenceController<VendasMobileCardPreferencia>(
             ordemPadrao: VendasMobileCardPreferencia.values,
-            selecionarOrdem: (preferencias) =>
-                preferencias.ordemCardsVendasMobile,
-            persistirOrdem: (ordem) =>
-                UsuarioService().atualizarPreferenciasIndividuais(
+            selecionarOrdem:
+                (preferencias) => preferencias.ordemCardsVendasMobile,
+            persistirOrdem:
+                (ordem) => UsuarioService().atualizarPreferenciasIndividuais(
                   ordemCardsVendasMobile: ordem
                       .map((item) => item.codigo)
                       .toList(growable: false),
@@ -105,7 +105,7 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
           VendasMobileCardPreferencia.novaVenda: _SaleActionData(
             preferencia: VendasMobileCardPreferencia.novaVenda,
             id: 'new-sale',
-            title: _t(context, 'atendimento.mobile.newSaleTitle', 'Nova venda'),
+            title: _t(context, 'atendimento.mobile.newSaleTitle', 'Vendas'),
             subtitle: _t(
               context,
               'atendimento.mobile.newSaleSubtitle',
@@ -178,66 +178,66 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
         icon: Icon(Icons.arrow_back_rounded),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
-      bodyBuilder:
-          (
-            BuildContext context,
-            ScrollController scrollController,
-            double topInset,
-          ) {
-            return SafeArea(
-              top: false,
-              child: LayoutBuilder(
-                builder: (BuildContext context, BoxConstraints constraints) {
-                  const double horizontalPadding = 16;
-                  const double topPadding = 8;
-                  const double bottomPadding = 24;
-                  final double cardHeight = constraints.maxWidth < 340
+      bodyBuilder: (
+        BuildContext context,
+        ScrollController scrollController,
+        double topInset,
+      ) {
+        return SafeArea(
+          top: false,
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              const double horizontalPadding = 16;
+              const double topPadding = 8;
+              const double bottomPadding = 24;
+              final double cardHeight =
+                  constraints.maxWidth < 340
                       ? _operationCardHeight - 8
                       : _operationCardHeight;
-                  final double compactCardHeight = constraints.maxWidth < 340
+              final double compactCardHeight =
+                  constraints.maxWidth < 340
                       ? _operationCompactCardHeight - 6
                       : _operationCompactCardHeight;
-                  final double cardWidth =
-                      constraints.maxWidth - (horizontalPadding * 2);
-                  final List<_SaleActionData> actions = _orderedActions(
-                    context,
-                  );
+              final double cardWidth =
+                  constraints.maxWidth - (horizontalPadding * 2);
+              final List<_SaleActionData> actions = _orderedActions(context);
 
-                  return ListView(
-                    controller: scrollController,
-                    physics: AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      topInset + topPadding,
-                      horizontalPadding,
-                      bottomPadding,
-                    ),
-                    children: <Widget>[
-                      for (int index = 0; index < actions.length; index++) ...[
-                        if (index > 0) SizedBox(height: _operationCardGap),
-                        SixStaggeredEntry(
-                          key: ValueKey<String>(
-                            'nova-venda-reorder-${actions[index].id}',
-                          ),
-                          delay: Duration(milliseconds: 40 + (index * 50)),
-                          child:
-                              SixMobileReorderableCard<
-                                VendasMobileCardPreferencia
-                              >(
-                                value: actions[index].preferencia,
-                                onReorder: _ordemCardsController.reordenar,
-                                feedbackWidth: cardWidth,
-                                feedbackHeight: actions[index].compact
+              return ListView(
+                controller: scrollController,
+                physics: AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  topInset + topPadding,
+                  horizontalPadding,
+                  bottomPadding,
+                ),
+                children: <Widget>[
+                  for (int index = 0; index < actions.length; index++) ...[
+                    if (index > 0) SizedBox(height: _operationCardGap),
+                    SixStaggeredEntry(
+                      key: ValueKey<String>(
+                        'nova-venda-reorder-${actions[index].id}',
+                      ),
+                      delay: Duration(milliseconds: 40 + (index * 50)),
+                      child:
+                          SixMobileReorderableCard<VendasMobileCardPreferencia>(
+                            value: actions[index].preferencia,
+                            onReorder: _ordemCardsController.reordenar,
+                            feedbackWidth: cardWidth,
+                            feedbackHeight:
+                                actions[index].compact
                                     ? compactCardHeight
                                     : cardHeight,
-                                handleColor: actions[index].accentColor,
-                                cardBuilder: () => _OperationActionCard(
+                            handleColor: actions[index].accentColor,
+                            cardBuilder:
+                                () => _OperationActionCard(
                                   key: ValueKey<String>(
                                     'nova-venda-action-${actions[index].id}',
                                   ),
-                                  height: actions[index].compact
-                                      ? compactCardHeight
-                                      : cardHeight,
+                                  height:
+                                      actions[index].compact
+                                          ? compactCardHeight
+                                          : cardHeight,
                                   compact: actions[index].compact,
                                   title: actions[index].title,
                                   subtitle: actions[index].subtitle,
@@ -250,15 +250,15 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
                                   loading: actions[index].loading,
                                   onTap: actions[index].onTap,
                                 ),
-                              ),
-                        ),
-                      ],
-                    ],
-                  );
-                },
-              ),
-            );
-          },
+                          ),
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -271,7 +271,9 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
         operationPoint: ProcedureOperationPoint.saleStartBefore,
       );
       if (!mounted) return;
-      if (result.shouldContinue) _go(PdvMobileScreen());
+      if (result.shouldContinue) {
+        _go(PdvMobileScreen(procedureCoordinator: _procedureCoordinator));
+      }
     } finally {
       if (mounted) setState(() => _openingNewSale = false);
     }
@@ -350,7 +352,7 @@ class _OperationActionCard extends StatelessWidget {
                     height ??
                     (compact
                         ? _OpcoesVendaMobileScreenState
-                              ._operationCompactCardHeight
+                            ._operationCompactCardHeight
                         : _OpcoesVendaMobileScreenState._operationCardHeight),
               ),
               decoration: BoxDecoration(
@@ -374,80 +376,80 @@ class _OperationActionCard extends StatelessWidget {
                     ),
                   ),
                   LayoutBuilder(
-                    builder:
-                        (BuildContext context, BoxConstraints constraints) {
-                          final bool tight = constraints.maxWidth < 330;
-                          final double illustrationSize =
-                              (constraints.maxWidth * (tight ? 0.25 : 0.28))
-                                  .clamp(
-                                    compact ? 68.0 : 76.0,
-                                    compact ? 84.0 : 98.0,
-                                  );
+                    builder: (
+                      BuildContext context,
+                      BoxConstraints constraints,
+                    ) {
+                      final bool tight = constraints.maxWidth < 330;
+                      final double illustrationSize = (constraints.maxWidth *
+                              (tight ? 0.25 : 0.28))
+                          .clamp(compact ? 68.0 : 76.0, compact ? 84.0 : 98.0);
 
-                          return Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              tight ? 18 : 21,
-                              compact ? 13 : 16,
-                              tight ? 12 : 14,
-                              compact ? 13 : 16,
-                            ),
-                            child: Row(
-                              children: <Widget>[
-                                Expanded(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: <Widget>[
-                                      Text(
-                                        title,
-                                        maxLines: compact ? 1 : 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: titleColor,
-                                          fontSize: compact
+                      return Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          tight ? 18 : 21,
+                          compact ? 13 : 16,
+                          tight ? 12 : 14,
+                          compact ? 13 : 16,
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    title,
+                                    maxLines: compact ? 1 : 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: titleColor,
+                                      fontSize:
+                                          compact
                                               ? (tight ? 15.5 : 16.5)
                                               : (tight ? 17 : 18.5),
-                                          height: 1.08,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                      SizedBox(height: compact ? 5 : 6),
-                                      Text(
-                                        subtitle,
-                                        maxLines: compact ? 1 : 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: subtitleColor,
-                                          fontSize: compact
+                                      height: 1.08,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  SizedBox(height: compact ? 5 : 6),
+                                  Text(
+                                    subtitle,
+                                    maxLines: compact ? 1 : 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: subtitleColor,
+                                      fontSize:
+                                          compact
                                               ? (tight ? 10.8 : 11.4)
                                               : (tight ? 11.4 : 12.2),
-                                          height: 1.18,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
+                                      height: 1.18,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
-                                ),
-                                SizedBox(width: tight ? 8 : 10),
-                                SizedBox.square(
-                                  dimension: illustrationSize,
-                                  child: _OperationIllustrationPane(
-                                    accentColor: accentColor,
-                                    enabled: available,
-                                    child: illustration,
-                                  ),
-                                ),
-                                SizedBox(width: tight ? 8 : 10),
-                                _OperationActionTrailing(
-                                  accentColor: accentColor,
-                                  loading: loading,
-                                  enabled: available,
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          );
-                        },
+                            SizedBox(width: tight ? 8 : 10),
+                            SizedBox.square(
+                              dimension: illustrationSize,
+                              child: _OperationIllustrationPane(
+                                accentColor: accentColor,
+                                enabled: available,
+                                child: illustration,
+                              ),
+                            ),
+                            SizedBox(width: tight ? 8 : 10),
+                            _OperationActionTrailing(
+                              accentColor: accentColor,
+                              loading: loading,
+                              enabled: available,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -481,9 +483,10 @@ class _OperationIllustrationPane extends StatelessWidget {
             aspectRatio: 1,
             child: Container(
               decoration: BoxDecoration(
-                color: enabled
-                    ? accentColor.withAlpha(13)
-                    : SixMobilePalette.border.withAlpha(32),
+                color:
+                    enabled
+                        ? accentColor.withAlpha(13)
+                        : SixMobilePalette.border.withAlpha(32),
                 shape: BoxShape.circle,
               ),
               child: Padding(padding: EdgeInsets.all(4), child: child),
@@ -526,9 +529,8 @@ class _OperationCanetinhaIllustration extends StatelessWidget {
         reforcoContorno: 0.62,
         reforcoAcento: 0.76,
         opacidadeReforco: 0.44,
-        opacidadeBrilho: Theme.of(context).brightness == Brightness.dark
-            ? 0.44
-            : 0.16,
+        opacidadeBrilho:
+            Theme.of(context).brightness == Brightness.dark ? 0.44 : 0.16,
         desfoqueBrilho: 3.4,
       ),
     );
@@ -548,40 +550,40 @@ class _OperationActionTrailing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color effectiveColor = enabled
-        ? accentColor
-        : SixMobilePalette.mutedText;
+    final Color effectiveColor =
+        enabled ? accentColor : SixMobilePalette.mutedText;
 
     return ExcludeSemantics(
       child: Container(
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: enabled
-              ? accentColor.withAlpha(20)
-              : SixMobilePalette.border.withAlpha(42),
+          color:
+              enabled
+                  ? accentColor.withAlpha(20)
+                  : SixMobilePalette.border.withAlpha(42),
           shape: BoxShape.circle,
           border: Border.all(
-            color: enabled
-                ? accentColor.withAlpha(58)
-                : SixMobilePalette.border,
+            color:
+                enabled ? accentColor.withAlpha(58) : SixMobilePalette.border,
           ),
         ),
-        child: loading
-            ? Padding(
-                padding: EdgeInsets.all(7),
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
+        child:
+            loading
+                ? Padding(
+                  padding: EdgeInsets.all(7),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: effectiveColor,
+                  ),
+                )
+                : Icon(
+                  enabled
+                      ? Icons.arrow_forward_rounded
+                      : Icons.lock_outline_rounded,
                   color: effectiveColor,
+                  size: 16,
                 ),
-              )
-            : Icon(
-                enabled
-                    ? Icons.arrow_forward_rounded
-                    : Icons.lock_outline_rounded,
-                color: effectiveColor,
-                size: 16,
-              ),
       ),
     );
   }

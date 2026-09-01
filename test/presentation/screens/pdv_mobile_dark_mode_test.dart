@@ -391,6 +391,54 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('checkout runs sale-finish procedure before continuing', (
+    WidgetTester tester,
+  ) async {
+    final List<ProcedureExecutionConfiguration> configurations =
+        <ProcedureExecutionConfiguration>[];
+    final _FakeOperacaoService operacaoService = _FakeOperacaoService();
+
+    await _pumpPdv(
+      tester,
+      themeCase: _darkTheme,
+      operacaoService: operacaoService,
+      procedureCoordinator: _procedureCoordinator(
+        scenario: OperationalProcedureRuntimeMockScenario.required,
+        runner: (
+          _,
+          OperationalProcedure procedure,
+          ProcedureExecutionConfiguration configuration,
+        ) async {
+          configurations.add(configuration);
+          expect(procedure.id, 'sale-start-required-parking');
+          return const ProcedureFlowResult.continueOperation(
+            completedProcedureIds: <String>['sale-start-required-parking'],
+          );
+        },
+      ),
+      productSelectionLauncher:
+          () async => <ProdutoModel>[
+            _product(id: 'produto-finish', name: _longProductName, price: 120),
+          ],
+    );
+
+    await _tapText(tester, 'Adicionar produto');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Receber depois'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.widgetWithText(FilledButton, 'Registrar para receber depois'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(configurations, hasLength(1));
+    expect(
+      configurations.single.operationPoint,
+      ProcedureOperationPoint.saleFinishBefore,
+    );
+    expect(operacaoService.finalizarCalls, 1);
+  });
+
   testWidgets('open sale receiving liquidates selected pending sale only', (
     WidgetTester tester,
   ) async {
@@ -558,6 +606,7 @@ Future<void> _pumpPdv(
   _FakeOperacaoService? operacaoService,
   _FakeCaixaApiClient? caixaApiClient,
   _FakeVendaNaoLiquidadaApiClient? vendaNaoLiquidadaApiClient,
+  OperationalProcedureFlowCoordinator? procedureCoordinator,
   VendaNaoLiquidadaModel? vendaNaoLiquidada,
   pdv_base.PdvMobileProductSelectionLauncher? productSelectionLauncher,
   pdv_base.PdvMobileBarcodeScannerLauncher? barcodeScannerLauncher,
@@ -595,6 +644,7 @@ Future<void> _pumpPdv(
       currentUserIdProvider: () async => 'colab-pdv',
       currentUserNameProvider: () => 'Operadora PDV',
       nowProvider: nowProvider ?? () => DateTime(2026, 8, 8, 10, 0),
+      procedureCoordinator: procedureCoordinator ?? _procedureCoordinator(),
     ),
   );
 }
@@ -693,6 +743,20 @@ Future<void> _tapText(WidgetTester tester, String text) async {
   }
   await tester.pump();
   await tester.tap(finder.first);
+}
+
+OperationalProcedureFlowCoordinator _procedureCoordinator({
+  OperationalProcedureRuntimeMockScenario scenario =
+      OperationalProcedureRuntimeMockScenario.none,
+  OperationalProcedureRunner? runner,
+}) {
+  return OperationalProcedureFlowCoordinator(
+    dataSource: OperationalProcedureMockDataSource(
+      delay: Duration.zero,
+      runtimeScenario: scenario,
+    ),
+    runner: runner,
+  );
 }
 
 Future<void> _scrollUntilVisible(WidgetTester tester, String text) async {

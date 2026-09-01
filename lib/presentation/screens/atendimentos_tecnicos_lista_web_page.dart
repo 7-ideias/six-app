@@ -11,6 +11,8 @@ import '../../core/config/app_config.dart';
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/dominio_models.dart';
+import '../../data/models/operational_procedure_flow_models.dart';
+import '../../data/models/operational_procedure_models.dart';
 import '../../data/models/usuario_model.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
 import '../../domain/services/atendimento_tecnico/atendimento_status_signature_policy.dart';
@@ -22,6 +24,7 @@ import '../../providers/usuario_provider.dart';
 import '../components/web/six_web_atendimento_details_dialog.dart';
 import '../components/web/six_web_atendimento_date_filter_dialog.dart';
 import '../components/web/six_web_recebimento_dialog.dart';
+import '../coordinators/operational_procedure_flow_coordinator.dart';
 import '../theme/web_theme_tokens.dart';
 import 'atendimento_tecnico_editar_dialog.dart';
 import 'atendimentos_tecnicos_web_page.dart';
@@ -31,10 +34,12 @@ class AtendimentosTecnicosListaWebPage extends StatefulWidget {
     super.key,
     this.embedded = false,
     this.onBack,
+    this.procedureCoordinator,
   });
 
   final bool embedded;
   final VoidCallback? onBack;
+  final OperationalProcedureFlowCoordinator? procedureCoordinator;
 
   @override
   State<AtendimentosTecnicosListaWebPage> createState() =>
@@ -51,12 +56,14 @@ class _AtendimentosTecnicosListaWebPageState
   final UsuarioService _usuarioService = UsuarioService();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
   final TextEditingController _buscaController = TextEditingController();
+  late final OperationalProcedureFlowCoordinator _procedureCoordinator;
 
   late Future<_ListaAtendimentosState> _future;
   Timer? _salvarBuscaDebounce;
   bool _alterandoStatus = false;
   bool _gerandoLink = false;
   bool _gerandoLinkStatus = false;
+  bool _abrindoNovoAtendimento = false;
   bool _aplicandoPreferencias = false;
   bool _usuarioAlterouFiltros = false;
   DateTime? _dataInicioFiltro;
@@ -69,6 +76,8 @@ class _AtendimentosTecnicosListaWebPageState
   @override
   void initState() {
     super.initState();
+    _procedureCoordinator =
+        widget.procedureCoordinator ?? OperationalProcedureFlowCoordinator();
     _future = _carregar();
     _buscaController.addListener(_onBuscaChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -238,34 +247,50 @@ class _AtendimentosTecnicosListaWebPageState
   }
 
   Future<void> _novoAtendimento() async {
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        final Size size = MediaQuery.of(dialogContext).size;
-        return Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 24,
-          ),
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: SizedBox(
-            width: size.width * 0.96,
-            height: size.height * 0.92,
-            child: AtendimentosTecnicosWebPage(
-              embedded: true,
-              onBack: () => Navigator.of(dialogContext).pop(),
-            ),
-          ),
-        );
-      },
-    );
+    if (_abrindoNovoAtendimento) return;
+    setState(() => _abrindoNovoAtendimento = true);
 
-    if (mounted) {
-      _recarregar();
+    try {
+      final ProcedureFlowResult procedureResult = await _procedureCoordinator
+          .execute(
+            context: context,
+            operationPoint: ProcedureOperationPoint.technicalServiceStartBefore,
+          );
+      if (!mounted || !procedureResult.shouldContinue) return;
+
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        builder: (BuildContext dialogContext) {
+          final Size size = MediaQuery.of(dialogContext).size;
+          return Dialog(
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 24,
+            ),
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: SizedBox(
+              width: size.width * 0.96,
+              height: size.height * 0.92,
+              child: AtendimentosTecnicosWebPage(
+                embedded: true,
+                onBack: () => Navigator.of(dialogContext).pop(),
+              ),
+            ),
+          );
+        },
+      );
+
+      if (mounted) {
+        _recarregar();
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _abrindoNovoAtendimento = false);
+      }
     }
   }
 
@@ -1464,62 +1489,77 @@ class _AtendimentosTecnicosListaWebPageState
               duration: WebThemeTokens.transitionDuration,
               curve: WebThemeTokens.transitionCurve,
               color: tokens.workspaceBackground,
-              child: Column(
-                children: <Widget>[
-                  _buildHeader(
-                    theme,
-                    total: state.atendimentos.length,
-                    filtrados: atendimentos.length,
-                    isCompact: isCompact,
+              child: CustomScrollView(
+                slivers: <Widget>[
+                  SliverToBoxAdapter(
+                    child: _buildHeader(
+                      theme,
+                      total: state.atendimentos.length,
+                      filtrados: atendimentos.length,
+                      isCompact: isCompact,
+                    ),
                   ),
-                  Padding(
+                  SliverPadding(
                     padding: EdgeInsets.fromLTRB(
                       horizontalPadding,
                       14,
                       horizontalPadding,
                       10,
                     ),
-                    child: Column(
-                      children: <Widget>[
-                        _buildResumo(theme, atendimentos, isCompact),
-                        const SizedBox(height: 12),
-                        _buildBusca(
-                          theme,
-                          isCompact,
-                          state.atendimentos,
-                          state.tecnicos,
-                          statusOptions,
-                        ),
-                      ],
+                    sliver: SliverToBoxAdapter(
+                      child: Column(
+                        children: <Widget>[
+                          _buildResumo(theme, atendimentos, isCompact),
+                          const SizedBox(height: 12),
+                          _buildBusca(
+                            theme,
+                            isCompact,
+                            state.atendimentos,
+                            state.tecnicos,
+                            statusOptions,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  Expanded(
-                    child: Padding(
+                  if (atendimentos.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          horizontalPadding,
+                          0,
+                          horizontalPadding,
+                          16,
+                        ),
+                        child: _EmptyState(onRetry: _recarregar),
+                      ),
+                    )
+                  else
+                    SliverPadding(
                       padding: EdgeInsets.fromLTRB(
                         horizontalPadding,
                         0,
                         horizontalPadding,
                         16,
                       ),
-                      child:
-                          atendimentos.isEmpty
-                              ? _EmptyState(onRetry: _recarregar)
-                              : ListView.separated(
-                                itemCount: atendimentos.length,
-                                separatorBuilder:
-                                    (_, __) => const SizedBox(height: 10),
-                                itemBuilder: (context, index) {
-                                  final atendimento = atendimentos[index];
-                                  return _buildAtendimentoCard(
-                                    theme,
-                                    atendimento,
-                                    statusOptions,
-                                    isCompact,
-                                  );
-                                },
-                              ),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final atendimento = atendimentos[index];
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              bottom: index == atendimentos.length - 1 ? 0 : 10,
+                            ),
+                            child: _buildAtendimentoCard(
+                              theme,
+                              atendimento,
+                              statusOptions,
+                              isCompact,
+                            ),
+                          );
+                        }, childCount: atendimentos.length),
+                      ),
                     ),
-                  ),
                 ],
               ),
             );
@@ -1649,7 +1689,7 @@ class _AtendimentosTecnicosListaWebPageState
       children: <Widget>[
         _headerButton(theme, Icons.refresh_rounded, 'Atualizar', _recarregar),
         FilledButton.icon(
-          onPressed: _novoAtendimento,
+          onPressed: _abrindoNovoAtendimento ? null : _novoAtendimento,
           icon: const Icon(Icons.add_rounded, size: 18),
           label: const Text('Novo atendimento'),
           style: FilledButton.styleFrom(

@@ -37,27 +37,29 @@ class OperationalProcedureFlowCoordinator {
     required BuildContext context,
     required ProcedureOperationPoint operationPoint,
   }) async {
-    if (operationPoint.operationType == ProcedureOperationType.sale) {
+    if (operationPoint == ProcedureOperationPoint.saleStartBefore) {
       OperationalProcedurePendingExecutionStore.instance.beginSaleFlow();
     }
-    final OperationalProcedurePresenter presenter = _runner == null
-        ? (kIsWeb
-              ? WebOperationalProcedurePresenter(context: context)
-              : MobileOperationalProcedurePresenter(context: context))
-        : _RunnerOperationalProcedurePresenter(
-            context: context,
-            runner: _runner,
-          );
+    final OperationalProcedurePresenter presenter =
+        _runner == null
+            ? (kIsWeb
+                ? WebOperationalProcedurePresenter(context: context)
+                : MobileOperationalProcedurePresenter(context: context))
+            : _RunnerOperationalProcedurePresenter(
+              context: context,
+              runner: _runner,
+            );
     final OperationalProcedureFlowController controller =
         OperationalProcedureFlowController(
-          repository: _dataSource == null
-              ? OperationalProcedureService(
-                  localeTag: Localizations.localeOf(context).toLanguageTag(),
-                )
-              : _DataSourceRuntimeRepository(
-                  _dataSource,
-                  Localizations.localeOf(context).toLanguageTag(),
-                ),
+          repository:
+              _dataSource == null
+                  ? OperationalProcedureService(
+                    localeTag: Localizations.localeOf(context).toLanguageTag(),
+                  )
+                  : _DataSourceRuntimeRepository(
+                    _dataSource,
+                    Localizations.localeOf(context).toLanguageTag(),
+                  ),
           presenter: presenter,
           resolver: _resolver,
         );
@@ -138,15 +140,13 @@ class _RunnerOperationalProcedurePresenter
       ProcedureFlowOutcome.continueOperation =>
         ProcedurePresentationResult.completed(
           procedure.id,
-          executionId: result.executionIds.isEmpty
-              ? null
-              : result.executionIds.first,
+          executionId:
+              result.executionIds.isEmpty ? null : result.executionIds.first,
         ),
       ProcedureFlowOutcome.skipped => ProcedurePresentationResult.skipped(
         procedure.id,
-        executionId: result.executionIds.isEmpty
-            ? null
-            : result.executionIds.first,
+        executionId:
+            result.executionIds.isEmpty ? null : result.executionIds.first,
       ),
       ProcedureFlowOutcome.cancelled =>
         const ProcedurePresentationResult.cancelled(),

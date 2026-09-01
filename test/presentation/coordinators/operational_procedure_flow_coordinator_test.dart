@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sixpos/data/datasources/operational_procedure_mock_data_source.dart';
 import 'package:sixpos/data/models/operational_procedure_flow_models.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
+import 'package:sixpos/domain/services/operational_procedures/operational_procedure_pending_execution_store.dart';
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
 
 void main() {
@@ -47,6 +48,7 @@ void main() {
     );
 
     await tester.tap(find.text('Executar'));
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
 
     expect(result?.outcome, ProcedureFlowOutcome.skipped);
@@ -111,6 +113,30 @@ void main() {
     expect(result?.shouldContinue, false);
   });
 
+  testWidgets('sale-finish execution preserves pending sale links', (
+    tester,
+  ) async {
+    final OperationalProcedurePendingExecutionStore store =
+        OperationalProcedurePendingExecutionStore.instance;
+    store.beginSaleFlow();
+    store.addSaleExecutions(<String>['exec-start']);
+    addTearDown(store.beginSaleFlow);
+
+    ProcedureFlowResult? result;
+    await _pumpCoordinator(
+      tester,
+      runtimeScenario: OperationalProcedureRuntimeMockScenario.none,
+      operationPoint: ProcedureOperationPoint.saleFinishBefore,
+      onResult: (ProcedureFlowResult value) => result = value,
+    );
+
+    await tester.tap(find.text('Executar'));
+    await tester.pump(const Duration(milliseconds: 350));
+
+    expect(result?.outcome, ProcedureFlowOutcome.continueOperation);
+    expect(store.pendingSaleExecutionIds, <String>['exec-start']);
+  });
+
   testWidgets('multiple procedures run sequentially and stop on cancellation', (
     tester,
   ) async {
@@ -145,25 +171,48 @@ void main() {
     expect(result?.outcome, ProcedureFlowOutcome.cancelled);
   });
 
+  test('mobile sale entries dispatch sale.start.before before opening sale', () {
+    final String menuSource =
+        File(
+          'lib/presentation/screens/atendimento_mobile_screen.dart',
+        ).readAsStringSync();
+    final String saleSource =
+        File(
+          'lib/presentation/screens/opcoes_venda_mobile_screen.dart',
+        ).readAsStringSync();
+
+    expect(
+      menuSource,
+      contains(
+        'OpcoesVendaMobileScreen(procedureCoordinator: _procedureCoordinator)',
+      ),
+    );
+    expect(saleSource, contains('ProcedureOperationPoint.saleStartBefore'));
+    expect(saleSource, contains('_procedureCoordinator'));
+    expect(saleSource, contains('Future<void> _startNewSale() async'));
+  });
+
   test(
-    'mobile sale entries dispatch sale.start.before before opening sale',
+    'web technical service entries dispatch technical-service.start.before before opening service flow',
     () {
-      final String operationSource =
+      final String shellSource =
+          File('lib/pagina_principal_web.dart').readAsStringSync();
+      final String listSource =
           File(
-            'lib/presentation/screens/atendimento_mobile_screen.dart',
-          ).readAsStringSync();
-      final String homeSource =
-          File(
-            'lib/presentation/screens/home_page_mobile_screen.dart',
+            'lib/presentation/screens/atendimentos_tecnicos_lista_web_page.dart',
           ).readAsStringSync();
 
       expect(
-        operationSource,
-        contains('ProcedureOperationPoint.saleStartBefore'),
+        shellSource,
+        contains('ProcedureOperationPoint.technicalServiceStartBefore'),
       );
-      expect(operationSource, contains('_openNewSale()'));
-      expect(homeSource, contains('ProcedureOperationPoint.saleStartBefore'));
-      expect(homeSource, contains('_openNewSale()'));
+      expect(
+        listSource,
+        contains('ProcedureOperationPoint.technicalServiceStartBefore'),
+      );
+      expect(listSource, contains('await _procedureCoordinator'));
+      expect(listSource, contains('.execute('));
+      expect(listSource, contains('Future<void> _novoAtendimento() async'));
     },
   );
 }
@@ -171,6 +220,8 @@ void main() {
 Future<void> _pumpCoordinator(
   WidgetTester tester, {
   required OperationalProcedureRuntimeMockScenario runtimeScenario,
+  ProcedureOperationPoint operationPoint =
+      ProcedureOperationPoint.saleStartBefore,
   OperationalProcedureRunner? runner,
   required ValueChanged<ProcedureFlowResult> onResult,
 }) async {
@@ -206,8 +257,7 @@ Future<void> _pumpCoordinator(
                     final ProcedureFlowResult result = await coordinator
                         .execute(
                           context: context,
-                          operationPoint:
-                              ProcedureOperationPoint.saleStartBefore,
+                          operationPoint: operationPoint,
                         );
                     onResult(result);
                   },

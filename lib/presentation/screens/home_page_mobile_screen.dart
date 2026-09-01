@@ -319,16 +319,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
   }
 
   void _configurarWebSocketMobile() {
-    onMensagemRecebida = (Map<String, dynamic> json) {
-      if (!mounted) return;
-
-      final String? mensagem = json['mensagem']?.toString().trim();
-      if (mensagem == null || mensagem.isEmpty) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
-      );
-    };
+    onMensagemRecebida = null;
 
     onStompErro = (Object error) {
       debugPrint('[HomePageMobile] Erro no WebSocket: $error');

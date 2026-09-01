@@ -11,6 +11,7 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/operational_procedure_editor_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operational_procedure_analytics_mobile_screen.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/operational_procedure_provider.dart';
 
 class OperationalProceduresMobileScreen extends StatelessWidget {
@@ -21,10 +22,11 @@ class OperationalProceduresMobileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<OperationalProcedureProvider>(
-      create: (_) => OperationalProcedureProvider(
-        dataSource: dataSource,
-        localeTag: Localizations.localeOf(context).toLanguageTag(),
-      )..load(),
+      create:
+          (_) => OperationalProcedureProvider(
+            dataSource: dataSource,
+            localeTag: Localizations.localeOf(context).toLanguageTag(),
+          )..load(),
       child: const _OperationalProceduresMobileView(),
     );
   }
@@ -40,6 +42,8 @@ class _OperationalProceduresMobileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool canManageProcedures = _canManageProcedures(context);
+
     return SixMobilePageShell(
       title: context.t('procedimentos.title', fallback: 'Procedimentos'),
       backgroundColor: _backgroundColor,
@@ -47,78 +51,75 @@ class _OperationalProceduresMobileView extends StatelessWidget {
       secondaryColor: _secondaryColor,
       accentColor: _accentColor,
       actions: <Widget>[
-        IconButton(
-          tooltip: context.t(
-            'procedimentos.analyticsTitle',
-            fallback: 'Análise de resultados',
+        if (canManageProcedures)
+          IconButton(
+            tooltip: context.t(
+              'procedimentos.analyticsTitle',
+              fallback: 'Análise de resultados',
+            ),
+            onPressed: () {
+              Navigator.of(context).push<void>(
+                MaterialPageRoute<void>(
+                  builder:
+                      (_) => const OperationalProcedureAnalyticsMobileScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.insights_rounded),
           ),
-          onPressed: () {
-            Navigator.of(context).push<void>(
-              MaterialPageRoute<void>(
-                builder: (_) =>
-                    const OperationalProcedureAnalyticsMobileScreen(),
-              ),
-            );
-          },
-          icon: const Icon(Icons.insights_rounded),
-        ),
       ],
-      bodyBuilder:
-          (
-            BuildContext context,
-            ScrollController scrollController,
-            double topInset,
-          ) {
-            return SafeArea(
-              top: false,
-              child: Consumer<OperationalProcedureProvider>(
-                builder:
-                    (
-                      BuildContext context,
-                      OperationalProcedureProvider provider,
-                      _,
-                    ) {
-                      final bool reduceMotion =
-                          MediaQuery.disableAnimationsOf(context) ||
-                          MediaQuery.accessibleNavigationOf(context);
+      bodyBuilder: (
+        BuildContext context,
+        ScrollController scrollController,
+        double topInset,
+      ) {
+        return SafeArea(
+          top: false,
+          child: Consumer<OperationalProcedureProvider>(
+            builder: (
+              BuildContext context,
+              OperationalProcedureProvider provider,
+              _,
+            ) {
+              final bool reduceMotion =
+                  MediaQuery.disableAnimationsOf(context) ||
+                  MediaQuery.accessibleNavigationOf(context);
 
-                      return RefreshIndicator(
-                        onRefresh: provider.reload,
-                        child: ListView(
-                          controller: scrollController,
-                          physics: AlwaysScrollableScrollPhysics(),
-                          padding: EdgeInsets.fromLTRB(
-                            16,
-                            topInset + 10,
-                            16,
-                            28,
-                          ),
-                          children: <Widget>[
-                            AnimatedSwitcher(
-                              duration: reduceMotion
-                                  ? Duration.zero
-                                  : Duration(milliseconds: 220),
-                              switchInCurve: Curves.easeOutCubic,
-                              switchOutCurve: Curves.easeInCubic,
-                              child: _buildState(
-                                context,
-                                provider,
-                                reduceMotion: reduceMotion,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-              ),
-            );
-          },
+              return RefreshIndicator(
+                onRefresh: provider.reload,
+                child: ListView(
+                  controller: scrollController,
+                  physics: AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
+                  children: <Widget>[
+                    AnimatedSwitcher(
+                      duration:
+                          reduceMotion
+                              ? Duration.zero
+                              : Duration(milliseconds: 220),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      child: _buildState(
+                        context,
+                        provider,
+                        canManageProcedures: canManageProcedures,
+                        reduceMotion: reduceMotion,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
   Widget _buildState(
     BuildContext context,
     OperationalProcedureProvider provider, {
+    required bool canManageProcedures,
     required bool reduceMotion,
   }) {
     if (provider.isLoading) {
@@ -135,19 +136,31 @@ class _OperationalProceduresMobileView extends StatelessWidget {
     }
 
     if (provider.isEmpty) {
-      return OperationalProcedureEmptyState(
-        key: ValueKey<String>('procedures-empty'),
-        onCreate: () => _openCreate(context, provider),
-      );
+      return canManageProcedures
+          ? OperationalProcedureEmptyState(
+            key: ValueKey<String>('procedures-empty'),
+            onCreate: () => _openCreate(context, provider),
+          )
+          : Column(
+            key: const ValueKey<String>('procedures-empty-restricted'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const <Widget>[
+              OperationalProcedureIntro(),
+              SizedBox(height: 14),
+              OperationalProcedureRestrictedAccessNotice(),
+            ],
+          );
     }
 
     return _ProceduresSuccessState(
       key: ValueKey<String>('procedures-success'),
       provider: provider,
+      canManageProcedures: canManageProcedures,
       reduceMotion: reduceMotion,
       onCreate: () => _openCreate(context, provider),
-      onOpen: (OperationalProcedure procedure) =>
-          _openEdit(context, provider, procedure),
+      onOpen:
+          (OperationalProcedure procedure) =>
+              _openEdit(context, provider, procedure),
     );
   }
 
@@ -155,10 +168,14 @@ class _OperationalProceduresMobileView extends StatelessWidget {
     BuildContext context,
     OperationalProcedureProvider provider,
   ) async {
+    if (!_canManageProcedures(context)) {
+      _showPermissionDenied(context);
+      return;
+    }
     final bool? saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
-        builder: (_) =>
-            ChangeNotifierProvider<OperationalProcedureProvider>.value(
+        builder:
+            (_) => ChangeNotifierProvider<OperationalProcedureProvider>.value(
               value: provider,
               child: OperationalProcedureEditorMobileScreen(
                 initialProcedure: provider.createEmptyProcedure(),
@@ -177,12 +194,16 @@ class _OperationalProceduresMobileView extends StatelessWidget {
     OperationalProcedureProvider provider,
     OperationalProcedure procedure,
   ) async {
+    if (!_canManageProcedures(context)) {
+      _showPermissionDenied(context);
+      return;
+    }
     final OperationalProcedure? current = provider.findById(procedure.id);
     if (current == null) return;
     final bool? saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
-        builder: (_) =>
-            ChangeNotifierProvider<OperationalProcedureProvider>.value(
+        builder:
+            (_) => ChangeNotifierProvider<OperationalProcedureProvider>.value(
               value: provider,
               child: OperationalProcedureEditorMobileScreen(
                 initialProcedure: current,
@@ -202,13 +223,34 @@ class _OperationalProceduresMobileView extends StatelessWidget {
         content: Text(
           created
               ? context.t(
-                  'procedimentos.createdSuccess',
-                  fallback: 'Procedimento criado.',
-                )
+                'procedimentos.createdSuccess',
+                fallback: 'Procedimento criado.',
+              )
               : context.t(
-                  'procedimentos.updatedSuccess',
-                  fallback: 'Procedimento atualizado.',
-                ),
+                'procedimentos.updatedSuccess',
+                fallback: 'Procedimento atualizado.',
+              ),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  bool _canManageProcedures(BuildContext context) {
+    final ColaboradorAutorizacoesProvider? permissions =
+        Provider.of<ColaboradorAutorizacoesProvider?>(context, listen: false);
+    return permissions?.ehAdministrador ?? true;
+  }
+
+  void _showPermissionDenied(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          context.t(
+            'procedimentos.restrictedDescription',
+            fallback:
+                'Você pode consultar os procedimentos da empresa, mas apenas administradores podem criar, editar e analisar essas configurações.',
+          ),
         ),
         behavior: SnackBarBehavior.floating,
       ),
@@ -220,12 +262,14 @@ class _ProceduresSuccessState extends StatelessWidget {
   const _ProceduresSuccessState({
     super.key,
     required this.provider,
+    required this.canManageProcedures,
     required this.reduceMotion,
     required this.onCreate,
     required this.onOpen,
   });
 
   final OperationalProcedureProvider provider;
+  final bool canManageProcedures;
   final bool reduceMotion;
   final VoidCallback onCreate;
   final ValueChanged<OperationalProcedure> onOpen;
@@ -238,10 +282,21 @@ class _ProceduresSuccessState extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         _entry(reduceMotion: reduceMotion, child: OperationalProcedureIntro()),
+        if (!canManageProcedures) ...<Widget>[
+          const SizedBox(height: 14),
+          _entry(
+            reduceMotion: reduceMotion,
+            delay: const Duration(milliseconds: 45),
+            child: const OperationalProcedureRestrictedAccessNotice(),
+          ),
+        ],
         SizedBox(height: 14),
         _entry(
           reduceMotion: reduceMotion,
-          delay: Duration(milliseconds: 70),
+          delay:
+              canManageProcedures
+                  ? const Duration(milliseconds: 70)
+                  : const Duration(milliseconds: 110),
           child: OperationalProcedureFilters(
             selectedFilter: provider.filter,
             onChanged: provider.setFilter,
@@ -265,17 +320,19 @@ class _ProceduresSuccessState extends StatelessWidget {
                 delay: Duration(milliseconds: 110 + (entry.key * 45)),
                 child: OperationalProcedureCard(
                   procedure: entry.value,
-                  onTap: () => onOpen(entry.value),
+                  onTap: canManageProcedures ? () => onOpen(entry.value) : null,
                 ),
               ),
             );
           }),
-        SizedBox(height: 8),
-        _entry(
-          reduceMotion: reduceMotion,
-          delay: Duration(milliseconds: 260),
-          child: OperationalProcedureNewAction(onTap: onCreate),
-        ),
+        if (canManageProcedures) ...<Widget>[
+          SizedBox(height: 8),
+          _entry(
+            reduceMotion: reduceMotion,
+            delay: Duration(milliseconds: 260),
+            child: OperationalProcedureNewAction(onTap: onCreate),
+          ),
+        ],
       ],
     );
   }
