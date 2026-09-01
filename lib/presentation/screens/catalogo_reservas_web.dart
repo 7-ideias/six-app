@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sixpos/core/services/catalogo_publico_service.dart';
 import 'package:sixpos/core/services/catalogo_reserva_service.dart';
+import 'package:sixpos/data/models/catalogo_publico_configuracao_model.dart';
 import 'package:sixpos/data/models/catalogo_reserva_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
+import 'package:sixpos/presentation/screens/catalogo_publico_personalizacao_web.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
@@ -37,11 +40,14 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
   ];
 
   final CatalogoReservaService _service = CatalogoReservaService();
+  final CatalogoPublicoService _catalogoPublicoService =
+      CatalogoPublicoService();
   final UsuarioService _usuarioService = UsuarioService();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
 
   CatalogoReservaPaginaModel? _pagina;
   CatalogoReservaDetalheModel? _detalhe;
+  CatalogoPublicoConfiguracaoModel? _configuracaoCatalogoVirtual;
   Set<CatalogoReservaStatus> _filtrosStatus = <CatalogoReservaStatus>{};
   DateTimeRange? _filtroPeriodo;
   String _periodoSelecionado = _periodoProximos7Dias;
@@ -53,6 +59,8 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
   bool _carregandoDetalhe = false;
   bool _atualizandoStatus = false;
   bool _convertendo = false;
+  bool _abrindoCatalogoVirtual = false;
+  bool _carregandoConfiguracaoCatalogoVirtual = true;
   bool _aplicandoPreferencias = false;
   bool _usuarioAlterouFiltros = false;
 
@@ -108,6 +116,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
       await _restaurarPreferenciasCatalogoReservasBackend();
       await _carregar();
     });
+    Future<void>.microtask(_carregarConfiguracaoCatalogoVirtual);
   }
 
   Future<void> _carregar({int pagina = 0, String? selecionarId}) async {
@@ -144,6 +153,46 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
         _erro = error.toString();
         _carregando = false;
       });
+    }
+  }
+
+  Future<void> _abrirCatalogoVirtual() async {
+    if (_abrindoCatalogoVirtual || _carregandoConfiguracaoCatalogoVirtual) {
+      return;
+    }
+    setState(() => _abrindoCatalogoVirtual = true);
+    try {
+      await openCatalogoVirtualWeb(
+        context,
+        service: _catalogoPublicoService,
+        initialConfiguration: _configuracaoCatalogoVirtual,
+      );
+      await _carregarConfiguracaoCatalogoVirtual(mostrarCarregamento: false);
+    } finally {
+      if (mounted) setState(() => _abrindoCatalogoVirtual = false);
+    }
+  }
+
+  Future<void> _carregarConfiguracaoCatalogoVirtual({
+    bool mostrarCarregamento = true,
+  }) async {
+    if (mostrarCarregamento && mounted) {
+      setState(() => _carregandoConfiguracaoCatalogoVirtual = true);
+    }
+    try {
+      final CatalogoPublicoConfiguracaoModel configuration =
+          await loadCatalogoVirtualWebConfiguration(
+            service: _catalogoPublicoService,
+          );
+      if (!mounted) return;
+      setState(() => _configuracaoCatalogoVirtual = configuration);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _configuracaoCatalogoVirtual = null);
+    } finally {
+      if (mounted) {
+        setState(() => _carregandoConfiguracaoCatalogoVirtual = false);
+      }
     }
   }
 
@@ -814,25 +863,77 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
               ],
             ),
           ),
-          OutlinedButton.icon(
-            onPressed:
-                _carregando
-                    ? null
-                    : () => _carregar(
-                      pagina: _pagina?.pagina ?? 0,
-                      selecionarId: _idSelecionado,
-                    ),
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: Text(context.t('common.refresh', fallback: 'Atualizar')),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: tokens.info,
-              backgroundColor: tokens.surfaceMuted.withValues(alpha: 0.35),
-              side: BorderSide(color: tokens.selectedBorder),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+          const SizedBox(width: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              FilledButton.icon(
+                onPressed:
+                    _abrindoCatalogoVirtual ||
+                            _carregandoConfiguracaoCatalogoVirtual
+                        ? null
+                        : _abrirCatalogoVirtual,
+                icon:
+                    _abrindoCatalogoVirtual ||
+                            _carregandoConfiguracaoCatalogoVirtual
+                        ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        )
+                        : const Icon(Icons.storefront_outlined, size: 18),
+                label: Text(
+                  context.t(
+                    _configuracaoCatalogoVirtual?.ativo == false
+                        ? 'catalogReservations.configureCatalog'
+                        : 'catalogReservations.openCatalog',
+                    fallback: _configuracaoCatalogoVirtual?.ativo == false
+                        ? 'Configurar catálogo virtual'
+                        : 'Ver catálogo virtual',
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
               ),
-            ),
+              OutlinedButton.icon(
+                onPressed:
+                    _carregando
+                        ? null
+                        : () => _carregar(
+                          pagina: _pagina?.pagina ?? 0,
+                          selecionarId: _idSelecionado,
+                        ),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(
+                  context.t('common.refresh', fallback: 'Atualizar'),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: tokens.info,
+                  backgroundColor: tokens.surfaceMuted.withValues(alpha: 0.35),
+                  side: BorderSide(color: tokens.selectedBorder),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

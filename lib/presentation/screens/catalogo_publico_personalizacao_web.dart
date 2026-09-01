@@ -34,9 +34,82 @@ String? _catalogPublicBaseUrl() {
       .toString();
 }
 
+Future<CatalogoPublicoConfiguracaoModel>
+loadCatalogoVirtualWebConfiguration({CatalogoPublicoService? service}) {
+  final CatalogoPublicoService resolvedService =
+      service ?? CatalogoPublicoService();
+  return resolvedService.buscarConfiguracao(baseUrl: _catalogPublicBaseUrl());
+}
+
+Future<void> openCatalogoVirtualWeb(
+  BuildContext context, {
+  CatalogoPublicoService? service,
+  CatalogoPublicoConfiguracaoModel? initialConfiguration,
+}) async {
+  final CatalogoPublicoService resolvedService =
+      service ?? CatalogoPublicoService();
+  late final CatalogoPublicoConfiguracaoModel configuration;
+
+  try {
+    configuration =
+        initialConfiguration ??
+        await loadCatalogoVirtualWebConfiguration(service: resolvedService);
+  } catch (_) {
+    if (!context.mounted) return;
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(
+        content: Text(
+          context.t(
+            'catalog.publicPage.loadErrorTitle',
+            fallback: 'Não foi possível carregar o catálogo virtual',
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: tokens.danger,
+      ),
+    );
+    return;
+  }
+
+  if (!context.mounted) return;
+  if (!configuration.ativo) {
+    await showCatalogoVirtualWebDialog(
+      context,
+      service: resolvedService,
+      initialConfiguration: configuration,
+    );
+    return;
+  }
+
+  final Uri? uri = Uri.tryParse(configuration.url);
+  bool opened = false;
+  try {
+    if (uri != null) opened = await launchExternalUri(uri);
+  } catch (_) {
+    opened = false;
+  }
+  if (opened || !context.mounted) return;
+
+  final WebThemeTokens tokens = WebThemeTokens.of(context);
+  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+    SnackBar(
+      content: Text(
+        context.t(
+          'catalog.publicPage.openError',
+          fallback: 'Não foi possível abrir o catálogo em uma nova aba.',
+        ),
+      ),
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: tokens.danger,
+    ),
+  );
+}
+
 Future<void> showCatalogoVirtualWebDialog(
   BuildContext context, {
   CatalogoPublicoService? service,
+  CatalogoPublicoConfiguracaoModel? initialConfiguration,
 }) async {
   final CatalogoPublicoService resolvedService =
       service ?? CatalogoPublicoService();
@@ -90,31 +163,35 @@ Future<void> showCatalogoVirtualWebDialog(
     },
   );
 
-  late final CatalogoPublicoConfiguracaoModel initialConfiguration;
-  try {
-    initialConfiguration = await resolvedService.buscarConfiguracao(
-      baseUrl: _catalogPublicBaseUrl(),
-    );
-  } catch (_) {
-    requestFinished = true;
-    loadingFeedbackTimer.cancel();
-    loadingController?.close();
-    if (context.mounted && messenger != null) {
-      final WebThemeTokens tokens = WebThemeTokens.of(context);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            context.t(
-              'catalog.publicPage.loadErrorTitle',
-              fallback: 'Não foi possível carregar o catálogo virtual',
-            ),
-          ),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: tokens.danger,
-        ),
+  late final CatalogoPublicoConfiguracaoModel resolvedConfiguration;
+  if (initialConfiguration != null) {
+    resolvedConfiguration = initialConfiguration;
+  } else {
+    try {
+      resolvedConfiguration = await loadCatalogoVirtualWebConfiguration(
+        service: resolvedService,
       );
+    } catch (_) {
+      requestFinished = true;
+      loadingFeedbackTimer.cancel();
+      loadingController?.close();
+      if (context.mounted && messenger != null) {
+        final WebThemeTokens tokens = WebThemeTokens.of(context);
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              context.t(
+                'catalog.publicPage.loadErrorTitle',
+                fallback: 'Não foi possível carregar o catálogo virtual',
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: tokens.danger,
+          ),
+        );
+      }
+      return;
     }
-    return;
   }
 
   requestFinished = true;
@@ -193,7 +270,7 @@ Future<void> showCatalogoVirtualWebDialog(
                           ),
                           child: CatalogoPublicoPersonalizacaoWebPage(
                             service: resolvedService,
-                            initialConfiguration: initialConfiguration,
+                            initialConfiguration: resolvedConfiguration,
                             onClose: () => Navigator.of(
                               dialogContext,
                               rootNavigator: true,
