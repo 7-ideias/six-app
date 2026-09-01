@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -10,7 +11,6 @@ import 'package:sixpos/core/services/catalogo_publico_service.dart';
 import 'package:sixpos/core/utils/external_link_launcher.dart';
 import 'package:sixpos/data/models/catalogo_publico_configuracao_model.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
-import 'package:sixpos/presentation/components/six_backend_loading.dart';
 import 'package:sixpos/presentation/components/web/six_web_catalog_unpublish_dialog.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
@@ -18,10 +18,110 @@ import 'package:provider/provider.dart';
 
 enum _CatalogPreviewDevice { desktop, mobile }
 
+String? _catalogPublicBaseUrl() {
+  final Uri currentUri = Uri.base;
+  if (!<String>{'http', 'https'}.contains(currentUri.scheme) ||
+      currentUri.host.isEmpty) {
+    return null;
+  }
+  final bool loopback = <String>{
+    'localhost',
+    '127.0.0.1',
+    '::1',
+  }.contains(currentUri.host.toLowerCase());
+  return currentUri
+      .resolve(loopback ? '/catalogo.html' : '/catalogo')
+      .toString();
+}
+
 Future<void> showCatalogoVirtualWebDialog(
   BuildContext context, {
   CatalogoPublicoService? service,
-}) {
+}) async {
+  final CatalogoPublicoService resolvedService =
+      service ?? CatalogoPublicoService();
+  final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>?
+      loadingController;
+  bool requestFinished = false;
+  final Timer loadingFeedbackTimer = Timer(
+    const Duration(milliseconds: 350),
+    () {
+      if (requestFinished || !context.mounted || messenger == null) return;
+      final WebThemeTokens tokens = WebThemeTokens.of(context);
+      loadingController = messenger.showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          width: math.min(360.0, MediaQuery.sizeOf(context).width - 32),
+          duration: const Duration(minutes: 1),
+          elevation: 12,
+          backgroundColor: tokens.surfaceElevated,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(color: tokens.cardBorder),
+          ),
+          content: Row(
+            children: <Widget>[
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: tokens.info,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  context.t(
+                    'catalog.virtualCatalog.loading',
+                    fallback: 'Preparando catálogo virtual...',
+                  ),
+                  style: TextStyle(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+
+  late final CatalogoPublicoConfiguracaoModel initialConfiguration;
+  try {
+    initialConfiguration = await resolvedService.buscarConfiguracao(
+      baseUrl: _catalogPublicBaseUrl(),
+    );
+  } catch (_) {
+    requestFinished = true;
+    loadingFeedbackTimer.cancel();
+    loadingController?.close();
+    if (context.mounted && messenger != null) {
+      final WebThemeTokens tokens = WebThemeTokens.of(context);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'catalog.publicPage.loadErrorTitle',
+              fallback: 'Não foi possível carregar o catálogo virtual',
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: tokens.danger,
+        ),
+      );
+    }
+    return;
+  }
+
+  requestFinished = true;
+  loadingFeedbackTimer.cancel();
+  loadingController?.close();
+  if (!context.mounted) return;
+
   final MediaQueryData mediaQuery = MediaQuery.of(context);
   final bool reduceMotion =
       mediaQuery.disableAnimations || mediaQuery.accessibleNavigation;
@@ -92,7 +192,8 @@ Future<void> showCatalogoVirtualWebDialog(
                             ),
                           ),
                           child: CatalogoPublicoPersonalizacaoWebPage(
-                            service: service,
+                            service: resolvedService,
+                            initialConfiguration: initialConfiguration,
                             onClose: () => Navigator.of(
                               dialogContext,
                               rootNavigator: true,
@@ -141,10 +242,12 @@ class CatalogoPublicoPersonalizacaoWebPage extends StatefulWidget {
   const CatalogoPublicoPersonalizacaoWebPage({
     super.key,
     this.service,
+    this.initialConfiguration,
     this.onClose,
   });
 
   final CatalogoPublicoService? service;
+  final CatalogoPublicoConfiguracaoModel? initialConfiguration;
   final VoidCallback? onClose;
 
   @override
@@ -180,7 +283,14 @@ class _CatalogoPublicoPersonalizacaoWebPageState
   void initState() {
     super.initState();
     _service = widget.service ?? CatalogoPublicoService();
-    _load();
+    final CatalogoPublicoConfiguracaoModel? initialConfiguration =
+        widget.initialConfiguration;
+    if (initialConfiguration == null) {
+      _load();
+    } else {
+      _loading = false;
+      _applyConfiguration(initialConfiguration, notify: false);
+    }
   }
 
   @override
@@ -191,21 +301,7 @@ class _CatalogoPublicoPersonalizacaoWebPageState
     super.dispose();
   }
 
-  String? get _publicBaseUrl {
-    final Uri currentUri = Uri.base;
-    if (!<String>{'http', 'https'}.contains(currentUri.scheme) ||
-        currentUri.host.isEmpty) {
-      return null;
-    }
-    final bool loopback = <String>{
-      'localhost',
-      '127.0.0.1',
-      '::1',
-    }.contains(currentUri.host.toLowerCase());
-    return currentUri
-        .resolve(loopback ? '/catalogo.html' : '/catalogo')
-        .toString();
-  }
+  String? get _publicBaseUrl => _catalogPublicBaseUrl();
 
   bool get _dirty {
     final CatalogoPublicoConfiguracaoModel? saved = _saved;
@@ -237,13 +333,23 @@ class _CatalogoPublicoPersonalizacaoWebPageState
     }
   }
 
-  void _applyConfiguration(CatalogoPublicoConfiguracaoModel configuration) {
-    _saved = configuration;
-    _draft = configuration;
-    _titleController.text = configuration.personalizacao.titulo;
-    _descriptionController.text = configuration.personalizacao.descricao;
-    _colorController.text = configuration.personalizacao.corPrincipal;
-    setState(() {});
+  void _applyConfiguration(
+    CatalogoPublicoConfiguracaoModel configuration, {
+    bool notify = true,
+  }) {
+    void apply() {
+      _saved = configuration;
+      _draft = configuration;
+      _titleController.text = configuration.personalizacao.titulo;
+      _descriptionController.text = configuration.personalizacao.descricao;
+      _colorController.text = configuration.personalizacao.corPrincipal;
+    }
+
+    if (notify) {
+      setState(apply);
+    } else {
+      apply();
+    }
   }
 
   void _updatePersonalization(
@@ -415,8 +521,13 @@ class _CatalogoPublicoPersonalizacaoWebPageState
             child: ColoredBox(
               color: tokens.workspaceBackground,
               child: Center(
-                child: SixBackendLoading.messages(
-                  animation: SixBackendLoadingAnimation.skeletonPulse,
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.4,
+                    color: tokens.info,
+                  ),
                 ),
               ),
             ),

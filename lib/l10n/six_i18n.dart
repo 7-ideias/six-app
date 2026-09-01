@@ -1035,6 +1035,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalogHub.modules.virtualCatalog': 'Catálogo virtual',
     'catalogHub.modules.virtualCatalogDescription':
         'Personalize sua vitrine, publique itens e compartilhe com seus clientes.',
+    'catalog.virtualCatalog.loading': 'Preparando catálogo virtual...',
     'catalogHub.stock.title': 'Disponibilidade do estoque',
     'catalogHub.stock.noIssues': 'Nenhuma indisponibilidade exige atenção.',
     'catalogHub.stock.issues':
@@ -2916,6 +2917,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalogHub.modules.virtualCatalog': 'Online catalog',
     'catalogHub.modules.virtualCatalogDescription':
         'Customize your storefront, publish items, and share it with customers.',
+    'catalog.virtualCatalog.loading': 'Preparing online catalog...',
     'catalogHub.stock.title': 'Stock availability',
     'catalogHub.stock.noIssues': 'No availability issue needs attention.',
     'catalogHub.stock.issues':
@@ -5209,6 +5211,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalogHub.modules.virtualCatalog': 'Catálogo virtual',
     'catalogHub.modules.virtualCatalogDescription':
         'Personalice su vitrina, publique artículos y compártala con sus clientes.',
+    'catalog.virtualCatalog.loading': 'Preparando catálogo virtual...',
     'catalogHub.stock.title': 'Disponibilidad del inventario',
     'catalogHub.stock.noIssues':
         'Ningún problema de disponibilidad requiere atención.',
