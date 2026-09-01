@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../data/models/usuario_model.dart';
+import '../../data/models/operational_procedure_flow_models.dart';
+import '../../data/models/operational_procedure_models.dart';
 import '../../design_system/themes/six_mobile_color_scheme.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
 import '../../domain/services/usuario/usuario_service.dart';
@@ -9,6 +11,7 @@ import '../components/mobile/six_imagem_canetinha.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
 import '../components/mobile/six_mobile_reorderable_card.dart';
 import '../components/mobile_motion.dart';
+import '../coordinators/operational_procedure_flow_coordinator.dart';
 import '../controllers/mobile_card_order_preference_controller.dart';
 import 'atendimento_tecnico_mobile_screen.dart';
 import 'atendimentos_tecnicos_mobile_screen.dart';
@@ -17,8 +20,13 @@ typedef ServicosAtendimentoMobileNavigate =
     void Function(BuildContext context, Widget page);
 
 class OpcoesServicosAtendimentoMobileScreen extends StatefulWidget {
-  const OpcoesServicosAtendimentoMobileScreen({super.key, this.onNavigate});
+  const OpcoesServicosAtendimentoMobileScreen({
+    super.key,
+    this.procedureCoordinator,
+    this.onNavigate,
+  });
 
+  final OperationalProcedureFlowCoordinator? procedureCoordinator;
   final ServicosAtendimentoMobileNavigate? onNavigate;
 
   @override
@@ -54,12 +62,16 @@ class _OpcoesServicosAtendimentoMobileScreenState
   static const double _serviceCardHeight = 136;
   static const double _serviceCardGap = 10;
 
+  late final OperationalProcedureFlowCoordinator _procedureCoordinator;
   late final MobileCardOrderPreferenceController<ServicosMobileCardPreferencia>
   _ordemCardsController;
+  bool _openingNewService = false;
 
   @override
   void initState() {
     super.initState();
+    _procedureCoordinator =
+        widget.procedureCoordinator ?? OperationalProcedureFlowCoordinator();
     _ordemCardsController =
         MobileCardOrderPreferenceController<ServicosMobileCardPreferencia>(
             ordemPadrao: ServicosMobileCardPreferencia.values,
@@ -98,11 +110,7 @@ class _OpcoesServicosAtendimentoMobileScreenState
       ServicosMobileCardPreferencia.novoServico: _ServiceActionData(
         preferencia: ServicosMobileCardPreferencia.novoServico,
         id: 'new-service',
-        title: _t(
-          context,
-          'atendimento.mobile.createServiceTitle',
-          'Novo serviço',
-        ),
+        title: _t(context, 'atendimento.mobile.createServiceTitle', 'Serviços'),
         subtitle: _t(
           context,
           'atendimento.mobile.createServiceSubtitle',
@@ -469,27 +477,42 @@ class _OpcoesServicosAtendimentoMobileScreenState
   }
 
   Future<void> _abrirNovoServico() async {
-    final AtendimentoTecnicoCreateFlowResult? result = await Navigator.of(
-      context,
-    ).push<AtendimentoTecnicoCreateFlowResult>(
-      MaterialPageRoute<AtendimentoTecnicoCreateFlowResult>(
-        builder: (_) => AtendimentoTecnicoMobileScreen(),
-      ),
-    );
+    if (_openingNewService) return;
+    setState(() => _openingNewService = true);
+    try {
+      final ProcedureFlowResult procedureResult = await _procedureCoordinator
+          .execute(
+            context: context,
+            operationPoint: ProcedureOperationPoint.technicalServiceStartBefore,
+          );
 
-    if (!mounted || result == null) return;
-    final Widget page = AtendimentosTecnicosMobileScreen(
-      initialFeedbackMessage: result.feedbackMessage,
-    );
-    final ServicosAtendimentoMobileNavigate? navigate = widget.onNavigate;
-    if (navigate != null) {
-      navigate(context, page);
-      return;
+      if (!mounted || !procedureResult.shouldContinue) return;
+
+      final AtendimentoTecnicoCreateFlowResult? result = await Navigator.of(
+        context,
+      ).push<AtendimentoTecnicoCreateFlowResult>(
+        MaterialPageRoute<AtendimentoTecnicoCreateFlowResult>(
+          builder: (_) => AtendimentoTecnicoMobileScreen(),
+        ),
+      );
+
+      if (!mounted || result == null) return;
+      final Widget page = AtendimentosTecnicosMobileScreen(
+        initialFeedbackMessage: result.feedbackMessage,
+        procedureCoordinator: _procedureCoordinator,
+      );
+      final ServicosAtendimentoMobileNavigate? navigate = widget.onNavigate;
+      if (navigate != null) {
+        navigate(context, page);
+        return;
+      }
+
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute<void>(builder: (_) => page));
+    } finally {
+      if (mounted) setState(() => _openingNewService = false);
     }
-
-    Navigator.of(
-      context,
-    ).pushReplacement(MaterialPageRoute<void>(builder: (_) => page));
   }
 }
 

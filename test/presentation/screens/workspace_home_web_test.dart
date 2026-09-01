@@ -134,10 +134,10 @@ void main() {
 
       await tester.ensureVisible(find.text('Ações rápidas'));
       expect(find.text('Nova venda'), findsNothing);
-      expect(find.text('Novo atendimento'), findsOneWidget);
+      expect(find.text('Serviços'), findsOneWidget);
       expect(find.text('Agenda financeira'), findsNothing);
 
-      await tester.tap(find.text('Novo atendimento'));
+      await tester.tap(find.text('Serviços'));
       await tester.pumpAndSettle();
 
       expect(novosAtendimentos, 1);

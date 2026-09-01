@@ -895,8 +895,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.action.openTechnicalServices': 'Abrir assistências',
     'workspaceHome.action.openFinancial': 'Abrir financeiro',
     'workspaceHome.action.openStock': 'Abrir estoque',
-    'workspaceHome.quickAction.newSale': 'Nova venda',
-    'workspaceHome.quickAction.newTechnicalService': 'Novo atendimento',
+    'workspaceHome.quickAction.newSale': 'Vendas',
+    'workspaceHome.quickAction.newTechnicalService': 'Serviços',
     'workspaceHome.quickAction.cash': 'Caixa',
     'workspaceHome.quickAction.financialAgenda': 'Agenda financeira',
     'streak.title': 'Ofensiva',
@@ -1625,6 +1625,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'procedimentos.validationItemTitle': 'Informe o título do item.',
     'procedimentos.createdSuccess': 'Procedimento criado.',
     'procedimentos.updatedSuccess': 'Procedimento atualizado.',
+    'procedimentos.restrictedTitle': 'Ajustes restritos para este usuário',
+    'procedimentos.restrictedDescription':
+        'Você pode consultar os procedimentos da empresa, mas apenas administradores podem criar, editar e analisar essas configurações.',
+    'procedimentos.editorRestrictedNotice':
+        'Consulta liberada. Somente administradores podem salvar alterações neste procedimento.',
     'procedimentos.discardChangesTitle': 'Descartar alterações?',
     'procedimentos.discardChangesMessage':
         'As alterações feitas neste procedimento ainda não foram salvas.',
@@ -1803,6 +1808,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'procedimentos.operationPointSaleStartBefore': 'Antes de iniciar uma venda',
     'procedimentos.operationPointSaleStartBeforeDescription':
         'Executado antes de abrir o fluxo de uma nova venda.',
+    'procedimentos.operationPointSaleFinishBefore':
+        'Antes de finalizar uma venda',
+    'procedimentos.operationPointSaleFinishBeforeDescription':
+        'Executado antes de concluir a venda em andamento.',
     'procedimentos.mobilePointAvailable': 'Disponível no aplicativo mobile.',
     'procedimentos.operationalExecutionTitle': 'Antes de iniciar a venda',
     'procedimentos.operationalSummaryTitle': 'Procedimento concluído',
@@ -2117,7 +2126,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.newServiceTitle': 'Serviços',
     'atendimento.mobile.newServiceSubtitle': 'Criar ou acompanhar',
     'atendimento.mobile.servicesMenuTitle': 'Serviços',
-    'atendimento.mobile.createServiceTitle': 'Novo serviço',
+    'atendimento.mobile.createServiceTitle': 'Serviços',
     'atendimento.mobile.createServiceSubtitle':
         'Abrir novo atendimento técnico',
     'atendimento.mobile.consultServicesInProgressTitle':
@@ -3189,8 +3198,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.action.openTechnicalServices': 'Open services',
     'workspaceHome.action.openFinancial': 'Open financial',
     'workspaceHome.action.openStock': 'Open stock',
-    'workspaceHome.quickAction.newSale': 'New sale',
-    'workspaceHome.quickAction.newTechnicalService': 'New service',
+    'workspaceHome.quickAction.newSale': 'Sales',
+    'workspaceHome.quickAction.newTechnicalService': 'Services',
     'workspaceHome.quickAction.cash': 'Cash register',
     'workspaceHome.quickAction.financialAgenda': 'Financial agenda',
     'streak.title': 'Streak',
@@ -3730,6 +3739,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'procedimentos.validationItemTitle': 'Enter the item title.',
     'procedimentos.createdSuccess': 'Procedure created.',
     'procedimentos.updatedSuccess': 'Procedure updated.',
+    'procedimentos.restrictedTitle': 'Restricted settings for this user',
+    'procedimentos.restrictedDescription':
+        'You can review the company procedures, but only administrators can create, edit, and analyze these settings.',
+    'procedimentos.editorRestrictedNotice':
+        'Viewing is allowed. Only administrators can save changes to this procedure.',
     'procedimentos.discardChangesTitle': 'Discard changes?',
     'procedimentos.discardChangesMessage':
         'The changes made to this procedure have not been saved yet.',
@@ -3905,6 +3919,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'procedimentos.operationPointSaleStartBefore': 'Before starting a sale',
     'procedimentos.operationPointSaleStartBeforeDescription':
         'Runs before opening the new sale flow.',
+    'procedimentos.operationPointSaleFinishBefore': 'Before completing a sale',
+    'procedimentos.operationPointSaleFinishBeforeDescription':
+        'Runs before completing the current sale.',
     'procedimentos.mobilePointAvailable': 'Available in the mobile app.',
     'procedimentos.operationalExecutionTitle': 'Before starting the sale',
     'procedimentos.operationalSummaryTitle': 'Procedure completed',
@@ -4285,7 +4302,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.newServiceTitle': 'Services',
     'atendimento.mobile.newServiceSubtitle': 'Create or track',
     'atendimento.mobile.servicesMenuTitle': 'Services',
-    'atendimento.mobile.createServiceTitle': 'New service',
+    'atendimento.mobile.createServiceTitle': 'Services',
     'atendimento.mobile.createServiceSubtitle': 'Open new technical service',
     'atendimento.mobile.consultServicesInProgressTitle':
         'View services in progress',
@@ -5378,8 +5395,8 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.action.openTechnicalServices': 'Abrir asistencias',
     'workspaceHome.action.openFinancial': 'Abrir financiero',
     'workspaceHome.action.openStock': 'Abrir stock',
-    'workspaceHome.quickAction.newSale': 'Nueva venta',
-    'workspaceHome.quickAction.newTechnicalService': 'Nuevo servicio',
+    'workspaceHome.quickAction.newSale': 'Ventas',
+    'workspaceHome.quickAction.newTechnicalService': 'Servicios',
     'workspaceHome.quickAction.cash': 'Caja',
     'workspaceHome.quickAction.financialAgenda': 'Agenda financiera',
     'streak.title': 'Racha',
@@ -6123,6 +6140,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'procedimentos.validationItemTitle': 'Ingresa el título del ítem.',
     'procedimentos.createdSuccess': 'Procedimiento creado.',
     'procedimentos.updatedSuccess': 'Procedimiento actualizado.',
+    'procedimentos.restrictedTitle': 'Ajustes restringidos para este usuario',
+    'procedimentos.restrictedDescription':
+        'Puedes consultar los procedimientos de la empresa, pero solo los administradores pueden crear, editar y analizar estas configuraciones.',
+    'procedimentos.editorRestrictedNotice':
+        'La consulta está permitida. Solo los administradores pueden guardar cambios en este procedimiento.',
     'procedimentos.discardChangesTitle': '¿Descartar cambios?',
     'procedimentos.discardChangesMessage':
         'Los cambios realizados en este procedimiento aún no se han guardado.',
@@ -6299,6 +6321,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'procedimentos.operationPointSaleStartBefore': 'Antes de iniciar una venta',
     'procedimentos.operationPointSaleStartBeforeDescription':
         'Se ejecuta antes de abrir el flujo de una nueva venta.',
+    'procedimentos.operationPointSaleFinishBefore':
+        'Antes de finalizar una venta',
+    'procedimentos.operationPointSaleFinishBeforeDescription':
+        'Se ejecuta antes de concluir la venta en curso.',
     'procedimentos.mobilePointAvailable': 'Disponible en la aplicación móvil.',
     'procedimentos.operationalExecutionTitle': 'Antes de iniciar la venta',
     'procedimentos.operationalSummaryTitle': 'Procedimiento concluido',
@@ -6514,7 +6540,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimento.mobile.newServiceTitle': 'Servicios',
     'atendimento.mobile.newServiceSubtitle': 'Crear o acompañar',
     'atendimento.mobile.servicesMenuTitle': 'Servicios',
-    'atendimento.mobile.createServiceTitle': 'Nuevo servicio',
+    'atendimento.mobile.createServiceTitle': 'Servicios',
     'atendimento.mobile.createServiceSubtitle': 'Abrir nueva atención técnica',
     'atendimento.mobile.consultServicesInProgressTitle':
         'Consultar servicios en curso',

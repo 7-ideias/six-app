@@ -9,10 +9,13 @@ import 'package:sixpos/core/utils/pdf_download.dart';
 import 'package:sixpos/data/models/caixa_models.dart';
 import 'package:sixpos/data/models/documento_models.dart';
 import 'package:sixpos/data/models/operacao_models.dart';
+import 'package:sixpos/data/models/operational_procedure_flow_models.dart';
+import 'package:sixpos/data/models/operational_procedure_models.dart';
 import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
 import 'package:sixpos/domain/services/operacao/operacao_service.dart';
 import 'package:sixpos/l10n/app_localizations.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 
@@ -32,6 +35,7 @@ Future<void> showRecebimentoPagamentoWebDialog({
   bool recebimentoParcialInicial = false,
   ValueChanged<RecebimentoPagamentoSelecaoResultado>? onSelecaoConfirmada,
   VoidCallback? onSuccess,
+  OperationalProcedureFlowCoordinator? procedureCoordinator,
 }) async {
   final bool reduceMotion =
       MediaQuery.maybeOf(context)?.disableAnimations ?? false;
@@ -69,6 +73,7 @@ Future<void> showRecebimentoPagamentoWebDialog({
           idColaborador: idColaborador,
           nomeColaborador: nomeColaborador,
           operacaoService: operacaoService,
+          procedureCoordinator: procedureCoordinator,
         ),
       );
     },
@@ -117,6 +122,7 @@ class RecebimentoPagamentoWeb extends StatefulWidget {
     this.descricoesFormasIniciais = const <String, String>{},
     this.recebimentoParcialInicial = false,
     this.onSelecaoConfirmada,
+    this.procedureCoordinator,
   });
 
   final double valorTotalVenda;
@@ -134,6 +140,7 @@ class RecebimentoPagamentoWeb extends StatefulWidget {
   final Map<String, String> descricoesFormasIniciais;
   final bool recebimentoParcialInicial;
   final ValueChanged<RecebimentoPagamentoSelecaoResultado>? onSelecaoConfirmada;
+  final OperationalProcedureFlowCoordinator? procedureCoordinator;
 
   @override
   State<RecebimentoPagamentoWeb> createState() =>
@@ -182,6 +189,7 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
     with SingleTickerProviderStateMixin {
   late final List<Map<String, dynamic>> _itensResumo;
   late final OperacaoService _operacaoService;
+  late final OperationalProcedureFlowCoordinator _procedureCoordinator;
   final CaixaApiClient _caixaApiClient = HttpCaixaApiClient();
   final Map<String, TextEditingController> _valorControllers =
       <String, TextEditingController>{};
@@ -287,6 +295,8 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
     _itensResumo = List<Map<String, dynamic>>.from(widget.itensResumo);
     _recebimentoParcial = widget.recebimentoParcialInicial;
     _operacaoService = widget.operacaoService ?? OperacaoModule.operacaoService;
+    _procedureCoordinator =
+        widget.procedureCoordinator ?? OperationalProcedureFlowCoordinator();
     _formasPagamento = _formasPagamentoFallback
         .map((forma) => forma.copyWith())
         .toList(growable: false);
@@ -909,6 +919,10 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
 
     if (!confirmar) return;
 
+    if (!await _executarProcedimentoAntesDeFinalizarVenda()) {
+      return;
+    }
+
     setState(() => _salvandoOperacao = true);
 
     try {
@@ -992,6 +1006,17 @@ class _RecebimentoPagamentoWebState extends State<RecebimentoPagamentoWeb>
         setState(() => _salvandoOperacao = false);
       }
     }
+  }
+
+  Future<bool> _executarProcedimentoAntesDeFinalizarVenda() async {
+    final ProcedureFlowResult result = await _procedureCoordinator.execute(
+      context: context,
+      operationPoint: ProcedureOperationPoint.saleFinishBefore,
+    );
+    if (!mounted) {
+      return false;
+    }
+    return result.shouldContinue;
   }
 
   String _txt(String key, String fallback) =>

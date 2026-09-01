@@ -3,6 +3,8 @@ import 'package:sixpos/data/datasources/operational_procedure_data_source.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
 import 'package:sixpos/data/services/operational_procedures/operational_procedure_api_client.dart';
 
+enum OperationalProcedureSaveFailure { forbidden, unknown }
+
 class OperationalProcedureProvider extends ChangeNotifier {
   OperationalProcedureProvider({
     OperationalProcedureDataSource? dataSource,
@@ -17,6 +19,7 @@ class OperationalProcedureProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isSaving = false;
   String? _errorMessage;
+  OperationalProcedureSaveFailure? _lastSaveFailure;
   int _localIdSeed = 0;
 
   OperationalProcedureSummary? get summary => _summary;
@@ -24,6 +27,7 @@ class OperationalProcedureProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
   String? get errorMessage => _errorMessage;
+  OperationalProcedureSaveFailure? get lastSaveFailure => _lastSaveFailure;
   bool get hasError => _errorMessage != null;
   bool get isEmpty =>
       !_isLoading && !hasError && (_summary?.procedures.isEmpty ?? true);
@@ -47,6 +51,7 @@ class OperationalProcedureProvider extends ChangeNotifier {
   Future<void> load() async {
     _isLoading = true;
     _errorMessage = null;
+    _lastSaveFailure = null;
     notifyListeners();
 
     try {
@@ -107,6 +112,11 @@ class OperationalProcedureProvider extends ChangeNotifier {
       procedure.copyWith(updatedAt: now),
     );
     final bool isCreating = index < 0;
+    debugPrint(
+      '[OperationalProcedureProvider] save start '
+      'mode=${isCreating ? 'create' : 'update'} '
+      'summary=${_procedureDebugSummary(normalized)}',
+    );
 
     if (index >= 0) {
       current[index] = normalized;
@@ -119,6 +129,7 @@ class OperationalProcedureProvider extends ChangeNotifier {
       isDemonstrationData: isDemonstrationData,
     );
     _errorMessage = null;
+    _lastSaveFailure = null;
     _isSaving = true;
     notifyListeners();
 
@@ -141,8 +152,34 @@ class OperationalProcedureProvider extends ChangeNotifier {
         isDemonstrationData: isDemonstrationData,
       );
       return persisted;
-    } catch (_) {
+    } on OperationalProcedureApiException catch (error, stackTrace) {
+      debugPrint(
+        '[OperationalProcedureProvider] save failed '
+        'mode=${isCreating ? 'create' : 'update'} '
+        'summary=${_procedureDebugSummary(normalized)} '
+        'error=$error',
+      );
+      debugPrint('$stackTrace');
       _summary = previousSummary;
+      _lastSaveFailure =
+          error.statusCode == 403
+              ? OperationalProcedureSaveFailure.forbidden
+              : OperationalProcedureSaveFailure.unknown;
+      _errorMessage =
+          error.statusCode == 403
+              ? 'PROCEDIMENTOS_PERMISSAO_NEGADA'
+              : 'Não foi possível salvar o procedimento.';
+      return null;
+    } on Object catch (error, stackTrace) {
+      debugPrint(
+        '[OperationalProcedureProvider] save failed '
+        'mode=${isCreating ? 'create' : 'update'} '
+        'summary=${_procedureDebugSummary(normalized)} '
+        'error=$error',
+      );
+      debugPrint('$stackTrace');
+      _summary = previousSummary;
+      _lastSaveFailure = OperationalProcedureSaveFailure.unknown;
       _errorMessage = 'Não foi possível salvar o procedimento.';
       return null;
     } finally {
@@ -343,4 +380,48 @@ class OperationalProcedureProvider extends ChangeNotifier {
     _localIdSeed++;
     return '$prefix-local-$_localIdSeed';
   }
+}
+
+String _procedureDebugSummary(OperationalProcedure procedure) {
+  final int itemCount = procedure.stages.fold<int>(
+    0,
+    (int total, ProcedureStage stage) => total + stage.items.length,
+  );
+  final Map<String, int> responseTypes = <String, int>{};
+  for (final ProcedureStage stage in procedure.stages) {
+    for (final ProcedureItem item in stage.items) {
+      responseTypes.update(
+        item.responseType.name,
+        (int current) => current + 1,
+        ifAbsent: () => 1,
+      );
+    }
+  }
+  final String triggerMoments =
+      procedure.triggers.isEmpty
+          ? 'none'
+          : procedure.triggers
+              .map((ProcedureTrigger trigger) => trigger.triggerMoment.name)
+              .toSet()
+              .join('|');
+  return 'id=${procedure.id} '
+      'status=${procedure.status.name} '
+      'operationType=${procedure.operationType.name} '
+      'procedureMoment=${procedure.moment.name} '
+      'triggerMoments=$triggerMoments '
+      'triggers=${procedure.triggers.length} '
+      'activeTriggers=${procedure.activeTriggerCount} '
+      'stages=${procedure.stages.length} '
+      'items=$itemCount '
+      'responseTypes=${_formatCounts(responseTypes)} '
+      'requiredProcedure=${procedure.required} '
+      'notifyAdmin=${procedure.adminNotification.enabled}';
+}
+
+String _formatCounts(Map<String, int> counts) {
+  if (counts.isEmpty) return 'none';
+  final List<String> entries = counts.entries
+    .map((MapEntry<String, int> entry) => '${entry.key}:${entry.value}')
+    .toList(growable: false)..sort();
+  return entries.join('|');
 }

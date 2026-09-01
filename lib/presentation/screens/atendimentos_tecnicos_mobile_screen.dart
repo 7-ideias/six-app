@@ -12,6 +12,8 @@ import '../../core/services/pdf_file_share_service.dart';
 import '../../data/models/atendimento_tecnico_models.dart';
 import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/dominio_models.dart';
+import '../../data/models/operational_procedure_flow_models.dart';
+import '../../data/models/operational_procedure_models.dart';
 import '../../data/models/usuario_model.dart';
 import '../../data/services/caixa/caixa_api_client.dart';
 import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.dart';
@@ -26,6 +28,7 @@ import '../../providers/usuario_provider.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
 import '../components/mobile/six_mobile_recebimento_bottom_sheet.dart';
 import '../components/mobile_motion.dart';
+import '../coordinators/operational_procedure_flow_coordinator.dart';
 import 'atendimento_tecnico_editar_mobile_screen.dart';
 import 'atendimento_tecnico_mobile_screen.dart';
 
@@ -193,6 +196,7 @@ class AtendimentosTecnicosMobileScreen extends StatefulWidget {
     this.pdfShareService,
     this.colaboradorApiClient,
     this.caixaApiClient,
+    this.procedureCoordinator,
     this.listContext = const AtendimentosTecnicosMobileListContext.standard(),
     this.initialFeedbackMessage,
   });
@@ -201,6 +205,7 @@ class AtendimentosTecnicosMobileScreen extends StatefulWidget {
   final AtendimentoPdfShareService? pdfShareService;
   final ColaboradorUsuarioApiClient? colaboradorApiClient;
   final CaixaApiClient? caixaApiClient;
+  final OperationalProcedureFlowCoordinator? procedureCoordinator;
   final AtendimentosTecnicosMobileListContext listContext;
   final String? initialFeedbackMessage;
 
@@ -231,6 +236,7 @@ class _AtendimentosTecnicosMobileScreenState
   late final AtendimentoTecnicoService _service;
   late final AtendimentoPdfShareService _pdfShareService;
   late final ColaboradorUsuarioApiClient _colaboradorApiClient;
+  late final OperationalProcedureFlowCoordinator _procedureCoordinator;
   final UsuarioService _usuarioService = UsuarioService();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
   final TextEditingController _searchController = TextEditingController();
@@ -246,6 +252,7 @@ class _AtendimentosTecnicosMobileScreenState
   bool _gerandoLinkAssinatura = false;
   bool _aplicandoPreferencias = false;
   bool _usuarioAlterouFiltros = false;
+  bool _abrindoNovoAtendimento = false;
 
   @override
   void initState() {
@@ -256,6 +263,8 @@ class _AtendimentosTecnicosMobileScreenState
         AtendimentoPdfShareService(atendimentoService: _service);
     _colaboradorApiClient =
         widget.colaboradorApiClient ?? HttpColaboradorUsuarioApiClient();
+    _procedureCoordinator =
+        widget.procedureCoordinator ?? OperationalProcedureFlowCoordinator();
     _future = _carregarECachear();
     _searchController.addListener(_onSearchChanged);
     final String? initialFeedbackMessage =
@@ -510,7 +519,7 @@ class _AtendimentosTecnicosMobileScreenState
         IconButton(
           tooltip: _t('atendimentoTecnico.mobile.newFab', 'Novo atendimento'),
           icon: Icon(Icons.add_rounded),
-          onPressed: _novoAtendimento,
+          onPressed: _abrindoNovoAtendimento ? null : _novoAtendimento,
         ),
       ],
       bodyBuilder: (
@@ -2699,18 +2708,31 @@ class _AtendimentosTecnicosMobileScreenState
   }
 
   Future<void> _novoAtendimento() async {
-    final AtendimentoTecnicoCreateFlowResult? result = await Navigator.of(
-      context,
-    ).push<AtendimentoTecnicoCreateFlowResult>(
-      MaterialPageRoute<AtendimentoTecnicoCreateFlowResult>(
-        builder: (_) => AtendimentoTecnicoMobileScreen(),
-      ),
-    );
+    if (_abrindoNovoAtendimento) return;
+    setState(() => _abrindoNovoAtendimento = true);
+    try {
+      final ProcedureFlowResult procedureResult = await _procedureCoordinator
+          .execute(
+            context: context,
+            operationPoint: ProcedureOperationPoint.technicalServiceStartBefore,
+          );
+      if (!mounted || !procedureResult.shouldContinue) return;
 
-    if (result != null && mounted) {
-      await _recarregar();
-      if (!mounted) return;
-      _mostrarMensagem(result.feedbackMessage);
+      final AtendimentoTecnicoCreateFlowResult? result = await Navigator.of(
+        context,
+      ).push<AtendimentoTecnicoCreateFlowResult>(
+        MaterialPageRoute<AtendimentoTecnicoCreateFlowResult>(
+          builder: (_) => AtendimentoTecnicoMobileScreen(),
+        ),
+      );
+
+      if (result != null && mounted) {
+        await _recarregar();
+        if (!mounted) return;
+        _mostrarMensagem(result.feedbackMessage);
+      }
+    } finally {
+      if (mounted) setState(() => _abrindoNovoAtendimento = false);
     }
   }
 

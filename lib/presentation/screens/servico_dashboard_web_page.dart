@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/data/models/servico_dashboard_model.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
@@ -90,7 +91,12 @@ class _ServicoDashboardWebPageState extends State<ServicoDashboardWebPage> {
                   FilledButton.icon(
                     onPressed: widget.onNovoServico,
                     icon: const Icon(Icons.add_rounded),
-                    label: const Text('Novo serviço'),
+                    label: Text(
+                      context.t(
+                        'workspaceHome.quickAction.newTechnicalService',
+                        fallback: 'Serviços',
+                      ),
+                    ),
                   ),
                   OutlinedButton.icon(
                     onPressed: widget.onOpenListaCompleta,

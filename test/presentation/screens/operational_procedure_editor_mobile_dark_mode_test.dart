@@ -123,6 +123,58 @@ void main() {
       SixMobileColorScheme.dark.error,
     );
   });
+
+  testWidgets(
+    'trigger sheet inherits procedure context and only requires moment',
+    (WidgetTester tester) async {
+      await _pumpEditor(tester, viewSize: const Size(390, 1180));
+
+      await tester.dragUntilVisible(
+        find.widgetWithText(OutlinedButton, 'Adicionar gatilho'),
+        find.byType(Scrollable).first,
+        const Offset(0, -220),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.widgetWithText(OutlinedButton, 'Adicionar gatilho'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Selecionar contexto'), findsNothing);
+
+      await tester.ensureVisible(find.text('Salvar gatilho'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Salvar gatilho'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Selecione o momento de execução.'), findsOneWidget);
+      expect(find.text('Selecione o contexto operacional.'), findsNothing);
+    },
+  );
+
+  testWidgets('changing procedure moment keeps sale trigger aligned', (
+    WidgetTester tester,
+  ) async {
+    await _pumpEditor(tester, viewSize: const Size(390, 1180));
+
+    expect(find.text('Antes de iniciar'), findsWidgets);
+
+    await tester.tap(find.text('Antes de iniciar').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Antes de finalizar').last);
+    await tester.pumpAndSettle();
+
+    await tester.dragUntilVisible(
+      find.text('Quando executar'),
+      find.byType(Scrollable).first,
+      const Offset(0, -180),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Antes de finalizar'), findsWidgets);
+    expect(find.text('Antes de iniciar'), findsNothing);
+  });
 }
 
 const List<Locale> _testSupportedLocales = <Locale>[Locale('pt')];
@@ -137,9 +189,10 @@ const List<LocalizationsDelegate<dynamic>> _testLocalizationsDelegates =
 Future<void> _pumpEditor(
   WidgetTester tester, {
   Brightness brightness = Brightness.dark,
+  Size viewSize = const Size(390, 900),
 }) async {
   tester.view.devicePixelRatio = 1;
-  tester.view.physicalSize = const Size(390, 900);
+  tester.view.physicalSize = viewSize;
   addTearDown(() {
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
@@ -166,10 +219,10 @@ Future<void> _pumpEditor(
         darkTheme: ThemeData.dark(),
         themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
         home: MediaQuery(
-          data: const MediaQueryData(
+          data: MediaQueryData(
             disableAnimations: true,
             accessibleNavigation: true,
-            size: Size(390, 900),
+            size: viewSize,
             devicePixelRatio: 1,
           ),
           child: OperationalProcedureEditorMobileScreen(
@@ -257,6 +310,20 @@ OperationalProcedure _procedure() {
     moment: ProcedureMoment.beforeStart,
     status: ProcedureStatus.active,
     required: false,
+    triggers: <ProcedureTrigger>[
+      ProcedureTrigger(
+        id: 'trigger-1',
+        operationPoint: ProcedureOperationPoint.saleStartBefore,
+        operationType: ProcedureOperationType.sale,
+        triggerMoment: ProcedureTriggerMoment.beforeStart,
+        activationMode: ProcedureTriggerActivationMode.automatic,
+        enforcementMode: ProcedureEnforcementMode.recommended,
+        enabled: true,
+        order: 1,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    ],
     stages: <ProcedureStage>[
       ProcedureStage(
         id: 'stage-1',

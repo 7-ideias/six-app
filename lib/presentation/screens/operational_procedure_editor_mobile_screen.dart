@@ -16,6 +16,7 @@ import 'package:sixpos/presentation/components/mobile/operational_procedures/ope
     as trigger_meta;
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/screens/operational_procedure_preview_mobile_screen.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/operational_procedure_provider.dart';
 
 InputDecoration _operationalProcedureFieldDecoration(
@@ -204,6 +205,7 @@ class _OperationalProcedureEditorMobileScreenState
   @override
   Widget build(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool canManageProcedures = _canManageProcedures(context);
     final bool reduceMotion =
         MediaQuery.disableAnimationsOf(context) ||
         MediaQuery.accessibleNavigationOf(context);
@@ -242,7 +244,7 @@ class _OperationalProcedureEditorMobileScreenState
             icon: Icon(Icons.play_circle_outline_rounded),
           ),
           TextButton(
-            onPressed: _saving ? null : _save,
+            onPressed: canManageProcedures && !_saving ? _save : null,
             child: Text(
               context.t('common.save', fallback: 'Salvar'),
               style: TextStyle(
@@ -269,6 +271,10 @@ class _OperationalProcedureEditorMobileScreenState
                   padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
                   children: <Widget>[
                     _DemoNotice(),
+                    if (!canManageProcedures) ...<Widget>[
+                      SizedBox(height: 12),
+                      _EditorPermissionNotice(),
+                    ],
                     SizedBox(height: 14),
                     _SectionCard(
                       title: context.t(
@@ -499,12 +505,14 @@ class _OperationalProcedureEditorMobileScreenState
                       ),
                     ),
                     SizedBox(height: 14),
-                    OperationalProcedureNewAction(
-                      onTap: _save,
-                      label: context.t('common.save', fallback: 'Salvar'),
-                      icon: Icons.check_rounded,
-                    ),
-                    SizedBox(height: 10),
+                    if (canManageProcedures) ...<Widget>[
+                      OperationalProcedureNewAction(
+                        onTap: _save,
+                        label: context.t('common.save', fallback: 'Salvar'),
+                        icon: Icons.check_rounded,
+                      ),
+                      SizedBox(height: 10),
+                    ],
                     OutlinedButton.icon(
                       onPressed: _openPreview,
                       icon: Icon(Icons.play_circle_outline_rounded),
@@ -695,9 +703,11 @@ class _OperationalProcedureEditorMobileScreenState
                       onDelete: () => _deleteTrigger(trigger),
                       onEnabledChanged: (bool enabled) {
                         _updateDraft(
-                          context
-                              .read<OperationalProcedureProvider>()
-                              .setTriggerEnabled(_draft, trigger, enabled),
+                          _syncProcedureMomentFromTriggers(
+                            context
+                                .read<OperationalProcedureProvider>()
+                                .setTriggerEnabled(_draft, trigger, enabled),
+                          ),
                         );
                       },
                     );
@@ -734,24 +744,30 @@ class _OperationalProcedureEditorMobileScreenState
           iconBuilder: (_) => Icons.storefront_outlined,
         );
     if (selected != null) {
-      final ProcedureOperationPoint point = switch (selected) {
-        ProcedureOperationType.technicalService =>
-          ProcedureOperationPoint.technicalServiceStartBefore,
-        ProcedureOperationType.cashRegister =>
-          ProcedureOperationPoint.cashRegisterStartBefore,
-        _ => ProcedureOperationPoint.saleStartBefore,
-      };
+      final List<ProcedureMoment> supportedMoments = trigger_meta
+          .publishedMobileProcedureMomentsForOperation(
+            selected,
+            current: _draft.moment,
+          );
+      final ProcedureMoment nextMoment =
+          supportedMoments.contains(_draft.moment)
+              ? _draft.moment
+              : supportedMoments.first;
       _updateDraft(
-        _draft.copyWith(
-          operationType: selected,
-          triggers: _draft.triggers
-              .map(
-                (ProcedureTrigger trigger) => trigger.copyWith(
-                  operationType: selected,
-                  operationPoint: point,
-                ),
-              )
-              .toList(growable: false),
+        _syncProcedureMomentFromTriggers(
+          _draft.copyWith(
+            operationType: selected,
+            moment: nextMoment,
+            triggers: _draft.triggers
+                .map(
+                  (ProcedureTrigger trigger) => _syncTriggerWithOperationType(
+                    trigger,
+                    selected,
+                    fallbackMoment: nextMoment,
+                  ),
+                )
+                .toList(growable: false),
+          ),
         ),
       );
     }
@@ -801,13 +817,24 @@ class _OperationalProcedureEditorMobileScreenState
   Future<void> _selectMoment() async {
     final ProcedureMoment? selected = await _showOptionSheet<ProcedureMoment>(
       title: context.t('procedimentos.momentField', fallback: 'Momento'),
-      options: ProcedureMoment.values,
+      options: trigger_meta.publishedMobileProcedureMomentsForOperation(
+        _draft.operationType,
+        current: _draft.moment,
+      ),
       selected: _draft.moment,
       labelBuilder: (ProcedureMoment value) => momentLabel(context, value),
       iconBuilder: (_) => Icons.schedule_outlined,
     );
     if (selected != null) {
-      _updateDraft(_draft.copyWith(moment: selected));
+      _updateDraft(
+        _syncProcedureMomentFromTriggers(
+          _syncProcedureTriggersWithMoment(
+            _draft,
+            previousMoment: _draft.moment,
+            nextMoment: selected,
+          ),
+        ),
+      );
     }
   }
 
@@ -841,7 +868,12 @@ class _OperationalProcedureEditorMobileScreenState
     if (trigger == null) return;
     if (!mounted) return;
     _updateDraft(
-      context.read<OperationalProcedureProvider>().addTrigger(_draft, trigger),
+      _syncProcedureMomentFromTriggers(
+        context.read<OperationalProcedureProvider>().addTrigger(
+          _draft,
+          trigger,
+        ),
+      ),
     );
   }
 
@@ -850,9 +882,11 @@ class _OperationalProcedureEditorMobileScreenState
     if (edited == null) return;
     if (!mounted) return;
     _updateDraft(
-      context.read<OperationalProcedureProvider>().updateTrigger(
-        _draft,
-        edited,
+      _syncProcedureMomentFromTriggers(
+        context.read<OperationalProcedureProvider>().updateTrigger(
+          _draft,
+          edited,
+        ),
       ),
     );
   }
@@ -867,6 +901,7 @@ class _OperationalProcedureEditorMobileScreenState
           (_) => OperationalProcedureTriggerEditorSheet(
             trigger: trigger,
             existingTriggers: _draft.triggers,
+            procedureOperationType: _draft.operationType,
           ),
     );
   }
@@ -885,10 +920,99 @@ class _OperationalProcedureEditorMobileScreenState
     if (!confirmed) return;
     if (!mounted) return;
     _updateDraft(
-      context.read<OperationalProcedureProvider>().removeTrigger(
-        _draft,
-        trigger.id,
+      _syncProcedureMomentFromTriggers(
+        context.read<OperationalProcedureProvider>().removeTrigger(
+          _draft,
+          trigger.id,
+        ),
       ),
+    );
+  }
+
+  OperationalProcedure _syncProcedureTriggersWithMoment(
+    OperationalProcedure procedure, {
+    required ProcedureMoment previousMoment,
+    required ProcedureMoment nextMoment,
+  }) {
+    final ProcedureTriggerMoment? previousTriggerMoment =
+        procedureTriggerMomentForMoment(previousMoment);
+    final ProcedureTriggerMoment? nextTriggerMoment =
+        procedureTriggerMomentForMoment(nextMoment);
+    if (nextTriggerMoment == null || procedure.triggers.isEmpty) {
+      return procedure.copyWith(moment: nextMoment);
+    }
+
+    final DateTime now = DateTime.now();
+    final List<ProcedureTrigger> synchronized = procedure.triggers
+        .map((ProcedureTrigger trigger) {
+          final bool shouldSync =
+              procedure.triggers.length == 1 ||
+              trigger.triggerMoment == previousTriggerMoment;
+          if (!shouldSync) return trigger;
+          return trigger.copyWith(
+            triggerMoment: nextTriggerMoment,
+            operationPoint: procedureOperationPointFor(
+              trigger.operationType,
+              nextTriggerMoment,
+            ),
+            updatedAt: now,
+          );
+        })
+        .toList(growable: false);
+
+    return procedure.copyWith(moment: nextMoment, triggers: synchronized);
+  }
+
+  OperationalProcedure _syncProcedureMomentFromTriggers(
+    OperationalProcedure procedure,
+  ) {
+    ProcedureMoment? derivedMoment;
+    for (final ProcedureTrigger trigger in procedure.triggers) {
+      if (!trigger.enabled) continue;
+      derivedMoment = procedureMomentForTriggerMoment(trigger.triggerMoment);
+      if (derivedMoment != null) break;
+    }
+    if (derivedMoment == null) {
+      for (final ProcedureTrigger trigger in procedure.triggers) {
+        derivedMoment = procedureMomentForTriggerMoment(trigger.triggerMoment);
+        if (derivedMoment != null) break;
+      }
+    }
+    if (derivedMoment == null || derivedMoment == procedure.moment) {
+      return procedure;
+    }
+    return procedure.copyWith(moment: derivedMoment);
+  }
+
+  ProcedureTrigger _syncTriggerWithOperationType(
+    ProcedureTrigger trigger,
+    ProcedureOperationType operationType, {
+    required ProcedureMoment fallbackMoment,
+  }) {
+    final List<ProcedureMoment> validMoments = trigger_meta
+        .publishedMobileProcedureMomentsForOperation(
+          operationType,
+          current: fallbackMoment,
+        );
+    final ProcedureMoment? derivedMoment = procedureMomentForTriggerMoment(
+      trigger.triggerMoment,
+    );
+    final ProcedureMoment normalizedMoment =
+        derivedMoment != null && validMoments.contains(derivedMoment)
+            ? derivedMoment
+            : fallbackMoment;
+    final ProcedureTriggerMoment normalizedTriggerMoment =
+        procedureTriggerMomentForMoment(normalizedMoment) ??
+        ProcedureTriggerMoment.beforeStart;
+
+    return trigger.copyWith(
+      operationType: operationType,
+      triggerMoment: normalizedTriggerMoment,
+      operationPoint: procedureOperationPointFor(
+        operationType,
+        normalizedTriggerMoment,
+      ),
+      updatedAt: DateTime.now(),
     );
   }
 
@@ -1039,6 +1163,21 @@ class _OperationalProcedureEditorMobileScreenState
   }
 
   Future<void> _save() async {
+    if (!_canManageProcedures(context)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'procedimentos.restrictedDescription',
+              fallback:
+                  'Você pode consultar os procedimentos da empresa, mas apenas administradores podem criar, editar e analisar essas configurações.',
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     FocusScope.of(context).unfocus();
     final bool validForm = _formKey.currentState?.validate() ?? false;
     final String? structureError = _validateStructure();
@@ -1071,13 +1210,21 @@ class _OperationalProcedureEditorMobileScreenState
     if (!mounted) return;
     setState(() => _saving = false);
     if (persisted == null) {
+      final OperationalProcedureSaveFailure? failure =
+          context.read<OperationalProcedureProvider>().lastSaveFailure;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            context.t(
-              'procedimentos.saveError',
-              fallback: 'Não foi possível salvar o procedimento.',
-            ),
+            failure == OperationalProcedureSaveFailure.forbidden
+                ? context.t(
+                  'procedimentos.restrictedDescription',
+                  fallback:
+                      'Você pode consultar os procedimentos da empresa, mas apenas administradores podem criar, editar e analisar essas configurações.',
+                )
+                : context.t(
+                  'procedimentos.saveError',
+                  fallback: 'Não foi possível salvar o procedimento.',
+                ),
           ),
           behavior: SnackBarBehavior.floating,
         ),
@@ -1129,6 +1276,12 @@ class _OperationalProcedureEditorMobileScreenState
     }
     return null;
   }
+
+  bool _canManageProcedures(BuildContext context) {
+    final ColaboradorAutorizacoesProvider? permissions =
+        Provider.of<ColaboradorAutorizacoesProvider?>(context, listen: false);
+    return permissions?.ehAdministrador ?? true;
+  }
 }
 
 class _DemoNotice extends StatelessWidget {
@@ -1161,6 +1314,44 @@ class _DemoNotice extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _EditorPermissionNotice extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(Icons.lock_outline_rounded, color: colors.accent, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              context.t(
+                'procedimentos.editorRestrictedNotice',
+                fallback:
+                    'Consulta liberada. Somente administradores podem salvar alterações neste procedimento.',
+              ),
+              style: TextStyle(
+                color: colors.titleText,
+                height: 1.3,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sixpos/data/datasources/operational_procedure_data_source.dart';
 import 'package:sixpos/data/datasources/operational_procedure_mock_data_source.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
+import 'package:sixpos/data/services/operational_procedures/operational_procedure_api_client.dart';
 import 'package:sixpos/providers/operational_procedure_provider.dart';
 
 void main() {
@@ -345,6 +347,37 @@ void main() {
       expect(saved.triggers.single.order, 1);
       expect(saved.activeTriggerCount, 1);
     });
+
+    test('keeps previous state and flags forbidden save failures', () async {
+      final provider = OperationalProcedureProvider(
+        dataSource: const _ForbiddenSaveDataSource(),
+      );
+      await provider.load();
+
+      final OperationalProcedure draft = provider.createEmptyProcedure();
+      final OperationalProcedure? persisted = await provider.saveProcedure(
+        draft.copyWith(
+          name: 'Procedimento restrito',
+          stages: <ProcedureStage>[
+            _stage(items: <ProcedureItem>[_item()]),
+          ],
+        ),
+      );
+
+      expect(persisted, isNull);
+      expect(
+        provider.lastSaveFailure,
+        OperationalProcedureSaveFailure.forbidden,
+      );
+      expect(provider.errorMessage, 'PROCEDIMENTOS_PERMISSAO_NEGADA');
+      expect(provider.procedures, hasLength(7));
+      expect(
+        provider.procedures.any(
+          (OperationalProcedure item) => item.name == 'Procedimento restrito',
+        ),
+        isFalse,
+      );
+    });
   });
 }
 
@@ -378,4 +411,31 @@ ProcedureItem _item({String title = 'Item'}) {
     required: true,
     order: 0,
   );
+}
+
+class _ForbiddenSaveDataSource implements OperationalProcedureDataSource {
+  const _ForbiddenSaveDataSource();
+
+  static const OperationalProcedureMockDataSource _delegate =
+      OperationalProcedureMockDataSource(delay: Duration.zero);
+
+  @override
+  Future<OperationalProcedureSummary> fetchProcedures({
+    String idioma = 'pt-BR',
+    bool somenteAtivos = false,
+  }) {
+    return _delegate.fetchProcedures(
+      idioma: idioma,
+      somenteAtivos: somenteAtivos,
+    );
+  }
+
+  @override
+  Future<OperationalProcedure> saveProcedure({
+    required OperationalProcedure procedure,
+    required String idioma,
+    required bool isCreating,
+  }) {
+    throw const OperationalProcedureApiException(statusCode: 403, body: '');
+  }
 }

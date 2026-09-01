@@ -645,9 +645,9 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
             _text(
               context,
               'sales.query.newSale',
-              pt: 'Nova venda',
-              en: 'New sale',
-              es: 'Nueva venta',
+              pt: 'Vendas',
+              en: 'Sales',
+              es: 'Ventas',
             ),
           ),
         ),

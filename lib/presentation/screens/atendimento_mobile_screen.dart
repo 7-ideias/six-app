@@ -75,8 +75,6 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   _ordemCardsController;
   final NotificacaoService _notificacoes = NotificacaoService();
 
-  int _totalNotificacoesConhecidas = 0;
-
   SixMobileColorScheme get _colors => context.sixMobileColors;
   Color get _bg => _colors.background;
   Color get _primary => _colors.primary;
@@ -91,10 +89,10 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     _ordemCardsController =
         MobileCardOrderPreferenceController<AtendimentoMobileCardPreferencia>(
             ordemPadrao: AtendimentoMobileCardPreferencia.values,
-            selecionarOrdem: (preferencias) =>
-                preferencias.ordemCardsAtendimentoMobile,
-            persistirOrdem: (ordem) =>
-                UsuarioService().atualizarPreferenciasIndividuais(
+            selecionarOrdem:
+                (preferencias) => preferencias.ordemCardsAtendimentoMobile,
+            persistirOrdem:
+                (ordem) => UsuarioService().atualizarPreferenciasIndividuais(
                   ordemCardsAtendimentoMobile: ordem
                       .map((item) => item.codigo)
                       .toList(growable: false),
@@ -103,7 +101,6 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
           )
           ..addListener(_aoAlterarOrdemDosCards)
           ..inicializar();
-    _totalNotificacoesConhecidas = _notificacoes.total;
     _notificacoes.addListener(_onNotificacoesChanged);
   }
 
@@ -125,21 +122,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
 
   void _onNotificacoesChanged() {
     if (!mounted) return;
-    final int totalAtual = _notificacoes.total;
-    final bool recebeuNova = totalAtual > _totalNotificacoesConhecidas;
-    _totalNotificacoesConhecidas = totalAtual;
     setState(() {});
-
-    final String? mensagem = _notificacoes.ultimaNotificacao?.description
-        .trim();
-    if (!recebeuNova || mensagem == null || mensagem.isEmpty) return;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
-      );
-    });
   }
 
   @override
@@ -163,9 +146,10 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
         ),
       ],
       bodyBuilder: _buildContent,
-      bottomNavigationBar: kIsWeb || !widget.showBottomNavigationBar
-          ? null
-          : NavBarMobile(initialIndex: 2),
+      bottomNavigationBar:
+          kIsWeb || !widget.showBottomNavigationBar
+              ? null
+              : NavBarMobile(initialIndex: 2),
     );
   }
 
@@ -367,13 +351,12 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     _go(OpcoesVendaMobileScreen(procedureCoordinator: _procedureCoordinator));
   }
 
-  Future<void> _openServicesMenu() async {
-    final ProcedureFlowResult result = await _procedureCoordinator.execute(
-      context: context,
-      operationPoint: ProcedureOperationPoint.technicalServiceStartBefore,
+  void _openServicesMenu() {
+    _go(
+      OpcoesServicosAtendimentoMobileScreen(
+        procedureCoordinator: _procedureCoordinator,
+      ),
     );
-    if (!mounted || !result.shouldContinue) return;
-    _go(OpcoesServicosAtendimentoMobileScreen());
   }
 
   Future<void> _openCashOperations() async {
@@ -430,27 +413,29 @@ class _AtendimentoVisualTokens {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return _AtendimentoVisualTokens(
-      saleAccent: isDark
-          ? SixMobilePalette.brandCyan
-          : SixMobilePalette.brandBlue,
-      serviceAccent: isDark
-          ? Color.lerp(SixMobilePalette.brandViolet, colors.titleText, 0.36)!
-          : SixMobilePalette.brandViolet,
-      receiveAccent: isDark
-          ? SixMobilePalette.brandCyan
-          : Color.lerp(
-              SixMobilePalette.brandCyan,
-              SixMobilePalette.brandNavyDeep,
-              0.56,
-            )!,
+      saleAccent:
+          isDark ? SixMobilePalette.brandCyan : SixMobilePalette.brandBlue,
+      serviceAccent:
+          isDark
+              ? Color.lerp(
+                SixMobilePalette.brandViolet,
+                colors.titleText,
+                0.36,
+              )!
+              : SixMobilePalette.brandViolet,
+      receiveAccent:
+          isDark
+              ? SixMobilePalette.brandCyan
+              : Color.lerp(
+                SixMobilePalette.brandCyan,
+                SixMobilePalette.brandNavyDeep,
+                0.56,
+              )!,
       cashAccent: isDark ? colors.accent : SixMobilePalette.brandBlue,
       returnAccent: colors.error,
       cashGradientEnd: isDark ? colors.accent : SixMobilePalette.brandCyan,
-      returnGradientEnd: Color.lerp(
-        colors.error,
-        colors.titleText,
-        isDark ? 0.18 : 0.06,
-      )!,
+      returnGradientEnd:
+          Color.lerp(colors.error, colors.titleText, isDark ? 0.18 : 0.06)!,
     );
   }
 }
@@ -489,9 +474,10 @@ class _AtendimentoLayoutSizing {
     final double baseContentHeight =
         heroHeight + primaryHeight + compactHeight + verticalGaps;
     final double availableHeight = viewportHeight - verticalPadding;
-    final double extraHeight = (availableHeight - baseContentHeight)
-        .clamp(0.0, double.infinity)
-        .toDouble();
+    final double extraHeight =
+        (availableHeight - baseContentHeight)
+            .clamp(0.0, double.infinity)
+            .toDouble();
 
     return _AtendimentoLayoutSizing(
       primaryRowExtraHeight: extraHeight * 0.54,
@@ -523,9 +509,8 @@ class _AtendimentoActionsRow extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) {
         final double width = constraints.maxWidth;
         final double textScale = MediaQuery.textScalerOf(context).scale(1);
-        final double gap = prominence == _AtendimentoActionProminence.primary
-            ? 12
-            : 8;
+        final double gap =
+            prominence == _AtendimentoActionProminence.primary ? 12 : 8;
         final double cardHeight =
             _resolveCardHeight(textScale: textScale) + heightBoost;
         final double cardWidth =
@@ -541,22 +526,22 @@ class _AtendimentoActionsRow extends StatelessWidget {
                 if (index > 0) SizedBox(width: gap),
                 SizedBox(
                   width: cardWidth,
-                  child:
-                      SixMobileReorderableCard<
-                        AtendimentoMobileCardPreferencia
-                      >(
-                        value: actions[index].preferencia,
-                        onReorder: onReorder,
-                        feedbackWidth: cardWidth,
-                        feedbackHeight: cardHeight,
-                        handleColor: actions[index].accentColor,
-                        handleOnLeft: true,
-                        cardBuilder: () => _PrimaryActionCard(
+                  child: SixMobileReorderableCard<
+                    AtendimentoMobileCardPreferencia
+                  >(
+                    value: actions[index].preferencia,
+                    onReorder: onReorder,
+                    feedbackWidth: cardWidth,
+                    feedbackHeight: cardHeight,
+                    handleColor: actions[index].accentColor,
+                    handleOnLeft: true,
+                    cardBuilder:
+                        () => _PrimaryActionCard(
                           data: actions[index],
                           prominence: prominence,
                           availableRowWidth: width,
                         ),
-                      ),
+                  ),
                 ),
               ],
             ],
@@ -595,9 +580,8 @@ class _PrimaryActionCard extends StatelessWidget {
     final bool enabled = data.enabled && data.onTap != null;
     final String status = data.statusLabel ?? '';
     final String semanticSuffix = status;
-    final String semanticLabel = semanticSuffix.isEmpty
-        ? data.title
-        : '${data.title}. $semanticSuffix';
+    final String semanticLabel =
+        semanticSuffix.isEmpty ? data.title : '${data.title}. $semanticSuffix';
     final double radius = _isPrimary ? 22 : 18;
 
     return Semantics(
@@ -613,9 +597,10 @@ class _PrimaryActionCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(radius),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: _isPrimary
-                    ? data.brandEnd.withAlpha(isDark ? 30 : 18)
-                    : colors.navigationShadow.withAlpha(18),
+                color:
+                    _isPrimary
+                        ? data.brandEnd.withAlpha(isDark ? 30 : 18)
+                        : colors.navigationShadow.withAlpha(18),
                 blurRadius: _isPrimary ? 16 : 10,
                 offset: Offset(0, _isPrimary ? 8 : 5),
               ),
@@ -644,9 +629,10 @@ class _PrimaryActionCard extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.circular(radius),
                 border: Border.all(
-                  color: enabled
-                      ? data.accentColor.withAlpha(_isPrimary ? 68 : 46)
-                      : colors.border,
+                  color:
+                      enabled
+                          ? data.accentColor.withAlpha(_isPrimary ? 68 : 46)
+                          : colors.border,
                 ),
               ),
               child: InkWell(
@@ -656,20 +642,23 @@ class _PrimaryActionCard extends StatelessWidget {
                   clipBehavior: Clip.none,
                   children: <Widget>[
                     Padding(
-                      padding: _isPrimary
-                          ? EdgeInsets.fromLTRB(10, 11, 10, 10)
-                          : EdgeInsets.fromLTRB(7, 8, 7, 8),
+                      padding:
+                          _isPrimary
+                              ? EdgeInsets.fromLTRB(10, 11, 10, 10)
+                              : EdgeInsets.fromLTRB(7, 8, 7, 8),
                       child: LayoutBuilder(
-                        builder:
-                            (BuildContext context, BoxConstraints constraints) {
-                              return _ActionCardContent(
-                                data: data,
-                                enabled: enabled,
-                                prominence: prominence,
-                                constraints: constraints,
-                                rowWidth: availableRowWidth,
-                              );
-                            },
+                        builder: (
+                          BuildContext context,
+                          BoxConstraints constraints,
+                        ) {
+                          return _ActionCardContent(
+                            data: data,
+                            enabled: enabled,
+                            prominence: prominence,
+                            constraints: constraints,
+                            rowWidth: availableRowWidth,
+                          );
+                        },
                       ),
                     ),
                     if (_isPrimary)
@@ -735,32 +724,42 @@ class _ActionCardContent extends StatelessWidget {
                 (_isPrimary ? 120 : 90))
             .clamp(0.0, 1.0)
             .toDouble();
-    final double imageCircleSize = _isPrimary
-        ? ((compact ? 68 : 82) + (extraHeightFactor * 10)) * 1.4
-        : ((compact ? 45 : 54) + (extraHeightFactor * 8)) * 1.4;
-    final double imageSize = _isPrimary
-        ? ((compact ? 60 : 72) + (extraHeightFactor * 9)) * 1.4
-        : ((compact ? 40 : 48) + (extraHeightFactor * 7)) * 1.4;
-    final double titleSize = _isPrimary
-        ? (compact ? 13.1 : 15.0) + (extraHeightFactor * 0.8)
-        : (compact ? 10.4 : 11.4) + (extraHeightFactor * 0.7);
+    final double imageCircleSize =
+        _isPrimary
+            ? ((compact ? 68 : 82) + (extraHeightFactor * 10)) * 1.4
+            : ((compact ? 45 : 54) + (extraHeightFactor * 8)) * 1.4;
+    final double imageSize =
+        _isPrimary
+            ? ((compact ? 60 : 72) + (extraHeightFactor * 9)) * 1.4
+            : ((compact ? 40 : 48) + (extraHeightFactor * 7)) * 1.4;
+    final double titleSize =
+        _isPrimary
+            ? (compact ? 13.1 : 15.0) + (extraHeightFactor * 0.8)
+            : (compact ? 10.4 : 11.4) + (extraHeightFactor * 0.7);
     final double contentGap = _isPrimary ? 10 : 8;
     final EdgeInsetsGeometry titlePadding = EdgeInsets.symmetric(
       horizontal: _isPrimary ? 10 : 8,
     );
-    final Color illustrationStart = isDark
-        ? Color.lerp(
-            data.brandStart,
-            colors.titleText,
-            _isPrimary ? 0.18 : 0.26,
-          )!
-        : data.brandStart;
-    final Color illustrationEnd = isDark
-        ? Color.lerp(data.brandEnd, colors.titleText, _isPrimary ? 0.46 : 0.54)!
-        : data.brandEnd;
-    final Color illustrationAccent = isDark
-        ? Color.lerp(data.accentColor, colors.titleText, 0.24)!
-        : data.accentColor;
+    final Color illustrationStart =
+        isDark
+            ? Color.lerp(
+              data.brandStart,
+              colors.titleText,
+              _isPrimary ? 0.18 : 0.26,
+            )!
+            : data.brandStart;
+    final Color illustrationEnd =
+        isDark
+            ? Color.lerp(
+              data.brandEnd,
+              colors.titleText,
+              _isPrimary ? 0.46 : 0.54,
+            )!
+            : data.brandEnd;
+    final Color illustrationAccent =
+        isDark
+            ? Color.lerp(data.accentColor, colors.titleText, 0.24)!
+            : data.accentColor;
 
     return Column(
       mainAxisSize: MainAxisSize.max,
@@ -783,15 +782,15 @@ class _ActionCardContent extends StatelessWidget {
                       data.brandStart.withAlpha(
                         enabled
                             ? isDark
-                                  ? (_isPrimary ? 96 : 82)
-                                  : (_isPrimary ? 60 : 52)
+                                ? (_isPrimary ? 96 : 82)
+                                : (_isPrimary ? 60 : 52)
                             : 18,
                       ),
                       data.brandEnd.withAlpha(
                         enabled
                             ? isDark
-                                  ? (_isPrimary ? 64 : 54)
-                                  : (_isPrimary ? 40 : 34)
+                                ? (_isPrimary ? 64 : 54)
+                                : (_isPrimary ? 40 : 34)
                             : 12,
                       ),
                     ],
@@ -802,17 +801,18 @@ class _ActionCardContent extends StatelessWidget {
                       enabled ? (_isPrimary ? 104 : 88) : 26,
                     ),
                   ),
-                  boxShadow: isDark && enabled
-                      ? <BoxShadow>[
-                          BoxShadow(
-                            color: data.brandStart.withAlpha(
-                              _isPrimary ? 72 : 58,
+                  boxShadow:
+                      isDark && enabled
+                          ? <BoxShadow>[
+                            BoxShadow(
+                              color: data.brandStart.withAlpha(
+                                _isPrimary ? 72 : 58,
+                              ),
+                              blurRadius: _isPrimary ? 22 : 16,
+                              spreadRadius: _isPrimary ? 0.4 : 0,
                             ),
-                            blurRadius: _isPrimary ? 22 : 16,
-                            spreadRadius: _isPrimary ? 0.4 : 0,
-                          ),
-                        ]
-                      : const <BoxShadow>[],
+                          ]
+                          : const <BoxShadow>[],
                 ),
                 child: Center(
                   child: SixImagemCanetinha(
@@ -838,11 +838,12 @@ class _ActionCardContent extends StatelessWidget {
                     reforcoContorno: _isPrimary ? 0.62 : 0.82,
                     reforcoAcento: _isPrimary ? 0.72 : 0.92,
                     opacidadeReforco: isDark ? 0.52 : 0.44,
-                    opacidadeBrilho: enabled
-                        ? isDark
-                              ? 0.62
-                              : 0.24
-                        : 0,
+                    opacidadeBrilho:
+                        enabled
+                            ? isDark
+                                ? 0.62
+                                : 0.24
+                            : 0,
                     desfoqueBrilho: _isPrimary ? 4.8 : 3.4,
                   ),
                 ),

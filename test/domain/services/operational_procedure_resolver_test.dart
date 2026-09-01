@@ -4,7 +4,7 @@ import 'package:sixpos/domain/services/operational_procedures/operational_proced
 
 void main() {
   group('ProcedureOperationPoint catalog', () {
-    test('declares stable sale start before point', () {
+    test('declares stable sale points', () {
       expect(ProcedureOperationPoint.saleStartBefore.id, 'sale.start.before');
       expect(
         ProcedureOperationPoint.saleStartBefore.operationType,
@@ -16,10 +16,20 @@ void main() {
       );
       expect(ProcedureOperationPoint.saleStartBefore.mobileAvailable, true);
       expect(ProcedureOperationPoint.saleStartBefore.webAvailable, true);
+      expect(ProcedureOperationPoint.saleFinishBefore.id, 'sale.finish.before');
+      expect(
+        ProcedureOperationPoint.saleFinishBefore.operationType,
+        ProcedureOperationType.sale,
+      );
+      expect(
+        ProcedureOperationPoint.saleFinishBefore.triggerMoment,
+        ProcedureTriggerMoment.beforeFinish,
+      );
       expect(
         procedureOperationPointCatalog.publishedFor(ProcedurePlatform.mobile),
         <ProcedureOperationPoint>[
           ProcedureOperationPoint.saleStartBefore,
+          ProcedureOperationPoint.saleFinishBefore,
           ProcedureOperationPoint.technicalServiceStartBefore,
           ProcedureOperationPoint.cashRegisterStartBefore,
         ],
@@ -28,6 +38,7 @@ void main() {
         procedureOperationPointCatalog.publishedFor(ProcedurePlatform.web),
         <ProcedureOperationPoint>[
           ProcedureOperationPoint.saleStartBefore,
+          ProcedureOperationPoint.saleFinishBefore,
           ProcedureOperationPoint.technicalServiceStartBefore,
           ProcedureOperationPoint.cashRegisterStartBefore,
         ],

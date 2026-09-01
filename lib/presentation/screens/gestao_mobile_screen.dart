@@ -92,12 +92,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   List<GestaoMobileCardPreferencia> _ordemCardsGestaoMobile =
       List<GestaoMobileCardPreferencia>.of(GestaoMobileCardPreferencia.values);
   bool _ordemAlteradaNestaSessao = false;
-  int _totalNotificacoesConhecidas = 0;
 
   @override
   void initState() {
     super.initState();
-    _totalNotificacoesConhecidas = _notificacaoService.total;
     final PreferenciasIndividuaisDoUsuarioModel? preferenciasAtuais =
         _usuarioProvider.usuario?.preferenciasIndividuaisDoUsuario;
     if (preferenciasAtuais != null) {
@@ -195,26 +193,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 
   void _onNotificacoesChanged() {
     if (!mounted) return;
-
-    final int totalAtual = _notificacaoService.total;
-    final bool recebeuNovaNotificacao =
-        totalAtual > _totalNotificacoesConhecidas;
-    _totalNotificacoesConhecidas = totalAtual;
-
     setState(() {});
-
-    if (!recebeuNovaNotificacao) return;
-
-    final String? mensagem =
-        _notificacaoService.ultimaNotificacao?.description.trim();
-    if (mensagem == null || mensagem.isEmpty) return;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
-      );
-    });
   }
 
   void _garantirWebSocketMobile() {
@@ -1263,8 +1242,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               icon: Icons.hub_outlined,
               accentColor: colors.accent,
               emphasis: ManagementActionEmphasis.secondary,
-              onTap: () =>
-                  _navigateTo(context, const UsuariosSixoMobileScreen()),
+              onTap:
+                  () => _navigateTo(context, const UsuariosSixoMobileScreen()),
             ),
           _ManagementItem(
             title: context.t(

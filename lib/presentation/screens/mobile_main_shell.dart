@@ -5,9 +5,11 @@ import 'package:provider/provider.dart';
 
 import '../../core/services/mobile_session_restoration_service.dart';
 import '../../core/services/firebase_push_notification_service.dart';
+import '../../core/services/notificacao_service.dart';
 import '../../core/services/notificacao_evento_sync_service.dart';
 import '../../core/services/push_destination_resolver.dart';
 import '../../core/services/push_navigation_service.dart';
+import '../../core/ui/app_feedback.dart';
 import '../../core/services/websocket_service.dart';
 import '../../data/models/streak_models.dart';
 import '../../providers/locale_settings_provider.dart';
@@ -50,8 +52,10 @@ class _MobileMainShellState extends State<MobileMainShell>
   late final PushNavigationExecutor _pushNavigationExecutor;
   late int _selectedIndex;
   int _transitionDirection = 0;
+  final NotificacaoService _notificacaoService = NotificacaoService();
   final MobileSessionRestorationService _sessionRestorationService =
       MobileSessionRestorationService();
+  String? _ultimaNotificacaoExibidaId;
   bool _restoringSessionAfterResume = false;
   bool _resumingRealtimeSession = false;
   bool _redirectingToLogin = false;
@@ -76,9 +80,11 @@ class _MobileMainShellState extends State<MobileMainShell>
     _pages = List<Widget?>.filled(3, null);
     _pages[widget.initialIndex] = _createPage(widget.initialIndex);
     _selectedIndex = widget.initialIndex;
+    _ultimaNotificacaoExibidaId = _notificacaoService.ultimaNotificacao?.id;
 
     WidgetsBinding.instance.addObserver(this);
     _navigationController.addListener(_onNavigationChanged);
+    _notificacaoService.addListener(_onNotificacoesChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       PushNavigationService().bindExecutor(_pushNavigationExecutor);
       _registrarOfensivaMobile();
@@ -90,6 +96,7 @@ class _MobileMainShellState extends State<MobileMainShell>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _navigationController.removeListener(_onNavigationChanged);
+    _notificacaoService.removeListener(_onNotificacoesChanged);
     PushNavigationService().unbindExecutor(_pushNavigationExecutor);
     _navigationController.dispose();
     _transitionController.dispose();
@@ -195,6 +202,30 @@ class _MobileMainShellState extends State<MobileMainShell>
       _selectedIndex = index;
     });
     _transitionController.forward(from: 0);
+  }
+
+  void _onNotificacoesChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    final SixNotificationEvent? notificacaoAtual =
+        _notificacaoService.ultimaNotificacao;
+    final String? mensagem = notificacaoAtual?.description.trim();
+    if (notificacaoAtual == null ||
+        mensagem == null ||
+        mensagem.isEmpty ||
+        notificacaoAtual.id == _ultimaNotificacaoExibidaId) {
+      return;
+    }
+
+    _ultimaNotificacaoExibidaId = notificacaoAtual.id;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      AppFeedback.show(mensagem);
+    });
   }
 
   Widget _createPage(int index) {

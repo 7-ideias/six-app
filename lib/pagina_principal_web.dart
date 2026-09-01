@@ -2571,6 +2571,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       return;
     }
 
+    if (!await _executarProcedimentoAntesDeFinalizarVendaWeb()) {
+      return;
+    }
+
     setState(() => _registrandoReceberDepois = true);
 
     try {
@@ -2714,6 +2718,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         idColaborador: 'idUnicoDoColaborador',
         nomeColaborador: 'Nome do colaborador',
         operacaoService: _operacaoService,
+        procedureCoordinator: _procedureCoordinator,
       );
     } finally {
       if (mounted) {
@@ -2856,6 +2861,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             idColaborador: 'idUnicoDoColaborador',
             nomeColaborador: 'Nome do colaborador',
             operacaoService: _operacaoService,
+            procedureCoordinator: _procedureCoordinator,
           ),
         );
 
@@ -2917,6 +2923,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
           child: AtendimentosTecnicosListaWebPage(
             embedded: true,
             onBack: voltarParaInicio,
+            procedureCoordinator: _procedureCoordinator,
           ),
         );
 
@@ -3040,6 +3047,21 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         _moduloAtual = ModuloCentralPDV.seletor;
       });
     });
+  }
+
+  Future<bool> _executarProcedimentoAntesDeFinalizarVendaWeb() async {
+    final ProcedureFlowResult result = await _procedureCoordinator.execute(
+      context: context,
+      operationPoint: ProcedureOperationPoint.saleFinishBefore,
+    );
+    if (!mounted) {
+      return false;
+    }
+    if (!result.shouldContinue) {
+      _restaurarFocoLeituraRapidaSeCabivel();
+      return false;
+    }
+    return true;
   }
 
   bool _navigationItemsContainDestination(

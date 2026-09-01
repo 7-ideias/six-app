@@ -12,9 +12,13 @@ void main() {
       ]);
       expect(
         publishedMobileMomentsForOperation(ProcedureOperationType.sale),
-        <ProcedureTriggerMoment>[ProcedureTriggerMoment.beforeStart],
+        <ProcedureTriggerMoment>[
+          ProcedureTriggerMoment.beforeStart,
+          ProcedureTriggerMoment.beforeFinish,
+        ],
       );
       expect(ProcedureOperationPoint.saleStartBefore.id, 'sale.start.before');
+      expect(ProcedureOperationPoint.saleFinishBefore.id, 'sale.finish.before');
     });
 
     test('returns valid moments by operation type', () {

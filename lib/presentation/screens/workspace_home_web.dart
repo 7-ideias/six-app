@@ -2073,11 +2073,7 @@ class _QuickActions extends StatelessWidget {
         _QuickActionEntry(
           keySuffix: 'new-sale',
           icon: Icons.point_of_sale_outlined,
-          label: _text(
-            context,
-            'workspaceHome.quickAction.newSale',
-            'Nova venda',
-          ),
+          label: _text(context, 'workspaceHome.quickAction.newSale', 'Vendas'),
           onPressed: onNewSale,
           primary: true,
         ),
@@ -2090,7 +2086,7 @@ class _QuickActions extends StatelessWidget {
           label: _text(
             context,
             'workspaceHome.quickAction.newTechnicalService',
-            'Novo atendimento',
+            'Serviços',
           ),
           onPressed: onNewTechnicalService,
         ),

@@ -237,6 +237,26 @@ class OperationalProcedureErrorState extends StatelessWidget {
   }
 }
 
+class OperationalProcedureRestrictedAccessNotice extends StatelessWidget {
+  const OperationalProcedureRestrictedAccessNotice({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return OperationalProcedureStateMessage(
+      icon: Icons.lock_outline_rounded,
+      title: context.t(
+        'procedimentos.restrictedTitle',
+        fallback: 'Ajustes restritos para este usuário',
+      ),
+      description: context.t(
+        'procedimentos.restrictedDescription',
+        fallback:
+            'Você pode consultar os procedimentos da empresa, mas apenas administradores podem criar, editar e analisar essas configurações.',
+      ),
+    );
+  }
+}
+
 class OperationalProcedureStateMessage extends StatelessWidget {
   const OperationalProcedureStateMessage({
     super.key,
