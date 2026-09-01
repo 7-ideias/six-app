@@ -8,7 +8,7 @@ import 'package:sixpos/data/models/catalogo_reserva_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
-import 'package:sixpos/presentation/components/six_backend_loading.dart';
+import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
@@ -841,20 +841,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
 
   Widget _buildBody(BuildContext context, WebThemeTokens tokens) {
     if (_carregando && _pagina == null) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: SixBackendLoading.messages(
-          title: context.t(
-            'catalogReservations.loadingTitle',
-            fallback: 'Carregando reservas',
-          ),
-          subtitle: context.t(
-            'catalogReservations.loadingSubtitle',
-            fallback: 'Sincronizando as solicitações deste comércio.',
-          ),
-          leadingIcon: Icons.inventory_outlined,
-        ),
-      );
+      return _buildReservationsLoading(tokens);
     }
 
     if (_erro != null && _pagina == null) {
@@ -884,6 +871,71 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildReservationsLoading(WebThemeTokens tokens) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compacto = constraints.maxWidth < 860;
+        final Widget lista = _buildListLoading(tokens);
+        final Widget detalhe = _buildDetailLoading(tokens);
+
+        if (compacto) {
+          return lista;
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            SizedBox(width: 430, child: lista),
+            VerticalDivider(width: 1, color: tokens.divider),
+            Expanded(child: detalhe),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildListLoading(WebThemeTokens tokens) {
+    return ColoredBox(
+      color: tokens.surface,
+      child: const SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            SixWebLoadingBlock(height: 94, highlight: true),
+            SizedBox(height: 14),
+            SixWebLoadingBlock(height: 104),
+            SizedBox(height: 10),
+            SixWebLoadingBlock(height: 104),
+            SizedBox(height: 10),
+            SixWebLoadingBlock(height: 104),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailLoading(WebThemeTokens tokens) {
+    return ColoredBox(
+      color: tokens.workspaceBackground,
+      child: const SingleChildScrollView(
+        padding: EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            SixWebLoadingBlock(height: 72, highlight: true),
+            SizedBox(height: 20),
+            SixWebLoadingBlock(height: 112),
+            SizedBox(height: 18),
+            SixWebLoadingBlock(height: 104),
+            SizedBox(height: 18),
+            SixWebLoadingBlock(height: 92),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1139,21 +1191,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
       return _buildEmpty(context, tokens);
     }
     if (_carregandoDetalhe || _detalhe == null) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: SixBackendLoading.messages(
-          title: context.t(
-            'catalogReservations.detailLoading',
-            fallback: 'Carregando detalhes',
-          ),
-          subtitle: context.t(
-            'catalogReservations.detailLoadingSubtitle',
-            fallback: 'Buscando os produtos e dados do cliente.',
-          ),
-          compact: true,
-          leadingIcon: Icons.receipt_long_outlined,
-        ),
-      );
+      return _buildDetailLoading(tokens);
     }
 
     final CatalogoReservaDetalheModel detalhe = _detalhe!;
