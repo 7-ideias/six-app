@@ -349,7 +349,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.catalog.services': 'Serviços',
     'web.navigation.catalog.stock': 'Estoque',
     'web.navigation.catalog.categories': 'Categorias',
-    'catalog.publicPage.title': 'Página pública do catálogo',
+    'catalog.publicPage.title': 'Catálogo virtual',
     'catalog.publicPage.subtitle':
         'Personalize, visualize e compartilhe sua vitrine em um só lugar.',
     'catalog.publicPage.open': 'Abrir',
@@ -360,11 +360,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalog.publicPage.save': 'Salvar alterações',
     'catalog.publicPage.discard': 'Descartar',
     'catalog.publicPage.saveSuccessPublished':
-        'Página salva e publicada com sucesso.',
+        'Catálogo salvo e publicado com sucesso.',
     'catalog.publicPage.saveSuccessDraft':
         'Personalização salva. Publique quando estiver pronta.',
     'catalog.publicPage.saveError':
-        'Não foi possível salvar a página do catálogo.',
+        'Não foi possível salvar o catálogo virtual.',
     'catalog.publicPage.openError':
         'Não foi possível abrir o catálogo em uma nova aba.',
     'catalog.publicPage.linkCopied': 'Link público copiado.',
@@ -372,7 +372,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalog.publicPage.shareFallback':
         'O compartilhamento não está disponível. O link foi copiado.',
     'catalog.publicPage.loadErrorTitle':
-        'Não foi possível carregar a página pública',
+        'Não foi possível carregar o catálogo virtual',
     'catalog.publicPage.editor.publication': 'Catálogo publicado',
     'catalog.publicPage.editor.publicationOn':
         'Clientes podem acessar pelo link público.',
@@ -962,6 +962,123 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalogHealth.status.warning': 'Atenção',
     'catalogHealth.status.healthy': 'Saudável',
     'catalogHealth.status.default': 'Saúde',
+    'catalogHealth.mobile.title': 'Saúde do catálogo',
+    'catalogHealth.mobile.description':
+        'Qualidade de fotos, categorias e informações dos itens ativos.',
+    'catalogHealth.mobile.pendingTitle': 'Pendências do catálogo',
+    'catalogHealth.mobile.pendingSubtitle':
+        'Revise os cadastros que precisam de atenção.',
+    'catalogHealth.mobile.managementTitle': 'Gestão do catálogo',
+    'catalogHealth.mobile.managementSubtitle':
+        'Organização e ferramentas dos seus itens.',
+    'catalogHealth.mobile.categories': 'Categorias',
+    'catalogHealth.mobile.categoriesDescription': 'Organizar itens',
+    'catalogHealth.mobile.labels': 'Etiquetas',
+    'catalogHealth.mobile.labelsDescription': 'Modelos na Web',
+    'catalogHealth.mobile.labelsWebOnly':
+        'A criação e a impressão de etiquetas estão disponíveis na versão Web.',
+    'catalogHealth.mobile.webBadge': 'WEB',
+    'catalogHealth.metric.missingPhoto': 'Sem foto',
+    'catalogHealth.metric.missingPhotoDescription':
+        'Produtos que precisam de uma imagem.',
+    'catalogHealth.metric.incompleteRegistration': 'Cadastro incompleto',
+    'catalogHealth.metric.incompleteRegistrationDescription':
+        'Itens com informações essenciais pendentes.',
+    'catalogHealth.metric.missingCategory': 'Sem categoria',
+    'catalogHealth.metric.missingCategoryDescription':
+        'Itens ainda sem organização definida.',
+    'catalogHealth.metric.withoutSales': 'Sem vendas recentes',
+    'catalogHealth.metric.withoutSalesDescription':
+        'Produtos sem movimentação de saída recente.',
+    'catalogHub.web.title': 'Produtos',
+    'catalogHub.web.subtitle':
+        'Cuide da qualidade do catálogo e acesse cadastros, categorias e etiquetas.',
+    'catalogHub.list.subtitle':
+        'Gerencie produtos, serviços, preços, imagens e organização.',
+    'catalogHub.actions.newProduct': 'Novo produto',
+    'catalogHub.actions.newService': 'Novo serviço',
+    'catalogHub.actions.newItem': 'Novo item',
+    'catalogHub.states.noAccessTitle': 'Acesso ao catálogo indisponível',
+    'catalogHub.states.noAccessDescription':
+        'Seu perfil não permite visualizar produtos e serviços deste comércio.',
+    'catalogHub.states.loadErrorTitle':
+        'Não foi possível carregar a saúde do catálogo',
+    'catalogHub.states.loadErrorDescription':
+        'Os acessos do catálogo continuam disponíveis. Tente atualizar o diagnóstico.',
+    'catalogHub.states.emptyTitle': 'Comece seu catálogo',
+    'catalogHub.states.emptyDescription':
+        'Cadastre o primeiro produto ou serviço. A saúde do catálogo será calculada automaticamente.',
+    'catalogHub.health.title': 'Saúde do catálogo',
+    'catalogHub.health.description':
+        'Qualidade dos cadastros e prontidão dos itens para venda.',
+    'catalogHub.health.catalogIssues': 'Pendências cadastrais',
+    'catalogHub.health.qualityTitle': 'Qualidade do cadastro',
+    'catalogHub.health.qualitySubtitle':
+        'Fotos, categorias e informações que ajudam o cliente a decidir.',
+    'catalogHub.health.noQualityIssues':
+        'Nenhuma pendência cadastral encontrada.',
+    'catalogHub.management.title': 'Gestão do catálogo',
+    'catalogHub.management.subtitle':
+        'Cadastros e ferramentas do catálogo ficam centralizados aqui.',
+    'catalogHub.modules.products': 'Produtos',
+    'catalogHub.modules.productsDescription':
+        'Cadastre, revise e publique itens de venda.',
+    'catalogHub.modules.services': 'Serviços',
+    'catalogHub.modules.servicesDescription':
+        'Organize serviços, preços e garantias.',
+    'catalogHub.modules.categories': 'Categorias',
+    'catalogHub.modules.categoriesDescription':
+        'Agrupe produtos e serviços para facilitar a operação.',
+    'catalogHub.modules.labels': 'Etiquetas',
+    'catalogHub.modules.labelsDescription':
+        'Crie modelos e imprima etiquetas de produtos.',
+    'catalogHub.modules.virtualCatalog': 'Catálogo virtual',
+    'catalogHub.modules.virtualCatalogDescription':
+        'Personalize sua vitrine, publique itens e compartilhe com seus clientes.',
+    'catalog.virtualCatalog.loading': 'Preparando catálogo virtual...',
+    'catalogHub.stock.title': 'Disponibilidade do estoque',
+    'catalogHub.stock.noIssues': 'Nenhuma indisponibilidade exige atenção.',
+    'catalogHub.stock.issues':
+        '{count} ocorrências precisam de atenção operacional.',
+    'catalogHub.stock.openManagement': 'Abrir estoque',
+    'stockMovement.entry.title': 'Registrar entrada',
+    'stockMovement.exit.title': 'Registrar saída',
+    'stockMovement.subtitle':
+        'A movimentação será registrada com usuário, data e motivo.',
+    'stockMovement.mobile.subtitle':
+        'Informe o item, a quantidade e o motivo.',
+    'stockMovement.product': 'Produto',
+    'stockMovement.unnamedProduct': 'Produto sem nome',
+    'stockMovement.currentBalance': 'Saldo atual: {value}',
+    'stockMovement.quantity': 'Quantidade',
+    'stockMovement.unitCost': 'Custo unitário (opcional)',
+    'stockMovement.reason': 'Motivo',
+    'stockMovement.reasonHint':
+        'Ex.: recebimento do fornecedor ou ajuste de inventário',
+    'stockMovement.mobile.reasonHint':
+        'Ex.: recebimento ou ajuste de inventário',
+    'stockMovement.validation.product': 'Selecione um produto.',
+    'stockMovement.validation.quantity':
+        'Informe uma quantidade maior que zero.',
+    'stockMovement.validation.cost': 'Informe um custo válido.',
+    'stockMovement.validation.reason':
+        'Informe o motivo da movimentação.',
+    'stockMovement.saving': 'Registrando...',
+    'stockMovement.confirm': 'Confirmar movimentação',
+    'stockMovement.success':
+        'Movimentação registrada. O estoque foi atualizado.',
+    'stockMovement.emptyProducts':
+        'Cadastre um produto antes de movimentar o estoque.',
+    'stockMovement.errors.loadProducts':
+        'Não foi possível carregar os produtos.',
+    'stockMovement.errors.save':
+        'Não foi possível registrar a movimentação.',
+    'stockMovement.errors.insufficientStock':
+        'A saída é maior que o saldo disponível.',
+    'stockMovement.errors.permission':
+        'Seu perfil não permite movimentar o estoque.',
+    'stockMovement.errors.productNotFound':
+        'O produto não foi encontrado neste comércio.',
     'atendimentoTecnico.status': 'Status',
     'atendimentoTecnico.filters.paymentStatus.label': 'Status pagamento',
     'atendimentoTecnico.filters.paymentStatus.tooltip':
@@ -2324,6 +2441,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalogReservations.title': 'Reservas do catálogo',
     'catalogReservations.subtitle':
         'Acompanhe solicitações recebidas pelo catálogo virtual.',
+    'catalogReservations.openCatalog': 'Abrir catálogo virtual',
     'catalogReservations.loadingTitle': 'Carregando reservas',
     'catalogReservations.loadingSubtitle':
         'Sincronizando as solicitações deste comércio.',
@@ -2725,7 +2843,120 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.catalog.services': 'Services',
     'web.navigation.catalog.stock': 'Stock',
     'web.navigation.catalog.categories': 'Categories',
-    'catalog.publicPage.title': 'Public catalog page',
+    'catalogHealth.mobile.title': 'Catalog health',
+    'catalogHealth.mobile.description':
+        'Quality of photos, categories, and details for active items.',
+    'catalogHealth.mobile.pendingTitle': 'Catalog issues',
+    'catalogHealth.mobile.pendingSubtitle':
+        'Review the item records that need attention.',
+    'catalogHealth.mobile.managementTitle': 'Catalog management',
+    'catalogHealth.mobile.managementSubtitle':
+        'Organization and tools for your items.',
+    'catalogHealth.mobile.categories': 'Categories',
+    'catalogHealth.mobile.categoriesDescription': 'Organize items',
+    'catalogHealth.mobile.labels': 'Labels',
+    'catalogHealth.mobile.labelsDescription': 'Templates on Web',
+    'catalogHealth.mobile.labelsWebOnly':
+        'Label creation and printing are available on the Web version.',
+    'catalogHealth.mobile.webBadge': 'WEB',
+    'catalogHealth.status.critical': 'Critical',
+    'catalogHealth.status.warning': 'Needs attention',
+    'catalogHealth.status.healthy': 'Healthy',
+    'catalogHealth.status.default': 'Health',
+    'catalogHealth.metric.missingPhoto': 'Missing photo',
+    'catalogHealth.metric.missingPhotoDescription':
+        'Products that need an image.',
+    'catalogHealth.metric.incompleteRegistration': 'Incomplete details',
+    'catalogHealth.metric.incompleteRegistrationDescription':
+        'Items with essential information missing.',
+    'catalogHealth.metric.missingCategory': 'Missing category',
+    'catalogHealth.metric.missingCategoryDescription':
+        'Items that have not been organized yet.',
+    'catalogHealth.metric.withoutSales': 'No recent sales',
+    'catalogHealth.metric.withoutSalesDescription':
+        'Products without a recent stock-out movement.',
+    'catalogHub.web.title': 'Products',
+    'catalogHub.web.subtitle':
+        'Improve catalog quality and access items, categories, and labels.',
+    'catalogHub.list.subtitle':
+        'Manage products, services, prices, images, and organization.',
+    'catalogHub.actions.newProduct': 'New product',
+    'catalogHub.actions.newService': 'New service',
+    'catalogHub.actions.newItem': 'New item',
+    'catalogHub.states.noAccessTitle': 'Catalog access unavailable',
+    'catalogHub.states.noAccessDescription':
+        'Your profile cannot view this business catalog.',
+    'catalogHub.states.loadErrorTitle': 'Unable to load catalog health',
+    'catalogHub.states.loadErrorDescription':
+        'Catalog tools remain available. Try refreshing the diagnosis.',
+    'catalogHub.states.emptyTitle': 'Start your catalog',
+    'catalogHub.states.emptyDescription':
+        'Create the first product or service. Catalog health will be calculated automatically.',
+    'catalogHub.health.title': 'Catalog health',
+    'catalogHub.health.description':
+        'Item detail quality and readiness for sale.',
+    'catalogHub.health.catalogIssues': 'Catalog issues',
+    'catalogHub.health.qualityTitle': 'Item quality',
+    'catalogHub.health.qualitySubtitle':
+        'Photos, categories, and details that help customers decide.',
+    'catalogHub.health.noQualityIssues': 'No catalog quality issues found.',
+    'catalogHub.management.title': 'Catalog management',
+    'catalogHub.management.subtitle':
+        'Catalog records and tools are centralized here.',
+    'catalogHub.modules.products': 'Products',
+    'catalogHub.modules.productsDescription':
+        'Create, review, and publish sale items.',
+    'catalogHub.modules.services': 'Services',
+    'catalogHub.modules.servicesDescription':
+        'Organize services, prices, and warranties.',
+    'catalogHub.modules.categories': 'Categories',
+    'catalogHub.modules.categoriesDescription':
+        'Group products and services to streamline operations.',
+    'catalogHub.modules.labels': 'Labels',
+    'catalogHub.modules.labelsDescription':
+        'Create templates and print product labels.',
+    'catalogHub.modules.virtualCatalog': 'Online catalog',
+    'catalogHub.modules.virtualCatalogDescription':
+        'Customize your storefront, publish items, and share it with customers.',
+    'catalog.virtualCatalog.loading': 'Preparing online catalog...',
+    'catalogHub.stock.title': 'Stock availability',
+    'catalogHub.stock.noIssues': 'No availability issue needs attention.',
+    'catalogHub.stock.issues':
+        '{count} occurrences need operational attention.',
+    'catalogHub.stock.openManagement': 'Open stock',
+    'stockMovement.entry.title': 'Record stock entry',
+    'stockMovement.exit.title': 'Record stock exit',
+    'stockMovement.subtitle':
+        'The movement will include the user, date, and reason.',
+    'stockMovement.mobile.subtitle':
+        'Enter the item, quantity, and reason.',
+    'stockMovement.product': 'Product',
+    'stockMovement.unnamedProduct': 'Unnamed product',
+    'stockMovement.currentBalance': 'Current balance: {value}',
+    'stockMovement.quantity': 'Quantity',
+    'stockMovement.unitCost': 'Unit cost (optional)',
+    'stockMovement.reason': 'Reason',
+    'stockMovement.reasonHint':
+        'E.g. supplier receipt or inventory adjustment',
+    'stockMovement.mobile.reasonHint': 'E.g. receipt or inventory adjustment',
+    'stockMovement.validation.product': 'Select a product.',
+    'stockMovement.validation.quantity': 'Enter a quantity greater than zero.',
+    'stockMovement.validation.cost': 'Enter a valid cost.',
+    'stockMovement.validation.reason': 'Enter the movement reason.',
+    'stockMovement.saving': 'Recording...',
+    'stockMovement.confirm': 'Confirm movement',
+    'stockMovement.success': 'Movement recorded. Stock has been updated.',
+    'stockMovement.emptyProducts':
+        'Create a product before recording stock movements.',
+    'stockMovement.errors.loadProducts': 'Unable to load products.',
+    'stockMovement.errors.save': 'Unable to record the stock movement.',
+    'stockMovement.errors.insufficientStock':
+        'The exit quantity exceeds the available balance.',
+    'stockMovement.errors.permission':
+        'Your profile cannot record stock movements.',
+    'stockMovement.errors.productNotFound':
+        'The product was not found in this business.',
+    'catalog.publicPage.title': 'Online catalog',
     'catalog.publicPage.subtitle':
         'Customize, preview, and share your storefront in one place.',
     'catalog.publicPage.open': 'Open',
@@ -2736,16 +2967,16 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalog.publicPage.save': 'Save changes',
     'catalog.publicPage.discard': 'Discard',
     'catalog.publicPage.saveSuccessPublished':
-        'Page saved and published successfully.',
+        'Online catalog saved and published successfully.',
     'catalog.publicPage.saveSuccessDraft':
         'Customization saved. Publish it when it is ready.',
-    'catalog.publicPage.saveError': 'Could not save the catalog page.',
+    'catalog.publicPage.saveError': 'Could not save the online catalog.',
     'catalog.publicPage.openError': 'Could not open the catalog in a new tab.',
     'catalog.publicPage.linkCopied': 'Public link copied.',
     'catalog.publicPage.shareSubject': '{title} catalog',
     'catalog.publicPage.shareFallback':
         'Sharing is unavailable. The public link was copied.',
-    'catalog.publicPage.loadErrorTitle': 'Could not load the public page',
+    'catalog.publicPage.loadErrorTitle': 'Could not load the online catalog',
     'catalog.publicPage.editor.publication': 'Published catalog',
     'catalog.publicPage.editor.publicationOn':
         'Customers can access it through the public link.',
@@ -4499,6 +4730,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalogReservations.title': 'Catalog reservations',
     'catalogReservations.subtitle':
         'Track requests received through the virtual catalog.',
+    'catalogReservations.openCatalog': 'Open online catalog',
     'catalogReservations.loadingTitle': 'Loading reservations',
     'catalogReservations.loadingSubtitle':
         'Syncing requests for this business.',
@@ -4904,7 +5136,128 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.catalog.services': 'Servicios',
     'web.navigation.catalog.stock': 'Inventario',
     'web.navigation.catalog.categories': 'Categorías',
-    'catalog.publicPage.title': 'Página pública del catálogo',
+    'catalogHealth.mobile.title': 'Salud del catálogo',
+    'catalogHealth.mobile.description':
+        'Calidad de fotos, categorías y datos de los artículos activos.',
+    'catalogHealth.mobile.pendingTitle': 'Pendientes del catálogo',
+    'catalogHealth.mobile.pendingSubtitle':
+        'Revise los registros que necesitan atención.',
+    'catalogHealth.mobile.managementTitle': 'Gestión del catálogo',
+    'catalogHealth.mobile.managementSubtitle':
+        'Organización y herramientas para sus artículos.',
+    'catalogHealth.mobile.categories': 'Categorías',
+    'catalogHealth.mobile.categoriesDescription': 'Organizar artículos',
+    'catalogHealth.mobile.labels': 'Etiquetas',
+    'catalogHealth.mobile.labelsDescription': 'Modelos en Web',
+    'catalogHealth.mobile.labelsWebOnly':
+        'La creación e impresión de etiquetas están disponibles en la versión Web.',
+    'catalogHealth.mobile.webBadge': 'WEB',
+    'catalogHealth.status.critical': 'Crítico',
+    'catalogHealth.status.warning': 'Atención',
+    'catalogHealth.status.healthy': 'Saludable',
+    'catalogHealth.status.default': 'Salud',
+    'catalogHealth.metric.missingPhoto': 'Sin foto',
+    'catalogHealth.metric.missingPhotoDescription':
+        'Productos que necesitan una imagen.',
+    'catalogHealth.metric.incompleteRegistration': 'Registro incompleto',
+    'catalogHealth.metric.incompleteRegistrationDescription':
+        'Artículos con información esencial pendiente.',
+    'catalogHealth.metric.missingCategory': 'Sin categoría',
+    'catalogHealth.metric.missingCategoryDescription':
+        'Artículos que aún no están organizados.',
+    'catalogHealth.metric.withoutSales': 'Sin ventas recientes',
+    'catalogHealth.metric.withoutSalesDescription':
+        'Productos sin movimiento de salida reciente.',
+    'catalogHub.web.title': 'Productos',
+    'catalogHub.web.subtitle':
+        'Mejore la calidad del catálogo y acceda a artículos, categorías y etiquetas.',
+    'catalogHub.list.subtitle':
+        'Gestione productos, servicios, precios, imágenes y organización.',
+    'catalogHub.actions.newProduct': 'Nuevo producto',
+    'catalogHub.actions.newService': 'Nuevo servicio',
+    'catalogHub.actions.newItem': 'Nuevo artículo',
+    'catalogHub.states.noAccessTitle': 'Acceso al catálogo no disponible',
+    'catalogHub.states.noAccessDescription':
+        'Su perfil no puede ver el catálogo de este comercio.',
+    'catalogHub.states.loadErrorTitle':
+        'No se pudo cargar la salud del catálogo',
+    'catalogHub.states.loadErrorDescription':
+        'Las herramientas siguen disponibles. Intente actualizar el diagnóstico.',
+    'catalogHub.states.emptyTitle': 'Comience su catálogo',
+    'catalogHub.states.emptyDescription':
+        'Cree el primer producto o servicio. La salud se calculará automáticamente.',
+    'catalogHub.health.title': 'Salud del catálogo',
+    'catalogHub.health.description':
+        'Calidad de los registros y preparación para la venta.',
+    'catalogHub.health.catalogIssues': 'Pendientes del catálogo',
+    'catalogHub.health.qualityTitle': 'Calidad del registro',
+    'catalogHub.health.qualitySubtitle':
+        'Fotos, categorías y datos que ayudan al cliente a decidir.',
+    'catalogHub.health.noQualityIssues':
+        'No se encontraron pendientes de calidad.',
+    'catalogHub.management.title': 'Gestión del catálogo',
+    'catalogHub.management.subtitle':
+        'Los registros y herramientas del catálogo se centralizan aquí.',
+    'catalogHub.modules.products': 'Productos',
+    'catalogHub.modules.productsDescription':
+        'Cree, revise y publique artículos de venta.',
+    'catalogHub.modules.services': 'Servicios',
+    'catalogHub.modules.servicesDescription':
+        'Organice servicios, precios y garantías.',
+    'catalogHub.modules.categories': 'Categorías',
+    'catalogHub.modules.categoriesDescription':
+        'Agrupe productos y servicios para facilitar la operación.',
+    'catalogHub.modules.labels': 'Etiquetas',
+    'catalogHub.modules.labelsDescription':
+        'Cree modelos e imprima etiquetas de productos.',
+    'catalogHub.modules.virtualCatalog': 'Catálogo virtual',
+    'catalogHub.modules.virtualCatalogDescription':
+        'Personalice su vitrina, publique artículos y compártala con sus clientes.',
+    'catalog.virtualCatalog.loading': 'Preparando catálogo virtual...',
+    'catalogHub.stock.title': 'Disponibilidad del inventario',
+    'catalogHub.stock.noIssues':
+        'Ningún problema de disponibilidad requiere atención.',
+    'catalogHub.stock.issues':
+        '{count} incidencias necesitan atención operativa.',
+    'catalogHub.stock.openManagement': 'Abrir inventario',
+    'stockMovement.entry.title': 'Registrar entrada',
+    'stockMovement.exit.title': 'Registrar salida',
+    'stockMovement.subtitle':
+        'El movimiento incluirá el usuario, la fecha y el motivo.',
+    'stockMovement.mobile.subtitle':
+        'Informe el artículo, la cantidad y el motivo.',
+    'stockMovement.product': 'Producto',
+    'stockMovement.unnamedProduct': 'Producto sin nombre',
+    'stockMovement.currentBalance': 'Saldo actual: {value}',
+    'stockMovement.quantity': 'Cantidad',
+    'stockMovement.unitCost': 'Costo unitario (opcional)',
+    'stockMovement.reason': 'Motivo',
+    'stockMovement.reasonHint':
+        'Ej.: recepción del proveedor o ajuste de inventario',
+    'stockMovement.mobile.reasonHint':
+        'Ej.: recepción o ajuste de inventario',
+    'stockMovement.validation.product': 'Seleccione un producto.',
+    'stockMovement.validation.quantity':
+        'Informe una cantidad mayor que cero.',
+    'stockMovement.validation.cost': 'Informe un costo válido.',
+    'stockMovement.validation.reason':
+        'Informe el motivo del movimiento.',
+    'stockMovement.saving': 'Registrando...',
+    'stockMovement.confirm': 'Confirmar movimiento',
+    'stockMovement.success':
+        'Movimiento registrado. El inventario fue actualizado.',
+    'stockMovement.emptyProducts':
+        'Cree un producto antes de mover el inventario.',
+    'stockMovement.errors.loadProducts':
+        'No se pudieron cargar los productos.',
+    'stockMovement.errors.save': 'No se pudo registrar el movimiento.',
+    'stockMovement.errors.insufficientStock':
+        'La salida supera el saldo disponible.',
+    'stockMovement.errors.permission':
+        'Su perfil no permite mover el inventario.',
+    'stockMovement.errors.productNotFound':
+        'El producto no fue encontrado en este comercio.',
+    'catalog.publicPage.title': 'Catálogo virtual',
     'catalog.publicPage.subtitle':
         'Personaliza, visualiza y comparte tu vitrina en un solo lugar.',
     'catalog.publicPage.open': 'Abrir',
@@ -4915,11 +5268,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalog.publicPage.save': 'Guardar cambios',
     'catalog.publicPage.discard': 'Descartar',
     'catalog.publicPage.saveSuccessPublished':
-        'Página guardada y publicada correctamente.',
+        'Catálogo guardado y publicado correctamente.',
     'catalog.publicPage.saveSuccessDraft':
         'Personalización guardada. Publícala cuando esté lista.',
     'catalog.publicPage.saveError':
-        'No fue posible guardar la página del catálogo.',
+        'No fue posible guardar el catálogo virtual.',
     'catalog.publicPage.openError':
         'No fue posible abrir el catálogo en una nueva pestaña.',
     'catalog.publicPage.linkCopied': 'Enlace público copiado.',
@@ -4927,7 +5280,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalog.publicPage.shareFallback':
         'Compartir no está disponible. Se copió el enlace público.',
     'catalog.publicPage.loadErrorTitle':
-        'No fue posible cargar la página pública',
+        'No fue posible cargar el catálogo virtual',
     'catalog.publicPage.editor.publication': 'Catálogo publicado',
     'catalog.publicPage.editor.publicationOn':
         'Los clientes pueden acceder mediante el enlace público.',
@@ -6738,6 +7091,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalogReservations.title': 'Reservas del catálogo',
     'catalogReservations.subtitle':
         'Acompaña las solicitudes recibidas por el catálogo virtual.',
+    'catalogReservations.openCatalog': 'Abrir catálogo virtual',
     'catalogReservations.loadingTitle': 'Cargando reservas',
     'catalogReservations.loadingSubtitle':
         'Sincronizando las solicitudes de este comercio.',

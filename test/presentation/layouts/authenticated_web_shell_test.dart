@@ -135,11 +135,11 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.view_module_outlined));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Serviços'));
+      await tester.tap(find.text('Produtos'));
       await tester.pumpAndSettle();
 
       expect(actions.calls, <WebNavigationDestination>[
-        WebNavigationDestination.catalogServices,
+        WebNavigationDestination.catalogProducts,
       ]);
     });
 

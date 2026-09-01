@@ -3,10 +3,14 @@ import 'package:sixpos/data/models/catalog_health_model.dart';
 import 'package:sixpos/data/services/catalog_health/catalog_health_api_client.dart';
 
 class CatalogHealthProvider extends ChangeNotifier {
-  CatalogHealthProvider({required CatalogHealthApiClient apiClient})
-    : _apiClient = apiClient;
+  CatalogHealthProvider({
+    required CatalogHealthApiClient apiClient,
+    String visualizacao = 'MOBILE',
+  }) : _apiClient = apiClient,
+       _visualizacao = visualizacao;
 
   final CatalogHealthApiClient _apiClient;
+  final String _visualizacao;
 
   CatalogHealthSummary? _summary;
   bool _isLoading = false;
@@ -26,7 +30,9 @@ class CatalogHealthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _summary = await _apiClient.buscarSaudeCatalogo();
+      _summary = await _apiClient.buscarSaudeCatalogo(
+        visualizacao: _visualizacao,
+      );
       _loadRevision += 1;
     } catch (_) {
       _summary = null;

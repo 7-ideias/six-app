@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/data/models/estoque_dashboard_model.dart';
+import 'package:sixpos/data/models/stock_movement_model.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
+import 'package:sixpos/presentation/screens/stock_movement_web_dialog.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
 class EstoqueDashboardWebPage extends StatefulWidget {
@@ -44,6 +47,27 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
 
   void _reload() =>
       setState(() => _future = _produtoService.buscarDashboardEstoque());
+
+  Future<void> _openMovement(StockMovementType type) async {
+    final bool? registered = await showStockMovementWebDialog(
+      context: context,
+      type: type,
+      produtoService: _produtoService,
+    );
+    if (registered != true || !mounted) return;
+    _reload();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          context.t(
+            'stockMovement.success',
+            fallback: 'Movimentação registrada. O estoque foi atualizado.',
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
   String _currency(double value) => _money.format(value);
   String _whole(double value) => _number.format(value.round());
   String _qty(double value) =>
@@ -97,12 +121,16 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
                     style: _headerOutlinedButtonStyle(tokens),
                   ),
                   FilledButton.icon(
-                    onPressed: widget.onEntradaEstoque,
+                    onPressed:
+                        widget.onEntradaEstoque ??
+                        () => _openMovement(StockMovementType.entry),
                     icon: const Icon(Icons.add_box_outlined),
                     label: const Text('Entrada'),
                   ),
                   OutlinedButton.icon(
-                    onPressed: widget.onSaidaEstoque,
+                    onPressed:
+                        widget.onSaidaEstoque ??
+                        () => _openMovement(StockMovementType.exit),
                     icon: const Icon(Icons.indeterminate_check_box_outlined),
                     label: const Text('Saída'),
                     style: _headerOutlinedButtonStyle(tokens),
@@ -805,7 +833,9 @@ class _EstoqueDashboardWebPageState extends State<EstoqueDashboardWebPage> {
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
-              onPressed: widget.onEntradaEstoque,
+              onPressed:
+                  widget.onEntradaEstoque ??
+                  () => _openMovement(StockMovementType.entry),
               icon: const Icon(Icons.add_box_outlined),
               label: const Text('Registrar entrada'),
             ),

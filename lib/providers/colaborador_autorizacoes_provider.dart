@@ -77,7 +77,6 @@ class ColaboradorAutorizacoesProvider extends ChangeNotifier {
   bool get podeAcessarCatalogo =>
       podeCadastrarProduto ||
       podeEditarProduto ||
-      podeVerEstoqueDeProduto ||
       podeAcessarEtiquetas;
   bool get podeGerarRelatorio =>
       autorizacoes.objRelatoriosPode.geraRelatorioDeVendas;

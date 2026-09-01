@@ -26,6 +26,7 @@ class ProdutolistMobileScreen extends StatefulWidget {
     this.permitirSelecaoMultipla = false,
     this.tipoInicial = 'PRODUTO',
     this.apenasAtivosNoBackend = false,
+    this.exibirInformacoesEstoque = false,
     this.produtoService,
   });
 
@@ -33,6 +34,7 @@ class ProdutolistMobileScreen extends StatefulWidget {
   final bool permitirSelecaoMultipla;
   final String tipoInicial;
   final bool apenasAtivosNoBackend;
+  final bool exibirInformacoesEstoque;
   final ProdutoService? produtoService;
 
   @override
@@ -166,6 +168,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   bool get _selecaoMultiplaAtiva =>
       widget.isSelecao && widget.permitirSelecaoMultipla;
 
+  bool get _exibirInformacoesEstoque =>
+      widget.exibirInformacoesEstoque || widget.isSelecao;
+
   int get _quantidadeSelecionadaTotal => _selecionados.values.fold<int>(
     0,
     (int total, _ProdutoSelecionadoMobile item) => total + item.quantidade,
@@ -260,7 +265,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       (_categoriaSelecionadaId != null &&
           _categoriaSelecionadaId!.isNotEmpty) ||
       _statusFiltro != _ProdutoStatusFiltroMobile.todos ||
-      _estoqueFiltro != _ProdutoEstoqueFiltroMobile.todos ||
+      (_exibirInformacoesEstoque &&
+          _estoqueFiltro != _ProdutoEstoqueFiltroMobile.todos) ||
       ordenacao != 'nome';
 
   String _normalizarTipoProduto(String tipo) {
@@ -298,33 +304,35 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         resultado = resultado.where((ProdutoModel produto) => !produto.ativo);
     }
 
-    switch (_estoqueFiltro) {
-      case _ProdutoEstoqueFiltroMobile.todos:
-        break;
-      case _ProdutoEstoqueFiltroMobile.emEstoque:
-        resultado = resultado.where(
-          (ProdutoModel produto) =>
-              _situacaoEstoque(produto) ==
-              _ProdutoSituacaoEstoqueMobile.emEstoque,
-        );
-      case _ProdutoEstoqueFiltroMobile.estoqueBaixo:
-        resultado = resultado.where(
-          (ProdutoModel produto) =>
-              _situacaoEstoque(produto) ==
-              _ProdutoSituacaoEstoqueMobile.estoqueBaixo,
-        );
-      case _ProdutoEstoqueFiltroMobile.semEstoque:
-        resultado = resultado.where(
-          (ProdutoModel produto) =>
-              _situacaoEstoque(produto) ==
-              _ProdutoSituacaoEstoqueMobile.semEstoque,
-        );
-      case _ProdutoEstoqueFiltroMobile.estoqueNegativo:
-        resultado = resultado.where(
-          (ProdutoModel produto) =>
-              _situacaoEstoque(produto) ==
-              _ProdutoSituacaoEstoqueMobile.estoqueNegativo,
-        );
+    if (_exibirInformacoesEstoque) {
+      switch (_estoqueFiltro) {
+        case _ProdutoEstoqueFiltroMobile.todos:
+          break;
+        case _ProdutoEstoqueFiltroMobile.emEstoque:
+          resultado = resultado.where(
+            (ProdutoModel produto) =>
+                _situacaoEstoque(produto) ==
+                _ProdutoSituacaoEstoqueMobile.emEstoque,
+          );
+        case _ProdutoEstoqueFiltroMobile.estoqueBaixo:
+          resultado = resultado.where(
+            (ProdutoModel produto) =>
+                _situacaoEstoque(produto) ==
+                _ProdutoSituacaoEstoqueMobile.estoqueBaixo,
+          );
+        case _ProdutoEstoqueFiltroMobile.semEstoque:
+          resultado = resultado.where(
+            (ProdutoModel produto) =>
+                _situacaoEstoque(produto) ==
+                _ProdutoSituacaoEstoqueMobile.semEstoque,
+          );
+        case _ProdutoEstoqueFiltroMobile.estoqueNegativo:
+          resultado = resultado.where(
+            (ProdutoModel produto) =>
+                _situacaoEstoque(produto) ==
+                _ProdutoSituacaoEstoqueMobile.estoqueNegativo,
+          );
+      }
     }
 
     return resultado.toList(growable: false);
@@ -1674,7 +1682,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                           physics: BouncingScrollPhysics(),
                           child: Row(
                             children: <Widget>[
-                              if (isProduto) _StockStatusChip(produto: produto),
+                              if (_exibirInformacoesEstoque && isProduto)
+                                _StockStatusChip(produto: produto),
                               if (!ativo) ...<Widget>[
                                 SizedBox(width: 4),
                                 _StatusChip(ativo: false),
@@ -1904,20 +1913,21 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                                     )
                                     : codigo,
                           ),
-                          _buildProdutoInfoRow(
-                            label: _t(
-                              'produto.webList.stockQuantity',
-                              'Estoque',
+                          if (_exibirInformacoesEstoque)
+                            _buildProdutoInfoRow(
+                              label: _t(
+                                'produto.webList.stockQuantity',
+                                'Estoque',
+                              ),
+                              value:
+                                  estoque.isEmpty
+                                      ? _t(
+                                        'produto.webList.stockNotApplicable',
+                                        'Sem controle',
+                                      )
+                                      : estoque,
+                              valueColor: _corEstoqueProduto(produto),
                             ),
-                            value:
-                                estoque.isEmpty
-                                    ? _t(
-                                      'produto.webList.stockNotApplicable',
-                                      'Sem controle',
-                                    )
-                                    : estoque,
-                            valueColor: _corEstoqueProduto(produto),
-                          ),
                           _buildProdutoInfoRow(
                             label: _t('produto.mobile.photosLabel', 'Fotos'),
                             value:
@@ -3326,12 +3336,12 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                                     )
                                     : modelo,
                           ),
-                          if (isProduto)
+                          if (_exibirInformacoesEstoque && isProduto)
                             _buildProdutoSheetLine(
                               label: _t('workspaceHome.stock.title', 'Estoque'),
                               valueWidget: _StockStatusChip(produto: produto),
                             ),
-                          if (isProduto)
+                          if (_exibirInformacoesEstoque && isProduto)
                             _buildProdutoSheetLine(
                               label: _t(
                                 'produto.mobile.minimumStock',
@@ -3339,7 +3349,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                               ),
                               value: _formatDecimal(produto.estoqueMinimo),
                             ),
-                          if (isProduto)
+                          if (_exibirInformacoesEstoque && isProduto)
                             _buildProdutoSheetLine(
                               label: _t(
                                 'produto.mobile.maximumStock',
@@ -3347,7 +3357,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                               ),
                               value: _formatDecimal(produto.estoqueMaximo),
                             ),
-                          if (estoque.isNotEmpty && !isProduto)
+                          if (_exibirInformacoesEstoque &&
+                              estoque.isNotEmpty &&
+                              !isProduto)
                             _buildProdutoSheetLine(
                               label: _t('workspaceHome.stock.title', 'Estoque'),
                               value: estoque,
@@ -3375,7 +3387,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                                       )
                                       : regras.unidadeMedida.trim(),
                             ),
-                          if (regras != null)
+                          if (_exibirInformacoesEstoque && regras != null)
                             _buildProdutoSheetLine(
                               label: _t(
                                 'produto.mobile.allowsNegativeStock',
@@ -3551,7 +3563,8 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                 (categoriaSelecionadaTemp != null &&
                     categoriaSelecionadaTemp!.isNotEmpty) ||
                 statusFiltroTemp != _ProdutoStatusFiltroMobile.todos ||
-                estoqueFiltroTemp != _ProdutoEstoqueFiltroMobile.todos ||
+                (_exibirInformacoesEstoque &&
+                    estoqueFiltroTemp != _ProdutoEstoqueFiltroMobile.todos) ||
                 ordenacaoTemp != 'nome';
 
             return SafeArea(
@@ -3623,7 +3636,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                                 Text(
                                   _t(
                                     'produto.mobile.filtersSubtitle',
-                                    'Ajuste categoria, status, estoque e ordenação.',
+                                    _exibirInformacoesEstoque
+                                        ? 'Ajuste categoria, status, estoque e ordenação.'
+                                        : 'Ajuste categoria, status e ordenação.',
                                   ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
@@ -3657,13 +3672,15 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                         value: _statusFiltroLabel(statusFiltroTemp),
                         onTap: selecionarStatus,
                       ),
-                      SizedBox(height: 10),
-                      _FilterSelectorTile(
-                        icon: Icons.inventory_2_outlined,
-                        label: _t('workspaceHome.stock.title', 'Estoque'),
-                        value: _estoqueFiltroLabel(estoqueFiltroTemp),
-                        onTap: selecionarEstoque,
-                      ),
+                      if (_exibirInformacoesEstoque) ...<Widget>[
+                        SizedBox(height: 10),
+                        _FilterSelectorTile(
+                          icon: Icons.inventory_2_outlined,
+                          label: _t('workspaceHome.stock.title', 'Estoque'),
+                          value: _estoqueFiltroLabel(estoqueFiltroTemp),
+                          onTap: selecionarEstoque,
+                        ),
+                      ],
                       SizedBox(height: 10),
                       _FilterSelectorTile(
                         icon: Icons.swap_vert_rounded,

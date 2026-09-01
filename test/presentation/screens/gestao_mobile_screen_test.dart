@@ -318,8 +318,8 @@ void main() {
     );
 
     expect(find.text('Produtos e Serviços'), findsNothing);
-    expect(find.text('Categorias'), findsWidgets);
-    expect(find.text('Estoque'), findsWidgets);
+    expect(find.text('Categorias'), findsNothing);
+    expect(find.text('Estoque'), findsNothing);
     expect(find.text('Catálogo restrito para este usuário'), findsOneWidget);
   });
 
@@ -405,6 +405,9 @@ Future<void> _pumpGestao(
 class _NoCatalogPermissionProvider extends ColaboradorAutorizacoesProvider {
   @override
   bool get podeAcessarCatalogo => false;
+
+  @override
+  bool get podeVerEstoqueDeProduto => false;
 }
 
 class _CollaboratorProvider extends ColaboradorAutorizacoesProvider {

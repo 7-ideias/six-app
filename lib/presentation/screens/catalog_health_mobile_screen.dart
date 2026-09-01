@@ -7,6 +7,8 @@ import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/catalog_health_score_indicator.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/screens/categorias_produtos_servicos_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/produto_cadastrar_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
 import 'package:sixpos/providers/catalog_health_provider.dart';
@@ -26,7 +28,6 @@ class CatalogHealthMobileScreen extends StatelessWidget {
     );
   }
 }
-
 class _CatalogHealthMobileView extends StatelessWidget {
   const _CatalogHealthMobileView();
 
@@ -41,7 +42,10 @@ class _CatalogHealthMobileView extends StatelessWidget {
         context.watch<ColaboradorAutorizacoesProvider>();
 
     return SixMobilePageShell(
-      title: 'Saúde do catálogo',
+      title: context.t(
+        'catalogHealth.mobile.title',
+        fallback: 'Saúde do catálogo',
+      ),
       backgroundColor: _backgroundColor,
       primaryColor: _primaryColor,
       secondaryColor: _secondaryColor,
@@ -210,12 +214,15 @@ class _CatalogHealthMobileView extends StatelessWidget {
       summary: summary,
       animationRevision: provider.loadRevision,
       canViewStock: permissions.podeVerEstoqueDeProduto,
+      canManageCatalog:
+          permissions.podeCadastrarProduto || permissions.podeEditarProduto,
       reduceMotion: reduceMotion,
       onOpenProducts: () => _openProducts(context),
       onOpenServices: () => _openServices(context),
+      onOpenCategories: () => _openCategories(context),
+      onOpenLabels: () => _showLabelsAvailability(context),
       onPendingMetric:
-          (CatalogHealthMetric metric) =>
-              _showPendingFilterMessage(context, metric),
+          (CatalogHealthMetric metric) => _openPendingMetric(context, metric),
     );
   }
 
@@ -235,6 +242,29 @@ class _CatalogHealthMobileView extends StatelessWidget {
     );
   }
 
+  void _openCategories(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const CategoriasProdutosServicosMobileScreen(),
+      ),
+    );
+  }
+
+  void _showLabelsAvailability(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          context.t(
+            'catalogHealth.mobile.labelsWebOnly',
+            fallback:
+                'A criação e a impressão de etiquetas estão disponíveis na versão Web.',
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   void _openCreate(BuildContext context, String tipoInicial) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -243,18 +273,23 @@ class _CatalogHealthMobileView extends StatelessWidget {
     );
   }
 
-  void _showPendingFilterMessage(
+  void _openPendingMetric(
     BuildContext context,
     CatalogHealthMetric metric,
   ) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'A lista filtrada de ${metric.title.toLowerCase()} será integrada em uma próxima etapa.',
-        ),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    switch (metric.action?.type.toUpperCase()) {
+      case 'ABRIR_ESTOQUE':
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const EstoqueMobileScreen()),
+        );
+        return;
+      case 'ABRIR_LISTA_SERVICOS':
+        _openServices(context);
+        return;
+      default:
+        _openProducts(context);
+        return;
+    }
   }
 }
 
@@ -266,18 +301,24 @@ class _CatalogSuccessState extends StatelessWidget {
     required this.summary,
     required this.animationRevision,
     required this.canViewStock,
+    required this.canManageCatalog,
     required this.reduceMotion,
     required this.onOpenProducts,
     required this.onOpenServices,
+    required this.onOpenCategories,
+    required this.onOpenLabels,
     required this.onPendingMetric,
   });
 
   final CatalogHealthSummary summary;
   final int animationRevision;
   final bool canViewStock;
+  final bool canManageCatalog;
   final bool reduceMotion;
   final VoidCallback onOpenProducts;
   final VoidCallback onOpenServices;
+  final VoidCallback onOpenCategories;
+  final VoidCallback onOpenLabels;
   final ValueChanged<CatalogHealthMetric> onPendingMetric;
 
   @override
@@ -341,10 +382,26 @@ class _CatalogSuccessState extends StatelessWidget {
       SizedBox(height: 22),
       _entry(
         reduceMotion: reduceMotion,
+        delay: Duration(milliseconds: 190),
+        child: _CatalogManagementTools(
+          canManageCatalog: canManageCatalog,
+          onOpenCategories: onOpenCategories,
+          onOpenLabels: onOpenLabels,
+        ),
+      ),
+      SizedBox(height: 16),
+      _entry(
+        reduceMotion: reduceMotion,
         delay: Duration(milliseconds: 220),
         child: _CatalogPendingAccordion(
-          title: summary.pendingSection.title,
-          subtitle: summary.pendingSection.description,
+          title: context.t(
+            'catalogHealth.mobile.pendingTitle',
+            fallback: 'Pendências do catálogo',
+          ),
+          subtitle: context.t(
+            'catalogHealth.mobile.pendingSubtitle',
+            fallback: 'Revise os cadastros que precisam de atenção.',
+          ),
           metrics: pendingMetrics,
           reduceMotion: reduceMotion,
           showRestrictedStockNotice: !canViewStock,
@@ -375,6 +432,190 @@ class _CatalogSuccessState extends StatelessWidget {
   }
 }
 
+class _CatalogManagementTools extends StatelessWidget {
+  const _CatalogManagementTools({
+    required this.canManageCatalog,
+    required this.onOpenCategories,
+    required this.onOpenLabels,
+  });
+
+  final bool canManageCatalog;
+  final VoidCallback onOpenCategories;
+  final VoidCallback onOpenLabels;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: SixMobilePalette.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: SixMobilePalette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            context.t(
+              'catalogHealth.mobile.managementTitle',
+              fallback: 'Gestão do catálogo',
+            ),
+            style: TextStyle(
+              color: SixMobilePalette.titleText,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            context.t(
+              'catalogHealth.mobile.managementSubtitle',
+              fallback: 'Organização e ferramentas dos seus itens.',
+            ),
+            style: TextStyle(
+              color: SixMobilePalette.mutedText,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 12),
+          Row(
+            children: <Widget>[
+              if (canManageCatalog) ...<Widget>[
+                Expanded(
+                  child: _CatalogToolCard(
+                    icon: Icons.category_outlined,
+                    title: context.t(
+                      'catalogHealth.mobile.categories',
+                      fallback: 'Categorias',
+                    ),
+                    subtitle: context.t(
+                      'catalogHealth.mobile.categoriesDescription',
+                      fallback: 'Organizar itens',
+                    ),
+                    onTap: onOpenCategories,
+                  ),
+                ),
+                SizedBox(width: 10),
+              ],
+              Expanded(
+                child: _CatalogToolCard(
+                  icon: Icons.local_offer_outlined,
+                  title: context.t(
+                    'catalogHealth.mobile.labels',
+                    fallback: 'Etiquetas',
+                  ),
+                  subtitle: context.t(
+                    'catalogHealth.mobile.labelsDescription',
+                    fallback: 'Modelos na Web',
+                  ),
+                  badge: context.t(
+                    'catalogHealth.mobile.webBadge',
+                    fallback: 'WEB',
+                  ),
+                  onTap: onOpenLabels,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CatalogToolCard extends StatelessWidget {
+  const _CatalogToolCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.badge,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final String? badge;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: SixMobilePalette.softNeutralSurface,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          constraints: BoxConstraints(minHeight: 92),
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: SixMobilePalette.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Icon(icon, color: SixMobilePalette.accent, size: 20),
+                  Spacer(),
+                  if (badge != null)
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: SixMobilePalette.accent.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        badge!,
+                        style: TextStyle(
+                          color: SixMobilePalette.accent,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    )
+                  else
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: SixMobilePalette.mutedText,
+                      size: 18,
+                    ),
+                ],
+              ),
+              SizedBox(height: 10),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: SixMobilePalette.titleText,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: SixMobilePalette.mutedText,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _CatalogHealthHero extends StatelessWidget {
   const _CatalogHealthHero({
     required this.summary,
@@ -397,17 +638,26 @@ class _CatalogHealthHero extends StatelessWidget {
       'catalogHealth.mobile.attentionItems',
       fallback: '{count} itens precisam de atenção',
     );
+    final int catalogAttentionItems = summary.overview.attentionItems;
+    final String heroTitle = context.t(
+      'catalogHealth.mobile.title',
+      fallback: 'Saúde do catálogo',
+    );
+    final String heroDescription = context.t(
+      'catalogHealth.mobile.description',
+      fallback: 'Qualidade de fotos, categorias e informações dos itens ativos.',
+    );
     final String attentionLabel =
         attentionTemplate.contains('{count}')
             ? attentionTemplate.replaceFirst(
               '{count}',
-              summary.attentionItems.toString(),
+              catalogAttentionItems.toString(),
             )
-            : '${summary.attentionItems} $attentionTemplate';
+            : '$catalogAttentionItems $attentionTemplate';
 
     return Semantics(
       container: true,
-      label: '${health.title}. ${health.description}. $attentionLabel.',
+      label: '$heroTitle. $heroDescription. $attentionLabel.',
       child: Container(
         width: double.infinity,
         padding: EdgeInsets.fromLTRB(16, 16, 16, 14),
@@ -427,7 +677,7 @@ class _CatalogHealthHero extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              summary.header.title,
+              heroTitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -438,7 +688,7 @@ class _CatalogHealthHero extends StatelessWidget {
             ),
             SizedBox(height: 4),
             Text(
-              health.description,
+              heroDescription,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(

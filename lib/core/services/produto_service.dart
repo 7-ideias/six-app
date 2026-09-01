@@ -4,6 +4,7 @@ import 'package:sixpos/data/models/estoque_dashboard_model.dart';
 import 'package:sixpos/data/models/produto_dashboard_model.dart';
 import 'package:sixpos/data/models/produto_model.dart';
 import 'package:sixpos/data/models/servico_dashboard_model.dart';
+import 'package:sixpos/data/models/stock_movement_model.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
@@ -23,6 +24,8 @@ class ProdutoService {
       '${AppConfig.baseUrl}/private/api/produto/dashboard';
   final String endpointEstoqueDashboard =
       '${AppConfig.baseUrl}/private/api/produto/estoque/dashboard';
+  final String endpointMovimentacaoEstoque =
+      '${AppConfig.baseUrl}/private/api/produto/estoque/movimentacoes';
   final String endpointServicosDashboard =
       '${AppConfig.baseUrl}/private/api/produto/servicos/dashboard';
 
@@ -140,6 +143,75 @@ class ProdutoService {
       print('❌ Erro ao carregar dashboard de estoque: $e');
       rethrow;
     }
+  }
+
+  Future<List<ProdutoModel>> buscarProdutosAtivosParaEstoque() async {
+    final authService = AuthService();
+    final token = await authService.getAccessToken();
+    final empresaId = await authService.getEmpresaId();
+    final Uri url = Uri.parse(endpointList).replace(
+      queryParameters: const <String, String>{'tipo': 'PRODUTO'},
+    );
+    final http.Response response = await client.get(
+      url,
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'idUnicoDaEmpresa': empresaId ?? '',
+        'Authorization': 'Bearer ${token ?? ''}',
+        'tipo': 'PRODUTO',
+        'produtosAtivos': 'true',
+      },
+    );
+
+    if (response.statusCode == 204) return const <ProdutoModel>[];
+    if (response.statusCode != 200) {
+      throw StockMovementException(
+        statusCode: response.statusCode,
+        errorCode: _stockErrorCode(response.body),
+      );
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw const StockMovementException(
+        statusCode: 500,
+        errorCode: 'RESPOSTA_PRODUTOS_INVALIDA',
+      );
+    }
+    return ProdutoResponseModel.fromJson(decoded).produtosList;
+  }
+
+  Future<StockMovementResult> registrarMovimentacaoEstoque(
+    StockMovementRequest request,
+  ) async {
+    final authService = AuthService();
+    final token = await authService.getAccessToken();
+    final empresaId = await authService.getEmpresaId();
+    final http.Response response = await client.post(
+      Uri.parse(endpointMovimentacaoEstoque),
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'idUnicoDaEmpresa': empresaId ?? '',
+        'Authorization': 'Bearer ${token ?? ''}',
+      },
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw StockMovementException(
+        statusCode: response.statusCode,
+        errorCode: _stockErrorCode(response.body),
+      );
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw const StockMovementException(
+        statusCode: 500,
+        errorCode: 'RESPOSTA_MOVIMENTACAO_INVALIDA',
+      );
+    }
+    return StockMovementResult.fromJson(decoded);
   }
 
   Future<ServicoDashboardModel> buscarDashboardServicos() async {
@@ -343,6 +415,22 @@ class ProdutoService {
       rethrow;
     }
   }
+}
+
+String _stockErrorCode(String body) {
+  if (body.trim().isEmpty) return 'ERRO_MOVIMENTACAO_ESTOQUE';
+  try {
+    final dynamic decoded = jsonDecode(body);
+    if (decoded is Map<String, dynamic>) {
+      for (final String key in <String>['code', 'codigo', 'detail', 'message']) {
+        final String value = decoded[key]?.toString().trim() ?? '';
+        if (value.isNotEmpty) return value;
+      }
+    }
+  } catch (_) {
+    return body.trim();
+  }
+  return 'ERRO_MOVIMENTACAO_ESTOQUE';
 }
 
 class RelatorioProdutoPdfResponse {

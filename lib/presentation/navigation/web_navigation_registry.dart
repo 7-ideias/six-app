@@ -114,18 +114,6 @@ abstract final class WebNavigationRegistry {
       visibility: WebNavigationVisibilityRule.authenticated(),
       children: <WebNavigationItem>[
         WebNavigationItem(
-          id: WebNavigationIds.catalogPublicPage,
-          labelKey: 'web.navigation.catalog.publicPage',
-          labelFallback: 'Página pública',
-          icon: Icons.storefront_outlined,
-          visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[
-              WebNavigationPermission.podeAcessarCatalogo,
-            ],
-          ),
-          destination: WebNavigationDestination.catalogPublicPage,
-        ),
-        WebNavigationItem(
           id: WebNavigationIds.operationsReservations,
           labelKey: 'web.navigation.catalog.reservations',
           labelFallback: 'Reservas',
@@ -140,24 +128,14 @@ abstract final class WebNavigationRegistry {
           labelKey: 'web.navigation.catalog.products',
           labelFallback: 'Produtos',
           icon: Icons.inventory_2_outlined,
-          visibility:
-              WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
-                WebNavigationPermission.podeCadastrarProduto,
-                WebNavigationPermission.podeEditarProduto,
-              ]),
+          visibility: WebNavigationVisibilityRule.anyOf(
+            <WebNavigationPermission>[
+              WebNavigationPermission.podeAcessarCatalogo,
+              WebNavigationPermission.podeCadastrarProduto,
+              WebNavigationPermission.podeEditarProduto,
+            ],
+          ),
           destination: WebNavigationDestination.catalogProducts,
-        ),
-        WebNavigationItem(
-          id: WebNavigationIds.catalogServices,
-          labelKey: 'web.navigation.catalog.services',
-          labelFallback: 'Serviços',
-          icon: Icons.home_repair_service_outlined,
-          visibility:
-              WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
-                WebNavigationPermission.podeCadastrarProduto,
-                WebNavigationPermission.podeEditarProduto,
-              ]),
-          destination: WebNavigationDestination.catalogServices,
         ),
         WebNavigationItem(
           id: WebNavigationIds.catalogStock,
@@ -170,30 +148,6 @@ abstract final class WebNavigationRegistry {
             ],
           ),
           destination: WebNavigationDestination.catalogStock,
-        ),
-        WebNavigationItem(
-          id: WebNavigationIds.catalogLabels,
-          labelKey: 'web.navigation.catalog.labels',
-          labelFallback: 'Etiquetas',
-          icon: Icons.local_offer_outlined,
-          visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[
-              WebNavigationPermission.podeAcessarEtiquetas,
-            ],
-          ),
-          destination: WebNavigationDestination.catalogLabels,
-        ),
-        WebNavigationItem(
-          id: WebNavigationIds.catalogCategories,
-          labelKey: 'web.navigation.catalog.categories',
-          labelFallback: 'Categorias',
-          icon: Icons.category_outlined,
-          visibility:
-              WebNavigationVisibilityRule.anyOf(<WebNavigationPermission>[
-                WebNavigationPermission.podeCadastrarProduto,
-                WebNavigationPermission.podeEditarProduto,
-              ]),
-          destination: WebNavigationDestination.catalogCategories,
         ),
       ],
     ),

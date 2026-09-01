@@ -422,10 +422,17 @@ class ProdutoCadastroFormUtils {
     String value, {
     required ProdutoCadastroNumberFormat numberFormat,
   }) {
+    return tryParseDecimal(value, numberFormat: numberFormat) ?? 0;
+  }
+
+  static double? tryParseDecimal(
+    String value, {
+    required ProdutoCadastroNumberFormat numberFormat,
+  }) {
     final String decimalSeparator = numberFormat.decimalSeparator.trim();
     final String thousandSeparator = numberFormat.thousandSeparator.trim();
     String normalized = value.trim().replaceAll(RegExp(r'\s+'), '');
-    if (normalized.isEmpty) return 0;
+    if (normalized.isEmpty) return null;
 
     if (thousandSeparator.isNotEmpty && thousandSeparator != decimalSeparator) {
       normalized = normalized.replaceAll(thousandSeparator, '');
@@ -436,7 +443,7 @@ class ProdutoCadastroFormUtils {
 
     normalized = normalized.replaceAll(RegExp(r'[^0-9.\-]'), '');
     if (normalized.isEmpty || normalized == '-' || normalized == '.') {
-      return 0;
+      return null;
     }
 
     final int firstDot = normalized.indexOf('.');
@@ -446,7 +453,7 @@ class ProdutoCadastroFormUtils {
           normalized.substring(firstDot + 1).replaceAll('.', '');
     }
 
-    return double.tryParse(normalized) ?? 0;
+    return double.tryParse(normalized);
   }
 
   static int parseInteger(

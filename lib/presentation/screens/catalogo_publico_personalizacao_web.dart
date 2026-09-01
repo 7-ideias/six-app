@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,7 +11,6 @@ import 'package:sixpos/core/services/catalogo_publico_service.dart';
 import 'package:sixpos/core/utils/external_link_launcher.dart';
 import 'package:sixpos/data/models/catalogo_publico_configuracao_model.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
-import 'package:sixpos/presentation/components/six_backend_loading.dart';
 import 'package:sixpos/presentation/components/web/six_web_catalog_unpublish_dialog.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
@@ -17,10 +18,237 @@ import 'package:provider/provider.dart';
 
 enum _CatalogPreviewDevice { desktop, mobile }
 
+String? _catalogPublicBaseUrl() {
+  final Uri currentUri = Uri.base;
+  if (!<String>{'http', 'https'}.contains(currentUri.scheme) ||
+      currentUri.host.isEmpty) {
+    return null;
+  }
+  final bool loopback = <String>{
+    'localhost',
+    '127.0.0.1',
+    '::1',
+  }.contains(currentUri.host.toLowerCase());
+  return currentUri
+      .resolve(loopback ? '/catalogo.html' : '/catalogo')
+      .toString();
+}
+
+Future<void> showCatalogoVirtualWebDialog(
+  BuildContext context, {
+  CatalogoPublicoService? service,
+}) async {
+  final CatalogoPublicoService resolvedService =
+      service ?? CatalogoPublicoService();
+  final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(context);
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>?
+      loadingController;
+  bool requestFinished = false;
+  final Timer loadingFeedbackTimer = Timer(
+    const Duration(milliseconds: 350),
+    () {
+      if (requestFinished || !context.mounted || messenger == null) return;
+      final WebThemeTokens tokens = WebThemeTokens.of(context);
+      loadingController = messenger.showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          width: math.min(360.0, MediaQuery.sizeOf(context).width - 32),
+          duration: const Duration(minutes: 1),
+          elevation: 12,
+          backgroundColor: tokens.surfaceElevated,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(color: tokens.cardBorder),
+          ),
+          content: Row(
+            children: <Widget>[
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: tokens.info,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  context.t(
+                    'catalog.virtualCatalog.loading',
+                    fallback: 'Preparando catálogo virtual...',
+                  ),
+                  style: TextStyle(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+
+  late final CatalogoPublicoConfiguracaoModel initialConfiguration;
+  try {
+    initialConfiguration = await resolvedService.buscarConfiguracao(
+      baseUrl: _catalogPublicBaseUrl(),
+    );
+  } catch (_) {
+    requestFinished = true;
+    loadingFeedbackTimer.cancel();
+    loadingController?.close();
+    if (context.mounted && messenger != null) {
+      final WebThemeTokens tokens = WebThemeTokens.of(context);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            context.t(
+              'catalog.publicPage.loadErrorTitle',
+              fallback: 'Não foi possível carregar o catálogo virtual',
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: tokens.danger,
+        ),
+      );
+    }
+    return;
+  }
+
+  requestFinished = true;
+  loadingFeedbackTimer.cancel();
+  loadingController?.close();
+  if (!context.mounted) return;
+
+  final MediaQueryData mediaQuery = MediaQuery.of(context);
+  final bool reduceMotion =
+      mediaQuery.disableAnimations || mediaQuery.accessibleNavigation;
+
+  return showGeneralDialog<void>(
+    context: context,
+    useRootNavigator: true,
+    barrierDismissible: false,
+    barrierLabel: context.t('common.close', fallback: 'Fechar'),
+    barrierColor: Colors.transparent,
+    transitionDuration: reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 260),
+    pageBuilder:
+        (
+          BuildContext dialogContext,
+          Animation<double> animation,
+          Animation<double> secondaryAnimation,
+        ) {
+          final Size size = MediaQuery.sizeOf(dialogContext);
+          final WebThemeTokens tokens = WebThemeTokens.of(dialogContext);
+          final bool compact = size.width < 760;
+          final double horizontalInset = compact ? 12 : 32;
+          final double verticalInset = size.height < 720 ? 12 : 28;
+          final double dialogWidth = math.min(
+            1560.0,
+            size.width - (horizontalInset * 2),
+          );
+          final double dialogHeight = math.min(
+            980.0,
+            size.height - (verticalInset * 2),
+          );
+          final BorderRadius borderRadius = BorderRadius.circular(
+            compact ? 18 : 24,
+          );
+
+          return Material(
+            type: MaterialType.transparency,
+            child: Stack(
+              fit: StackFit.expand,
+              children: <Widget>[
+                BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: ColoredBox(
+                    color: const Color(0xFF020817).withValues(alpha: 0.72),
+                  ),
+                ),
+                SafeArea(
+                  minimum: EdgeInsets.symmetric(
+                    horizontal: horizontalInset,
+                    vertical: verticalInset,
+                  ),
+                  child: Center(
+                    child: SizedBox(
+                      width: dialogWidth,
+                      height: dialogHeight,
+                      child: Material(
+                        elevation: 32,
+                        shadowColor: Colors.black.withValues(alpha: 0.55),
+                        color: tokens.workspaceBackground,
+                        borderRadius: borderRadius,
+                        clipBehavior: Clip.antiAlias,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: borderRadius,
+                            border: Border.all(
+                              color: tokens.cardBorder.withValues(alpha: 0.82),
+                            ),
+                          ),
+                          child: CatalogoPublicoPersonalizacaoWebPage(
+                            service: resolvedService,
+                            initialConfiguration: initialConfiguration,
+                            onClose: () => Navigator.of(
+                              dialogContext,
+                              rootNavigator: true,
+                            ).pop(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+    transitionBuilder:
+        (
+          BuildContext context,
+          Animation<double> animation,
+          Animation<double> secondaryAnimation,
+          Widget child,
+        ) {
+          if (reduceMotion) return child;
+          final Animation<double> curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          );
+          return FadeTransition(
+            opacity: curved,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.025),
+                end: Offset.zero,
+              ).animate(curved),
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.97, end: 1).animate(curved),
+                child: child,
+              ),
+            ),
+          );
+        },
+  );
+}
+
 class CatalogoPublicoPersonalizacaoWebPage extends StatefulWidget {
-  const CatalogoPublicoPersonalizacaoWebPage({super.key, this.service});
+  const CatalogoPublicoPersonalizacaoWebPage({
+    super.key,
+    this.service,
+    this.initialConfiguration,
+    this.onClose,
+  });
 
   final CatalogoPublicoService? service;
+  final CatalogoPublicoConfiguracaoModel? initialConfiguration;
+  final VoidCallback? onClose;
 
   @override
   State<CatalogoPublicoPersonalizacaoWebPage> createState() =>
@@ -55,7 +283,14 @@ class _CatalogoPublicoPersonalizacaoWebPageState
   void initState() {
     super.initState();
     _service = widget.service ?? CatalogoPublicoService();
-    _load();
+    final CatalogoPublicoConfiguracaoModel? initialConfiguration =
+        widget.initialConfiguration;
+    if (initialConfiguration == null) {
+      _load();
+    } else {
+      _loading = false;
+      _applyConfiguration(initialConfiguration, notify: false);
+    }
   }
 
   @override
@@ -66,21 +301,7 @@ class _CatalogoPublicoPersonalizacaoWebPageState
     super.dispose();
   }
 
-  String? get _publicBaseUrl {
-    final Uri currentUri = Uri.base;
-    if (!<String>{'http', 'https'}.contains(currentUri.scheme) ||
-        currentUri.host.isEmpty) {
-      return null;
-    }
-    final bool loopback = <String>{
-      'localhost',
-      '127.0.0.1',
-      '::1',
-    }.contains(currentUri.host.toLowerCase());
-    return currentUri
-        .resolve(loopback ? '/catalogo.html' : '/catalogo')
-        .toString();
-  }
+  String? get _publicBaseUrl => _catalogPublicBaseUrl();
 
   bool get _dirty {
     final CatalogoPublicoConfiguracaoModel? saved = _saved;
@@ -112,13 +333,23 @@ class _CatalogoPublicoPersonalizacaoWebPageState
     }
   }
 
-  void _applyConfiguration(CatalogoPublicoConfiguracaoModel configuration) {
-    _saved = configuration;
-    _draft = configuration;
-    _titleController.text = configuration.personalizacao.titulo;
-    _descriptionController.text = configuration.personalizacao.descricao;
-    _colorController.text = configuration.personalizacao.corPrincipal;
-    setState(() {});
+  void _applyConfiguration(
+    CatalogoPublicoConfiguracaoModel configuration, {
+    bool notify = true,
+  }) {
+    void apply() {
+      _saved = configuration;
+      _draft = configuration;
+      _titleController.text = configuration.personalizacao.titulo;
+      _descriptionController.text = configuration.personalizacao.descricao;
+      _colorController.text = configuration.personalizacao.corPrincipal;
+    }
+
+    if (notify) {
+      setState(apply);
+    } else {
+      apply();
+    }
   }
 
   void _updatePersonalization(
@@ -182,7 +413,7 @@ class _CatalogoPublicoPersonalizacaoWebPageState
         updated.ativo
             ? context.t(
                 'catalog.publicPage.saveSuccessPublished',
-                fallback: 'Página salva e publicada com sucesso.',
+                fallback: 'Catálogo salvo e publicado com sucesso.',
               )
             : context.t(
                 'catalog.publicPage.saveSuccessDraft',
@@ -195,7 +426,7 @@ class _CatalogoPublicoPersonalizacaoWebPageState
       _showSnack(
         context.t(
           'catalog.publicPage.saveError',
-          fallback: 'Não foi possível salvar a página do catálogo.',
+          fallback: 'Não foi possível salvar o catálogo virtual.',
         ),
         error: true,
       );
@@ -284,17 +515,44 @@ class _CatalogoPublicoPersonalizacaoWebPageState
   Widget build(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     if (_loading) {
-      return ColoredBox(
-        color: tokens.workspaceBackground,
-        child: Center(
-          child: SixBackendLoading.messages(
-            animation: SixBackendLoadingAnimation.skeletonPulse,
+      return Stack(
+        children: <Widget>[
+          Positioned.fill(
+            child: ColoredBox(
+              color: tokens.workspaceBackground,
+              child: Center(
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.4,
+                    color: tokens.info,
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
+          if (widget.onClose != null)
+            Positioned(
+              top: 16,
+              right: 16,
+              child: _buildCloseButton(tokens),
+            ),
+        ],
       );
     }
     if (_errorMessage.isNotEmpty || _draft == null) {
-      return _buildError(tokens);
+      return Stack(
+        children: <Widget>[
+          Positioned.fill(child: _buildError(tokens)),
+          if (widget.onClose != null)
+            Positioned(
+              top: 16,
+              right: 16,
+              child: _buildCloseButton(tokens),
+            ),
+        ],
+      );
     }
 
     return ColoredBox(
@@ -359,7 +617,7 @@ class _CatalogoPublicoPersonalizacaoWebPageState
                 Text(
                   context.t(
                     'catalog.publicPage.loadErrorTitle',
-                    fallback: 'Não foi possível carregar a página pública',
+                    fallback: 'Não foi possível carregar o catálogo virtual',
                   ),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -415,7 +673,7 @@ class _CatalogoPublicoPersonalizacaoWebPageState
                     Text(
                       context.t(
                         'catalog.publicPage.title',
-                        fallback: 'Página pública do catálogo',
+                        fallback: 'Catálogo virtual',
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -463,6 +721,8 @@ class _CatalogoPublicoPersonalizacaoWebPageState
                 context.t('catalog.publicPage.share', fallback: 'Compartilhar'),
               ),
             ),
+            if (widget.onClose != null)
+              _buildCloseButton(tokens),
           ];
           if (compact) {
             return Column(
@@ -483,6 +743,20 @@ class _CatalogoPublicoPersonalizacaoWebPageState
           );
         },
       ),
+    );
+  }
+
+  Widget _buildCloseButton(WebThemeTokens tokens) {
+    return IconButton(
+      onPressed: _saving ? null : widget.onClose,
+      tooltip: context.t('common.close', fallback: 'Fechar'),
+      style: IconButton.styleFrom(
+        foregroundColor: tokens.primaryText,
+        backgroundColor: tokens.surfaceMuted,
+        side: BorderSide(color: tokens.cardBorder),
+        minimumSize: const Size(42, 42),
+      ),
+      icon: const Icon(Icons.close_rounded),
     );
   }
 

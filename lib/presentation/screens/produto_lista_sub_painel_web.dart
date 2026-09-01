@@ -170,6 +170,7 @@ class SubPainelWebProdutoLista extends StatelessWidget {
     this.permitirSelecaoMultipla = false,
     this.tipoInicial = 'PRODUTO',
     this.apenasAtivosNoBackend = false,
+    this.exibirInformacoesEstoque = false,
   });
 
   final bool isSelecao;
@@ -177,6 +178,7 @@ class SubPainelWebProdutoLista extends StatelessWidget {
   final bool permitirSelecaoMultipla;
   final String tipoInicial;
   final bool apenasAtivosNoBackend;
+  final bool exibirInformacoesEstoque;
 
   @override
   Widget build(BuildContext context) {
@@ -186,6 +188,7 @@ class SubPainelWebProdutoLista extends StatelessWidget {
       permitirSelecaoMultipla: permitirSelecaoMultipla,
       tipoInicial: tipoInicial,
       apenasAtivosNoBackend: apenasAtivosNoBackend,
+      exibirInformacoesEstoque: exibirInformacoesEstoque,
     );
   }
 }
@@ -198,6 +201,7 @@ class ProdutoListaBody extends StatefulWidget {
     this.permitirSelecaoMultipla = false,
     this.tipoInicial = 'PRODUTO',
     this.apenasAtivosNoBackend = false,
+    this.exibirInformacoesEstoque = false,
   });
 
   final bool isSelecao;
@@ -205,6 +209,7 @@ class ProdutoListaBody extends StatefulWidget {
   final bool permitirSelecaoMultipla;
   final String tipoInicial;
   final bool apenasAtivosNoBackend;
+  final bool exibirInformacoesEstoque;
 
   @override
   State<ProdutoListaBody> createState() => _ProdutoListaBodyState();
@@ -264,6 +269,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   bool get _isProdutoSelecionado => tipoSelecionado == 'PRODUTO';
 
   bool get _usarTokensSelecaoWeb => widget.isSelecao;
+
+  bool get _exibirInformacoesEstoque =>
+      widget.exibirInformacoesEstoque || widget.isSelecao;
 
   int get _quantidadeSelecionadaTotal => _produtosSelecionados.values.fold<int>(
     0,
@@ -841,11 +849,17 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                       'Busca rápida para incluir produto ou serviço na venda.',
                 )
             : widget.modoEdicao
-            ? context.t(
-              'produto.webList.edit.subtitle',
-              fallback:
-                  'Gerencie seu catálogo de produtos, estoque, preços e imagens.',
-            )
+            ? _exibirInformacoesEstoque
+                ? context.t(
+                  'produto.webList.edit.subtitle',
+                  fallback:
+                      'Gerencie seu catálogo de produtos, estoque, preços e imagens.',
+                )
+                : context.t(
+                  'catalogHub.list.subtitle',
+                  fallback:
+                      'Gerencie produtos, serviços, preços, imagens e organização.',
+                )
             : context.t(
               'produto.webList.default.subtitle',
               fallback: 'Consulta rápida do catálogo com ações de balcão.',
@@ -1613,30 +1627,33 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         resultado = resultado.where((ProdutoModel produto) => !produto.ativo);
     }
 
-    switch (_estoqueFiltro) {
-      case _ProdutoEstoqueFiltro.todos:
-        break;
-      case _ProdutoEstoqueFiltro.emEstoque:
-        resultado = resultado.where(
-          (ProdutoModel produto) =>
-              _situacaoEstoque(produto) == _ProdutoSituacaoEstoque.emEstoque,
-        );
-      case _ProdutoEstoqueFiltro.estoqueBaixo:
-        resultado = resultado.where(
-          (ProdutoModel produto) =>
-              _situacaoEstoque(produto) == _ProdutoSituacaoEstoque.estoqueBaixo,
-        );
-      case _ProdutoEstoqueFiltro.semEstoque:
-        resultado = resultado.where(
-          (ProdutoModel produto) =>
-              _situacaoEstoque(produto) == _ProdutoSituacaoEstoque.semEstoque,
-        );
-      case _ProdutoEstoqueFiltro.estoqueNegativo:
-        resultado = resultado.where(
-          (ProdutoModel produto) =>
-              _situacaoEstoque(produto) ==
-              _ProdutoSituacaoEstoque.estoqueNegativo,
-        );
+    if (_exibirInformacoesEstoque) {
+      switch (_estoqueFiltro) {
+        case _ProdutoEstoqueFiltro.todos:
+          break;
+        case _ProdutoEstoqueFiltro.emEstoque:
+          resultado = resultado.where(
+            (ProdutoModel produto) =>
+                _situacaoEstoque(produto) == _ProdutoSituacaoEstoque.emEstoque,
+          );
+        case _ProdutoEstoqueFiltro.estoqueBaixo:
+          resultado = resultado.where(
+            (ProdutoModel produto) =>
+                _situacaoEstoque(produto) ==
+                _ProdutoSituacaoEstoque.estoqueBaixo,
+          );
+        case _ProdutoEstoqueFiltro.semEstoque:
+          resultado = resultado.where(
+            (ProdutoModel produto) =>
+                _situacaoEstoque(produto) == _ProdutoSituacaoEstoque.semEstoque,
+          );
+        case _ProdutoEstoqueFiltro.estoqueNegativo:
+          resultado = resultado.where(
+            (ProdutoModel produto) =>
+                _situacaoEstoque(produto) ==
+                _ProdutoSituacaoEstoque.estoqueNegativo,
+          );
+      }
     }
 
     switch (_marcacaoFiltro) {
@@ -1834,7 +1851,8 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
             });
           },
         ),
-        _buildMenuFiltro<_ProdutoEstoqueFiltro>(
+        if (_exibirInformacoesEstoque)
+          _buildMenuFiltro<_ProdutoEstoqueFiltro>(
           context: context,
           icon: Icons.inventory_2_outlined,
           label: context.t('workspaceHome.stock.title', fallback: 'Estoque'),
@@ -2057,7 +2075,8 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
           _ProdutoResumoRapidoFiltro.produtos,
           _ProdutoResumoRapidoFiltro.servicos,
           _ProdutoResumoRapidoFiltro.comImagem,
-          _ProdutoResumoRapidoFiltro.estoqueBaixo,
+          if (_exibirInformacoesEstoque)
+            _ProdutoResumoRapidoFiltro.estoqueBaixo,
         ];
 
     return Align(
@@ -2397,11 +2416,14 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  _buildQuantidadeEstoqueInfo(context, produto),
+                  if (_exibirInformacoesEstoque) ...<Widget>[
+                    const SizedBox(width: 12),
+                    _buildQuantidadeEstoqueInfo(context, produto),
+                  ],
                 ],
               ),
-              if (situacaoEstoque != _ProdutoSituacaoEstoque.emEstoque &&
+              if (_exibirInformacoesEstoque &&
+                  situacaoEstoque != _ProdutoSituacaoEstoque.emEstoque &&
                   situacaoEstoque !=
                       _ProdutoSituacaoEstoque.naoAplicavel) ...<Widget>[
                 const SizedBox(height: 10),
@@ -2538,13 +2560,14 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 textAlign: TextAlign.end,
               ),
             ),
-            Expanded(
-              flex: 2,
-              child: Text(
-                context.t('workspaceHome.stock.title', fallback: 'Estoque'),
-                textAlign: TextAlign.end,
+            if (_exibirInformacoesEstoque)
+              Expanded(
+                flex: 2,
+                child: Text(
+                  context.t('workspaceHome.stock.title', fallback: 'Estoque'),
+                  textAlign: TextAlign.end,
+                ),
               ),
-            ),
             Expanded(
               flex: 2,
               child: Text(
@@ -2645,34 +2668,37 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                 ),
               ),
             ),
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(
-                    _quantidadeEstoqueLabel(produto),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: tokens.primaryText,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  if (situacaoEstoque != _ProdutoSituacaoEstoque.emEstoque &&
-                      situacaoEstoque != _ProdutoSituacaoEstoque.naoAplicavel)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: _buildEstoqueChip(
-                        context,
-                        situacaoEstoque,
-                        compact: true,
+            if (_exibirInformacoesEstoque)
+              Expanded(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      _quantidadeEstoqueLabel(produto),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: tokens.primaryText,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                ],
+                    if (situacaoEstoque !=
+                            _ProdutoSituacaoEstoque.emEstoque &&
+                        situacaoEstoque !=
+                            _ProdutoSituacaoEstoque.naoAplicavel)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: _buildEstoqueChip(
+                          context,
+                          situacaoEstoque,
+                          compact: true,
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
             Expanded(
               flex: 2,
               child: Align(
@@ -3757,16 +3783,18 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                     _precoFormatado(produto.precoVenda),
                     strong: true,
                   ),
-                  _pill(
-                    context,
-                    Icons.low_priority_rounded,
-                    'Mín.: ${produto.estoqueMinimo}',
-                  ),
-                  _pill(
-                    context,
-                    Icons.trending_up_rounded,
-                    'Máx.: ${produto.estoqueMaximo}',
-                  ),
+                  if (_exibirInformacoesEstoque) ...<Widget>[
+                    _pill(
+                      context,
+                      Icons.low_priority_rounded,
+                      'Mín.: ${produto.estoqueMinimo}',
+                    ),
+                    _pill(
+                      context,
+                      Icons.trending_up_rounded,
+                      'Máx.: ${produto.estoqueMaximo}',
+                    ),
+                  ],
                 ],
               ),
             ],

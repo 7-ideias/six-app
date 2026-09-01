@@ -8,7 +8,8 @@ import 'package:sixpos/data/models/catalogo_reserva_model.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
-import 'package:sixpos/presentation/components/six_backend_loading.dart';
+import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
+import 'package:sixpos/presentation/screens/catalogo_publico_personalizacao_web.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
@@ -53,6 +54,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
   bool _carregandoDetalhe = false;
   bool _atualizandoStatus = false;
   bool _convertendo = false;
+  bool _abrindoCatalogoVirtual = false;
   bool _aplicandoPreferencias = false;
   bool _usuarioAlterouFiltros = false;
 
@@ -144,6 +146,16 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
         _erro = error.toString();
         _carregando = false;
       });
+    }
+  }
+
+  Future<void> _abrirCatalogoVirtual() async {
+    if (_abrindoCatalogoVirtual) return;
+    setState(() => _abrindoCatalogoVirtual = true);
+    try {
+      await showCatalogoVirtualWebDialog(context);
+    } finally {
+      if (mounted) setState(() => _abrindoCatalogoVirtual = false);
     }
   }
 
@@ -814,25 +826,69 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
               ],
             ),
           ),
-          OutlinedButton.icon(
-            onPressed:
-                _carregando
-                    ? null
-                    : () => _carregar(
-                      pagina: _pagina?.pagina ?? 0,
-                      selecionarId: _idSelecionado,
-                    ),
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: Text(context.t('common.refresh', fallback: 'Atualizar')),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: tokens.info,
-              backgroundColor: tokens.surfaceMuted.withValues(alpha: 0.35),
-              side: BorderSide(color: tokens.selectedBorder),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+          const SizedBox(width: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              FilledButton.icon(
+                onPressed:
+                    _abrindoCatalogoVirtual ? null : _abrirCatalogoVirtual,
+                icon:
+                    _abrindoCatalogoVirtual
+                        ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        )
+                        : const Icon(Icons.storefront_outlined, size: 18),
+                label: Text(
+                  context.t(
+                    'catalogReservations.openCatalog',
+                    fallback: 'Abrir catálogo virtual',
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
               ),
-            ),
+              OutlinedButton.icon(
+                onPressed:
+                    _carregando
+                        ? null
+                        : () => _carregar(
+                          pagina: _pagina?.pagina ?? 0,
+                          selecionarId: _idSelecionado,
+                        ),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(
+                  context.t('common.refresh', fallback: 'Atualizar'),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: tokens.info,
+                  backgroundColor: tokens.surfaceMuted.withValues(alpha: 0.35),
+                  side: BorderSide(color: tokens.selectedBorder),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -841,20 +897,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
 
   Widget _buildBody(BuildContext context, WebThemeTokens tokens) {
     if (_carregando && _pagina == null) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: SixBackendLoading.messages(
-          title: context.t(
-            'catalogReservations.loadingTitle',
-            fallback: 'Carregando reservas',
-          ),
-          subtitle: context.t(
-            'catalogReservations.loadingSubtitle',
-            fallback: 'Sincronizando as solicitações deste comércio.',
-          ),
-          leadingIcon: Icons.inventory_outlined,
-        ),
-      );
+      return _buildReservationsLoading(tokens);
     }
 
     if (_erro != null && _pagina == null) {
@@ -884,6 +927,71 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildReservationsLoading(WebThemeTokens tokens) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compacto = constraints.maxWidth < 860;
+        final Widget lista = _buildListLoading(tokens);
+        final Widget detalhe = _buildDetailLoading(tokens);
+
+        if (compacto) {
+          return lista;
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            SizedBox(width: 430, child: lista),
+            VerticalDivider(width: 1, color: tokens.divider),
+            Expanded(child: detalhe),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildListLoading(WebThemeTokens tokens) {
+    return ColoredBox(
+      color: tokens.surface,
+      child: const SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            SixWebLoadingBlock(height: 94, highlight: true),
+            SizedBox(height: 14),
+            SixWebLoadingBlock(height: 104),
+            SizedBox(height: 10),
+            SixWebLoadingBlock(height: 104),
+            SizedBox(height: 10),
+            SixWebLoadingBlock(height: 104),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailLoading(WebThemeTokens tokens) {
+    return ColoredBox(
+      color: tokens.workspaceBackground,
+      child: const SingleChildScrollView(
+        padding: EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            SixWebLoadingBlock(height: 72, highlight: true),
+            SizedBox(height: 20),
+            SixWebLoadingBlock(height: 112),
+            SizedBox(height: 18),
+            SixWebLoadingBlock(height: 104),
+            SizedBox(height: 18),
+            SixWebLoadingBlock(height: 92),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1139,21 +1247,7 @@ class _CatalogoReservasWebPageState extends State<CatalogoReservasWebPage> {
       return _buildEmpty(context, tokens);
     }
     if (_carregandoDetalhe || _detalhe == null) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: SixBackendLoading.messages(
-          title: context.t(
-            'catalogReservations.detailLoading',
-            fallback: 'Carregando detalhes',
-          ),
-          subtitle: context.t(
-            'catalogReservations.detailLoadingSubtitle',
-            fallback: 'Buscando os produtos e dados do cliente.',
-          ),
-          compact: true,
-          leadingIcon: Icons.receipt_long_outlined,
-        ),
-      );
+      return _buildDetailLoading(tokens);
     }
 
     final CatalogoReservaDetalheModel detalhe = _detalhe!;
