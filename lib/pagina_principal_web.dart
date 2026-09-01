@@ -89,6 +89,7 @@ class PaginaPrincipalWeb extends StatefulWidget {
   @override
   State<PaginaPrincipalWeb> createState() => _PaginaPrincipalWebState();
 }
+
 enum StatusComunicacaoBackend { conectando, conectado, desconectado }
 
 enum _PdvItemVisualFeedback { itemAdded, quantityIncreased, quantityDecreased }
@@ -150,6 +151,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
   bool _sincronizandoTotalVendasAReceber = false;
   bool _modoExpandidoFrenteCaixa = false;
   bool _carregandoSessaoCaixaPdv = false;
+  bool _atualizandoVisaoPdv = false;
   bool _sessaoCaixaPdvSincronizada = false;
   bool _erroSessaoCaixaPdv = false;
   CaixaSessao? _sessaoCaixaPdv;
@@ -1576,6 +1578,52 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
       if (mounted) {
         setState(() {
           _carregandoSessaoCaixaPdv = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _atualizarVisaoPdv() async {
+    if (_atualizandoVisaoPdv) {
+      return;
+    }
+
+    setState(() {
+      _atualizandoVisaoPdv = true;
+    });
+
+    try {
+      await Future.wait<void>(<Future<void>>[
+        _carregarSessaoCaixaPdv(),
+        _sincronizarTotalVendasAReceber(),
+      ]);
+      if (!mounted) {
+        return;
+      }
+
+      final VendaNaoLiquidadaModel? vendaEmConsulta =
+          _vendaNaoLiquidadaEmConsulta;
+      final bool podeRecarregarVendaEmConsulta =
+          vendaEmConsulta != null &&
+          !_recebendoVendaNaoLiquidada &&
+          !_vendaNaoLiquidadaPossuiAlteracoesNosItens;
+
+      if (podeRecarregarVendaEmConsulta) {
+        await _carregarVendaNaoLiquidadaNoPdv(vendaEmConsulta);
+        if (!mounted) {
+          return;
+        }
+      } else {
+        setState(() {
+          _atualizarCamposDerivados();
+        });
+      }
+
+      _restaurarFocoLeituraRapidaSeCabivel();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _atualizandoVisaoPdv = false;
         });
       }
     }

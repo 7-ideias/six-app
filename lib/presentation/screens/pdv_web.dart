@@ -2558,9 +2558,15 @@ extension _PdvWeb on _PaginaPrincipalWebState {
             runSpacing: 8,
             children: <Widget>[
               OutlinedButton.icon(
-                onPressed:
-                    _carregandoSessaoCaixaPdv ? null : _carregarSessaoCaixaPdv,
-                icon: const Icon(Icons.refresh_rounded),
+                onPressed: _atualizandoVisaoPdv ? null : _atualizarVisaoPdv,
+                icon:
+                    _atualizandoVisaoPdv
+                        ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.refresh_rounded),
                 label: Text(context.t('common.refresh', fallback: 'Atualizar')),
                 style: _pdvOutlinedCtaStyle(),
               ),
