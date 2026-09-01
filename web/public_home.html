@@ -5,48 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="sixapp-entrypoint" content="public-home">
-  <meta name="description" content="SixoApp organiza vendas, orçamentos, atendimentos técnicos, clientes, equipe e financeiro em uma plataforma para usar na Web, Android e iOS.">
-  <meta name="theme-color" content="#00163A">
+  <meta name="description" content="Uma operação que lembra, avisa, conecta clientes e faz cada etapa avançar — no app e na web.">
+  <meta name="theme-color" content="#061022">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="SixoApp">
-  <meta property="og:description" content="Gestão completa para quem vende produtos e presta serviços técnicos na Web, Android e iOS.">
-  <meta property="og:image" content="/site-assets/images/sixoapp-mark.png">
+  <meta property="og:title" content="Nada escapa. Tudo avança. | SixoApp">
+  <meta property="og:description" content="Checklist, alertas, agenda financeira, links web, assinatura e acompanhamento em uma operação conectada.">
+  <meta property="og:image" content="/site-assets/images/home-impact/hero-carousel/01-alerta-dono.jpg">
+  <meta property="og:image:width" content="1440">
+  <meta property="og:image:height" content="810">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="SixoApp">
-  <meta name="twitter:description" content="Vendas, orçamentos, atendimentos, equipe e financeiro na Web, Android e iOS.">
-  <meta name="twitter:image" content="/site-assets/images/sixoapp-mark.png">
+  <meta name="twitter:title" content="Nada escapa. Tudo avança. | SixoApp">
+  <meta name="twitter:description" content="O básico registra. A operação certa faz o próximo passo acontecer.">
+  <meta name="twitter:image" content="/site-assets/images/home-impact/hero-carousel/01-alerta-dono.jpg">
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/site-assets/images/sixoapp-mark.png">
-  <link rel="preload" as="image" href="/site-assets/images/sixoapp-symbol.png" fetchpriority="high">
+  <link rel="preload" as="image" href="/site-assets/images/home-impact/hero-carousel/01-alerta-dono.jpg" type="image/jpeg" fetchpriority="high">
   <link rel="stylesheet" href="/site-assets/css/public-base.css">
   <link rel="stylesheet" href="/site-assets/css/home.css">
-  <title>SixoApp - Gestão em Web, Android e iOS</title>
+  <link rel="stylesheet" href="/site-assets/css/home-impact.css">
+  <title>Nada escapa. Tudo avança. | SixoApp</title>
 </head>
-<body>
+<body class="public-home-page">
   <a class="skip-link" href="#conteudo" data-i18n="access.skip">Ir para o conteúdo principal</a>
 
-  <header class="site-header" data-header>
+  <header class="site-header impact-header" data-header>
     <nav class="nav-shell" aria-label="Navegação principal" data-i18n-aria="nav.aria">
       <a class="brand" href="#topo" aria-label="SixoApp">
-        <span class="brand-mark" aria-hidden="true">
-          <img src="/site-assets/images/sixoapp-mark.png" width="30" height="30" alt="">
-        </span>
+        <span class="brand-mark" aria-hidden="true"><img src="/site-assets/images/sixoapp-mark.png" width="30" height="30" alt=""></span>
         <span>SixoApp</span>
       </a>
-
       <button class="menu-toggle" type="button" aria-controls="nav-panel" aria-expanded="false" data-menu-toggle>
-        <span class="menu-toggle-lines" aria-hidden="true"></span>
-        <span data-i18n="nav.menu">Menu</span>
+        <span class="menu-toggle-lines" aria-hidden="true"></span><span data-i18n="nav.menu">Menu</span>
       </button>
-
       <div class="nav-panel" id="nav-panel" data-nav-panel>
         <div class="nav-links">
-          <a href="#recursos" data-i18n="nav.resources">Recursos</a>
-          <a href="#solucoes" data-i18n="nav.solutions">Dores e soluções</a>
-          <a href="#como-funciona" data-i18n="nav.how">Como funciona</a>
+          <a href="#recursos" data-i18n="nav.resources">Diferenciais</a>
+          <a href="#como-funciona" data-i18n="nav.how">A jornada</a>
           <a href="#planos" data-i18n="nav.plans">Planos</a>
+          <a href="#faq" data-i18n="nav.faq">FAQ</a>
         </div>
-
         <div class="nav-actions">
           <div class="language-switcher" role="group" aria-label="Selecionar idioma" data-i18n-aria="language.aria">
             <button type="button" data-lang-option="pt" aria-pressed="true">PT</button>
@@ -54,199 +51,236 @@
             <button type="button" data-lang-option="es" aria-pressed="false">ES</button>
           </div>
           <a class="button button-quiet" href="/login" data-i18n="nav.login">Entrar</a>
-          <a class="button button-primary" href="/register" data-i18n="nav.signup">Criar conta</a>
+          <a class="button button-primary" href="/register" data-i18n="nav.signup">Começar grátis</a>
         </div>
       </div>
     </nav>
   </header>
 
   <main id="conteudo">
-    <section class="hero-editorial" id="topo" aria-labelledby="hero-title">
-      <div class="layout hero-editorial-grid">
-        <div class="hero-editorial-copy" data-reveal="hero">
-          <p class="editorial-pill" data-i18n="hero.editorial.eyebrow">Gestão simples para comércio e serviços</p>
+    <section class="impact-hero" id="topo" aria-labelledby="hero-title">
+      <div class="impact-orbit impact-orbit-one" aria-hidden="true"></div>
+      <div class="impact-orbit impact-orbit-two" aria-hidden="true"></div>
+      <div class="layout impact-hero-grid">
+        <div class="impact-hero-copy" data-reveal="hero">
+          <p class="impact-eyebrow"><span aria-hidden="true"></span><span data-i18n="hero.eyebrow">Gestão que age, avisa e conecta</span></p>
           <h1 id="hero-title">
-            <span data-i18n="hero.editorial.lineOne">Todo o seu negócio</span>
-            <span data-i18n="hero.editorial.lineTwo">em um sistema</span>
-            <span class="hero-emphasis" data-i18n="hero.editorial.emphasis">simples.</span>
+            <span data-i18n="hero.lineOne">Seu negócio não precisa</span>
+            <span data-i18n="hero.lineTwo">de mais um sistema.</span>
+            <span class="impact-gradient-text" data-i18n="hero.lineThree">Precisa fazer o próximo passo acontecer.</span>
           </h1>
-          <p class="hero-editorial-lead" data-i18n="hero.editorial.lead">Vendas, produtos, serviços técnicos, clientes e financeiro em uma experiência leve para usar no computador e no celular.</p>
-
-          <div class="hero-editorial-actions">
-            <a class="button button-primary button-large button-arrow" href="/register">
-              <span data-i18n="hero.editorial.primary">Criar conta</span>
-              <span aria-hidden="true">→</span>
-            </a>
-            <a class="button button-quiet button-large" href="#recursos" data-i18n="hero.editorial.secondary">Ver funcionalidades</a>
+          <p class="impact-hero-lead" data-i18n="hero.lead">O básico registra. Aqui, tarefas viram ações, alertas chegam antes, clientes acompanham o serviço e o financeiro mostra o que vem pela frente — no app e na web.</p>
+          <div class="impact-hero-actions">
+            <a class="button button-primary button-large impact-primary-button" href="/register"><span data-i18n="hero.primary">Começar grátis</span><span aria-hidden="true">↗</span></a>
+            <a class="impact-text-link" href="#recursos"><span data-i18n="hero.secondary">Ver a operação em movimento</span><span aria-hidden="true">↓</span></a>
           </div>
-
-          <div class="hero-proof" aria-label="Diferenciais principais" data-i18n-aria="hero.proof.aria">
-            <span><i aria-hidden="true"></i><span data-i18n="hero.proof.online">Sistema online</span></span>
-            <span><i aria-hidden="true"></i><span data-i18n="hero.proof.multiBusiness">Multiempresa</span></span>
-            <span><i aria-hidden="true"></i><span data-i18n="hero.proof.languages">Vários idiomas</span></span>
+          <div class="impact-proof-row" aria-label="Diferenciais principais" data-i18n-aria="hero.proof.aria">
+            <span><i aria-hidden="true"></i><span data-i18n="hero.proof.platforms">App + web no mesmo fluxo</span></span>
+            <span><i aria-hidden="true"></i><span data-i18n="hero.proof.links">Links web para o cliente</span></span>
+            <span><i aria-hidden="true"></i><span data-i18n="hero.proof.push">Controle que chega por push</span></span>
           </div>
         </div>
 
-        <div class="hero-editorial-visual" data-reveal="hero-visual">
-          <figure class="hero-photo-card">
-            <span class="hero-brand-grid" aria-hidden="true"></span>
-            <img src="/site-assets/images/sixoapp-symbol.png" width="1024" height="1024" alt="Símbolo do SixoApp" data-i18n-alt="hero.image.alt" fetchpriority="high">
-            <figcaption aria-hidden="true">
-              <strong>SixoApp</strong>
-              <span data-i18n="hero.brand.tagline">Tudo conectado. Tudo sob controle.</span>
-            </figcaption>
+        <div class="impact-hero-visual" data-reveal="hero-visual" data-hero-carousel aria-label="Situações reais de uma operação conectada" data-i18n-aria="hero.carousel.aria">
+          <figure class="impact-hero-frame" data-hero-viewport>
+            <div class="impact-hero-slides">
+              <img class="impact-hero-slide is-active" data-hero-slide src="/site-assets/images/home-impact/hero-carousel/01-alerta-dono.jpg" width="1440" height="810" alt="Dono de empresa recebe um alerta no celular enquanto coordena outra atividade" data-i18n-alt="hero.scene.one.alt" fetchpriority="high" decoding="async" aria-hidden="false">
+              <img class="impact-hero-slide" data-hero-slide src="/site-assets/images/home-impact/hero-carousel/02-atendimento-domiciliar.jpg" width="1440" height="810" alt="Técnico realiza atendimento de ar-condicionado na casa de uma cliente" data-i18n-alt="hero.scene.two.alt" loading="eager" decoding="async" aria-hidden="true">
+              <img class="impact-hero-slide" data-hero-slide src="/site-assets/images/home-impact/hero.webp" width="1672" height="941" alt="Profissional atende cliente presencialmente em uma assistência técnica" data-i18n-alt="hero.scene.three.alt" loading="eager" decoding="async" aria-hidden="true">
+              <img class="impact-hero-slide" data-hero-slide src="/site-assets/images/home-impact/hero-carousel/04-servico-em-campo.jpg" width="1440" height="810" alt="Técnico organiza ferramentas e checklist antes de um atendimento externo" data-i18n-alt="hero.scene.four.alt" loading="eager" decoding="async" aria-hidden="true">
+              <img class="impact-hero-slide" data-hero-slide src="/site-assets/images/home-impact/hero-carousel/05-cliente-aprova-web.jpg" width="1440" height="810" alt="Cliente acompanha orçamento e status pelo celular enquanto o serviço acontece" data-i18n-alt="hero.scene.five.alt" loading="eager" decoding="async" aria-hidden="true">
+              <img class="impact-hero-slide" data-hero-slide src="/site-assets/images/home-impact/hero-carousel/06-agenda-financeira.jpg" width="1440" height="810" alt="Empresária revisa a agenda financeira enquanto acompanha a operação" data-i18n-alt="hero.scene.six.alt" loading="eager" decoding="async" aria-hidden="true">
+            </div>
+            <span class="impact-frame-shade" aria-hidden="true"></span>
+
+            <div class="impact-hero-control-rail" aria-label="Controles das situações" data-i18n-aria="hero.carousel.controls.aria">
+              <div class="impact-hero-dots">
+                <button class="is-active" type="button" data-hero-dot aria-current="true" aria-label="Ver cena 1: alerta de controle" data-i18n-aria="hero.carousel.gotoOne"><span aria-hidden="true"></span></button>
+                <button type="button" data-hero-dot aria-label="Ver cena 2: atendimento domiciliar" data-i18n-aria="hero.carousel.gotoTwo"><span aria-hidden="true"></span></button>
+                <button type="button" data-hero-dot aria-label="Ver cena 3: atendimento presencial" data-i18n-aria="hero.carousel.gotoThree"><span aria-hidden="true"></span></button>
+                <button type="button" data-hero-dot aria-label="Ver cena 4: checklist em campo" data-i18n-aria="hero.carousel.gotoFour"><span aria-hidden="true"></span></button>
+                <button type="button" data-hero-dot aria-label="Ver cena 5: cliente conectado" data-i18n-aria="hero.carousel.gotoFive"><span aria-hidden="true"></span></button>
+                <button type="button" data-hero-dot aria-label="Ver cena 6: agenda financeira" data-i18n-aria="hero.carousel.gotoSix"><span aria-hidden="true"></span></button>
+              </div>
+              <span class="impact-hero-counter" aria-hidden="true"><strong data-hero-current>01</strong> / 06</span>
+              <button class="impact-hero-toggle" type="button" data-hero-toggle aria-label="Pausar carrossel de situações" title="Pausar carrossel de situações">
+                <span aria-hidden="true" data-hero-toggle-icon>Ⅱ</span>
+                <span hidden data-hero-pause-copy data-i18n="hero.carousel.pause">Pausar carrossel de situações</span>
+                <span hidden data-hero-play-copy data-i18n="hero.carousel.play">Reproduzir carrossel de situações</span>
+              </button>
+            </div>
+
+            <div class="impact-scene-copy is-active" data-hero-caption aria-hidden="false"><small data-i18n="hero.scene.one.label">Alerta de controle</small><strong data-i18n="hero.scene.one.title">O alerta encontra o dono onde ele estiver.</strong></div>
+            <div class="impact-scene-copy" data-hero-caption aria-hidden="true"><small data-i18n="hero.scene.two.label">Atendimento domiciliar</small><strong data-i18n="hero.scene.two.title">Checklist guiando cada etapa em campo.</strong></div>
+            <div class="impact-scene-copy" data-hero-caption aria-hidden="true"><small data-i18n="hero.scene.three.label">Atendimento presencial</small><strong data-i18n="hero.scene.three.title">Entrada, etiqueta e orçamento no mesmo fluxo.</strong></div>
+            <div class="impact-scene-copy" data-hero-caption aria-hidden="true"><small data-i18n="hero.scene.four.label">Checklist em campo</small><strong data-i18n="hero.scene.four.title">Cada visita começa com o próximo passo claro.</strong></div>
+            <div class="impact-scene-copy" data-hero-caption aria-hidden="true"><small data-i18n="hero.scene.five.label">Cliente conectado</small><strong data-i18n="hero.scene.five.title">Orçamento, status, assinatura e feedback pelo link.</strong></div>
+            <div class="impact-scene-copy" data-hero-caption aria-hidden="true"><small data-i18n="hero.scene.six.label">Visão à frente</small><strong data-i18n="hero.scene.six.title">Agenda financeira no app e na web.</strong></div>
           </figure>
+          <span class="sr-only" aria-live="polite" aria-atomic="true" data-hero-live></span>
+        </div>
+      </div>
+      <div class="impact-hero-manifest layout" aria-label="Manifesto" data-i18n-aria="manifest.aria">
+        <span data-i18n="manifest.one">Nada fora do radar.</span><i aria-hidden="true"></i>
+        <span data-i18n="manifest.two">Nenhum cliente no escuro.</span><i aria-hidden="true"></i>
+        <span data-i18n="manifest.three">Toda etapa deixando prova.</span>
+      </div>
+    </section>
 
-          <div class="hero-platform-card" aria-label="Disponível na Web, Android e iOS" data-i18n-aria="hero.platform.card.aria">
-            <strong>Web + Android + iOS</strong>
-            <span data-i18n="hero.platform.card.body">A operação completa também no celular</span>
-          </div>
-
-          <div class="hero-status-card" aria-hidden="true">
-            <span></span>
-            <div>
-              <small data-i18n="hero.status.label">Atendimento</small>
-              <strong data-i18n="hero.status.value">Tudo organizado</strong>
-            </div>
-          </div>
+    <section class="impact-contrast" id="solucoes" aria-labelledby="contrast-title">
+      <div class="layout impact-contrast-grid">
+        <div class="impact-contrast-copy" data-reveal>
+          <p class="impact-section-index">01 / <span data-i18n="contrast.kicker">A ruptura</span></p>
+          <h2 id="contrast-title" data-i18n="contrast.title">Registrar é o mínimo. Fazer avançar é o diferencial.</h2>
+          <p data-i18n="contrast.lead">Cadastro, estoque, vendas e relatórios são o ponto de partida. A diferença aparece antes do atraso, durante o serviço e depois da entrega.</p>
+        </div>
+        <div class="impact-verb-grid" data-reveal>
+          <article><span>01</span><strong data-i18n="contrast.remember.title">Lembra</strong><p data-i18n="contrast.remember.body">O próximo passo deixa de depender da memória.</p></article>
+          <article><span>02</span><strong data-i18n="contrast.warn.title">Avisa</strong><p data-i18n="contrast.warn.body">O controle chega antes que a pendência vire urgência.</p></article>
+          <article><span>03</span><strong data-i18n="contrast.connect.title">Conecta</strong><p data-i18n="contrast.connect.body">O cliente acompanha sem interromper a equipe.</p></article>
+          <article><span>04</span><strong data-i18n="contrast.prove.title">Comprova</strong><p data-i18n="contrast.prove.body">Etiquetas, documentos e feedback fecham o ciclo.</p></article>
         </div>
       </div>
     </section>
 
-    <section class="capability-marquee" aria-label="Áreas do SixoApp" data-i18n-aria="marquee.aria">
-      <div class="marquee-track">
-        <div class="marquee-group">
-          <span data-i18n="marquee.sales">Vendas</span><i></i>
-          <span data-i18n="marquee.products">Produtos</span><i></i>
-          <span data-i18n="marquee.service">Serviços técnicos</span><i></i>
-          <span data-i18n="marquee.customers">Clientes</span><i></i>
-          <span data-i18n="marquee.finance">Financeiro</span><i></i>
-          <span data-i18n="marquee.reports">Relatórios</span><i></i>
-          <span data-i18n="marquee.mobile">Mobile</span><i></i>
-        </div>
-        <div class="marquee-group" aria-hidden="true">
-          <span data-i18n="marquee.sales">Vendas</span><i></i>
-          <span data-i18n="marquee.products">Produtos</span><i></i>
-          <span data-i18n="marquee.service">Serviços técnicos</span><i></i>
-          <span data-i18n="marquee.customers">Clientes</span><i></i>
-          <span data-i18n="marquee.finance">Financeiro</span><i></i>
-          <span data-i18n="marquee.reports">Relatórios</span><i></i>
-          <span data-i18n="marquee.mobile">Mobile</span><i></i>
-        </div>
-      </div>
-    </section>
-
-    <section class="editorial-section resources-section" id="recursos" aria-labelledby="resources-title">
+    <section class="impact-journey" id="como-funciona" aria-labelledby="journey-title">
       <div class="layout">
-        <div class="editorial-heading" data-reveal>
-          <p class="editorial-kicker" data-i18n="resources.kicker">Recursos principais</p>
-          <h2 id="resources-title" data-i18n="resources.editorial.title">Tudo o que a sua operação precisa.</h2>
-          <p data-i18n="resources.editorial.lead">Recursos conectados, sem excesso de telas e com uma navegação feita para ser entendida rapidamente.</p>
+        <div class="impact-section-heading is-light" data-reveal>
+          <p class="impact-section-index">02 / <span data-i18n="journey.kicker">Uma única jornada</span></p>
+          <h2 id="journey-title" data-i18n="journey.title">Uma ação movimenta a próxima.</h2>
+          <p data-i18n="journey.lead">Não são ferramentas soltas. É o mesmo atendimento avançando do primeiro contato ao financeiro.</p>
         </div>
-
-        <div class="feature-lines">
-          <article class="feature-line" data-reveal><span class="feature-line-index">01</span><span class="feature-line-icon feature-line-icon-sales" aria-hidden="true"></span><h3 data-i18n="feature.sales.title">Vendas e orçamentos</h3><p data-i18n="feature.sales.body">Registre pedidos, acompanhe propostas e avance do orçamento ao atendimento com menos retrabalho.</p></article>
-          <article class="feature-line" data-reveal><span class="feature-line-index">02</span><span class="feature-line-icon feature-line-icon-service" aria-hidden="true"></span><h3 data-i18n="feature.service.title">Atendimento técnico</h3><p data-i18n="feature.service.body">Organize solicitações, status, evidências, execução e entrega sem perder o histórico do cliente.</p></article>
-          <article class="feature-line" data-reveal><span class="feature-line-index">03</span><span class="feature-line-icon feature-line-icon-catalog" aria-hidden="true"></span><h3 data-i18n="feature.catalog.title">Produtos e serviços</h3><p data-i18n="feature.catalog.body">Mantenha catálogo, estoque e serviços cadastrados em uma rotina centralizada.</p></article>
-          <article class="feature-line" data-reveal><span class="feature-line-index">04</span><span class="feature-line-icon feature-line-icon-people" aria-hidden="true"></span><h3 data-i18n="feature.people.title">Clientes, colaboradores e fornecedores</h3><p data-i18n="feature.people.body">Tenha cadastros mais claros para relacionamento, operação e acompanhamento interno.</p></article>
-          <article class="feature-line" data-reveal><span class="feature-line-index">05</span><span class="feature-line-icon feature-line-icon-finance" aria-hidden="true"></span><h3 data-i18n="feature.finance.title">Financeiro</h3><p data-i18n="feature.finance.body">Acompanhe caixa, recebimentos, pendências e compromissos com leitura operacional.</p></article>
-          <article class="feature-line" data-reveal><span class="feature-line-index">06</span><span class="feature-line-icon feature-line-icon-report" aria-hidden="true"></span><h3 data-i18n="feature.pdf.title">Relatórios e comprovantes em PDF</h3><p data-i18n="feature.pdf.body">Gere documentos e registros para apoiar atendimento, entrega e conferência.</p></article>
-        </div>
-      </div>
-    </section>
-
-    <section class="showcase-section" aria-label="SixoApp na rotina" data-i18n-aria="showcase.aria">
-      <div class="layout showcase-list">
-        <article class="showcase-row" data-reveal>
-          <div class="showcase-copy">
-            <p class="editorial-kicker" data-i18n="showcase.service.kicker">Serviços técnicos</p>
-            <h2 data-i18n="showcase.service.title">Cada atendimento com contexto e continuidade.</h2>
-            <p data-i18n="showcase.service.body">Registre informações, evidências e mudanças de status em um fluxo que acompanha o serviço do recebimento à entrega.</p>
-            <ul class="editorial-check-list"><li data-i18n="showcase.service.pointOne">Histórico reunido por cliente e atendimento</li><li data-i18n="showcase.service.pointTwo">Status claros para a equipe</li><li data-i18n="showcase.service.pointThree">Documentos prontos para compartilhar</li></ul>
-          </div>
-          <div class="showcase-art service-art" aria-hidden="true">
-            <div class="art-window">
-              <div class="art-window-bar"><span></span><span></span><span></span><strong>SixoApp</strong></div>
-              <div class="service-timeline"><div class="is-complete"><i></i><span data-i18n="showcase.service.stepOne">Recebido</span></div><div class="is-active"><i></i><span data-i18n="showcase.service.stepTwo">Em atendimento</span></div><div><i></i><span data-i18n="showcase.service.stepThree">Pronto para entrega</span></div></div>
-              <div class="service-note"></div>
-            </div>
-          </div>
-        </article>
-
-        <article class="showcase-row showcase-row-reverse" data-reveal>
-          <div class="showcase-copy">
-            <p class="editorial-kicker" data-i18n="showcase.operation.kicker">Operação integrada</p>
-            <h2 data-i18n="showcase.operation.title">Produtos, pessoas e financeiro na mesma rotina.</h2>
-            <p data-i18n="showcase.operation.body">O dado cadastrado deixa de ficar isolado e passa a apoiar vendas, serviços, estoque, recebimentos e decisões.</p>
-            <ul class="editorial-check-list"><li data-i18n="showcase.operation.pointOne">Produtos e serviços prontos para uso</li><li data-i18n="showcase.operation.pointTwo">Clientes, colaboradores e fornecedores organizados</li><li data-i18n="showcase.operation.pointThree">Movimentações com visão financeira</li></ul>
-          </div>
-          <div class="showcase-art operation-art" aria-hidden="true">
-            <div class="operation-card operation-card-main"><span data-i18n="showcase.operation.cardOne">Operação do dia</span><strong data-i18n="showcase.operation.cardOneValue">Visão geral</strong><div class="operation-bars"><i></i><i></i><i></i><i></i><i></i></div></div>
-            <div class="operation-card operation-card-stock"><span data-i18n="showcase.operation.cardTwo">Estoque</span><strong data-i18n="showcase.operation.cardTwoValue">Atualizado</strong></div>
-            <div class="operation-card operation-card-team"><span data-i18n="showcase.operation.cardThree">Equipe</span><strong data-i18n="showcase.operation.cardThreeValue">Acessos definidos</strong></div>
-          </div>
-        </article>
-
-        <article class="showcase-row" data-reveal>
-          <div class="showcase-copy">
-            <p class="editorial-kicker" data-i18n="showcase.platform.kicker">Web + Android + iOS</p>
-            <h2 data-i18n="showcase.platform.title">O SixoApp inteiro acompanha você.</h2>
-            <p data-i18n="showcase.platform.body">Não é apenas um aplicativo de apoio: as rotinas do negócio também podem ser utilizadas no celular, com experiência própria para cada tela.</p>
-            <ul class="editorial-check-list"><li data-i18n="showcase.platform.pointOne">Gestão completa no navegador</li><li data-i18n="showcase.platform.pointTwo">Operação prática no Android e no iPhone</li><li data-i18n="showcase.platform.pointThree">Informações sincronizadas pela internet</li></ul>
-          </div>
-          <div class="showcase-art platform-art" aria-hidden="true"><div class="platform-desktop"><div class="platform-desktop-top"><span></span><span></span><span></span></div><div class="platform-desktop-body"><i></i><i></i><i></i><i></i></div></div><div class="platform-phone"><span></span><div><i></i><i></i><i></i></div></div></div>
-        </article>
-      </div>
-    </section>
-
-    <section class="editorial-section solutions-section" id="solucoes" aria-labelledby="solutions-title">
-      <div class="layout">
-        <div class="editorial-heading editorial-heading-wide" data-reveal><p class="editorial-kicker" data-i18n="solutions.kicker">Dores e soluções</p><h2 id="solutions-title" data-i18n="solutions.title">Problemas reais da operação, tratados de forma direta.</h2><p data-i18n="solutions.lead">O SixoApp reduz a fragmentação do dia a dia conectando informações que normalmente ficam espalhadas.</p></div>
-
-        <div class="solution-pairs">
-          <article class="solution-pair" data-reveal><div class="pain-panel"><div class="pair-label"><span>01</span><i aria-hidden="true">!</i><strong data-i18n="solutions.pain.label">A dor</strong></div><h3 data-i18n="solutions.one.painTitle">Informações do atendimento espalhadas</h3><p data-i18n="solutions.one.painBody">Status, observações e evidências ficam em lugares diferentes, tornando a consulta lenta e aumentando o risco de desencontro.</p></div><div class="answer-panel"><div class="pair-label"><i aria-hidden="true">✓</i><strong data-i18n="solutions.answer.label">A solução SixoApp</strong></div><h3 data-i18n="solutions.one.answerTitle">Histórico e status centralizados</h3><p data-i18n="solutions.one.answerBody">O atendimento mantém contexto, etapas e registros reunidos para facilitar a continuidade do trabalho.</p></div></article>
-          <article class="solution-pair" data-reveal><div class="pain-panel"><div class="pair-label"><span>02</span><i aria-hidden="true">!</i><strong data-i18n="solutions.pain.label">A dor</strong></div><h3 data-i18n="solutions.two.painTitle">Equipe sem clareza sobre acessos</h3><p data-i18n="solutions.two.painBody">Quando todos enxergam ou executam as mesmas ações, responsabilidades e informações sensíveis ficam difíceis de controlar.</p></div><div class="answer-panel"><div class="pair-label"><i aria-hidden="true">✓</i><strong data-i18n="solutions.answer.label">A solução SixoApp</strong></div><h3 data-i18n="solutions.two.answerTitle">Permissões por colaborador</h3><p data-i18n="solutions.two.answerBody">O administrador organiza os acessos de acordo com o papel de cada pessoa e de cada comércio.</p></div></article>
-          <article class="solution-pair" data-reveal><div class="pain-panel"><div class="pair-label"><span>03</span><i aria-hidden="true">!</i><strong data-i18n="solutions.pain.label">A dor</strong></div><h3 data-i18n="solutions.three.painTitle">Cadastros que não conversam com a operação</h3><p data-i18n="solutions.three.painBody">Produtos, serviços e pessoas registrados de forma isolada geram repetição de trabalho durante vendas e atendimentos.</p></div><div class="answer-panel"><div class="pair-label"><i aria-hidden="true">✓</i><strong data-i18n="solutions.answer.label">A solução SixoApp</strong></div><h3 data-i18n="solutions.three.answerTitle">Uma base conectada ao uso diário</h3><p data-i18n="solutions.three.answerBody">Os cadastros apoiam as movimentações e preservam o contexto necessário em cada jornada.</p></div></article>
-          <article class="solution-pair" data-reveal><div class="pain-panel"><div class="pair-label"><span>04</span><i aria-hidden="true">!</i><strong data-i18n="solutions.pain.label">A dor</strong></div><h3 data-i18n="solutions.four.painTitle">Decisões financeiras sem visão suficiente</h3><p data-i18n="solutions.four.painBody">Caixa, recebimentos, compromissos e pendências separados dificultam a leitura do momento do negócio.</p></div><div class="answer-panel"><div class="pair-label"><i aria-hidden="true">✓</i><strong data-i18n="solutions.answer.label">A solução SixoApp</strong></div><h3 data-i18n="solutions.four.answerTitle">Financeiro organizado para acompanhar</h3><p data-i18n="solutions.four.answerBody">Informações importantes ficam reunidas para apoiar conferência, planejamento e tomada de decisão.</p></div></article>
-        </div>
-
-        <div class="solutions-cta" data-reveal><div><h3 data-i18n="solutions.cta.title">Organize primeiro. Cresça com clareza.</h3><p data-i18n="solutions.cta.body">Conheça a experiência do SixoApp e veja como ela se encaixa na sua operação.</p></div><a class="button button-primary button-large button-arrow" href="/register"><span data-i18n="solutions.cta.button">Criar conta</span><span aria-hidden="true">→</span></a></div>
-      </div>
-    </section>
-
-    <section class="editorial-section steps-section" id="como-funciona" aria-labelledby="steps-title">
-      <div class="layout steps-layout">
-        <div class="editorial-heading" data-reveal><p class="editorial-kicker" data-i18n="steps.kicker">Como funciona</p><h2 id="steps-title" data-i18n="steps.title">Começar é simples.</h2><p data-i18n="steps.lead">A conta evolui junto com a estrutura do seu negócio, da primeira configuração à operação da equipe.</p></div>
-        <ol class="step-list">
-          <li data-reveal><span>01</span><h3 data-i18n="steps.one.title">Crie a conta</h3><p data-i18n="steps.one.body">O administrador inicia o acesso e registra as informações principais.</p></li>
-          <li data-reveal><span>02</span><h3 data-i18n="steps.two.title">Organize o comércio</h3><p data-i18n="steps.two.body">Cadastre produtos, serviços, pessoas e configure os acessos da equipe.</p></li>
-          <li data-reveal><span>03</span><h3 data-i18n="steps.three.title">Use onde estiver</h3><p data-i18n="steps.three.body">Opere pela Web, Android ou iOS com as informações sincronizadas.</p></li>
+        <ol class="impact-journey-track" tabindex="0" aria-label="Jornada conectada" data-i18n-aria="journey.aria" data-reveal data-journey-motion>
+          <li><span>01</span><i aria-hidden="true">↗</i><strong data-i18n="journey.quote">Orçamento web</strong></li>
+          <li><span>02</span><i aria-hidden="true">⌁</i><strong data-i18n="journey.signature">Aceite e assinatura</strong></li>
+          <li><span>03</span><i aria-hidden="true">▰</i><strong data-i18n="journey.label">Etiqueta e entrada</strong></li>
+          <li><span>04</span><i aria-hidden="true">✓</i><strong data-i18n="journey.checklist">Checklist e execução</strong></li>
+          <li><span>05</span><i aria-hidden="true">●</i><strong data-i18n="journey.status">Push e status</strong></li>
+          <li><span>06</span><i aria-hidden="true">★</i><strong data-i18n="journey.feedback">Entrega e feedback</strong></li>
+          <li><span>07</span><i aria-hidden="true">↗</i><strong data-i18n="journey.finance">Agenda financeira</strong></li>
         </ol>
       </div>
     </section>
 
-    <section class="editorial-section plans-editorial-section" id="planos" aria-labelledby="plans-title">
+    <section class="impact-features" id="recursos" aria-labelledby="features-title">
       <div class="layout">
-        <div class="editorial-heading" data-reveal><p class="editorial-kicker" data-i18n="plans.kicker">Planos</p><h2 id="plans-title" data-i18n="plans.editorial.title">Um caminho para cada momento do negócio.</h2><p data-i18n="plans.editorial.lead">Comece pela conta, conheça as opções disponíveis e evolua conforme a sua operação ganhar novas necessidades.</p></div>
-        <div class="plan-catalog-feedback" data-public-plans-status role="status" aria-live="polite">Carregando planos...</div>
-        <div class="plan-path-grid" data-public-plans aria-busy="true"></div>
-        <div class="plan-catalog-actions"><button class="button button-quiet" type="button" data-public-plans-retry hidden>Tentar novamente</button></div>
-        <noscript>
-          <p class="plan-catalog-feedback">Ative o JavaScript para consultar os planos publicados.</p>
-          <a class="button button-quiet" href="/checkout">Conhecer planos</a>
-        </noscript>
+        <div class="impact-features-heading" data-reveal>
+          <div class="impact-section-heading is-light">
+            <p class="impact-section-index">03 / <span data-i18n="features.kicker">O que muda na prática</span></p>
+            <h2 id="features-title" data-i18n="features.title">Diferenciais que trabalham juntos.</h2>
+            <p data-i18n="features.lead">Explore cinco capítulos de uma operação que lembra, antecipa, conecta, comprova e continua em qualquer tela.</p>
+          </div>
+          <div class="impact-carousel-controls" aria-label="Controles do carrossel" data-i18n-aria="carousel.controls.aria">
+            <button type="button" data-carousel-prev aria-label="Diferencial anterior" data-i18n-aria="carousel.prev">←</button>
+            <span aria-hidden="true"><strong data-carousel-current>01</strong> / 05</span>
+            <button type="button" data-carousel-next aria-label="Próximo diferencial" data-i18n-aria="carousel.next">→</button>
+          </div>
+        </div>
+
+        <div class="impact-carousel" data-impact-carousel role="region" aria-label="Diferenciais do sistema" data-i18n-aria="carousel.aria" data-reveal>
+          <div class="impact-carousel-tabs" role="tablist" aria-label="Capítulos dos diferenciais" data-i18n-aria="carousel.tabs.aria">
+            <button type="button" role="tab" id="feature-tab-control" aria-controls="feature-panel-control" aria-selected="true" tabindex="0" class="is-active" data-carousel-tab="0" data-i18n="feature.control.tab">Controle</button>
+            <button type="button" role="tab" id="feature-tab-finance" aria-controls="feature-panel-finance" aria-selected="false" tabindex="-1" data-carousel-tab="1" data-i18n="feature.finance.tab">Antecipação</button>
+            <button type="button" role="tab" id="feature-tab-client" aria-controls="feature-panel-client" aria-selected="false" tabindex="-1" data-carousel-tab="2" data-i18n="feature.client.tab">Cliente</button>
+            <button type="button" role="tab" id="feature-tab-evidence" aria-controls="feature-panel-evidence" aria-selected="false" tabindex="-1" data-carousel-tab="3" data-i18n="feature.evidence.tab">Evidência</button>
+            <button type="button" role="tab" id="feature-tab-integration" aria-controls="feature-panel-integration" aria-selected="false" tabindex="-1" data-carousel-tab="4" data-i18n="feature.integration.tab">Continuidade</button>
+          </div>
+
+          <div class="impact-carousel-viewport" data-carousel-viewport>
+            <article class="impact-feature-slide is-active" id="feature-panel-control" role="tabpanel" aria-labelledby="feature-tab-control" data-carousel-slide="0">
+              <div class="impact-feature-image">
+                <img src="/site-assets/images/home-impact/control.webp" width="1672" height="941" loading="lazy" decoding="async" alt="Bancada técnica organizada por uma sequência de tarefas" data-i18n-alt="feature.control.alt">
+                <div class="impact-feature-overlay is-checklist" aria-hidden="true"><span>✓</span><span>✓</span><span>●</span></div>
+                <div class="impact-feature-notification"><i aria-hidden="true">!</i><span><small data-i18n="feature.control.overlay.label">Controle ativo</small><strong data-i18n="feature.control.overlay.value">Próxima ação sinalizada</strong></span></div>
+              </div>
+              <div class="impact-feature-copy"><p class="impact-slide-index">01 / <span data-i18n="feature.control.tab">Controle</span></p><h3 data-i18n="feature.control.title">Nada importante depende da memória.</h3><p data-i18n="feature.control.body">Checklists deixam o próximo passo claro. Notificações push levam pendências e acontecimentos relevantes até quem precisa agir.</p><ul><li data-i18n="feature.control.itemOne">Checklist de tarefas</li><li data-i18n="feature.control.itemTwo">Notificações push de controle</li></ul></div>
+            </article>
+
+            <article class="impact-feature-slide" id="feature-panel-finance" role="tabpanel" aria-labelledby="feature-tab-finance" data-carousel-slide="1">
+              <div class="impact-feature-image">
+                <img src="/site-assets/images/home-impact/finance.webp" width="1672" height="941" loading="lazy" decoding="async" alt="Agenda financeira visual organizada sobre uma mesa" data-i18n-alt="feature.finance.alt">
+                <div class="impact-finance-widget"><small data-i18n="feature.finance.overlay.label">Próximos compromissos</small><div><span></span><span></span><span class="is-alert"></span><span></span></div><strong data-i18n="feature.finance.overlay.value">Antes da surpresa</strong></div>
+              </div>
+              <div class="impact-feature-copy"><p class="impact-slide-index">02 / <span data-i18n="feature.finance.tab">Antecipação</span></p><h3 data-i18n="feature.finance.title">O caixa de amanhã aparece hoje.</h3><p data-i18n="feature.finance.body">Vencimentos, entradas, saídas e compromissos ganham leitura de agenda para você decidir antes, não correr depois.</p><ul><li data-i18n="feature.finance.itemOne">Agenda financeira visual</li><li data-i18n="feature.finance.itemTwo">Compromissos no tempo certo</li></ul></div>
+            </article>
+
+            <article class="impact-feature-slide" id="feature-panel-client" role="tabpanel" aria-labelledby="feature-tab-client" data-carousel-slide="2">
+              <div class="impact-feature-image">
+                <img src="/site-assets/images/home-impact/client.webp" width="1672" height="941" loading="lazy" decoding="async" alt="Cliente acompanhando pelo celular um serviço realizado na loja" data-i18n-alt="feature.client.alt">
+                <div class="impact-client-flow"><span class="is-done">✓</span><i></i><span class="is-active">●</span><i></i><span>★</span></div>
+                <div class="impact-feature-notification is-client"><i aria-hidden="true">↗</i><span><small data-i18n="feature.client.overlay.label">Link público</small><strong data-i18n="feature.client.overlay.value">Cliente acompanhando</strong></span></div>
+              </div>
+              <div class="impact-feature-copy"><p class="impact-slide-index">03 / <span data-i18n="feature.client.tab">Cliente</span></p><h3 data-i18n="feature.client.title">Seu cliente não precisa perguntar. Ele acompanha.</h3><p data-i18n="feature.client.body">O orçamento abre pela web, o status fica disponível on-line e o feedback chega na mesma jornada — sem exigir aplicativo do cliente.</p><ul><li data-i18n="feature.client.itemOne">Orçamentos com link web</li><li data-i18n="feature.client.itemTwo">Status on-line e feedback web</li></ul></div>
+            </article>
+
+            <article class="impact-feature-slide" id="feature-panel-evidence" role="tabpanel" aria-labelledby="feature-tab-evidence" data-carousel-slide="3">
+              <div class="impact-feature-image">
+                <img src="/site-assets/images/home-impact/evidence.webp" width="1672" height="941" loading="lazy" decoding="async" alt="Etiqueta sendo impressa enquanto um documento é assinado em um tablet" data-i18n-alt="feature.evidence.alt">
+                <div class="impact-evidence-stamp"><span aria-hidden="true">✓</span><small data-i18n="feature.evidence.overlay.label">Registrado</small><strong data-i18n="feature.evidence.overlay.value">Etapa comprovada</strong></div>
+              </div>
+              <div class="impact-feature-copy"><p class="impact-slide-index">04 / <span data-i18n="feature.evidence.tab">Evidência</span></p><h3 data-i18n="feature.evidence.title">Identifique. Formalize. Comprove.</h3><p data-i18n="feature.evidence.body">Etiquetas levam organização até o item físico. A assinatura registra o combinado e mantém a conclusão dentro do fluxo.</p><ul><li data-i18n="feature.evidence.itemOne">Gerador de etiquetas</li><li data-i18n="feature.evidence.itemTwo">Assinaturas digitais de documentos</li></ul></div>
+            </article>
+
+            <article class="impact-feature-slide" id="feature-panel-integration" role="tabpanel" aria-labelledby="feature-tab-integration" data-carousel-slide="4">
+              <div class="impact-feature-image">
+                <img src="/site-assets/images/home-impact/integrated.webp" width="1672" height="941" loading="lazy" decoding="async" alt="Pessoas trabalhando no celular, tablet e computador com a mesma operação" data-i18n-alt="feature.integration.alt">
+                <div class="impact-device-rail"><span data-i18n="feature.integration.web">WEB</span><i></i><span data-i18n="feature.integration.app">APP</span><i></i><strong data-i18n="feature.integration.synced">CONECTADO</strong></div>
+              </div>
+              <div class="impact-feature-copy"><p class="impact-slide-index">05 / <span data-i18n="feature.integration.tab">Continuidade</span></p><h3 data-i18n="feature.integration.title">Uma operação. Toda tela. Nenhuma ruptura.</h3><p data-i18n="feature.integration.body">Comece no balcão, acompanhe no celular e continue no computador sem transformar cada dispositivo em um sistema diferente.</p><ul><li data-i18n="feature.integration.itemOne">App e web integrados</li><li data-i18n="feature.integration.itemTwo">Informações sincronizadas</li></ul></div>
+            </article>
+          </div>
+          <p class="sr-only" aria-live="polite" aria-atomic="true" data-carousel-live></p>
+        </div>
       </div>
     </section>
 
-    <section class="final-editorial-cta" aria-labelledby="final-title">
-      <div class="layout final-editorial-card" data-reveal><div><p class="editorial-kicker" data-i18n="final.kicker">Próximo passo</p><h2 id="final-title" data-i18n="final.editorial.title">Comece a organizar o seu negócio com o SixoApp.</h2><p data-i18n="final.editorial.body">Crie uma conta ou entre para continuar de onde parou.</p></div><div class="final-editorial-actions"><a class="button button-light button-large" href="/register" data-i18n="final.primary">Criar minha conta</a><a class="button button-dark-outline button-large" href="/login" data-i18n="final.secondary">Entrar</a></div></div>
+    <section class="impact-results" aria-labelledby="results-title">
+      <div class="layout">
+        <div class="impact-section-heading" data-reveal><p class="impact-section-index">04 / <span data-i18n="results.kicker">O resultado percebido</span></p><h2 id="results-title" data-i18n="results.title">Mais controle para o dono. Mais clareza para a equipe. Mais confiança para o cliente.</h2></div>
+        <div class="impact-result-grid">
+          <article data-reveal><span aria-hidden="true">↗</span><small data-i18n="results.owner.kicker">Para quem administra</small><h3 data-i18n="results.owner.title">O problema aparece antes de virar urgência.</h3><p data-i18n="results.owner.body">Alertas, tarefas e agenda financeira mantêm o que importa visível.</p></article>
+          <article data-reveal><span aria-hidden="true">✓</span><small data-i18n="results.team.kicker">Para quem executa</small><h3 data-i18n="results.team.title">O próximo passo fica claro.</h3><p data-i18n="results.team.body">Menos improviso, menos retrabalho e uma rotina que conduz a entrega.</p></article>
+          <article data-reveal><span aria-hidden="true">●</span><small data-i18n="results.client.kicker">Para quem é atendido</small><h3 data-i18n="results.client.title">A confiança cresce durante o serviço.</h3><p data-i18n="results.client.body">O cliente consulta, acompanha, assina e responde pela web.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="editorial-section plans-editorial-section impact-plans" id="planos" aria-labelledby="plans-title">
+      <div class="layout">
+        <div class="impact-section-heading is-light" data-reveal><p class="impact-section-index">05 / <span data-i18n="plans.kicker">Planos</span></p><h2 id="plans-title" data-i18n="plans.title">Comece simples. Evolua sem trocar de operação.</h2><p data-i18n="plans.lead">Escolha o ponto de partida e avance conforme novos controles fizerem sentido para o seu negócio.</p></div>
+        <div class="plan-catalog-feedback" data-public-plans-status role="status" aria-live="polite">Carregando planos...</div>
+        <div class="plan-path-grid" data-public-plans aria-busy="true"></div>
+        <div class="plan-catalog-actions"><button class="button button-quiet" type="button" data-public-plans-retry hidden>Tentar novamente</button></div>
+        <noscript><p class="plan-catalog-feedback">Ative o JavaScript para consultar os planos publicados.</p><a class="button button-quiet" href="/checkout">Conhecer planos</a></noscript>
+      </div>
+    </section>
+
+    <section class="impact-faq" id="faq" aria-labelledby="faq-title">
+      <div class="layout impact-faq-grid">
+        <div class="impact-section-heading" data-reveal><p class="impact-section-index">06 / <span data-i18n="faq.kicker">Sem letras miúdas</span></p><h2 id="faq-title" data-i18n="faq.title">Perguntas antes do próximo passo.</h2><p data-i18n="faq.lead">Respostas diretas sobre como essa operação chega à equipe e ao cliente.</p></div>
+        <div class="impact-accordion" data-reveal>
+          <details open><summary><span data-i18n="faq.one.question">O cliente precisa instalar o aplicativo?</span><i aria-hidden="true"></i></summary><p data-i18n="faq.one.answer">Não para as jornadas públicas. Orçamento, acompanhamento, assinatura e feedback podem abrir diretamente no navegador.</p></details>
+          <details><summary><span data-i18n="faq.two.question">App e web usam as mesmas informações?</span><i aria-hidden="true"></i></summary><p data-i18n="faq.two.answer">Sim. A operação permanece conectada, com experiências próprias para celular e computador.</p></details>
+          <details><summary><span data-i18n="faq.three.question">O sistema funciona sem internet?</span><i aria-hidden="true"></i></summary><p data-i18n="faq.three.answer">Não. O SixoApp é on-line para manter informações, equipe e jornadas públicas sincronizadas.</p></details>
+          <details><summary><span data-i18n="faq.four.question">Serve apenas para assistência de celular?</span><i aria-hidden="true"></i></summary><p data-i18n="faq.four.answer">Não. Foi pensado para comércios que vendem produtos, fazem orçamentos e prestam diferentes tipos de serviço técnico.</p></details>
+          <details><summary><span data-i18n="faq.five.question">A assinatura digital substitui o papel?</span><i aria-hidden="true"></i></summary><p data-i18n="faq.five.answer">Ela formaliza o aceite e mantém o registro vinculado ao documento. A adequação jurídica depende do tipo de documento e das regras do país onde a operação acontece.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <section class="impact-final" aria-labelledby="final-title">
+      <div class="layout impact-final-card" data-reveal>
+        <img class="impact-final-symbol" src="/site-assets/images/sixoapp-symbol.png" width="1024" height="1024" alt="" loading="lazy" decoding="async">
+        <div><p class="impact-eyebrow"><span aria-hidden="true"></span><span data-i18n="final.kicker">Nada escapa. Tudo avança.</span></p><h2 id="final-title" data-i18n="final.title">Você pode continuar juntando ferramentas. Ou fazer toda a operação trabalhar como uma só.</h2><p data-i18n="final.body">Do primeiro orçamento ao último feedback. Da tarefa interna ao acompanhamento do cliente.</p></div>
+        <div class="impact-final-actions"><a class="button button-light button-large" href="/register" data-i18n="final.primary">Quero uma operação que avança</a><a class="impact-text-link is-light" href="/login" data-i18n="final.secondary">Já tenho uma conta</a></div>
+      </div>
     </section>
   </main>
 
-  <footer class="site-footer">
+  <footer class="site-footer impact-footer">
     <div class="layout footer-main">
       <a class="footer-brand" href="#topo" aria-label="SixoApp"><img src="/site-assets/images/sixoapp-mark.png" width="28" height="28" alt="" loading="lazy" decoding="async"><span>SixoApp</span></a>
-      <nav class="footer-nav" aria-label="Navegação do rodapé" data-i18n-aria="footer.aria"><a href="#recursos" data-i18n="footer.resources">Recursos</a><a href="#solucoes" data-i18n="footer.solutions">Soluções</a><a href="#como-funciona" data-i18n="footer.how">Como funciona</a><a href="#planos" data-i18n="footer.plans">Planos</a></nav>
+      <nav class="footer-nav" aria-label="Navegação do rodapé" data-i18n-aria="footer.aria"><a href="#recursos" data-i18n="footer.resources">Diferenciais</a><a href="#como-funciona" data-i18n="footer.how">A jornada</a><a href="#planos" data-i18n="footer.plans">Planos</a><a href="#faq" data-i18n="footer.faq">FAQ</a></nav>
       <p>© <span data-current-year>2026</span> SixoApp. <span data-i18n="footer.rights">Todos os direitos reservados.</span></p>
     </div>
   </footer>
