@@ -37,13 +37,12 @@ void main() {
       );
       final WebNavigationItem catalog = _requiredItem(WebNavigationIds.catalog);
       expect(_childIds(catalog), <String>[
-        WebNavigationIds.catalogPublicPage,
         WebNavigationIds.operationsReservations,
         WebNavigationIds.catalogProducts,
         WebNavigationIds.catalogStock,
       ]);
       expect(
-        catalog.children[1].destination,
+        catalog.children[0].destination,
         WebNavigationDestination.operationsReservations,
       );
 
@@ -79,8 +78,10 @@ void main() {
             .toSet();
 
         expect(ids, isNot(contains(WebNavigationIds.reports)));
+        expect(ids, isNot(contains(WebNavigationIds.catalogPublicPage)));
 
         expect(labels, isNot(contains('Legado')));
+        expect(labels, isNot(contains('Página pública')));
         expect(labels, isNot(contains('Relatórios')));
         expect(labels, isNot(contains('Fiado')));
         expect(labels, isNot(contains('Crediário')));
@@ -110,7 +111,6 @@ void main() {
           'operations.purchases',
           'operations.reservations',
           'catalog',
-          'catalog.public_page',
           'catalog.products',
           'catalog.stock',
           'people',
@@ -211,7 +211,7 @@ void main() {
       final int reservationsIndex = _childIds(
         catalog,
       ).indexOf(WebNavigationIds.operationsReservations);
-      expect(reservationsIndex, 1);
+      expect(reservationsIndex, 0);
       expect(
         catalog.children[reservationsIndex].destination,
         WebNavigationDestination.operationsReservations,

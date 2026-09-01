@@ -98,17 +98,14 @@ void main() {
       );
     });
 
-    test('permissao de catalogo libera pagina publica e hub de produtos', () {
+    test('permissao de catalogo libera apenas o hub de produtos', () {
       final List<WebNavigationItem> visible = _visibleItemsFor(
         _FakeAutorizacoesProvider(podeAcessarCatalogo: true),
       );
 
       expect(
         _childIds(_requiredItem(visible, WebNavigationIds.catalog)),
-        <String>[
-          WebNavigationIds.catalogPublicPage,
-          WebNavigationIds.catalogProducts,
-        ],
+        <String>[WebNavigationIds.catalogProducts],
       );
     });
 

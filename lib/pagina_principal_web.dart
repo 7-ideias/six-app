@@ -3044,11 +3044,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                 () => _abrirListaProdutosParaEdicao(tipoInicial: 'SERVICO'),
             onOpenCategorias: _abrirCategoriasDoCatalogo,
             onOpenEtiquetas: _abrirEtiquetasDoCatalogo,
-            onOpenCatalogoOnline: () {
-              setState(() {
-                _moduloAtual = ModuloCentralPDV.catalogoPublico;
-              });
-            },
+            onOpenCatalogoVirtual: () => showCatalogoVirtualWebDialog(context),
             onOpenEstoque: () {
               setState(() {
                 _moduloAtual = ModuloCentralPDV.estoque;

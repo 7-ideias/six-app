@@ -114,18 +114,6 @@ abstract final class WebNavigationRegistry {
       visibility: WebNavigationVisibilityRule.authenticated(),
       children: <WebNavigationItem>[
         WebNavigationItem(
-          id: WebNavigationIds.catalogPublicPage,
-          labelKey: 'web.navigation.catalog.publicPage',
-          labelFallback: 'Página pública',
-          icon: Icons.storefront_outlined,
-          visibility: WebNavigationVisibilityRule.anyOf(
-            <WebNavigationPermission>[
-              WebNavigationPermission.podeAcessarCatalogo,
-            ],
-          ),
-          destination: WebNavigationDestination.catalogPublicPage,
-        ),
-        WebNavigationItem(
           id: WebNavigationIds.operationsReservations,
           labelKey: 'web.navigation.catalog.reservations',
           labelFallback: 'Reservas',

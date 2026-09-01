@@ -24,7 +24,7 @@ class ProdutoDashboardWebPage extends StatelessWidget {
     this.onOpenListaServicos,
     this.onOpenCategorias,
     this.onOpenEtiquetas,
-    this.onOpenCatalogoOnline,
+    this.onOpenCatalogoVirtual,
     this.onOpenEstoque,
     this.apiClient,
   });
@@ -36,7 +36,7 @@ class ProdutoDashboardWebPage extends StatelessWidget {
   final VoidCallback? onOpenListaServicos;
   final VoidCallback? onOpenCategorias;
   final VoidCallback? onOpenEtiquetas;
-  final VoidCallback? onOpenCatalogoOnline;
+  final VoidCallback? onOpenCatalogoVirtual;
   final VoidCallback? onOpenEstoque;
   final CatalogHealthApiClient? apiClient;
 
@@ -55,7 +55,7 @@ class ProdutoDashboardWebPage extends StatelessWidget {
         onOpenListaServicos: onOpenListaServicos,
         onOpenCategorias: onOpenCategorias,
         onOpenEtiquetas: onOpenEtiquetas,
-        onOpenCatalogoOnline: onOpenCatalogoOnline,
+        onOpenCatalogoVirtual: onOpenCatalogoVirtual,
         onOpenEstoque: onOpenEstoque,
       ),
     );
@@ -71,7 +71,7 @@ class _ProdutoCatalogoWebView extends StatelessWidget {
     required this.onOpenListaServicos,
     required this.onOpenCategorias,
     required this.onOpenEtiquetas,
-    required this.onOpenCatalogoOnline,
+    required this.onOpenCatalogoVirtual,
     required this.onOpenEstoque,
   });
 
@@ -82,7 +82,7 @@ class _ProdutoCatalogoWebView extends StatelessWidget {
   final VoidCallback? onOpenListaServicos;
   final VoidCallback? onOpenCategorias;
   final VoidCallback? onOpenEtiquetas;
-  final VoidCallback? onOpenCatalogoOnline;
+  final VoidCallback? onOpenCatalogoVirtual;
   final VoidCallback? onOpenEstoque;
 
   @override
@@ -210,7 +210,7 @@ class _ProdutoCatalogoWebView extends StatelessWidget {
                             onOpenListaServicos ?? onOpenListaCompleta,
                         onOpenCategories: onOpenCategorias,
                         onOpenLabels: onOpenEtiquetas,
-                        onOpenCatalog: onOpenCatalogoOnline,
+                        onOpenCatalog: onOpenCatalogoVirtual,
                       ),
                     ),
                     if (canViewStock && onOpenEstoque != null) ...<Widget>[
@@ -865,12 +865,13 @@ class _CatalogManagementSection extends StatelessWidget {
         _CatalogModuleData(
           icon: Icons.language_outlined,
           title: context.t(
-            'catalogHub.modules.onlineCatalog',
-            fallback: 'Catálogo online',
+            'catalogHub.modules.virtualCatalog',
+            fallback: 'Catálogo virtual',
           ),
           subtitle: context.t(
-            'catalogHub.modules.onlineCatalogDescription',
-            fallback: 'Personalize a vitrine pública e compartilhe o link.',
+            'catalogHub.modules.virtualCatalogDescription',
+            fallback:
+                'Personalize sua vitrine, publique itens e compartilhe com seus clientes.',
           ),
           onTap: onOpenCatalog,
         ),

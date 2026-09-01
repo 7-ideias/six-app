@@ -349,7 +349,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'web.navigation.catalog.services': 'Serviços',
     'web.navigation.catalog.stock': 'Estoque',
     'web.navigation.catalog.categories': 'Categorias',
-    'catalog.publicPage.title': 'Página pública do catálogo',
+    'catalog.publicPage.title': 'Catálogo virtual',
     'catalog.publicPage.subtitle':
         'Personalize, visualize e compartilhe sua vitrine em um só lugar.',
     'catalog.publicPage.open': 'Abrir',
@@ -360,11 +360,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalog.publicPage.save': 'Salvar alterações',
     'catalog.publicPage.discard': 'Descartar',
     'catalog.publicPage.saveSuccessPublished':
-        'Página salva e publicada com sucesso.',
+        'Catálogo salvo e publicado com sucesso.',
     'catalog.publicPage.saveSuccessDraft':
         'Personalização salva. Publique quando estiver pronta.',
     'catalog.publicPage.saveError':
-        'Não foi possível salvar a página do catálogo.',
+        'Não foi possível salvar o catálogo virtual.',
     'catalog.publicPage.openError':
         'Não foi possível abrir o catálogo em uma nova aba.',
     'catalog.publicPage.linkCopied': 'Link público copiado.',
@@ -372,7 +372,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalog.publicPage.shareFallback':
         'O compartilhamento não está disponível. O link foi copiado.',
     'catalog.publicPage.loadErrorTitle':
-        'Não foi possível carregar a página pública',
+        'Não foi possível carregar o catálogo virtual',
     'catalog.publicPage.editor.publication': 'Catálogo publicado',
     'catalog.publicPage.editor.publicationOn':
         'Clientes podem acessar pelo link público.',
@@ -1032,9 +1032,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalogHub.modules.labels': 'Etiquetas',
     'catalogHub.modules.labelsDescription':
         'Crie modelos e imprima etiquetas de produtos.',
-    'catalogHub.modules.onlineCatalog': 'Catálogo online',
-    'catalogHub.modules.onlineCatalogDescription':
-        'Personalize a vitrine pública e compartilhe o link.',
+    'catalogHub.modules.virtualCatalog': 'Catálogo virtual',
+    'catalogHub.modules.virtualCatalogDescription':
+        'Personalize sua vitrine, publique itens e compartilhe com seus clientes.',
     'catalogHub.stock.title': 'Disponibilidade do estoque',
     'catalogHub.stock.noIssues': 'Nenhuma indisponibilidade exige atenção.',
     'catalogHub.stock.issues':
@@ -2913,9 +2913,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalogHub.modules.labels': 'Labels',
     'catalogHub.modules.labelsDescription':
         'Create templates and print product labels.',
-    'catalogHub.modules.onlineCatalog': 'Online catalog',
-    'catalogHub.modules.onlineCatalogDescription':
-        'Customize the public storefront and share its link.',
+    'catalogHub.modules.virtualCatalog': 'Online catalog',
+    'catalogHub.modules.virtualCatalogDescription':
+        'Customize your storefront, publish items, and share it with customers.',
     'catalogHub.stock.title': 'Stock availability',
     'catalogHub.stock.noIssues': 'No availability issue needs attention.',
     'catalogHub.stock.issues':
@@ -2953,7 +2953,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Your profile cannot record stock movements.',
     'stockMovement.errors.productNotFound':
         'The product was not found in this business.',
-    'catalog.publicPage.title': 'Public catalog page',
+    'catalog.publicPage.title': 'Online catalog',
     'catalog.publicPage.subtitle':
         'Customize, preview, and share your storefront in one place.',
     'catalog.publicPage.open': 'Open',
@@ -2964,16 +2964,16 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalog.publicPage.save': 'Save changes',
     'catalog.publicPage.discard': 'Discard',
     'catalog.publicPage.saveSuccessPublished':
-        'Page saved and published successfully.',
+        'Online catalog saved and published successfully.',
     'catalog.publicPage.saveSuccessDraft':
         'Customization saved. Publish it when it is ready.',
-    'catalog.publicPage.saveError': 'Could not save the catalog page.',
+    'catalog.publicPage.saveError': 'Could not save the online catalog.',
     'catalog.publicPage.openError': 'Could not open the catalog in a new tab.',
     'catalog.publicPage.linkCopied': 'Public link copied.',
     'catalog.publicPage.shareSubject': '{title} catalog',
     'catalog.publicPage.shareFallback':
         'Sharing is unavailable. The public link was copied.',
-    'catalog.publicPage.loadErrorTitle': 'Could not load the public page',
+    'catalog.publicPage.loadErrorTitle': 'Could not load the online catalog',
     'catalog.publicPage.editor.publication': 'Published catalog',
     'catalog.publicPage.editor.publicationOn':
         'Customers can access it through the public link.',
@@ -5206,9 +5206,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalogHub.modules.labels': 'Etiquetas',
     'catalogHub.modules.labelsDescription':
         'Cree modelos e imprima etiquetas de productos.',
-    'catalogHub.modules.onlineCatalog': 'Catálogo en línea',
-    'catalogHub.modules.onlineCatalogDescription':
-        'Personalice el escaparate público y comparta el enlace.',
+    'catalogHub.modules.virtualCatalog': 'Catálogo virtual',
+    'catalogHub.modules.virtualCatalogDescription':
+        'Personalice su vitrina, publique artículos y compártala con sus clientes.',
     'catalogHub.stock.title': 'Disponibilidad del inventario',
     'catalogHub.stock.noIssues':
         'Ningún problema de disponibilidad requiere atención.',
@@ -5252,7 +5252,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Su perfil no permite mover el inventario.',
     'stockMovement.errors.productNotFound':
         'El producto no fue encontrado en este comercio.',
-    'catalog.publicPage.title': 'Página pública del catálogo',
+    'catalog.publicPage.title': 'Catálogo virtual',
     'catalog.publicPage.subtitle':
         'Personaliza, visualiza y comparte tu vitrina en un solo lugar.',
     'catalog.publicPage.open': 'Abrir',
@@ -5263,11 +5263,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalog.publicPage.save': 'Guardar cambios',
     'catalog.publicPage.discard': 'Descartar',
     'catalog.publicPage.saveSuccessPublished':
-        'Página guardada y publicada correctamente.',
+        'Catálogo guardado y publicado correctamente.',
     'catalog.publicPage.saveSuccessDraft':
         'Personalización guardada. Publícala cuando esté lista.',
     'catalog.publicPage.saveError':
-        'No fue posible guardar la página del catálogo.',
+        'No fue posible guardar el catálogo virtual.',
     'catalog.publicPage.openError':
         'No fue posible abrir el catálogo en una nueva pestaña.',
     'catalog.publicPage.linkCopied': 'Enlace público copiado.',
@@ -5275,7 +5275,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'catalog.publicPage.shareFallback':
         'Compartir no está disponible. Se copió el enlace público.',
     'catalog.publicPage.loadErrorTitle':
-        'No fue posible cargar la página pública',
+        'No fue posible cargar el catálogo virtual',
     'catalog.publicPage.editor.publication': 'Catálogo publicado',
     'catalog.publicPage.editor.publicationOn':
         'Los clientes pueden acceder mediante el enlace público.',
