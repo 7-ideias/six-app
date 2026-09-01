@@ -1202,6 +1202,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Canal oficial de acompanhamento do serviço.',
     'atendimentoTecnico.publicStatus.externalLinkUnavailable':
         'Não foi possível abrir este contato neste dispositivo.',
+    'atendimentoTecnico.web.loading': 'Carregando atendimentos técnicos',
     'atendimentoTecnico.mobile.loading': 'Carregando atendimentos técnicos',
     'atendimentoTecnico.mobile.dashboardTitle': 'Dashboard técnico',
     'atendimentoTecnico.mobile.dashboardDescription': '',
@@ -3658,6 +3659,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Official service tracking channel.',
     'atendimentoTecnico.publicStatus.externalLinkUnavailable':
         'Could not open this contact on this device.',
+    'atendimentoTecnico.web.loading': 'Loading technical services',
     'atendimentoTecnico.mobile.loading': 'Loading technical services',
     'atendimentoTecnico.mobile.emptyFilteredMessage':
         'No services found with the selected filters.',
@@ -5992,6 +5994,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Canal oficial de seguimiento del servicio.',
     'atendimentoTecnico.publicStatus.externalLinkUnavailable':
         'No fue posible abrir este contacto en este dispositivo.',
+    'atendimentoTecnico.web.loading': 'Cargando servicios técnicos',
     'atendimentoTecnico.mobile.loading': 'Cargando servicios técnicos',
     'atendimentoTecnico.mobile.emptyFilteredMessage':
         'No se encontraron servicios con los filtros seleccionados.',

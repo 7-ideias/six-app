@@ -1470,7 +1470,7 @@ class _AtendimentosTecnicosListaWebPageState
       future: _future,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return _buildLoading(theme);
+          return _buildLoading();
         }
         if (snapshot.hasError) {
           return _ErrorState(
@@ -1598,39 +1598,12 @@ class _AtendimentosTecnicosListaWebPageState
     );
   }
 
-  Widget _buildLoading(ThemeData theme) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return AnimatedContainer(
-      duration: WebThemeTokens.transitionDuration,
-      curve: WebThemeTokens.transitionCurve,
-      color: tokens.workspaceBackground,
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          decoration: BoxDecoration(
-            color: tokens.cardBackground,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: tokens.cardBorder),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2.4),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Carregando atendimentos...',
-                style: TextStyle(
-                  color: tokens.primaryText,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
+  Widget _buildLoading() {
+    return _AtendimentosTecnicosWebSkeleton(
+      showCloseButton: widget.onBack != null,
+      semanticsLabel: context.t(
+        'atendimentoTecnico.web.loading',
+        fallback: 'Carregando atendimentos técnicos',
       ),
     );
   }
@@ -3779,6 +3752,456 @@ class _AtendimentosTecnicosListaWebPageState
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AtendimentosTecnicosWebSkeleton extends StatefulWidget {
+  const _AtendimentosTecnicosWebSkeleton({
+    required this.semanticsLabel,
+    required this.showCloseButton,
+  });
+
+  final String semanticsLabel;
+  final bool showCloseButton;
+
+  @override
+  State<_AtendimentosTecnicosWebSkeleton> createState() =>
+      _AtendimentosTecnicosWebSkeletonState();
+}
+
+class _AtendimentosTecnicosWebSkeletonState
+    extends State<_AtendimentosTecnicosWebSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController;
+  bool _motionDisabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final bool motionDisabled =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (motionDisabled == _motionDisabled) return;
+
+    _motionDisabled = motionDisabled;
+    if (_motionDisabled) {
+      _pulseController
+        ..stop()
+        ..value = 0.45;
+      return;
+    }
+    _pulseController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool dark = Theme.of(context).brightness == Brightness.dark;
+    final Color skeletonBase = Color.alphaBlend(
+      tokens.primaryText.withValues(alpha: dark ? 0.06 : 0.045),
+      tokens.surfaceMuted,
+    );
+    final Color skeletonHighlight = Color.alphaBlend(
+      tokens.primaryText.withValues(alpha: dark ? 0.14 : 0.09),
+      tokens.surfaceMuted,
+    );
+
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: widget.semanticsLabel,
+      child: ExcludeSemantics(
+        child: IgnorePointer(
+          child: AnimatedBuilder(
+            animation: _pulseController,
+            builder: (BuildContext context, Widget? child) {
+              final double pulse =
+                  _motionDisabled
+                      ? 0.45
+                      : Curves.easeInOut.transform(_pulseController.value);
+              final Color skeletonColor =
+                  Color.lerp(skeletonBase, skeletonHighlight, pulse) ??
+                  skeletonBase;
+              return ColoredBox(
+                color: tokens.workspaceBackground,
+                child: LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints constraints) {
+                    final bool isCompact = constraints.maxWidth < 920;
+                    final double horizontalPadding = isCompact ? 16 : 28;
+                    return CustomScrollView(
+                      physics: const NeverScrollableScrollPhysics(),
+                      slivers: <Widget>[
+                        SliverToBoxAdapter(
+                          child: _buildHeader(tokens, skeletonColor, isCompact),
+                        ),
+                        SliverPadding(
+                          padding: EdgeInsets.fromLTRB(
+                            horizontalPadding,
+                            14,
+                            horizontalPadding,
+                            10,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: Column(
+                              children: <Widget>[
+                                _buildSummary(tokens, skeletonColor, isCompact),
+                                const SizedBox(height: 12),
+                                _buildFilters(tokens, skeletonColor, isCompact),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SliverPadding(
+                          padding: EdgeInsets.fromLTRB(
+                            horizontalPadding,
+                            0,
+                            horizontalPadding,
+                            16,
+                          ),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (BuildContext context, int index) => Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: index == 3 ? 0 : 10,
+                                ),
+                                child: _buildServiceCard(
+                                  tokens,
+                                  skeletonColor,
+                                  isCompact,
+                                  index,
+                                ),
+                              ),
+                              childCount: 4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(
+    WebThemeTokens tokens,
+    Color skeletonColor,
+    bool isCompact,
+  ) {
+    final Widget titleBlock = Row(
+      children: <Widget>[
+        _block(skeletonColor, width: 50, height: 50, radius: 16),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              _line(skeletonColor, widthFactor: 0.54, height: 22),
+              const SizedBox(height: 8),
+              _line(skeletonColor, widthFactor: 0.82, height: 13),
+            ],
+          ),
+        ),
+      ],
+    );
+    final Widget actions = Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      alignment: WrapAlignment.end,
+      children: <Widget>[
+        _block(skeletonColor, width: 112, height: 46, radius: 14),
+        _block(skeletonColor, width: 172, height: 46, radius: 14),
+        _block(skeletonColor, width: 92, height: 38, radius: 14),
+        _block(skeletonColor, width: 108, height: 38, radius: 14),
+        if (widget.showCloseButton)
+          _block(skeletonColor, width: 42, height: 42, radius: 14),
+      ],
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        isCompact ? 16 : 28,
+        isCompact ? 16 : 22,
+        isCompact ? 16 : 28,
+        isCompact ? 14 : 18,
+      ),
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        border: Border(bottom: BorderSide(color: tokens.cardBorder)),
+      ),
+      child:
+          isCompact
+              ? Column(
+                children: <Widget>[
+                  titleBlock,
+                  const SizedBox(height: 14),
+                  Align(alignment: Alignment.centerRight, child: actions),
+                ],
+              )
+              : Row(
+                children: <Widget>[
+                  Expanded(child: titleBlock),
+                  const SizedBox(width: 16),
+                  actions,
+                ],
+              ),
+    );
+  }
+
+  Widget _buildSummary(
+    WebThemeTokens tokens,
+    Color skeletonColor,
+    bool isCompact,
+  ) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double cardWidth =
+            isCompact
+                ? constraints.maxWidth
+                : ((constraints.maxWidth - 36) / 4).clamp(
+                  190.0,
+                  constraints.maxWidth,
+                );
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: List<Widget>.generate(
+            4,
+            (int index) => Container(
+              width: cardWidth,
+              height: 102,
+              padding: const EdgeInsets.all(16),
+              decoration: _panelDecoration(tokens, radius: 20),
+              child: Row(
+                children: <Widget>[
+                  _block(skeletonColor, width: 42, height: 42, radius: 14),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        _line(
+                          skeletonColor,
+                          widthFactor: 0.58 + ((index % 2) * 0.08),
+                          height: 11,
+                        ),
+                        const SizedBox(height: 7),
+                        _line(
+                          skeletonColor,
+                          widthFactor: index == 3 ? 0.76 : 0.34,
+                          height: 20,
+                        ),
+                        const SizedBox(height: 6),
+                        _line(skeletonColor, widthFactor: 0.68, height: 10),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFilters(
+    WebThemeTokens tokens,
+    Color skeletonColor,
+    bool isCompact,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isCompact ? 12 : 14),
+      decoration: _panelDecoration(tokens, radius: 20),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double fullWidth = constraints.maxWidth;
+          final double searchWidth =
+              isCompact ? fullWidth : (fullWidth * 0.42).clamp(320.0, 620.0);
+          return Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              _block(skeletonColor, width: searchWidth, height: 56, radius: 16),
+              _block(
+                skeletonColor,
+                width: isCompact ? fullWidth : 220,
+                height: 56,
+                radius: 16,
+              ),
+              _block(
+                skeletonColor,
+                width: isCompact ? fullWidth : 250,
+                height: 56,
+                radius: 16,
+              ),
+              _block(
+                skeletonColor,
+                width: isCompact ? fullWidth : 250,
+                height: 56,
+                radius: 16,
+              ),
+              _block(
+                skeletonColor,
+                width: isCompact ? fullWidth : 230,
+                height: 56,
+                radius: 16,
+              ),
+              _block(
+                skeletonColor,
+                width: isCompact ? 132 : 128,
+                height: 38,
+                radius: 999,
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildServiceCard(
+    WebThemeTokens tokens,
+    Color skeletonColor,
+    bool isCompact,
+    int index,
+  ) {
+    final Widget identity = Row(
+      children: <Widget>[
+        _block(skeletonColor, width: 46, height: 46, radius: 15),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              _line(
+                skeletonColor,
+                widthFactor: 0.50 + ((index % 3) * 0.12),
+                height: 16,
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: <Widget>[
+                  _block(skeletonColor, width: 132, height: 28, radius: 999),
+                  _block(skeletonColor, width: 86, height: 28, radius: 999),
+                  _block(skeletonColor, width: 92, height: 28, radius: 999),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+    final Widget status = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: <Widget>[
+        _block(skeletonColor, width: 112, height: 30, radius: 999),
+        _block(skeletonColor, width: 118, height: 30, radius: 999),
+        _block(skeletonColor, width: 134, height: 30, radius: 999),
+        _block(skeletonColor, width: 126, height: 30, radius: 999),
+      ],
+    );
+    final Widget actions = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      alignment: WrapAlignment.end,
+      children: <Widget>[
+        _block(skeletonColor, width: 104, height: 44, radius: 14),
+        _block(skeletonColor, width: 82, height: 44, radius: 14),
+        _block(skeletonColor, width: 44, height: 44, radius: 14),
+      ],
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isCompact ? 14 : 18),
+      decoration: _panelDecoration(tokens, radius: 20),
+      child:
+          isCompact
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  identity,
+                  const SizedBox(height: 14),
+                  status,
+                  const SizedBox(height: 14),
+                  Align(alignment: Alignment.centerRight, child: actions),
+                ],
+              )
+              : Row(
+                children: <Widget>[
+                  Expanded(flex: 5, child: identity),
+                  const SizedBox(width: 18),
+                  Expanded(flex: 6, child: status),
+                  const SizedBox(width: 18),
+                  actions,
+                ],
+              ),
+    );
+  }
+
+  BoxDecoration _panelDecoration(
+    WebThemeTokens tokens, {
+    required double radius,
+  }) {
+    return BoxDecoration(
+      color: tokens.cardBackground,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(color: tokens.cardBorder),
+    );
+  }
+
+  Widget _line(
+    Color color, {
+    required double widthFactor,
+    required double height,
+  }) {
+    return FractionallySizedBox(
+      alignment: Alignment.centerLeft,
+      widthFactor: widthFactor,
+      child: _block(color, height: height, radius: 999),
+    );
+  }
+
+  Widget _block(
+    Color color, {
+    double? width,
+    required double height,
+    required double radius,
+  }) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(radius),
       ),
     );
   }
