@@ -98,19 +98,22 @@ void main() {
       );
     });
 
-    test('permissao de catalogo libera somente a pagina publica', () {
+    test('permissao de catalogo libera pagina publica e hub de produtos', () {
       final List<WebNavigationItem> visible = _visibleItemsFor(
         _FakeAutorizacoesProvider(podeAcessarCatalogo: true),
       );
 
       expect(
         _childIds(_requiredItem(visible, WebNavigationIds.catalog)),
-        <String>[WebNavigationIds.catalogPublicPage],
+        <String>[
+          WebNavigationIds.catalogPublicPage,
+          WebNavigationIds.catalogProducts,
+        ],
       );
     });
 
     test(
-      'Catalogo com cadastro de produto libera produtos servicos e categorias',
+      'Catalogo com cadastro de produto libera o hub centralizado',
       () {
         final List<WebNavigationItem> visible = _visibleItemsFor(
           _FakeAutorizacoesProvider(podeCadastrarProduto: true),
@@ -120,8 +123,6 @@ void main() {
           _childIds(_requiredItem(visible, WebNavigationIds.catalog)),
           <String>[
             WebNavigationIds.catalogProducts,
-            WebNavigationIds.catalogServices,
-            WebNavigationIds.catalogCategories,
           ],
         );
       },

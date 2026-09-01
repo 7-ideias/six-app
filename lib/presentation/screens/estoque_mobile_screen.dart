@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/data/models/estoque_dashboard_model.dart';
+import 'package:sixpos/data/models/stock_movement_model.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/stock_movement_mobile_sheet.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 
 class EstoqueMobileScreen extends StatefulWidget {
@@ -48,6 +50,28 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
     final dashboard = await _produtoService.buscarDashboardEstoque();
     _ultimaAtualizacaoEm = DateTime.now();
     return dashboard;
+  }
+
+  Future<void> _openMovement(StockMovementType type) async {
+    final bool? registered = await showStockMovementMobileSheet(
+      context: context,
+      type: type,
+      produtoService: _produtoService,
+    );
+    if (registered != true || !mounted) return;
+    await _reload();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _t(
+            'stockMovement.success',
+            'Movimentação registrada. O estoque foi atualizado.',
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -342,7 +366,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
           child: _ActionButton(
             label: _t('estoque.mobile.entry', 'Entrada'),
             icon: Icons.add_box_outlined,
-            onTap: _showFeatureInProgress,
+            onTap: () => _openMovement(StockMovementType.entry),
           ),
         ),
         SizedBox(width: 10),
@@ -350,7 +374,7 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
           child: _ActionButton(
             label: _t('estoque.mobile.exit', 'Saída'),
             icon: Icons.indeterminate_check_box_outlined,
-            onTap: _showFeatureInProgress,
+            onTap: () => _openMovement(StockMovementType.exit),
           ),
         ),
         SizedBox(width: 10),
@@ -361,7 +385,12 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
             onTap:
                 () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => ProdutolistMobileScreen()),
+                  MaterialPageRoute(
+                    builder:
+                        (_) => const ProdutolistMobileScreen(
+                          exibirInformacoesEstoque: true,
+                        ),
+                  ),
                 ),
           ),
         ),
@@ -594,17 +623,6 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
       trailingTitle: item.tipo,
       trailingSubtitle: _qty(item.quantidade),
       trailingColor: color,
-    );
-  }
-
-  void _showFeatureInProgress() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _t('estoque.mobile.featureInProgress', 'Fluxo mobile em evolução.'),
-        ),
-        behavior: SnackBarBehavior.floating,
-      ),
     );
   }
 

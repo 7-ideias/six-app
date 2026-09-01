@@ -23,7 +23,6 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart
 import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/catalog_health_mobile_screen.dart';
-import 'package:sixpos/presentation/screens/categorias_produtos_servicos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
@@ -61,7 +60,6 @@ class GestaoMobileScreen extends StatefulWidget {
   @override
   State<GestaoMobileScreen> createState() => _GestaoMobileScreenState();
 }
-
 class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   static const double _horizontalPadding = 16;
   static const double _sectionContentBottomPadding = 24;
@@ -1145,35 +1143,21 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               emphasis: ManagementActionEmphasis.secondary,
               onTap: () => _navigateTo(context, CatalogHealthMobileScreen()),
             ),
-          _ManagementItem(
-            title: context.t(
-              'gestao.catalog.categories',
-              fallback: 'Categorias',
+          if (autorizacoes.podeVerEstoqueDeProduto)
+            _ManagementItem(
+              title: context.t(
+                'gestao.catalog.inventory',
+                fallback: 'Estoque',
+              ),
+              subtitle: context.t(
+                'gestao.catalog.inventoryDesc',
+                fallback: 'Saldos, entradas e ajustes',
+              ),
+              icon: Icons.warehouse_outlined,
+              accentColor: _attentionAccent,
+              emphasis: ManagementActionEmphasis.operational,
+              onTap: () => _navigateTo(context, EstoqueMobileScreen()),
             ),
-            subtitle: context.t(
-              'gestao.catalog.categoriesDesc',
-              fallback: 'Organização do catálogo',
-            ),
-            icon: Icons.category_outlined,
-            accentColor: _peopleAccent,
-            emphasis: ManagementActionEmphasis.secondary,
-            onTap:
-                () => _navigateTo(
-                  context,
-                  CategoriasProdutosServicosMobileScreen(),
-                ),
-          ),
-          _ManagementItem(
-            title: context.t('gestao.catalog.inventory', fallback: 'Estoque'),
-            subtitle: context.t(
-              'gestao.catalog.inventoryDesc',
-              fallback: 'Saldos, entradas e ajustes',
-            ),
-            icon: Icons.warehouse_outlined,
-            accentColor: _attentionAccent,
-            emphasis: ManagementActionEmphasis.operational,
-            onTap: () => _navigateTo(context, EstoqueMobileScreen()),
-          ),
           _ManagementItem(
             title: context.t(
               'gestao.catalog.webCatalog',

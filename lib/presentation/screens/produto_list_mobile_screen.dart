@@ -19,6 +19,7 @@ class ProdutolistMobileScreen extends StatelessWidget {
     this.permitirSelecaoMultipla = false,
     this.tipoInicial = 'PRODUTO',
     this.apenasAtivosNoBackend = false,
+    this.exibirInformacoesEstoque = false,
     this.produtoService,
   });
 
@@ -26,6 +27,7 @@ class ProdutolistMobileScreen extends StatelessWidget {
   final bool permitirSelecaoMultipla;
   final String tipoInicial;
   final bool apenasAtivosNoBackend;
+  final bool exibirInformacoesEstoque;
   final ProdutoService? produtoService;
 
   @override
@@ -44,6 +46,7 @@ class ProdutolistMobileScreen extends StatelessWidget {
               permitirSelecaoMultipla: permitirSelecaoMultipla,
               tipoInicial: tipoInicial,
               apenasAtivosNoBackend: apenasAtivosNoBackend,
+              exibirInformacoesEstoque: exibirInformacoesEstoque,
               produtoService: produtoService,
             ),
             Positioned.fill(

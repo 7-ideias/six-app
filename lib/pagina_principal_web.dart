@@ -22,6 +22,7 @@ import 'package:sixpos/presentation/screens/compras/compras_web_page.dart';
 import 'package:sixpos/presentation/screens/configuracoes_six_web_page.dart';
 import 'package:sixpos/presentation/screens/desempenho_colaborador_web_page.dart';
 import 'package:sixpos/presentation/screens/estoque_dashboard_web_page.dart';
+import 'package:sixpos/presentation/screens/etiquetas_web_page.dart';
 import 'package:sixpos/presentation/screens/meu_perfil_web_screen.dart';
 import 'package:sixpos/presentation/screens/operacoes_caixa_web_page.dart';
 import 'package:sixpos/presentation/screens/ordem_servico_web.dart';
@@ -88,7 +89,6 @@ class PaginaPrincipalWeb extends StatefulWidget {
   @override
   State<PaginaPrincipalWeb> createState() => _PaginaPrincipalWebState();
 }
-
 enum StatusComunicacaoBackend { conectando, conectado, desconectado }
 
 enum _PdvItemVisualFeedback { itemAdded, quantityIncreased, quantityDecreased }
@@ -1376,7 +1376,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     _restaurarFocoLeituraRapidaSeCabivel();
   }
 
-  Future<void> _abrirListaProdutosParaEdicao() async {
+  Future<void> _abrirListaProdutosParaEdicao({
+    String tipoInicial = 'PRODUTO',
+    bool exibirInformacoesEstoque = false,
+  }) async {
     await showDialog<void>(
       context: context,
       builder: (BuildContext context) {
@@ -1384,7 +1387,49 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
           child: SizedBox(
             width: MediaQuery.of(context).size.width * 0.92,
             height: MediaQuery.of(context).size.height * 0.9,
-            child: SubPainelWebProdutoLista(isSelecao: false, modoEdicao: true),
+            child: SubPainelWebProdutoLista(
+              isSelecao: false,
+              modoEdicao: true,
+              tipoInicial: tipoInicial,
+              exibirInformacoesEstoque: exibirInformacoesEstoque,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _abrirCategoriasDoCatalogo() async {
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox(
+            width: MediaQuery.sizeOf(dialogContext).width * 0.92,
+            height: MediaQuery.sizeOf(dialogContext).height * 0.9,
+            child: CategoriasProdutosServicosWebPage(
+              embedded: true,
+              onBack: () => Navigator.of(dialogContext).pop(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _abrirEtiquetasDoCatalogo() async {
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox(
+            width: MediaQuery.sizeOf(dialogContext).width * 0.92,
+            height: MediaQuery.sizeOf(dialogContext).height * 0.9,
+            child: EtiquetasWebPage(
+              onBack: () => Navigator.of(dialogContext).pop(),
+            ),
           ),
         );
       },
@@ -2943,7 +2988,24 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             onNovoProduto: () {
               showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
             },
-            onOpenListaCompleta: _abrirListaProdutosParaEdicao,
+            onNovoServico: () {
+              showSubPainelCadastroProduto(context, 'Cadastro de Serviços');
+            },
+            onOpenListaCompleta: () => _abrirListaProdutosParaEdicao(),
+            onOpenListaServicos:
+                () => _abrirListaProdutosParaEdicao(tipoInicial: 'SERVICO'),
+            onOpenCategorias: _abrirCategoriasDoCatalogo,
+            onOpenEtiquetas: _abrirEtiquetasDoCatalogo,
+            onOpenCatalogoOnline: () {
+              setState(() {
+                _moduloAtual = ModuloCentralPDV.catalogoPublico;
+              });
+            },
+            onOpenEstoque: () {
+              setState(() {
+                _moduloAtual = ModuloCentralPDV.estoque;
+              });
+            },
           ),
         );
 
@@ -2954,7 +3016,7 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
             onNovoServico: () {
               showSubPainelCadastroProduto(context, 'Cadastro de Produtos');
             },
-            onOpenListaCompleta: _abrirListaProdutosParaEdicao,
+            onOpenListaCompleta: () => _abrirListaProdutosParaEdicao(),
           ),
         );
 
@@ -2962,7 +3024,10 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         return Expanded(
           child: EstoqueDashboardWebPage(
             onBack: voltarParaInicio,
-            onOpenListaCompleta: _abrirListaProdutosParaEdicao,
+            onOpenListaCompleta:
+                () => _abrirListaProdutosParaEdicao(
+                  exibirInformacoesEstoque: true,
+                ),
           ),
         );
 

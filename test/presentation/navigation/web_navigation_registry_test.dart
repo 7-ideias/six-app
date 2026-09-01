@@ -40,10 +40,7 @@ void main() {
         WebNavigationIds.catalogPublicPage,
         WebNavigationIds.operationsReservations,
         WebNavigationIds.catalogProducts,
-        WebNavigationIds.catalogServices,
         WebNavigationIds.catalogStock,
-        WebNavigationIds.catalogLabels,
-        WebNavigationIds.catalogCategories,
       ]);
       expect(
         catalog.children[1].destination,
@@ -115,9 +112,7 @@ void main() {
           'catalog',
           'catalog.public_page',
           'catalog.products',
-          'catalog.services',
           'catalog.stock',
-          'catalog.categories',
           'people',
           'people.customers',
           'people.collaborators',

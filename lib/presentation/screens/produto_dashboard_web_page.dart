@@ -1,529 +1,1024 @@
-import 'dart:math' as math;
-
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:sixpos/core/services/produto_service.dart';
-import 'package:sixpos/data/models/produto_dashboard_model.dart';
+import 'package:provider/provider.dart';
+import 'package:sixpos/core/di/catalog_health_module.dart';
+import 'package:sixpos/data/models/catalog_health_model.dart';
+import 'package:sixpos/data/services/catalog_health/catalog_health_api_client.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/web_dashboard_widgets.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
+import 'package:sixpos/providers/catalog_health_provider.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 
-class ProdutoDashboardWebPage extends StatefulWidget {
+/// Hub Web de produtos e do catálogo.
+///
+/// Saldos e movimentações permanecem na tela de estoque. Aqui ficam a
+/// qualidade do cadastro, os pontos de entrada do catálogo e uma prévia de
+/// disponibilidade somente para quem possui permissão de estoque.
+class ProdutoDashboardWebPage extends StatelessWidget {
   const ProdutoDashboardWebPage({
     super.key,
     this.onBack,
     this.onNovoProduto,
+    this.onNovoServico,
     this.onOpenListaCompleta,
+    this.onOpenListaServicos,
+    this.onOpenCategorias,
+    this.onOpenEtiquetas,
+    this.onOpenCatalogoOnline,
+    this.onOpenEstoque,
+    this.apiClient,
   });
 
   final VoidCallback? onBack;
   final VoidCallback? onNovoProduto;
+  final VoidCallback? onNovoServico;
   final VoidCallback? onOpenListaCompleta;
-
-  @override
-  State<ProdutoDashboardWebPage> createState() =>
-      _ProdutoDashboardWebPageState();
-}
-
-class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
-  static const Duration _entryDuration = Duration(milliseconds: 520);
-  static const Duration _chartDuration = Duration(milliseconds: 1100);
-  static const Duration _numberDuration = Duration(milliseconds: 750);
-  static const Curve _entryCurve = Curves.easeOutCubic;
-
-  final ProdutoService _produtoService = ProdutoService();
-  late Future<ProdutoDashboardModel> _dashboardFuture;
-  final NumberFormat _currencyFormatter = NumberFormat.currency(
-    locale: 'pt_BR',
-    symbol: r'R$',
-  );
-  final NumberFormat _decimalFormatter = NumberFormat.decimalPattern('pt_BR');
-
-  int _produtosPorCategoriaTouchedIndex = -1;
-  int _situacaoEstoqueTouchedIndex = -1;
-  int _valorPorCategoriaTouchedIndex = -1;
-
-  @override
-  void initState() {
-    super.initState();
-    _dashboardFuture = _produtoService.buscarDashboardProdutos();
-  }
-
-  void _recarregar() {
-    setState(() {
-      _produtosPorCategoriaTouchedIndex = -1;
-      _situacaoEstoqueTouchedIndex = -1;
-      _valorPorCategoriaTouchedIndex = -1;
-      _dashboardFuture = _produtoService.buscarDashboardProdutos();
-    });
-  }
-
-  void _setProdutosPorCategoriaTouchedIndex(int index) {
-    if (_produtosPorCategoriaTouchedIndex != index) {
-      setState(() => _produtosPorCategoriaTouchedIndex = index);
-    }
-  }
-
-  void _setSituacaoEstoqueTouchedIndex(int index) {
-    if (_situacaoEstoqueTouchedIndex != index) {
-      setState(() => _situacaoEstoqueTouchedIndex = index);
-    }
-  }
-
-  void _setValorPorCategoriaTouchedIndex(int index) {
-    if (_valorPorCategoriaTouchedIndex != index) {
-      setState(() => _valorPorCategoriaTouchedIndex = index);
-    }
-  }
-
-  String _money(double value) => _currencyFormatter.format(value);
-  String _whole(double value) => _decimalFormatter.format(value.round());
-  String _percent(double value) =>
-      '${value.toStringAsFixed(2).replaceAll('.', ',')}%';
-
-  String _qty(double value) {
-    if (value == value.roundToDouble()) {
-      return _decimalFormatter.format(value.toInt());
-    }
-    return value.toStringAsFixed(2).replaceAll('.', ',');
-  }
+  final VoidCallback? onOpenListaServicos;
+  final VoidCallback? onOpenCategorias;
+  final VoidCallback? onOpenEtiquetas;
+  final VoidCallback? onOpenCatalogoOnline;
+  final VoidCallback? onOpenEstoque;
+  final CatalogHealthApiClient? apiClient;
 
   @override
   Widget build(BuildContext context) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return ChangeNotifierProvider<CatalogHealthProvider>(
+      create: (_) => CatalogHealthProvider(
+        apiClient: apiClient ?? CatalogHealthModule.catalogHealthApiClient,
+        visualizacao: 'WEB',
+      )..load(),
+      child: _ProdutoCatalogoWebView(
+        onBack: onBack,
+        onNovoProduto: onNovoProduto,
+        onNovoServico: onNovoServico,
+        onOpenListaCompleta: onOpenListaCompleta,
+        onOpenListaServicos: onOpenListaServicos,
+        onOpenCategorias: onOpenCategorias,
+        onOpenEtiquetas: onOpenEtiquetas,
+        onOpenCatalogoOnline: onOpenCatalogoOnline,
+        onOpenEstoque: onOpenEstoque,
+      ),
+    );
+  }
+}
+
+class _ProdutoCatalogoWebView extends StatelessWidget {
+  const _ProdutoCatalogoWebView({
+    required this.onBack,
+    required this.onNovoProduto,
+    required this.onNovoServico,
+    required this.onOpenListaCompleta,
+    required this.onOpenListaServicos,
+    required this.onOpenCategorias,
+    required this.onOpenEtiquetas,
+    required this.onOpenCatalogoOnline,
+    required this.onOpenEstoque,
+  });
+
+  final VoidCallback? onBack;
+  final VoidCallback? onNovoProduto;
+  final VoidCallback? onNovoServico;
+  final VoidCallback? onOpenListaCompleta;
+  final VoidCallback? onOpenListaServicos;
+  final VoidCallback? onOpenCategorias;
+  final VoidCallback? onOpenEtiquetas;
+  final VoidCallback? onOpenCatalogoOnline;
+  final VoidCallback? onOpenEstoque;
+
+  @override
+  Widget build(BuildContext context) {
+    final CatalogHealthProvider provider = context
+        .watch<CatalogHealthProvider>();
+    final ColaboradorAutorizacoesProvider permissions = context
+        .watch<ColaboradorAutorizacoesProvider>();
+    final bool canCreate = permissions.podeCadastrarProduto;
+    final bool canManage =
+        permissions.podeCadastrarProduto || permissions.podeEditarProduto;
+    final bool canViewStock = permissions.podeVerEstoqueDeProduto;
+    final bool canOpenLabels =
+        permissions.podeAcessarEtiquetas && onOpenEtiquetas != null;
+
     return Material(
-      color: tokens.workspaceBackground,
-      child: FutureBuilder<ProdutoDashboardModel>(
-        future: _dashboardFuture,
-        builder: (context, snapshot) {
-          final Widget child;
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            child = KeyedSubtree(
-              key: const ValueKey<String>('produtos-dashboard-loading'),
-              child: _buildLoadingDashboard(),
-            );
-          } else if (snapshot.hasError) {
-            child = KeyedSubtree(
-              key: const ValueKey<String>('produtos-dashboard-error'),
-              child: _buildError(snapshot.error),
-            );
-          } else {
-            final dashboard = snapshot.data ?? _emptyDashboard();
-            child = KeyedSubtree(
-              key: const ValueKey<String>('produtos-dashboard-content'),
-              child:
-                  dashboard.isEmpty
-                      ? _buildEmpty()
-                      : _buildDashboard(dashboard),
-            );
-          }
-
-          return Column(
-            children: <Widget>[
-              _buildHeader(),
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 280),
-                  switchInCurve: _entryCurve,
-                  switchOutCurve: Curves.easeInCubic,
-                  child: child,
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  ProdutoDashboardModel _emptyDashboard() {
-    return const ProdutoDashboardModel(
-      totalProdutos: 0,
-      produtosAtivos: 0,
-      valorTotalEstoque: 0,
-      quantidadeTotalEstoque: 0,
-      produtosEstoqueBaixo: 0,
-      produtosSemEstoque: 0,
-      produtosEstoqueNegativo: 0,
-      margemMediaPercentual: 0,
-      produtosPorCategoria: <ProdutoDashboardSerieItem>[],
-      valorEstoquePorCategoria: <ProdutoDashboardSerieItem>[],
-      situacaoEstoque: <ProdutoDashboardSerieItem>[],
-      topProdutosMaiorValorEstoque: <ProdutoDashboardItem>[],
-      produtosEstoqueBaixoLista: <ProdutoDashboardItem>[],
-      alertas: <ProdutoDashboardAlerta>[],
-    );
-  }
-
-  Widget _buildHeader() {
-    final theme = Theme.of(context);
-    final tokens = WebThemeTokens.of(context);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
-      decoration: BoxDecoration(
-        color: tokens.surfaceMuted,
-        border: Border(bottom: BorderSide(color: tokens.cardBorder)),
-      ),
-      child: Row(
+      color: WebThemeTokens.of(context).workspaceBackground,
+      child: Column(
         children: <Widget>[
-          _headerIcon(Icons.inventory_2_outlined),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'Produtos',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    color: tokens.primaryText,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Resumo executivo do catálogo, estoque, valor parado e alertas de reposição.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: tokens.secondaryText,
-                    height: 1.35,
-                  ),
-                ),
-              ],
+          SixWebDashboardHeader(
+            icon: Icons.inventory_2_outlined,
+            title: context.t('catalogHub.web.title', fallback: 'Produtos'),
+            subtitle: context.t(
+              'catalogHub.web.subtitle',
+              fallback:
+                  'Cuide da qualidade do catálogo e acesse cadastros, categorias e etiquetas.',
             ),
-          ),
-          const SizedBox(width: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: <Widget>[
+            onBack: onBack,
+            actions: <Widget>[
               OutlinedButton.icon(
-                onPressed: _recarregar,
+                onPressed: provider.isLoading ? null : provider.reload,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Atualizar'),
-                style: _headerOutlinedButtonStyle(tokens),
+                label: Text(context.t('common.refresh', fallback: 'Atualizar')),
               ),
-              FilledButton.icon(
-                onPressed: widget.onNovoProduto,
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('Novo produto'),
-              ),
-              OutlinedButton.icon(
-                onPressed: null,
-                icon: const Icon(Icons.upload_file_outlined),
-                label: Text(
-                  context.t(
-                    'produto.dashboard.importSpreadsheetSoon',
-                    fallback: 'Importar via planilha (em breve)',
+              if (canCreate && (onNovoProduto != null || onNovoServico != null))
+                PopupMenuButton<_CatalogCreateAction>(
+                  onSelected: (_CatalogCreateAction action) {
+                    switch (action) {
+                      case _CatalogCreateAction.product:
+                        onNovoProduto?.call();
+                      case _CatalogCreateAction.service:
+                        onNovoServico?.call();
+                    }
+                  },
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<_CatalogCreateAction>>[
+                        if (onNovoProduto != null)
+                          PopupMenuItem<_CatalogCreateAction>(
+                            value: _CatalogCreateAction.product,
+                            child: ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              leading: const Icon(Icons.inventory_2_outlined),
+                              title: Text(
+                                context.t(
+                                  'catalogHub.actions.newProduct',
+                                  fallback: 'Novo produto',
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (onNovoServico != null)
+                          PopupMenuItem<_CatalogCreateAction>(
+                            value: _CatalogCreateAction.service,
+                            child: ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              leading: const Icon(
+                                Icons.home_repair_service_outlined,
+                              ),
+                              title: Text(
+                                context.t(
+                                  'catalogHub.actions.newService',
+                                  fallback: 'Novo serviço',
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                  child: IgnorePointer(
+                    child: FilledButton.icon(
+                      onPressed: () {},
+                      icon: const Icon(Icons.add_rounded),
+                      label: Text(
+                        context.t(
+                          'catalogHub.actions.newItem',
+                          fallback: 'Novo item',
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                style: _headerComingSoonButtonStyle(tokens),
-              ),
-              OutlinedButton.icon(
-                onPressed: widget.onOpenListaCompleta,
-                icon: const Icon(Icons.table_rows_rounded),
-                label: const Text('Lista completa'),
-                style: _headerOutlinedButtonStyle(tokens),
-              ),
-              if (widget.onBack != null)
-                IconButton.filledTonal(
-                  onPressed: widget.onBack,
-                  tooltip: 'Fechar',
-                  icon: const Icon(Icons.close_rounded),
                 ),
             ],
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: provider.reload,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(24, 22, 24, 32),
+                children: <Widget>[
+                  if (!permissions.podeAcessarCatalogo)
+                    _CatalogStatePanel(
+                      icon: Icons.lock_outline_rounded,
+                      title: context.t(
+                        'catalogHub.states.noAccessTitle',
+                        fallback: 'Acesso ao catálogo indisponível',
+                      ),
+                      description: context.t(
+                        'catalogHub.states.noAccessDescription',
+                        fallback:
+                            'Seu perfil não permite visualizar produtos e serviços deste comércio.',
+                      ),
+                    )
+                  else ...<Widget>[
+                    _healthState(context, provider, canManage: canManage),
+                    const SizedBox(height: 20),
+                    SixWebEntry(
+                      order: 2,
+                      child: _CatalogManagementSection(
+                        canManage: canManage,
+                        canOpenLabels: canOpenLabels,
+                        onOpenProducts: onOpenListaCompleta,
+                        onOpenServices:
+                            onOpenListaServicos ?? onOpenListaCompleta,
+                        onOpenCategories: onOpenCategorias,
+                        onOpenLabels: onOpenEtiquetas,
+                        onOpenCatalog: onOpenCatalogoOnline,
+                      ),
+                    ),
+                    if (canViewStock && onOpenEstoque != null) ...<Widget>[
+                      const SizedBox(height: 20),
+                      SixWebEntry(
+                        order: 3,
+                        child: _StockBoundaryCard(
+                          summary: provider.summary,
+                          onOpenStock: onOpenEstoque!,
+                        ),
+                      ),
+                    ],
+                  ],
+                ],
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _headerIcon(IconData icon) {
-    final tokens = WebThemeTokens.of(context);
-    return Container(
-      width: 54,
-      height: 54,
-      decoration: BoxDecoration(
-        color: tokens.info.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Icon(icon, color: tokens.info, size: 28),
-    );
-  }
-
-  ButtonStyle _headerOutlinedButtonStyle(WebThemeTokens tokens) {
-    return OutlinedButton.styleFrom(
-      foregroundColor: tokens.info,
-      backgroundColor: tokens.surface,
-      side: BorderSide(color: tokens.cardBorder),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    );
-  }
-
-  ButtonStyle _headerComingSoonButtonStyle(WebThemeTokens tokens) {
-    return OutlinedButton.styleFrom(
-      disabledForegroundColor: tokens.secondaryText.withValues(alpha: 0.72),
-      disabledBackgroundColor: tokens.surface,
-      side: BorderSide(color: tokens.cardBorder),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    );
-  }
-
-  Widget _buildLoadingDashboard() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 1180;
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: 8,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: compact ? 2 : 4,
-                  crossAxisSpacing: 14,
-                  mainAxisSpacing: 14,
-                  mainAxisExtent: 118,
-                ),
-                itemBuilder:
-                    (context, index) => _entry(
-                      order: index,
-                      child: _loadingKpiCard(highlight: index == 2),
-                    ),
-              ),
-              const SizedBox(height: 18),
-              _responsiveChildren(
-                compact: compact,
-                children: <Widget>[
-                  _loadingChartCard(
-                    title: 'Produtos por categoria',
-                    subtitle: 'Quantidade em estoque por agrupamento.',
-                    order: 8,
-                  ),
-                  _loadingChartCard(
-                    title: 'Situação do estoque',
-                    subtitle: 'Distribuição por saúde operacional.',
-                    order: 9,
-                  ),
-                  _loadingChartCard(
-                    title: 'Valor por categoria',
-                    subtitle: 'Onde o dinheiro em estoque está concentrado.',
-                    order: 10,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              _responsiveChildren(
-                compact: compact,
-                children: <Widget>[
-                  _loadingSectionCard(title: 'Atenção necessária', order: 11),
-                  _loadingSectionCard(
-                    title: 'Produtos com estoque baixo',
-                    order: 12,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildDashboard(ProdutoDashboardModel dashboard) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 1180;
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _buildKpis(dashboard, compact),
-              const SizedBox(height: 18),
-              _responsiveChildren(
-                compact: compact,
-                children: <Widget>[
-                  _entry(
-                    order: 8,
-                    child: _chartCard(
-                      title: 'Produtos por categoria',
-                      subtitle: 'Quantidade em estoque por agrupamento.',
-                      child: _barChart(
-                        dashboard.produtosPorCategoria,
-                        value: (item) => item.quantidade,
-                        touchedIndex: _produtosPorCategoriaTouchedIndex,
-                        onTouchedIndexChanged:
-                            _setProdutosPorCategoriaTouchedIndex,
-                      ),
-                    ),
-                  ),
-                  _entry(
-                    order: 9,
-                    child: _chartCard(
-                      title: 'Situação do estoque',
-                      subtitle: 'Distribuição por saúde operacional.',
-                      child: _pieChart(
-                        dashboard.situacaoEstoque,
-                        touchedIndex: _situacaoEstoqueTouchedIndex,
-                        onTouchedIndexChanged: _setSituacaoEstoqueTouchedIndex,
-                      ),
-                    ),
-                  ),
-                  _entry(
-                    order: 10,
-                    child: _chartCard(
-                      title: 'Valor por categoria',
-                      subtitle: 'Onde o dinheiro em estoque está concentrado.',
-                      child: _barChart(
-                        dashboard.valorEstoquePorCategoria,
-                        value: (item) => item.valor,
-                        touchedIndex: _valorPorCategoriaTouchedIndex,
-                        onTouchedIndexChanged:
-                            _setValorPorCategoriaTouchedIndex,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              _responsiveChildren(
-                compact: compact,
-                children: <Widget>[
-                  _entry(order: 11, child: _alerts(dashboard.alertas)),
-                  _entry(
-                    order: 12,
-                    child: _lowStock(dashboard.produtosEstoqueBaixoLista),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              _entry(
-                order: 13,
-                child: _topStockValue(dashboard.topProdutosMaiorValorEstoque),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _responsiveChildren({
-    required bool compact,
-    required List<Widget> children,
+  Widget _healthState(
+    BuildContext context,
+    CatalogHealthProvider provider, {
+    required bool canManage,
   }) {
-    if (compact) {
-      return Column(children: _withSpacing(children, vertical: true));
+    if (provider.isLoading) {
+      return const Column(
+        children: <Widget>[
+          SixWebLoadingBlock(height: 210, highlight: true),
+          SizedBox(height: 16),
+          SixWebLoadingBlock(height: 150),
+        ],
+      );
     }
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: _withSpacing(
-        children.map((child) => Expanded(child: child)).toList(),
-        vertical: false,
-      ),
+
+    if (provider.hasError) {
+      return _CatalogStatePanel(
+        icon: Icons.cloud_off_outlined,
+        title: context.t(
+          'catalogHub.states.loadErrorTitle',
+          fallback: 'Não foi possível carregar a saúde do catálogo',
+        ),
+        description: context.t(
+          'catalogHub.states.loadErrorDescription',
+          fallback:
+              'Os acessos do catálogo continuam disponíveis. Tente atualizar o diagnóstico.',
+        ),
+        action: OutlinedButton.icon(
+          onPressed: provider.reload,
+          icon: const Icon(Icons.refresh_rounded),
+          label: Text(
+            context.t('common.tryAgain', fallback: 'Tentar novamente'),
+          ),
+        ),
+      );
+    }
+
+    final CatalogHealthSummary? summary = provider.summary;
+    if (summary == null || summary.isEmpty) {
+      return _CatalogStatePanel(
+        icon: Icons.inventory_2_outlined,
+        title: context.t(
+          'catalogHub.states.emptyTitle',
+          fallback: 'Comece seu catálogo',
+        ),
+        description: context.t(
+          'catalogHub.states.emptyDescription',
+          fallback:
+              'Cadastre o primeiro produto ou serviço. A saúde do catálogo será calculada automaticamente.',
+        ),
+        action: onNovoProduto == null
+            ? null
+            : FilledButton.icon(
+                onPressed: onNovoProduto,
+                icon: const Icon(Icons.add_rounded),
+                label: Text(
+                  context.t(
+                    'catalogHub.actions.newProduct',
+                    fallback: 'Novo produto',
+                  ),
+                ),
+              ),
+      );
+    }
+
+    final List<CatalogHealthMetric> catalogPending = summary
+        .pendingSection
+        .items
+        .where((CatalogHealthMetric metric) => !metric.requiresStockPermission)
+        .toList(growable: false);
+
+    return Column(
+      children: <Widget>[
+        SixWebEntry(
+          child: _CatalogHealthOverview(
+            summary: summary,
+            onOpenProducts: canManage ? onOpenListaCompleta : null,
+            onOpenServices:
+                canManage
+                    ? (onOpenListaServicos ?? onOpenListaCompleta)
+                    : null,
+          ),
+        ),
+        const SizedBox(height: 16),
+        SixWebEntry(
+          order: 1,
+          child: _CatalogQualityIssues(
+            metrics: catalogPending,
+            onOpenItems: canManage ? onOpenListaCompleta : null,
+          ),
+        ),
+      ],
     );
   }
+}
 
-  List<Widget> _withSpacing(List<Widget> children, {required bool vertical}) {
-    final spaced = <Widget>[];
-    for (var index = 0; index < children.length; index++) {
-      if (index > 0) {
-        spaced.add(
-          SizedBox(width: vertical ? 0 : 18, height: vertical ? 18 : 0),
+enum _CatalogCreateAction { product, service }
+
+class _CatalogHealthOverview extends StatelessWidget {
+  const _CatalogHealthOverview({
+    required this.summary,
+    required this.onOpenProducts,
+    required this.onOpenServices,
+  });
+
+  final CatalogHealthSummary summary;
+  final VoidCallback? onOpenProducts;
+  final VoidCallback? onOpenServices;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final CatalogHealthScore health = summary.health;
+    final Color healthColor = _healthColor(tokens, health.situation);
+    final int catalogIssues = summary.pendingSection.items
+        .where((CatalogHealthMetric item) => !item.requiresStockPermission)
+        .fold<int>(
+          0,
+          (int total, CatalogHealthMetric item) => total + item.value,
         );
-      }
-      spaced.add(children[index]);
-    }
-    return spaced;
-  }
-
-  Widget _buildKpis(ProdutoDashboardModel dashboard, bool compact) {
-    final kpis = <_Kpi>[
-      _Kpi(
-        Icons.widgets_outlined,
-        'Produtos cadastrados',
-        dashboard.totalProdutos.toDouble(),
-        _whole,
-      ),
-      _Kpi(
-        Icons.verified_outlined,
-        'Produtos ativos',
-        dashboard.produtosAtivos.toDouble(),
-        _whole,
-      ),
-      _Kpi(
-        Icons.account_balance_wallet_outlined,
-        'Valor em estoque',
-        dashboard.valorTotalEstoque,
-        _money,
-        true,
-      ),
-      _Kpi(
-        Icons.inventory_outlined,
-        'Quantidade em estoque',
-        dashboard.quantidadeTotalEstoque,
-        _qty,
-      ),
-      _Kpi(
-        Icons.warning_amber_rounded,
-        'Estoque baixo',
-        dashboard.produtosEstoqueBaixo.toDouble(),
-        _whole,
-      ),
-      _Kpi(
-        Icons.remove_shopping_cart_outlined,
-        'Sem estoque',
-        dashboard.produtosSemEstoque.toDouble(),
-        _whole,
-      ),
-      _Kpi(
-        Icons.error_outline_rounded,
-        'Estoque negativo',
-        dashboard.produtosEstoqueNegativo.toDouble(),
-        _whole,
-      ),
-      _Kpi(
-        Icons.trending_up_rounded,
-        'Margem média',
-        dashboard.margemMediaPercentual,
-        _percent,
-      ),
-    ];
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: kpis.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: compact ? 2 : 4,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-        mainAxisExtent: 118,
-      ),
-      itemBuilder:
-          (context, index) =>
-              _entry(order: index, child: _kpiCard(kpis[index])),
-    );
-  }
-
-  Widget _kpiCard(_Kpi kpi) {
-    final tokens = WebThemeTokens.of(context);
-    final background =
-        kpi.highlight ? tokens.surfaceElevated : tokens.cardBackground;
-    final foreground = tokens.primaryText;
-    final muted = tokens.secondaryText;
-    final accent = tokens.info;
 
     return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool compact = constraints.maxWidth < 840;
+          final Widget score = _CatalogScore(
+            percentage: health.percentage,
+            status: _healthStatus(context, health.situation),
+            color: healthColor,
+          );
+          final Widget details = _CatalogHealthDetails(
+            summary: summary,
+            catalogIssues: catalogIssues,
+            onOpenProducts: onOpenProducts,
+            onOpenServices: onOpenServices,
+          );
+
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Center(child: score),
+                const SizedBox(height: 22),
+                details,
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              SizedBox(width: 220, child: score),
+              const SizedBox(width: 28),
+              Expanded(child: details),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CatalogScore extends StatelessWidget {
+  const _CatalogScore({
+    required this.percentage,
+    required this.status,
+    required this.color,
+  });
+
+  final int percentage;
+  final String status;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final double progress = percentage.clamp(0, 100) / 100;
+    return Semantics(
+      label: '$percentage%. $status',
+      child: Column(
+        children: <Widget>[
+          SizedBox(
+            width: 142,
+            height: 142,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0, end: progress),
+              duration: const Duration(milliseconds: 720),
+              curve: Curves.easeOutCubic,
+              builder: (BuildContext context, double value, Widget? child) {
+                return Stack(
+                  fit: StackFit.expand,
+                  children: <Widget>[
+                    CircularProgressIndicator(
+                      value: value,
+                      strokeWidth: 12,
+                      strokeCap: StrokeCap.round,
+                      color: color,
+                      backgroundColor: tokens.surfaceMuted,
+                    ),
+                    Center(
+                      child: Text(
+                        '$percentage%',
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
+                              color: tokens.primaryText,
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            status,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CatalogHealthDetails extends StatelessWidget {
+  const _CatalogHealthDetails({
+    required this.summary,
+    required this.catalogIssues,
+    required this.onOpenProducts,
+    required this.onOpenServices,
+  });
+
+  final CatalogHealthSummary summary;
+  final int catalogIssues;
+  final VoidCallback? onOpenProducts;
+  final VoidCallback? onOpenServices;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Icon(Icons.monitor_heart_outlined, color: tokens.info),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                context.t(
+                  'catalogHub.health.title',
+                  fallback: 'Saúde do catálogo',
+                ),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: tokens.primaryText,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 7),
+        Text(
+          context.t(
+            'catalogHub.health.description',
+            fallback:
+                'Qualidade dos cadastros e prontidão dos itens para venda.',
+          ),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: tokens.secondaryText,
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 18),
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool compact = constraints.maxWidth < 620;
+            final List<Widget> cards = <Widget>[
+              _CatalogCountCard(
+                icon: Icons.inventory_2_outlined,
+                label: context.t(
+                  'catalogHub.modules.products',
+                  fallback: 'Produtos',
+                ),
+                value: summary.overview.products.quantity,
+                onTap: onOpenProducts,
+              ),
+              _CatalogCountCard(
+                icon: Icons.home_repair_service_outlined,
+                label: context.t(
+                  'catalogHub.modules.services',
+                  fallback: 'Serviços',
+                ),
+                value: summary.overview.services.quantity,
+                onTap: onOpenServices,
+              ),
+              _CatalogCountCard(
+                icon: Icons.rule_folder_outlined,
+                label: context.t(
+                  'catalogHub.health.catalogIssues',
+                  fallback: 'Pendências cadastrais',
+                ),
+                value: catalogIssues,
+              ),
+            ];
+            if (compact) {
+              return Column(
+                children: <Widget>[
+                  for (
+                    int index = 0;
+                    index < cards.length;
+                    index++
+                  ) ...<Widget>[
+                    cards[index],
+                    if (index != cards.length - 1) const SizedBox(height: 10),
+                  ],
+                ],
+              );
+            }
+            return Row(
+              children: <Widget>[
+                for (int index = 0; index < cards.length; index++) ...<Widget>[
+                  Expanded(child: cards[index]),
+                  if (index != cards.length - 1) const SizedBox(width: 10),
+                ],
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _CatalogCountCard extends StatelessWidget {
+  const _CatalogCountCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final int value;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Material(
+      color: tokens.surfaceMuted,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: <Widget>[
+              Icon(icon, color: tokens.info, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      value.toString(),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: tokens.primaryText,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: tokens.secondaryText,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (onTap != null)
+                Icon(Icons.chevron_right_rounded, color: tokens.mutedText),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CatalogQualityIssues extends StatelessWidget {
+  const _CatalogQualityIssues({
+    required this.metrics,
+    required this.onOpenItems,
+  });
+
+  final List<CatalogHealthMetric> metrics;
+  final VoidCallback? onOpenItems;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool healthy =
+        metrics.isEmpty ||
+        metrics.every((CatalogHealthMetric item) => item.value == 0);
+    return SixWebSectionCard(
+      title: context.t(
+        'catalogHub.health.qualityTitle',
+        fallback: 'Qualidade do cadastro',
+      ),
+      subtitle: context.t(
+        'catalogHub.health.qualitySubtitle',
+        fallback:
+            'Fotos, categorias e informações que ajudam o cliente a decidir.',
+      ),
+      icon: Icons.fact_check_outlined,
+      child: healthy
+          ? const _HealthyCatalogMessage()
+          : Column(
+              children: <Widget>[
+                for (
+                  int index = 0;
+                  index < metrics.length;
+                  index++
+                ) ...<Widget>[
+                  _CatalogIssueRow(metric: metrics[index], onTap: onOpenItems),
+                  if (index != metrics.length - 1) const SizedBox(height: 10),
+                ],
+              ],
+            ),
+    );
+  }
+}
+
+class _HealthyCatalogMessage extends StatelessWidget {
+  const _HealthyCatalogMessage();
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: kpi.highlight ? tokens.selectedBorder : tokens.cardBorder,
+        color: tokens.success.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.check_circle_outline_rounded, color: tokens.success),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              context.t(
+                'catalogHub.health.noQualityIssues',
+                fallback: 'Nenhuma pendência cadastral encontrada.',
+              ),
+              style: TextStyle(
+                color: tokens.primaryText,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CatalogIssueRow extends StatelessWidget {
+  const _CatalogIssueRow({required this.metric, this.onTap});
+
+  final CatalogHealthMetric metric;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final Color color = switch (metric.severity) {
+      CatalogHealthMetricSeverity.critical => tokens.danger,
+      CatalogHealthMetricSeverity.warning => tokens.warning,
+      CatalogHealthMetricSeverity.informative => tokens.info,
+      CatalogHealthMetricSeverity.neutral => tokens.statusNeutral,
+    };
+    final bool resolved = metric.value == 0;
+
+    return Material(
+      color: tokens.surfaceMuted,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: resolved ? null : onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(_metricIcon(metric.type), color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      _metricTitle(context, metric),
+                      style: TextStyle(
+                        color: tokens.primaryText,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      _metricSubtitle(context, metric),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: tokens.secondaryText),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                resolved
+                    ? context.t('common.ok', fallback: 'OK')
+                    : metric.value.toString(),
+                style: TextStyle(
+                  color: resolved ? tokens.success : color,
+                  fontSize: resolved ? 13 : 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              if (!resolved && onTap != null) ...<Widget>[
+                const SizedBox(width: 6),
+                Icon(Icons.chevron_right_rounded, color: tokens.mutedText),
+              ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _CatalogManagementSection extends StatelessWidget {
+  const _CatalogManagementSection({
+    required this.canManage,
+    required this.canOpenLabels,
+    required this.onOpenProducts,
+    required this.onOpenServices,
+    required this.onOpenCategories,
+    required this.onOpenLabels,
+    required this.onOpenCatalog,
+  });
+
+  final bool canManage;
+  final bool canOpenLabels;
+  final VoidCallback? onOpenProducts;
+  final VoidCallback? onOpenServices;
+  final VoidCallback? onOpenCategories;
+  final VoidCallback? onOpenLabels;
+  final VoidCallback? onOpenCatalog;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<_CatalogModuleData> modules = <_CatalogModuleData>[
+      if (canManage) ...<_CatalogModuleData>[
+        _CatalogModuleData(
+          icon: Icons.inventory_2_outlined,
+          title: context.t('catalogHub.modules.products', fallback: 'Produtos'),
+          subtitle: context.t(
+            'catalogHub.modules.productsDescription',
+            fallback: 'Cadastre, revise e publique itens de venda.',
+          ),
+          onTap: onOpenProducts,
+        ),
+        _CatalogModuleData(
+          icon: Icons.home_repair_service_outlined,
+          title: context.t('catalogHub.modules.services', fallback: 'Serviços'),
+          subtitle: context.t(
+            'catalogHub.modules.servicesDescription',
+            fallback: 'Organize serviços, preços e garantias.',
+          ),
+          onTap: onOpenServices,
+        ),
+        _CatalogModuleData(
+          icon: Icons.category_outlined,
+          title: context.t(
+            'catalogHub.modules.categories',
+            fallback: 'Categorias',
+          ),
+          subtitle: context.t(
+            'catalogHub.modules.categoriesDescription',
+            fallback: 'Agrupe produtos e serviços para facilitar a operação.',
+          ),
+          onTap: onOpenCategories,
+        ),
+      ],
+      if (canOpenLabels)
+        _CatalogModuleData(
+          icon: Icons.local_offer_outlined,
+          title: context.t('catalogHub.modules.labels', fallback: 'Etiquetas'),
+          subtitle: context.t(
+            'catalogHub.modules.labelsDescription',
+            fallback: 'Crie modelos e imprima etiquetas de produtos.',
+          ),
+          onTap: onOpenLabels,
+        ),
+      if (canManage)
+        _CatalogModuleData(
+          icon: Icons.language_outlined,
+          title: context.t(
+            'catalogHub.modules.onlineCatalog',
+            fallback: 'Catálogo online',
+          ),
+          subtitle: context.t(
+            'catalogHub.modules.onlineCatalogDescription',
+            fallback: 'Personalize a vitrine pública e compartilhe o link.',
+          ),
+          onTap: onOpenCatalog,
+        ),
+    ];
+
+    return SixWebSectionCard(
+      title: context.t(
+        'catalogHub.management.title',
+        fallback: 'Gestão do catálogo',
+      ),
+      subtitle: context.t(
+        'catalogHub.management.subtitle',
+        fallback:
+            'Cadastros e ferramentas do catálogo ficam centralizados aqui.',
+      ),
+      icon: Icons.widgets_outlined,
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final int columns = constraints.maxWidth >= 1180
+              ? 4
+              : constraints.maxWidth >= 720
+              ? 2
+              : 1;
+          const double spacing = 12;
+          final double width =
+              (constraints.maxWidth - spacing * (columns - 1)) / columns;
+          return Wrap(
+            spacing: spacing,
+            runSpacing: spacing,
+            children: modules
+                .map(
+                  (_CatalogModuleData module) => SizedBox(
+                    width: width,
+                    child: _CatalogModuleCard(data: module),
+                  ),
+                )
+                .toList(growable: false),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CatalogModuleData {
+  const _CatalogModuleData({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+}
+
+class _CatalogModuleCard extends StatelessWidget {
+  const _CatalogModuleCard({required this.data});
+
+  final _CatalogModuleData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Material(
+      color: tokens.surfaceMuted,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: data.onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 132),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: tokens.cardBorder),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: tokens.info.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Icon(data.icon, color: tokens.info, size: 21),
+                  ),
+                  const Spacer(),
+                  Icon(Icons.arrow_forward_rounded, color: tokens.mutedText),
+                ],
+              ),
+              const SizedBox(height: 13),
+              Text(
+                data.title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: tokens.primaryText,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                data.subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: tokens.secondaryText,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StockBoundaryCard extends StatelessWidget {
+  const _StockBoundaryCard({required this.summary, required this.onOpenStock});
+
+  final CatalogHealthSummary? summary;
+  final VoidCallback onOpenStock;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final List<CatalogHealthMetric> stockMetrics =
+        summary?.pendingSection.items
+            .where((CatalogHealthMetric item) => item.requiresStockPermission)
+            .toList(growable: false) ??
+        const <CatalogHealthMetric>[];
+    final int stockIssues = stockMetrics.fold<int>(
+      0,
+      (int total, CatalogHealthMetric item) => total + item.value,
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: tokens.info.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: tokens.info.withValues(alpha: 0.20)),
       ),
       child: Row(
         children: <Widget>[
@@ -531,970 +1026,212 @@ class _ProdutoDashboardWebPageState extends State<ProdutoDashboardWebPage> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color:
-                  kpi.highlight
-                      ? accent.withValues(alpha: 0.16)
-                      : accent.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(16),
+              color: tokens.info.withValues(alpha: 0.11),
+              borderRadius: BorderRadius.circular(15),
             ),
-            child: Icon(kpi.icon, color: accent),
+            child: Icon(Icons.warehouse_outlined, color: tokens.info),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 Text(
-                  kpi.label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: muted,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
+                  context.t(
+                    'catalogHub.stock.title',
+                    fallback: 'Disponibilidade do estoque',
                   ),
-                ),
-                const SizedBox(height: 6),
-                TweenAnimationBuilder<double>(
-                  key: ValueKey<String>('${kpi.label}:${kpi.value}'),
-                  tween: Tween<double>(begin: 0, end: kpi.value),
-                  duration: _numberDuration,
-                  curve: _entryCurve,
-                  builder: (context, value, child) {
-                    return Text(
-                      kpi.formatter(value),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: foreground,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 22,
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _chartCard({
-    required String title,
-    required String subtitle,
-    required Widget child,
-  }) {
-    final theme = Theme.of(context);
-    final tokens = WebThemeTokens.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: tokens.cardBackground,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: tokens.cardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: tokens.primaryText,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: tokens.secondaryText,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 16),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget _barChart(
-    List<ProdutoDashboardSerieItem> itens, {
-    required double Function(ProdutoDashboardSerieItem item) value,
-    required int touchedIndex,
-    required ValueChanged<int> onTouchedIndexChanged,
-  }) {
-    final theme = Theme.of(context);
-    final tokens = WebThemeTokens.of(context);
-    final chartItems = itens.take(6).toList();
-    if (chartItems.isEmpty) return _noData();
-
-    final maxValue = chartItems.fold<double>(
-      0,
-      (max, item) => math.max(max, value(item)),
-    );
-    return TweenAnimationBuilder<double>(
-      key: ValueKey<String>(
-        chartItems.map((item) => '${item.label}:${value(item)}').join('|'),
-      ),
-      tween: Tween<double>(begin: 0, end: 1),
-      duration: _chartDuration,
-      curve: Curves.linear,
-      builder: (context, progress, child) {
-        return SizedBox(
-          height: 260,
-          child: BarChart(
-            BarChartData(
-              maxY: maxValue <= 0 ? 10.0 : maxValue * 1.18,
-              borderData: FlBorderData(show: false),
-              barTouchData: BarTouchData(
-                enabled: true,
-                touchCallback: (_, response) {
-                  final index = response?.spot?.touchedBarGroupIndex ?? -1;
-                  onTouchedIndexChanged(
-                    index >= 0 && index < chartItems.length ? index : -1,
-                  );
-                },
-              ),
-              gridData: FlGridData(
-                show: true,
-                horizontalInterval:
-                    maxValue <= 0 ? 2.0 : math.max(1.0, maxValue / 4),
-                getDrawingHorizontalLine:
-                    (_) => FlLine(
-                      color: tokens.divider.withValues(alpha: 0.75),
-                      strokeWidth: 1,
-                    ),
-              ),
-              titlesData: _barTitles(theme, chartItems),
-              barGroups: List<BarChartGroupData>.generate(chartItems.length, (
-                index,
-              ) {
-                final itemProgress = _staggeredItemProgress(progress, index);
-                final touched = index == touchedIndex;
-                final opacity = touchedIndex == -1 || touched ? 1.0 : 0.45;
-                return BarChartGroupData(
-                  x: index,
-                  barRods: <BarChartRodData>[
-                    BarChartRodData(
-                      toY: value(chartItems[index]) * itemProgress,
-                      width: touched ? 30 : 22,
-                      borderRadius: BorderRadius.circular(touched ? 10 : 8),
-                      color: _chartColor(
-                        theme,
-                        index,
-                      ).withValues(alpha: opacity),
-                    ),
-                  ],
-                );
-              }),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  FlTitlesData _barTitles(
-    ThemeData theme,
-    List<ProdutoDashboardSerieItem> chartItems,
-  ) {
-    return FlTitlesData(
-      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      leftTitles: AxisTitles(
-        sideTitles: SideTitles(
-          showTitles: true,
-          reservedSize: 46,
-          getTitlesWidget:
-              (axisValue, meta) => Text(
-                axisValue >= 1000
-                    ? '${(axisValue / 1000).toStringAsFixed(0)}k'
-                    : axisValue.toInt().toString(),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: WebThemeTokens.of(context).mutedText,
-                ),
-              ),
-        ),
-      ),
-      bottomTitles: AxisTitles(
-        sideTitles: SideTitles(
-          showTitles: true,
-          reservedSize: 44,
-          getTitlesWidget: (axisValue, meta) {
-            final index = axisValue.toInt();
-            if (index < 0 || index >= chartItems.length) {
-              return const SizedBox.shrink();
-            }
-            return Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: SizedBox(
-                width: 72,
-                child: Text(
-                  chartItems[index].label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: WebThemeTokens.of(context).mutedText,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _pieChart(
-    List<ProdutoDashboardSerieItem> itens, {
-    required int touchedIndex,
-    required ValueChanged<int> onTouchedIndexChanged,
-  }) {
-    final theme = Theme.of(context);
-    final chartItems = itens.where((item) => item.quantidade > 0).toList();
-    if (chartItems.isEmpty) return _noData();
-
-    return TweenAnimationBuilder<double>(
-      key: ValueKey<String>(
-        chartItems.map((item) => '${item.label}:${item.quantidade}').join('|'),
-      ),
-      tween: Tween<double>(begin: 0, end: 1),
-      duration: _chartDuration,
-      curve: Curves.linear,
-      builder: (context, progress, child) {
-        return Column(
-          children: <Widget>[
-            SizedBox(
-              height: 230,
-              child: PieChart(
-                PieChartData(
-                  pieTouchData: PieTouchData(
-                    touchCallback: (_, response) {
-                      final index =
-                          response?.touchedSection?.touchedSectionIndex ?? -1;
-                      onTouchedIndexChanged(
-                        index >= 0 && index < chartItems.length ? index : -1,
-                      );
-                    },
-                  ),
-                  startDegreeOffset: -90,
-                  centerSpaceRadius: 48,
-                  sectionsSpace: touchedIndex == -1 ? 3 : 5,
-                  sections: List<PieChartSectionData>.generate(
-                    chartItems.length,
-                    (index) {
-                      final item = chartItems[index];
-                      final itemProgress = _staggeredItemProgress(
-                        progress,
-                        index,
-                      );
-                      final touched = index == touchedIndex;
-                      final opacity =
-                          touchedIndex == -1 || touched ? 1.0 : 0.48;
-                      return PieChartSectionData(
-                        value: math.max(0.001, item.quantidade * itemProgress),
-                        title: itemProgress > 0.72 ? _qty(item.quantidade) : '',
-                        radius: touched ? 78 : 54 + (12 * progress),
-                        color: _chartColor(
-                          theme,
-                          index,
-                        ).withValues(alpha: opacity),
-                        titleStyle: const TextStyle(
-                          color: Color(0xFFF8FAFC),
-                          fontWeight: FontWeight.w900,
-                          fontSize: 12,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            AnimatedOpacity(
-              duration: const Duration(milliseconds: 220),
-              opacity: progress > 0.65 ? 1 : 0,
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 8,
-                children: List<Widget>.generate(
-                  chartItems.length,
-                  (index) => _legend(
-                    _chartColor(theme, index),
-                    chartItems[index].label,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _alerts(List<ProdutoDashboardAlerta> alertas) {
-    final theme = Theme.of(context);
-    final tokens = WebThemeTokens.of(context);
-    return _sectionCard(
-      title: 'Atenção necessária',
-      icon: Icons.tips_and_updates_outlined,
-      child: Column(
-        children:
-            alertas.map((alerta) {
-              final color = _alertColor(theme, alerta.tipo);
-              return Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: tokens.surfaceMuted,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: tokens.cardBorder),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Container(
-                      width: 3,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        _alertIcon(alerta.tipo),
-                        color: color,
-                        size: 19,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            alerta.titulo,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            alerta.descricao,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: tokens.secondaryText,
-                              height: 1.35,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _decimalFormatter.format(alerta.quantidade),
-                      style: TextStyle(
-                        color: color,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-      ),
-    );
-  }
-
-  Widget _lowStock(List<ProdutoDashboardItem> items) {
-    return _sectionCard(
-      title: 'Produtos com estoque baixo',
-      icon: Icons.production_quantity_limits_rounded,
-      child:
-          items.isEmpty
-              ? _noData(text: 'Nenhum produto abaixo do estoque mínimo.')
-              : Column(children: items.map(_compactProduct).toList()),
-    );
-  }
-
-  Widget _topStockValue(List<ProdutoDashboardItem> items) {
-    final tokens = WebThemeTokens.of(context);
-    return _sectionCard(
-      title: 'Top produtos por valor em estoque',
-      icon: Icons.leaderboard_outlined,
-      child:
-          items.isEmpty
-              ? _noData()
-              : Column(
-                children:
-                    items.map((item) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(color: tokens.divider),
-                          ),
-                        ),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              flex: 4,
-                              child: _tableText(item.nome, bold: true),
-                            ),
-                            Expanded(
-                              flex: 2,
-                              child: _tableText(item.categoria),
-                            ),
-                            Expanded(
-                              child: _tableText(
-                                _qty(item.quantidadeEstoque),
-                                alignEnd: true,
-                              ),
-                            ),
-                            Expanded(
-                              flex: 2,
-                              child: _tableText(
-                                _money(item.precoVenda),
-                                alignEnd: true,
-                              ),
-                            ),
-                            Expanded(
-                              flex: 2,
-                              child: _tableText(
-                                _money(item.valorEstoque),
-                                alignEnd: true,
-                                bold: true,
-                              ),
-                            ),
-                            Expanded(
-                              child: _tableText(
-                                _percent(item.margemPercentual),
-                                alignEnd: true,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-              ),
-    );
-  }
-
-  Widget _sectionCard({
-    required String title,
-    required IconData icon,
-    required Widget child,
-  }) {
-    final theme = Theme.of(context);
-    final tokens = WebThemeTokens.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: tokens.cardBackground,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: tokens.cardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Icon(icon, color: tokens.info),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: tokens.primaryText,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget _compactProduct(ProdutoDashboardItem item) {
-    final theme = Theme.of(context);
-    final tokens = WebThemeTokens.of(context);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: tokens.surfaceMuted,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: tokens.cardBorder),
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(Icons.inventory_outlined, color: tokens.stockWarning),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
+                const SizedBox(height: 4),
                 Text(
-                  item.nome,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: tokens.primaryText,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '${item.categoria} • mínimo ${_qty(item.estoqueMinimo)}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: tokens.secondaryText,
-                  ),
+                  stockIssues == 0
+                      ? context.t(
+                          'catalogHub.stock.noIssues',
+                          fallback: 'Nenhuma indisponibilidade exige atenção.',
+                        )
+                      : context
+                            .t(
+                              'catalogHub.stock.issues',
+                              fallback:
+                                  '{count} ocorrências precisam de atenção operacional.',
+                            )
+                            .replaceFirst('{count}', stockIssues.toString()),
+                  style: TextStyle(color: tokens.secondaryText),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 10),
-          Text(
-            _qty(item.quantidadeEstoque),
-            style: TextStyle(
-              color: tokens.stockWarning,
-              fontWeight: FontWeight.w900,
-              fontSize: 18,
+          const SizedBox(width: 14),
+          OutlinedButton.icon(
+            onPressed: onOpenStock,
+            icon: const Icon(Icons.arrow_forward_rounded),
+            label: Text(
+              context.t(
+                'catalogHub.stock.openManagement',
+                fallback: 'Abrir estoque',
+              ),
             ),
           ),
         ],
       ),
     );
-  }
-
-  Widget _tableText(String value, {bool alignEnd = false, bool bold = false}) {
-    final theme = Theme.of(context);
-    final tokens = WebThemeTokens.of(context);
-    return Align(
-      alignment: alignEnd ? Alignment.centerRight : Alignment.centerLeft,
-      child: Text(
-        value,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: bold ? tokens.primaryText : tokens.secondaryText,
-          fontWeight: bold ? FontWeight.w900 : FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  Widget _legend(Color color, String label) {
-    final theme = Theme.of(context);
-    final tokens = WebThemeTokens.of(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 7),
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: tokens.secondaryText,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _entry({required int order, required Widget child}) {
-    final stagger = order > 8 ? 8 : order;
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: 1),
-      duration: _entryDuration + Duration(milliseconds: stagger * 55),
-      curve: _entryCurve,
-      child: child,
-      builder: (context, progress, child) {
-        final normalized = math.max(0.0, math.min(1.0, progress));
-        return Opacity(
-          opacity: normalized,
-          child: Transform.translate(
-            offset: Offset(0, 18 * (1 - normalized)),
-            child: Transform.scale(
-              alignment: Alignment.topCenter,
-              scale: 0.985 + (0.015 * normalized),
-              child: child,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  double _staggeredItemProgress(double progress, int index) {
-    final delayedProgress =
-        ((progress - (index * 0.07)) / 0.72).clamp(0.0, 1.0).toDouble();
-    return Curves.easeOutCubic.transform(delayedProgress);
-  }
-
-  Widget _loadingKpiCard({required bool highlight}) {
-    final tokens = WebThemeTokens.of(context);
-    final Color accent = tokens.info;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: highlight ? tokens.surfaceElevated : tokens.cardBackground,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: highlight ? tokens.selectedBorder : tokens.cardBorder,
-        ),
-      ),
-      child: Row(
-        children: <Widget>[
-          _skeletonBox(
-            width: 48,
-            height: 48,
-            radius: 16,
-            color: highlight ? accent.withValues(alpha: 0.16) : null,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                _skeletonBox(
-                  width: 96,
-                  height: 10,
-                  color: highlight ? accent.withValues(alpha: 0.22) : null,
-                ),
-                const SizedBox(height: 10),
-                _skeletonBox(
-                  width: 134,
-                  height: 22,
-                  color: highlight ? accent.withValues(alpha: 0.28) : null,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _loadingChartCard({
-    required String title,
-    required String subtitle,
-    required int order,
-  }) {
-    return _entry(
-      order: order,
-      child: _chartCard(
-        title: title,
-        subtitle: subtitle,
-        child: _chartSkeleton(),
-      ),
-    );
-  }
-
-  Widget _loadingSectionCard({required String title, required int order}) {
-    final tokens = WebThemeTokens.of(context);
-    return _entry(
-      order: order,
-      child: _sectionCard(
-        title: title,
-        icon: Icons.hourglass_empty_rounded,
-        child: Column(
-          children: List<Widget>.generate(3, (index) {
-            return Container(
-              width: double.infinity,
-              margin: EdgeInsets.only(bottom: index == 2 ? 0 : 10),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: tokens.surfaceMuted,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: tokens.cardBorder),
-              ),
-              child: Row(
-                children: <Widget>[
-                  _skeletonBox(width: 34, height: 34, radius: 12),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        _skeletonBox(width: 150, height: 12),
-                        const SizedBox(height: 8),
-                        _skeletonBox(width: double.infinity, height: 10),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  _skeletonBox(width: 36, height: 18),
-                ],
-              ),
-            );
-          }),
-        ),
-      ),
-    );
-  }
-
-  Widget _chartSkeleton() {
-    final tokens = WebThemeTokens.of(context);
-    return SizedBox(
-      height: 260,
-      child: Stack(
-        children: <Widget>[
-          Positioned.fill(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List<Widget>.generate(
-                5,
-                (index) => Container(height: 1, color: tokens.divider),
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                _skeletonBox(width: 22, height: 120, radius: 8),
-                _skeletonBox(width: 22, height: 180, radius: 8),
-                _skeletonBox(width: 22, height: 92, radius: 8),
-                _skeletonBox(width: 22, height: 150, radius: 8),
-                _skeletonBox(width: 22, height: 70, radius: 8),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _skeletonBox({
-    double? width,
-    required double height,
-    double radius = 999,
-    Color? color,
-  }) {
-    final tokens = WebThemeTokens.of(context);
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: color ?? tokens.surfaceMuted,
-        borderRadius: BorderRadius.circular(radius),
-      ),
-    );
-  }
-
-  Widget _noData({
-    String text = 'Sem dados suficientes para exibir esta informação.',
-  }) {
-    final theme = Theme.of(context);
-    final tokens = WebThemeTokens.of(context);
-    return Container(
-      width: double.infinity,
-      height: 220,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: tokens.surfaceMuted,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: tokens.secondaryText,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildError(Object? error) {
-    final theme = Theme.of(context);
-    final tokens = WebThemeTokens.of(context);
-    return Center(
-      child: _entry(
-        order: 0,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 560),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: tokens.danger.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: tokens.danger.withValues(alpha: 0.28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(Icons.cloud_off_rounded, size: 42, color: tokens.danger),
-              const SizedBox(height: 14),
-              Text(
-                'Não foi possível carregar o resumo de produtos.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: tokens.primaryText,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                error?.toString() ?? 'Erro desconhecido',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: tokens.secondaryText,
-                ),
-              ),
-              const SizedBox(height: 18),
-              FilledButton.icon(
-                onPressed: _recarregar,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Tentar novamente'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmpty() {
-    final theme = Theme.of(context);
-    final tokens = WebThemeTokens.of(context);
-    return Center(
-      child: _entry(
-        order: 0,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 560),
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            color: tokens.cardBackground,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: tokens.cardBorder),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(Icons.inventory_2_outlined, size: 48, color: tokens.info),
-              const SizedBox(height: 14),
-              Text(
-                'Nenhum produto cadastrado ainda.',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: tokens.primaryText,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Cadastre os primeiros itens para visualizar valor em estoque, categorias, margem e alertas executivos.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: tokens.secondaryText,
-                  height: 1.45,
-                ),
-              ),
-              const SizedBox(height: 20),
-              FilledButton.icon(
-                onPressed: widget.onNovoProduto,
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('Cadastrar produto'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Color _chartColor(ThemeData theme, int index) {
-    final tokens = WebThemeTokens.of(context);
-    final colors = <Color>[
-      tokens.info,
-      tokens.success,
-      tokens.warning,
-      tokens.stockWarning,
-      tokens.stockCritical,
-      theme.colorScheme.secondary,
-      tokens.statusNeutral,
-    ];
-    return colors[index % colors.length];
-  }
-
-  Color _alertColor(ThemeData theme, String tipo) {
-    final tokens = WebThemeTokens.of(context);
-    switch (tipo.toUpperCase()) {
-      case 'CRITICO':
-      case 'ALTO':
-        return tokens.danger;
-      case 'MEDIO':
-        return tokens.warning;
-      case 'OK':
-        return tokens.success;
-      default:
-        return tokens.info;
-    }
-  }
-
-  IconData _alertIcon(String tipo) {
-    switch (tipo.toUpperCase()) {
-      case 'CRITICO':
-      case 'ALTO':
-        return Icons.priority_high_rounded;
-      case 'MEDIO':
-        return Icons.warning_amber_rounded;
-      case 'OK':
-        return Icons.check_circle_outline_rounded;
-      default:
-        return Icons.info_outline_rounded;
-    }
   }
 }
 
-class _Kpi {
-  final IconData icon;
-  final String label;
-  final double value;
-  final String Function(double value) formatter;
-  final bool highlight;
+class _CatalogStatePanel extends StatelessWidget {
+  const _CatalogStatePanel({
+    required this.icon,
+    required this.title,
+    required this.description,
+    this.action,
+  });
 
-  const _Kpi(
-    this.icon,
-    this.label,
-    this.value,
-    this.formatter, [
-    this.highlight = false,
-  ]);
+  final IconData icon;
+  final String title;
+  final String description;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: tokens.cardBackground,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: tokens.cardBorder),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: tokens.surfaceMuted,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: tokens.info),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: tokens.primaryText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  description,
+                  style: TextStyle(color: tokens.secondaryText, height: 1.4),
+                ),
+              ],
+            ),
+          ),
+          if (action != null) ...<Widget>[const SizedBox(width: 16), action!],
+        ],
+      ),
+    );
+  }
+}
+
+Color _healthColor(WebThemeTokens tokens, String situation) {
+  switch (situation.trim().toUpperCase()) {
+    case 'CRITICO':
+    case 'CRITICA':
+      return tokens.danger;
+    case 'ATENCAO':
+    case 'ALERTA':
+      return tokens.warning;
+    case 'SAUDAVEL':
+    case 'SAUDE':
+      return tokens.success;
+    default:
+      return tokens.info;
+  }
+}
+
+String _healthStatus(BuildContext context, String situation) {
+  switch (situation.trim().toUpperCase()) {
+    case 'CRITICO':
+    case 'CRITICA':
+      return context.t('catalogHealth.status.critical', fallback: 'Crítico');
+    case 'ATENCAO':
+    case 'ALERTA':
+      return context.t('catalogHealth.status.warning', fallback: 'Atenção');
+    case 'SAUDAVEL':
+    case 'SAUDE':
+      return context.t('catalogHealth.status.healthy', fallback: 'Saudável');
+    default:
+      return context.t('catalogHealth.status.default', fallback: 'Saúde');
+  }
+}
+
+IconData _metricIcon(CatalogHealthMetricType type) {
+  return switch (type) {
+    CatalogHealthMetricType.missingPhoto => Icons.photo_library_outlined,
+    CatalogHealthMetricType.incompleteRegistration => Icons.fact_check_outlined,
+    CatalogHealthMetricType.missingCategory => Icons.category_outlined,
+    CatalogHealthMetricType.withoutSales => Icons.history_toggle_off_rounded,
+    CatalogHealthMetricType.outOfStock => Icons.remove_shopping_cart_outlined,
+    CatalogHealthMetricType.lowStock =>
+      Icons.production_quantity_limits_outlined,
+    CatalogHealthMetricType.highStock => Icons.inventory_outlined,
+    CatalogHealthMetricType.services => Icons.home_repair_service_outlined,
+    CatalogHealthMetricType.products => Icons.inventory_2_outlined,
+    CatalogHealthMetricType.unknown => Icons.info_outline_rounded,
+  };
+}
+
+String _metricTitle(BuildContext context, CatalogHealthMetric metric) {
+  return switch (metric.type) {
+    CatalogHealthMetricType.missingPhoto => context.t(
+      'catalogHealth.metric.missingPhoto',
+      fallback: 'Sem foto',
+    ),
+    CatalogHealthMetricType.incompleteRegistration => context.t(
+      'catalogHealth.metric.incompleteRegistration',
+      fallback: 'Cadastro incompleto',
+    ),
+    CatalogHealthMetricType.missingCategory => context.t(
+      'catalogHealth.metric.missingCategory',
+      fallback: 'Sem categoria',
+    ),
+    CatalogHealthMetricType.withoutSales => context.t(
+      'catalogHealth.metric.withoutSales',
+      fallback: 'Sem vendas recentes',
+    ),
+    _ => metric.title,
+  };
+}
+
+String _metricSubtitle(BuildContext context, CatalogHealthMetric metric) {
+  return switch (metric.type) {
+    CatalogHealthMetricType.missingPhoto => context.t(
+      'catalogHealth.metric.missingPhotoDescription',
+      fallback: 'Produtos que precisam de uma imagem.',
+    ),
+    CatalogHealthMetricType.incompleteRegistration => context.t(
+      'catalogHealth.metric.incompleteRegistrationDescription',
+      fallback: 'Itens com informações essenciais pendentes.',
+    ),
+    CatalogHealthMetricType.missingCategory => context.t(
+      'catalogHealth.metric.missingCategoryDescription',
+      fallback: 'Itens ainda sem organização definida.',
+    ),
+    CatalogHealthMetricType.withoutSales => context.t(
+      'catalogHealth.metric.withoutSalesDescription',
+      fallback: 'Produtos sem movimentação de saída recente.',
+    ),
+    _ => metric.subtitle,
+  };
 }
