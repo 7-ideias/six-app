@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../l10n/six_i18n.dart';
 import 'ai_assistant_panel.dart';
 
 class AiAssistantMobileScreen extends StatelessWidget {
@@ -8,10 +9,12 @@ class AiAssistantMobileScreen extends StatelessWidget {
     super.key,
     required this.modulo,
     required this.telaAtual,
+    this.onOpenSupport,
   });
 
   final String modulo;
   final String telaAtual;
+  final VoidCallback? onOpenSupport;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +51,17 @@ class AiAssistantMobileScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (onOpenSupport != null)
+                    TextButton.icon(
+                      onPressed: onOpenSupport,
+                      icon: const Icon(Icons.support_agent_rounded),
+                      label: Text(
+                        context.t(
+                          'chatSupport.lis.open',
+                          fallback: 'Suporte',
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -60,6 +74,7 @@ class AiAssistantMobileScreen extends StatelessWidget {
                   modulo: modulo,
                   telaAtual: telaAtual,
                   isMobile: true,
+                  onOpenSupport: onOpenSupport,
                 ),
               ),
             ),

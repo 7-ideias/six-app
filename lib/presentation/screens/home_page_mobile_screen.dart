@@ -28,6 +28,8 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_a
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_selection_sheet.dart';
 import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
+import 'package:sixpos/presentation/screens/chat_suporte_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/chat_suporte_web_page.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/utils/profile_image_payload.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
@@ -585,12 +587,31 @@ class _HomePageMobileState extends State<HomePageMobile> {
     }
   }
 
+  void _abrirChatSuporte() {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder:
+            (_) =>
+                kIsWeb
+                    ? const ChatSuporteWebPage()
+                    : const ChatSuporteMobileScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final ColaboradorAutorizacoesProvider autorizacoes =
+        context.watch<ColaboradorAutorizacoesProvider>();
+    final bool podeAcessarSuporte =
+        autorizacoes.ehSuperUsuario ||
+        autorizacoes.ehAdministrador ||
+        autorizacoes.ehColaborador;
     if (kIsWeb) {
       return AiAssistantHost(
         modulo: 'geral',
         telaAtual: 'inicio_web',
+        onOpenSupport: podeAcessarSuporte ? _abrirChatSuporte : null,
         child: PaginaPrincipalWeb(),
       );
     }
@@ -598,6 +619,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
     return AiAssistantHost(
       modulo: 'geral',
       telaAtual: 'inicio_mobile',
+      onOpenSupport: podeAcessarSuporte ? _abrirChatSuporte : null,
       child: SixMobilePageShell(
         title: context.t('mobile.nav.home'),
         backgroundColor: _backgroundColor,

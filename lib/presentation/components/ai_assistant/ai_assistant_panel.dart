@@ -8,6 +8,7 @@ import '../../../core/services/auth_service.dart';
 import '../../../data/models/ai_assistant_models.dart';
 import '../../../domain/services/ia/ai_assistant_service.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../l10n/six_i18n.dart';
 import '../../../providers/colaborador_autorizacoes_provider.dart';
 import '../../../providers/locale_settings_provider.dart';
 import '../six_backend_loading.dart';
@@ -23,6 +24,7 @@ class AiAssistantPanel extends StatelessWidget {
     required this.onClose,
     this.onMinimize,
     this.onToggleExpanded,
+    this.onOpenSupport,
     this.expanded = false,
   });
 
@@ -31,6 +33,7 @@ class AiAssistantPanel extends StatelessWidget {
   final VoidCallback onClose;
   final VoidCallback? onMinimize;
   final VoidCallback? onToggleExpanded;
+  final VoidCallback? onOpenSupport;
   final bool expanded;
 
   @override
@@ -90,6 +93,7 @@ class AiAssistantPanel extends StatelessWidget {
                   compact: compact,
                   l10n: l10n,
                   onToggleExpanded: onToggleExpanded,
+                  onOpenSupport: onOpenSupport,
                   onMinimize: onMinimize ?? onClose,
                   onClose: onClose,
                 ),
@@ -98,6 +102,7 @@ class AiAssistantPanel extends StatelessWidget {
                     modulo: modulo,
                     telaAtual: telaAtual,
                     isMobile: false,
+                    onOpenSupport: onOpenSupport,
                   ),
                 ),
               ],
@@ -137,6 +142,7 @@ class _AiAssistantPanelToolbar extends StatelessWidget {
     required this.compact,
     required this.l10n,
     required this.onToggleExpanded,
+    required this.onOpenSupport,
     required this.onMinimize,
     required this.onClose,
   });
@@ -145,6 +151,7 @@ class _AiAssistantPanelToolbar extends StatelessWidget {
   final bool compact;
   final AppLocalizations? l10n;
   final VoidCallback? onToggleExpanded;
+  final VoidCallback? onOpenSupport;
   final VoidCallback onMinimize;
   final VoidCallback onClose;
 
@@ -165,6 +172,18 @@ class _AiAssistantPanelToolbar extends StatelessWidget {
         child: Row(
           children: <Widget>[
             const Spacer(),
+            if (onOpenSupport != null) ...<Widget>[
+              _AiAssistantToolbarButton(
+                size: size,
+                icon: Icons.support_agent_rounded,
+                tooltip: context.t(
+                  'chatSupport.lis.open',
+                  fallback: 'Falar com o suporte',
+                ),
+                onPressed: onOpenSupport,
+              ),
+              const SizedBox(width: 8),
+            ],
             _AiAssistantToolbarButton(
               size: size,
               icon:
@@ -279,11 +298,13 @@ class AiAssistantConversationBody extends StatefulWidget {
     required this.modulo,
     required this.telaAtual,
     required this.isMobile,
+    this.onOpenSupport,
   });
 
   final String modulo;
   final String telaAtual;
   final bool isMobile;
+  final VoidCallback? onOpenSupport;
 
   @override
   State<AiAssistantConversationBody> createState() =>
@@ -518,6 +539,7 @@ class _AiAssistantConversationBodyState
                       key: const ValueKey<String>('ai-assistant-welcome'),
                       l10n: l10n,
                       isMobile: widget.isMobile,
+                      onOpenSupport: widget.onOpenSupport,
                     )
                     : _AiAssistantConversationView(
                       key: const ValueKey<String>('ai-assistant-conversation'),
@@ -555,10 +577,12 @@ class _AiAssistantWelcome extends StatelessWidget {
     super.key,
     required this.l10n,
     required this.isMobile,
+    this.onOpenSupport,
   });
 
   final AppLocalizations? l10n;
   final bool isMobile;
+  final VoidCallback? onOpenSupport;
 
   @override
   Widget build(BuildContext context) {
@@ -617,6 +641,19 @@ class _AiAssistantWelcome extends StatelessWidget {
                   ),
                 ),
               ),
+              if (onOpenSupport != null) ...<Widget>[
+                const SizedBox(height: 22),
+                OutlinedButton.icon(
+                  onPressed: onOpenSupport,
+                  icon: const Icon(Icons.support_agent_rounded),
+                  label: Text(
+                    context.t(
+                      'chatSupport.lis.open',
+                      fallback: 'Falar com o suporte',
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

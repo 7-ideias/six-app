@@ -16,6 +16,7 @@ import 'package:sixpos/presentation/screens/atendimentos_tecnicos_lista_web_page
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_web_page.dart';
 import 'package:sixpos/presentation/screens/catalogo_reservas_web.dart';
 import 'package:sixpos/presentation/screens/catalogo_publico_personalizacao_web.dart';
+import 'package:sixpos/presentation/screens/chat_suporte_web_page.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_list_page.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_web_page.dart';
 import 'package:sixpos/presentation/screens/compras/compras_web_page.dart';
@@ -94,7 +95,7 @@ enum StatusComunicacaoBackend { conectando, conectado, desconectado }
 
 enum _PdvItemVisualFeedback { itemAdded, quantityIncreased, quantityDecreased }
 
-enum _WebHeaderUserAction { profile, logout }
+enum _WebHeaderUserAction { profile, support, logout }
 
 class _PdvItemMutationResult {
   const _PdvItemMutationResult({
@@ -686,6 +687,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
         MaterialLocalizations.of(context).modalBarrierDismissLabel;
     bool expanded = false;
     bool minimizarSolicitado = false;
+    bool abrirSuporteSolicitado = false;
+    final ColaboradorAutorizacoesProvider autorizacoes =
+        context.read<ColaboradorAutorizacoesProvider>();
+    final bool podeAcessarSuporte =
+        autorizacoes.ehSuperUsuario ||
+        autorizacoes.ehAdministrador ||
+        autorizacoes.ehColaborador;
 
     if (_assistenteIAMinimizado) {
       setState(() => _assistenteIAMinimizado = false);
@@ -722,6 +730,14 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                     minimizarSolicitado = true;
                     Navigator.of(dialogContext).pop();
                   },
+                  onOpenSupport:
+                      podeAcessarSuporte
+                          ? () {
+                            abrirSuporteSolicitado = true;
+                            minimizarSolicitado = false;
+                            Navigator.of(dialogContext).pop();
+                          }
+                          : null,
                   onToggleExpanded:
                       () => setDialogState(() => expanded = !expanded),
                 ),
@@ -756,6 +772,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
 
     if (!mounted) return;
     setState(() => _assistenteIAMinimizado = minimizarSolicitado);
+    if (abrirSuporteSolicitado) {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => const ChatSuporteWebPage(),
+        ),
+      );
+    }
   }
 
   Widget _buildAssistenteIAMinimizado() {
@@ -941,6 +964,12 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     final ColorScheme colorScheme = theme.colorScheme;
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final Color accent = _webHeaderAccentColor(colorScheme, tokens);
+    final ColaboradorAutorizacoesProvider autorizacoes =
+        context.watch<ColaboradorAutorizacoesProvider>();
+    final bool podeAcessarSuporte =
+        autorizacoes.ehSuperUsuario ||
+        autorizacoes.ehAdministrador ||
+        autorizacoes.ehColaborador;
 
     return AnimatedBuilder(
       animation: UsuarioProvider(),
@@ -958,6 +987,13 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
               switch (action) {
                 case _WebHeaderUserAction.profile:
                   showMeuPerfilWebDialog(context);
+                  return;
+                case _WebHeaderUserAction.support:
+                  Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ChatSuporteWebPage(),
+                    ),
+                  );
                   return;
                 case _WebHeaderUserAction.logout:
                   _confirmarLogout();
@@ -990,6 +1026,30 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                           ],
                         ),
                       ),
+                      if (podeAcessarSuporte)
+                        PopupMenuItem<_WebHeaderUserAction>(
+                          value: _WebHeaderUserAction.support,
+                          child: Row(
+                            children: <Widget>[
+                              Icon(
+                                Icons.support_agent_rounded,
+                                size: 18,
+                                color: accent,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                context.t(
+                                  'chatSupport.title',
+                                  fallback: 'Suporte',
+                                ),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: tokens.primaryText,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       const SixWebThemeMenuEntry<_WebHeaderUserAction>(),
                       PopupMenuItem<_WebHeaderUserAction>(
                         value: _WebHeaderUserAction.logout,

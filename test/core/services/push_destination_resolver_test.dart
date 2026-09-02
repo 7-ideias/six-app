@@ -64,6 +64,35 @@ void main() {
     expect(resolved.shellTab, PushNavigationShellTab.management);
   });
 
+  test('maps support chat and keeps it outside shell tabs', () {
+    final PushNavigationIntent intent = PushNavigationIntent(
+      payload: <String, dynamic>{
+        'destination': 'support.chat',
+        'conversationId': 'conversation-42',
+        'idUnicoDaEmpresa': 'company-1',
+      },
+      source: PushNavigationSource.firebaseNotificationTap,
+    );
+
+    final ResolvedPushNavigation resolved = resolver.resolve(intent);
+
+    expect(resolved.destination, PushNavigationDestination.supportChat);
+    expect(resolved.destinationKey, 'support.chat');
+    expect(resolved.shellTab, isNull);
+    expect(intent.dedupKey, 'conversation-42');
+  });
+
+  test('infers support chat from conversation id', () {
+    final ResolvedPushNavigation resolved = resolver.resolve(
+      PushNavigationIntent(
+        payload: <String, dynamic>{'conversationId': 'conversation-99'},
+        source: PushNavigationSource.firebaseInitialMessage,
+      ),
+    );
+
+    expect(resolved.destination, PushNavigationDestination.supportChat);
+  });
+
   test('falls back to inbox for unknown payload', () {
     final PushNavigationIntent intent = PushNavigationIntent(
       payload: <String, dynamic>{'titulo': 'Atualizacao generica'},
