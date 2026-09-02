@@ -102,7 +102,7 @@ void main() {
         expect(destinations, hasLength(3));
         final AtendimentosTecnicosMobileScreen inProgressPage =
             destinations.first as AtendimentosTecnicosMobileScreen;
-        expect(inProgressPage.listContext.statusFilter, 'ACTIVE_GROUP');
+        expect(inProgressPage.listContext.statusFilter, isNull);
         final AtendimentosTecnicosMobileScreen approvalPage =
             destinations[1] as AtendimentosTecnicosMobileScreen;
         expect(
@@ -847,10 +847,26 @@ void main() {
     );
 
     testWidgets(
-      'in progress and closed queries use grouped status filters in ${themeCase.description} mode',
+      'in progress exposes every status while closed remains grouped in ${themeCase.description} mode',
       (WidgetTester tester) async {
         final _FakeAtendimentoTecnicoService inProgressService =
-            _FakeAtendimentoTecnicoService();
+            _FakeAtendimentoTecnicoService(
+              atendimentos: <AtendimentoTecnicoModel>[
+                _atendimento(
+                  numero: 'OS-ABERTA',
+                  statusCodigo: 'ABERTA',
+                  statusNome: 'Aberto',
+                ),
+                for (int index = 1; index <= 4; index++)
+                  _atendimento(
+                    numero: 'OS-ENTREGUE-$index',
+                    statusCodigo: 'ENTREGUE',
+                    statusNome: 'ENTREGUE(editado2)',
+                    valorEmAberto: 0,
+                    liquidada: true,
+                  ),
+              ],
+            );
 
         await _pumpTechnicalList(
           tester,
@@ -859,20 +875,30 @@ void main() {
           listContext: const AtendimentosTecnicosMobileListContext.inProgress(),
         );
 
-        expect(inProgressService.lastListStatus, 'ACTIVE_GROUP');
+        expect(inProgressService.lastListStatus, isNull);
         expect(find.text('Serviços em andamento'), findsWidgets);
+        expect(find.text('5 atendimentos'), findsOneWidget);
 
-        await tester.scrollUntilVisible(
-          find.text('Nenhum serviço em andamento no momento.'),
-          420,
-          scrollable: _verticalScrollable(),
+        Finder sheetText(String text) => find.descendant(
+          of: find.byType(DraggableScrollableSheet),
+          matching: find.text(text),
         );
+        await tester.tap(find.byIcon(Icons.tune_rounded).first);
+        await tester.pumpAndSettle();
+        await tester.tap(sheetText('Status'));
+        await tester.pumpAndSettle();
+        expect(sheetText('ENTREGUE(editado2)'), findsOneWidget);
+        expect(sheetText('4'), findsOneWidget);
+        await tester.tap(sheetText('ENTREGUE(editado2)'));
         await tester.pump();
-
-        expect(
-          find.text('Nenhum serviço em andamento no momento.'),
-          findsOneWidget,
+        await tester.tap(find.widgetWithText(FilledButton, 'Aplicar'));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.widgetWithText(FilledButton, 'Ver 4 atendimentos'),
         );
+        await tester.pumpAndSettle();
+        expect(find.text('4 atendimentos'), findsOneWidget);
+        expect(find.textContaining('OS-ENTREGUE-1'), findsOneWidget);
 
         final _FakeAtendimentoTecnicoService closedService =
             _FakeAtendimentoTecnicoService();

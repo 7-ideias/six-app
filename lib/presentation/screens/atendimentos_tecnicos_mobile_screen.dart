@@ -99,7 +99,6 @@ class AtendimentosTecnicosMobileListContext {
             'Não foi possível consultar os serviços em andamento. Tente novamente.',
         loadingLabelKey: 'atendimentoTecnico.mobile.inProgressLoading',
         loadingLabelFallback: 'Carregando serviços em andamento',
-        statusFilter: 'ACTIVE_GROUP',
         sectionTitleKey: 'atendimentoTecnico.mobile.inProgressSection',
         sectionTitleFallback: 'Serviços em andamento',
         filteredSectionTitleKey:
