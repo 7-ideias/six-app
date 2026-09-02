@@ -16,11 +16,16 @@ bool _stompInicializado = false;
 bool _stompDevePermanecerAtivo = false;
 int _stompGeneration = 0;
 String? _idUnicoDaEmpresaInscrita;
+final StreamController<Map<String, dynamic>> _stompMessageController =
+    StreamController<Map<String, dynamic>>.broadcast(sync: true);
 
 Function(Map<String, dynamic>)? onMensagemRecebida;
 VoidCallback? onStompConectado;
 VoidCallback? onStompDesconectado;
 ValueChanged<Object>? onStompErro;
+
+Stream<Map<String, dynamic>> get stompMessages =>
+    _stompMessageController.stream;
 
 Future<void> connectStomp({String? idUnicoDaEmpresa}) async {
   final AuthService authService = AuthService();
@@ -28,8 +33,9 @@ Future<void> connectStomp({String? idUnicoDaEmpresa}) async {
     idUnicoDaEmpresa ?? await authService.getEmpresaId(),
   );
   final String accessToken = (await authService.getAccessToken())?.trim() ?? '';
+  final bool ehSuper = await authService.hasRealmRole('SUPER_USER');
 
-  if (empresaId == null || accessToken.isEmpty) {
+  if ((empresaId == null && !ehSuper) || accessToken.isEmpty) {
     const String erro =
         'Sessao autenticada incompleta para assinar o WebSocket.';
     debugPrint(erro);
@@ -54,7 +60,7 @@ Future<void> connectStomp({String? idUnicoDaEmpresa}) async {
   final Completer<void> conexaoConcluida = Completer<void>();
   final Map<String, String> stompHeaders = <String, String>{
     'Authorization': 'Bearer $accessToken',
-    'idUnicoDaEmpresa': empresaId,
+    if (empresaId != null) 'idUnicoDaEmpresa': empresaId,
   };
   late final StompClient client;
   client = StompClient(
@@ -130,7 +136,7 @@ Future<void> reconnectStomp({String? idUnicoDaEmpresa}) async {
 void _onConnect({
   required int generation,
   required StompClient client,
-  required String empresaId,
+  required String? empresaId,
 }) {
   if (!_ehConexaoAtual(generation)) {
     return;
@@ -142,8 +148,9 @@ void _onConnect({
   }
 
   final List<String> destinations = <String>[
-    '/topic/empresa/$empresaId/vendas',
-    '/topic/empresa/$empresaId/produtos',
+    if (empresaId != null) '/topic/empresa/$empresaId/vendas',
+    if (empresaId != null) '/topic/empresa/$empresaId/produtos',
+    '/user/queue/chat-suporte',
   ];
 
   for (final String destination in destinations) {
@@ -187,13 +194,24 @@ void _assinarDestino({
           'canal': jsonBody['canal'] ?? 'WEBSOCKET',
         };
 
-        NotificacaoService().registrarPayload(payload);
+        if (_deveRegistrarComoNotificacao(payload)) {
+          NotificacaoService().registrarPayload(payload);
+        }
+        _stompMessageController.add(payload);
         onMensagemRecebida?.call(payload);
       } catch (error) {
         debugPrint('Erro ao converter mensagem do WebSocket: $error');
       }
     },
   );
+}
+
+bool _deveRegistrarComoNotificacao(Map<String, dynamic> payload) {
+  if (payload['destination']?.toString() != 'support.chat') {
+    return true;
+  }
+  return payload['tipoDeEvento']?.toString() ==
+      'CHAT_SUPORTE_NOVA_MENSAGEM';
 }
 
 void disconnectStomp() {

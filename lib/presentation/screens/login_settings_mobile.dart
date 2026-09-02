@@ -16,9 +16,11 @@ import 'package:sixpos/presentation/components/mobile/management/management_sett
 import 'package:sixpos/presentation/components/mobile/six_mobile_theme_toggle.dart';
 import 'package:sixpos/presentation/components/user_profile_avatar_image.dart';
 import 'package:sixpos/presentation/screens/login_mobile.dart';
+import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/theme_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 
+import 'chat_suporte_mobile_screen.dart';
 import 'meu_perfil_mobile_screen.dart';
 
 class _AccountPanelColors {
@@ -255,6 +257,12 @@ class _LoginSettingsMobileState extends State<LoginSettingsMobile> {
   @override
   Widget build(BuildContext context) {
     context.watch<ThemeProvider>();
+    final ColaboradorAutorizacoesProvider autorizacoes =
+        context.watch<ColaboradorAutorizacoesProvider>();
+    final bool podeAcessarSuporte =
+        autorizacoes.ehSuperUsuario ||
+        autorizacoes.ehAdministrador ||
+        autorizacoes.ehColaborador;
     final _AccountPanelColors targetColors = _AccountPanelColors.resolve(
       context,
     );
@@ -439,22 +447,27 @@ class _LoginSettingsMobileState extends State<LoginSettingsMobile> {
                               context,
                               colors: colors,
                               items: <_GroupedItemData>[
-                                _GroupedItemData(
-                                  icon: Icons.help_outline_rounded,
-                                  title: context.t(
-                                    'account.settings.support.title',
-                                    fallback: 'Ajuda e suporte',
+                                if (podeAcessarSuporte)
+                                  _GroupedItemData(
+                                    icon: Icons.help_outline_rounded,
+                                    title: context.t(
+                                      'account.settings.support.title',
+                                      fallback: 'Ajuda e suporte',
+                                    ),
+                                    subtitle: context.t(
+                                      'account.settings.support.subtitle',
+                                      fallback: 'Dúvidas e contato',
+                                    ),
+                                    semanticsLabel: context.t(
+                                      'account.settings.support.open',
+                                      fallback: 'Abrir ajuda e suporte',
+                                    ),
+                                    onTap:
+                                        () => _openScreen(
+                                          context,
+                                          const ChatSuporteMobileScreen(),
+                                        ),
                                   ),
-                                  subtitle: context.t(
-                                    'account.settings.support.subtitle',
-                                    fallback: 'Dúvidas e contato',
-                                  ),
-                                  semanticsLabel: context.t(
-                                    'account.settings.support.open',
-                                    fallback: 'Abrir ajuda e suporte',
-                                  ),
-                                  comingSoon: true,
-                                ),
                                 _GroupedItemData(
                                   icon: Icons.description_outlined,
                                   title: context.t(

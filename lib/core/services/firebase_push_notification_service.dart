@@ -271,11 +271,12 @@ class FirebasePushNotificationService {
 
     final String? accessToken = await _authService.getAccessToken();
     final String? idUnicoDaEmpresa = await _authService.getEmpresaId();
+    final bool ehSuper = await _authService.hasRealmRole('SUPER_USER');
 
     if (accessToken == null ||
         accessToken.trim().isEmpty ||
-        idUnicoDaEmpresa == null ||
-        idUnicoDaEmpresa.trim().isEmpty) {
+        (!ehSuper &&
+            (idUnicoDaEmpresa == null || idUnicoDaEmpresa.trim().isEmpty))) {
       debugPrint(
         '[FirebasePushNotificationService] Token FCM aguardando sessão autenticada.',
       );
@@ -292,7 +293,8 @@ class FirebasePushNotificationService {
         headers: <String, String>{
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
-          'idUnicoDaEmpresa': idUnicoDaEmpresa,
+          if (idUnicoDaEmpresa != null && idUnicoDaEmpresa.trim().isNotEmpty)
+            'idUnicoDaEmpresa': idUnicoDaEmpresa.trim(),
         },
         body: jsonEncode(<String, String>{
           'token': tokenNormalizado,

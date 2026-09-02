@@ -11,6 +11,7 @@ enum PushNavigationShellTab { dash, management, service }
 
 enum PushNavigationDestination {
   notificationsInbox,
+  supportChat,
   salesPending,
   technicalOrders,
   customersList,
@@ -33,6 +34,7 @@ class PushNavigationIntent {
     final String? stableId = _readAny(<String>[
       'eventId',
       'messageId',
+      'conversationId',
       'entityId',
       'idOperacao',
       'idOperacaoApp',
@@ -117,6 +119,11 @@ class PushDestinationResolver {
     final String eventType = (intent.eventType ?? '').trim().toUpperCase();
     final Map<String, dynamic> payload = intent.payload;
 
+    if (_containsAny(eventType, const <String>['CHAT_SUPORTE', 'SUPPORT']) ||
+        _hasAnyField(payload, const <String>['conversationId'])) {
+      return _resolved(intent, PushNavigationDestination.supportChat);
+    }
+
     if (_containsAny(eventType, const <String>['CLIENTE', 'CUSTOMER']) ||
         _hasAnyField(payload, const <String>['idCliente', 'clienteId'])) {
       return _resolved(intent, PushNavigationDestination.customersList);
@@ -164,6 +171,8 @@ class PushDestinationResolver {
     switch (normalized) {
       case 'notifications.inbox':
         return PushNavigationDestination.notificationsInbox;
+      case 'support.chat':
+        return PushNavigationDestination.supportChat;
       case 'sales.pending':
         return PushNavigationDestination.salesPending;
       case 'technical.orders':
@@ -179,6 +188,8 @@ class PushDestinationResolver {
     switch (destination) {
       case PushNavigationDestination.notificationsInbox:
         return 'notifications.inbox';
+      case PushNavigationDestination.supportChat:
+        return 'support.chat';
       case PushNavigationDestination.salesPending:
         return 'sales.pending';
       case PushNavigationDestination.technicalOrders:
@@ -191,6 +202,7 @@ class PushDestinationResolver {
   PushNavigationShellTab? _shellTabFor(PushNavigationDestination destination) {
     switch (destination) {
       case PushNavigationDestination.notificationsInbox:
+      case PushNavigationDestination.supportChat:
         return null;
       case PushNavigationDestination.salesPending:
       case PushNavigationDestination.technicalOrders:

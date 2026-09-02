@@ -12,11 +12,13 @@ class AiAssistantHost extends StatefulWidget {
     required this.child,
     required this.modulo,
     required this.telaAtual,
+    this.onOpenSupport,
   });
 
   final Widget child;
   final String modulo;
   final String telaAtual;
+  final VoidCallback? onOpenSupport;
 
   @override
   State<AiAssistantHost> createState() => _AiAssistantHostState();
@@ -69,12 +71,13 @@ class _AiAssistantHostState extends State<AiAssistantHost> {
   }
 
   Future<void> _openMobileAssistant() async {
+    bool openSupportRequested = false;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) {
+      builder: (BuildContext sheetContext) {
         return FractionallySizedBox(
           heightFactor: 0.95,
           child: ClipRRect(
@@ -82,11 +85,31 @@ class _AiAssistantHostState extends State<AiAssistantHost> {
             child: AiAssistantMobileScreen(
               modulo: widget.modulo,
               telaAtual: widget.telaAtual,
+              onOpenSupport:
+                  widget.onOpenSupport == null
+                      ? null
+                      : () {
+                        openSupportRequested = true;
+                        Navigator.of(sheetContext).pop();
+                      },
             ),
           ),
         );
       },
     );
+    if (openSupportRequested && mounted) {
+      widget.onOpenSupport?.call();
+    }
+  }
+
+  void _openSupportFromWebPanel() {
+    if (widget.onOpenSupport == null) return;
+    _closeWebPanel();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.onOpenSupport?.call();
+      }
+    });
   }
 
   @override
@@ -167,6 +190,10 @@ class _AiAssistantHostState extends State<AiAssistantHost> {
                     telaAtual: widget.telaAtual,
                     onClose: _closeWebPanel,
                     onMinimize: _minimizeWebPanel,
+                    onOpenSupport:
+                        widget.onOpenSupport == null
+                            ? null
+                            : _openSupportFromWebPanel,
                     expanded: _webPanelExpanded,
                     onToggleExpanded: _toggleWebPanelExpanded,
                   ),

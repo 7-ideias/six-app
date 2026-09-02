@@ -19,6 +19,7 @@ import 'auth_entry_mobile.dart';
 import 'atendimento_mobile_screen.dart';
 import 'atendimentos_tecnicos_mobile_screen.dart';
 import 'clientes_usuario_mobile_screen.dart';
+import 'chat_suporte_mobile_screen.dart';
 import 'gestao_mobile_screen.dart';
 import 'home_page_mobile_screen.dart';
 import 'notificacoes_mobile_screen.dart';
@@ -299,6 +300,14 @@ class _MobileMainShellState extends State<MobileMainShell>
     switch (navigation.destination) {
       case PushNavigationDestination.notificationsInbox:
         return const NotificacoesMobileScreen();
+      case PushNavigationDestination.supportChat:
+        final Map<String, dynamic> payload = navigation.payload;
+        return ChatSuporteMobileScreen(
+          idConversaInicial:
+              payload['conversationId']?.toString() ??
+              payload['entityId']?.toString(),
+          idEmpresaInicial: payload['idUnicoDaEmpresa']?.toString(),
+        );
       case PushNavigationDestination.salesPending:
         return const VendasNaoLiquidadasMobileScreen();
       case PushNavigationDestination.technicalOrders:
