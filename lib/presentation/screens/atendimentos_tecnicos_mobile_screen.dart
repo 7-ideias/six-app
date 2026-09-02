@@ -383,7 +383,7 @@ class _AtendimentosTecnicosMobileScreenState
         dataInicio: filtros.dataInicio,
         dataFim: filtros.dataFim,
         tecnicoKey: filtros.tecnicoKey,
-        statusKey: null,
+        statusKey: filtros.statusKey,
         statusPagamento: filtros.statusPagamento,
       );
     });
@@ -408,7 +408,7 @@ class _AtendimentosTecnicosMobileScreenState
       dataInicio: _consulta.dataInicio,
       dataFim: _consulta.dataFim,
       tecnicoKey: _consulta.tecnicoKey,
-      statusKey: null,
+      statusKey: _consulta.statusKey,
       statusPagamento: _consulta.statusPagamento,
     );
 
@@ -472,6 +472,7 @@ class _AtendimentosTecnicosMobileScreenState
         dataInicio: null,
         dataFim: null,
         tecnicoKey: null,
+        statusKey: null,
         statusPagamento: AtendimentosCriadosStatusPagamentoFiltro.todos,
       ),
     );
@@ -559,6 +560,10 @@ class _AtendimentosTecnicosMobileScreenState
           atendimentos,
           state.tecnicos,
         );
+        final List<_StatusFiltroOption> status = _statusFiltroOptions(
+          atendimentos,
+          statusDisponiveis,
+        );
         final List<AtendimentoTecnicoModel> filtrados = _filtrar(
           atendimentos,
           statusDisponiveis,
@@ -575,7 +580,7 @@ class _AtendimentosTecnicosMobileScreenState
                 delay: Duration(milliseconds: 60),
                 child: _querySearchBar(),
               ),
-              _activeAdvancedFilterChips(tecnicos),
+              _activeAdvancedFilterChips(tecnicos, status),
               if (filtrados.isNotEmpty) ...<Widget>[
                 SizedBox(height: 12),
                 SixStaggeredEntry(
@@ -1095,7 +1100,10 @@ class _AtendimentosTecnicosMobileScreenState
     );
   }
 
-  Widget _activeAdvancedFilterChips(List<_TecnicoFiltroOption> tecnicos) {
+  Widget _activeAdvancedFilterChips(
+    List<_TecnicoFiltroOption> tecnicos,
+    List<_StatusFiltroOption> status,
+  ) {
     if (!_hasAdvancedFilters) return SizedBox.shrink();
 
     final List<Widget> chips = <Widget>[];
@@ -1118,6 +1126,16 @@ class _AtendimentosTecnicosMobileScreenState
           icon: Icons.engineering_outlined,
           onDeleted:
               () => _aplicarConsulta(_consulta.copyWith(tecnicoKey: null)),
+        ),
+      );
+    }
+    if (_consulta.statusKey != null) {
+      chips.add(
+        _activeFilterChip(
+          label: _statusFiltroLabel(status, _consulta.statusKey),
+          icon: Icons.flag_outlined,
+          onDeleted:
+              () => _aplicarConsulta(_consulta.copyWith(statusKey: null)),
         ),
       );
     }
@@ -1249,6 +1267,10 @@ class _AtendimentosTecnicosMobileScreenState
             return _FiltrosAvancadosAtendimentosTecnicosMobileSheet(
               consulta: _consulta,
               tecnicos: tecnicos,
+              status: _statusFiltroOptions(
+                atendimentos,
+                statusDisponiveis,
+              ),
               permitePagamento: _permiteFiltroStatusPagamento,
               formatarData: _formatarData,
               statusPagamentoLabel: _statusPagamentoFiltroLabel,
@@ -3652,6 +3674,7 @@ class _AtendimentosTecnicosMobileScreenState
     final DateTime? fim =
         consulta.dataFim == null ? null : _fimDoDia(consulta.dataFim!);
     final String? tecnicoKey = consulta.tecnicoKey;
+    final String? statusKey = consulta.statusKey;
     final AtendimentosCriadosStatusPagamentoFiltro statusPagamento =
         _permiteFiltroStatusPagamento
             ? consulta.statusPagamento
@@ -3675,6 +3698,10 @@ class _AtendimentosTecnicosMobileScreenState
           }
           if (tecnicoKey != null &&
               _tecnicoKeyAtendimento(atendimento) != tecnicoKey) {
+            return false;
+          }
+          if (statusKey != null &&
+              _statusFiltroKeyAtendimento(atendimento) != statusKey) {
             return false;
           }
           if (!_atendimentoPassaStatusPagamento(atendimento, statusPagamento)) {
@@ -3822,6 +3849,13 @@ class _AtendimentosTecnicosMobileScreenState
     return nome.isEmpty ? 'Sem técnico responsável' : nome;
   }
 
+  String _statusFiltroKeyAtendimento(AtendimentoTecnicoModel atendimento) {
+    if (atendimento.statusId > 0) return 'id:${atendimento.statusId}';
+    final String codigo = atendimento.statusCodigo.trim().toUpperCase();
+    if (codigo.isNotEmpty) return 'codigo:$codigo';
+    return '__sem_status__';
+  }
+
   String _statusOptionLabel(DominioOpcaoModel status) {
     final String fallback =
         status.nomePadraoPtBr.trim().isEmpty
@@ -3882,6 +3916,31 @@ class _AtendimentosTecnicosMobileScreenState
     return options;
   }
 
+  List<_StatusFiltroOption> _statusFiltroOptions(
+    List<AtendimentoTecnicoModel> atendimentos,
+    List<DominioOpcaoModel> statusDisponiveis,
+  ) {
+    final Map<String, _StatusFiltroOption> options =
+        <String, _StatusFiltroOption>{};
+    for (final AtendimentoTecnicoModel atendimento in atendimentos) {
+      final String key = _statusFiltroKeyAtendimento(atendimento);
+      final String label = _statusLabel(atendimento, statusDisponiveis);
+      final _StatusFiltroOption? current = options[key];
+      options[key] = _StatusFiltroOption(
+        key: key,
+        label: current?.label ?? label,
+        count: (current?.count ?? 0) + 1,
+      );
+    }
+    return options.values.toList(growable: false)..sort(
+      (_StatusFiltroOption a, _StatusFiltroOption b) {
+        final int countCompare = b.count.compareTo(a.count);
+        if (countCompare != 0) return countCompare;
+        return a.label.toLowerCase().compareTo(b.label.toLowerCase());
+      },
+    );
+  }
+
   String _tecnicoFiltroLabel(
     List<_TecnicoFiltroOption> options,
     String? selected,
@@ -3898,6 +3957,25 @@ class _AtendimentosTecnicosMobileScreenState
     return _t(
       'atendimentoTecnico.mobile.selectedTechnician',
       'Técnico selecionado',
+    );
+  }
+
+  String _statusFiltroLabel(
+    List<_StatusFiltroOption> options,
+    String? selected,
+  ) {
+    if (selected == null) {
+      return _t(
+        'atendimentoTecnico.filters.status.all',
+        'Todos os status',
+      );
+    }
+    for (final _StatusFiltroOption option in options) {
+      if (option.key == selected) return option.label;
+    }
+    return _t(
+      'atendimentoTecnico.filters.status.selectedFallback',
+      'Status selecionado',
     );
   }
 
@@ -4349,6 +4427,18 @@ class _TecnicoFiltroOption {
   final String label;
 }
 
+class _StatusFiltroOption {
+  const _StatusFiltroOption({
+    required this.key,
+    required this.label,
+    required this.count,
+  });
+
+  final String key;
+  final String label;
+  final int count;
+}
+
 class _PeriodoFiltro {
   const _PeriodoFiltro({required this.dataInicio, required this.dataFim});
 
@@ -4385,6 +4475,7 @@ class _AtendimentosTecnicosConsulta {
     int count = 0;
     if (dataInicio != null || dataFim != null) count++;
     if (tecnicoKey != null) count++;
+    if (statusKey != null) count++;
     if (includePayment &&
         statusPagamento != AtendimentosCriadosStatusPagamentoFiltro.todos) {
       count++;
@@ -4440,6 +4531,7 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheet extends StatefulWidget {
   const _FiltrosAvancadosAtendimentosTecnicosMobileSheet({
     required this.consulta,
     required this.tecnicos,
+    required this.status,
     required this.permitePagamento,
     required this.formatarData,
     required this.statusPagamentoLabel,
@@ -4448,6 +4540,7 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheet extends StatefulWidget {
 
   final _AtendimentosTecnicosConsulta consulta;
   final List<_TecnicoFiltroOption> tecnicos;
+  final List<_StatusFiltroOption> status;
   final bool permitePagamento;
   final String Function(DateTime?) formatarData;
   final String Function(AtendimentosCriadosStatusPagamentoFiltro value)
@@ -4463,6 +4556,7 @@ enum _FiltrosAvancadosAtendimentosTecnicosMobileView {
   principal,
   periodo,
   tecnico,
+  status,
   pagamento,
 }
 
@@ -4482,6 +4576,7 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
   late DateTime? _dataInicio = widget.consulta.dataInicio;
   late DateTime? _dataFim = widget.consulta.dataFim;
   late String? _tecnicoKey = widget.consulta.tecnicoKey;
+  late String? _statusKey = widget.consulta.statusKey;
   late AtendimentosCriadosStatusPagamentoFiltro _statusPagamento =
       widget.consulta.statusPagamento;
   bool _editandoInicio = true;
@@ -4673,6 +4768,8 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
         return _periodSelectorView();
       case _FiltrosAvancadosAtendimentosTecnicosMobileView.tecnico:
         return _technicianSelectorView();
+      case _FiltrosAvancadosAtendimentosTecnicosMobileView.status:
+        return _statusSelectorView();
       case _FiltrosAvancadosAtendimentosTecnicosMobileView.pagamento:
         return _paymentSelectorView();
     }
@@ -4702,6 +4799,16 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
           onTap:
               () => _openView(
                 _FiltrosAvancadosAtendimentosTecnicosMobileView.tecnico,
+              ),
+        ),
+        SizedBox(height: 10),
+        _compactFilterRow(
+          title: _t('atendimentoTecnico.status', 'Status'),
+          value: _statusResumoLabel(),
+          icon: Icons.flag_outlined,
+          onTap:
+              () => _openView(
+                _FiltrosAvancadosAtendimentosTecnicosMobileView.status,
               ),
         ),
         if (widget.permitePagamento) ...<Widget>[
@@ -4920,6 +5027,46 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
     );
   }
 
+  Widget _statusSelectorView() {
+    return ListView.builder(
+      padding: EdgeInsets.fromLTRB(
+        18,
+        0,
+        18,
+        16 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      itemCount: widget.status.length + 1,
+      itemBuilder: (BuildContext context, int index) {
+        if (index == 0) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: 10),
+            child: _optionTile(
+              label: _t(
+                'atendimentoTecnico.filters.status.all',
+                'Todos os status',
+              ),
+              icon: Icons.flag_outlined,
+              selected: _statusKey == null,
+              onTap: () => _selecionarStatus(null),
+            ),
+          );
+        }
+
+        final _StatusFiltroOption status = widget.status[index - 1];
+        return Padding(
+          padding: EdgeInsets.only(bottom: 10),
+          child: _optionTile(
+            label: status.label,
+            count: status.count,
+            icon: Icons.flag_outlined,
+            selected: _statusKey == status.key,
+            onTap: () => _selecionarStatus(status.key),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _sheetActions({
     required _AtendimentosTecnicosConsulta consulta,
     required int previewCount,
@@ -5067,6 +5214,8 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
           'atendimentoTecnico.mobile.filterTechnician',
           'Técnico responsável',
         );
+      case _FiltrosAvancadosAtendimentosTecnicosMobileView.status:
+        return _t('atendimentoTecnico.status', 'Status');
       case _FiltrosAvancadosAtendimentosTecnicosMobileView.pagamento:
         return _t(
           'atendimentoTecnico.mobile.filterPaymentStatus',
@@ -5083,6 +5232,8 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
         return Icons.event_outlined;
       case _FiltrosAvancadosAtendimentosTecnicosMobileView.tecnico:
         return Icons.engineering_outlined;
+      case _FiltrosAvancadosAtendimentosTecnicosMobileView.status:
+        return Icons.flag_outlined;
       case _FiltrosAvancadosAtendimentosTecnicosMobileView.pagamento:
         return Icons.account_balance_wallet_outlined;
     }
@@ -5112,6 +5263,13 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
       _tecnicoKey = key;
       _tecnicoSearch = '';
       _tecnicoSearchController.clear();
+      _view = _FiltrosAvancadosAtendimentosTecnicosMobileView.principal;
+    });
+  }
+
+  void _selecionarStatus(String? key) {
+    setState(() {
+      _statusKey = key;
       _view = _FiltrosAvancadosAtendimentosTecnicosMobileView.principal;
     });
   }
@@ -5186,6 +5344,22 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
     );
   }
 
+  String _statusResumoLabel() {
+    if (_statusKey == null) {
+      return _t(
+        'atendimentoTecnico.filters.status.all',
+        'Todos os status',
+      );
+    }
+    for (final _StatusFiltroOption status in widget.status) {
+      if (status.key == _statusKey) return status.label;
+    }
+    return _t(
+      'atendimentoTecnico.filters.status.selectedFallback',
+      'Status selecionado',
+    );
+  }
+
   DateTime _inicioDoDia(DateTime value) {
     return DateTime(value.year, value.month, value.day);
   }
@@ -5228,6 +5402,7 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
 
   Widget _optionTile({
     required String label,
+    int? count,
     required IconData icon,
     required bool selected,
     required VoidCallback onTap,
@@ -5268,6 +5443,27 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
                   ),
                 ),
               ),
+              if (count != null) ...<Widget>[
+                SizedBox(width: 8),
+                Container(
+                  constraints: BoxConstraints(minWidth: 28),
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _surfaceColor,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: _borderColor),
+                  ),
+                  child: Text(
+                    count.toString(),
+                    style: TextStyle(
+                      color: _mutedTextColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
               SizedBox(width: 8),
               Icon(
                 selected
@@ -5331,6 +5527,7 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
       _dataInicio = null;
       _dataFim = null;
       _tecnicoKey = null;
+      _statusKey = null;
       _statusPagamento = AtendimentosCriadosStatusPagamentoFiltro.todos;
       _tecnicoSearch = '';
       _tecnicoSearchController.clear();
@@ -5343,6 +5540,7 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
       dataInicio: _dataInicio,
       dataFim: _dataFim,
       tecnicoKey: _tecnicoKey,
+      statusKey: _statusKey,
       statusPagamento:
           widget.permitePagamento
               ? _statusPagamento
