@@ -16,7 +16,7 @@ import 'ai_assistant_example_list.dart';
 import 'ai_assistant_feedback_actions.dart';
 import 'ai_assistant_message_bubble.dart';
 
-class AiAssistantPanel extends StatelessWidget {
+class AiAssistantPanel extends StatefulWidget {
   const AiAssistantPanel({
     super.key,
     required this.modulo,
@@ -25,6 +25,7 @@ class AiAssistantPanel extends StatelessWidget {
     this.onMinimize,
     this.onToggleExpanded,
     this.onOpenSupport,
+    this.supportContentBuilder,
     this.expanded = false,
   });
 
@@ -34,7 +35,38 @@ class AiAssistantPanel extends StatelessWidget {
   final VoidCallback? onMinimize;
   final VoidCallback? onToggleExpanded;
   final VoidCallback? onOpenSupport;
+  final WidgetBuilder? supportContentBuilder;
   final bool expanded;
+
+  @override
+  State<AiAssistantPanel> createState() => _AiAssistantPanelState();
+}
+
+class _AiAssistantPanelState extends State<AiAssistantPanel> {
+  bool _showingSupport = false;
+
+  bool get _canOpenSupport =>
+      widget.supportContentBuilder != null || widget.onOpenSupport != null;
+
+  void _openSupport() {
+    if (widget.supportContentBuilder == null) {
+      widget.onOpenSupport?.call();
+      return;
+    }
+    setState(() => _showingSupport = true);
+  }
+
+  void _showLis() {
+    setState(() => _showingSupport = false);
+  }
+
+  @override
+  void didUpdateWidget(covariant AiAssistantPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_showingSupport && widget.supportContentBuilder == null) {
+      _showingSupport = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,12 +96,12 @@ class AiAssistantPanel extends StatelessWidget {
         );
         final double panelWidth = _panelDimension(
           max: availableWidth,
-          preferred: expanded ? 1080 : 760,
+          preferred: widget.expanded ? 1080 : 760,
           minimum: 320,
         );
         final double panelHeight = _panelDimension(
           max: availableHeight,
-          preferred: expanded ? availableHeight : 920,
+          preferred: widget.expanded ? availableHeight : 920,
           minimum: 420,
         );
         final bool compact = panelWidth < 560;
@@ -89,20 +121,41 @@ class AiAssistantPanel extends StatelessWidget {
             child: Column(
               children: <Widget>[
                 _AiAssistantPanelToolbar(
-                  expanded: expanded,
+                  expanded: widget.expanded,
+                  showingSupport: _showingSupport,
                   compact: compact,
                   l10n: l10n,
-                  onToggleExpanded: onToggleExpanded,
-                  onOpenSupport: onOpenSupport,
-                  onMinimize: onMinimize ?? onClose,
-                  onClose: onClose,
+                  onToggleExpanded: widget.onToggleExpanded,
+                  onOpenSupport:
+                      !_canOpenSupport
+                          ? null
+                          : _showingSupport
+                          ? _showLis
+                          : _openSupport,
+                  onMinimize: widget.onMinimize ?? widget.onClose,
+                  onClose: widget.onClose,
                 ),
                 Expanded(
-                  child: AiAssistantConversationBody(
-                    modulo: modulo,
-                    telaAtual: telaAtual,
-                    isMobile: false,
-                    onOpenSupport: onOpenSupport,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 260),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    child:
+                        _showingSupport
+                            ? KeyedSubtree(
+                              key: const ValueKey<String>(
+                                'ai-assistant-support',
+                              ),
+                              child: widget.supportContentBuilder!(context),
+                            )
+                            : AiAssistantConversationBody(
+                              key: const ValueKey<String>('ai-assistant-lis'),
+                              modulo: widget.modulo,
+                              telaAtual: widget.telaAtual,
+                              isMobile: false,
+                              onOpenSupport:
+                                  _canOpenSupport ? _openSupport : null,
+                            ),
                   ),
                 ),
               ],
@@ -139,6 +192,7 @@ double _panelDimension({
 class _AiAssistantPanelToolbar extends StatelessWidget {
   const _AiAssistantPanelToolbar({
     required this.expanded,
+    required this.showingSupport,
     required this.compact,
     required this.l10n,
     required this.onToggleExpanded,
@@ -148,6 +202,7 @@ class _AiAssistantPanelToolbar extends StatelessWidget {
   });
 
   final bool expanded;
+  final bool showingSupport;
   final bool compact;
   final AppLocalizations? l10n;
   final VoidCallback? onToggleExpanded;
@@ -175,11 +230,17 @@ class _AiAssistantPanelToolbar extends StatelessWidget {
             if (onOpenSupport != null) ...<Widget>[
               _AiAssistantToolbarButton(
                 size: size,
-                icon: Icons.support_agent_rounded,
-                tooltip: context.t(
-                  'chatSupport.lis.open',
-                  fallback: 'Falar com o suporte',
-                ),
+                icon:
+                    showingSupport
+                        ? Icons.arrow_back_rounded
+                        : Icons.support_agent_rounded,
+                tooltip:
+                    showingSupport
+                        ? context.t('common.back', fallback: 'Voltar')
+                        : context.t(
+                          'chatSupport.lis.open',
+                          fallback: 'Falar com o suporte',
+                        ),
                 onPressed: onOpenSupport,
               ),
               const SizedBox(width: 8),

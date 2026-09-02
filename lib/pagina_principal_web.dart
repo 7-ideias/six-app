@@ -690,8 +690,9 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
     bool abrirSuporteSolicitado = false;
     final ColaboradorAutorizacoesProvider autorizacoes =
         context.read<ColaboradorAutorizacoesProvider>();
+    final bool ehSuper = autorizacoes.ehSuperUsuario;
     final bool podeAcessarSuporte =
-        autorizacoes.ehSuperUsuario ||
+        ehSuper ||
         autorizacoes.ehAdministrador ||
         autorizacoes.ehColaborador;
 
@@ -731,12 +732,16 @@ class _PaginaPrincipalWebState extends State<PaginaPrincipalWeb>
                     Navigator.of(dialogContext).pop();
                   },
                   onOpenSupport:
-                      podeAcessarSuporte
+                      podeAcessarSuporte && ehSuper
                           ? () {
                             abrirSuporteSolicitado = true;
                             minimizarSolicitado = false;
                             Navigator.of(dialogContext).pop();
                           }
+                          : null,
+                  supportContentBuilder:
+                      podeAcessarSuporte && !ehSuper
+                          ? (_) => const ChatSuporteWebPage(embedded: true)
                           : null,
                   onToggleExpanded:
                       () => setDialogState(() => expanded = !expanded),

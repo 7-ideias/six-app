@@ -20,10 +20,12 @@ class ChatSuporteWebPage extends StatefulWidget {
     super.key,
     this.idConversaInicial,
     this.idEmpresaInicial,
+    this.embedded = false,
   });
 
   final String? idConversaInicial;
   final String? idEmpresaInicial;
+  final bool embedded;
 
   @override
   State<ChatSuporteWebPage> createState() => _ChatSuporteWebPageState();
@@ -88,6 +90,13 @@ class _ChatSuporteWebPageState extends State<ChatSuporteWebPage> {
   @override
   Widget build(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
+    if (widget.embedded && !_provider.ehSuper) {
+      return Material(
+        key: const ValueKey<String>('chat-support-embedded'),
+        color: tokens.surface,
+        child: _buildBody(context, tokens, embedded: true),
+      );
+    }
     return Material(
       color: tokens.workspaceBackground,
       child: Column(
@@ -126,7 +135,11 @@ class _ChatSuporteWebPageState extends State<ChatSuporteWebPage> {
     );
   }
 
-  Widget _buildBody(BuildContext context, WebThemeTokens tokens) {
+  Widget _buildBody(
+    BuildContext context,
+    WebThemeTokens tokens, {
+    bool embedded = false,
+  }) {
     if (_provider.carregando && _provider.conversaSelecionada == null) {
       return Center(
         child: ConstrainedBox(
@@ -148,6 +161,9 @@ class _ChatSuporteWebPageState extends State<ChatSuporteWebPage> {
     }
 
     if (!_provider.ehSuper) {
+      if (embedded) {
+        return _buildConversation(context, tokens);
+      }
       return Padding(
         padding: const EdgeInsets.all(24),
         child: Center(
