@@ -1568,7 +1568,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
             child: Text(
               label,
               style: TextStyle(
-                color: selected ? SixMobilePalette.onPrimary : _titleTextColor,
+                color: selected ? SixMobilePalette.onAccent : _titleTextColor,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
               ),
@@ -2612,7 +2612,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
                       style: TextStyle(
                         color:
                             selected
-                                ? SixMobilePalette.onPrimary
+                                ? SixMobilePalette.onAccent
                                 : _titleTextColor,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,

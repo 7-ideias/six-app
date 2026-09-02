@@ -1033,7 +1033,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                   style: FilledButton.styleFrom(
                     minimumSize: Size.fromHeight(44),
                     backgroundColor: SixMobilePalette.accent,
-                    foregroundColor: SixMobilePalette.onPrimary,
+                    foregroundColor: SixMobilePalette.onAccent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -1549,9 +1549,9 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
     if (_carregandoSessaoCaixa) {
       return _SessaoCaixaMobileView(
         label: l10n?.pdvCashSessionChecking ?? 'Verificando sessão do caixa',
-        foregroundColor: SixMobilePalette.primary,
-        backgroundColor: _withAlpha(SixMobilePalette.primary, 0.09),
-        borderColor: _withAlpha(SixMobilePalette.primary, 0.14),
+        foregroundColor: SixMobilePalette.accent,
+        backgroundColor: _withAlpha(SixMobilePalette.accent, 0.09),
+        borderColor: _withAlpha(SixMobilePalette.accent, 0.24),
       );
     }
 
@@ -2398,7 +2398,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
               ),
               style: FilledButton.styleFrom(
                 backgroundColor: SixMobilePalette.accent,
-                foregroundColor: SixMobilePalette.onPrimary,
+                foregroundColor: SixMobilePalette.onAccent,
                 minimumSize: Size.fromHeight(50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
@@ -2425,7 +2425,7 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
                       _editandoVendaNaoLiquidada ? 'Voltar' : 'Receber depois',
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: SixMobilePalette.primary,
+                      foregroundColor: SixMobilePalette.accent,
                       side: BorderSide(color: SixMobilePalette.border),
                       minimumSize: Size.fromHeight(44),
                       shape: RoundedRectangleBorder(

@@ -452,9 +452,9 @@ class _OrdemServicoPublicaPageState extends State<OrdemServicoPublicaPage> {
                       CircleAvatar(
                         radius: 30,
                         backgroundColor: theme.colorScheme.primary,
-                        child: const Icon(
+                        child: Icon(
                           Icons.assignment_turned_in_outlined,
-                          color: Colors.white,
+                          color: theme.colorScheme.onPrimary,
                           size: 28,
                         ),
                       ),

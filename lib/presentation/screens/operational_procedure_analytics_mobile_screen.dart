@@ -244,7 +244,7 @@ class _KpiCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
-          Icon(icon, color: SixMobilePalette.primary),
+          Icon(icon, color: SixMobilePalette.accent),
           Text(
             value,
             style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900),

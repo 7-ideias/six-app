@@ -4,6 +4,7 @@ import 'package:sixpos/sub_painel_cadastro_colaborador.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
 import '../../data/models/produto_model.dart';
 import '../../mock_cadastros_store.dart';
@@ -1860,6 +1861,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
   }
 
   Widget _header(ThemeData theme) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -1887,9 +1889,9 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                   CircleAvatar(
                     radius: 24,
                     backgroundColor: theme.colorScheme.primary,
-                    child: const Icon(
+                    child: Icon(
                       Icons.assignment_turned_in_outlined,
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1957,7 +1959,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                           radius: 20,
                           backgroundColor:
                               selected
-                                  ? Colors.white
+                                  ? theme.colorScheme.onPrimary
                                   : done
                                   ? theme.colorScheme.primary
                                   : theme.colorScheme.surfaceContainerHighest,
@@ -1965,7 +1967,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                               selected
                                   ? theme.colorScheme.primary
                                   : done
-                                  ? Colors.white
+                                  ? theme.colorScheme.onPrimary
                                   : theme.colorScheme.onSurfaceVariant,
                           child: Icon(step['icone'] as IconData, size: 18),
                         ),
@@ -1982,7 +1984,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   color:
                                       selected
-                                          ? Colors.white
+                                          ? theme.colorScheme.onPrimary
                                           : theme.colorScheme.onSurface,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -1995,7 +1997,8 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color:
                                       selected
-                                          ? Colors.white.withOpacity(.90)
+                                          ? theme.colorScheme.onPrimary
+                                              .withOpacity(.90)
                                           : theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
@@ -2017,8 +2020,8 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
               FilledButton.icon(
                 onPressed: _confirmCancelAll,
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red.shade600,
-                  foregroundColor: Colors.white,
+                  backgroundColor: tokens.danger,
+                  foregroundColor: tokens.onDanger,
                 ),
                 icon: const Icon(Icons.close_rounded),
                 label: const Text('Cancelar tudo e voltar'),
@@ -2036,6 +2039,7 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
   }
 
   Widget _navBar() {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -2083,8 +2087,8 @@ class _OrdemServicoWebState extends State<OrdemServicoWeb> {
                 icon: const Icon(Icons.close_rounded),
                 label: const Text('Cancelar tudo'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red.shade700,
-                  side: BorderSide(color: Colors.red.shade200),
+                  foregroundColor: tokens.danger,
+                  side: BorderSide(color: tokens.danger),
                 ),
               ),
             ],

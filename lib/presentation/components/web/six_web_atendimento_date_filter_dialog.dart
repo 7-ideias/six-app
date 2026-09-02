@@ -617,7 +617,7 @@ class _SixWebAtendimentoDateFilterDialogState
             ),
             style: FilledButton.styleFrom(
               backgroundColor: tokens.info,
-              foregroundColor: const Color(0xFF08111F),
+              foregroundColor: tokens.onInfo,
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),

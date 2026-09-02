@@ -747,7 +747,7 @@ class _ClientesUsuarioListPageState extends State<ClientesUsuarioListPage> {
   ButtonStyle _filledCtaStyle() {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     return FilledButton.styleFrom(
-      foregroundColor: Colors.white,
+      foregroundColor: tokens.onInfo,
       backgroundColor: tokens.info,
       disabledForegroundColor: tokens.disabledForeground,
       disabledBackgroundColor: tokens.disabledBackground,

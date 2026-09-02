@@ -1182,7 +1182,10 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
                   CircleAvatar(
                     radius: 24,
                     backgroundColor: theme.colorScheme.primary,
-                    child: const Icon(Icons.request_quote, color: Colors.white),
+                    child: Icon(
+                      Icons.request_quote,
+                      color: theme.colorScheme.onPrimary,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -1248,7 +1251,7 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
                           radius: 20,
                           backgroundColor:
                               selected
-                                  ? Colors.white
+                                  ? theme.colorScheme.onPrimary
                                   : done
                                   ? theme.colorScheme.primary
                                   : theme.colorScheme.surfaceContainerHighest,
@@ -1256,7 +1259,7 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
                               selected
                                   ? theme.colorScheme.primary
                                   : done
-                                  ? Colors.white
+                                  ? theme.colorScheme.onPrimary
                                   : theme.colorScheme.onSurfaceVariant,
                           child: Icon(step['icone'] as IconData, size: 18),
                         ),
@@ -1273,7 +1276,7 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   color:
                                       selected
-                                          ? Colors.white
+                                          ? theme.colorScheme.onPrimary
                                           : theme.colorScheme.onSurface,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -1286,7 +1289,8 @@ class _OrcamentoWebState extends State<OrcamentoWeb> {
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color:
                                       selected
-                                          ? Colors.white.withOpacity(0.90)
+                                          ? theme.colorScheme.onPrimary
+                                              .withOpacity(0.90)
                                           : theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),

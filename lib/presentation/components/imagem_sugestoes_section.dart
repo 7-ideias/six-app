@@ -191,10 +191,10 @@ class ImagemSugestoesSection extends StatelessWidget {
                             color: colorScheme.primary.withOpacity(0.85),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Usada',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colorScheme.onPrimary,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),

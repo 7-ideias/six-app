@@ -134,7 +134,7 @@ class _SeguimentoSelecionarMobileScreenState
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
         backgroundColor: const Color(0xFFCDDE38),
-        child: const Icon(Icons.lightbulb_outline, color: Colors.white),
+        child: const Icon(Icons.lightbulb_outline, color: Colors.black),
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -144,10 +144,15 @@ class _SeguimentoSelecionarMobileScreenState
             padding: const EdgeInsets.symmetric(vertical: 16),
             backgroundColor:
                 selectedSubsegments.containsValue(true)
-                    ? Theme.of(context).primaryColor
-                    : Colors.grey.shade300,
-            disabledForegroundColor: Colors.white.withOpacity(0.5),
-            disabledBackgroundColor: Colors.grey.shade300,
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            disabledForegroundColor: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.38),
+            disabledBackgroundColor: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),

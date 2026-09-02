@@ -116,7 +116,7 @@ class OperationalProcedureNewAction extends StatelessWidget {
           ),
           style: FilledButton.styleFrom(
             backgroundColor: SixMobilePalette.accent,
-            foregroundColor: SixMobilePalette.onPrimary,
+            foregroundColor: SixMobilePalette.onAccent,
             padding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -327,7 +327,7 @@ class OperationalProcedureStateMessage extends StatelessWidget {
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: SixMobilePalette.accent,
-                  foregroundColor: SixMobilePalette.onPrimary,
+                  foregroundColor: SixMobilePalette.onAccent,
                   padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),

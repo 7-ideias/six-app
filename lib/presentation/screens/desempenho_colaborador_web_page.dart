@@ -903,7 +903,7 @@ class _DesempenhoColaboradorWebPageState
   ButtonStyle _filledCtaStyle() {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     return FilledButton.styleFrom(
-      foregroundColor: Colors.white,
+      foregroundColor: tokens.onInfo,
       backgroundColor: tokens.info,
       disabledForegroundColor: tokens.disabledForeground,
       disabledBackgroundColor: tokens.disabledBackground,
@@ -1155,7 +1155,7 @@ class _GoalFormState extends State<_GoalForm> {
                     widget.meta == null ? 'Cadastrar meta' : 'Salvar meta',
                   ),
                   style: FilledButton.styleFrom(
-                    foregroundColor: Colors.white,
+                    foregroundColor: tokens.onInfo,
                     backgroundColor: tokens.info,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 18,

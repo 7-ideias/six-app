@@ -31,7 +31,7 @@ class _CatalogosMobileScreenState extends State<CatalogosMobileScreen> {
           SwitchListTile(
             title: const Text("Sempre selecionar serviços do catálogo"),
             value: selecionarServicos,
-            activeColor: Colors.deepPurple,
+            activeColor: Theme.of(context).colorScheme.primary,
             onChanged: (value) {
               setState(() {
                 selecionarServicos = value;
@@ -41,7 +41,7 @@ class _CatalogosMobileScreenState extends State<CatalogosMobileScreen> {
           SwitchListTile(
             title: const Text("Sempre selecionar peças do catálogo"),
             value: selecionarPecas,
-            activeColor: Colors.deepPurple,
+            activeColor: Theme.of(context).colorScheme.primary,
             onChanged: (value) {
               setState(() {
                 selecionarPecas = value;
@@ -57,7 +57,9 @@ class _CatalogosMobileScreenState extends State<CatalogosMobileScreen> {
           height: 48,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              foregroundColor:
+                  Theme.of(context).colorScheme.onPrimaryContainer,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -65,7 +67,7 @@ class _CatalogosMobileScreenState extends State<CatalogosMobileScreen> {
             onPressed: () {
               // salvar preferências de catálogo
             },
-            child: const Text("salvar", style: TextStyle(color: Colors.white)),
+            child: const Text("salvar"),
           ),
         ),
       ),

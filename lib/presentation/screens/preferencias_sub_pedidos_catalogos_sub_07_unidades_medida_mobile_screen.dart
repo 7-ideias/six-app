@@ -78,7 +78,7 @@ class _UnidadesMedidaMobileScreenState
                     },
                     title: Text(item.sigla),
                     subtitle: Text(item.descricao),
-                    activeColor: Colors.deepPurple,
+                    activeColor: Theme.of(context).colorScheme.primary,
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: EdgeInsets.zero,
                   );
@@ -95,7 +95,7 @@ class _UnidadesMedidaMobileScreenState
           // Ajuda, dica ou tooltip
         },
         backgroundColor: const Color(0xFFDAE529),
-        child: const Icon(Icons.lightbulb_outline, color: Colors.white),
+        child: const Icon(Icons.lightbulb_outline, color: Colors.black),
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16),
@@ -103,7 +103,9 @@ class _UnidadesMedidaMobileScreenState
           height: 48,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              foregroundColor:
+                  Theme.of(context).colorScheme.onPrimaryContainer,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -111,7 +113,7 @@ class _UnidadesMedidaMobileScreenState
             onPressed: () {
               // salvar unidades selecionadas
             },
-            child: const Text("salvar", style: TextStyle(color: Colors.white)),
+            child: const Text("salvar"),
           ),
         ),
       ),

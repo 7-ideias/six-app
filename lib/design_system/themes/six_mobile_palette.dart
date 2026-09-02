@@ -82,6 +82,8 @@ abstract final class SixMobilePalette {
   static const Color onPrimary = Colors.white;
   static const Color onAccentLight = Colors.white;
   static const Color onAccentDark = Color(0xFF07111E);
+  static const Color onErrorLight = Colors.white;
+  static const Color onErrorDark = Colors.black;
   static const Color heroSupportingTextLight = Color(0xFFE5E7EB);
   static const Color heroSupportingTextDark = Color(0xFFD6DEE8);
   static const Color heroLabelTextLight = Color(0xFFD1D5DB);
@@ -90,6 +92,7 @@ abstract final class SixMobilePalette {
   static Color get titleText => _isDark ? titleTextDark : titleTextLight;
   static Color get mutedText => _isDark ? mutedTextDark : mutedTextLight;
   static Color get onAccent => _isDark ? onAccentDark : onAccentLight;
+  static Color get onError => _isDark ? onErrorDark : onErrorLight;
   static Color get heroSupportingText =>
       _isDark ? heroSupportingTextDark : heroSupportingTextLight;
   static Color get heroLabelText =>

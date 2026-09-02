@@ -131,7 +131,10 @@ class _AssinaturaMobileScreenState extends State<AssinaturaMobileScreen> {
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
+                      backgroundColor:
+                          Theme.of(context).colorScheme.primaryContainer,
+                      foregroundColor:
+                          Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
                     onPressed: () async {
                       if (_controller.isNotEmpty) {

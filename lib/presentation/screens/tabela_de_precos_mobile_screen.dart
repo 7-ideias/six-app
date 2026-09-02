@@ -106,8 +106,9 @@ class _CadastroListaBodyState extends State<CadastroListaBody> {
           child: ListTile(
             leading: CircleAvatar(
               child: Text('${index + 1}'),
-              backgroundColor: Colors.blue.shade200,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              foregroundColor:
+                  Theme.of(context).colorScheme.onPrimaryContainer,
             ),
             title: Text(
               'produto',

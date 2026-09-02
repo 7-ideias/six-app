@@ -1466,7 +1466,7 @@ InputDecorationTheme _buildWebInputDecorationTheme(WebThemeTokens tokens) {
 ButtonStyle _webPrimaryButtonStyle(WebThemeTokens tokens) {
   return FilledButton.styleFrom(
     backgroundColor: tokens.info,
-    foregroundColor: Colors.white,
+    foregroundColor: tokens.onInfo,
     disabledBackgroundColor: tokens.disabledBackground,
     disabledForegroundColor: tokens.disabledForeground,
     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),

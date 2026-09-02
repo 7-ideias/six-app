@@ -913,7 +913,7 @@ class _AtendimentoTecnicoEditarDialogState
                         onPressed: () => Navigator.of(dialogContext).pop(),
                         style: FilledButton.styleFrom(
                           backgroundColor: tokens.info,
-                          foregroundColor: Colors.white,
+                          foregroundColor: tokens.onInfo,
                         ),
                         icon: const Icon(Icons.check_rounded),
                         label: Text(_t('common.ok', 'Entendi')),

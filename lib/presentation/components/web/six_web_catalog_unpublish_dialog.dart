@@ -329,8 +329,8 @@ class _CatalogUnpublishDialogStateWidget
               key: const Key('catalog-unpublish-confirm'),
               onPressed: _busy ? null : _confirm,
               style: FilledButton.styleFrom(
-                backgroundColor: tokens.warning,
-                foregroundColor: const Color(0xFF1B1300),
+                  backgroundColor: tokens.warning,
+                  foregroundColor: tokens.onWarning,
               ),
               icon: const Icon(Icons.visibility_off_outlined),
               label: Text(

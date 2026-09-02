@@ -1018,7 +1018,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 label: const Text('Excluir lançamento'),
                 style: FilledButton.styleFrom(
                   backgroundColor: WebThemeTokens.of(dialogContext).danger,
-                  foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+                  foregroundColor:
+                      WebThemeTokens.of(dialogContext).onDanger,
                 ),
               ),
             ],
@@ -1087,7 +1088,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 label: const Text('Excluir parcial'),
                 style: FilledButton.styleFrom(
                   backgroundColor: WebThemeTokens.of(dialogContext).danger,
-                  foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+                  foregroundColor:
+                      WebThemeTokens.of(dialogContext).onDanger,
                 ),
               ),
             ],
@@ -1583,7 +1585,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: tokens.info,
-          foregroundColor: const Color(0xFF08111F),
+          foregroundColor: tokens.onInfo,
           disabledBackgroundColor: tokens.disabledBackground,
           disabledForegroundColor: tokens.disabledForeground,
           minimumSize: const Size(0, 44),
@@ -1989,7 +1991,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final tokens = WebThemeTokens.of(context);
     final Color primary = theme.colorScheme.primary;
     return FilledButton.styleFrom(
-      foregroundColor: Colors.white,
+      foregroundColor: theme.colorScheme.onPrimary,
       backgroundColor: Color.alphaBlend(
         primary.withValues(alpha: 0.92),
         tokens.surfaceElevated,

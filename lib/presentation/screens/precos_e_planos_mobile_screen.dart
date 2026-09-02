@@ -14,8 +14,6 @@ class _PlanosCarrosselScreenState extends State<PlanosCarrosselScreen> {
   final List<Widget> _planos = [
     PlanoWidget(
       plano: 'TOP',
-      corIcone: Colors.deepPurple,
-      corBotao: Colors.deepPurple,
       precoMensal: 'R\$ 49,90',
       precoAnual: 'R\$ 359,90',
       descricao: 'Nosso plano mais avançado!',
@@ -40,8 +38,6 @@ class _PlanosCarrosselScreenState extends State<PlanosCarrosselScreen> {
     ),
     PlanoWidget(
       plano: 'POP',
-      corIcone: Colors.cyan,
-      corBotao: Colors.deepPurple,
       precoMensal: 'R\$ 12,90',
       precoAnual: 'R\$ 99,90',
       descricao: 'Nosso plano mais baratinho. Dica: confira nosso plano Pro!',
@@ -62,8 +58,6 @@ class _PlanosCarrosselScreenState extends State<PlanosCarrosselScreen> {
     ),
     PlanoWidget(
       plano: 'PRO',
-      corIcone: Colors.purple,
-      corBotao: Colors.deepPurple,
       precoMensal: 'R\$ 24,90',
       precoAnual: 'R\$ 179,90',
       destaqueAnual: '40% de desconto!',
@@ -117,7 +111,9 @@ class _PlanosCarrosselScreenState extends State<PlanosCarrosselScreen> {
                 height: 8,
                 decoration: BoxDecoration(
                   color:
-                      _currentIndex == index ? Colors.deepPurple : Colors.grey,
+                      _currentIndex == index
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.outline,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -137,8 +133,6 @@ class PlanoWidget extends StatelessWidget {
   final String precoMensal;
   final String precoAnual;
   final String? destaqueAnual;
-  final Color corIcone;
-  final Color corBotao;
 
   const PlanoWidget({
     super.key,
@@ -148,8 +142,6 @@ class PlanoWidget extends StatelessWidget {
     required this.precoMensal,
     required this.precoAnual,
     this.destaqueAnual,
-    required this.corIcone,
-    required this.corBotao,
   });
 
   @override
@@ -173,7 +165,10 @@ class PlanoWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: ListTile(
-              leading: Icon(Icons.info_outline, color: corIcone),
+              leading: Icon(
+                Icons.info_outline,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               title: Text(
                 f[0],
                 style: const TextStyle(fontWeight: FontWeight.bold),
@@ -211,24 +206,20 @@ class PlanoWidget extends StatelessWidget {
           height: 48,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: corBotao,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              foregroundColor:
+                  Theme.of(context).colorScheme.onPrimaryContainer,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
             onPressed: () {},
-            child: Text(
-              "Contratar plano $plano!",
-              style: const TextStyle(color: Colors.white),
-            ),
+            child: Text("Contratar plano $plano!"),
           ),
         ),
         TextButton(
           onPressed: () {},
-          child: const Text(
-            "detalhes dos testes grátis e assinaturas",
-            style: TextStyle(color: Colors.deepPurple),
-          ),
+          child: const Text("detalhes dos testes grátis e assinaturas"),
         ),
         const SizedBox(height: 24),
       ],

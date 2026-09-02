@@ -818,7 +818,7 @@ class _CatalogEntryCard extends StatelessWidget {
                       ),
                       child: Icon(
                         _catalogIcon(metric.iconCode),
-                        color: SixMobilePalette.primary,
+                        color: SixMobilePalette.accent,
                         size: 20,
                       ),
                     ),
@@ -1462,7 +1462,7 @@ class _StateCard extends StatelessWidget {
                 color: SixMobilePalette.softNeutralSurface,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(icon, color: SixMobilePalette.primary),
+              child: Icon(icon, color: SixMobilePalette.accent),
             ),
             SizedBox(height: 14),
             Text(

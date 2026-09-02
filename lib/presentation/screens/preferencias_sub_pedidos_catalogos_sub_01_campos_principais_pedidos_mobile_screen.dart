@@ -68,7 +68,7 @@ class _CamposPrincipaisPedidosScreenState
                         : const TextStyle(),
               ),
               controlAffinity: ListTileControlAffinity.leading,
-              activeColor: Colors.deepPurple,
+              activeColor: Theme.of(context).colorScheme.primary,
             );
           }).toList(),
           const SizedBox(height: 80),
@@ -80,7 +80,9 @@ class _CamposPrincipaisPedidosScreenState
           height: 48,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              foregroundColor:
+                  Theme.of(context).colorScheme.onPrimaryContainer,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -88,10 +90,7 @@ class _CamposPrincipaisPedidosScreenState
             onPressed: () {
               // TODO: salvar campos selecionados
             },
-            child: const Text(
-              "salvar campos",
-              style: TextStyle(color: Colors.white),
-            ),
+            child: const Text("salvar campos"),
           ),
         ),
       ),

@@ -897,7 +897,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
                       _salvando ? null : () => Navigator.of(context).pop(),
                   style: OutlinedButton.styleFrom(
                     minimumSize: Size(0, 48),
-                    foregroundColor: SixMobilePalette.primary,
+                    foregroundColor: SixMobilePalette.accent,
                     side: BorderSide(color: SixMobilePalette.border),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -919,7 +919,7 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
                   style: FilledButton.styleFrom(
                     minimumSize: Size(0, 48),
                     backgroundColor: SixMobilePalette.accent,
-                    foregroundColor: SixMobilePalette.onPrimary,
+                    foregroundColor: SixMobilePalette.onAccent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
