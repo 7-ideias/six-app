@@ -239,8 +239,11 @@ void main() {
             'busca': 'equipamento teste',
             'dataInicio': '2026-08-02',
             'dataFim': '2026-08-08',
-            'tecnicoKey': 'tecnico-2',
-            'statusKey': 'codigo:REPAIRING',
+            'tecnicoKeys': <String>['tecnico-2', 'tecnico-3'],
+            'statusKeys': <String>[
+              'codigo:REPAIRING',
+              'codigo:WAITING_PART',
+            ],
             'statusPagamento': 'LIQUIDADO',
           },
         },
@@ -251,8 +254,14 @@ void main() {
       expect(filtros.busca, 'equipamento teste');
       expect(filtros.dataInicio, DateTime(2026, 8, 2));
       expect(filtros.dataFim, DateTime(2026, 8, 8));
-      expect(filtros.tecnicoKey, 'tecnico-2');
-      expect(filtros.statusKey, 'codigo:REPAIRING');
+      expect(filtros.tecnicoKeysSelecionadas, <String>[
+        'tecnico-2',
+        'tecnico-3',
+      ]);
+      expect(filtros.statusKeysSelecionadas, <String>[
+        'codigo:REPAIRING',
+        'codigo:WAITING_PART',
+      ]);
       expect(
         filtros.statusPagamento,
         AtendimentosCriadosStatusPagamentoFiltro.liquidado,
@@ -261,8 +270,11 @@ void main() {
         'busca': 'equipamento teste',
         'dataInicio': '2026-08-02',
         'dataFim': '2026-08-08',
-        'tecnicoKey': 'tecnico-2',
-        'statusKey': 'codigo:REPAIRING',
+        'tecnicoKeys': <String>['tecnico-2', 'tecnico-3'],
+        'statusKeys': <String>[
+          'codigo:REPAIRING',
+          'codigo:WAITING_PART',
+        ],
         'statusPagamento': 'LIQUIDADO',
       });
       expect(
@@ -271,6 +283,28 @@ void main() {
         ).atendimentosCriadosFiltrosMobile.toJson(),
         isEmpty,
       );
+    });
+
+    test('mantem compatibilidade com filtros mobile antigos', () {
+      final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+        const <String, dynamic>{
+          'atendimentosCriadosFiltrosMobile': <String, dynamic>{
+            'tecnicoKey': 'tecnico-legado',
+            'statusKey': 'codigo:LEGACY_STATUS',
+          },
+        },
+      );
+
+      final filtros = preferencias.atendimentosCriadosFiltrosMobile;
+
+      expect(filtros.tecnicoKeysSelecionadas, <String>['tecnico-legado']);
+      expect(filtros.statusKeysSelecionadas, <String>[
+        'codigo:LEGACY_STATUS',
+      ]);
+      expect(filtros.toJson(), <String, dynamic>{
+        'tecnicoKeys': <String>['tecnico-legado'],
+        'statusKeys': <String>['codigo:LEGACY_STATUS'],
+      });
     });
 
     test('serializa e desserializa a ordem dos cards da Gestão Mobile', () {

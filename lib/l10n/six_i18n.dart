@@ -1216,7 +1216,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.mobile.recentSection': 'Atendimentos recentes',
     'atendimentoTecnico.mobile.filteredSection': 'Resultado do filtro',
     'atendimentoTecnico.mobile.searchHint':
-        'Buscar por cliente, status, equipamento ou número',
+        'Buscar por cliente, técnico, status, equipamento ou número',
     'atendimentoTecnico.mobile.advancedFilters': 'Filtros avançados',
     'atendimentoTecnico.mobile.advancedFiltersActive':
         'Filtros avançados ativos',
@@ -3664,7 +3664,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.mobile.emptyFilteredMessage':
         'No services found with the selected filters.',
     'atendimentoTecnico.mobile.searchHint':
-        'Search by customer, status, equipment, or number',
+        'Search by customer, technician, status, equipment, or number',
     'atendimentoTecnico.mobile.advancedFilters': 'Advanced filters',
     'atendimentoTecnico.mobile.advancedFiltersActive':
         'Active advanced filters',
@@ -5999,7 +5999,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'atendimentoTecnico.mobile.emptyFilteredMessage':
         'No se encontraron servicios con los filtros seleccionados.',
     'atendimentoTecnico.mobile.searchHint':
-        'Buscar por cliente, estado, equipo o número',
+        'Buscar por cliente, técnico, estado, equipo o número',
     'atendimentoTecnico.mobile.advancedFilters': 'Filtros avanzados',
     'atendimentoTecnico.mobile.advancedFiltersActive':
         'Filtros avanzados activos',

@@ -102,7 +102,7 @@ void main() {
         expect(destinations, hasLength(3));
         final AtendimentosTecnicosMobileScreen inProgressPage =
             destinations.first as AtendimentosTecnicosMobileScreen;
-        expect(inProgressPage.listContext.statusFilter, 'ACTIVE_GROUP');
+        expect(inProgressPage.listContext.statusFilter, isNull);
         final AtendimentosTecnicosMobileScreen approvalPage =
             destinations[1] as AtendimentosTecnicosMobileScreen;
         expect(
@@ -197,7 +197,9 @@ void main() {
 
         expect(find.text('Atendimentos técnicos'), findsOneWidget);
         expect(
-          find.text('Buscar por cliente, status, equipamento ou número'),
+          find.text(
+            'Buscar por cliente, técnico, status, equipamento ou número',
+          ),
           findsOneWidget,
         );
         expect(find.text('10 atendimentos'), findsOneWidget);
@@ -249,29 +251,9 @@ void main() {
           lessThan(tester.getTopLeft(find.text('10 atendimentos')).dy),
         );
         expect(find.text('Mais recentes'), findsOneWidget);
-        expect(find.text('Todos'), findsOneWidget);
-        expect(find.text('Aberta'), findsWidgets);
-        expect(find.text('Pendente de pagamento'), findsWidgets);
-        expect(find.byIcon(Icons.flag_outlined), findsWidgets);
         expect(
           find.byIcon(Icons.account_balance_wallet_outlined),
           findsWidgets,
-        );
-        final ChoiceChip selectedStatusChip = tester.widget<ChoiceChip>(
-          find.widgetWithText(ChoiceChip, 'Todos'),
-        );
-        expect(selectedStatusChip.selectedColor, themeCase.colors.accent);
-        expect(selectedStatusChip.labelStyle?.color, themeCase.colors.onAccent);
-        final ChoiceChip inactiveStatusChip = tester.widget<ChoiceChip>(
-          find.widgetWithText(ChoiceChip, 'Aberta').first,
-        );
-        expect(
-          inactiveStatusChip.backgroundColor,
-          themeCase.colors.softSurface,
-        );
-        expect(
-          inactiveStatusChip.labelStyle?.color,
-          themeCase.colors.titleText,
         );
         final TextField searchField = tester.widget<TextField>(
           find.byType(TextField).first,
@@ -296,12 +278,18 @@ void main() {
         expect(sheetText('Todas as datas'), findsOneWidget);
         expect(sheetText('Técnico responsável'), findsOneWidget);
         expect(sheetText('Todos os técnicos'), findsOneWidget);
+        expect(sheetText('Status'), findsOneWidget);
+        expect(sheetText('Todos os status'), findsOneWidget);
         expect(sheetText('Status do pagamento'), findsOneWidget);
         expect(sheetText('Todos os pagamentos'), findsOneWidget);
         expect(sheetText('Técnica'), findsNothing);
         expect(
-          tester.getTopLeft(sheetText('Status do pagamento')).dy,
+          tester.getTopLeft(sheetText('Status')).dy,
           greaterThan(tester.getTopLeft(sheetText('Técnico responsável')).dy),
+        );
+        expect(
+          tester.getTopLeft(sheetText('Status do pagamento')).dy,
+          greaterThan(tester.getTopLeft(sheetText('Status')).dy),
         );
         expect(
           _hasDecoratedAncestorColor(
@@ -344,6 +332,12 @@ void main() {
         await tester.enterText(sheetWidget(find.byType(TextField)), 'tecnica');
         await tester.pump();
         await tester.tap(sheetText('Técnica'));
+        await tester.pump();
+        expect(
+          sheetWidget(find.byIcon(Icons.check_box_rounded)),
+          findsOneWidget,
+        );
+        await tester.tap(find.widgetWithText(FilledButton, 'Aplicar'));
         await tester.pumpAndSettle();
         expect(sheetText('Técnica'), findsOneWidget);
         expect(sheetText('Próximos 7 dias'), findsOneWidget);
@@ -372,10 +366,20 @@ void main() {
         await tester.tap(sheetText('Técnico responsável'));
         await tester.pumpAndSettle();
         expect(
-          sheetWidget(find.byIcon(Icons.check_circle_rounded)),
+          sheetWidget(find.byIcon(Icons.check_box_rounded)),
           findsOneWidget,
         );
         await tester.tap(sheetText('Todos os técnicos'));
+        await tester.pump();
+        await tester.tap(find.byIcon(Icons.arrow_back_rounded).last);
+        await tester.pumpAndSettle();
+        expect(sheetText('Técnica'), findsOneWidget);
+
+        await tester.tap(sheetText('Técnico responsável'));
+        await tester.pumpAndSettle();
+        await tester.tap(sheetText('Todos os técnicos'));
+        await tester.pump();
+        await tester.tap(find.widgetWithText(FilledButton, 'Aplicar'));
         await tester.pumpAndSettle();
         expect(sheetText('Todos os técnicos'), findsOneWidget);
         await tester.tap(find.byIcon(Icons.close_rounded).last);
@@ -389,6 +393,7 @@ void main() {
         await tester.pump();
         expect(sheetText('Todas as datas'), findsOneWidget);
         expect(sheetText('Todos os técnicos'), findsOneWidget);
+        expect(sheetText('Todos os status'), findsOneWidget);
         expect(sheetText('Todos os pagamentos'), findsOneWidget);
         await tester.tap(find.byIcon(Icons.close_rounded).last);
         await tester.pumpAndSettle();
@@ -409,45 +414,6 @@ void main() {
         await tester.pump();
         expect(find.text('10 atendimentos'), findsOneWidget);
         expect(find.widgetWithText(InputChip, 'Técnica'), findsNothing);
-
-        await tester.tap(find.widgetWithText(ChoiceChip, 'Aberta').first);
-        await tester.pumpAndSettle();
-        expect(find.text('1 atendimento'), findsOneWidget);
-        final Finder singleSummaryCard = find.byKey(
-          const ValueKey<String>('atendimentos-tecnicos-resumo-compacto'),
-        );
-        expect(
-          find.descendant(of: singleSummaryCard, matching: find.text('1')),
-          findsNWidgets(2),
-        );
-        expect(
-          find.descendant(
-            of: singleSummaryCard,
-            matching: find.text('atendimento'),
-          ),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(
-            of: singleSummaryCard,
-            matching: find.text('em aberto'),
-          ),
-          findsWidgets,
-        );
-        expect(
-          find.descendant(of: singleSummaryCard, matching: find.text('0')),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(
-            of: singleSummaryCard,
-            matching: find.text('assinados'),
-          ),
-          findsOneWidget,
-        );
-        expect(find.textContaining('OS-ABERTA'), findsOneWidget);
-        await tester.tap(find.widgetWithText(ChoiceChip, 'Todos'));
-        await tester.pump();
 
         await tester.enterText(find.byType(TextField).first, 'pendente');
         await tester.pump(const Duration(milliseconds: 300));
@@ -585,7 +551,84 @@ void main() {
     );
 
     testWidgets(
-      'advanced filter technician selector is compact and scrollable in ${themeCase.description} mode',
+      'advanced status filter supports multiple selections in ${themeCase.description} mode',
+      (WidgetTester tester) async {
+        final _FakeAtendimentoTecnicoService service =
+            _FakeAtendimentoTecnicoService(
+              atendimentos: _atendimentosTecnicos(),
+            );
+
+        await _pumpTechnicalList(
+          tester,
+          themeCase: themeCase,
+          service: service,
+        );
+
+        Finder sheetText(String text) => find.descendant(
+          of: find.byType(DraggableScrollableSheet),
+          matching: find.text(text),
+        );
+
+        await tester.tap(find.byIcon(Icons.tune_rounded).first);
+        await tester.pumpAndSettle();
+        expect(sheetText('Status'), findsOneWidget);
+        expect(sheetText('Todos os status'), findsOneWidget);
+
+        await tester.tap(sheetText('Status'));
+        await tester.pumpAndSettle();
+        expect(sheetText('Todos os status'), findsOneWidget);
+        expect(sheetText('Aberta'), findsOneWidget);
+        expect(sheetText('Pendente de pagamento'), findsOneWidget);
+
+        await tester.tap(sheetText('Aberta'));
+        await tester.pump();
+        await tester.tap(sheetText('Pendente de pagamento'));
+        await tester.pump();
+        expect(
+          find.descendant(
+            of: find.byType(DraggableScrollableSheet),
+            matching: find.byIcon(Icons.check_box_rounded),
+          ),
+          findsNWidgets(2),
+        );
+        await tester.tap(find.widgetWithText(FilledButton, 'Aplicar'));
+        await tester.pumpAndSettle();
+        expect(sheetText('2 selecionados'), findsOneWidget);
+        expect(sheetText('Aberta'), findsNothing);
+        await tester.tap(
+          find.widgetWithText(FilledButton, 'Ver 2 atendimentos'),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('2 atendimentos'), findsOneWidget);
+        expect(
+          find.widgetWithText(InputChip, '2 selecionados'),
+          findsOneWidget,
+        );
+        final Finder filteredSummaryCard = find.byKey(
+          const ValueKey<String>('atendimentos-tecnicos-resumo-compacto'),
+        );
+        expect(
+          find.descendant(of: filteredSummaryCard, matching: find.text('2')),
+          findsNWidgets(2),
+        );
+        expect(
+          find.descendant(
+            of: filteredSummaryCard,
+            matching: find.text('atendimentos'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.textContaining('OS-ABERTA'), findsOneWidget);
+        await _dragUntilTextVisible(tester, 'OS-PAGAMENTO');
+        expect(find.textContaining('OS-PAGAMENTO'), findsOneWidget);
+        expect(service.listCalls, 1);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'advanced technician filter is scrollable and supports multiple selections in ${themeCase.description} mode',
       (WidgetTester tester) async {
         final List<ColaboradorUsuarioResumo> tecnicos =
             List<ColaboradorUsuarioResumo>.generate(32, (int index) {
@@ -599,7 +642,32 @@ void main() {
             });
         final _FakeAtendimentoTecnicoService service =
             _FakeAtendimentoTecnicoService(
-              atendimentos: _atendimentosTecnicos(),
+              atendimentos: <AtendimentoTecnicoModel>[
+                _atendimento(
+                  numero: 'OS-TEC-01',
+                  statusCodigo: 'ABERTA',
+                  statusNome: 'Aberta',
+                  idTecnicoResponsavel: 'tec-01',
+                  nomeTecnicoResponsavel: 'Técnico 01',
+                  dataAtualizacao: DateTime(2026, 8, 7, 9),
+                ),
+                _atendimento(
+                  numero: 'OS-TEC-25',
+                  statusCodigo: 'EM_ANDAMENTO',
+                  statusNome: 'Em andamento',
+                  idTecnicoResponsavel: 'tec-25',
+                  nomeTecnicoResponsavel: 'Técnico 25',
+                  dataAtualizacao: DateTime(2026, 8, 9, 9),
+                ),
+                _atendimento(
+                  numero: 'OS-TEC-32',
+                  statusCodigo: 'AGUARDANDO_PECA',
+                  statusNome: 'Aguardando peça',
+                  idTecnicoResponsavel: 'tec-32',
+                  nomeTecnicoResponsavel: 'Técnico 32',
+                  dataAtualizacao: DateTime(2026, 8, 8, 9),
+                ),
+              ],
             );
 
         await _pumpTechnicalList(
@@ -650,6 +718,13 @@ void main() {
         expect(sheetText('Técnico 25'), findsOneWidget);
         expect(tester.takeException(), isNull);
 
+        await tester.tap(sheetText('Técnico 25'));
+        await tester.pump();
+        expect(
+          sheetWidget(find.byIcon(Icons.check_box_rounded)),
+          findsOneWidget,
+        );
+
         await tester.enterText(technicianSearch, 'sem match');
         await tester.pump();
         expect(sheetText('Nenhum técnico encontrado.'), findsOneWidget);
@@ -665,6 +740,31 @@ void main() {
         await tester.pump();
 
         expect(sheetText('Técnico 32'), findsOneWidget);
+        await tester.tap(sheetText('Técnico 32'));
+        await tester.pump();
+        expect(
+          sheetWidget(find.byIcon(Icons.check_box_rounded)),
+          findsOneWidget,
+        );
+        tester.testTextInput.hide();
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(FilledButton, 'Aplicar'));
+        await tester.pumpAndSettle();
+
+        expect(sheetText('2 selecionados'), findsOneWidget);
+        await tester.tap(
+          find.widgetWithText(FilledButton, 'Ver 2 atendimentos'),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('2 atendimentos'), findsOneWidget);
+        expect(
+          find.widgetWithText(InputChip, '2 selecionados'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('OS-TEC-25'), findsOneWidget);
+        await _dragUntilTextVisible(tester, 'OS-TEC-32');
+        expect(find.textContaining('OS-TEC-32'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -747,10 +847,26 @@ void main() {
     );
 
     testWidgets(
-      'in progress and closed queries use grouped status filters in ${themeCase.description} mode',
+      'in progress exposes every status while closed remains grouped in ${themeCase.description} mode',
       (WidgetTester tester) async {
         final _FakeAtendimentoTecnicoService inProgressService =
-            _FakeAtendimentoTecnicoService();
+            _FakeAtendimentoTecnicoService(
+              atendimentos: <AtendimentoTecnicoModel>[
+                _atendimento(
+                  numero: 'OS-ABERTA',
+                  statusCodigo: 'ABERTA',
+                  statusNome: 'Aberto',
+                ),
+                for (int index = 1; index <= 4; index++)
+                  _atendimento(
+                    numero: 'OS-ENTREGUE-$index',
+                    statusCodigo: 'ENTREGUE',
+                    statusNome: 'ENTREGUE(editado2)',
+                    valorEmAberto: 0,
+                    liquidada: true,
+                  ),
+              ],
+            );
 
         await _pumpTechnicalList(
           tester,
@@ -759,20 +875,30 @@ void main() {
           listContext: const AtendimentosTecnicosMobileListContext.inProgress(),
         );
 
-        expect(inProgressService.lastListStatus, 'ACTIVE_GROUP');
+        expect(inProgressService.lastListStatus, isNull);
         expect(find.text('Serviços em andamento'), findsWidgets);
+        expect(find.text('5 atendimentos'), findsOneWidget);
 
-        await tester.scrollUntilVisible(
-          find.text('Nenhum serviço em andamento no momento.'),
-          420,
-          scrollable: _verticalScrollable(),
+        Finder sheetText(String text) => find.descendant(
+          of: find.byType(DraggableScrollableSheet),
+          matching: find.text(text),
         );
+        await tester.tap(find.byIcon(Icons.tune_rounded).first);
+        await tester.pumpAndSettle();
+        await tester.tap(sheetText('Status'));
+        await tester.pumpAndSettle();
+        expect(sheetText('ENTREGUE(editado2)'), findsOneWidget);
+        expect(sheetText('4'), findsOneWidget);
+        await tester.tap(sheetText('ENTREGUE(editado2)'));
         await tester.pump();
-
-        expect(
-          find.text('Nenhum serviço em andamento no momento.'),
-          findsOneWidget,
+        await tester.tap(find.widgetWithText(FilledButton, 'Aplicar'));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.widgetWithText(FilledButton, 'Ver 4 atendimentos'),
         );
+        await tester.pumpAndSettle();
+        expect(find.text('4 atendimentos'), findsOneWidget);
+        expect(find.textContaining('OS-ENTREGUE-1'), findsOneWidget);
 
         final _FakeAtendimentoTecnicoService closedService =
             _FakeAtendimentoTecnicoService();
@@ -2384,6 +2510,8 @@ AtendimentoTecnicoModel _atendimento({
   bool requerNovaAssinatura = false,
   DateTime? dataAtualizacao,
   DateTime? dataEntregaPrevista,
+  String idTecnicoResponsavel = 'tec-1',
+  String nomeTecnicoResponsavel = 'Técnica Six',
 }) {
   final int statusId =
       _dominios.statusAtendimentoTecnico
@@ -2400,8 +2528,8 @@ AtendimentoTecnicoModel _atendimento({
     descricao: 'Atendimento técnico com descrição extensa para validar quebra.',
     idCliente: 'cliente-1',
     nomeClienteSnapshot: 'Cliente Six com nome comercial longo',
-    idTecnicoResponsavel: 'tec-1',
-    nomeTecnicoResponsavelSnapshot: 'Técnica Six',
+    idTecnicoResponsavel: idTecnicoResponsavel,
+    nomeTecnicoResponsavelSnapshot: nomeTecnicoResponsavel,
     statusId: statusId,
     statusCodigo: statusCodigo,
     statusI18nKey: 'atendimento.status.${statusCodigo.toLowerCase()}',

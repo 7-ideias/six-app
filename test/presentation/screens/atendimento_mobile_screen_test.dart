@@ -504,7 +504,7 @@ void main() {
         navigations[2] as AtendimentosTecnicosMobileScreen;
     final AtendimentosTecnicosMobileScreen inProgressPage =
         navigations.first as AtendimentosTecnicosMobileScreen;
-    expect(inProgressPage.listContext.statusFilter, 'ACTIVE_GROUP');
+    expect(inProgressPage.listContext.statusFilter, isNull);
     expect(approvalPage.listContext.statusFilter, 'WAITING_CUSTOMER_APROVAL');
     expect(
       approvalPage.listContext.titleFallback,
