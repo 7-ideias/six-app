@@ -611,7 +611,14 @@ class _HomePageMobileState extends State<HomePageMobile> {
       return AiAssistantHost(
         modulo: 'geral',
         telaAtual: 'inicio_web',
-        onOpenSupport: podeAcessarSuporte ? _abrirChatSuporte : null,
+        onOpenSupport:
+            podeAcessarSuporte && autorizacoes.ehSuperUsuario
+                ? _abrirChatSuporte
+                : null,
+        supportContentBuilder:
+            podeAcessarSuporte && !autorizacoes.ehSuperUsuario
+                ? (_) => const ChatSuporteWebPage(embedded: true)
+                : null,
         child: PaginaPrincipalWeb(),
       );
     }

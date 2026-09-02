@@ -13,12 +13,14 @@ class AiAssistantHost extends StatefulWidget {
     required this.modulo,
     required this.telaAtual,
     this.onOpenSupport,
+    this.supportContentBuilder,
   });
 
   final Widget child;
   final String modulo;
   final String telaAtual;
   final VoidCallback? onOpenSupport;
+  final WidgetBuilder? supportContentBuilder;
 
   @override
   State<AiAssistantHost> createState() => _AiAssistantHostState();
@@ -194,6 +196,7 @@ class _AiAssistantHostState extends State<AiAssistantHost> {
                         widget.onOpenSupport == null
                             ? null
                             : _openSupportFromWebPanel,
+                    supportContentBuilder: widget.supportContentBuilder,
                     expanded: _webPanelExpanded,
                     onToggleExpanded: _toggleWebPanelExpanded,
                   ),
