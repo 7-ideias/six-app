@@ -10,6 +10,10 @@ import '../data/services/chat_suporte/chat_suporte_api_client.dart';
 enum ChatSuporteFiltro { todas, aguardando, minhas, encerradas }
 
 class ChatSuporteProvider extends ChangeNotifier {
+  static const Duration _intervaloSincronizacaoDeSeguranca = Duration(
+    seconds: 5,
+  );
+
   ChatSuporteProvider({
     required this.ehSuper,
     this.idConversaInicial,
@@ -29,6 +33,7 @@ class ChatSuporteProvider extends ChangeNotifier {
       <String, Future<Uint8List>>{};
   StreamSubscription<Map<String, dynamic>>? _eventSubscription;
   Timer? _refreshDebounce;
+  Timer? _syncFallbackTimer;
 
   List<ChatSuporteConversaModel> _conversas =
       const <ChatSuporteConversaModel>[];
@@ -43,6 +48,7 @@ class ChatSuporteProvider extends ChangeNotifier {
   bool _carregandoAnteriores = false;
   bool _enviando = false;
   bool _executandoAcao = false;
+  bool _atualizando = false;
   bool _disposed = false;
   String? _erro;
   String? _idUsuarioAtual;
@@ -67,6 +73,7 @@ class ChatSuporteProvider extends ChangeNotifier {
 
   Future<void> initialize() async {
     _eventSubscription ??= stompMessages.listen(_onRealtimeEvent);
+    unawaited(_garantirConexaoTempoReal());
     _idUsuarioAtual = await _authService.getUserId();
     _carregando = true;
     _erro = null;
@@ -96,11 +103,21 @@ class ChatSuporteProvider extends ChangeNotifier {
       _erro = 'CHAT_SUPORTE_ERRO_INESPERADO';
     } finally {
       _carregando = false;
+      _iniciarSincronizacaoDeSeguranca();
       notifyListeners();
     }
   }
 
   Future<void> atualizar() async {
+    if (_disposed ||
+        _atualizando ||
+        _carregando ||
+        _carregandoAnteriores ||
+        _enviando ||
+        _executandoAcao) {
+      return;
+    }
+    _atualizando = true;
     _erro = null;
     try {
       if (ehSuper) {
@@ -123,8 +140,10 @@ class ChatSuporteProvider extends ChangeNotifier {
       _erro = exception.codigo;
     } catch (_) {
       _erro = 'CHAT_SUPORTE_ERRO_INESPERADO';
+    } finally {
+      _atualizando = false;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   Future<void> selecionarConversa(ChatSuporteConversaModel conversa) async {
@@ -366,6 +385,24 @@ class ChatSuporteProvider extends ChangeNotifier {
         : conversa.naoLidasPeloSolicitante > 0;
   }
 
+  Future<void> _garantirConexaoTempoReal() async {
+    if (isStompConnected()) return;
+    try {
+      await reconnectStomp();
+    } catch (_) {
+      // A sincronizacao HTTP mantem o chat atualizado enquanto o STOMP
+      // estiver temporariamente indisponivel.
+    }
+  }
+
+  void _iniciarSincronizacaoDeSeguranca() {
+    _syncFallbackTimer?.cancel();
+    _syncFallbackTimer = Timer.periodic(
+      _intervaloSincronizacaoDeSeguranca,
+      (_) => unawaited(atualizar()),
+    );
+  }
+
   void _onRealtimeEvent(Map<String, dynamic> payload) {
     if (payload['destination']?.toString() != 'support.chat') return;
     final String idConversa = payload['conversationId']?.toString() ?? '';
@@ -384,6 +421,7 @@ class ChatSuporteProvider extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _refreshDebounce?.cancel();
+    _syncFallbackTimer?.cancel();
     _eventSubscription?.cancel();
     _apiClient.dispose();
     super.dispose();
