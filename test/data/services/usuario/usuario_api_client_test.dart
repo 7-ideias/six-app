@@ -46,7 +46,8 @@ void main() {
           'statusPagamento': 'EM_ABERTO',
         },
         'atendimentosCriadosFiltrosMobile': <String, dynamic>{
-          'tecnicoKey': 'tecnico-2',
+          'tecnicoKeys': <String>['tecnico-2', 'tecnico-3'],
+          'statusKeys': <String>['id:3', 'codigo:REPAIRING'],
           'statusPagamento': 'LIQUIDADO',
         },
         'ordemCardsGestaoMobile': <String>[
@@ -90,7 +91,8 @@ void main() {
           'statusPagamento': 'EM_ABERTO',
         },
         'atendimentosCriadosFiltrosMobile': <String, dynamic>{
-          'tecnicoKey': 'tecnico-2',
+          'tecnicoKeys': <String>['tecnico-2', 'tecnico-3'],
+          'statusKeys': <String>['id:3', 'codigo:REPAIRING'],
           'statusPagamento': 'LIQUIDADO',
         },
         'ordemCardsGestaoMobile': <String>[
