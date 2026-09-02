@@ -92,6 +92,17 @@ class ChatSuporteApiClient {
     String? texto,
     List<ChatSuporteImagemUpload> imagens = const <ChatSuporteImagemUpload>[],
   }) async {
+    final String textoNormalizado = texto?.trim() ?? '';
+    if (imagens.isEmpty) {
+      final http.Response response = await _httpClient.post(
+        _uri('$_base/conversas/${Uri.encodeComponent(idConversa)}/mensagens'),
+        headers: await _headers(idUnicoDaEmpresa: idUnicoDaEmpresa),
+        body: jsonEncode(<String, String>{'texto': textoNormalizado}),
+      );
+      _validar(response, const <int>{201});
+      return ChatSuporteEnvioMensagemModel.fromJson(_jsonObject(response));
+    }
+
     final http.MultipartRequest request = http.MultipartRequest(
       'POST',
       _uri('$_base/conversas/${Uri.encodeComponent(idConversa)}/mensagens'),
@@ -102,7 +113,6 @@ class ChatSuporteApiClient {
         includeContentType: false,
       ),
     );
-    final String textoNormalizado = texto?.trim() ?? '';
     if (textoNormalizado.isNotEmpty) {
       request.fields['texto'] = textoNormalizado;
     }

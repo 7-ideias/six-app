@@ -1548,6 +1548,10 @@ class _ChatSuporteMobileScreenState extends State<ChatSuporteMobileScreen> {
         'chatSupport.error.imageFormat',
         fallback: 'Use imagens JPG, PNG ou WebP.',
       ),
+      'CHAT_SUPORTE_MENSAGEM_VAZIA' => context.t(
+        'chatSupport.error.emptyMessage',
+        fallback: 'Digite uma mensagem ou selecione uma imagem.',
+      ),
       'CHAT_SUPORTE_SEM_ACESSO_EMPRESA' ||
       'CHAT_SUPORTE_ACESSO_NEGADO' ||
       'CHAT_SUPORTE_EMPRESA_DIVERGENTE' => context.t(
