@@ -23,6 +23,7 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart
 import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/catalog_health_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/catalogo_virtual_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/clientes_usuario_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/colaboradores_usuario_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
@@ -1069,10 +1070,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     return section.items
         .map((_ManagementItem item) {
           final String? statusLabel =
-              item.statusLabel ??
-              (item.maturity == ManagementSettingsMaturity.functional
+              item.maturity == ManagementSettingsMaturity.functional
                   ? null
-                  : _maturityLabel(context, item.maturity));
+                  : _maturityLabel(context, item.maturity);
 
           return ManagementActionItemData(
             title: item.title,
@@ -1158,24 +1158,23 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               emphasis: ManagementActionEmphasis.operational,
               onTap: () => _navigateTo(context, EstoqueMobileScreen()),
             ),
-          _ManagementItem(
-            title: context.t(
-              'gestao.catalog.webCatalog',
-              fallback: 'Catálogo web',
+          if (podeAcessarCatalogo)
+            _ManagementItem(
+              title: context.t(
+                'catalog.publicPage.title',
+                fallback: 'Catálogo virtual',
+              ),
+              subtitle: context.t(
+                'catalog.publicPage.subtitle',
+                fallback:
+                    'Personalize, visualize e compartilhe sua vitrine em um só lugar.',
+              ),
+              icon: Icons.language_outlined,
+              accentColor: colors.accent,
+              emphasis: ManagementActionEmphasis.secondary,
+              onTap: () =>
+                  _navigateTo(context, const CatalogoVirtualMobileScreen()),
             ),
-            subtitle: context.t(
-              'gestao.catalog.webCatalogDesc',
-              fallback: 'Experiência completa do catálogo no navegador',
-            ),
-            icon: Icons.language_outlined,
-            accentColor: _lockedAccent,
-            emphasis: ManagementActionEmphasis.secondary,
-            maturity: ManagementSettingsMaturity.comingSoon,
-            statusLabel: context.t(
-              'gestao.catalog.webCatalogBadge',
-              fallback: 'WEB',
-            ),
-          ),
         ],
       ),
       _ManagementSection(
@@ -1792,7 +1791,6 @@ class _ManagementItem {
     this.accentColor,
     this.emphasis = ManagementActionEmphasis.secondary,
     this.maturity = ManagementSettingsMaturity.functional,
-    this.statusLabel,
     this.visualGroupId,
   });
 
@@ -1803,6 +1801,5 @@ class _ManagementItem {
   final Color? accentColor;
   final ManagementActionEmphasis emphasis;
   final ManagementSettingsMaturity maturity;
-  final String? statusLabel;
   final String? visualGroupId;
 }
