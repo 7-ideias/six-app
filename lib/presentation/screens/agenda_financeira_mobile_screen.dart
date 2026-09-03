@@ -5,11 +5,14 @@ import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:sixpos/data/models/caixa_models.dart';
+import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
-import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/domain/services/usuario/usuario_service.dart';
+import 'package:sixpos/presentation/components/date_selector_mobile_bottom_sheet.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/providers/usuario_provider.dart';
 
 import 'agenda_financeira_lancamento_mobile_create_screen.dart';
 import 'agenda_financeira_lancamento_mobile_edit_screen.dart';
@@ -35,6 +38,9 @@ class AgendaFinanceiraMobileScreen extends StatefulWidget {
 
 class _AgendaFinanceiraMobileScreenState
     extends State<AgendaFinanceiraMobileScreen> {
+  static const String _periodoIntervaloPersonalizado =
+      'Intervalo personalizado';
+
   SixMobileColorScheme get _colors => context.sixMobileColors;
   Color get _backgroundColor => _colors.background;
   Color get _primaryColor => _colors.primary;
@@ -55,6 +61,8 @@ class _AgendaFinanceiraMobileScreenState
       widget.acoesFinanceiras ?? AgendaFinanceiraAcoesFinanceiras();
   late final CaixaApiClient _caixaApiClient =
       widget.caixaApiClient ?? HttpCaixaApiClient();
+  final UsuarioService _usuarioService = UsuarioService();
+  final UsuarioProvider _usuarioProvider = UsuarioProvider();
   final ScrollController _periodosScrollController = ScrollController();
 
   final List<String> _abas = <String>[
@@ -68,6 +76,7 @@ class _AgendaFinanceiraMobileScreenState
     'Próximos 7 dias',
     'Este mês',
     'Próximo mês',
+    _periodoIntervaloPersonalizado,
   ];
   final List<String> _tipos = <String>['Todos', 'Receber', 'Pagar'];
   final List<String> _status = <String>[
@@ -111,6 +120,8 @@ class _AgendaFinanceiraMobileScreenState
 
   int _abaSelecionada = 0;
   String _periodoSelecionado = 'Próximos 7 dias';
+  late DateTime _dataInicioPersonalizada;
+  late DateTime _dataFimPersonalizada;
   String _tipoSelecionado = 'Todos';
   String _statusSelecionado = 'Todos';
   final Set<String> _formasPagamentoSelecionadas = <String>{};
@@ -118,6 +129,8 @@ class _AgendaFinanceiraMobileScreenState
   bool _carregando = false;
   bool _executandoAcao = false;
   bool _dicaPeriodosExecutada = false;
+  bool _aplicandoPreferencias = false;
+  bool _usuarioAlterouFiltros = false;
   String? _erroConsulta;
   DateTime? _ultimaConsultaEm;
 
@@ -127,10 +140,16 @@ class _AgendaFinanceiraMobileScreenState
   @override
   void initState() {
     super.initState();
+    final DateTime hoje = _hojeNormalizado();
+    _dataInicioPersonalizada = DateTime(hoje.year, hoje.month, 1);
+    _dataFimPersonalizada = hoje;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _restaurarPreferenciasAgendaFinanceiraMobile();
       await _carregarTiposPagamentoConfigurados();
       if (!mounted) return;
+      await _restaurarPreferenciasAgendaFinanceiraMobile();
       await _consultar();
+      unawaited(_restaurarPreferenciasAgendaFinanceiraMobileBackend());
       if (widget.enablePeriodHint) {
         _executarDicaScrollPeriodos();
       }
@@ -142,6 +161,117 @@ class _AgendaFinanceiraMobileScreenState
     _periodosScrollController.dispose();
     super.dispose();
   }
+
+  Future<void> _restaurarPreferenciasAgendaFinanceiraMobile() async {
+    final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+        await _usuarioService.carregarPreferenciasIndividuaisDoCache();
+    if (!mounted || preferencias == null || _usuarioAlterouFiltros) return;
+    _aplicarPreferenciasAgendaFinanceiraMobile(
+      preferencias.agendaFinanceiraFiltrosMobile,
+    );
+  }
+
+  Future<void> _restaurarPreferenciasAgendaFinanceiraMobileBackend() async {
+    try {
+      if (_usuarioProvider.usuario == null) {
+        await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
+      }
+      final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+          _usuarioProvider.usuario?.preferenciasIndividuaisDoUsuario;
+      if (!mounted || preferencias == null || _usuarioAlterouFiltros) return;
+      final String assinaturaAnterior = _assinaturaFiltrosAgendaMobile();
+      _aplicarPreferenciasAgendaFinanceiraMobile(
+        preferencias.agendaFinanceiraFiltrosMobile,
+      );
+      if (mounted && assinaturaAnterior != _assinaturaFiltrosAgendaMobile()) {
+        await _consultar();
+      }
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Erro ao restaurar preferencias da agenda financeira mobile: '
+        '$error\n$stackTrace',
+      );
+    }
+  }
+
+  void _aplicarPreferenciasAgendaFinanceiraMobile(
+    AgendaFinanceiraFiltrosPreferencia filtros,
+  ) {
+    final String periodo = _periodoLabelPreferencia(filtros.periodo);
+    final String tipo = _tipoLabelPreferencia(filtros.tipo);
+    final String status = _statusLabelPreferencia(filtros.status);
+    final Set<String> formasPagamento =
+        filtros.tiposDePagamento
+            .map(_formaPagamentoLabelPorCodigoPreferencia)
+            .whereType<String>()
+            .where(_formasPagamentoFiltro.contains)
+            .toSet();
+
+    _aplicandoPreferencias = true;
+    setState(() {
+      if (_periodos.contains(periodo)) _periodoSelecionado = periodo;
+      if (_tipos.contains(tipo)) _tipoSelecionado = tipo;
+      if (_status.contains(status)) _statusSelecionado = status;
+      if (filtros.dataInicio != null) {
+        _dataInicioPersonalizada = _normalizarData(filtros.dataInicio!);
+      }
+      if (filtros.dataFim != null) {
+        _dataFimPersonalizada = _normalizarData(filtros.dataFim!);
+      }
+      _formasPagamentoSelecionadas
+        ..clear()
+        ..addAll(formasPagamento);
+      if (_usaPeriodoPersonalizado) _ajustarPeriodoPersonalizadoSeguro();
+    });
+    _aplicandoPreferencias = false;
+  }
+
+  void _salvarPreferenciasAgendaFinanceiraMobile() {
+    if (_aplicandoPreferencias) return;
+    _usuarioAlterouFiltros = true;
+    final AgendaFinanceiraFiltrosPreferencia filtros =
+        AgendaFinanceiraFiltrosPreferencia(
+          periodo: AgendaFinanceiraPeriodoWebPreferenciaApi.fromCodigo(
+            _periodoCodigoPreferencia(_periodoSelecionado),
+            AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias,
+          ),
+          dataInicio:
+              _usaPeriodoPersonalizado ? _dataInicioPersonalizada : null,
+          dataFim: _usaPeriodoPersonalizado ? _dataFimPersonalizada : null,
+          tipo: AgendaFinanceiraTipoWebPreferenciaApi.fromCodigo(
+            _tipoCodigoPreferencia(_tipoSelecionado),
+            AgendaFinanceiraTipoWebPreferencia.todos,
+          ),
+          status: AgendaFinanceiraStatusWebPreferenciaApi.fromCodigo(
+            _statusCodigoPreferencia(_statusSelecionado),
+            AgendaFinanceiraStatusWebPreferencia.todos,
+          ),
+          tiposDePagamento: _codigosTipoPagamentoPreferencia(
+            _formasPagamentoSelecionadas,
+          ),
+        );
+    unawaited(
+      _usuarioService
+          .atualizarPreferenciasIndividuais(
+            agendaFinanceiraFiltrosMobile: filtros.toJson(),
+          )
+          .catchError((Object error, StackTrace stackTrace) {
+            debugPrint(
+              'Erro ao salvar preferencias da agenda financeira mobile: '
+              '$error\n$stackTrace',
+            );
+          }),
+    );
+  }
+
+  String _assinaturaFiltrosAgendaMobile() => <Object?>[
+    _periodoSelecionado,
+    _dataInicioPersonalizada.toIso8601String(),
+    _dataFimPersonalizada.toIso8601String(),
+    _tipoSelecionado,
+    _statusSelecionado,
+    ...(_formasPagamentoSelecionadas.toList()..sort()),
+  ].join('|');
 
   List<Map<String, dynamic>> get _itensAgenda {
     return _gruposAgenda
@@ -215,6 +345,13 @@ class _AgendaFinanceiraMobileScreenState
 
   Future<void> _consultar({bool mostrarFeedback = false}) async {
     if (_carregando) return;
+    final String? erroPeriodo = _validarPeriodoSelecionado();
+    if (erroPeriodo != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(erroPeriodo)));
+      return;
+    }
     setState(() => _carregando = true);
     try {
       final request = _buildRequest();
@@ -346,8 +483,7 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   AgendaFinanceiraPeriodoRequest _periodoRequest() {
-    final agora = DateTime.now();
-    final hoje = DateTime(agora.year, agora.month, agora.day);
+    final hoje = _hojeNormalizado();
     switch (_periodoSelecionado) {
       case 'Hoje':
         return AgendaFinanceiraPeriodoRequest(
@@ -367,6 +503,12 @@ class _AgendaFinanceiraMobileScreenState
           dataInicio: DateTime(hoje.year, hoje.month + 1, 1),
           dataFim: DateTime(hoje.year, hoje.month + 2, 0),
         );
+      case _periodoIntervaloPersonalizado:
+        return AgendaFinanceiraPeriodoRequest(
+          modo: 'PERSONALIZADO',
+          dataInicio: _normalizarData(_dataInicioPersonalizada),
+          dataFim: _normalizarData(_dataFimPersonalizada),
+        );
       default:
         return AgendaFinanceiraPeriodoRequest(
           modo: 'PROXIMOS_7_DIAS',
@@ -374,6 +516,173 @@ class _AgendaFinanceiraMobileScreenState
           dataFim: hoje.add(Duration(days: 7)),
         );
     }
+  }
+
+  DateTime _hojeNormalizado() {
+    final DateTime agora = DateTime.now();
+    return DateTime(agora.year, agora.month, agora.day);
+  }
+
+  DateTime _normalizarData(DateTime data) =>
+      DateTime(data.year, data.month, data.day);
+
+  bool get _usaPeriodoPersonalizado =>
+      _periodoSelecionado == _periodoIntervaloPersonalizado;
+
+  DateTime _limiteFimPeriodoPersonalizado(DateTime inicio) {
+    final DateTime normalizada = _normalizarData(inicio);
+    final DateTime limite = DateTime(
+      normalizada.year + 1,
+      normalizada.month,
+      normalizada.day,
+    );
+    if (limite.month != normalizada.month) {
+      return DateTime(normalizada.year + 1, normalizada.month + 1, 0);
+    }
+    return limite;
+  }
+
+  void _ajustarPeriodoPersonalizadoSeguro() {
+    _dataInicioPersonalizada = _normalizarData(_dataInicioPersonalizada);
+    _dataFimPersonalizada = _normalizarData(_dataFimPersonalizada);
+    if (_dataFimPersonalizada.isBefore(_dataInicioPersonalizada)) {
+      _dataFimPersonalizada = _dataInicioPersonalizada;
+    }
+    final DateTime limite = _limiteFimPeriodoPersonalizado(
+      _dataInicioPersonalizada,
+    );
+    if (_dataFimPersonalizada.isAfter(limite)) {
+      _dataFimPersonalizada = limite;
+    }
+  }
+
+  String? _validarPeriodoSelecionado() {
+    if (!_usaPeriodoPersonalizado) return null;
+    if (_dataFimPersonalizada.isBefore(_dataInicioPersonalizada)) {
+      return 'A data final não pode ser anterior à data inicial.';
+    }
+    if (_dataFimPersonalizada.isAfter(
+      _limiteFimPeriodoPersonalizado(_dataInicioPersonalizada),
+    )) {
+      return 'O intervalo personalizado deve ter no máximo 1 ano.';
+    }
+    return null;
+  }
+
+  String _periodoCodigoPreferencia(String periodo) {
+    switch (periodo) {
+      case 'Hoje':
+        return AgendaFinanceiraPeriodoWebPreferencia.hoje.codigo;
+      case 'Este mês':
+        return AgendaFinanceiraPeriodoWebPreferencia.esteMes.codigo;
+      case 'Próximo mês':
+        return AgendaFinanceiraPeriodoWebPreferencia.proximoMes.codigo;
+      case _periodoIntervaloPersonalizado:
+        return AgendaFinanceiraPeriodoWebPreferencia.personalizado.codigo;
+      default:
+        return AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias.codigo;
+    }
+  }
+
+  String _periodoLabelPreferencia(
+    AgendaFinanceiraPeriodoWebPreferencia periodo,
+  ) {
+    switch (periodo) {
+      case AgendaFinanceiraPeriodoWebPreferencia.hoje:
+        return 'Hoje';
+      case AgendaFinanceiraPeriodoWebPreferencia.esteMes:
+        return 'Este mês';
+      case AgendaFinanceiraPeriodoWebPreferencia.proximoMes:
+        return 'Próximo mês';
+      case AgendaFinanceiraPeriodoWebPreferencia.personalizado:
+        return _periodoIntervaloPersonalizado;
+      case AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias:
+        return 'Próximos 7 dias';
+    }
+  }
+
+  String _tipoCodigoPreferencia(String tipo) {
+    switch (tipo) {
+      case 'Receber':
+        return AgendaFinanceiraTipoWebPreferencia.receber.codigo;
+      case 'Pagar':
+        return AgendaFinanceiraTipoWebPreferencia.pagar.codigo;
+      default:
+        return AgendaFinanceiraTipoWebPreferencia.todos.codigo;
+    }
+  }
+
+  String _tipoLabelPreferencia(AgendaFinanceiraTipoWebPreferencia tipo) {
+    switch (tipo) {
+      case AgendaFinanceiraTipoWebPreferencia.receber:
+        return 'Receber';
+      case AgendaFinanceiraTipoWebPreferencia.pagar:
+        return 'Pagar';
+      case AgendaFinanceiraTipoWebPreferencia.todos:
+        return 'Todos';
+    }
+  }
+
+  String _statusCodigoPreferencia(String status) {
+    switch (status) {
+      case 'Previsto':
+        return AgendaFinanceiraStatusWebPreferencia.previsto.codigo;
+      case 'Pendente':
+        return AgendaFinanceiraStatusWebPreferencia.pendente.codigo;
+      case 'Vence hoje':
+        return AgendaFinanceiraStatusWebPreferencia.venceHoje.codigo;
+      case 'Vencido':
+        return AgendaFinanceiraStatusWebPreferencia.vencido.codigo;
+      case 'Pago':
+        return AgendaFinanceiraStatusWebPreferencia.pago.codigo;
+      case 'Recebido':
+        return AgendaFinanceiraStatusWebPreferencia.recebido.codigo;
+      case 'Parcial':
+        return AgendaFinanceiraStatusWebPreferencia.parcial.codigo;
+      case 'Cancelado':
+        return AgendaFinanceiraStatusWebPreferencia.cancelado.codigo;
+      default:
+        return AgendaFinanceiraStatusWebPreferencia.todos.codigo;
+    }
+  }
+
+  String _statusLabelPreferencia(AgendaFinanceiraStatusWebPreferencia status) {
+    switch (status) {
+      case AgendaFinanceiraStatusWebPreferencia.previsto:
+        return 'Previsto';
+      case AgendaFinanceiraStatusWebPreferencia.pendente:
+        return 'Pendente';
+      case AgendaFinanceiraStatusWebPreferencia.venceHoje:
+        return 'Vence hoje';
+      case AgendaFinanceiraStatusWebPreferencia.vencido:
+        return 'Vencido';
+      case AgendaFinanceiraStatusWebPreferencia.pago:
+        return 'Pago';
+      case AgendaFinanceiraStatusWebPreferencia.recebido:
+        return 'Recebido';
+      case AgendaFinanceiraStatusWebPreferencia.parcial:
+        return 'Parcial';
+      case AgendaFinanceiraStatusWebPreferencia.cancelado:
+        return 'Cancelado';
+      case AgendaFinanceiraStatusWebPreferencia.todos:
+        return 'Todos';
+    }
+  }
+
+  List<String> _codigosTipoPagamentoPreferencia(Set<String> formasPagamento) {
+    final List<String> codigos = formasPagamento
+      .map((String forma) => _codigoTipoPorDescricaoFormaPagamento[forma])
+      .whereType<String>()
+      .where((String codigo) => codigo.trim().isNotEmpty)
+      .toSet()
+      .toList(growable: false)..sort();
+    return codigos;
+  }
+
+  String? _formaPagamentoLabelPorCodigoPreferencia(String codigo) {
+    final String normalizado = codigo.trim().toLowerCase();
+    if (normalizado.isEmpty) return null;
+    return _descricaoPorCodigoTipoFormaPagamento[normalizado];
   }
 
   List<String> _statusFiltro() {
@@ -939,6 +1248,23 @@ class _AgendaFinanceiraMobileScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _buildPeriodosSelector(),
+          if (_usaPeriodoPersonalizado) ...<Widget>[
+            SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: <Widget>[
+                _smallInfoChip(
+                  Icons.event_outlined,
+                  'De ${_formatarDataCurta(_dataInicioPersonalizada)}',
+                ),
+                _smallInfoChip(
+                  Icons.event_available_outlined,
+                  'Até ${_formatarDataCurta(_dataFimPersonalizada)}',
+                ),
+              ],
+            ),
+          ],
           SizedBox(height: 10),
           Wrap(
             spacing: 8,
@@ -996,7 +1322,13 @@ class _AgendaFinanceiraMobileScreenState
                     _carregando
                         ? null
                         : (_) {
-                          setState(() => _periodoSelecionado = periodo);
+                          setState(() {
+                            _periodoSelecionado = periodo;
+                            if (_usaPeriodoPersonalizado) {
+                              _ajustarPeriodoPersonalizadoSeguro();
+                            }
+                          });
+                          _salvarPreferenciasAgendaFinanceiraMobile();
                         },
                 selectedColor: _primaryColor,
                 backgroundColor: _softSurfaceColor,
@@ -1082,6 +1414,9 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Future<void> _abrirFiltros() async {
+    String periodoTemp = _periodoSelecionado;
+    DateTime dataInicioTemp = _dataInicioPersonalizada;
+    DateTime dataFimTemp = _dataFimPersonalizada;
     String tipoTemp = _tipoSelecionado;
     String statusTemp = _statusSelecionado;
     final Set<String> formasPagamentoTemp = Set<String>.from(
@@ -1090,10 +1425,11 @@ class _AgendaFinanceiraMobileScreenState
     final result = await showModalBottomSheet<_AgendaMobileFiltro>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
+      builder: (BuildContext sheetContext) {
         return StatefulBuilder(
-          builder: (context, setModalState) {
+          builder: (BuildContext context, StateSetter setModalState) {
             return Container(
               padding: EdgeInsets.fromLTRB(
                 16,
@@ -1133,6 +1469,107 @@ class _AgendaFinanceiraMobileScreenState
                       ),
                       SizedBox(height: 16),
                       _buildFilterOptions(
+                        title: 'Período',
+                        values: _periodos,
+                        selected: periodoTemp,
+                        onSelected: (String value) {
+                          setModalState(() {
+                            periodoTemp = value;
+                            if (periodoTemp == _periodoIntervaloPersonalizado) {
+                              if (dataFimTemp.isBefore(dataInicioTemp)) {
+                                dataFimTemp = dataInicioTemp;
+                              }
+                              final DateTime limite =
+                                  _limiteFimPeriodoPersonalizado(
+                                    dataInicioTemp,
+                                  );
+                              if (dataFimTemp.isAfter(limite)) {
+                                dataFimTemp = limite;
+                              }
+                            }
+                          });
+                        },
+                      ),
+                      if (periodoTemp ==
+                          _periodoIntervaloPersonalizado) ...<Widget>[
+                        SizedBox(height: 16),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: _buildDataFiltroMobile(
+                                label: 'Início',
+                                data: dataInicioTemp,
+                                onTap: () async {
+                                  final DateTime? selecionada =
+                                      await _abrirSeletorDataMobile(
+                                        sheetContext,
+                                        titulo: 'Data inicial',
+                                        dataInicial: dataInicioTemp,
+                                        primeiraData: DateTime(2000),
+                                        ultimaData: DateTime(2100, 12, 31),
+                                      );
+                                  if (selecionada == null ||
+                                      !sheetContext.mounted) {
+                                    return;
+                                  }
+                                  setModalState(() {
+                                    dataInicioTemp = _normalizarData(
+                                      selecionada,
+                                    );
+                                    if (dataFimTemp.isBefore(dataInicioTemp)) {
+                                      dataFimTemp = dataInicioTemp;
+                                    }
+                                    final DateTime limite =
+                                        _limiteFimPeriodoPersonalizado(
+                                          dataInicioTemp,
+                                        );
+                                    if (dataFimTemp.isAfter(limite)) {
+                                      dataFimTemp = limite;
+                                    }
+                                  });
+                                },
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: _buildDataFiltroMobile(
+                                label: 'Fim',
+                                data: dataFimTemp,
+                                onTap: () async {
+                                  final DateTime limite =
+                                      _limiteFimPeriodoPersonalizado(
+                                        dataInicioTemp,
+                                      );
+                                  final DateTime ultimaData =
+                                      limite.isAfter(DateTime(2100, 12, 31))
+                                          ? DateTime(2100, 12, 31)
+                                          : limite;
+                                  final DateTime? selecionada =
+                                      await _abrirSeletorDataMobile(
+                                        sheetContext,
+                                        titulo: 'Data final',
+                                        dataInicial: dataFimTemp,
+                                        primeiraData: dataInicioTemp,
+                                        ultimaData: ultimaData,
+                                      );
+                                  if (selecionada == null ||
+                                      !sheetContext.mounted) {
+                                    return;
+                                  }
+                                  setModalState(
+                                    () =>
+                                        dataFimTemp = _normalizarData(
+                                          selecionada,
+                                        ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      SizedBox(height: 16),
+                      _buildFilterOptions(
                         title: 'Tipo',
                         values: _tipos,
                         selected: tipoTemp,
@@ -1170,14 +1607,34 @@ class _AgendaFinanceiraMobileScreenState
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
-                          onPressed:
-                              () => Navigator.of(context).pop(
-                                _AgendaMobileFiltro(
-                                  tipo: tipoTemp,
-                                  status: statusTemp,
-                                  formasPagamento: formasPagamentoTemp,
+                          onPressed: () {
+                            if (periodoTemp == _periodoIntervaloPersonalizado &&
+                                (dataFimTemp.isBefore(dataInicioTemp) ||
+                                    dataFimTemp.isAfter(
+                                      _limiteFimPeriodoPersonalizado(
+                                        dataInicioTemp,
+                                      ),
+                                    ))) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'O intervalo deve ser válido e ter no máximo 1 ano.',
+                                  ),
                                 ),
+                              );
+                              return;
+                            }
+                            Navigator.of(context).pop(
+                              _AgendaMobileFiltro(
+                                periodo: periodoTemp,
+                                dataInicio: dataInicioTemp,
+                                dataFim: dataFimTemp,
+                                tipo: tipoTemp,
+                                status: statusTemp,
+                                formasPagamento: formasPagamentoTemp,
                               ),
+                            );
+                          },
                           icon: Icon(Icons.check_rounded),
                           label: Text('Aplicar filtros'),
                           style: _filledCtaStyle(),
@@ -1194,12 +1651,90 @@ class _AgendaFinanceiraMobileScreenState
     );
     if (result == null || !mounted) return;
     setState(() {
+      _periodoSelecionado = result.periodo;
+      _dataInicioPersonalizada = result.dataInicio;
+      _dataFimPersonalizada = result.dataFim;
       _tipoSelecionado = result.tipo;
       _statusSelecionado = result.status;
       _formasPagamentoSelecionadas
         ..clear()
         ..addAll(result.formasPagamento);
+      if (_usaPeriodoPersonalizado) _ajustarPeriodoPersonalizadoSeguro();
     });
+    _salvarPreferenciasAgendaFinanceiraMobile();
+  }
+
+  Future<DateTime?> _abrirSeletorDataMobile(
+    BuildContext context, {
+    required String titulo,
+    required DateTime dataInicial,
+    required DateTime primeiraData,
+    required DateTime ultimaData,
+  }) {
+    return showModalBottomSheet<DateTime>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder:
+          (BuildContext context) => DateSelectorMobileBottomSheet(
+            title: titulo,
+            initialDate: dataInicial,
+            firstDate: primeiraData,
+            lastDate: ultimaData,
+          ),
+    );
+  }
+
+  Widget _buildDataFiltroMobile({
+    required String label,
+    required DateTime data,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: _softSurfaceColor,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            border: Border.all(color: _borderColor),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.event_outlined, size: 18, color: _accentColor),
+              SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: _mutedTextColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      _formatarDataCurta(data),
+                      style: TextStyle(
+                        color: _titleTextColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildFilterOptions({
@@ -1513,108 +2048,352 @@ class _AgendaFinanceiraMobileScreenState
   }
 
   Widget _buildLancamentoCard(Map<String, dynamic> item) {
-    final tipoEntrada = item['tipo'] == 'receber';
-    final valorAberto = _toDouble(item['valorRestante'] ?? item['valor']);
-    final valorConfirmado = _toDouble(item['valorConfirmado']);
-    final acoes =
-        item['acoes'] is List
-            ? (item['acoes'] as List)
-                .cast<dynamic>()
-                .map((acao) => acao.toString())
-                .toList()
-            : <String>[];
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _surfaceColor,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _borderColor),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: SixMobilePalette.navigationShadow.withValues(alpha: 0.70),
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              _pill(
-                tipoEntrada ? 'Receber' : 'Pagar',
-                tipoEntrada
-                    ? Icons.south_west_rounded
-                    : Icons.north_east_rounded,
-              ),
-              _pill(item['status']?.toString() ?? '-', Icons.flag_outlined),
-              if (valorConfirmado > 0)
-                _pill(
-                  'Confirmado: ${_formatarMoeda(valorConfirmado)}',
-                  Icons.verified_outlined,
+    final bool tipoEntrada = item['tipo'] == 'receber';
+    final double valorAberto = _toDouble(
+      item['valorRestante'] ?? item['valor'],
+    );
+    final double valorExibido =
+        valorAberto > 0
+            ? valorAberto
+            : _toDouble(item['valorOriginal'] ?? item['valor']);
+    final String titulo = item['descricao']?.toString() ?? 'Sem descrição';
+    final String subtitulo =
+        '${item['contato']} • ${item['status']} • vence ${item['vencimento']}';
+
+    return Semantics(
+      button: true,
+      label: 'Abrir lançamento $titulo',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _executandoAcao ? null : () => _abrirAcoesLancamento(item),
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            margin: EdgeInsets.only(bottom: 8),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: _surfaceColor,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: _borderColor),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: _colors.navigationShadow.withValues(alpha: 0.58),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
                 ),
-              if (valorAberto > 0)
-                _pill(
-                  'Aberto: ${_formatarMoeda(valorAberto)}',
-                  Icons.pending_actions_outlined,
-                ),
-            ],
-          ),
-          SizedBox(height: 12),
-          Text(
-            item['descricao']?.toString() ?? '',
-            style: TextStyle(
-              color: _titleTextColor,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
+              ],
             ),
-          ),
-          SizedBox(height: 7),
-          Text(
-            '${item['contato']} • Vence em ${item['vencimento']} • ${item['formaPagamento']}',
-            style: TextStyle(color: _mutedTextColor, height: 1.35),
-          ),
-          SizedBox(height: 10),
-          Text(
-            'Original: ${_formatarMoeda(_toDouble(item['valorOriginal']))}',
-            style: TextStyle(
-              color: _titleTextColor,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              OutlinedButton.icon(
-                onPressed:
-                    _executandoAcao ? null : () => _editarLancamento(item),
-                icon: Icon(Icons.edit_outlined, size: 18),
-                label: Text('Editar'),
-                style: _outlinedCtaStyle(),
-              ),
-              ...acoes
-                  .take(3)
-                  .map(
-                    (acao) => OutlinedButton(
-                      onPressed:
-                          _executandoAcao
-                              ? null
-                              : () => _executarAcao(acao, item),
-                      child: Text(acao),
-                      style: _outlinedCtaStyle(),
-                    ),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color:
+                        tipoEntrada
+                            ? _softBlueColor
+                            : _colors.error.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-            ],
+                  child: Icon(
+                    tipoEntrada
+                        ? Icons.south_west_rounded
+                        : Icons.north_east_rounded,
+                    size: 20,
+                    color: tipoEntrada ? _accentColor : _colors.error,
+                  ),
+                ),
+                SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        titulo,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _titleTextColor,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        subtitulo,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _mutedTextColor,
+                          fontSize: 11.5,
+                          height: 1.25,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 8),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: <Widget>[
+                    Text(
+                      _formatarMoeda(valorExibido),
+                      style: TextStyle(
+                        color: _titleTextColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: _accentColor,
+                      size: 22,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
+  }
+
+  Future<void> _abrirAcoesLancamento(Map<String, dynamic> item) {
+    final Set<String> acoesInformadas =
+        item['acoes'] is List
+            ? (item['acoes'] as List)
+                .map((dynamic acao) => acao.toString())
+                .toSet()
+            : <String>{};
+    acoesInformadas
+      ..add('Editar')
+      ..add('Detalhes');
+    const List<String> ordemAcoes = <String>[
+      'Editar',
+      'Liquidar',
+      'Registrar parcial',
+      'Detalhes',
+    ];
+    final List<String> acoes = ordemAcoes
+        .where((String acao) => acoesInformadas.contains(acao))
+        .toList(growable: false);
+    final bool tipoEntrada = item['tipo'] == 'receber';
+    final double valorAberto = _toDouble(
+      item['valorRestante'] ?? item['valor'],
+    );
+    final double valorConfirmado = _toDouble(item['valorConfirmado']);
+
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext sheetContext) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.88,
+          ),
+          decoration: BoxDecoration(
+            color: _surfaceColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(top: BorderSide(color: _strongBorderColor)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(16, 10, 16, 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: _strongBorderColor,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color:
+                              tipoEntrada
+                                  ? _softBlueColor
+                                  : _colors.error.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Icon(
+                          tipoEntrada
+                              ? Icons.south_west_rounded
+                              : Icons.north_east_rounded,
+                          color: tipoEntrada ? _accentColor : _colors.error,
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              item['descricao']?.toString() ?? 'Sem descrição',
+                              style: TextStyle(
+                                color: _titleTextColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              item['contato']?.toString() ?? 'Não informado',
+                              style: TextStyle(
+                                color: _mutedTextColor,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Fechar',
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        icon: Icon(Icons.close_rounded),
+                        color: _titleTextColor,
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: <Widget>[
+                      _pill(
+                        tipoEntrada ? 'Receber' : 'Pagar',
+                        tipoEntrada
+                            ? Icons.south_west_rounded
+                            : Icons.north_east_rounded,
+                      ),
+                      _pill(
+                        item['status']?.toString() ?? '-',
+                        Icons.flag_outlined,
+                      ),
+                      if (valorConfirmado > 0)
+                        _pill(
+                          'Confirmado: ${_formatarMoeda(valorConfirmado)}',
+                          Icons.verified_outlined,
+                        ),
+                      if (valorAberto > 0)
+                        _pill(
+                          'Aberto: ${_formatarMoeda(valorAberto)}',
+                          Icons.pending_actions_outlined,
+                        ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: _softSurfaceColor,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: _borderColor),
+                    ),
+                    child: Column(
+                      children: <Widget>[
+                        _detalheLinha(
+                          'Vencimento',
+                          item['vencimento']?.toString() ?? '-',
+                        ),
+                        _detalheLinha(
+                          'Pagamento',
+                          item['formaPagamento']?.toString() ?? '-',
+                        ),
+                        _detalheLinha(
+                          'Valor original',
+                          _formatarMoeda(_toDouble(item['valorOriginal'])),
+                        ),
+                        if ((item['categoria']?.toString() ?? '').isNotEmpty)
+                          _detalheLinha(
+                            'Categoria',
+                            item['categoria'].toString(),
+                          ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Ações',
+                    style: TextStyle(
+                      color: _titleTextColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  ...acoes.map(
+                    (String acao) => Padding(
+                      padding: EdgeInsets.only(bottom: 8),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed:
+                              _executandoAcao
+                                  ? null
+                                  : () => _executarAcaoDoBottomSheet(
+                                    sheetContext,
+                                    acao,
+                                    item,
+                                  ),
+                          icon: Icon(_iconeAcaoAgenda(acao), size: 19),
+                          label: Text(acao),
+                          style: _outlinedCtaStyle(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _executarAcaoDoBottomSheet(
+    BuildContext sheetContext,
+    String acao,
+    Map<String, dynamic> item,
+  ) {
+    Navigator.of(sheetContext).pop();
+    Future<void>.delayed(Duration(milliseconds: 120), () async {
+      if (!mounted) return;
+      await _executarAcao(acao, item);
+    });
+  }
+
+  IconData _iconeAcaoAgenda(String acao) {
+    switch (acao) {
+      case 'Editar':
+        return Icons.edit_outlined;
+      case 'Liquidar':
+        return Icons.check_circle_outline_rounded;
+      case 'Registrar parcial':
+        return Icons.pie_chart_outline_rounded;
+      default:
+        return Icons.info_outline_rounded;
+    }
   }
 
   Widget _buildCalendario() {
@@ -2353,6 +3132,13 @@ class _AgendaFinanceiraMobileScreenState
     }
   }
 
+  String _formatarDataCurta(DateTime data) {
+    final DateTime normalizada = _normalizarData(data);
+    return '${normalizada.day.toString().padLeft(2, '0')}/'
+        '${normalizada.month.toString().padLeft(2, '0')}/'
+        '${normalizada.year}';
+  }
+
   double _toDouble(dynamic value) {
     if (value is num) return value.toDouble();
     if (value is String) {
@@ -2385,10 +3171,16 @@ class _AgendaFinanceiraMobileScreenState
 
 class _AgendaMobileFiltro {
   const _AgendaMobileFiltro({
+    required this.periodo,
+    required this.dataInicio,
+    required this.dataFim,
     required this.tipo,
     required this.status,
     required this.formasPagamento,
   });
+  final String periodo;
+  final DateTime dataInicio;
+  final DateTime dataFim;
   final String tipo;
   final String status;
   final Set<String> formasPagamento;

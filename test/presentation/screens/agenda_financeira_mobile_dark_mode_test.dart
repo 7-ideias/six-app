@@ -32,21 +32,49 @@ void main() {
     expect(find.text('Conta vencida'), findsOneWidget);
     expect(find.text('Recebimento confirmado'), findsOneWidget);
     expect(find.text('Pagamento realizado'), findsOneWidget);
-    expect(find.text('Pendente'), findsWidgets);
-    expect(find.text('Vencido'), findsWidgets);
-    expect(find.text('Recebido'), findsWidgets);
-    expect(find.text('Pago'), findsWidgets);
-    expect(find.text('Receber'), findsWidgets);
-    expect(find.text('Pagar'), findsWidgets);
+    expect(find.textContaining('Pendente'), findsWidgets);
+    expect(find.textContaining('Vencido'), findsWidgets);
+    expect(find.textContaining('Recebido'), findsWidgets);
+    expect(find.textContaining('Pago'), findsWidgets);
     expect(find.byIcon(Icons.south_west_rounded), findsWidgets);
     expect(find.byIcon(Icons.north_east_rounded), findsWidgets);
     expect(find.byIcon(Icons.flag_outlined), findsWidgets);
-    expect(find.byIcon(Icons.verified_outlined), findsWidgets);
-    expect(find.byIcon(Icons.pending_actions_outlined), findsWidgets);
+    expect(find.byIcon(Icons.chevron_right_rounded), findsWidgets);
     expect(
       _hasDecoratedAncestorColor(
         tester,
         find.text('Conta vencida'),
+        SixMobileColorScheme.dark.surface,
+      ),
+      isTrue,
+    );
+
+    await tester.ensureVisible(find.text('Conta pendente'));
+    final Finder lancamentoCompacto =
+        find
+            .ancestor(
+              of: find.text('Conta pendente'),
+              matching: find.byType(InkWell),
+            )
+            .first;
+    expect(tester.getSize(lancamentoCompacto).height, lessThan(90));
+    await tester.tap(find.text('Conta pendente'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 220));
+
+    expect(find.text('Ações'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Editar'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Liquidar'), findsOneWidget);
+    expect(
+      find.widgetWithText(OutlinedButton, 'Registrar parcial'),
+      findsOneWidget,
+    );
+    expect(find.widgetWithText(OutlinedButton, 'Detalhes'), findsOneWidget);
+    expect(find.byIcon(Icons.pending_actions_outlined), findsOneWidget);
+    expect(
+      _hasDecoratedAncestorColor(
+        tester,
+        find.text('Ações'),
         SixMobileColorScheme.dark.surface,
       ),
       isTrue,
@@ -68,11 +96,16 @@ void main() {
     await tester.pump(const Duration(milliseconds: 220));
 
     expect(find.text('Filtrar agenda'), findsOneWidget);
+    expect(find.text('Período'), findsOneWidget);
+    await tester.tap(find.text('Intervalo personalizado'));
+    await tester.pump();
+    expect(find.text('Início'), findsOneWidget);
+    expect(find.text('Fim'), findsOneWidget);
     expect(
       _hasDecoratedAncestorColor(
         tester,
         find.text('Filtrar agenda'),
-        SixMobileColorScheme.light.background,
+        SixMobileColorScheme.light.surface,
       ),
       isTrue,
     );
@@ -421,7 +454,15 @@ Map<String, dynamic> _agendaItem(
     'codigoTipoRecebimento': 'tipo2',
     'categoria': 'Operacional',
     'responsavel': 'Mobile',
-    'acoesDisponiveis': <String>['DETALHES', 'EDITAR'],
+    'acoesDisponiveis':
+        status == 'PENDENTE' || status == 'VENCIDO'
+            ? <String>[
+              'EDITAR',
+              'REGISTRAR_RECEBIMENTO',
+              'REGISTRAR_PARCIAL',
+              'DETALHES',
+            ]
+            : <String>['DETALHES', 'EDITAR'],
   };
 }
 

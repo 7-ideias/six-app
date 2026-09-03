@@ -78,10 +78,14 @@ class UsuarioService {
     String? agendaFinanceiraTipoWeb,
     String? agendaFinanceiraStatusWeb,
     List<String>? agendaFinanceiraTipoDePagamentoWeb,
+    Map<String, dynamic>? agendaFinanceiraFiltrosWeb,
+    Map<String, dynamic>? agendaFinanceiraFiltrosMobile,
     Map<String, dynamic>? catalogoReservasFiltrosWeb,
     Map<String, dynamic>? consultaVendasFiltrosWeb,
+    Map<String, dynamic>? consultaVendasFiltrosMobile,
     Map<String, dynamic>? atendimentosCriadosFiltrosWeb,
     Map<String, dynamic>? atendimentosCriadosFiltrosMobile,
+    Map<String, dynamic>? servicosEmAndamentoFiltrosMobile,
     List<String>? ordemCardsGestaoMobile,
     List<String>? ordemCardsAtendimentoMobile,
     List<String>? ordemCardsVendasMobile,
@@ -93,15 +97,13 @@ class UsuarioService {
       body['idiomaDePreferencia'] = idiomaDePreferencia;
     }
     if (modoDeExibicaoProdutos != null) {
-      final String campo = kIsWeb
-          ? 'modoDeExibicaoProdutosWeb'
-          : 'modoDeExibicaoProdutosMobile';
+      final String campo =
+          kIsWeb ? 'modoDeExibicaoProdutosWeb' : 'modoDeExibicaoProdutosMobile';
       body[campo] = modoDeExibicaoProdutos;
     }
     if (modoDeExibicaoServicos != null) {
-      final String campo = kIsWeb
-          ? 'modoDeExibicaoServicosWeb'
-          : 'modoDeExibicaoServicosMobile';
+      final String campo =
+          kIsWeb ? 'modoDeExibicaoServicosWeb' : 'modoDeExibicaoServicosMobile';
       body[campo] = modoDeExibicaoServicos;
     }
     if (modoDeExibicaoProdutosWeb != null) {
@@ -132,11 +134,20 @@ class UsuarioService {
       body['agendaFinanceiraTipoDePagamentoWeb'] =
           agendaFinanceiraTipoDePagamentoWeb;
     }
+    if (agendaFinanceiraFiltrosWeb != null) {
+      body['agendaFinanceiraFiltrosWeb'] = agendaFinanceiraFiltrosWeb;
+    }
+    if (agendaFinanceiraFiltrosMobile != null) {
+      body['agendaFinanceiraFiltrosMobile'] = agendaFinanceiraFiltrosMobile;
+    }
     if (catalogoReservasFiltrosWeb != null) {
       body['catalogoReservasFiltrosWeb'] = catalogoReservasFiltrosWeb;
     }
     if (consultaVendasFiltrosWeb != null) {
       body['consultaVendasFiltrosWeb'] = consultaVendasFiltrosWeb;
+    }
+    if (consultaVendasFiltrosMobile != null) {
+      body['consultaVendasFiltrosMobile'] = consultaVendasFiltrosMobile;
     }
     if (atendimentosCriadosFiltrosWeb != null) {
       body['atendimentosCriadosFiltrosWeb'] = atendimentosCriadosFiltrosWeb;
@@ -144,6 +155,10 @@ class UsuarioService {
     if (atendimentosCriadosFiltrosMobile != null) {
       body['atendimentosCriadosFiltrosMobile'] =
           atendimentosCriadosFiltrosMobile;
+    }
+    if (servicosEmAndamentoFiltrosMobile != null) {
+      body['servicosEmAndamentoFiltrosMobile'] =
+          servicosEmAndamentoFiltrosMobile;
     }
     if (ordemCardsGestaoMobile != null) {
       body['ordemCardsGestaoMobile'] = ordemCardsGestaoMobile;

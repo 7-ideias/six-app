@@ -28,6 +28,16 @@ void main() {
       await client.atualizarPreferenciasIndividuais(<String, dynamic>{
         'agendaFinanceiraPeriodoWeb': 'ESTE_MES',
         'agendaFinanceiraTipoDePagamentoWeb': <String>['tipo2', 'tipo3'],
+        'agendaFinanceiraFiltrosWeb': <String, dynamic>{
+          'periodo': 'PERSONALIZADO',
+          'dataInicio': '2026-08-03',
+          'dataFim': '2026-08-12',
+          'tipo': 'RECEBER',
+        },
+        'agendaFinanceiraFiltrosMobile': <String, dynamic>{
+          'periodo': 'PROXIMO_MES',
+          'status': 'PENDENTE',
+        },
         'catalogoReservasFiltrosWeb': <String, dynamic>{
           'status': <String>['CONFIRMADA'],
           'periodo': 'PERSONALIZADO',
@@ -40,6 +50,10 @@ void main() {
           'statusFinanceiro': 'QUITADA',
           'ordenacao': 'MAIOR_VALOR',
         },
+        'consultaVendasFiltrosMobile': <String, dynamic>{
+          'busca': 'cliente mobile',
+          'periodo': 'HOJE',
+        },
         'atendimentosCriadosFiltrosWeb': <String, dynamic>{
           'busca': 'cliente teste',
           'statusKey': 'id:3',
@@ -49,6 +63,10 @@ void main() {
           'tecnicoKeys': <String>['tecnico-2', 'tecnico-3'],
           'statusKeys': <String>['id:3', 'codigo:REPAIRING'],
           'statusPagamento': 'LIQUIDADO',
+        },
+        'servicosEmAndamentoFiltrosMobile': <String, dynamic>{
+          'busca': 'aparelho em reparo',
+          'statusKeys': <String>['codigo:REPAIRING'],
         },
         'ordemCardsGestaoMobile': <String>[
           'FINANCEIRO',
@@ -73,6 +91,16 @@ void main() {
       expect(body['payload'], <String, dynamic>{
         'agendaFinanceiraPeriodoWeb': 'ESTE_MES',
         'agendaFinanceiraTipoDePagamentoWeb': <String>['tipo2', 'tipo3'],
+        'agendaFinanceiraFiltrosWeb': <String, dynamic>{
+          'periodo': 'PERSONALIZADO',
+          'dataInicio': '2026-08-03',
+          'dataFim': '2026-08-12',
+          'tipo': 'RECEBER',
+        },
+        'agendaFinanceiraFiltrosMobile': <String, dynamic>{
+          'periodo': 'PROXIMO_MES',
+          'status': 'PENDENTE',
+        },
         'catalogoReservasFiltrosWeb': <String, dynamic>{
           'status': <String>['CONFIRMADA'],
           'periodo': 'PERSONALIZADO',
@@ -85,6 +113,10 @@ void main() {
           'statusFinanceiro': 'QUITADA',
           'ordenacao': 'MAIOR_VALOR',
         },
+        'consultaVendasFiltrosMobile': <String, dynamic>{
+          'busca': 'cliente mobile',
+          'periodo': 'HOJE',
+        },
         'atendimentosCriadosFiltrosWeb': <String, dynamic>{
           'busca': 'cliente teste',
           'statusKey': 'id:3',
@@ -94,6 +126,10 @@ void main() {
           'tecnicoKeys': <String>['tecnico-2', 'tecnico-3'],
           'statusKeys': <String>['id:3', 'codigo:REPAIRING'],
           'statusPagamento': 'LIQUIDADO',
+        },
+        'servicosEmAndamentoFiltrosMobile': <String, dynamic>{
+          'busca': 'aparelho em reparo',
+          'statusKeys': <String>['codigo:REPAIRING'],
         },
         'ordemCardsGestaoMobile': <String>[
           'FINANCEIRO',

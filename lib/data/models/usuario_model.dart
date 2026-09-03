@@ -390,6 +390,110 @@ extension AgendaFinanceiraStatusWebPreferenciaApi
   }
 }
 
+class AgendaFinanceiraFiltrosPreferencia {
+  AgendaFinanceiraFiltrosPreferencia({
+    this.periodo = AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias,
+    this.dataInicio,
+    this.dataFim,
+    this.tipo = AgendaFinanceiraTipoWebPreferencia.todos,
+    this.status = AgendaFinanceiraStatusWebPreferencia.todos,
+    List<String>? tiposDePagamento,
+  }) : tiposDePagamento = List<String>.unmodifiable(
+         PreferenciasIndividuaisDoUsuarioModel._normalizarListaDeStrings(
+           tiposDePagamento,
+         ),
+       );
+
+  final AgendaFinanceiraPeriodoWebPreferencia periodo;
+  final DateTime? dataInicio;
+  final DateTime? dataFim;
+  final AgendaFinanceiraTipoWebPreferencia tipo;
+  final AgendaFinanceiraStatusWebPreferencia status;
+  final List<String> tiposDePagamento;
+
+  factory AgendaFinanceiraFiltrosPreferencia.vazia() {
+    return AgendaFinanceiraFiltrosPreferencia();
+  }
+
+  factory AgendaFinanceiraFiltrosPreferencia.fromJson(dynamic json) {
+    if (json is! Map<String, dynamic>) {
+      return AgendaFinanceiraFiltrosPreferencia.vazia();
+    }
+
+    return AgendaFinanceiraFiltrosPreferencia(
+      periodo: AgendaFinanceiraPeriodoWebPreferenciaApi.fromCodigo(
+        json['periodo'],
+        AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias,
+      ),
+      dataInicio: _dateFromJson(json['dataInicio']),
+      dataFim: _dateFromJson(json['dataFim']),
+      tipo: AgendaFinanceiraTipoWebPreferenciaApi.fromCodigo(
+        json['tipo'],
+        AgendaFinanceiraTipoWebPreferencia.todos,
+      ),
+      status: AgendaFinanceiraStatusWebPreferenciaApi.fromCodigo(
+        json['status'],
+        AgendaFinanceiraStatusWebPreferencia.todos,
+      ),
+      tiposDePagamento:
+          PreferenciasIndividuaisDoUsuarioModel._normalizarListaDeStrings(
+            json['tiposDePagamento'],
+          ),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      if (periodo != AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias)
+        'periodo': periodo.codigo,
+      if (periodo == AgendaFinanceiraPeriodoWebPreferencia.personalizado &&
+          dataInicio != null)
+        'dataInicio': _dateToJson(dataInicio!),
+      if (periodo == AgendaFinanceiraPeriodoWebPreferencia.personalizado &&
+          dataFim != null)
+        'dataFim': _dateToJson(dataFim!),
+      if (tipo != AgendaFinanceiraTipoWebPreferencia.todos) 'tipo': tipo.codigo,
+      if (status != AgendaFinanceiraStatusWebPreferencia.todos)
+        'status': status.codigo,
+      if (tiposDePagamento.isNotEmpty) 'tiposDePagamento': tiposDePagamento,
+    };
+  }
+
+  AgendaFinanceiraFiltrosPreferencia copyWith({
+    AgendaFinanceiraPeriodoWebPreferencia? periodo,
+    DateTime? dataInicio,
+    DateTime? dataFim,
+    AgendaFinanceiraTipoWebPreferencia? tipo,
+    AgendaFinanceiraStatusWebPreferencia? status,
+    List<String>? tiposDePagamento,
+  }) {
+    return AgendaFinanceiraFiltrosPreferencia(
+      periodo: periodo ?? this.periodo,
+      dataInicio: dataInicio ?? this.dataInicio,
+      dataFim: dataFim ?? this.dataFim,
+      tipo: tipo ?? this.tipo,
+      status: status ?? this.status,
+      tiposDePagamento: tiposDePagamento ?? this.tiposDePagamento,
+    );
+  }
+
+  static DateTime? _dateFromJson(dynamic value) {
+    final String raw = value?.toString().trim() ?? '';
+    if (raw.isEmpty) return null;
+    final DateTime? parsed = DateTime.tryParse(raw);
+    if (parsed == null) return null;
+    return DateTime(parsed.year, parsed.month, parsed.day);
+  }
+
+  static String _dateToJson(DateTime value) {
+    final DateTime date = DateTime(value.year, value.month, value.day);
+    final String year = date.year.toString().padLeft(4, '0');
+    final String month = date.month.toString().padLeft(2, '0');
+    final String day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
+}
+
 enum CatalogoReservasPeriodoWebPreferencia {
   hoje,
   proximos7Dias,
@@ -744,11 +848,16 @@ class PreferenciasIndividuaisDoUsuarioModel {
   final AgendaFinanceiraTipoWebPreferencia agendaFinanceiraTipoWeb;
   final AgendaFinanceiraStatusWebPreferencia agendaFinanceiraStatusWeb;
   final List<String> agendaFinanceiraTipoDePagamentoWeb;
+  final AgendaFinanceiraFiltrosPreferencia agendaFinanceiraFiltrosWeb;
+  final AgendaFinanceiraFiltrosPreferencia agendaFinanceiraFiltrosMobile;
   final CatalogoReservasFiltrosWebPreferencia catalogoReservasFiltrosWeb;
   final ConsultaVendasFiltrosWebPreferencia consultaVendasFiltrosWeb;
+  final ConsultaVendasFiltrosWebPreferencia consultaVendasFiltrosMobile;
   final AtendimentosCriadosFiltrosWebPreferencia atendimentosCriadosFiltrosWeb;
   final AtendimentosCriadosFiltrosMobilePreferencia
   atendimentosCriadosFiltrosMobile;
+  final AtendimentosCriadosFiltrosMobilePreferencia
+  servicosEmAndamentoFiltrosMobile;
   final List<GestaoMobileCardPreferencia> ordemCardsGestaoMobile;
   final List<AtendimentoMobileCardPreferencia> ordemCardsAtendimentoMobile;
   final List<VendasMobileCardPreferencia> ordemCardsVendasMobile;
@@ -768,11 +877,16 @@ class PreferenciasIndividuaisDoUsuarioModel {
     AgendaFinanceiraTipoWebPreferencia? agendaFinanceiraTipoWeb,
     AgendaFinanceiraStatusWebPreferencia? agendaFinanceiraStatusWeb,
     List<String>? agendaFinanceiraTipoDePagamentoWeb,
+    AgendaFinanceiraFiltrosPreferencia? agendaFinanceiraFiltrosWeb,
+    AgendaFinanceiraFiltrosPreferencia? agendaFinanceiraFiltrosMobile,
     CatalogoReservasFiltrosWebPreferencia? catalogoReservasFiltrosWeb,
     ConsultaVendasFiltrosWebPreferencia? consultaVendasFiltrosWeb,
+    ConsultaVendasFiltrosWebPreferencia? consultaVendasFiltrosMobile,
     AtendimentosCriadosFiltrosWebPreferencia? atendimentosCriadosFiltrosWeb,
     AtendimentosCriadosFiltrosMobilePreferencia?
     atendimentosCriadosFiltrosMobile,
+    AtendimentosCriadosFiltrosMobilePreferencia?
+    servicosEmAndamentoFiltrosMobile,
     List<GestaoMobileCardPreferencia>? ordemCardsGestaoMobile,
     List<AtendimentoMobileCardPreferencia>? ordemCardsAtendimentoMobile,
     List<VendasMobileCardPreferencia>? ordemCardsVendasMobile,
@@ -795,27 +909,57 @@ class PreferenciasIndividuaisDoUsuarioModel {
            modoDeExibicaoServicos ??
            ModoDeExibicaoUsuario.vertical,
        agendaFinanceiraPeriodoWeb =
+           agendaFinanceiraFiltrosWeb?.periodo ??
            agendaFinanceiraPeriodoWeb ??
            AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias,
        agendaFinanceiraTipoWeb =
-           agendaFinanceiraTipoWeb ?? AgendaFinanceiraTipoWebPreferencia.todos,
+           agendaFinanceiraFiltrosWeb?.tipo ??
+           agendaFinanceiraTipoWeb ??
+           AgendaFinanceiraTipoWebPreferencia.todos,
        agendaFinanceiraStatusWeb =
+           agendaFinanceiraFiltrosWeb?.status ??
            agendaFinanceiraStatusWeb ??
            AgendaFinanceiraStatusWebPreferencia.todos,
        agendaFinanceiraTipoDePagamentoWeb = List<String>.unmodifiable(
-         _normalizarListaDeStrings(agendaFinanceiraTipoDePagamentoWeb),
+         agendaFinanceiraFiltrosWeb?.tiposDePagamento ??
+             _normalizarListaDeStrings(agendaFinanceiraTipoDePagamentoWeb),
        ),
+       agendaFinanceiraFiltrosWeb =
+           agendaFinanceiraFiltrosWeb ??
+           AgendaFinanceiraFiltrosPreferencia(
+             periodo:
+                 agendaFinanceiraPeriodoWeb ??
+                 AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias,
+             tipo:
+                 agendaFinanceiraTipoWeb ??
+                 AgendaFinanceiraTipoWebPreferencia.todos,
+             status:
+                 agendaFinanceiraStatusWeb ??
+                 AgendaFinanceiraStatusWebPreferencia.todos,
+             tiposDePagamento: agendaFinanceiraTipoDePagamentoWeb,
+           ),
+       agendaFinanceiraFiltrosMobile =
+           agendaFinanceiraFiltrosMobile ??
+           AgendaFinanceiraFiltrosPreferencia.vazia(),
        catalogoReservasFiltrosWeb =
            catalogoReservasFiltrosWeb ??
            CatalogoReservasFiltrosWebPreferencia.vazia(),
        consultaVendasFiltrosWeb =
            consultaVendasFiltrosWeb ??
            ConsultaVendasFiltrosWebPreferencia.vazia(),
+       consultaVendasFiltrosMobile =
+           consultaVendasFiltrosMobile ??
+           const ConsultaVendasFiltrosWebPreferencia(
+             periodo: ConsultaVendasPeriodoWebPreferencia.hoje,
+           ),
        atendimentosCriadosFiltrosWeb =
            atendimentosCriadosFiltrosWeb ??
            AtendimentosCriadosFiltrosWebPreferencia.vazia(),
        atendimentosCriadosFiltrosMobile =
            atendimentosCriadosFiltrosMobile ??
+           AtendimentosCriadosFiltrosMobilePreferencia.vazia(),
+       servicosEmAndamentoFiltrosMobile =
+           servicosEmAndamentoFiltrosMobile ??
            AtendimentosCriadosFiltrosMobilePreferencia.vazia(),
        ordemCardsGestaoMobile = GestaoMobileCardPreferenciaApi.normalizarOrdem(
          ordemCardsGestaoMobile,
@@ -855,11 +999,18 @@ class PreferenciasIndividuaisDoUsuarioModel {
       agendaFinanceiraTipoWeb: AgendaFinanceiraTipoWebPreferencia.todos,
       agendaFinanceiraStatusWeb: AgendaFinanceiraStatusWebPreferencia.todos,
       agendaFinanceiraTipoDePagamentoWeb: const <String>[],
+      agendaFinanceiraFiltrosWeb: AgendaFinanceiraFiltrosPreferencia.vazia(),
+      agendaFinanceiraFiltrosMobile: AgendaFinanceiraFiltrosPreferencia.vazia(),
       catalogoReservasFiltrosWeb: CatalogoReservasFiltrosWebPreferencia.vazia(),
       consultaVendasFiltrosWeb: ConsultaVendasFiltrosWebPreferencia.vazia(),
+      consultaVendasFiltrosMobile: const ConsultaVendasFiltrosWebPreferencia(
+        periodo: ConsultaVendasPeriodoWebPreferencia.hoje,
+      ),
       atendimentosCriadosFiltrosWeb:
           AtendimentosCriadosFiltrosWebPreferencia.vazia(),
       atendimentosCriadosFiltrosMobile:
+          AtendimentosCriadosFiltrosMobilePreferencia.vazia(),
+      servicosEmAndamentoFiltrosMobile:
           AtendimentosCriadosFiltrosMobilePreferencia.vazia(),
       ordemCardsGestaoMobile: GestaoMobileCardPreferencia.values,
       ordemCardsAtendimentoMobile: AtendimentoMobileCardPreferencia.values,
@@ -881,6 +1032,24 @@ class PreferenciasIndividuaisDoUsuarioModel {
         ModoDeExibicaoUsuarioApi.tryFromCodigo(json['modoDeExibicaoProdutos']);
     final ModoDeExibicaoUsuario? modoServicosLegado =
         ModoDeExibicaoUsuarioApi.tryFromCodigo(json['modoDeExibicaoServicos']);
+    final AgendaFinanceiraFiltrosPreferencia agendaFinanceiraFiltrosWebLegado =
+        AgendaFinanceiraFiltrosPreferencia(
+          periodo: AgendaFinanceiraPeriodoWebPreferenciaApi.fromCodigo(
+            json['agendaFinanceiraPeriodoWeb'],
+            padrao.agendaFinanceiraPeriodoWeb,
+          ),
+          tipo: AgendaFinanceiraTipoWebPreferenciaApi.fromCodigo(
+            json['agendaFinanceiraTipoWeb'],
+            padrao.agendaFinanceiraTipoWeb,
+          ),
+          status: AgendaFinanceiraStatusWebPreferenciaApi.fromCodigo(
+            json['agendaFinanceiraStatusWeb'],
+            padrao.agendaFinanceiraStatusWeb,
+          ),
+          tiposDePagamento: _normalizarListaDeStrings(
+            json['agendaFinanceiraTipoDePagamentoWeb'],
+          ),
+        );
 
     return PreferenciasIndividuaisDoUsuarioModel(
       idiomaDePreferencia: json['idiomaDePreferencia']?.toString() ?? '',
@@ -927,6 +1096,20 @@ class PreferenciasIndividuaisDoUsuarioModel {
       agendaFinanceiraTipoDePagamentoWeb: _normalizarListaDeStrings(
         json['agendaFinanceiraTipoDePagamentoWeb'],
       ),
+      agendaFinanceiraFiltrosWeb:
+          json['agendaFinanceiraFiltrosWeb'] is Map<String, dynamic> &&
+                  (json['agendaFinanceiraFiltrosWeb'] as Map<String, dynamic>)
+                      .isNotEmpty
+              ? AgendaFinanceiraFiltrosPreferencia.fromJson(
+                json['agendaFinanceiraFiltrosWeb'],
+              )
+              : agendaFinanceiraFiltrosWebLegado,
+      agendaFinanceiraFiltrosMobile:
+          json['agendaFinanceiraFiltrosMobile'] is Map<String, dynamic>
+              ? AgendaFinanceiraFiltrosPreferencia.fromJson(
+                json['agendaFinanceiraFiltrosMobile'],
+              )
+              : padrao.agendaFinanceiraFiltrosMobile,
       catalogoReservasFiltrosWeb:
           CatalogoReservasFiltrosWebPreferencia.fromJson(
             json['catalogoReservasFiltrosWeb'],
@@ -934,6 +1117,13 @@ class PreferenciasIndividuaisDoUsuarioModel {
       consultaVendasFiltrosWeb: ConsultaVendasFiltrosWebPreferencia.fromJson(
         json['consultaVendasFiltrosWeb'],
       ),
+      consultaVendasFiltrosMobile:
+          json['consultaVendasFiltrosMobile'] is Map<String, dynamic>
+              ? ConsultaVendasFiltrosWebPreferencia.fromJson(
+                json['consultaVendasFiltrosMobile'],
+                periodoPadrao: ConsultaVendasPeriodoWebPreferencia.hoje,
+              )
+              : padrao.consultaVendasFiltrosMobile,
       atendimentosCriadosFiltrosWeb:
           AtendimentosCriadosFiltrosWebPreferencia.fromJson(
             json['atendimentosCriadosFiltrosWeb'],
@@ -941,6 +1131,10 @@ class PreferenciasIndividuaisDoUsuarioModel {
       atendimentosCriadosFiltrosMobile:
           AtendimentosCriadosFiltrosMobilePreferencia.fromJson(
             json['atendimentosCriadosFiltrosMobile'],
+          ),
+      servicosEmAndamentoFiltrosMobile:
+          AtendimentosCriadosFiltrosMobilePreferencia.fromJson(
+            json['servicosEmAndamentoFiltrosMobile'],
           ),
       ordemCardsGestaoMobile: GestaoMobileCardPreferenciaApi.normalizarOrdem(
         json['ordemCardsGestaoMobile'],
@@ -977,11 +1171,16 @@ class PreferenciasIndividuaisDoUsuarioModel {
       'agendaFinanceiraTipoWeb': agendaFinanceiraTipoWeb.codigo,
       'agendaFinanceiraStatusWeb': agendaFinanceiraStatusWeb.codigo,
       'agendaFinanceiraTipoDePagamentoWeb': agendaFinanceiraTipoDePagamentoWeb,
+      'agendaFinanceiraFiltrosWeb': agendaFinanceiraFiltrosWeb.toJson(),
+      'agendaFinanceiraFiltrosMobile': agendaFinanceiraFiltrosMobile.toJson(),
       'catalogoReservasFiltrosWeb': catalogoReservasFiltrosWeb.toJson(),
       'consultaVendasFiltrosWeb': consultaVendasFiltrosWeb.toJson(),
+      'consultaVendasFiltrosMobile': consultaVendasFiltrosMobile.toJson(),
       'atendimentosCriadosFiltrosWeb': atendimentosCriadosFiltrosWeb.toJson(),
       'atendimentosCriadosFiltrosMobile':
           atendimentosCriadosFiltrosMobile.toJson(),
+      'servicosEmAndamentoFiltrosMobile':
+          servicosEmAndamentoFiltrosMobile.toJson(),
       'ordemCardsGestaoMobile': ordemCardsGestaoMobile
           .map((GestaoMobileCardPreferencia item) => item.codigo)
           .toList(growable: false),
@@ -1013,17 +1212,37 @@ class PreferenciasIndividuaisDoUsuarioModel {
     AgendaFinanceiraTipoWebPreferencia? agendaFinanceiraTipoWeb,
     AgendaFinanceiraStatusWebPreferencia? agendaFinanceiraStatusWeb,
     List<String>? agendaFinanceiraTipoDePagamentoWeb,
+    AgendaFinanceiraFiltrosPreferencia? agendaFinanceiraFiltrosWeb,
+    AgendaFinanceiraFiltrosPreferencia? agendaFinanceiraFiltrosMobile,
     CatalogoReservasFiltrosWebPreferencia? catalogoReservasFiltrosWeb,
     ConsultaVendasFiltrosWebPreferencia? consultaVendasFiltrosWeb,
+    ConsultaVendasFiltrosWebPreferencia? consultaVendasFiltrosMobile,
     AtendimentosCriadosFiltrosWebPreferencia? atendimentosCriadosFiltrosWeb,
     AtendimentosCriadosFiltrosMobilePreferencia?
     atendimentosCriadosFiltrosMobile,
+    AtendimentosCriadosFiltrosMobilePreferencia?
+    servicosEmAndamentoFiltrosMobile,
     List<GestaoMobileCardPreferencia>? ordemCardsGestaoMobile,
     List<AtendimentoMobileCardPreferencia>? ordemCardsAtendimentoMobile,
     List<VendasMobileCardPreferencia>? ordemCardsVendasMobile,
     List<ServicosMobileCardPreferencia>? ordemCardsServicosMobile,
     List<ReceberMobileCardPreferencia>? ordemCardsReceberMobile,
   }) {
+    final bool atualizouFiltrosAgendaWebLegados =
+        agendaFinanceiraPeriodoWeb != null ||
+        agendaFinanceiraTipoWeb != null ||
+        agendaFinanceiraStatusWeb != null ||
+        agendaFinanceiraTipoDePagamentoWeb != null;
+    final AgendaFinanceiraFiltrosPreferencia filtrosAgendaWebAtualizados =
+        agendaFinanceiraFiltrosWeb ??
+        (atualizouFiltrosAgendaWebLegados
+            ? this.agendaFinanceiraFiltrosWeb.copyWith(
+              periodo: agendaFinanceiraPeriodoWeb,
+              tipo: agendaFinanceiraTipoWeb,
+              status: agendaFinanceiraStatusWeb,
+              tiposDePagamento: agendaFinanceiraTipoDePagamentoWeb,
+            )
+            : this.agendaFinanceiraFiltrosWeb);
     return PreferenciasIndividuaisDoUsuarioModel(
       idiomaDePreferencia: idiomaDePreferencia ?? this.idiomaDePreferencia,
       modoDeExibicaoProdutosWeb:
@@ -1057,15 +1276,23 @@ class PreferenciasIndividuaisDoUsuarioModel {
       agendaFinanceiraTipoDePagamentoWeb:
           agendaFinanceiraTipoDePagamentoWeb ??
           this.agendaFinanceiraTipoDePagamentoWeb,
+      agendaFinanceiraFiltrosWeb: filtrosAgendaWebAtualizados,
+      agendaFinanceiraFiltrosMobile:
+          agendaFinanceiraFiltrosMobile ?? this.agendaFinanceiraFiltrosMobile,
       catalogoReservasFiltrosWeb:
           catalogoReservasFiltrosWeb ?? this.catalogoReservasFiltrosWeb,
       consultaVendasFiltrosWeb:
           consultaVendasFiltrosWeb ?? this.consultaVendasFiltrosWeb,
+      consultaVendasFiltrosMobile:
+          consultaVendasFiltrosMobile ?? this.consultaVendasFiltrosMobile,
       atendimentosCriadosFiltrosWeb:
           atendimentosCriadosFiltrosWeb ?? this.atendimentosCriadosFiltrosWeb,
       atendimentosCriadosFiltrosMobile:
           atendimentosCriadosFiltrosMobile ??
           this.atendimentosCriadosFiltrosMobile,
+      servicosEmAndamentoFiltrosMobile:
+          servicosEmAndamentoFiltrosMobile ??
+          this.servicosEmAndamentoFiltrosMobile,
       ordemCardsGestaoMobile:
           ordemCardsGestaoMobile ?? this.ordemCardsGestaoMobile,
       ordemCardsAtendimentoMobile:
@@ -1280,16 +1507,20 @@ class ConsultaVendasFiltrosWebPreferencia {
     return const ConsultaVendasFiltrosWebPreferencia();
   }
 
-  factory ConsultaVendasFiltrosWebPreferencia.fromJson(dynamic json) {
+  factory ConsultaVendasFiltrosWebPreferencia.fromJson(
+    dynamic json, {
+    ConsultaVendasPeriodoWebPreferencia periodoPadrao =
+        ConsultaVendasPeriodoWebPreferencia.ultimos30Dias,
+  }) {
     if (json is! Map<String, dynamic>) {
-      return ConsultaVendasFiltrosWebPreferencia.vazia();
+      return ConsultaVendasFiltrosWebPreferencia(periodo: periodoPadrao);
     }
 
     return ConsultaVendasFiltrosWebPreferencia(
       busca: json['busca']?.toString().trim() ?? '',
       periodo: ConsultaVendasPeriodoWebPreferenciaApi.fromCodigo(
         json['periodo'],
-        ConsultaVendasPeriodoWebPreferencia.ultimos30Dias,
+        periodoPadrao,
       ),
       dataInicio: _dateFromJson(json['dataInicio']),
       dataFim: _dateFromJson(json['dataFim']),

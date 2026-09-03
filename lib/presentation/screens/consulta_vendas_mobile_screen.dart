@@ -1,13 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/consulta_vendas_models.dart';
+import '../../data/models/usuario_model.dart';
 import '../../data/services/vendas/consulta_vendas_api_client.dart';
 import '../../design_system/themes/six_mobile_color_scheme.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
 import '../../l10n/six_i18n.dart';
+import '../../domain/services/usuario/usuario_service.dart';
 import '../../providers/locale_settings_provider.dart';
+import '../../providers/usuario_provider.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
 import '../components/mobile/six_mobile_selection_sheet.dart';
 import '../components/mobile_motion.dart';
@@ -61,6 +66,8 @@ class _ConsultaVendasMobileScreenState
   ];
 
   late final ConsultaVendasApiClient _api;
+  final UsuarioService _usuarioService = UsuarioService();
+  final UsuarioProvider _usuarioProvider = UsuarioProvider();
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
   final TextEditingController _buscaController = TextEditingController();
@@ -80,6 +87,9 @@ class _ConsultaVendasMobileScreenState
   String _valorMinimoTexto = '';
   String _valorMaximoTexto = '';
   final int _tamanhoPagina = 25;
+  Timer? _salvarFiltrosDebounce;
+  bool _aplicandoPreferencias = false;
+  bool _usuarioAlterouFiltros = false;
 
   SixMobileColorScheme get _colors => context.sixMobileColors;
 
@@ -92,13 +102,23 @@ class _ConsultaVendasMobileScreenState
     _dataInicial = hoje;
     _dataInicioPersonalizada = _dataInicial;
     _dataFimPersonalizada = _dataFinal;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _consultar();
+    _buscaController.addListener(_onBuscaChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _restaurarPreferenciasConsultaVendasMobile();
+      if (!mounted) return;
+      await _consultar();
+      unawaited(
+        _restaurarPreferenciasConsultaVendasMobileBackend(
+          recarregarSeAlterou: true,
+        ),
+      );
     });
   }
 
   @override
   void dispose() {
+    _salvarFiltrosDebounce?.cancel();
+    _buscaController.removeListener(_onBuscaChanged);
     _buscaController.dispose();
     super.dispose();
   }
@@ -218,7 +238,10 @@ class _ConsultaVendasMobileScreenState
         );
       case _periodoUltimos30Dias:
       default:
-        return DateTimeRange(start: hoje, end: hoje);
+        return DateTimeRange(
+          start: hoje.subtract(const Duration(days: 29)),
+          end: hoje,
+        );
     }
   }
 
@@ -226,6 +249,166 @@ class _ConsultaVendasMobileScreenState
     final DateTimeRange periodo = _resolverPeriodoSelecionado();
     _dataInicial = periodo.start;
     _dataFinal = periodo.end;
+  }
+
+  Future<void> _restaurarPreferenciasConsultaVendasMobile() async {
+    final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+        await _usuarioService.carregarPreferenciasIndividuaisDoCache();
+    if (!mounted || preferencias == null || _usuarioAlterouFiltros) {
+      return;
+    }
+    _aplicarPreferenciasConsultaVendasMobile(
+      preferencias.consultaVendasFiltrosMobile,
+    );
+  }
+
+  Future<void> _restaurarPreferenciasConsultaVendasMobileBackend({
+    bool recarregarSeAlterou = false,
+  }) async {
+    try {
+      if (_usuarioProvider.usuario == null) {
+        await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
+      }
+      final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+          _usuarioProvider.usuario?.preferenciasIndividuaisDoUsuario;
+      if (!mounted || preferencias == null || _usuarioAlterouFiltros) {
+        return;
+      }
+      final bool alterou = _aplicarPreferenciasConsultaVendasMobile(
+        preferencias.consultaVendasFiltrosMobile,
+      );
+      if (alterou && recarregarSeAlterou && mounted) {
+        await _consultar(pagina: 0);
+      }
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Erro ao restaurar preferencias mobile da consulta de vendas: '
+        '$error\n$stackTrace',
+      );
+    }
+  }
+
+  bool _aplicarPreferenciasConsultaVendasMobile(
+    ConsultaVendasFiltrosWebPreferencia filtros,
+  ) {
+    final String assinaturaAnterior = _assinaturaFiltrosAtual();
+    _aplicandoPreferencias = true;
+    if (_buscaController.text != filtros.busca) {
+      _buscaController.text = filtros.busca;
+    }
+    setState(() {
+      _periodoSelecionado = filtros.periodo.codigo;
+      _statusFinanceiroSelecionado = filtros.statusFinanceiro;
+      _statusDevolucaoSelecionado = filtros.statusDevolucao;
+      _ordenacaoSelecionada = filtros.ordenacao;
+      _valorMinimoTexto = filtros.valorMinimo;
+      _valorMaximoTexto = filtros.valorMaximo;
+      if (filtros.periodo ==
+          ConsultaVendasPeriodoWebPreferencia.personalizado) {
+        if (filtros.dataInicio != null) {
+          _dataInicioPersonalizada = filtros.dataInicio!;
+        }
+        if (filtros.dataFim != null) {
+          _dataFimPersonalizada = filtros.dataFim!;
+        }
+        if (_dataFimPersonalizada.isBefore(_dataInicioPersonalizada)) {
+          _dataFimPersonalizada = _dataInicioPersonalizada;
+        }
+      }
+      _sincronizarPeriodoComDatas();
+    });
+    _aplicandoPreferencias = false;
+    return assinaturaAnterior != _assinaturaFiltrosAtual();
+  }
+
+  void _onBuscaChanged() {
+    if (mounted) setState(() {});
+    if (_aplicandoPreferencias) return;
+    _usuarioAlterouFiltros = true;
+    _agendarSalvarPreferenciasConsultaVendasMobile();
+  }
+
+  void _onFiltroAlterado({bool salvarImediatamente = false}) {
+    if (_aplicandoPreferencias) return;
+    _usuarioAlterouFiltros = true;
+    if (salvarImediatamente) {
+      _salvarPreferenciasConsultaVendasMobile();
+      return;
+    }
+    _agendarSalvarPreferenciasConsultaVendasMobile();
+  }
+
+  void _agendarSalvarPreferenciasConsultaVendasMobile() {
+    _salvarFiltrosDebounce?.cancel();
+    _salvarFiltrosDebounce = Timer(
+      const Duration(milliseconds: 450),
+      _salvarPreferenciasConsultaVendasMobile,
+    );
+  }
+
+  void _salvarPreferenciasConsultaVendasMobile() {
+    _salvarFiltrosDebounce?.cancel();
+    final ConsultaVendasFiltrosWebPreferencia filtros =
+        _preferenciaConsultaVendasMobileAtual();
+    unawaited(
+      _usuarioService
+          .atualizarPreferenciasIndividuais(
+            consultaVendasFiltrosMobile: filtros.toJson(),
+          )
+          .catchError((Object error, StackTrace stackTrace) {
+            debugPrint(
+              'Erro ao salvar preferencias mobile da consulta de vendas: '
+              '$error\n$stackTrace',
+            );
+          }),
+    );
+  }
+
+  ConsultaVendasFiltrosWebPreferencia _preferenciaConsultaVendasMobileAtual() {
+    return ConsultaVendasFiltrosWebPreferencia(
+      busca: _buscaController.text,
+      periodo:
+          ConsultaVendasPeriodoWebPreferenciaApi.tryFromCodigo(
+            _periodoSelecionado,
+          ) ??
+          ConsultaVendasPeriodoWebPreferencia.hoje,
+      dataInicio:
+          _periodoSelecionado == _periodoPersonalizado
+              ? _dataInicioPersonalizada
+              : null,
+      dataFim:
+          _periodoSelecionado == _periodoPersonalizado
+              ? _dataFimPersonalizada
+              : null,
+      statusFinanceiro: _statusFinanceiroSelecionado,
+      statusDevolucao: _statusDevolucaoSelecionado,
+      valorMinimo: _valorMinimoTexto,
+      valorMaximo: _valorMaximoTexto,
+      ordenacao: _ordenacaoSelecionada,
+      tamanhoPagina: _tamanhoPagina,
+    );
+  }
+
+  String _assinaturaFiltrosAtual() {
+    final ConsultaVendasFiltrosWebPreferencia filtros =
+        _preferenciaConsultaVendasMobileAtual();
+    return <String>[
+      filtros.busca.trim(),
+      filtros.periodo.codigo,
+      filtros.dataInicio?.toIso8601String() ?? '',
+      filtros.dataFim?.toIso8601String() ?? '',
+      filtros.statusFinanceiro ?? '',
+      filtros.statusDevolucao ?? '',
+      filtros.valorMinimo.trim(),
+      filtros.valorMaximo.trim(),
+      filtros.ordenacao,
+      filtros.tamanhoPagina.toString(),
+    ].join('|');
+  }
+
+  Future<void> _aplicarBusca() async {
+    _onFiltroAlterado(salvarImediatamente: true);
+    await _consultar(pagina: 0);
   }
 
   Future<void> _abrirFiltros() async {
@@ -289,6 +472,7 @@ class _ConsultaVendasMobileScreenState
       _sincronizarPeriodoComDatas();
     });
 
+    _onFiltroAlterado(salvarImediatamente: true);
     await _consultar(pagina: 0);
   }
 
@@ -316,6 +500,7 @@ class _ConsultaVendasMobileScreenState
 
   Future<void> _limparFiltros() async {
     final DateTime hoje = _hojeNormalizado();
+    _aplicandoPreferencias = true;
     setState(() {
       _periodoSelecionado = _periodoHoje;
       _dataFinal = hoje;
@@ -329,6 +514,8 @@ class _ConsultaVendasMobileScreenState
       _valorMaximoTexto = '';
       _buscaController.clear();
     });
+    _aplicandoPreferencias = false;
+    _onFiltroAlterado(salvarImediatamente: true);
     await _consultar(pagina: 0);
   }
 
@@ -552,7 +739,7 @@ class _ConsultaVendasMobileScreenState
           TextField(
             controller: _buscaController,
             textInputAction: TextInputAction.search,
-            onSubmitted: (_) => _consultar(pagina: 0),
+            onSubmitted: (_) => _aplicarBusca(),
             decoration: InputDecoration(
               hintText: _txt(
                 'sales.query.search',
@@ -568,7 +755,7 @@ class _ConsultaVendasMobileScreenState
                   'Apply search',
                   'Aplicar búsqueda',
                 ),
-                onPressed: _carregando ? null : () => _consultar(pagina: 0),
+                onPressed: _carregando ? null : _aplicarBusca,
                 icon: const Icon(Icons.arrow_forward_rounded),
               ),
               filled: true,

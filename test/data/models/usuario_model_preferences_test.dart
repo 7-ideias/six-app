@@ -75,6 +75,98 @@ void main() {
       );
     });
 
+    test('migra a agenda web legada e preserva o intervalo personalizado', () {
+      final preferenciasLegadas =
+          PreferenciasIndividuaisDoUsuarioModel.fromJson(
+            const <String, dynamic>{
+              'agendaFinanceiraPeriodoWeb': 'ESTE_MES',
+              'agendaFinanceiraTipoWeb': 'PAGAR',
+            },
+          );
+      expect(
+        preferenciasLegadas.agendaFinanceiraFiltrosWeb.periodo,
+        AgendaFinanceiraPeriodoWebPreferencia.esteMes,
+      );
+      expect(
+        preferenciasLegadas.agendaFinanceiraFiltrosWeb.tipo,
+        AgendaFinanceiraTipoWebPreferencia.pagar,
+      );
+
+      final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+        const <String, dynamic>{
+          'agendaFinanceiraPeriodoWeb': 'HOJE',
+          'agendaFinanceiraFiltrosWeb': <String, dynamic>{
+            'periodo': 'PERSONALIZADO',
+            'dataInicio': '2026-08-05',
+            'dataFim': '2026-08-23',
+            'tipo': 'RECEBER',
+            'status': 'PARCIAL',
+            'tiposDePagamento': <String>['tipo2', 'tipo3'],
+          },
+        },
+      );
+
+      final filtros = preferencias.agendaFinanceiraFiltrosWeb;
+      expect(
+        filtros.periodo,
+        AgendaFinanceiraPeriodoWebPreferencia.personalizado,
+      );
+      expect(filtros.dataInicio, DateTime(2026, 8, 5));
+      expect(filtros.dataFim, DateTime(2026, 8, 23));
+      expect(filtros.tipo, AgendaFinanceiraTipoWebPreferencia.receber);
+      expect(filtros.status, AgendaFinanceiraStatusWebPreferencia.parcial);
+      expect(filtros.tiposDePagamento, <String>['tipo2', 'tipo3']);
+      expect(
+        preferencias.agendaFinanceiraPeriodoWeb,
+        AgendaFinanceiraPeriodoWebPreferencia.personalizado,
+      );
+      expect(
+        preferencias.toJson()['agendaFinanceiraFiltrosWeb'],
+        <String, dynamic>{
+          'periodo': 'PERSONALIZADO',
+          'dataInicio': '2026-08-05',
+          'dataFim': '2026-08-23',
+          'tipo': 'RECEBER',
+          'status': 'PARCIAL',
+          'tiposDePagamento': <String>['tipo2', 'tipo3'],
+        },
+      );
+    });
+
+    test('mantem filtros web e mobile da agenda independentes', () {
+      final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+        const <String, dynamic>{
+          'agendaFinanceiraFiltrosWeb': <String, dynamic>{
+            'periodo': 'ESTE_MES',
+            'tipo': 'RECEBER',
+          },
+          'agendaFinanceiraFiltrosMobile': <String, dynamic>{
+            'periodo': 'PROXIMO_MES',
+            'tipo': 'PAGAR',
+            'status': 'VENCIDO',
+            'tiposDePagamento': <String>['tipo2'],
+          },
+        },
+      );
+
+      expect(
+        preferencias.agendaFinanceiraFiltrosWeb.periodo,
+        AgendaFinanceiraPeriodoWebPreferencia.esteMes,
+      );
+      expect(
+        preferencias.agendaFinanceiraFiltrosMobile.periodo,
+        AgendaFinanceiraPeriodoWebPreferencia.proximoMes,
+      );
+      expect(
+        preferencias.agendaFinanceiraFiltrosMobile.tipo,
+        AgendaFinanceiraTipoWebPreferencia.pagar,
+      );
+      expect(
+        preferencias.agendaFinanceiraFiltrosMobile.status,
+        AgendaFinanceiraStatusWebPreferencia.vencido,
+      );
+    });
+
     test('serializa e desserializa filtros web de atendimentos criados', () {
       final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
         const <String, dynamic>{
@@ -206,6 +298,41 @@ void main() {
       );
     });
 
+    test('serializa filtros mobile de vendas sem alterar os filtros web', () {
+      final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+        const <String, dynamic>{
+          'consultaVendasFiltrosWeb': <String, dynamic>{
+            'busca': 'web',
+            'periodo': 'ULTIMOS_30_DIAS',
+          },
+          'consultaVendasFiltrosMobile': <String, dynamic>{
+            'busca': 'mobile',
+            'periodo': 'HOJE',
+            'statusFinanceiro': 'EM_ABERTO',
+          },
+        },
+      );
+
+      expect(preferencias.consultaVendasFiltrosWeb.busca, 'web');
+      expect(preferencias.consultaVendasFiltrosMobile.busca, 'mobile');
+      expect(
+        preferencias.consultaVendasFiltrosMobile.periodo,
+        ConsultaVendasPeriodoWebPreferencia.hoje,
+      );
+      expect(
+        preferencias.consultaVendasFiltrosMobile.statusFinanceiro,
+        'EM_ABERTO',
+      );
+      expect(
+        preferencias.toJson()['consultaVendasFiltrosMobile'],
+        <String, dynamic>{
+          'busca': 'mobile',
+          'periodo': 'HOJE',
+          'statusFinanceiro': 'EM_ABERTO',
+        },
+      );
+    });
+
     test('mantem multiplos filtros web de atendimentos criados', () {
       final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
         const <String, dynamic>{
@@ -240,10 +367,7 @@ void main() {
             'dataInicio': '2026-08-02',
             'dataFim': '2026-08-08',
             'tecnicoKeys': <String>['tecnico-2', 'tecnico-3'],
-            'statusKeys': <String>[
-              'codigo:REPAIRING',
-              'codigo:WAITING_PART',
-            ],
+            'statusKeys': <String>['codigo:REPAIRING', 'codigo:WAITING_PART'],
             'statusPagamento': 'LIQUIDADO',
           },
         },
@@ -271,10 +395,7 @@ void main() {
         'dataInicio': '2026-08-02',
         'dataFim': '2026-08-08',
         'tecnicoKeys': <String>['tecnico-2', 'tecnico-3'],
-        'statusKeys': <String>[
-          'codigo:REPAIRING',
-          'codigo:WAITING_PART',
-        ],
+        'statusKeys': <String>['codigo:REPAIRING', 'codigo:WAITING_PART'],
         'statusPagamento': 'LIQUIDADO',
       });
       expect(
@@ -298,13 +419,38 @@ void main() {
       final filtros = preferencias.atendimentosCriadosFiltrosMobile;
 
       expect(filtros.tecnicoKeysSelecionadas, <String>['tecnico-legado']);
-      expect(filtros.statusKeysSelecionadas, <String>[
-        'codigo:LEGACY_STATUS',
-      ]);
+      expect(filtros.statusKeysSelecionadas, <String>['codigo:LEGACY_STATUS']);
       expect(filtros.toJson(), <String, dynamic>{
         'tecnicoKeys': <String>['tecnico-legado'],
         'statusKeys': <String>['codigo:LEGACY_STATUS'],
       });
+    });
+
+    test('separa preferencias da lista mobile de servicos em andamento', () {
+      final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+        const <String, dynamic>{
+          'atendimentosCriadosFiltrosMobile': <String, dynamic>{
+            'busca': 'todos os atendimentos',
+          },
+          'servicosEmAndamentoFiltrosMobile': <String, dynamic>{
+            'busca': 'somente ativos',
+            'statusKeys': <String>['codigo:REPAIRING'],
+          },
+        },
+      );
+
+      expect(
+        preferencias.atendimentosCriadosFiltrosMobile.busca,
+        'todos os atendimentos',
+      );
+      expect(
+        preferencias.servicosEmAndamentoFiltrosMobile.busca,
+        'somente ativos',
+      );
+      expect(
+        preferencias.servicosEmAndamentoFiltrosMobile.statusKeysSelecionadas,
+        <String>['codigo:REPAIRING'],
+      );
     });
 
     test('serializa e desserializa a ordem dos cards da Gestão Mobile', () {
