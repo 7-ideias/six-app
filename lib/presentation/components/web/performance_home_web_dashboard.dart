@@ -1345,7 +1345,7 @@ class _InitialLoading extends StatelessWidget {
 }
 
 class _LoadError extends StatelessWidget {
-  const _LoadError({required this.onRetry});
+  const _LoadError({super.key, required this.onRetry});
 
   final Future<void> Function() onRetry;
 
