@@ -494,6 +494,120 @@ class AgendaFinanceiraFiltrosPreferencia {
   }
 }
 
+class EstoqueFiltrosPreferencia {
+  EstoqueFiltrosPreferencia({
+    String busca = '',
+    String tipo = 'PRODUTO',
+    String? categoriaId,
+    String status = 'TODOS',
+    String situacaoEstoque = 'TODOS',
+    String marcacao = 'TODOS',
+    String ordenacao = 'NOME_ASC',
+    String resumoRapido = 'PRODUTOS',
+    int itensPorPagina = 12,
+  }) : busca = busca.trim(),
+       tipo = _normalizarCodigo(tipo, const <String>{
+         'PRODUTO',
+         'SERVICO',
+       }, 'PRODUTO'),
+       categoriaId = _normalizarTextoOpcional(categoriaId),
+       status = _normalizarCodigo(status, const <String>{
+         'TODOS',
+         'ATIVOS',
+         'INATIVOS',
+       }, 'TODOS'),
+       situacaoEstoque = _normalizarCodigo(situacaoEstoque, const <String>{
+         'TODOS',
+         'EM_ESTOQUE',
+         'ESTOQUE_BAIXO',
+         'SEM_ESTOQUE',
+         'ESTOQUE_NEGATIVO',
+       }, 'TODOS'),
+       marcacao = _normalizarCodigo(marcacao, const <String>{
+         'TODOS',
+         'FAVORITOS',
+         'CATALOGO',
+         'FAVORITOS_E_CATALOGO',
+       }, 'TODOS'),
+       ordenacao = _normalizarCodigo(ordenacao, const <String>{
+         'NOME_ASC',
+         'PRECO_ASC',
+         'PRECO_DESC',
+       }, 'NOME_ASC'),
+       resumoRapido = _normalizarCodigo(resumoRapido, const <String>{
+         'TODOS',
+         'PRODUTOS',
+         'SERVICOS',
+         'COM_IMAGEM',
+         'ESTOQUE_BAIXO',
+       }, 'PRODUTOS'),
+       itensPorPagina =
+           const <int>{12, 24, 48}.contains(itensPorPagina)
+               ? itensPorPagina
+               : 12;
+
+  final String busca;
+  final String tipo;
+  final String? categoriaId;
+  final String status;
+  final String situacaoEstoque;
+  final String marcacao;
+  final String ordenacao;
+  final String resumoRapido;
+  final int itensPorPagina;
+
+  factory EstoqueFiltrosPreferencia.vazia() {
+    return EstoqueFiltrosPreferencia();
+  }
+
+  factory EstoqueFiltrosPreferencia.fromJson(dynamic json) {
+    if (json is! Map<String, dynamic>) {
+      return EstoqueFiltrosPreferencia.vazia();
+    }
+
+    return EstoqueFiltrosPreferencia(
+      busca: json['busca']?.toString() ?? '',
+      tipo: json['tipo']?.toString() ?? 'PRODUTO',
+      categoriaId: json['categoriaId']?.toString(),
+      status: json['status']?.toString() ?? 'TODOS',
+      situacaoEstoque: json['situacaoEstoque']?.toString() ?? 'TODOS',
+      marcacao: json['marcacao']?.toString() ?? 'TODOS',
+      ordenacao: json['ordenacao']?.toString() ?? 'NOME_ASC',
+      resumoRapido: json['resumoRapido']?.toString() ?? 'PRODUTOS',
+      itensPorPagina:
+          int.tryParse(json['itensPorPagina']?.toString() ?? '') ?? 12,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      if (busca.isNotEmpty) 'busca': busca,
+      if (tipo != 'PRODUTO') 'tipo': tipo,
+      if (categoriaId != null) 'categoriaId': categoriaId,
+      if (status != 'TODOS') 'status': status,
+      if (situacaoEstoque != 'TODOS') 'situacaoEstoque': situacaoEstoque,
+      if (marcacao != 'TODOS') 'marcacao': marcacao,
+      if (ordenacao != 'NOME_ASC') 'ordenacao': ordenacao,
+      if (resumoRapido != 'PRODUTOS') 'resumoRapido': resumoRapido,
+      if (itensPorPagina != 12) 'itensPorPagina': itensPorPagina,
+    };
+  }
+
+  static String _normalizarCodigo(
+    String value,
+    Set<String> permitidos,
+    String fallback,
+  ) {
+    final String codigo = value.trim().toUpperCase();
+    return permitidos.contains(codigo) ? codigo : fallback;
+  }
+
+  static String? _normalizarTextoOpcional(String? value) {
+    final String texto = value?.trim() ?? '';
+    return texto.isEmpty ? null : texto;
+  }
+}
+
 enum CatalogoReservasPeriodoWebPreferencia {
   hoje,
   proximos7Dias,
@@ -850,6 +964,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
   final List<String> agendaFinanceiraTipoDePagamentoWeb;
   final AgendaFinanceiraFiltrosPreferencia agendaFinanceiraFiltrosWeb;
   final AgendaFinanceiraFiltrosPreferencia agendaFinanceiraFiltrosMobile;
+  final EstoqueFiltrosPreferencia estoqueFiltrosWeb;
+  final EstoqueFiltrosPreferencia estoqueFiltrosMobile;
   final CatalogoReservasFiltrosWebPreferencia catalogoReservasFiltrosWeb;
   final ConsultaVendasFiltrosWebPreferencia consultaVendasFiltrosWeb;
   final ConsultaVendasFiltrosWebPreferencia consultaVendasFiltrosMobile;
@@ -879,6 +995,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
     List<String>? agendaFinanceiraTipoDePagamentoWeb,
     AgendaFinanceiraFiltrosPreferencia? agendaFinanceiraFiltrosWeb,
     AgendaFinanceiraFiltrosPreferencia? agendaFinanceiraFiltrosMobile,
+    EstoqueFiltrosPreferencia? estoqueFiltrosWeb,
+    EstoqueFiltrosPreferencia? estoqueFiltrosMobile,
     CatalogoReservasFiltrosWebPreferencia? catalogoReservasFiltrosWeb,
     ConsultaVendasFiltrosWebPreferencia? consultaVendasFiltrosWeb,
     ConsultaVendasFiltrosWebPreferencia? consultaVendasFiltrosMobile,
@@ -941,6 +1059,10 @@ class PreferenciasIndividuaisDoUsuarioModel {
        agendaFinanceiraFiltrosMobile =
            agendaFinanceiraFiltrosMobile ??
            AgendaFinanceiraFiltrosPreferencia.vazia(),
+       estoqueFiltrosWeb =
+           estoqueFiltrosWeb ?? EstoqueFiltrosPreferencia.vazia(),
+       estoqueFiltrosMobile =
+           estoqueFiltrosMobile ?? EstoqueFiltrosPreferencia.vazia(),
        catalogoReservasFiltrosWeb =
            catalogoReservasFiltrosWeb ??
            CatalogoReservasFiltrosWebPreferencia.vazia(),
@@ -1001,6 +1123,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
       agendaFinanceiraTipoDePagamentoWeb: const <String>[],
       agendaFinanceiraFiltrosWeb: AgendaFinanceiraFiltrosPreferencia.vazia(),
       agendaFinanceiraFiltrosMobile: AgendaFinanceiraFiltrosPreferencia.vazia(),
+      estoqueFiltrosWeb: EstoqueFiltrosPreferencia.vazia(),
+      estoqueFiltrosMobile: EstoqueFiltrosPreferencia.vazia(),
       catalogoReservasFiltrosWeb: CatalogoReservasFiltrosWebPreferencia.vazia(),
       consultaVendasFiltrosWeb: ConsultaVendasFiltrosWebPreferencia.vazia(),
       consultaVendasFiltrosMobile: const ConsultaVendasFiltrosWebPreferencia(
@@ -1110,6 +1234,12 @@ class PreferenciasIndividuaisDoUsuarioModel {
                 json['agendaFinanceiraFiltrosMobile'],
               )
               : padrao.agendaFinanceiraFiltrosMobile,
+      estoqueFiltrosWeb: EstoqueFiltrosPreferencia.fromJson(
+        json['estoqueFiltrosWeb'],
+      ),
+      estoqueFiltrosMobile: EstoqueFiltrosPreferencia.fromJson(
+        json['estoqueFiltrosMobile'],
+      ),
       catalogoReservasFiltrosWeb:
           CatalogoReservasFiltrosWebPreferencia.fromJson(
             json['catalogoReservasFiltrosWeb'],
@@ -1173,6 +1303,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
       'agendaFinanceiraTipoDePagamentoWeb': agendaFinanceiraTipoDePagamentoWeb,
       'agendaFinanceiraFiltrosWeb': agendaFinanceiraFiltrosWeb.toJson(),
       'agendaFinanceiraFiltrosMobile': agendaFinanceiraFiltrosMobile.toJson(),
+      'estoqueFiltrosWeb': estoqueFiltrosWeb.toJson(),
+      'estoqueFiltrosMobile': estoqueFiltrosMobile.toJson(),
       'catalogoReservasFiltrosWeb': catalogoReservasFiltrosWeb.toJson(),
       'consultaVendasFiltrosWeb': consultaVendasFiltrosWeb.toJson(),
       'consultaVendasFiltrosMobile': consultaVendasFiltrosMobile.toJson(),
@@ -1214,6 +1346,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
     List<String>? agendaFinanceiraTipoDePagamentoWeb,
     AgendaFinanceiraFiltrosPreferencia? agendaFinanceiraFiltrosWeb,
     AgendaFinanceiraFiltrosPreferencia? agendaFinanceiraFiltrosMobile,
+    EstoqueFiltrosPreferencia? estoqueFiltrosWeb,
+    EstoqueFiltrosPreferencia? estoqueFiltrosMobile,
     CatalogoReservasFiltrosWebPreferencia? catalogoReservasFiltrosWeb,
     ConsultaVendasFiltrosWebPreferencia? consultaVendasFiltrosWeb,
     ConsultaVendasFiltrosWebPreferencia? consultaVendasFiltrosMobile,
@@ -1279,6 +1413,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
       agendaFinanceiraFiltrosWeb: filtrosAgendaWebAtualizados,
       agendaFinanceiraFiltrosMobile:
           agendaFinanceiraFiltrosMobile ?? this.agendaFinanceiraFiltrosMobile,
+      estoqueFiltrosWeb: estoqueFiltrosWeb ?? this.estoqueFiltrosWeb,
+      estoqueFiltrosMobile: estoqueFiltrosMobile ?? this.estoqueFiltrosMobile,
       catalogoReservasFiltrosWeb:
           catalogoReservasFiltrosWeb ?? this.catalogoReservasFiltrosWeb,
       consultaVendasFiltrosWeb:
