@@ -974,6 +974,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
   atendimentosCriadosFiltrosMobile;
   final AtendimentosCriadosFiltrosMobilePreferencia
   servicosEmAndamentoFiltrosMobile;
+  final Map<String, dynamic> desempenhoInicioFiltrosWeb;
+  final Map<String, dynamic> desempenhoInicioFiltrosMobile;
   final List<GestaoMobileCardPreferencia> ordemCardsGestaoMobile;
   final List<AtendimentoMobileCardPreferencia> ordemCardsAtendimentoMobile;
   final List<VendasMobileCardPreferencia> ordemCardsVendasMobile;
@@ -1005,6 +1007,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
     atendimentosCriadosFiltrosMobile,
     AtendimentosCriadosFiltrosMobilePreferencia?
     servicosEmAndamentoFiltrosMobile,
+    Map<String, dynamic>? desempenhoInicioFiltrosWeb,
+    Map<String, dynamic>? desempenhoInicioFiltrosMobile,
     List<GestaoMobileCardPreferencia>? ordemCardsGestaoMobile,
     List<AtendimentoMobileCardPreferencia>? ordemCardsAtendimentoMobile,
     List<VendasMobileCardPreferencia>? ordemCardsVendasMobile,
@@ -1083,6 +1087,12 @@ class PreferenciasIndividuaisDoUsuarioModel {
        servicosEmAndamentoFiltrosMobile =
            servicosEmAndamentoFiltrosMobile ??
            AtendimentosCriadosFiltrosMobilePreferencia.vazia(),
+       desempenhoInicioFiltrosWeb = Map<String, dynamic>.unmodifiable(
+         _normalizarMapa(desempenhoInicioFiltrosWeb),
+       ),
+       desempenhoInicioFiltrosMobile = Map<String, dynamic>.unmodifiable(
+         _normalizarMapa(desempenhoInicioFiltrosMobile),
+       ),
        ordemCardsGestaoMobile = GestaoMobileCardPreferenciaApi.normalizarOrdem(
          ordemCardsGestaoMobile,
        ),
@@ -1136,6 +1146,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
           AtendimentosCriadosFiltrosMobilePreferencia.vazia(),
       servicosEmAndamentoFiltrosMobile:
           AtendimentosCriadosFiltrosMobilePreferencia.vazia(),
+      desempenhoInicioFiltrosWeb: const <String, dynamic>{},
+      desempenhoInicioFiltrosMobile: const <String, dynamic>{},
       ordemCardsGestaoMobile: GestaoMobileCardPreferencia.values,
       ordemCardsAtendimentoMobile: AtendimentoMobileCardPreferencia.values,
       ordemCardsVendasMobile: VendasMobileCardPreferencia.values,
@@ -1266,6 +1278,12 @@ class PreferenciasIndividuaisDoUsuarioModel {
           AtendimentosCriadosFiltrosMobilePreferencia.fromJson(
             json['servicosEmAndamentoFiltrosMobile'],
           ),
+      desempenhoInicioFiltrosWeb: _normalizarMapa(
+        json['desempenhoInicioFiltrosWeb'],
+      ),
+      desempenhoInicioFiltrosMobile: _normalizarMapa(
+        json['desempenhoInicioFiltrosMobile'],
+      ),
       ordemCardsGestaoMobile: GestaoMobileCardPreferenciaApi.normalizarOrdem(
         json['ordemCardsGestaoMobile'],
       ),
@@ -1313,6 +1331,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
           atendimentosCriadosFiltrosMobile.toJson(),
       'servicosEmAndamentoFiltrosMobile':
           servicosEmAndamentoFiltrosMobile.toJson(),
+      'desempenhoInicioFiltrosWeb': desempenhoInicioFiltrosWeb,
+      'desempenhoInicioFiltrosMobile': desempenhoInicioFiltrosMobile,
       'ordemCardsGestaoMobile': ordemCardsGestaoMobile
           .map((GestaoMobileCardPreferencia item) => item.codigo)
           .toList(growable: false),
@@ -1356,6 +1376,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
     atendimentosCriadosFiltrosMobile,
     AtendimentosCriadosFiltrosMobilePreferencia?
     servicosEmAndamentoFiltrosMobile,
+    Map<String, dynamic>? desempenhoInicioFiltrosWeb,
+    Map<String, dynamic>? desempenhoInicioFiltrosMobile,
     List<GestaoMobileCardPreferencia>? ordemCardsGestaoMobile,
     List<AtendimentoMobileCardPreferencia>? ordemCardsAtendimentoMobile,
     List<VendasMobileCardPreferencia>? ordemCardsVendasMobile,
@@ -1429,6 +1451,10 @@ class PreferenciasIndividuaisDoUsuarioModel {
       servicosEmAndamentoFiltrosMobile:
           servicosEmAndamentoFiltrosMobile ??
           this.servicosEmAndamentoFiltrosMobile,
+      desempenhoInicioFiltrosWeb:
+          desempenhoInicioFiltrosWeb ?? this.desempenhoInicioFiltrosWeb,
+      desempenhoInicioFiltrosMobile:
+          desempenhoInicioFiltrosMobile ?? this.desempenhoInicioFiltrosMobile,
       ordemCardsGestaoMobile:
           ordemCardsGestaoMobile ?? this.ordemCardsGestaoMobile,
       ordemCardsAtendimentoMobile:
@@ -1459,6 +1485,19 @@ class PreferenciasIndividuaisDoUsuarioModel {
           .toList(growable: false);
     }
     return <String>[];
+  }
+
+  static Map<String, dynamic> _normalizarMapa(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return Map<String, dynamic>.from(value);
+    }
+    if (value is Map) {
+      return value.map(
+        (dynamic key, dynamic item) =>
+            MapEntry<String, dynamic>(key.toString(), item),
+      );
+    }
+    return <String, dynamic>{};
   }
 }
 

@@ -26,6 +26,7 @@ abstract class DesempenhoColaboradorApiClient {
     required DateTime dataInicio,
     required DateTime dataFim,
     String? idColaborador,
+    List<String> idsColaboradores = const <String>[],
   });
 }
 
@@ -36,7 +37,8 @@ class HttpDesempenhoColaboradorApiClient
     Future<String?> Function()? accessTokenProvider,
     Future<String?> Function()? empresaIdProvider,
   }) : _httpClient = httpClient ?? createHttpClient(),
-       _accessTokenProvider = accessTokenProvider ?? AuthService().getAccessToken,
+       _accessTokenProvider =
+           accessTokenProvider ?? AuthService().getAccessToken,
        _empresaIdProvider = empresaIdProvider ?? AuthService().getEmpresaId;
 
   final http.Client _httpClient;
@@ -50,7 +52,7 @@ class HttpDesempenhoColaboradorApiClient
     return <String, String>{
       'Content-Type': 'application/json',
       'idUnicoDaEmpresa': empresaId,
-      'Authori' 'zation': 'Bear' 'er $token',
+      'Authorization': 'Bearer $token',
     };
   }
 
@@ -171,14 +173,21 @@ class HttpDesempenhoColaboradorApiClient
     required DateTime dataInicio,
     required DateTime dataFim,
     String? idColaborador,
+    List<String> idsColaboradores = const <String>[],
   }) async {
-    final Map<String, String> query = <String, String>{
-      'dataInicio': _formatDate(dataInicio),
-      'dataFim': _formatDate(dataFim),
+    final List<String> idsNormalizados = idsColaboradores
+        .map((String id) => id.trim())
+        .where((String id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    final Map<String, List<String>> query = <String, List<String>>{
+      'dataInicio': <String>[_formatDate(dataInicio)],
+      'dataFim': <String>[_formatDate(dataFim)],
+      if (idsNormalizados.isNotEmpty)
+        'idsColaboradores': idsNormalizados
+      else if (idColaborador != null && idColaborador.trim().isNotEmpty)
+        'idColaborador': <String>[idColaborador.trim()],
     };
-    if (idColaborador != null && idColaborador.trim().isNotEmpty) {
-      query['idColaborador'] = idColaborador.trim();
-    }
 
     final Uri uri = Uri.parse(
       '${AppConfig.baseUrl}/private/api/desempenho-colaborador/resumo',
