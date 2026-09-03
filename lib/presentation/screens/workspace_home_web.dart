@@ -19,7 +19,7 @@ import '../../providers/workspace_home_provider.dart';
 import '../admin/admin_portal_texts.dart';
 import '../components/six_backend_loading.dart';
 import '../components/web/collaborator_operational_home_dashboard.dart';
-import '../components/web/collaborator_performance_home_dashboard.dart';
+import '../components/web/performance_home_web_dashboard.dart';
 import '../navigation/web_navigation_destination_resolver.dart';
 import '../navigation/web_navigation_item.dart';
 import '../navigation/web_navigation_permission_adapter.dart';
@@ -93,7 +93,9 @@ class WorkspaceHomeWeb extends StatelessWidget {
   }
 }
 
-class _WorkspaceHomeContent extends StatelessWidget {
+enum _WorkspaceHomeView { operational, performance }
+
+class _WorkspaceHomeContent extends StatefulWidget {
   const _WorkspaceHomeContent({
     required this.compact,
     required this.resolver,
@@ -103,6 +105,31 @@ class _WorkspaceHomeContent extends StatelessWidget {
   final bool compact;
   final WebNavigationDestinationResolver resolver;
   final VoidCallback onNovoAtendimentoTecnico;
+
+  @override
+  State<_WorkspaceHomeContent> createState() => _WorkspaceHomeContentState();
+}
+
+class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
+  _WorkspaceHomeView _selectedView = _WorkspaceHomeView.operational;
+  DesempenhoColaboradorHomeProvider? _boundDesempenhoProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final DesempenhoColaboradorHomeProvider provider =
+        context.read<DesempenhoColaboradorHomeProvider>();
+    if (!identical(_boundDesempenhoProvider, provider)) {
+      _boundDesempenhoProvider?.setRealtimeActive(false);
+      _boundDesempenhoProvider = provider;
+    }
+  }
+
+  @override
+  void dispose() {
+    _boundDesempenhoProvider?.setRealtimeActive(false);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,8 +154,19 @@ class _WorkspaceHomeContent extends StatelessWidget {
     final ColaboradorHomeOperacionalProvider operacional =
         context.watch<ColaboradorHomeOperacionalProvider>();
     final ThemeData webTheme = WebThemeTokens.applyTo(Theme.of(context));
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
 
-    if (isCollaborator && !desempenho.hasLoaded && !desempenho.loading) {
+    desempenho.configureRole(isAdmin: isAdminUser);
+    desempenho.setRealtimeActive(
+      _selectedView == _WorkspaceHomeView.performance &&
+          (isAdminUser || isCollaborator),
+    );
+    if (_selectedView == _WorkspaceHomeView.performance &&
+        (isAdminUser || isCollaborator) &&
+        !desempenho.hasLoaded &&
+        !desempenho.loading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted && !desempenho.hasLoaded && !desempenho.loading) {
           unawaited(desempenho.load());
@@ -156,7 +194,8 @@ class _WorkspaceHomeContent extends StatelessWidget {
 
     return AnimatedTheme(
       data: webTheme,
-      duration: WebThemeTokens.transitionDuration,
+      duration:
+          reduceMotion ? Duration.zero : WebThemeTokens.transitionDuration,
       curve: WebThemeTokens.transitionCurve,
       child: Consumer<WorkspaceHomeProvider>(
         builder: (
@@ -171,7 +210,7 @@ class _WorkspaceHomeContent extends StatelessWidget {
 
           return LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
-              final bool narrow = compact || constraints.maxWidth < 900;
+              final bool narrow = widget.compact || constraints.maxWidth < 900;
               final double horizontalPadding = narrow ? 14 : 24;
 
               return AnimatedContainer(
@@ -198,10 +237,11 @@ class _WorkspaceHomeContent extends StatelessWidget {
                             home: isCollaborator ? null : home,
                             regionalizacao: regionalizacao,
                             loading:
-                                isCollaborator
-                                    ? desempenho.loading ||
-                                        (hasOperationalAccess &&
-                                            operacional.loading)
+                                _selectedView == _WorkspaceHomeView.performance
+                                    ? desempenho.loading
+                                    : isCollaborator
+                                    ? hasOperationalAccess &&
+                                        operacional.loading
                                     : provider.loading,
                             onRefresh: () async {
                               final ColaboradorAutorizacoesProvider
@@ -218,6 +258,11 @@ class _WorkspaceHomeContent extends StatelessWidget {
 
                               final bool refreshedIsCollaborator =
                                   refreshedAutorizacoes.ehColaborador;
+                              final bool refreshedIsAdmin =
+                                  refreshedAutorizacoes.ehAdministrador;
+                              desempenho.configureRole(
+                                isAdmin: refreshedIsAdmin,
+                              );
                               final bool refreshedCanAccessSales =
                                   refreshedIsCollaborator &&
                                   refreshedAutorizacoes.podeVerQuantoVendeu;
@@ -233,9 +278,13 @@ class _WorkspaceHomeContent extends StatelessWidget {
                                   refreshedCanAccessServices ||
                                   refreshedCanAccessReservations;
 
-                              if (refreshedIsCollaborator) {
+                              if (_selectedView ==
+                                      _WorkspaceHomeView.performance &&
+                                  (refreshedIsAdmin ||
+                                      refreshedIsCollaborator)) {
+                                await desempenho.reload();
+                              } else if (refreshedIsCollaborator) {
                                 await Future.wait<void>(<Future<void>>[
-                                  desempenho.reload(),
                                   if (refreshedHasOperationalAccess)
                                     operacional.reload(
                                       canAccessSales: refreshedCanAccessSales,
@@ -259,7 +308,25 @@ class _WorkspaceHomeContent extends StatelessWidget {
                             },
                           ),
                           const SizedBox(height: 18),
-                          if (isCollaborator) ...<Widget>[
+                          if (isAdminUser || isCollaborator) ...<Widget>[
+                            _WorkspaceHomeViewSwitch(
+                              selected: _selectedView,
+                              onChanged: (_WorkspaceHomeView value) {
+                                setState(() => _selectedView = value);
+                                desempenho.setRealtimeActive(
+                                  value == _WorkspaceHomeView.performance,
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 18),
+                          ],
+                          if ((isAdminUser || isCollaborator) &&
+                              _selectedView == _WorkspaceHomeView.performance)
+                            PerformanceHomeWebDashboard(
+                              provider: desempenho,
+                              regionalizacao: regionalizacao,
+                            )
+                          else if (isCollaborator) ...<Widget>[
                             _WorkspaceHomeRoleHeader(
                               icon: Icons.track_changes_rounded,
                               title: _text(
@@ -305,12 +372,7 @@ class _WorkspaceHomeContent extends StatelessWidget {
                                         )
                                         : null,
                               ),
-                              const SizedBox(height: 16),
                             ],
-                            CollaboratorPerformanceHomeWebDashboard(
-                              provider: desempenho,
-                              regionalizacao: regionalizacao,
-                            ),
                           ] else if (initialLoading)
                             _WorkspaceHomeLoading(compact: narrow)
                           else if (initialError)
@@ -414,7 +476,7 @@ class _WorkspaceHomeContent extends StatelessWidget {
                                             .operationsPointOfSale,
                                       ),
                                   onNewTechnicalService:
-                                      onNovoAtendimentoTecnico,
+                                      widget.onNovoAtendimentoTecnico,
                                   onOpenCash:
                                       () => _resolve(
                                         context,
@@ -454,7 +516,9 @@ class _WorkspaceHomeContent extends StatelessWidget {
   }
 
   void _resolve(BuildContext context, WebNavigationDestination destination) {
-    final WebNavigationResolutionResult result = resolver.resolve(destination);
+    final WebNavigationResolutionResult result = widget.resolver.resolve(
+      destination,
+    );
     if (result.handled) {
       return;
     }
@@ -473,6 +537,121 @@ class _WorkspaceHomeContent extends StatelessWidget {
           ),
         ),
         behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+}
+
+class _WorkspaceHomeViewSwitch extends StatelessWidget {
+  const _WorkspaceHomeViewSwitch({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final _WorkspaceHomeView selected;
+  final ValueChanged<_WorkspaceHomeView> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    return Semantics(
+      label: context.t(
+        'workspaceHome.viewSelector',
+        fallback: 'Selecionar visão da tela inicial',
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          color: tokens.surfaceMuted,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: tokens.cardBorder),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            _WorkspaceHomeViewButton(
+              key: const Key('workspace-home-operational-view'),
+              selected: selected == _WorkspaceHomeView.operational,
+              icon: Icons.dashboard_outlined,
+              label: context.t(
+                'workspaceHome.view.operational',
+                fallback: 'Operacional',
+              ),
+              onTap: () => onChanged(_WorkspaceHomeView.operational),
+            ),
+            const SizedBox(width: 4),
+            _WorkspaceHomeViewButton(
+              key: const Key('workspace-home-performance-view'),
+              selected: selected == _WorkspaceHomeView.performance,
+              icon: Icons.insights_outlined,
+              label: context.t(
+                'workspaceHome.view.performance',
+                fallback: 'Desempenho',
+              ),
+              onTap: () => onChanged(_WorkspaceHomeView.performance),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WorkspaceHomeViewButton extends StatelessWidget {
+  const _WorkspaceHomeViewButton({
+    super.key,
+    required this.selected,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+    return Material(
+      color: selected ? tokens.surface : Colors.transparent,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration:
+              reduceMotion ? Duration.zero : WebThemeTokens.transitionDuration,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected ? tokens.selectedBorder : Colors.transparent,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                icon,
+                size: 18,
+                color: selected ? tokens.info : tokens.secondaryText,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected ? tokens.primaryText : tokens.secondaryText,
+                  fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

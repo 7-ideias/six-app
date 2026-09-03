@@ -150,6 +150,7 @@ void _onConnect({
   final List<String> destinations = <String>[
     if (empresaId != null) '/topic/empresa/$empresaId/vendas',
     if (empresaId != null) '/topic/empresa/$empresaId/produtos',
+    if (empresaId != null) '/topic/empresa/$empresaId/dashboard',
     '/user/queue/chat-suporte',
   ];
 
@@ -181,9 +182,10 @@ void _assinarDestino({
 
       try {
         final dynamic decoded = jsonDecode(body);
-        final Map<String, dynamic> jsonBody = decoded is Map<String, dynamic>
-            ? decoded
-            : Map<String, dynamic>.from(decoded as Map);
+        final Map<String, dynamic> jsonBody =
+            decoded is Map<String, dynamic>
+                ? decoded
+                : Map<String, dynamic>.from(decoded as Map);
 
         final DateTime recebidoEm = DateTime.now();
         final Map<String, dynamic> payload = <String, dynamic>{
@@ -194,11 +196,16 @@ void _assinarDestino({
           'canal': jsonBody['canal'] ?? 'WEBSOCKET',
         };
 
-        if (_deveRegistrarComoNotificacao(payload)) {
+        final bool registrarComoNotificacao = _deveRegistrarComoNotificacao(
+          payload,
+        );
+        if (registrarComoNotificacao) {
           NotificacaoService().registrarPayload(payload);
         }
         _stompMessageController.add(payload);
-        onMensagemRecebida?.call(payload);
+        if (!_ehAtualizacaoSilenciosaDoDashboard(payload)) {
+          onMensagemRecebida?.call(payload);
+        }
       } catch (error) {
         debugPrint('Erro ao converter mensagem do WebSocket: $error');
       }
@@ -207,11 +214,18 @@ void _assinarDestino({
 }
 
 bool _deveRegistrarComoNotificacao(Map<String, dynamic> payload) {
+  if (_ehAtualizacaoSilenciosaDoDashboard(payload)) {
+    return false;
+  }
   if (payload['destination']?.toString() != 'support.chat') {
     return true;
   }
+  return payload['tipoDeEvento']?.toString() == 'CHAT_SUPORTE_NOVA_MENSAGEM';
+}
+
+bool _ehAtualizacaoSilenciosaDoDashboard(Map<String, dynamic> payload) {
   return payload['tipoDeEvento']?.toString() ==
-      'CHAT_SUPORTE_NOVA_MENSAGEM';
+      'DASHBOARD_DESEMPENHO_ATUALIZADO';
 }
 
 void disconnectStomp() {

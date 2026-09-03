@@ -88,6 +88,8 @@ class UsuarioService {
     Map<String, dynamic>? atendimentosCriadosFiltrosWeb,
     Map<String, dynamic>? atendimentosCriadosFiltrosMobile,
     Map<String, dynamic>? servicosEmAndamentoFiltrosMobile,
+    Map<String, dynamic>? desempenhoInicioFiltrosWeb,
+    Map<String, dynamic>? desempenhoInicioFiltrosMobile,
     List<String>? ordemCardsGestaoMobile,
     List<String>? ordemCardsAtendimentoMobile,
     List<String>? ordemCardsVendasMobile,
@@ -167,6 +169,12 @@ class UsuarioService {
     if (servicosEmAndamentoFiltrosMobile != null) {
       body['servicosEmAndamentoFiltrosMobile'] =
           servicosEmAndamentoFiltrosMobile;
+    }
+    if (desempenhoInicioFiltrosWeb != null) {
+      body['desempenhoInicioFiltrosWeb'] = desempenhoInicioFiltrosWeb;
+    }
+    if (desempenhoInicioFiltrosMobile != null) {
+      body['desempenhoInicioFiltrosMobile'] = desempenhoInicioFiltrosMobile;
     }
     if (ordemCardsGestaoMobile != null) {
       body['ordemCardsGestaoMobile'] = ordemCardsGestaoMobile;

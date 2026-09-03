@@ -23,7 +23,7 @@ import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
 import 'package:sixpos/presentation/components/mobile/collaborator_operational_home_dashboard.dart';
-import 'package:sixpos/presentation/components/mobile/collaborator_performance_home_dashboard.dart';
+import 'package:sixpos/presentation/components/mobile/performance_home_mobile_dashboard.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_selection_sheet.dart';
@@ -66,6 +66,8 @@ class _InfrastructureRequestsFilterSelection {
   final int value;
   final AdminRequestWindowUnit unit;
 }
+
+enum _HomeDashboardView { operational, performance }
 
 class _HomePageMobileState extends State<HomePageMobile> {
   static const String _allCompaniesFilterValue = '__all_companies__';
@@ -132,6 +134,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
   AdminRequestWindowUnit _infrastructureRequestsWindowUnit =
       AdminRequestWindowUnit.minutes;
   bool _tentouCarregarDesempenho = false;
+  _HomeDashboardView _dashboardView = _HomeDashboardView.operational;
   String _comercioSelecionadoNoFiltro = _allCompaniesFilterValue;
   String? _colaboradorSelecionadoNoFiltro;
   List<EmpresaVinculoWebModel> _comerciosDisponiveis =
@@ -169,6 +172,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
     _notificacaoService.removeListener(_onNotificacoesChanged);
     _dashboardProvider.removeListener(_onDashboardChanged);
     _desempenhoProvider.removeListener(_onDesempenhoChanged);
+    _desempenhoProvider.setRealtimeActive(false);
     _operacionalProvider.removeListener(_onOperacionalChanged);
     _empresaProvider.removeListener(_onEmpresaChanged);
     _usuarioProvider.removeListener(_onUsuarioChanged);
@@ -206,13 +210,16 @@ class _HomePageMobileState extends State<HomePageMobile> {
         }
       });
     }
-    if (autorizacoes.ehColaborador && !_tentouCarregarDesempenho) {
-      _tentouCarregarDesempenho = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          unawaited(_desempenhoProvider.load());
-        }
-      });
+    _desempenhoProvider.configureRole(isAdmin: autorizacoes.ehAdministrador);
+    _desempenhoProvider.setRealtimeActive(
+      _dashboardView == _HomeDashboardView.performance &&
+          (autorizacoes.ehAdministrador || autorizacoes.ehColaborador),
+    );
+    if (_dashboardView == _HomeDashboardView.performance &&
+        (autorizacoes.ehAdministrador || autorizacoes.ehColaborador) &&
+        !_carregandoTrocaDeComercio &&
+        !_tentouCarregarDesempenho) {
+      _schedulePerformanceLoad();
     }
     if (!kIsWeb) {
       _scheduleOperationalLoad(autorizacoes);
@@ -237,6 +244,14 @@ class _HomePageMobileState extends State<HomePageMobile> {
     }
 
     _profileAvatarScrollProgress.value = progress;
+  }
+
+  void _schedulePerformanceLoad() {
+    if (_tentouCarregarDesempenho) return;
+    _tentouCarregarDesempenho = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_desempenhoProvider.load());
+    });
   }
 
   void _onNotificacoesChanged() {
@@ -418,11 +433,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
         canAccessSales || canAccessServices || canAccessReservations;
 
     final List<Future<void>> tasks = <Future<void>>[];
-    if (autorizacoes.ehAdministrador) {
-      tasks.add(_dashboardProvider.reload());
-    }
-    if (autorizacoes.ehColaborador) {
+    if (_dashboardView == _HomeDashboardView.performance &&
+        (autorizacoes.ehAdministrador || autorizacoes.ehColaborador)) {
       tasks.add(_desempenhoProvider.reload());
+    } else if (autorizacoes.ehAdministrador) {
+      tasks.add(_dashboardProvider.reload());
+    } else if (autorizacoes.ehColaborador) {
       if (podeCarregarPainelOperacional) {
         tasks.add(_reloadOperational(autorizacoes));
       }
@@ -725,7 +741,15 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 child: _buildSuperInfrastructureBlock(context),
               ),
             ],
-            if (ehAdmin) ...[
+            if (ehAdmin || ehColaborador) ...<Widget>[
+              const SizedBox(height: 16),
+              SixStaggeredEntry(
+                delay: Duration(milliseconds: ehSuper ? 140 : 70),
+                child: _buildHomeViewSwitch(context),
+              ),
+            ],
+            if (ehAdmin &&
+                _dashboardView == _HomeDashboardView.operational) ...[
               SizedBox(height: 16),
               SixStaggeredEntry(
                 delay: Duration(milliseconds: ehSuper ? 150 : 80),
@@ -759,7 +783,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
                 child: _buildOperationsSection(data),
               ),
             ],
-            if (ehColaborador) ...[
+            if (ehColaborador &&
+                _dashboardView == _HomeDashboardView.operational) ...[
               SizedBox(height: 16),
               SixStaggeredEntry(
                 delay: Duration(milliseconds: 80),
@@ -790,10 +815,13 @@ class _HomePageMobileState extends State<HomePageMobile> {
                   ),
                 ),
               ],
-              SizedBox(height: 12),
+            ],
+            if ((ehAdmin || ehColaborador) &&
+                _dashboardView == _HomeDashboardView.performance) ...<Widget>[
+              const SizedBox(height: 16),
               SixStaggeredEntry(
-                delay: Duration(milliseconds: hasOperationalAccess ? 210 : 130),
-                child: CollaboratorPerformanceHomeMobileDashboard(
+                delay: Duration(milliseconds: ehSuper ? 190 : 120),
+                child: PerformanceHomeMobileDashboard(
                   provider: _desempenhoProvider,
                 ),
               ),
@@ -806,6 +834,119 @@ class _HomePageMobileState extends State<HomePageMobile> {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHomeViewSwitch(BuildContext context) {
+    return Semantics(
+      label: context.t(
+        'workspaceHome.viewSelector',
+        fallback: 'Selecionar visão da tela inicial',
+      ),
+      child: Container(
+        key: const Key('home-mobile-view-switch'),
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          color: _softSurface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _borderColor),
+        ),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: _buildHomeViewButton(
+                key: const Key('home-mobile-operational-view'),
+                selected: _dashboardView == _HomeDashboardView.operational,
+                icon: Icons.dashboard_outlined,
+                label: context.t(
+                  'workspaceHome.view.operational',
+                  fallback: 'Operacional',
+                ),
+                onTap: () {
+                  setState(
+                    () => _dashboardView = _HomeDashboardView.operational,
+                  );
+                  _desempenhoProvider.setRealtimeActive(false);
+                },
+              ),
+            ),
+            const SizedBox(width: 5),
+            Expanded(
+              child: _buildHomeViewButton(
+                key: const Key('home-mobile-performance-view'),
+                selected: _dashboardView == _HomeDashboardView.performance,
+                icon: Icons.insights_outlined,
+                label: context.t(
+                  'workspaceHome.view.performance',
+                  fallback: 'Desempenho',
+                ),
+                onTap: () {
+                  setState(
+                    () => _dashboardView = _HomeDashboardView.performance,
+                  );
+                  _desempenhoProvider.setRealtimeActive(true);
+                  _schedulePerformanceLoad();
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHomeViewButton({
+    required Key key,
+    required bool selected,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+    return Material(
+      key: key,
+      color: selected ? _surfaceColor : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration:
+              reduceMotion ? Duration.zero : const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected ? _colors.strongBorder : Colors.transparent,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Icon(
+                icon,
+                size: 18,
+                color: selected ? _accentColor : _mutedTextColor,
+              ),
+              const SizedBox(width: 7),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: selected ? _titleTextColor : _mutedTextColor,
+                    fontSize: 12,
+                    fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -2197,8 +2338,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
     if (filtroSelecionado == _allCompaniesFilterValue) {
       setState(() {
         _comercioSelecionadoNoFiltro = filtroSelecionado;
+        _dashboardView = _HomeDashboardView.operational;
+        _tentouCarregarDesempenho = false;
         _resetCollaboratorFilterState();
       });
+      _desempenhoProvider.setRealtimeActive(false);
+      _desempenhoProvider.clear();
       _dashboardProvider.setCollaboratorFilter(null, reload: false);
       await _dashboardProvider.reload();
       return;
@@ -2211,8 +2356,10 @@ class _HomePageMobileState extends State<HomePageMobile> {
     setState(() {
       _carregandoTrocaDeComercio = true;
       _comercioSelecionadoNoFiltro = filtroSelecionado;
+      _tentouCarregarDesempenho = false;
       _resetCollaboratorFilterState();
     });
+    _desempenhoProvider.clear();
 
     try {
       if (empresaAnterior != filtroSelecionado) {
@@ -2231,7 +2378,12 @@ class _HomePageMobileState extends State<HomePageMobile> {
           () => _dashboardProvider.setCollaboratorFilter(null, reload: false),
         ),
         _dashboardProvider.reload(),
+        if (_dashboardView == _HomeDashboardView.performance)
+          _desempenhoProvider.load(),
       ]);
+      if (_dashboardView == _HomeDashboardView.performance) {
+        _tentouCarregarDesempenho = true;
+      }
     } catch (error) {
       debugPrint('[HomePageMobile] Falha ao trocar comércio no filtro: $error');
       await _authService.setEmpresaId(empresaAnterior);
