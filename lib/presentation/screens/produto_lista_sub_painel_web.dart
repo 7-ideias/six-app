@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
@@ -223,6 +224,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   final ScrollController _horizontalScrollController = ScrollController();
   final ProdutoService _produtoService = ProdutoService();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
+  final UsuarioService _usuarioService = UsuarioService();
 
   List<ProdutoModel> todosProdutos = <ProdutoModel>[];
   List<ProdutoModel> produtosFiltrados = <ProdutoModel>[];
@@ -235,6 +237,12 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   bool _isGerandoRelatorio = false;
   bool _carregandoCatalogoEdicao = false;
   bool _salvandoPreferencia = false;
+  bool _aplicandoPreferenciasEstoque = false;
+  bool _usuarioAlterouFiltrosEstoque = false;
+  bool _salvandoFiltrosEstoque = false;
+  bool _salvamentoFiltrosEstoquePendente = false;
+  Timer? _debouncePreferenciasEstoque;
+  String? _ultimaAssinaturaPreferenciasEstoque;
   String? _erroCatalogoEdicao;
   String? _categoriaSelecionadaId;
   _ProdutoResumoRapidoFiltro _resumoRapidoSelecionado =
@@ -273,6 +281,9 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
   bool get _exibirInformacoesEstoque =>
       widget.exibirInformacoesEstoque || widget.isSelecao;
 
+  bool get _usarPreferenciasEstoqueWeb =>
+      widget.exibirInformacoesEstoque && !widget.isSelecao;
+
   int get _quantidadeSelecionadaTotal => _produtosSelecionados.values.fold<int>(
     0,
     (int total, _ProdutoSelecionadoWeb item) => total + item.quantidade,
@@ -291,22 +302,317 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         tipoSelecionado == 'SERVICO'
             ? _ProdutoResumoRapidoFiltro.servicos
             : _ProdutoResumoRapidoFiltro.produtos;
-    Future.microtask(_carregarPreferenciasDoUsuario);
-    Future.microtask(_recarregar);
+    Future.microtask(_inicializarTela);
   }
 
   @override
   void dispose() {
+    final bool temSalvamentoPendente =
+        _debouncePreferenciasEstoque?.isActive ?? false;
+    _debouncePreferenciasEstoque?.cancel();
+    if (temSalvamentoPendente) {
+      unawaited(_salvarPreferenciasEstoqueWeb());
+    }
     _controllerBusca.dispose();
     _verticalScrollController.dispose();
     _horizontalScrollController.dispose();
     super.dispose();
   }
 
+  Future<void> _inicializarTela() async {
+    if (_usarPreferenciasEstoqueWeb) {
+      await _restaurarPreferenciasEstoqueWebDoCache();
+    }
+    if (!mounted) return;
+
+    await _recarregar();
+    if (!mounted) return;
+
+    if (_usarPreferenciasEstoqueWeb) {
+      unawaited(_restaurarPreferenciasEstoqueWebDoBackend());
+    } else {
+      unawaited(_carregarPreferenciasDoUsuario());
+    }
+  }
+
+  Future<void> _restaurarPreferenciasEstoqueWebDoCache() async {
+    final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+        await _usuarioService.carregarPreferenciasIndividuaisDoCache();
+    if (!mounted || preferencias == null || _usuarioAlterouFiltrosEstoque) {
+      return;
+    }
+    _aplicarPreferenciasEstoqueWeb(preferencias.estoqueFiltrosWeb);
+  }
+
+  Future<void> _restaurarPreferenciasEstoqueWebDoBackend() async {
+    try {
+      if (_usuarioProvider.usuario == null) {
+        await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
+      }
+      final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+          _usuarioProvider.usuario?.preferenciasIndividuaisDoUsuario;
+      if (!mounted || preferencias == null || _usuarioAlterouFiltrosEstoque) {
+        return;
+      }
+      _aplicarPreferenciasEstoqueWeb(preferencias.estoqueFiltrosWeb);
+    } catch (error, stackTrace) {
+      _logError(
+        'Erro ao restaurar preferencias web do estoque',
+        error,
+        stackTrace,
+      );
+    }
+  }
+
+  void _aplicarPreferenciasEstoqueWeb(EstoqueFiltrosPreferencia filtros) {
+    String? categoriaId = filtros.categoriaId;
+    if (categoriaId != null &&
+        todosProdutos.isNotEmpty &&
+        !todosProdutos.any(
+          (ProdutoModel produto) =>
+              produto.objCategoria?.idCategoria == categoriaId,
+        )) {
+      categoriaId = null;
+    }
+
+    _aplicandoPreferenciasEstoque = true;
+    setState(() {
+      termoBusca = filtros.busca;
+      _controllerBusca.text = filtros.busca;
+      _categoriaSelecionadaId = categoriaId;
+      _statusFiltro = _statusEstoqueWebDaPreferencia(filtros.status);
+      _estoqueFiltro = _situacaoEstoqueWebDaPreferencia(
+        filtros.situacaoEstoque,
+      );
+      _marcacaoFiltro = _marcacaoEstoqueWebDaPreferencia(filtros.marcacao);
+      ordenacao = _ordenacaoEstoqueWebDaPreferencia(filtros.ordenacao);
+      _resumoRapidoSelecionado = _resumoEstoqueWebDaPreferencia(
+        filtros.resumoRapido,
+      );
+      _itensPorPagina = filtros.itensPorPagina;
+      _resetarPaginacao();
+    });
+    _aplicandoPreferenciasEstoque = false;
+    _ultimaAssinaturaPreferenciasEstoque = _assinaturaPreferenciasEstoqueWeb();
+  }
+
+  void _agendarSalvamentoPreferenciasEstoqueWeb() {
+    if (!_usarPreferenciasEstoqueWeb || _aplicandoPreferenciasEstoque) return;
+
+    _debouncePreferenciasEstoque?.cancel();
+    if (_assinaturaPreferenciasEstoqueWeb() ==
+        _ultimaAssinaturaPreferenciasEstoque) {
+      return;
+    }
+    _usuarioAlterouFiltrosEstoque = true;
+
+    _debouncePreferenciasEstoque = Timer(
+      const Duration(milliseconds: 450),
+      _salvarPreferenciasEstoqueWeb,
+    );
+  }
+
+  Future<void> _salvarPreferenciasEstoqueWeb() async {
+    if (_salvandoFiltrosEstoque) {
+      _salvamentoFiltrosEstoquePendente = true;
+      return;
+    }
+
+    _salvandoFiltrosEstoque = true;
+    try {
+      while (true) {
+        _salvamentoFiltrosEstoquePendente = false;
+        final String assinatura = _assinaturaPreferenciasEstoqueWeb();
+        if (assinatura == _ultimaAssinaturaPreferenciasEstoque) break;
+
+        final EstoqueFiltrosPreferencia filtros =
+            _preferenciasEstoqueWebAtuais();
+        try {
+          await _usuarioService.atualizarPreferenciasIndividuais(
+            estoqueFiltrosWeb: filtros.toJson(),
+          );
+          _ultimaAssinaturaPreferenciasEstoque = assinatura;
+        } catch (error, stackTrace) {
+          _logError(
+            'Erro ao salvar preferencias web do estoque',
+            error,
+            stackTrace,
+          );
+          break;
+        }
+
+        if (!_salvamentoFiltrosEstoquePendente &&
+            _assinaturaPreferenciasEstoqueWeb() ==
+                _ultimaAssinaturaPreferenciasEstoque) {
+          break;
+        }
+      }
+    } finally {
+      _salvandoFiltrosEstoque = false;
+    }
+  }
+
+  EstoqueFiltrosPreferencia _preferenciasEstoqueWebAtuais() {
+    return EstoqueFiltrosPreferencia(
+      busca: termoBusca,
+      categoriaId: _categoriaSelecionadaId,
+      status: _statusPreferenciaEstoqueWeb(_statusFiltro),
+      situacaoEstoque: _situacaoPreferenciaEstoqueWeb(_estoqueFiltro),
+      marcacao: _marcacaoPreferenciaEstoqueWeb(_marcacaoFiltro),
+      ordenacao: _ordenacaoPreferenciaEstoqueWeb(ordenacao),
+      resumoRapido: _resumoPreferenciaEstoqueWeb(_resumoRapidoSelecionado),
+      itensPorPagina: _itensPorPagina,
+    );
+  }
+
+  String _assinaturaPreferenciasEstoqueWeb() {
+    final EstoqueFiltrosPreferencia filtros = _preferenciasEstoqueWebAtuais();
+    return <Object?>[
+      filtros.busca,
+      filtros.categoriaId,
+      filtros.status,
+      filtros.situacaoEstoque,
+      filtros.marcacao,
+      filtros.ordenacao,
+      filtros.resumoRapido,
+      filtros.itensPorPagina,
+    ].join('|');
+  }
+
+  _ProdutoStatusFiltro _statusEstoqueWebDaPreferencia(String codigo) {
+    switch (codigo) {
+      case 'ATIVOS':
+        return _ProdutoStatusFiltro.ativos;
+      case 'INATIVOS':
+        return _ProdutoStatusFiltro.inativos;
+      default:
+        return _ProdutoStatusFiltro.todos;
+    }
+  }
+
+  String _statusPreferenciaEstoqueWeb(_ProdutoStatusFiltro filtro) {
+    switch (filtro) {
+      case _ProdutoStatusFiltro.todos:
+        return 'TODOS';
+      case _ProdutoStatusFiltro.ativos:
+        return 'ATIVOS';
+      case _ProdutoStatusFiltro.inativos:
+        return 'INATIVOS';
+    }
+  }
+
+  _ProdutoEstoqueFiltro _situacaoEstoqueWebDaPreferencia(String codigo) {
+    switch (codigo) {
+      case 'EM_ESTOQUE':
+        return _ProdutoEstoqueFiltro.emEstoque;
+      case 'ESTOQUE_BAIXO':
+        return _ProdutoEstoqueFiltro.estoqueBaixo;
+      case 'SEM_ESTOQUE':
+        return _ProdutoEstoqueFiltro.semEstoque;
+      case 'ESTOQUE_NEGATIVO':
+        return _ProdutoEstoqueFiltro.estoqueNegativo;
+      default:
+        return _ProdutoEstoqueFiltro.todos;
+    }
+  }
+
+  String _situacaoPreferenciaEstoqueWeb(_ProdutoEstoqueFiltro filtro) {
+    switch (filtro) {
+      case _ProdutoEstoqueFiltro.todos:
+        return 'TODOS';
+      case _ProdutoEstoqueFiltro.emEstoque:
+        return 'EM_ESTOQUE';
+      case _ProdutoEstoqueFiltro.estoqueBaixo:
+        return 'ESTOQUE_BAIXO';
+      case _ProdutoEstoqueFiltro.semEstoque:
+        return 'SEM_ESTOQUE';
+      case _ProdutoEstoqueFiltro.estoqueNegativo:
+        return 'ESTOQUE_NEGATIVO';
+    }
+  }
+
+  _ProdutoMarcacaoFiltro _marcacaoEstoqueWebDaPreferencia(String codigo) {
+    switch (codigo) {
+      case 'FAVORITOS':
+        return _ProdutoMarcacaoFiltro.favoritos;
+      case 'CATALOGO':
+        return _ProdutoMarcacaoFiltro.catalogo;
+      case 'FAVORITOS_E_CATALOGO':
+        return _ProdutoMarcacaoFiltro.favoritosECatalogo;
+      default:
+        return _ProdutoMarcacaoFiltro.todos;
+    }
+  }
+
+  String _marcacaoPreferenciaEstoqueWeb(_ProdutoMarcacaoFiltro filtro) {
+    switch (filtro) {
+      case _ProdutoMarcacaoFiltro.todos:
+        return 'TODOS';
+      case _ProdutoMarcacaoFiltro.favoritos:
+        return 'FAVORITOS';
+      case _ProdutoMarcacaoFiltro.catalogo:
+        return 'CATALOGO';
+      case _ProdutoMarcacaoFiltro.favoritosECatalogo:
+        return 'FAVORITOS_E_CATALOGO';
+    }
+  }
+
+  String _ordenacaoEstoqueWebDaPreferencia(String codigo) {
+    switch (codigo) {
+      case 'PRECO_ASC':
+        return 'precoAsc';
+      case 'PRECO_DESC':
+        return 'precoDesc';
+      default:
+        return 'nomeAsc';
+    }
+  }
+
+  String _ordenacaoPreferenciaEstoqueWeb(String valor) {
+    switch (valor) {
+      case 'precoAsc':
+        return 'PRECO_ASC';
+      case 'precoDesc':
+        return 'PRECO_DESC';
+      default:
+        return 'NOME_ASC';
+    }
+  }
+
+  _ProdutoResumoRapidoFiltro _resumoEstoqueWebDaPreferencia(String codigo) {
+    switch (codigo) {
+      case 'TODOS':
+        return _ProdutoResumoRapidoFiltro.todos;
+      case 'SERVICOS':
+        return _ProdutoResumoRapidoFiltro.servicos;
+      case 'COM_IMAGEM':
+        return _ProdutoResumoRapidoFiltro.comImagem;
+      case 'ESTOQUE_BAIXO':
+        return _ProdutoResumoRapidoFiltro.estoqueBaixo;
+      default:
+        return _ProdutoResumoRapidoFiltro.produtos;
+    }
+  }
+
+  String _resumoPreferenciaEstoqueWeb(_ProdutoResumoRapidoFiltro filtro) {
+    switch (filtro) {
+      case _ProdutoResumoRapidoFiltro.todos:
+        return 'TODOS';
+      case _ProdutoResumoRapidoFiltro.produtos:
+        return 'PRODUTOS';
+      case _ProdutoResumoRapidoFiltro.servicos:
+        return 'SERVICOS';
+      case _ProdutoResumoRapidoFiltro.comImagem:
+        return 'COM_IMAGEM';
+      case _ProdutoResumoRapidoFiltro.estoqueBaixo:
+        return 'ESTOQUE_BAIXO';
+    }
+  }
+
   Future<void> _carregarPreferenciasDoUsuario() async {
     if (_usuarioProvider.usuario != null) return;
     try {
-      await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+      await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
       if (mounted) setState(() {});
     } catch (error, stackTrace) {
       _logError('Erro ao carregar preferencias do usuario', error, stackTrace);
@@ -384,8 +690,20 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
     if (!mounted) return;
 
+    final List<ProdutoModel> itensCarregados = <ProdutoModel>[
+      ...produtos,
+      ...servicos,
+    ];
     setState(() {
-      todosProdutos = <ProdutoModel>[...produtos, ...servicos];
+      todosProdutos = itensCarregados;
+      final String? categoriaId = _categoriaSelecionadaId;
+      if (categoriaId != null &&
+          !itensCarregados.any(
+            (ProdutoModel produto) =>
+                produto.objCategoria?.idCategoria == categoriaId,
+          )) {
+        _categoriaSelecionadaId = null;
+      }
       produtosFiltrados = const <ProdutoModel>[];
       _carregandoCatalogoEdicao = false;
       _resetarPaginacao();
@@ -394,6 +712,10 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
               ? (erroProdutos ?? erroServicos)?.toString()
               : null;
     });
+    if (_usarPreferenciasEstoqueWeb && !_usuarioAlterouFiltrosEstoque) {
+      _ultimaAssinaturaPreferenciasEstoque =
+          _assinaturaPreferenciasEstoqueWeb();
+    }
   }
 
   void atualizarListaComProvider(List<ProdutoModel> items) {
@@ -448,6 +770,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         _resetarPaginacao();
       }
     });
+    _agendarSalvamentoPreferenciasEstoqueWeb();
   }
 
   void _resetarPaginacao() {
@@ -461,7 +784,7 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
 
     setState(() => _salvandoPreferencia = true);
     try {
-      await UsuarioService().atualizarPreferenciasIndividuais(
+      await _usuarioService.atualizarPreferenciasIndividuais(
         modoDeExibicaoProdutosWeb: novoModo.codigo,
       );
       if (!mounted) return;
@@ -1850,55 +2173,55 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
         ),
         if (_exibirInformacoesEstoque)
           _buildMenuFiltro<_ProdutoEstoqueFiltro>(
-          context: context,
-          icon: Icons.inventory_2_outlined,
-          label: context.t('workspaceHome.stock.title', fallback: 'Estoque'),
-          value: _estoqueFiltroLabel(context),
-          selectedValue: _estoqueFiltro,
-          minWidth: 170,
-          items: <_ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>>[
-            _ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>(
-              value: _ProdutoEstoqueFiltro.todos,
-              label: context.t(
-                'produto.webList.filter.stockAll',
-                fallback: 'Todos',
+            context: context,
+            icon: Icons.inventory_2_outlined,
+            label: context.t('workspaceHome.stock.title', fallback: 'Estoque'),
+            value: _estoqueFiltroLabel(context),
+            selectedValue: _estoqueFiltro,
+            minWidth: 170,
+            items: <_ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>>[
+              _ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>(
+                value: _ProdutoEstoqueFiltro.todos,
+                label: context.t(
+                  'produto.webList.filter.stockAll',
+                  fallback: 'Todos',
+                ),
               ),
-            ),
-            _ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>(
-              value: _ProdutoEstoqueFiltro.emEstoque,
-              label: context.t(
-                'produto.webList.filter.stockAvailable',
-                fallback: 'Em estoque',
+              _ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>(
+                value: _ProdutoEstoqueFiltro.emEstoque,
+                label: context.t(
+                  'produto.webList.filter.stockAvailable',
+                  fallback: 'Em estoque',
+                ),
               ),
-            ),
-            _ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>(
-              value: _ProdutoEstoqueFiltro.estoqueBaixo,
-              label: context.t(
-                'produto.webList.filter.stockLow',
-                fallback: 'Estoque baixo',
+              _ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>(
+                value: _ProdutoEstoqueFiltro.estoqueBaixo,
+                label: context.t(
+                  'produto.webList.filter.stockLow',
+                  fallback: 'Estoque baixo',
+                ),
               ),
-            ),
-            _ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>(
-              value: _ProdutoEstoqueFiltro.semEstoque,
-              label: context.t(
-                'produto.webList.filter.stockOut',
-                fallback: 'Sem estoque',
+              _ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>(
+                value: _ProdutoEstoqueFiltro.semEstoque,
+                label: context.t(
+                  'produto.webList.filter.stockOut',
+                  fallback: 'Sem estoque',
+                ),
               ),
-            ),
-            _ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>(
-              value: _ProdutoEstoqueFiltro.estoqueNegativo,
-              label: context.t(
-                'produto.webList.filter.stockNegative',
-                fallback: 'Estoque negativo',
+              _ProdutoFiltroMenuOpcao<_ProdutoEstoqueFiltro>(
+                value: _ProdutoEstoqueFiltro.estoqueNegativo,
+                label: context.t(
+                  'produto.webList.filter.stockNegative',
+                  fallback: 'Estoque negativo',
+                ),
               ),
-            ),
-          ],
-          onSelected: (_ProdutoEstoqueFiltro value) {
-            _atualizarCatalogo(() {
-              _estoqueFiltro = value;
-            });
-          },
-        ),
+            ],
+            onSelected: (_ProdutoEstoqueFiltro value) {
+              _atualizarCatalogo(() {
+                _estoqueFiltro = value;
+              });
+            },
+          ),
         _buildMenuFiltro<_ProdutoMarcacaoFiltro>(
           context: context,
           icon: Icons.auto_awesome_outlined,
@@ -2681,10 +3004,8 @@ class _ProdutoListaBodyState extends State<ProdutoListaBody> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    if (situacaoEstoque !=
-                            _ProdutoSituacaoEstoque.emEstoque &&
-                        situacaoEstoque !=
-                            _ProdutoSituacaoEstoque.naoAplicavel)
+                    if (situacaoEstoque != _ProdutoSituacaoEstoque.emEstoque &&
+                        situacaoEstoque != _ProdutoSituacaoEstoque.naoAplicavel)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: _buildEstoqueChip(

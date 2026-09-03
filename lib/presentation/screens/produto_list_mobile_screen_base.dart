@@ -104,12 +104,14 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       ValueNotifier<double>(0);
   final FocusNode _focusBusca = FocusNode();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
+  final UsuarioService _usuarioService = UsuarioService();
   late final ProdutoService _produtoService =
       widget.produtoService ?? ProdutoService();
   late final ProdutoQuickUpdateService _produtoQuickUpdateService =
       ProdutoQuickUpdateService(produtoService: _produtoService);
 
   Timer? _timerOcultarBusca;
+  Timer? _debouncePreferenciasEstoque;
   bool _exibirCampoBusca = false;
   final Map<String, _ProdutoSelecionadoMobile> _selecionados =
       <String, _ProdutoSelecionadoMobile>{};
@@ -136,6 +138,11 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       _ProdutoEstoqueFiltroMobile.todos;
   bool _salvandoPreferencia = false;
   bool _fixarHeaderLista = false;
+  bool _aplicandoPreferenciasEstoque = false;
+  bool _usuarioAlterouFiltrosEstoque = false;
+  bool _salvandoFiltrosEstoque = false;
+  bool _salvamentoFiltrosEstoquePendente = false;
+  String? _ultimaAssinaturaPreferenciasEstoque;
 
   String _t(String key, String fallback) => context.t(key, fallback: fallback);
 
@@ -171,6 +178,9 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   bool get _exibirInformacoesEstoque =>
       widget.exibirInformacoesEstoque || widget.isSelecao;
 
+  bool get _usarPreferenciasEstoqueMobile =>
+      widget.exibirInformacoesEstoque && !widget.isSelecao;
+
   int get _quantidadeSelecionadaTotal => _selecionados.values.fold<int>(
     0,
     (int total, _ProdutoSelecionadoMobile item) => total + item.quantidade,
@@ -197,13 +207,18 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     _exibirCampoBusca = widget.isSelecao;
     tipoSelecionado = _normalizarTipoProduto(widget.tipoInicial);
     _scrollController.addListener(_atualizarHeaderListaFixo);
-    Future.microtask(_carregarPreferenciasDoUsuario);
-    Future.microtask(_recarregar);
+    Future.microtask(_inicializarTela);
   }
 
   @override
   void dispose() {
     _timerOcultarBusca?.cancel();
+    final bool temSalvamentoPendente =
+        _debouncePreferenciasEstoque?.isActive ?? false;
+    _debouncePreferenciasEstoque?.cancel();
+    if (temSalvamentoPendente) {
+      unawaited(_salvarPreferenciasEstoqueMobile());
+    }
     _scrollController.dispose();
     _horizontalProdutosController.dispose();
     _selecaoHeaderCollapseProgress.dispose();
@@ -213,10 +228,236 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
     super.dispose();
   }
 
+  Future<void> _inicializarTela() async {
+    if (_usarPreferenciasEstoqueMobile) {
+      await _restaurarPreferenciasEstoqueMobileDoCache();
+    }
+    if (!mounted) return;
+
+    await _recarregar();
+    if (!mounted) return;
+
+    if (_usarPreferenciasEstoqueMobile) {
+      unawaited(_restaurarPreferenciasEstoqueMobileDoBackend());
+    } else {
+      unawaited(_carregarPreferenciasDoUsuario());
+    }
+  }
+
+  Future<void> _restaurarPreferenciasEstoqueMobileDoCache() async {
+    final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+        await _usuarioService.carregarPreferenciasIndividuaisDoCache();
+    if (!mounted || preferencias == null || _usuarioAlterouFiltrosEstoque) {
+      return;
+    }
+    _aplicarPreferenciasEstoqueMobile(preferencias.estoqueFiltrosMobile);
+  }
+
+  Future<void> _restaurarPreferenciasEstoqueMobileDoBackend() async {
+    try {
+      if (_usuarioProvider.usuario == null) {
+        await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
+      }
+      final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+          _usuarioProvider.usuario?.preferenciasIndividuaisDoUsuario;
+      if (!mounted || preferencias == null || _usuarioAlterouFiltrosEstoque) {
+        return;
+      }
+
+      final String tipoAnterior = tipoSelecionado;
+      _aplicarPreferenciasEstoqueMobile(preferencias.estoqueFiltrosMobile);
+      if (tipoAnterior != tipoSelecionado) {
+        await _recarregar();
+      } else {
+        aplicarFiltroOrdenacao();
+      }
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Erro ao restaurar preferencias mobile do estoque: '
+        '$error\n$stackTrace',
+      );
+    }
+  }
+
+  void _aplicarPreferenciasEstoqueMobile(EstoqueFiltrosPreferencia filtros) {
+    _aplicandoPreferenciasEstoque = true;
+    setState(() {
+      termoBusca = filtros.busca;
+      _controllerBusca.text = filtros.busca;
+      tipoSelecionado = filtros.tipo;
+      _categoriaSelecionadaId = filtros.categoriaId;
+      _statusFiltro = _statusEstoqueMobileDaPreferencia(filtros.status);
+      _estoqueFiltro = _situacaoEstoqueMobileDaPreferencia(
+        filtros.situacaoEstoque,
+      );
+      ordenacao = _ordenacaoEstoqueMobileDaPreferencia(filtros.ordenacao);
+    });
+    _aplicandoPreferenciasEstoque = false;
+    _ultimaAssinaturaPreferenciasEstoque =
+        _assinaturaPreferenciasEstoqueMobile();
+  }
+
+  void _agendarSalvamentoPreferenciasEstoqueMobile() {
+    if (!_usarPreferenciasEstoqueMobile || _aplicandoPreferenciasEstoque) {
+      return;
+    }
+
+    _debouncePreferenciasEstoque?.cancel();
+    if (_assinaturaPreferenciasEstoqueMobile() ==
+        _ultimaAssinaturaPreferenciasEstoque) {
+      return;
+    }
+    _usuarioAlterouFiltrosEstoque = true;
+
+    _debouncePreferenciasEstoque = Timer(
+      const Duration(milliseconds: 450),
+      _salvarPreferenciasEstoqueMobile,
+    );
+  }
+
+  Future<void> _salvarPreferenciasEstoqueMobile() async {
+    if (_salvandoFiltrosEstoque) {
+      _salvamentoFiltrosEstoquePendente = true;
+      return;
+    }
+
+    _salvandoFiltrosEstoque = true;
+    try {
+      while (true) {
+        _salvamentoFiltrosEstoquePendente = false;
+        final String assinatura = _assinaturaPreferenciasEstoqueMobile();
+        if (assinatura == _ultimaAssinaturaPreferenciasEstoque) break;
+
+        final EstoqueFiltrosPreferencia filtros =
+            _preferenciasEstoqueMobileAtuais();
+        try {
+          await _usuarioService.atualizarPreferenciasIndividuais(
+            estoqueFiltrosMobile: filtros.toJson(),
+          );
+          _ultimaAssinaturaPreferenciasEstoque = assinatura;
+        } catch (error, stackTrace) {
+          debugPrint(
+            'Erro ao salvar preferencias mobile do estoque: '
+            '$error\n$stackTrace',
+          );
+          break;
+        }
+
+        if (!_salvamentoFiltrosEstoquePendente &&
+            _assinaturaPreferenciasEstoqueMobile() ==
+                _ultimaAssinaturaPreferenciasEstoque) {
+          break;
+        }
+      }
+    } finally {
+      _salvandoFiltrosEstoque = false;
+    }
+  }
+
+  EstoqueFiltrosPreferencia _preferenciasEstoqueMobileAtuais() {
+    return EstoqueFiltrosPreferencia(
+      busca: termoBusca,
+      tipo: tipoSelecionado,
+      categoriaId: _categoriaSelecionadaId,
+      status: _statusPreferenciaEstoqueMobile(_statusFiltro),
+      situacaoEstoque: _situacaoPreferenciaEstoqueMobile(_estoqueFiltro),
+      ordenacao: _ordenacaoPreferenciaEstoqueMobile(ordenacao),
+    );
+  }
+
+  String _assinaturaPreferenciasEstoqueMobile() {
+    final EstoqueFiltrosPreferencia filtros =
+        _preferenciasEstoqueMobileAtuais();
+    return <Object?>[
+      filtros.busca,
+      filtros.tipo,
+      filtros.categoriaId,
+      filtros.status,
+      filtros.situacaoEstoque,
+      filtros.ordenacao,
+    ].join('|');
+  }
+
+  _ProdutoStatusFiltroMobile _statusEstoqueMobileDaPreferencia(String codigo) {
+    switch (codigo) {
+      case 'ATIVOS':
+        return _ProdutoStatusFiltroMobile.ativos;
+      case 'INATIVOS':
+        return _ProdutoStatusFiltroMobile.inativos;
+      default:
+        return _ProdutoStatusFiltroMobile.todos;
+    }
+  }
+
+  String _statusPreferenciaEstoqueMobile(_ProdutoStatusFiltroMobile filtro) {
+    switch (filtro) {
+      case _ProdutoStatusFiltroMobile.todos:
+        return 'TODOS';
+      case _ProdutoStatusFiltroMobile.ativos:
+        return 'ATIVOS';
+      case _ProdutoStatusFiltroMobile.inativos:
+        return 'INATIVOS';
+    }
+  }
+
+  _ProdutoEstoqueFiltroMobile _situacaoEstoqueMobileDaPreferencia(
+    String codigo,
+  ) {
+    switch (codigo) {
+      case 'EM_ESTOQUE':
+        return _ProdutoEstoqueFiltroMobile.emEstoque;
+      case 'ESTOQUE_BAIXO':
+        return _ProdutoEstoqueFiltroMobile.estoqueBaixo;
+      case 'SEM_ESTOQUE':
+        return _ProdutoEstoqueFiltroMobile.semEstoque;
+      case 'ESTOQUE_NEGATIVO':
+        return _ProdutoEstoqueFiltroMobile.estoqueNegativo;
+      default:
+        return _ProdutoEstoqueFiltroMobile.todos;
+    }
+  }
+
+  String _situacaoPreferenciaEstoqueMobile(_ProdutoEstoqueFiltroMobile filtro) {
+    switch (filtro) {
+      case _ProdutoEstoqueFiltroMobile.todos:
+        return 'TODOS';
+      case _ProdutoEstoqueFiltroMobile.emEstoque:
+        return 'EM_ESTOQUE';
+      case _ProdutoEstoqueFiltroMobile.estoqueBaixo:
+        return 'ESTOQUE_BAIXO';
+      case _ProdutoEstoqueFiltroMobile.semEstoque:
+        return 'SEM_ESTOQUE';
+      case _ProdutoEstoqueFiltroMobile.estoqueNegativo:
+        return 'ESTOQUE_NEGATIVO';
+    }
+  }
+
+  String _ordenacaoEstoqueMobileDaPreferencia(String codigo) {
+    switch (codigo) {
+      case 'PRECO_ASC':
+        return 'precoAsc';
+      case 'PRECO_DESC':
+        return 'precoDesc';
+      default:
+        return 'nome';
+    }
+  }
+
+  String _ordenacaoPreferenciaEstoqueMobile(String valor) {
+    switch (valor) {
+      case 'precoAsc':
+        return 'PRECO_ASC';
+      case 'precoDesc':
+        return 'PRECO_DESC';
+      default:
+        return 'NOME_ASC';
+    }
+  }
+
   Future<void> _carregarPreferenciasDoUsuario() async {
     if (_usuarioProvider.usuario != null) return;
     try {
-      await UsuarioService().buscarDadosDoUsuario_atualizaProviders();
+      await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
       if (mounted) setState(() {});
     } catch (_) {
       // Mantem a visualizacao vertical quando as preferencias ainda nao carregaram.
@@ -233,9 +474,16 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
   }
 
   void atualizarListaComProvider(List<ProdutoModel> listaDeProdutos) {
+    final String? categoriaAnterior = _categoriaSelecionadaId;
     todosProdutos = listaDeProdutos;
     _sincronizarCategoriaSelecionada();
     aplicarFiltroOrdenacao();
+    if (_usarPreferenciasEstoqueMobile && !_usuarioAlterouFiltrosEstoque) {
+      _ultimaAssinaturaPreferenciasEstoque =
+          _assinaturaPreferenciasEstoqueMobile();
+    } else if (categoriaAnterior != _categoriaSelecionadaId) {
+      _agendarSalvamentoPreferenciasEstoqueMobile();
+    }
   }
 
   void aplicarFiltroOrdenacao() {
@@ -896,6 +1144,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
         onChanged: (String value) {
           termoBusca = value;
           aplicarFiltroOrdenacao();
+          _agendarSalvamentoPreferenciasEstoqueMobile();
           _reiniciarTimerOcultarBusca();
         },
         decoration: InputDecoration(
@@ -919,6 +1168,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
                       _controllerBusca.clear();
                       termoBusca = '';
                       aplicarFiltroOrdenacao();
+                      _agendarSalvamentoPreferenciasEstoqueMobile();
                       _reiniciarTimerOcultarBusca();
                     },
                     icon: Icon(Icons.close_rounded, color: _mutedTextColor),
@@ -3105,6 +3355,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       produtosFiltrados = <ProdutoModel>[];
       todosProdutos = <ProdutoModel>[];
     });
+    _agendarSalvamentoPreferenciasEstoqueMobile();
     _recarregar();
   }
 
@@ -3746,6 +3997,7 @@ class _ProdutolistMobileScreenState extends State<ProdutolistMobileScreen> {
       ordenacao = selection.ordenacao;
     });
     aplicarFiltroOrdenacao();
+    _agendarSalvamentoPreferenciasEstoqueMobile();
   }
 
   Future<String?> _showCategoryFilterSelector(

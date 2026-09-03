@@ -80,6 +80,8 @@ class UsuarioService {
     List<String>? agendaFinanceiraTipoDePagamentoWeb,
     Map<String, dynamic>? agendaFinanceiraFiltrosWeb,
     Map<String, dynamic>? agendaFinanceiraFiltrosMobile,
+    Map<String, dynamic>? estoqueFiltrosWeb,
+    Map<String, dynamic>? estoqueFiltrosMobile,
     Map<String, dynamic>? catalogoReservasFiltrosWeb,
     Map<String, dynamic>? consultaVendasFiltrosWeb,
     Map<String, dynamic>? consultaVendasFiltrosMobile,
@@ -139,6 +141,12 @@ class UsuarioService {
     }
     if (agendaFinanceiraFiltrosMobile != null) {
       body['agendaFinanceiraFiltrosMobile'] = agendaFinanceiraFiltrosMobile;
+    }
+    if (estoqueFiltrosWeb != null) {
+      body['estoqueFiltrosWeb'] = estoqueFiltrosWeb;
+    }
+    if (estoqueFiltrosMobile != null) {
+      body['estoqueFiltrosMobile'] = estoqueFiltrosMobile;
     }
     if (catalogoReservasFiltrosWeb != null) {
       body['catalogoReservasFiltrosWeb'] = catalogoReservasFiltrosWeb;

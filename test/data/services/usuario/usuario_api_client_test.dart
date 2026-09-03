@@ -38,6 +38,16 @@ void main() {
           'periodo': 'PROXIMO_MES',
           'status': 'PENDENTE',
         },
+        'estoqueFiltrosWeb': <String, dynamic>{
+          'busca': 'produto web',
+          'situacaoEstoque': 'ESTOQUE_BAIXO',
+          'itensPorPagina': 24,
+        },
+        'estoqueFiltrosMobile': <String, dynamic>{
+          'busca': 'produto mobile',
+          'status': 'ATIVOS',
+          'ordenacao': 'PRECO_ASC',
+        },
         'catalogoReservasFiltrosWeb': <String, dynamic>{
           'status': <String>['CONFIRMADA'],
           'periodo': 'PERSONALIZADO',
@@ -100,6 +110,16 @@ void main() {
         'agendaFinanceiraFiltrosMobile': <String, dynamic>{
           'periodo': 'PROXIMO_MES',
           'status': 'PENDENTE',
+        },
+        'estoqueFiltrosWeb': <String, dynamic>{
+          'busca': 'produto web',
+          'situacaoEstoque': 'ESTOQUE_BAIXO',
+          'itensPorPagina': 24,
+        },
+        'estoqueFiltrosMobile': <String, dynamic>{
+          'busca': 'produto mobile',
+          'status': 'ATIVOS',
+          'ordenacao': 'PRECO_ASC',
         },
         'catalogoReservasFiltrosWeb': <String, dynamic>{
           'status': <String>['CONFIRMADA'],
