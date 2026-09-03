@@ -106,6 +106,22 @@ void main() {
     expect(find.text('Em breve'), findsWidgets);
   });
 
+  testWidgets('abre o catálogo virtual na experiência mobile própria', (
+    WidgetTester tester,
+  ) async {
+    final List<String> navigations = <String>[];
+    await _pumpGestao(tester, navigations: navigations);
+
+    final Finder virtualCatalog = find.text('Catálogo virtual');
+    expect(virtualCatalog, findsOneWidget);
+    await tester.ensureVisible(virtualCatalog);
+    await tester.tap(virtualCatalog);
+    await tester.pump(const Duration(milliseconds: 120));
+
+    expect(navigations, contains('CatalogoVirtualMobileScreen'));
+    expect(find.text('WEB'), findsNothing);
+  });
+
   testWidgets('não exibe desempenho do colaborador na seção de pessoas', (
     WidgetTester tester,
   ) async {
@@ -320,6 +336,7 @@ void main() {
     expect(find.text('Produtos e Serviços'), findsNothing);
     expect(find.text('Categorias'), findsNothing);
     expect(find.text('Estoque'), findsNothing);
+    expect(find.text('Catálogo virtual'), findsNothing);
     expect(find.text('Catálogo restrito para este usuário'), findsOneWidget);
   });
 
