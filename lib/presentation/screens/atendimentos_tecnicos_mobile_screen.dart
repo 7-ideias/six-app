@@ -32,6 +32,11 @@ import '../coordinators/operational_procedure_flow_coordinator.dart';
 import 'atendimento_tecnico_editar_mobile_screen.dart';
 import 'atendimento_tecnico_mobile_screen.dart';
 
+enum PreferenciaFiltrosAtendimentosTecnicosMobile {
+  atendimentosCriados,
+  servicosEmAndamento,
+}
+
 class AtendimentosTecnicosMobileListContext {
   const AtendimentosTecnicosMobileListContext({
     required this.titleKey,
@@ -53,7 +58,8 @@ class AtendimentosTecnicosMobileListContext {
     this.sectionTitleFallback,
     this.filteredSectionTitleKey,
     this.filteredSectionTitleFallback,
-    this.persistUserFilters = true,
+    this.preferenciaFiltrosMobile =
+        PreferenciaFiltrosAtendimentosTecnicosMobile.atendimentosCriados,
     this.allowPaymentStatusFilter = true,
   });
 
@@ -104,7 +110,8 @@ class AtendimentosTecnicosMobileListContext {
         filteredSectionTitleKey:
             'atendimentoTecnico.mobile.inProgressFilteredSection',
         filteredSectionTitleFallback: 'Resultado do filtro',
-        persistUserFilters: false,
+        preferenciaFiltrosMobile:
+            PreferenciaFiltrosAtendimentosTecnicosMobile.servicosEmAndamento,
       );
 
   const AtendimentosTecnicosMobileListContext.waitingCustomerApproval()
@@ -133,7 +140,7 @@ class AtendimentosTecnicosMobileListContext {
         filteredSectionTitleKey:
             'atendimentoTecnico.mobile.waitingApprovalFilteredSection',
         filteredSectionTitleFallback: 'Resultado do filtro',
-        persistUserFilters: false,
+        preferenciaFiltrosMobile: null,
         allowPaymentStatusFilter: false,
       );
 
@@ -162,7 +169,7 @@ class AtendimentosTecnicosMobileListContext {
         filteredSectionTitleKey:
             'atendimentoTecnico.mobile.closedFilteredSection',
         filteredSectionTitleFallback: 'Resultado do filtro',
-        persistUserFilters: false,
+        preferenciaFiltrosMobile: null,
       );
 
   final String titleKey;
@@ -184,7 +191,7 @@ class AtendimentosTecnicosMobileListContext {
   final String? sectionTitleFallback;
   final String? filteredSectionTitleKey;
   final String? filteredSectionTitleFallback;
-  final bool persistUserFilters;
+  final PreferenciaFiltrosAtendimentosTecnicosMobile? preferenciaFiltrosMobile;
   final bool allowPaymentStatusFilter;
 }
 
@@ -341,7 +348,7 @@ class _AtendimentosTecnicosMobileScreenState
       return;
     }
     _aplicarPreferenciasAtendimentosCriadosMobile(
-      preferencias.atendimentosCriadosFiltrosMobile,
+      _filtrosPreferidosMobile(preferencias),
     );
   }
 
@@ -356,7 +363,7 @@ class _AtendimentosTecnicosMobileScreenState
         return;
       }
       _aplicarPreferenciasAtendimentosCriadosMobile(
-        preferencias.atendimentosCriadosFiltrosMobile,
+        _filtrosPreferidosMobile(preferencias),
       );
     } catch (error, stackTrace) {
       debugPrint(
@@ -411,31 +418,52 @@ class _AtendimentosTecnicosMobileScreenState
       statusPagamento: _consulta.statusPagamento,
     );
 
+    final Future<void> atualizacao = switch (widget
+        .listContext
+        .preferenciaFiltrosMobile) {
+      PreferenciaFiltrosAtendimentosTecnicosMobile.atendimentosCriados =>
+        _usuarioService.atualizarPreferenciasIndividuais(
+          atendimentosCriadosFiltrosMobile: filtros.toJson(),
+        ),
+      PreferenciaFiltrosAtendimentosTecnicosMobile.servicosEmAndamento =>
+        _usuarioService.atualizarPreferenciasIndividuais(
+          servicosEmAndamentoFiltrosMobile: filtros.toJson(),
+        ),
+      null => Future<void>.value(),
+    };
+
     unawaited(
-      _usuarioService
-          .atualizarPreferenciasIndividuais(
-            atendimentosCriadosFiltrosMobile: filtros.toJson(),
-          )
-          .catchError((Object error, StackTrace stackTrace) {
-            debugPrint(
-              'Erro ao salvar preferencias mobile dos atendimentos criados: '
-              '$error\n$stackTrace',
-            );
-          }),
+      atualizacao.catchError((Object error, StackTrace stackTrace) {
+        debugPrint(
+          'Erro ao salvar preferencias mobile dos atendimentos criados: '
+          '$error\n$stackTrace',
+        );
+      }),
     );
   }
 
   List<String> _sortedFiltroKeys(Set<String> keys) {
     return keys
-        .map((String key) => key.trim())
-        .where((String key) => key.isNotEmpty)
-        .toSet()
-        .toList(growable: false)
-      ..sort();
+      .map((String key) => key.trim())
+      .where((String key) => key.isNotEmpty)
+      .toSet()
+      .toList(growable: false)..sort();
+  }
+
+  AtendimentosCriadosFiltrosMobilePreferencia _filtrosPreferidosMobile(
+    PreferenciasIndividuaisDoUsuarioModel preferencias,
+  ) {
+    return switch (widget.listContext.preferenciaFiltrosMobile) {
+      PreferenciaFiltrosAtendimentosTecnicosMobile.atendimentosCriados =>
+        preferencias.atendimentosCriadosFiltrosMobile,
+      PreferenciaFiltrosAtendimentosTecnicosMobile.servicosEmAndamento =>
+        preferencias.servicosEmAndamentoFiltrosMobile,
+      null => AtendimentosCriadosFiltrosMobilePreferencia.vazia(),
+    };
   }
 
   bool get _permitePreferenciasAtendimentosCriados =>
-      widget.listContext.persistUserFilters;
+      widget.listContext.preferenciaFiltrosMobile != null;
 
   bool get _permiteFiltroStatusPagamento =>
       widget.listContext.allowPaymentStatusFilter;
@@ -1279,10 +1307,7 @@ class _AtendimentosTecnicosMobileScreenState
             return _FiltrosAvancadosAtendimentosTecnicosMobileSheet(
               consulta: _consulta,
               tecnicos: tecnicos,
-              status: _statusFiltroOptions(
-                atendimentos,
-                statusDisponiveis,
-              ),
+              status: _statusFiltroOptions(atendimentos, statusDisponiveis),
               permitePagamento: _permiteFiltroStatusPagamento,
               formatarData: _formatarData,
               statusPagamentoLabel: _statusPagamentoFiltroLabel,
@@ -3965,13 +3990,12 @@ class _AtendimentosTecnicosMobileScreenState
         count: (current?.count ?? 0) + 1,
       );
     }
-    return options.values.toList(growable: false)..sort(
-      (_StatusFiltroOption a, _StatusFiltroOption b) {
+    return options.values.toList(growable: false)
+      ..sort((_StatusFiltroOption a, _StatusFiltroOption b) {
         final int countCompare = b.count.compareTo(a.count);
         if (countCompare != 0) return countCompare;
         return a.label.toLowerCase().compareTo(b.label.toLowerCase());
-      },
-    );
+      });
   }
 
   String _tecnicoFiltroLabel(
@@ -4005,10 +4029,7 @@ class _AtendimentosTecnicosMobileScreenState
     Set<String> selected,
   ) {
     if (selected.isEmpty) {
-      return _t(
-        'atendimentoTecnico.filters.status.all',
-        'Todos os status',
-      );
+      return _t('atendimentoTecnico.filters.status.all', 'Todos os status');
     }
     if (selected.length == 1) {
       final String selectedKey = selected.first;
@@ -5335,8 +5356,7 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
 
   void _openView(_FiltrosAvancadosAtendimentosTecnicosMobileView view) {
     setState(() {
-      if (view ==
-          _FiltrosAvancadosAtendimentosTecnicosMobileView.tecnico) {
+      if (view == _FiltrosAvancadosAtendimentosTecnicosMobileView.tecnico) {
         _tecnicoDraftKeys = Set<String>.from(_tecnicoKeys);
         _tecnicoSearch = '';
         _tecnicoSearchController.clear();
@@ -5385,8 +5405,7 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
 
   void _limparSelecaoMultipla() {
     setState(() {
-      if (_view ==
-          _FiltrosAvancadosAtendimentosTecnicosMobileView.tecnico) {
+      if (_view == _FiltrosAvancadosAtendimentosTecnicosMobileView.tecnico) {
         _tecnicoDraftKeys.clear();
       } else if (_view ==
           _FiltrosAvancadosAtendimentosTecnicosMobileView.status) {
@@ -5398,8 +5417,7 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
   void _aplicarSelecaoMultipla() {
     FocusScope.of(context).unfocus();
     setState(() {
-      if (_view ==
-          _FiltrosAvancadosAtendimentosTecnicosMobileView.tecnico) {
+      if (_view == _FiltrosAvancadosAtendimentosTecnicosMobileView.tecnico) {
         _tecnicoKeys = Set<String>.from(_tecnicoDraftKeys);
       } else if (_view ==
           _FiltrosAvancadosAtendimentosTecnicosMobileView.status) {
@@ -5490,10 +5508,7 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
 
   String _statusResumoLabel() {
     if (_statusKeys.isEmpty) {
-      return _t(
-        'atendimentoTecnico.filters.status.all',
-        'Todos os status',
-      );
+      return _t('atendimentoTecnico.filters.status.all', 'Todos os status');
     }
     if (_statusKeys.length == 1) {
       final String selectedKey = _statusKeys.first;
@@ -5628,10 +5643,7 @@ class _FiltrosAvancadosAtendimentosTecnicosMobileSheetState
     );
   }
 
-  IconData _selectionIcon({
-    required bool selected,
-    required bool multiple,
-  }) {
+  IconData _selectionIcon({required bool selected, required bool multiple}) {
     if (multiple) {
       return selected
           ? Icons.check_box_rounded

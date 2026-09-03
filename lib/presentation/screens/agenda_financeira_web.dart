@@ -109,6 +109,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   bool _carregando = false;
   bool _executandoAcao = false;
   bool _overlayInicialAberto = false;
+  bool _usuarioAlterouFiltros = false;
   DateTime? _ultimaConsultaEm;
 
   List<Map<String, dynamic>> get _itensAgenda =>
@@ -156,7 +157,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   Future<void> _restaurarPreferenciasAgendaFinanceira() async {
     final PreferenciasIndividuaisDoUsuarioModel? preferencias =
         await _usuarioService.carregarPreferenciasIndividuaisDoCache();
-    if (!mounted || preferencias == null) {
+    if (!mounted || preferencias == null || _usuarioAlterouFiltros) {
       return;
     }
     _aplicarPreferenciasAgendaFinanceira(preferencias);
@@ -169,7 +170,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       }
       final PreferenciasIndividuaisDoUsuarioModel? preferencias =
           _usuarioProvider.usuario?.preferenciasIndividuaisDoUsuario;
-      if (!mounted || preferencias == null) {
+      if (!mounted || preferencias == null || _usuarioAlterouFiltros) {
         return;
       }
       _aplicarPreferenciasAgendaFinanceira(preferencias);
@@ -183,17 +184,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   void _aplicarPreferenciasAgendaFinanceira(
     PreferenciasIndividuaisDoUsuarioModel preferencias,
   ) {
-    final String periodo = _periodoLabelPreferencia(
-      preferencias.agendaFinanceiraPeriodoWeb,
-    );
-    final String tipo = _tipoLabelPreferencia(
-      preferencias.agendaFinanceiraTipoWeb,
-    );
-    final String status = _statusLabelPreferencia(
-      preferencias.agendaFinanceiraStatusWeb,
-    );
+    final AgendaFinanceiraFiltrosPreferencia filtros =
+        preferencias.agendaFinanceiraFiltrosWeb;
+    final String periodo = _periodoLabelPreferencia(filtros.periodo);
+    final String tipo = _tipoLabelPreferencia(filtros.tipo);
+    final String status = _statusLabelPreferencia(filtros.status);
     final Set<String> formasPagamento =
-        preferencias.agendaFinanceiraTipoDePagamentoWeb
+        filtros.tiposDePagamento
             .map(_formaPagamentoLabelPorCodigoPreferencia)
             .whereType<String>()
             .where(_tiposRecebimentoFiltro.contains)
@@ -208,6 +205,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       }
       if (_status.contains(status)) {
         _statusSelecionado = status;
+      }
+      if (filtros.dataInicio != null) {
+        _dataInicioPersonalizada = _normalizarData(filtros.dataInicio!);
+      }
+      if (filtros.dataFim != null) {
+        _dataFimPersonalizada = _normalizarData(filtros.dataFim!);
       }
       _formasPagamentoSelecionadas
         ..clear()
@@ -531,9 +534,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         _ajustarPeriodoPersonalizadoSeguro();
       }
     });
-    _salvarPreferenciasAgendaFinanceira(
-      agendaFinanceiraPeriodoWeb: _periodoCodigoPreferencia(periodo),
-    );
+    _salvarPreferenciasAgendaFinanceira();
   }
 
   void _selecionarTipo(String? tipo) {
@@ -541,9 +542,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       return;
     }
     setState(() => _tipoSelecionado = tipo);
-    _salvarPreferenciasAgendaFinanceira(
-      agendaFinanceiraTipoWeb: _tipoCodigoPreferencia(tipo),
-    );
+    _salvarPreferenciasAgendaFinanceira();
   }
 
   void _selecionarStatus(String? status) {
@@ -551,9 +550,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       return;
     }
     setState(() => _statusSelecionado = status);
-    _salvarPreferenciasAgendaFinanceira(
-      agendaFinanceiraStatusWeb: _statusCodigoPreferencia(status),
-    );
+    _salvarPreferenciasAgendaFinanceira();
   }
 
   void _selecionarTiposPagamento(Set<String> resultado) {
@@ -566,27 +563,40 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         ..clear()
         ..addAll(valoresValidos);
     });
-    _salvarPreferenciasAgendaFinanceira(
-      agendaFinanceiraTipoDePagamentoWeb: _codigosTipoPagamentoPreferencia(
-        valoresValidos,
-      ),
-    );
+    _salvarPreferenciasAgendaFinanceira();
   }
 
-  void _salvarPreferenciasAgendaFinanceira({
-    String? agendaFinanceiraPeriodoWeb,
-    String? agendaFinanceiraTipoWeb,
-    String? agendaFinanceiraStatusWeb,
-    List<String>? agendaFinanceiraTipoDePagamentoWeb,
-  }) {
+  void _salvarPreferenciasAgendaFinanceira() {
+    _usuarioAlterouFiltros = true;
+    final AgendaFinanceiraFiltrosPreferencia filtros =
+        AgendaFinanceiraFiltrosPreferencia(
+          periodo: AgendaFinanceiraPeriodoWebPreferenciaApi.fromCodigo(
+            _periodoCodigoPreferencia(_periodoSelecionado),
+            AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias,
+          ),
+          dataInicio:
+              _usaPeriodoPersonalizado ? _inicioPeriodoPersonalizado() : null,
+          dataFim: _usaPeriodoPersonalizado ? _fimPeriodoPersonalizado() : null,
+          tipo: AgendaFinanceiraTipoWebPreferenciaApi.fromCodigo(
+            _tipoCodigoPreferencia(_tipoSelecionado),
+            AgendaFinanceiraTipoWebPreferencia.todos,
+          ),
+          status: AgendaFinanceiraStatusWebPreferenciaApi.fromCodigo(
+            _statusCodigoPreferencia(_statusSelecionado),
+            AgendaFinanceiraStatusWebPreferencia.todos,
+          ),
+          tiposDePagamento: _codigosTipoPagamentoPreferencia(
+            _formasPagamentoSelecionadas,
+          ),
+        );
     unawaited(
       _usuarioService
           .atualizarPreferenciasIndividuais(
-            agendaFinanceiraPeriodoWeb: agendaFinanceiraPeriodoWeb,
-            agendaFinanceiraTipoWeb: agendaFinanceiraTipoWeb,
-            agendaFinanceiraStatusWeb: agendaFinanceiraStatusWeb,
-            agendaFinanceiraTipoDePagamentoWeb:
-                agendaFinanceiraTipoDePagamentoWeb,
+            agendaFinanceiraFiltrosWeb: filtros.toJson(),
+            agendaFinanceiraPeriodoWeb: filtros.periodo.codigo,
+            agendaFinanceiraTipoWeb: filtros.tipo.codigo,
+            agendaFinanceiraStatusWeb: filtros.status.codigo,
+            agendaFinanceiraTipoDePagamentoWeb: filtros.tiposDePagamento,
           )
           .catchError((Object error, StackTrace stackTrace) {
             debugPrint(
@@ -738,6 +748,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       _dataInicioPersonalizada = _normalizarData(selecionada);
       _ajustarPeriodoPersonalizadoSeguro();
     });
+    _salvarPreferenciasAgendaFinanceira();
   }
 
   Future<void> _selecionarDataFimPersonalizada() async {
@@ -759,6 +770,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       _dataFimPersonalizada = _normalizarData(selecionada);
       _ajustarPeriodoPersonalizadoSeguro();
     });
+    _salvarPreferenciasAgendaFinanceira();
   }
 
   List<String> _statusFiltro() {
@@ -1018,8 +1030,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 label: const Text('Excluir lançamento'),
                 style: FilledButton.styleFrom(
                   backgroundColor: WebThemeTokens.of(dialogContext).danger,
-                  foregroundColor:
-                      WebThemeTokens.of(dialogContext).onDanger,
+                  foregroundColor: WebThemeTokens.of(dialogContext).onDanger,
                 ),
               ),
             ],
@@ -1088,8 +1099,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 label: const Text('Excluir parcial'),
                 style: FilledButton.styleFrom(
                   backgroundColor: WebThemeTokens.of(dialogContext).danger,
-                  foregroundColor:
-                      WebThemeTokens.of(dialogContext).onDanger,
+                  foregroundColor: WebThemeTokens.of(dialogContext).onDanger,
                 ),
               ),
             ],
