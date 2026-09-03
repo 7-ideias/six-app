@@ -154,6 +154,7 @@ void main() {
       findsNothing,
     );
     expect(find.text('Desempenho do colaborador'), findsNothing);
+    expect(find.byIcon(Icons.flag_outlined), findsNothing);
   });
 }
 

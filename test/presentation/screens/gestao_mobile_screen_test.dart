@@ -122,12 +122,23 @@ void main() {
     expect(find.text('WEB'), findsNothing);
   });
 
-  testWidgets('não exibe desempenho do colaborador na seção de pessoas', (
+  testWidgets('abre desempenho do colaborador na seção de pessoas', (
     WidgetTester tester,
   ) async {
-    await _pumpGestao(tester, area: GestaoMobileArea.pessoas);
+    final List<String> navigations = <String>[];
+    await _pumpGestao(
+      tester,
+      navigations: navigations,
+      area: GestaoMobileArea.pessoas,
+    );
 
-    expect(find.text('Desempenho do colaborador'), findsNothing);
+    final Finder performance = find.text('Desempenho do colaborador');
+    expect(performance, findsOneWidget);
+    await tester.ensureVisible(performance);
+    await tester.tap(performance);
+    await tester.pump(const Duration(milliseconds: 120));
+
+    expect(navigations, contains('DesempenhoColaboradorMobileScreen'));
   });
 
   testWidgets('oculta desempenho da equipe para colaborador', (

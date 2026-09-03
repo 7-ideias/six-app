@@ -269,6 +269,8 @@ class _ColaboradoresUsuarioMobileScreenState
   @override
   Widget build(BuildContext context) {
     context.watch<LocaleSettingsProvider>();
+    final bool podeAcessarDesempenho =
+        !context.watch<ColaboradorAutorizacoesProvider>().ehColaborador;
 
     return SixMobilePageShell(
       title: _t('colaboradores.title', 'Colaboradores'),
@@ -280,11 +282,12 @@ class _ColaboradoresUsuarioMobileScreenState
       toolbarHeight: 48,
       initialContentSpacing: 4,
       actions: <Widget>[
-        IconButton(
-          tooltip: _t('performance.mobile.title', 'Metas'),
-          onPressed: _loading ? null : _openDesempenhoColaborador,
-          icon: Icon(Icons.flag_outlined),
-        ),
+        if (podeAcessarDesempenho)
+          IconButton(
+            tooltip: _t('performance.mobile.title', 'Desempenho'),
+            onPressed: _loading ? null : _openDesempenhoColaborador,
+            icon: Icon(Icons.flag_outlined),
+          ),
         IconButton(
           tooltip: _t('colaboradores.newCollaborator', 'Novo colaborador'),
           onPressed: _loading ? null : _openNovoColaborador,
