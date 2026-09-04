@@ -12,6 +12,7 @@ import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/domain/models/aparencia_models.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
+import 'package:sixpos/presentation/components/mobile/sixoapp_mobile_loading_scene.dart';
 import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
 import 'package:sixpos/providers/locale_settings_provider.dart';
 
@@ -20,7 +21,7 @@ void main() {
     SixThemeResolver().atualizarTema(TemaSistema.claro);
   });
 
-  testWidgets('stock dashboard loading uses dark progress colors', (
+  testWidgets('stock dashboard loading follows dark theme', (
     WidgetTester tester,
   ) async {
     final Completer<EstoqueDashboardModel> completer =
@@ -32,17 +33,19 @@ void main() {
     );
 
     expect(_scaffoldBackground(tester), SixMobileColorScheme.dark.background);
-    final CircularProgressIndicator loader = tester
-        .widget<CircularProgressIndicator>(
-          find.byType(CircularProgressIndicator).first,
-        );
-    expect(loader.color, SixMobileColorScheme.dark.accent);
+    final Finder loading = find.byType(SixoAppMobileLoadingScene);
+    expect(loading, findsOneWidget);
+    final ColoredBox background = tester.widget<ColoredBox>(
+      find.descendant(of: loading, matching: find.byType(ColoredBox)),
+    );
+    expect(background.color, SixMobileColorScheme.dark.background);
+    expect(find.text('SixoApp'), findsNothing);
 
     completer.complete(_emptyDashboard);
     await tester.pump();
   });
 
-  testWidgets('stock dashboard loading uses light progress colors', (
+  testWidgets('stock dashboard loading follows light theme', (
     WidgetTester tester,
   ) async {
     final Completer<EstoqueDashboardModel> completer =
@@ -55,11 +58,13 @@ void main() {
     );
 
     expect(_scaffoldBackground(tester), SixMobileColorScheme.light.background);
-    final CircularProgressIndicator loader = tester
-        .widget<CircularProgressIndicator>(
-          find.byType(CircularProgressIndicator).first,
-        );
-    expect(loader.color, SixMobileColorScheme.light.accent);
+    final Finder loading = find.byType(SixoAppMobileLoadingScene);
+    expect(loading, findsOneWidget);
+    final ColoredBox background = tester.widget<ColoredBox>(
+      find.descendant(of: loading, matching: find.byType(ColoredBox)),
+    );
+    expect(background.color, SixMobileColorScheme.light.background);
+    expect(find.text('SixoApp'), findsNothing);
 
     completer.complete(_emptyDashboard);
     await tester.pump();

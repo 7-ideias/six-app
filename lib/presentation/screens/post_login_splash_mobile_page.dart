@@ -149,7 +149,7 @@ class _PostLoginSplashMobilePageState extends State<PostLoginSplashMobilePage> {
       );
     }
     return Scaffold(
-      body: SixoAppMobileLoadingScene(
+      body: SixoAppMobileLoadingScene.themed(
         message: context.t(
           'splash.syncingAccount',
           fallback: 'Sincronizando seus dados...',

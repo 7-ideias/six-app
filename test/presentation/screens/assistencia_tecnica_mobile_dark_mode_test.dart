@@ -25,6 +25,7 @@ import 'package:sixpos/domain/models/regionalizacao_models.dart';
 import 'package:sixpos/domain/services/atendimento_tecnico/atendimento_pdf_share_service.dart';
 import 'package:sixpos/domain/services/atendimento_tecnico/atendimento_tecnico_service.dart';
 import 'package:sixpos/domain/services/regionalizacao/regionalizacao_service.dart';
+import 'package:sixpos/presentation/components/mobile/sixoapp_mobile_loading_scene.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_editar_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/atendimento_tecnico_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/atendimentos_tecnicos_mobile_screen.dart';
@@ -1083,7 +1084,8 @@ void main() {
         expect(pdfShareService.calls, 1);
         expect(pdfShareService.lastAtendimentoId, 'os-pdf');
         expect(pdfShareService.lastSharePositionOrigin, isNotNull);
-        expect(find.byType(CircularProgressIndicator), findsWidgets);
+        expect(find.byType(SixoAppMobileLoadingScene), findsOneWidget);
+        expect(find.text('SixoApp'), findsNothing);
         expect(find.text('Gerando PDF do atendimento'), findsOneWidget);
         expect(
           find.text('Aguarde enquanto o documento é preparado.'),
@@ -1101,7 +1103,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(pdfShareService.calls, 1);
-        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.byType(SixoAppMobileLoadingScene), findsNothing);
         expect(find.text('Gerando PDF do atendimento'), findsNothing);
 
         await tester.tap(find.byIcon(Icons.close_rounded).last);

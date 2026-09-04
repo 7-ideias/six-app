@@ -27,6 +27,7 @@ import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
 import '../components/mobile/six_mobile_recebimento_bottom_sheet.dart';
+import '../components/mobile/sixoapp_mobile_loading_scene.dart';
 import '../components/mobile_motion.dart';
 import '../coordinators/operational_procedure_flow_coordinator.dart';
 import 'atendimento_tecnico_editar_mobile_screen.dart';
@@ -2315,69 +2316,12 @@ class _AtendimentosTecnicosMobileScreenState
       'Aguarde enquanto o documento é preparado.',
     );
 
-    return Semantics(
-      container: true,
-      liveRegion: true,
-      label: title,
-      child: AbsorbPointer(
-        absorbing: true,
-        child: Container(
-          color: _backgroundColor.withValues(alpha: 0.88),
-          padding: EdgeInsets.all(24),
-          child: Center(
-            child: Container(
-              constraints: BoxConstraints(maxWidth: 320),
-              padding: EdgeInsets.fromLTRB(18, 18, 18, 16),
-              decoration: BoxDecoration(
-                color: _surfaceColor,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: _highlightedBorderColor),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: _cardShadowColor,
-                    blurRadius: 18,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  SizedBox(
-                    width: 30,
-                    height: 30,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                      valueColor: AlwaysStoppedAnimation<Color>(_accentColor),
-                    ),
-                  ),
-                  SizedBox(height: 14),
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: _titleTextColor,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      height: 1.2,
-                    ),
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    subtitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: _mutedTextColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+    return AbsorbPointer(
+      absorbing: true,
+      child: SixoAppMobileLoadingScene.themed(
+        message: title,
+        supportingMessage: subtitle,
+        semanticLabel: '$title. $subtitle',
       ),
     );
   }

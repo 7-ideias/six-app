@@ -138,10 +138,19 @@ void main() {
     );
     expect(loading, findsOneWidget);
 
-    final ColoredBox overlay = tester.widget<ColoredBox>(
-      find.descendant(of: loading, matching: find.byType(ColoredBox)),
+    final DecoratedBox tint = tester.widget<DecoratedBox>(
+      find.descendant(
+        of: loading,
+        matching: find.byKey(
+          const ValueKey<String>('sixoapp-mobile-loading-tint'),
+        ),
+      ),
     );
-    expect(overlay.color, SixMobileColorScheme.dark.background);
+    final BoxDecoration decoration = tint.decoration as BoxDecoration;
+    expect(
+      decoration.color,
+      SixMobileColorScheme.dark.background.withValues(alpha: 0.76),
+    );
 
     completer.complete(<ProdutoModel>[]);
     await tester.pump();
@@ -264,10 +273,19 @@ void main() {
     );
     expect(loading, findsOneWidget);
 
-    final ColoredBox overlay = tester.widget<ColoredBox>(
-      find.descendant(of: loading, matching: find.byType(ColoredBox)),
+    final DecoratedBox tint = tester.widget<DecoratedBox>(
+      find.descendant(
+        of: loading,
+        matching: find.byKey(
+          const ValueKey<String>('sixoapp-mobile-loading-tint'),
+        ),
+      ),
     );
-    expect(overlay.color, SixMobileColorScheme.light.background);
+    final BoxDecoration decoration = tint.decoration as BoxDecoration;
+    expect(
+      decoration.color,
+      SixMobileColorScheme.light.background.withValues(alpha: 0.72),
+    );
 
     completer.complete(<ProdutoModel>[]);
     await tester.pump();

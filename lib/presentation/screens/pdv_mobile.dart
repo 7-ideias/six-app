@@ -42,6 +42,7 @@ typedef PdvMobileCashOperationsLauncher = Future<void> Function();
 typedef PdvMobileCurrentUserIdProvider = Future<String?> Function();
 typedef PdvMobileCurrentUserNameProvider = String Function();
 typedef PdvMobileNowProvider = DateTime Function();
+typedef PdvMobileSaleCompletedFeedback = Future<void> Function();
 
 class PdvMobileScreen extends StatefulWidget {
   const PdvMobileScreen({
@@ -59,6 +60,7 @@ class PdvMobileScreen extends StatefulWidget {
     this.nowProvider,
     this.procedureCoordinator,
     this.operationalProcedureService,
+    this.onSaleCompleted,
   });
 
   final VendaNaoLiquidadaModel? vendaNaoLiquidada;
@@ -74,6 +76,7 @@ class PdvMobileScreen extends StatefulWidget {
   final PdvMobileNowProvider? nowProvider;
   final OperationalProcedureFlowCoordinator? procedureCoordinator;
   final OperationalProcedureService? operationalProcedureService;
+  final PdvMobileSaleCompletedFeedback? onSaleCompleted;
 
   @override
   State<PdvMobileScreen> createState() => _PdvMobileScreenState();
@@ -614,6 +617,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
 
       await _operacaoService.finalizarVenda(input);
       if (!mounted) return;
+      await widget.onSaleCompleted?.call();
+      if (!mounted) return;
       _mostrarSnack(mensagemSucesso);
       Navigator.of(context).pop(true);
     } catch (e) {
@@ -644,6 +649,8 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       );
       await _vincularExecucoesPendentesAVendaExistente(venda);
 
+      if (!mounted) return;
+      await widget.onSaleCompleted?.call();
       if (!mounted) return;
       _mostrarSnack(
         resultado.parcial

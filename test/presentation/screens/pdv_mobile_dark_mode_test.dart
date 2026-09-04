@@ -281,11 +281,15 @@ void main() {
     final _FakeOperacaoService operacaoService = _FakeOperacaoService(
       completer: Completer<OperacaoInserirResponse>(),
     );
+    int completedFeedbackCalls = 0;
 
     await _pumpPdv(
       tester,
       themeCase: _darkTheme,
       operacaoService: operacaoService,
+      onSaleCompleted: () async {
+        completedFeedbackCalls += 1;
+      },
       nowProvider: () => DateTime(2026, 8, 8, 11, 30),
       productSelectionLauncher:
           () async => <ProdutoModel>[
@@ -339,6 +343,7 @@ void main() {
       input.formasPagamento.fold<double>(0, (sum, item) => sum + item.valor),
       closeTo(190, 0.001),
     );
+    expect(completedFeedbackCalls, 1);
     expect(find.text('Venda finalizada com sucesso.'), findsOneWidget);
     expect(find.text(_longProductName), findsNothing);
     expect(tester.takeException(), isNull);
@@ -350,11 +355,15 @@ void main() {
     final _FakeOperacaoService operacaoService = _FakeOperacaoService(
       error: Exception('backend recusou a venda mobile'),
     );
+    int completedFeedbackCalls = 0;
 
     await _pumpPdv(
       tester,
       themeCase: _lightTheme,
       operacaoService: operacaoService,
+      onSaleCompleted: () async {
+        completedFeedbackCalls += 1;
+      },
       productSelectionLauncher:
           () async => <ProdutoModel>[
             _product(id: 'produto-erro', name: _longProductName, price: 120),
@@ -387,6 +396,7 @@ void main() {
     expect(operacaoService.finalizarCalls, 1);
     expect(operacaoService.lastInput?.receberDepois, isTrue);
     expect(operacaoService.lastInput?.formasPagamento, isEmpty);
+    expect(completedFeedbackCalls, 0);
     expect(find.text(_longProductName), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -613,6 +623,7 @@ Future<void> _pumpPdv(
   pdv_base.PdvMobileBarcodeProductLoader? barcodeProductLoader,
   pdv_base.PdvMobileCashOperationsLauncher? cashOperationsLauncher,
   pdv_base.PdvMobileNowProvider? nowProvider,
+  pdv_base.PdvMobileSaleCompletedFeedback? onSaleCompleted,
   List<TiposRecebimento>? paymentTypes,
   Size size = const Size(390, 900),
   double textScale = 1,
@@ -645,6 +656,7 @@ Future<void> _pumpPdv(
       currentUserNameProvider: () => 'Operadora PDV',
       nowProvider: nowProvider ?? () => DateTime(2026, 8, 8, 10, 0),
       procedureCoordinator: procedureCoordinator ?? _procedureCoordinator(),
+      onSaleCompleted: onSaleCompleted,
     ),
   );
 }

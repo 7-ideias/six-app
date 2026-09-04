@@ -13,6 +13,7 @@ import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
 import '../components/mobile/six_mobile_recebimento_bottom_sheet.dart';
+import '../components/mobile/sixoapp_mobile_loading_scene.dart';
 import '../components/mobile_motion.dart';
 
 class VendasNaoLiquidadasMobileScreen extends StatefulWidget {
@@ -388,30 +389,34 @@ class _VendasNaoLiquidadasMobileScreenState
           '${provider.dateFormat}|${provider.timeFormat}',
     );
 
-    return SixMobilePageShell(
-      title: _txt('vendasNaoLiquidadas.title', 'Vendas a receber'),
-      backgroundColor: _backgroundColor,
-      primaryColor: _primaryColor,
-      secondaryColor: _secondaryColor,
-      accentColor: _accentColor,
-      enableAnimatedBackground: false,
-      toolbarHeight: 48,
-      initialContentSpacing: 8,
-      scrollEffectOffset: 28,
-      scrolledSurfaceOpacity: 0.70,
-      leading: IconButton(
-        tooltip: _txt('common.back', 'Voltar'),
-        icon: Icon(Icons.arrow_back_rounded),
-        onPressed: () => Navigator.of(context).maybePop(),
-      ),
-      actions: <Widget>[
-        IconButton(
-          tooltip: _txt('common.refresh', 'Atualizar'),
-          onPressed: _loading || _cancelando ? null : _carregar,
-          icon: Icon(Icons.refresh_rounded),
+    return SixoAppMobileLoadingOverlay(
+      isLoading: _cancelando,
+      message: _txt('vendasNaoLiquidadas.processando', 'Processando ação...'),
+      child: SixMobilePageShell(
+        title: _txt('vendasNaoLiquidadas.title', 'Vendas a receber'),
+        backgroundColor: _backgroundColor,
+        primaryColor: _primaryColor,
+        secondaryColor: _secondaryColor,
+        accentColor: _accentColor,
+        enableAnimatedBackground: false,
+        toolbarHeight: 48,
+        initialContentSpacing: 8,
+        scrollEffectOffset: 28,
+        scrolledSurfaceOpacity: 0.70,
+        leading: IconButton(
+          tooltip: _txt('common.back', 'Voltar'),
+          icon: Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).maybePop(),
         ),
-      ],
-      bodyBuilder: _buildContent,
+        actions: <Widget>[
+          IconButton(
+            tooltip: _txt('common.refresh', 'Atualizar'),
+            onPressed: _loading || _cancelando ? null : _carregar,
+            icon: Icon(Icons.refresh_rounded),
+          ),
+        ],
+        bodyBuilder: _buildContent,
+      ),
     );
   }
 
@@ -426,27 +431,21 @@ class _VendasNaoLiquidadasMobileScreenState
 
     return SafeArea(
       top: false,
-      child: Stack(
-        children: <Widget>[
-          RefreshIndicator(
-            onRefresh: _carregar,
-            child: ListView(
-              controller: scrollController,
-              physics: AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
-              children: <Widget>[
-                AnimatedSwitcher(
-                  duration:
-                      reduceMotion ? Duration.zero : _stateTransitionDuration,
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  child: _buildState(reduceMotion: reduceMotion),
-                ),
-              ],
+      child: RefreshIndicator(
+        onRefresh: _carregar,
+        child: ListView(
+          controller: scrollController,
+          physics: AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
+          children: <Widget>[
+            AnimatedSwitcher(
+              duration: reduceMotion ? Duration.zero : _stateTransitionDuration,
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              child: _buildState(reduceMotion: reduceMotion),
             ),
-          ),
-          if (_cancelando) _actionOverlay(),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1608,60 +1607,6 @@ class _VendasNaoLiquidadasMobileScreenState
           SizedBox(height: 10),
           _skeletonLine(width: double.infinity, height: 42),
         ],
-      ),
-    );
-  }
-
-  Widget _actionOverlay() {
-    return Positioned.fill(
-      child: Semantics(
-        container: true,
-        liveRegion: true,
-        label: _txt('vendasNaoLiquidadas.processando', 'Processando ação'),
-        child: Container(
-          color: _withAlpha(Colors.black, 0.10),
-          alignment: Alignment.center,
-          child: Container(
-            width: 220,
-            padding: EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: _surfaceColor,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _borderColor),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: _colors.navigationShadow,
-                  blurRadius: 16,
-                  offset: Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                LinearProgressIndicator(minHeight: 3),
-                SizedBox(height: 14),
-                Text(
-                  _txt('vendasNaoLiquidadas.processando', 'Processando ação'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _titleTextColor,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  _txt(
-                    'vendasNaoLiquidadas.aguarde',
-                    'Estamos concluindo a operação.',
-                  ),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: _mutedTextColor, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

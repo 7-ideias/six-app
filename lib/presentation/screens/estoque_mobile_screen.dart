@@ -6,6 +6,7 @@ import 'package:sixpos/data/models/stock_movement_model.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
+import 'package:sixpos/presentation/components/mobile/sixoapp_mobile_loading_scene.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/screens/produto_list_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/stock_movement_mobile_sheet.dart';
@@ -105,13 +106,10 @@ class _EstoqueMobileScreenState extends State<EstoqueMobileScreen> {
           future: _dashboardFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return Padding(
-                padding: EdgeInsets.only(top: topInset),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: SixMobilePalette.accent,
-                    backgroundColor: SixMobilePalette.activeBorder,
-                  ),
+              return SixoAppMobileLoadingScene.themed(
+                message: _t(
+                  'estoque.mobile.loading',
+                  'Carregando seu estoque...',
                 ),
               );
             }
