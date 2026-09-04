@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/services/produto_service.dart';
 import 'package:sixpos/data/models/produto_model.dart';
-import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/presentation/components/mobile/sixoapp_mobile_loading_scene.dart';
 import 'package:sixpos/providers/produtos_list_provider.dart';
 
 import 'produto_list_mobile_screen_base.dart' as base;
@@ -38,37 +38,18 @@ class ProdutolistMobileScreen extends StatelessWidget {
         ProdutosListProvider<ProdutoModel> provider,
         _,
       ) {
-        return Stack(
-          fit: StackFit.expand,
-          children: <Widget>[
-            base.ProdutolistMobileScreen(
-              isSelecao: isSelecao,
-              permitirSelecaoMultipla: permitirSelecaoMultipla,
-              tipoInicial: tipoInicial,
-              apenasAtivosNoBackend: apenasAtivosNoBackend,
-              exibirInformacoesEstoque: exibirInformacoesEstoque,
-              produtoService: produtoService,
-            ),
-            Positioned.fill(
-              child: AbsorbPointer(
-                absorbing: provider.isLoading,
-                child: AnimatedSwitcher(
-                  duration: Duration(milliseconds: 180),
-                  reverseDuration: Duration(milliseconds: 140),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  child:
-                      provider.isLoading
-                          ? _ProductCatalogLoadingOverlay(
-                            label: _loadingLabel(context),
-                          )
-                          : SizedBox.shrink(
-                            key: ValueKey<String>('catalog-loading-hidden'),
-                          ),
-                ),
-              ),
-            ),
-          ],
+        return SixoAppMobileLoadingOverlay(
+          isLoading: provider.isLoading,
+          message: _loadingLabel(context),
+          visibleKey: const ValueKey<String>('catalog-loading-visible'),
+          child: base.ProdutolistMobileScreen(
+            isSelecao: isSelecao,
+            permitirSelecaoMultipla: permitirSelecaoMultipla,
+            tipoInicial: tipoInicial,
+            apenasAtivosNoBackend: apenasAtivosNoBackend,
+            exibirInformacoesEstoque: exibirInformacoesEstoque,
+            produtoService: produtoService,
+          ),
         );
       },
     );
@@ -83,34 +64,5 @@ class ProdutolistMobileScreen extends StatelessWidget {
       default:
         return 'Carregando produtos e serviços';
     }
-  }
-}
-
-class _ProductCatalogLoadingOverlay extends StatelessWidget {
-  const _ProductCatalogLoadingOverlay({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      key: ValueKey<String>('catalog-loading-visible'),
-      container: true,
-      liveRegion: true,
-      label: label,
-      child: ColoredBox(
-        color: SixMobilePalette.background,
-        child: Center(
-          child: SizedBox.square(
-            dimension: 42,
-            child: CircularProgressIndicator(
-              strokeWidth: 3,
-              color: SixMobilePalette.accent,
-              backgroundColor: SixMobilePalette.activeBorder,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

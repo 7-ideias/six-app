@@ -164,7 +164,7 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
   Widget build(BuildContext context) {
     if (_status == _AuthGateMobileStatus.validating) {
       return Scaffold(
-        body: SixoAppMobileLoadingScene(
+        body: SixoAppMobileLoadingScene.themed(
           message: context.t(
             'splash.validatingSession',
             fallback: 'Validando sua sessão...',

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/core/config/app_config.dart';
@@ -13,6 +12,7 @@ import 'package:sixpos/domain/services/usuario/usuario_service.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_settings_item_data.dart';
 import 'package:sixpos/presentation/components/mobile/management/management_settings_maturity_badge.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_logout_sheet.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_theme_toggle.dart';
 import 'package:sixpos/presentation/components/user_profile_avatar_image.dart';
 import 'package:sixpos/presentation/screens/login_mobile.dart';
@@ -1054,108 +1054,7 @@ class _LoginSettingsMobileState extends State<LoginSettingsMobile> {
   }
 
   Future<void> _confirmLogoutWithSwipe(BuildContext context) async {
-    final _AccountPanelColors colors = _AccountPanelColors.resolve(context);
-    final String confirmTitle = context.t(
-      'account.settings.logout.confirmTitle',
-      fallback: 'Sair da conta?',
-    );
-    final String confirmSubtitle = context.t(
-      'account.settings.logout.confirmSubtitle',
-      fallback: 'Confirme para encerrar sua sessão neste aparelho.',
-    );
-    final String cancelLabel = context.t('common.cancel', fallback: 'Cancelar');
-
-    final bool confirmed =
-        await showModalBottomSheet<bool>(
-          context: context,
-          showDragHandle: true,
-          backgroundColor: colors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          builder: (BuildContext bottomSheetContext) {
-            return SafeArea(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(18, 4, 18, 18),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    Container(
-                      padding: EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: colors.softSurface,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: colors.border.withValues(alpha: 0.48),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Row(
-                        children: <Widget>[
-                          Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: colors.surface,
-                              borderRadius: BorderRadius.circular(13),
-                              border: Border.all(
-                                color: colors.error.withValues(alpha: 0.18),
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Icon(
-                              Icons.logout_rounded,
-                              color: colors.error.withValues(alpha: 0.82),
-                              size: 20,
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(
-                                  confirmTitle,
-                                  style: TextStyle(
-                                    color: colors.title,
-                                    fontSize: 15.5,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                SizedBox(height: 3),
-                                Text(
-                                  confirmSubtitle,
-                                  style: TextStyle(
-                                    color: colors.muted,
-                                    fontSize: 12,
-                                    height: 1.35,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 14),
-                    _LogoutSwipeConfirmation(
-                      colors: colors,
-                      onConfirmed:
-                          () => Navigator.of(bottomSheetContext).pop(true),
-                    ),
-                    SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () => Navigator.of(bottomSheetContext).pop(),
-                      child: Text(cancelLabel),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ) ??
-        false;
+    final bool confirmed = await showSixMobileLogoutSheet(context);
 
     if (!confirmed || !context.mounted) return;
     await _logout(context);
@@ -1301,168 +1200,6 @@ class _LoginSettingsMobileState extends State<LoginSettingsMobile> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _LogoutSwipeConfirmation extends StatefulWidget {
-  const _LogoutSwipeConfirmation({
-    required this.colors,
-    required this.onConfirmed,
-  });
-
-  final _AccountPanelColors colors;
-  final VoidCallback onConfirmed;
-
-  @override
-  State<_LogoutSwipeConfirmation> createState() =>
-      _LogoutSwipeConfirmationState();
-}
-
-class _LogoutSwipeConfirmationState extends State<_LogoutSwipeConfirmation> {
-  static const double _height = 54;
-  static const double _padding = 4;
-  static const double _thumbSize = 46;
-
-  double _dragOffset = 0;
-  bool _confirmed = false;
-
-  void _updateDrag(double delta, double maxOffset) {
-    if (_confirmed) return;
-    setState(() {
-      _dragOffset = (_dragOffset + delta).clamp(0, maxOffset);
-    });
-  }
-
-  void _endDrag(double maxOffset) {
-    if (_confirmed) return;
-
-    if (_dragOffset >= maxOffset * 0.82) {
-      setState(() {
-        _confirmed = true;
-        _dragOffset = maxOffset;
-      });
-      HapticFeedback.mediumImpact();
-      widget.onConfirmed();
-      return;
-    }
-
-    setState(() => _dragOffset = 0);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final double maxOffset = (constraints.maxWidth -
-                _thumbSize -
-                (_padding * 2))
-            .clamp(0, double.infinity);
-        final double progress = maxOffset == 0 ? 0 : _dragOffset / maxOffset;
-
-        return Semantics(
-          button: true,
-          enabled: !_confirmed,
-          label: context.t(
-            'account.settings.logout.swipeSemantics',
-            fallback: 'Deslize para confirmar saída da conta',
-          ),
-          child: GestureDetector(
-            onHorizontalDragUpdate:
-                (DragUpdateDetails details) =>
-                    _updateDrag(details.delta.dx, maxOffset),
-            onHorizontalDragEnd: (_) => _endDrag(maxOffset),
-            child: Container(
-              height: _height,
-              decoration: BoxDecoration(
-                color: widget.colors.softSurface,
-                borderRadius: BorderRadius.circular(17),
-                border: Border.all(
-                  color: widget.colors.border.withValues(alpha: 0.7),
-                  width: 0.8,
-                ),
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: <Widget>[
-                  Positioned.fill(
-                    child: FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: progress,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: widget.colors.error.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(17),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 58),
-                    child: AnimatedOpacity(
-                      opacity: _confirmed ? 0 : (1 - progress).clamp(0.35, 1),
-                      duration: Duration(milliseconds: 120),
-                      child: Text(
-                        context.t(
-                          'account.settings.logout.swipeHint',
-                          fallback: 'Segure e deslize para sair',
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: widget.colors.muted,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  AnimatedPositioned(
-                    duration:
-                        _confirmed
-                            ? Duration.zero
-                            : Duration(milliseconds: 180),
-                    curve: Curves.easeOutCubic,
-                    left: _padding + _dragOffset,
-                    top: _padding,
-                    child: Container(
-                      width: _thumbSize,
-                      height: _thumbSize,
-                      decoration: BoxDecoration(
-                        color: widget.colors.surface,
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(
-                          color: widget.colors.error.withValues(
-                            alpha: _confirmed ? 0.38 : 0.18,
-                          ),
-                          width: 0.9,
-                        ),
-                        boxShadow: <BoxShadow>[
-                          BoxShadow(
-                            color: widget.colors.secondaryShadow.withValues(
-                              alpha: 0.85,
-                            ),
-                            blurRadius: 12,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        _confirmed
-                            ? Icons.check_rounded
-                            : Icons.arrow_forward_rounded,
-                        color: widget.colors.error.withValues(alpha: 0.82),
-                        size: 21,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }

@@ -2,26 +2,145 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/six_mobile_animated_gradient_background.dart';
+
+enum SixoAppMobileLoadingBackground { brand, currentTheme }
+
+/// Mantém a tela atual montada e apresenta o loading mobile do SixoApp com
+/// entrada e saída suaves. Use em operações bloqueantes de rota.
+class SixoAppMobileLoadingOverlay extends StatelessWidget {
+  const SixoAppMobileLoadingOverlay({
+    super.key,
+    required this.isLoading,
+    required this.message,
+    required this.child,
+    this.semanticLabel,
+    this.supportingMessage,
+    this.visibleKey = const ValueKey<String>('sixoapp-mobile-loading-visible'),
+    this.blockBackNavigation = false,
+  });
+
+  final bool isLoading;
+  final String message;
+  final String? semanticLabel;
+  final String? supportingMessage;
+  final Key visibleKey;
+  final bool blockBackNavigation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
+    final Duration duration =
+        reduceMotion ? Duration.zero : const Duration(milliseconds: 380);
+
+    return PopScope(
+      canPop: !blockBackNavigation || !isLoading,
+      child: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          ExcludeSemantics(excluding: isLoading, child: child),
+          Positioned.fill(
+            child: ExcludeSemantics(
+              excluding: !isLoading,
+              child: IgnorePointer(
+                ignoring: !isLoading,
+                child: AbsorbPointer(
+                  child: AnimatedSwitcher(
+                    duration: duration,
+                    reverseDuration:
+                        reduceMotion
+                            ? Duration.zero
+                            : const Duration(milliseconds: 280),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    layoutBuilder: (
+                      Widget? currentChild,
+                      List<Widget> previousChildren,
+                    ) {
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: <Widget>[
+                          ...previousChildren,
+                          if (currentChild != null) currentChild,
+                        ],
+                      );
+                    },
+                    transitionBuilder: (
+                      Widget child,
+                      Animation<double> animation,
+                    ) {
+                      final Animation<double> curved = CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                        reverseCurve: Curves.easeInCubic,
+                      );
+                      return FadeTransition(
+                        opacity: curved,
+                        child: ScaleTransition(
+                          scale: Tween<double>(
+                            begin: 0.985,
+                            end: 1,
+                          ).animate(curved),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child:
+                        isLoading
+                            ? SixoAppMobileLoadingScene.themed(
+                              key: visibleKey,
+                              message: message,
+                              semanticLabel: semanticLabel,
+                              supportingMessage: supportingMessage,
+                            )
+                            : const SizedBox.shrink(
+                              key: ValueKey<String>(
+                                'sixoapp-mobile-loading-hidden',
+                              ),
+                            ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class SixoAppMobileLoadingScene extends StatefulWidget {
   const SixoAppMobileLoadingScene({
     super.key,
     this.message,
     this.semanticLabel,
-  });
+    this.supportingMessage,
+  }) : background = SixoAppMobileLoadingBackground.brand;
+
+  const SixoAppMobileLoadingScene.themed({
+    super.key,
+    this.message,
+    this.semanticLabel,
+    this.supportingMessage,
+  }) : background = SixoAppMobileLoadingBackground.currentTheme;
 
   final String? message;
   final String? semanticLabel;
+  final String? supportingMessage;
+  final SixoAppMobileLoadingBackground background;
 
   @override
   State<SixoAppMobileLoadingScene> createState() =>
       _SixoAppMobileLoadingSceneState();
 }
 
-class _SixoAppMobileLoadingSceneState
-    extends State<SixoAppMobileLoadingScene>
+class _SixoAppMobileLoadingSceneState extends State<SixoAppMobileLoadingScene>
     with TickerProviderStateMixin {
   late final AnimationController _entryController;
   late final AnimationController _loopController;
@@ -73,6 +192,9 @@ class _SixoAppMobileLoadingSceneState
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool useCurrentTheme =
+        widget.background == SixoAppMobileLoadingBackground.currentTheme;
     final String message =
         widget.message ??
         context.t(
@@ -83,17 +205,25 @@ class _SixoAppMobileLoadingSceneState
       'splash.connectedTagline',
       fallback: 'Tudo conectado. Tudo sob controle.',
     );
+    final String supportingMessage = widget.supportingMessage?.trim() ?? '';
+    final Color baseColor =
+        useCurrentTheme ? colors.background : _SixoAppSplashColors.navy950;
+    final bool navigationBarIsDark =
+        ThemeData.estimateBrightnessForColor(baseColor) == Brightness.dark;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
-        systemNavigationBarColor: _SixoAppSplashColors.navy950,
-        systemNavigationBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: baseColor,
+        systemNavigationBarDividerColor: baseColor,
+        systemNavigationBarIconBrightness:
+            navigationBarIsDark ? Brightness.light : Brightness.dark,
       ),
       child: ColoredBox(
-        color: _SixoAppSplashColors.navy950,
+        key: const ValueKey<String>('sixoapp-mobile-loading-background'),
+        color: baseColor,
         child: Semantics(
           container: true,
           liveRegion: true,
@@ -109,6 +239,16 @@ class _SixoAppMobileLoadingSceneState
                   _entryController.value,
                 );
                 final double progress = _loopController.value;
+                if (useCurrentTheme) {
+                  return _buildThemedScene(
+                    colors: colors,
+                    entry: entry,
+                    progress: progress,
+                    message: message,
+                    supportingMessage: supportingMessage,
+                  );
+                }
+
                 return Stack(
                   fit: StackFit.expand,
                   children: <Widget>[
@@ -242,6 +382,130 @@ class _SixoAppMobileLoadingSceneState
       ),
     );
   }
+
+  Widget _buildThemedScene({
+    required SixMobileColorScheme colors,
+    required double entry,
+    required double progress,
+    required String message,
+    required String supportingMessage,
+  }) {
+    return SixMobileAnimatedGradientBackground(
+      enabled: !_reduceMotion,
+      intensity: 0.52,
+      baseColor: colors.background,
+      primaryColor: colors.primary,
+      secondaryColor: colors.secondary,
+      accentColor: colors.accent,
+      child: SafeArea(
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool compact = constraints.maxHeight < 620;
+            final double logoSize = math.min(
+              math.min(
+                constraints.maxWidth * (compact ? 0.38 : 0.44),
+                constraints.maxHeight * (compact ? 0.24 : 0.27),
+              ),
+              compact ? 148 : 188,
+            );
+            final double titleSize =
+                (constraints.maxWidth * 0.085).clamp(29.0, 38.0).toDouble();
+            final double pulse =
+                _reduceMotion
+                    ? 1
+                    : 1 + (math.sin(progress * math.pi * 2) * 0.022);
+
+            return Center(
+              child: SingleChildScrollView(
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 24,
+                ),
+                child: Opacity(
+                  opacity: entry,
+                  child: Transform.translate(
+                    offset: Offset(0, (1 - entry) * 14),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Transform.scale(
+                          scale: (0.94 + (entry * 0.06)) * pulse,
+                          child: _SixoAppAnimatedSymbol(
+                            size: logoSize,
+                            progress: progress,
+                            reduceMotion: _reduceMotion,
+                          ),
+                        ),
+                        SizedBox(height: compact ? 8 : 12),
+                        Text(
+                          'SixoApp',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: colors.titleText,
+                            fontSize: titleSize,
+                            height: 1,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -1.1,
+                          ),
+                        ),
+                        SizedBox(height: compact ? 16 : 22),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 320),
+                          child: Text(
+                            message,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: colors.mutedText,
+                              fontSize: compact ? 14 : 16,
+                              height: 1.35,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if (supportingMessage.isNotEmpty) ...<Widget>[
+                          const SizedBox(height: 6),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 320),
+                            child: Text(
+                              supportingMessage,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: colors.mutedText.withValues(alpha: 0.82),
+                                fontSize: compact ? 12 : 13,
+                                height: 1.35,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                        SizedBox(height: compact ? 16 : 22),
+                        _SixoAppSweepProgress(
+                          progress: progress,
+                          reduceMotion: _reduceMotion,
+                          trackColor: colors.strongBorder.withValues(
+                            alpha: 0.34,
+                          ),
+                          startColor: SixMobilePalette.brandCyan,
+                          endColor: colors.accent,
+                          glowColor: colors.accent.withValues(alpha: 0.42),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
 }
 
 class _SixoAppAnimatedSymbol extends StatelessWidget {
@@ -314,10 +578,18 @@ class _SixoAppSweepProgress extends StatelessWidget {
   const _SixoAppSweepProgress({
     required this.progress,
     required this.reduceMotion,
+    this.trackColor = _SixoAppSplashColors.progressTrack,
+    this.startColor = _SixoAppSplashColors.cyan,
+    this.endColor = _SixoAppSplashColors.electricBlue,
+    this.glowColor = const Color(0x8010D9F0),
   });
 
   final double progress;
   final bool reduceMotion;
+  final Color trackColor;
+  final Color startColor;
+  final Color endColor;
+  final Color glowColor;
 
   @override
   Widget build(BuildContext context) {
@@ -335,7 +607,7 @@ class _SixoAppSweepProgress extends StatelessWidget {
             children: <Widget>[
               DecoratedBox(
                 decoration: BoxDecoration(
-                  color: _SixoAppSplashColors.progressTrack,
+                  color: trackColor,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
@@ -347,17 +619,11 @@ class _SixoAppSweepProgress extends StatelessWidget {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(999),
-                    gradient: const LinearGradient(
-                      colors: <Color>[
-                        _SixoAppSplashColors.cyan,
-                        _SixoAppSplashColors.electricBlue,
-                      ],
+                    gradient: LinearGradient(
+                      colors: <Color>[startColor, endColor],
                     ),
-                    boxShadow: const <BoxShadow>[
-                      BoxShadow(
-                        color: Color(0x8010D9F0),
-                        blurRadius: 9,
-                      ),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(color: glowColor, blurRadius: 9),
                     ],
                   ),
                 ),

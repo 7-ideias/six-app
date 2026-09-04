@@ -12,6 +12,7 @@ import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
+import '../components/mobile/sixoapp_mobile_loading_scene.dart';
 import '../components/mobile_motion.dart';
 import '../components/six_backend_loading.dart';
 
@@ -517,41 +518,48 @@ class _OperacoesCaixaMobileScreenState
           '${provider.dateFormat}|${provider.timeFormat}',
     );
 
-    return SixMobilePageShell(
-      title: _txt('caixa.operacoes.mobile.title', 'Operações de caixa'),
-      backgroundColor: _backgroundColor,
-      primaryColor: _primaryColor,
-      secondaryColor: _secondaryColor,
-      accentColor: _accentColor,
-      enableAnimatedBackground: false,
-      toolbarHeight: 48,
-      initialContentSpacing: 8,
-      scrollEffectOffset: 28,
-      scrolledSurfaceOpacity: 0.70,
-      leading: IconButton(
-        tooltip: _txt('common.back', 'Voltar'),
-        icon: Icon(Icons.arrow_back_rounded),
-        onPressed: () => Navigator.of(context).maybePop(),
+    return SixoAppMobileLoadingOverlay(
+      isLoading: _busy,
+      message: _txt(
+        'caixa.operacoes.mobile.processing',
+        'Processando operação...',
       ),
-      actions: <Widget>[
-        IconButton(
-          tooltip: _txt(
-            'caixa.operacoes.mobile.newMovement',
-            'Nova movimentação',
-          ),
-          onPressed: _busy ? null : _abrirFormularioMovimentoSheet,
-          icon: Icon(Icons.add_circle_outline_rounded),
+      child: SixMobilePageShell(
+        title: _txt('caixa.operacoes.mobile.title', 'Operações de caixa'),
+        backgroundColor: _backgroundColor,
+        primaryColor: _primaryColor,
+        secondaryColor: _secondaryColor,
+        accentColor: _accentColor,
+        enableAnimatedBackground: false,
+        toolbarHeight: 48,
+        initialContentSpacing: 8,
+        scrollEffectOffset: 28,
+        scrolledSurfaceOpacity: 0.70,
+        leading: IconButton(
+          tooltip: _txt('common.back', 'Voltar'),
+          icon: Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).maybePop(),
         ),
-        IconButton(
-          tooltip: _txt(
-            'caixa.operacoes.mobile.closingSettings',
-            'Configurações de fechamento',
+        actions: <Widget>[
+          IconButton(
+            tooltip: _txt(
+              'caixa.operacoes.mobile.newMovement',
+              'Nova movimentação',
+            ),
+            onPressed: _busy ? null : _abrirFormularioMovimentoSheet,
+            icon: Icon(Icons.add_circle_outline_rounded),
           ),
-          onPressed: _abrirConfiguracoesFechamento,
-          icon: Icon(Icons.settings_outlined),
-        ),
-      ],
-      bodyBuilder: _buildContent,
+          IconButton(
+            tooltip: _txt(
+              'caixa.operacoes.mobile.closingSettings',
+              'Configurações de fechamento',
+            ),
+            onPressed: _abrirConfiguracoesFechamento,
+            icon: Icon(Icons.settings_outlined),
+          ),
+        ],
+        bodyBuilder: _buildContent,
+      ),
     );
   }
 
@@ -566,26 +574,21 @@ class _OperacoesCaixaMobileScreenState
 
     return SafeArea(
       top: false,
-      child: Stack(
-        children: <Widget>[
-          RefreshIndicator(
-            onRefresh: () => _carregarDadosIniciais(),
-            child: ListView(
-              controller: scrollController,
-              physics: AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
-              children: <Widget>[
-                AnimatedSwitcher(
-                  duration: reduceMotion ? Duration.zero : _transitionDuration,
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  child: _buildState(reduceMotion: reduceMotion),
-                ),
-              ],
+      child: RefreshIndicator(
+        onRefresh: () => _carregarDadosIniciais(),
+        child: ListView(
+          controller: scrollController,
+          physics: AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 28),
+          children: <Widget>[
+            AnimatedSwitcher(
+              duration: reduceMotion ? Duration.zero : _transitionDuration,
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              child: _buildState(reduceMotion: reduceMotion),
             ),
-          ),
-          if (_busy) _actionOverlay(),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -2855,50 +2858,6 @@ class _OperacoesCaixaMobileScreenState
           style: style,
         );
       },
-    );
-  }
-
-  Widget _actionOverlay() {
-    return Positioned.fill(
-      child: AbsorbPointer(
-        child: Semantics(
-          liveRegion: true,
-          label: _txt(
-            'caixa.operacoes.mobile.processing',
-            'Processando operação',
-          ),
-          child: Container(
-            color: _withAlpha(Colors.black, 0.22),
-            alignment: Alignment.center,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-              decoration: BoxDecoration(
-                color: SixMobilePalette.surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: SixMobilePalette.border),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2.4),
-                  ),
-                  SizedBox(width: 12),
-                  Text(
-                    _txt(
-                      'caixa.operacoes.mobile.processing',
-                      'Processando operação',
-                    ),
-                    style: TextStyle(fontWeight: FontWeight.w900),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 

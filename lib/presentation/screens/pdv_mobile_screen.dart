@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../core/state/loading_do_mobile_comunicando_com_backend_controller.dart';
 import '../../data/models/venda_nao_liquidada_models.dart';
-import '../../l10n/app_localizations.dart';
+import '../../l10n/six_i18n.dart';
+import '../components/mobile/sixoapp_mobile_loading_scene.dart';
 import '../coordinators/operational_procedure_flow_coordinator.dart';
-import '../components/six_lottie_action_overlay.dart';
 import 'pdv_mobile.dart' as base;
 
 /// Mantém o PDV original isolado e adiciona feedback visual reutilizável para
@@ -21,8 +21,6 @@ class PdvMobileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations localizations = AppLocalizations.of(context)!;
-
     return ValueListenableBuilder<int>(
       valueListenable:
           LoadingDoMobileComunicandoComBackendController.activeOperations,
@@ -31,9 +29,17 @@ class PdvMobileScreen extends StatelessWidget {
         procedureCoordinator: procedureCoordinator,
       ),
       builder: (BuildContext context, int activeOperations, Widget? child) {
-        return SixLottieActionOverlay(
+        return SixoAppMobileLoadingOverlay(
           isLoading: activeOperations > 0,
-          title: localizations.aiAssistantSending,
+          blockBackNavigation: true,
+          message: context.t(
+            'pdv.mobile.finalizingSale',
+            fallback: 'Finalizando sua venda...',
+          ),
+          semanticLabel: context.t(
+            'pdv.mobile.finalizingSaleSemantics',
+            fallback: 'SixoApp finalizando sua venda',
+          ),
           child: child!,
         );
       },
