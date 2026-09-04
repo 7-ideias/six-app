@@ -85,6 +85,7 @@ class UsuarioService {
     Map<String, dynamic>? catalogoReservasFiltrosWeb,
     Map<String, dynamic>? consultaVendasFiltrosWeb,
     Map<String, dynamic>? consultaVendasFiltrosMobile,
+    Map<String, dynamic>? vendasNaoLiquidadasFiltrosMobile,
     Map<String, dynamic>? atendimentosCriadosFiltrosWeb,
     Map<String, dynamic>? atendimentosCriadosFiltrosMobile,
     Map<String, dynamic>? servicosEmAndamentoFiltrosMobile,
@@ -101,13 +102,15 @@ class UsuarioService {
       body['idiomaDePreferencia'] = idiomaDePreferencia;
     }
     if (modoDeExibicaoProdutos != null) {
-      final String campo =
-          kIsWeb ? 'modoDeExibicaoProdutosWeb' : 'modoDeExibicaoProdutosMobile';
+      final String campo = kIsWeb
+          ? 'modoDeExibicaoProdutosWeb'
+          : 'modoDeExibicaoProdutosMobile';
       body[campo] = modoDeExibicaoProdutos;
     }
     if (modoDeExibicaoServicos != null) {
-      final String campo =
-          kIsWeb ? 'modoDeExibicaoServicosWeb' : 'modoDeExibicaoServicosMobile';
+      final String campo = kIsWeb
+          ? 'modoDeExibicaoServicosWeb'
+          : 'modoDeExibicaoServicosMobile';
       body[campo] = modoDeExibicaoServicos;
     }
     if (modoDeExibicaoProdutosWeb != null) {
@@ -158,6 +161,10 @@ class UsuarioService {
     }
     if (consultaVendasFiltrosMobile != null) {
       body['consultaVendasFiltrosMobile'] = consultaVendasFiltrosMobile;
+    }
+    if (vendasNaoLiquidadasFiltrosMobile != null) {
+      body['vendasNaoLiquidadasFiltrosMobile'] =
+          vendasNaoLiquidadasFiltrosMobile;
     }
     if (atendimentosCriadosFiltrosWeb != null) {
       body['atendimentosCriadosFiltrosWeb'] = atendimentosCriadosFiltrosWeb;

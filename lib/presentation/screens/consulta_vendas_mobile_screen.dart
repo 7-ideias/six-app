@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/consulta_vendas_models.dart';
 import '../../data/models/usuario_model.dart';
+import '../../data/services/desempenho_colaborador/desempenho_colaborador_api_client.dart';
 import '../../data/services/vendas/consulta_vendas_api_client.dart';
 import '../../design_system/themes/six_mobile_color_scheme.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
@@ -19,9 +21,14 @@ import '../components/mobile_motion.dart';
 import '../components/six_backend_loading.dart';
 
 class ConsultaVendasMobileScreen extends StatefulWidget {
-  const ConsultaVendasMobileScreen({super.key, this.apiClient});
+  const ConsultaVendasMobileScreen({
+    super.key,
+    this.apiClient,
+    this.vendedoresLoader,
+  });
 
   final ConsultaVendasApiClient? apiClient;
+  final Future<List<ColaboradorUsuarioResumo>> Function()? vendedoresLoader;
 
   @override
   State<ConsultaVendasMobileScreen> createState() =>
@@ -66,6 +73,8 @@ class _ConsultaVendasMobileScreenState
   ];
 
   late final ConsultaVendasApiClient _api;
+  late final Future<List<ColaboradorUsuarioResumo>> Function()
+  _vendedoresLoader;
   final UsuarioService _usuarioService = UsuarioService();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
@@ -83,6 +92,9 @@ class _ConsultaVendasMobileScreenState
   String _periodoSelecionado = _periodoHoje;
   String? _statusFinanceiroSelecionado;
   String? _statusDevolucaoSelecionado;
+  Set<String> _idsVendedoresSelecionados = <String>{};
+  List<ColaboradorUsuarioResumo> _vendedores =
+      const <ColaboradorUsuarioResumo>[];
   String _ordenacaoSelecionada = 'MAIS_RECENTES';
   String _valorMinimoTexto = '';
   String _valorMaximoTexto = '';
@@ -90,6 +102,8 @@ class _ConsultaVendasMobileScreenState
   Timer? _salvarFiltrosDebounce;
   bool _aplicandoPreferencias = false;
   bool _usuarioAlterouFiltros = false;
+  bool _carregandoVendedores = true;
+  bool _falhaAoCarregarVendedores = false;
 
   SixMobileColorScheme get _colors => context.sixMobileColors;
 
@@ -97,12 +111,18 @@ class _ConsultaVendasMobileScreenState
   void initState() {
     super.initState();
     _api = widget.apiClient ?? HttpConsultaVendasApiClient();
+    _vendedoresLoader =
+        widget.vendedoresLoader ??
+        () => HttpDesempenhoColaboradorApiClient().listarParticipantes(
+          incluirNaoAtivos: false,
+        );
     final DateTime hoje = _hojeNormalizado();
     _dataFinal = hoje;
     _dataInicial = hoje;
     _dataInicioPersonalizada = _dataInicial;
     _dataFimPersonalizada = _dataFinal;
     _buscaController.addListener(_onBuscaChanged);
+    unawaited(_carregarVendedores());
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _restaurarPreferenciasConsultaVendasMobile();
       if (!mounted) return;
@@ -113,6 +133,45 @@ class _ConsultaVendasMobileScreenState
         ),
       );
     });
+  }
+
+  Future<void> _carregarVendedores() async {
+    try {
+      final List<ColaboradorUsuarioResumo> resultado =
+          await _vendedoresLoader();
+      final Map<String, ColaboradorUsuarioResumo> vendedoresPorId =
+          <String, ColaboradorUsuarioResumo>{};
+      for (final ColaboradorUsuarioResumo vendedor in resultado) {
+        final String id = vendedor.idUnicoPessoal.trim();
+        if (id.isNotEmpty && vendedor.ativo) {
+          vendedoresPorId[id] = vendedor;
+        }
+      }
+      final List<ColaboradorUsuarioResumo> vendedores = vendedoresPorId.values
+        .toList(growable: false)..sort(
+        (ColaboradorUsuarioResumo first, ColaboradorUsuarioResumo second) =>
+            _nomeVendedor(
+              first,
+            ).toLowerCase().compareTo(_nomeVendedor(second).toLowerCase()),
+      );
+      if (!mounted) return;
+      setState(() {
+        _vendedores = vendedores;
+        _falhaAoCarregarVendedores = false;
+      });
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Erro ao carregar vendedores da consulta de vendas mobile: '
+        '$error\n$stackTrace',
+      );
+      if (mounted) {
+        setState(() => _falhaAoCarregarVendedores = true);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _carregandoVendedores = false);
+      }
+    }
   }
 
   @override
@@ -173,6 +232,7 @@ class _ConsultaVendasMobileScreenState
       dataInicial: _dataInicial,
       dataFinal: _dataFinal,
       busca: _buscaController.text,
+      idsColaboradores: _idsVendedoresOrdenados(),
       statusFinanceiro: _statusFinanceiroSelecionado,
       statusDevolucao: _statusDevolucaoSelecionado,
       valorMinimo: _parseNumero(_valorMinimoTexto),
@@ -185,12 +245,101 @@ class _ConsultaVendasMobileScreenState
 
   bool get _temFiltrosAtivos =>
       _buscaController.text.trim().isNotEmpty ||
+      _idsVendedoresSelecionados.isNotEmpty ||
       _periodoSelecionado != _periodoHoje ||
       _statusFinanceiroSelecionado != null ||
       _statusDevolucaoSelecionado != null ||
       _valorMinimoTexto.trim().isNotEmpty ||
       _valorMaximoTexto.trim().isNotEmpty ||
       _ordenacaoSelecionada != 'MAIS_RECENTES';
+
+  List<String> _idsVendedoresOrdenados() {
+    final List<String> ids = _idsVendedoresSelecionados
+        .map((String id) => id.trim())
+        .where((String id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    ids.sort();
+    return ids;
+  }
+
+  String _nomeVendedor(ColaboradorUsuarioResumo vendedor) {
+    for (final String value in <String>[
+      vendedor.nomeDeGuerra,
+      vendedor.nome,
+      vendedor.email,
+      vendedor.idUnicoPessoal,
+    ]) {
+      final String normalized = value.trim();
+      if (normalized.isNotEmpty) return normalized;
+    }
+    return vendedor.idUnicoPessoal;
+  }
+
+  ColaboradorUsuarioResumo? _vendedorPorId(String id) {
+    for (final ColaboradorUsuarioResumo vendedor in _vendedores) {
+      if (vendedor.idUnicoPessoal.trim() == id.trim()) return vendedor;
+    }
+    return null;
+  }
+
+  String _quantidadeVendedoresLabel(int count) {
+    return _txt(
+      count == 1
+          ? 'sales.query.oneSellerSelected'
+          : 'sales.query.sellersSelected',
+      count == 1 ? '{count} vendedor' : '{count} vendedores',
+      count == 1 ? '{count} seller' : '{count} sellers',
+      count == 1 ? '{count} vendedor' : '{count} vendedores',
+    ).replaceAll('{count}', count.toString());
+  }
+
+  String _valorFiltroVendedores(Set<String> ids) {
+    if (ids.isEmpty) {
+      return _txt(
+        'sales.query.allSellers',
+        'Todos os vendedores',
+        'All sellers',
+        'Todos los vendedores',
+      );
+    }
+    if (ids.length == 1) {
+      final ColaboradorUsuarioResumo? vendedor = _vendedorPorId(ids.first);
+      if (vendedor != null) return _nomeVendedor(vendedor);
+    }
+    return _quantidadeVendedoresLabel(ids.length);
+  }
+
+  List<SixMobileSelectionOption<String>> _opcoesVendedoresMobile() {
+    final List<SixMobileSelectionOption<String>> options = _vendedores
+        .map((ColaboradorUsuarioResumo vendedor) {
+          final String label = _nomeVendedor(vendedor);
+          final String email = vendedor.email.trim();
+          return SixMobileSelectionOption<String>(
+            value: vendedor.idUnicoPessoal.trim(),
+            title: label,
+            subtitle: email.isNotEmpty && email != label ? email : null,
+            icon: Icons.person_outline_rounded,
+          );
+        })
+        .toList(growable: true);
+    final Set<String> idsConhecidos =
+        options
+            .map((SixMobileSelectionOption<String> option) => option.value)
+            .toSet();
+    for (final String id in _idsVendedoresOrdenados()) {
+      if (!idsConhecidos.contains(id)) {
+        options.add(
+          SixMobileSelectionOption<String>(
+            value: id,
+            title: id,
+            icon: Icons.person_outline_rounded,
+          ),
+        );
+      }
+    }
+    return options;
+  }
 
   DateTime _hojeNormalizado() {
     final DateTime agora = DateTime.now();
@@ -298,6 +447,7 @@ class _ConsultaVendasMobileScreenState
     }
     setState(() {
       _periodoSelecionado = filtros.periodo.codigo;
+      _idsVendedoresSelecionados = filtros.idsVendedores.toSet();
       _statusFinanceiroSelecionado = filtros.statusFinanceiro;
       _statusDevolucaoSelecionado = filtros.statusDevolucao;
       _ordenacaoSelecionada = filtros.ordenacao;
@@ -367,6 +517,7 @@ class _ConsultaVendasMobileScreenState
   ConsultaVendasFiltrosWebPreferencia _preferenciaConsultaVendasMobileAtual() {
     return ConsultaVendasFiltrosWebPreferencia(
       busca: _buscaController.text,
+      idsVendedores: _idsVendedoresOrdenados(),
       periodo:
           ConsultaVendasPeriodoWebPreferenciaApi.tryFromCodigo(
             _periodoSelecionado,
@@ -394,6 +545,7 @@ class _ConsultaVendasMobileScreenState
         _preferenciaConsultaVendasMobileAtual();
     return <String>[
       filtros.busca.trim(),
+      filtros.idsVendedores.join(','),
       filtros.periodo.codigo,
       filtros.dataInicio?.toIso8601String() ?? '',
       filtros.dataFim?.toIso8601String() ?? '',
@@ -427,12 +579,17 @@ class _ConsultaVendasMobileScreenState
             periodo: _periodoSelecionado,
             dataInicio: _dataInicioPersonalizada,
             dataFim: _dataFimPersonalizada,
+            idsVendedores: _idsVendedoresSelecionados,
             statusFinanceiro: _statusFinanceiroSelecionado,
             statusDevolucao: _statusDevolucaoSelecionado,
             ordenacao: _ordenacaoSelecionada,
             valorMinimo: _valorMinimoTexto,
             valorMaximo: _valorMaximoTexto,
           ),
+          sellerOptions: _opcoesVendedoresMobile(),
+          sellersLoading: _carregandoVendedores,
+          sellersLoadFailed: _falhaAoCarregarVendedores,
+          sellerSelectionLabelBuilder: _valorFiltroVendedores,
           formatDate: regionalizacao.formatDate,
           periodLabelBuilder: (String value) => _periodoLabel(context, value),
           financialStatusLabelBuilder:
@@ -464,6 +621,7 @@ class _ConsultaVendasMobileScreenState
           draft.dataFim.isBefore(draft.dataInicio)
               ? draft.dataInicio
               : draft.dataFim;
+      _idsVendedoresSelecionados = Set<String>.from(draft.idsVendedores);
       _statusFinanceiroSelecionado = draft.statusFinanceiro;
       _statusDevolucaoSelecionado = draft.statusDevolucao;
       _ordenacaoSelecionada = draft.ordenacao;
@@ -507,6 +665,7 @@ class _ConsultaVendasMobileScreenState
       _dataInicial = hoje;
       _dataInicioPersonalizada = _dataInicial;
       _dataFimPersonalizada = _dataFinal;
+      _idsVendedoresSelecionados = <String>{};
       _statusFinanceiroSelecionado = null;
       _statusDevolucaoSelecionado = null;
       _ordenacaoSelecionada = 'MAIS_RECENTES';
@@ -785,6 +944,11 @@ class _ConsultaVendasMobileScreenState
         icon: Icons.date_range_rounded,
         label: _periodoResumoLabel(regionalizacao),
       ),
+      if (_idsVendedoresSelecionados.isNotEmpty)
+        _ActiveFilterChip(
+          icon: Icons.people_alt_outlined,
+          label: _valorFiltroVendedores(_idsVendedoresSelecionados),
+        ),
       if (_statusFinanceiroSelecionado != null)
         _ActiveFilterChip(
           icon: Icons.account_balance_wallet_outlined,
@@ -2061,6 +2225,7 @@ class _ConsultaVendasFilterDraft {
     required this.periodo,
     required this.dataInicio,
     required this.dataFim,
+    required this.idsVendedores,
     required this.statusFinanceiro,
     required this.statusDevolucao,
     required this.ordenacao,
@@ -2071,6 +2236,7 @@ class _ConsultaVendasFilterDraft {
   final String periodo;
   final DateTime dataInicio;
   final DateTime dataFim;
+  final Set<String> idsVendedores;
   final String? statusFinanceiro;
   final String? statusDevolucao;
   final String ordenacao;
@@ -2081,6 +2247,7 @@ class _ConsultaVendasFilterDraft {
     String? periodo,
     DateTime? dataInicio,
     DateTime? dataFim,
+    Set<String>? idsVendedores,
     String? statusFinanceiro,
     String? statusDevolucao,
     String? ordenacao,
@@ -2093,6 +2260,7 @@ class _ConsultaVendasFilterDraft {
       periodo: periodo ?? this.periodo,
       dataInicio: dataInicio ?? this.dataInicio,
       dataFim: dataFim ?? this.dataFim,
+      idsVendedores: Set<String>.from(idsVendedores ?? this.idsVendedores),
       statusFinanceiro:
           limparStatusFinanceiro
               ? null
@@ -2111,6 +2279,10 @@ class _ConsultaVendasFilterDraft {
 class _ConsultaVendasFilterSheet extends StatefulWidget {
   const _ConsultaVendasFilterSheet({
     required this.initialDraft,
+    required this.sellerOptions,
+    required this.sellersLoading,
+    required this.sellersLoadFailed,
+    required this.sellerSelectionLabelBuilder,
     required this.formatDate,
     required this.periodLabelBuilder,
     required this.financialStatusLabelBuilder,
@@ -2120,6 +2292,10 @@ class _ConsultaVendasFilterSheet extends StatefulWidget {
   });
 
   final _ConsultaVendasFilterDraft initialDraft;
+  final List<SixMobileSelectionOption<String>> sellerOptions;
+  final bool sellersLoading;
+  final bool sellersLoadFailed;
+  final String Function(Set<String> values) sellerSelectionLabelBuilder;
   final String Function(DateTime value) formatDate;
   final String Function(String value) periodLabelBuilder;
   final String Function(String value) financialStatusLabelBuilder;
@@ -2190,6 +2366,63 @@ class _ConsultaVendasFilterSheetState
 
     if (selected == null || !mounted) return;
     setState(() => _draft = _draft.copyWith(periodo: selected));
+  }
+
+  Future<void> _pickVendedores() async {
+    final Set<String>?
+    selected = await showSixMobileMultiSelectionSheet<String>(
+      context: context,
+      title: _triple(
+        context,
+        'sales.query.sellers',
+        'Vendedores',
+        'Sellers',
+        'Vendedores',
+      ),
+      subtitle: _triple(
+        context,
+        'sales.query.mobile.sellersSubtitle',
+        'Selecione um ou mais vendedores. Sem seleção, todos serão considerados.',
+        'Select one or more sellers. With no selection, all are included.',
+        'Seleccione uno o más vendedores. Sin selección, se incluyen todos.',
+      ),
+      options: widget.sellerOptions,
+      selectedValues: _draft.idsVendedores,
+      allLabel: _triple(
+        context,
+        'sales.query.allSellers',
+        'Todos os vendedores',
+        'All sellers',
+        'Todos los vendedores',
+      ),
+      searchHint: _triple(
+        context,
+        'sales.query.searchSeller',
+        'Buscar vendedor',
+        'Search seller',
+        'Buscar vendedor',
+      ),
+      emptyTitle: _triple(
+        context,
+        widget.sellersLoadFailed
+            ? 'sales.query.sellersLoadError'
+            : 'sales.query.noSellers',
+        widget.sellersLoadFailed
+            ? 'Não foi possível carregar os vendedores.'
+            : 'Nenhum vendedor encontrado.',
+        widget.sellersLoadFailed
+            ? 'Could not load sellers.'
+            : 'No sellers found.',
+        widget.sellersLoadFailed
+            ? 'No se pudieron cargar los vendedores.'
+            : 'No se encontraron vendedores.',
+      ),
+    );
+
+    if (selected == null || !mounted) return;
+    setState(() {
+      _draft = _draft.copyWith(idsVendedores: selected);
+    });
   }
 
   Future<void> _pickStatusFinanceiro() async {
@@ -2337,6 +2570,7 @@ class _ConsultaVendasFilterSheetState
         periodo: _ConsultaVendasMobileScreenState._periodoHoje,
         dataInicio: DateTime.now(),
         dataFim: DateTime.now(),
+        idsVendedores: <String>{},
         statusFinanceiro: null,
         statusDevolucao: null,
         ordenacao: 'MAIS_RECENTES',
@@ -2486,6 +2720,44 @@ class _ConsultaVendasFilterSheetState
                             ],
                           ),
                         ],
+                        const SizedBox(height: 12),
+                        SixMobileSelectionField(
+                          label: _triple(
+                            context,
+                            'sales.query.sellers',
+                            'Vendedores',
+                            'Sellers',
+                            'Vendedores',
+                          ),
+                          value:
+                              widget.sellersLoading &&
+                                      _draft.idsVendedores.isEmpty
+                                  ? _triple(
+                                    context,
+                                    'sales.query.loadingSellers',
+                                    'Carregando vendedores...',
+                                    'Loading sellers...',
+                                    'Cargando vendedores...',
+                                  )
+                                  : widget.sellerSelectionLabelBuilder(
+                                    _draft.idsVendedores,
+                                  ),
+                          helperText:
+                              widget.sellersLoadFailed
+                                  ? _triple(
+                                    context,
+                                    'sales.query.sellersLoadErrorShort',
+                                    'Lista indisponível no momento',
+                                    'List currently unavailable',
+                                    'Lista no disponible por el momento',
+                                  )
+                                  : null,
+                          icon: Icons.people_alt_outlined,
+                          enabled:
+                              !widget.sellersLoading ||
+                              _draft.idsVendedores.isNotEmpty,
+                          onTap: _pickVendedores,
+                        ),
                         const SizedBox(height: 12),
                         SixMobileSelectionField(
                           label: _triple(

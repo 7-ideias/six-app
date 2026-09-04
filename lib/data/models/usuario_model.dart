@@ -62,10 +62,9 @@ class UsuarioModel {
             json['imagemPerfil'] ??
             json['imagemDoUsuario'],
       ),
-      objEndereco:
-          json['objEndereco'] != null
-              ? EnderecoModel.fromJson(json['objEndereco'])
-              : null,
+      objEndereco: json['objEndereco'] != null
+          ? EnderecoModel.fromJson(json['objEndereco'])
+          : null,
       preferenciasIndividuaisDoUsuario:
           PreferenciasIndividuaisDoUsuarioModel.fromJson(
             json['preferenciasIndividuaisDoUsuario'],
@@ -541,10 +540,9 @@ class EstoqueFiltrosPreferencia {
          'COM_IMAGEM',
          'ESTOQUE_BAIXO',
        }, 'PRODUTOS'),
-       itensPorPagina =
-           const <int>{12, 24, 48}.contains(itensPorPagina)
-               ? itensPorPagina
-               : 12;
+       itensPorPagina = const <int>{12, 24, 48}.contains(itensPorPagina)
+           ? itensPorPagina
+           : 12;
 
   final String busca;
   final String tipo;
@@ -747,10 +745,9 @@ extension GestaoMobileCardPreferenciaApi on GestaoMobileCardPreferencia {
     if (value is Iterable) {
       final List<GestaoMobileCardPreferencia> ordem = value
           .map(
-            (dynamic item) =>
-                item is GestaoMobileCardPreferencia
-                    ? item
-                    : tryFromCodigo(item),
+            (dynamic item) => item is GestaoMobileCardPreferencia
+                ? item
+                : tryFromCodigo(item),
           )
           .whereType<GestaoMobileCardPreferencia>()
           .toList(growable: false);
@@ -969,6 +966,7 @@ class PreferenciasIndividuaisDoUsuarioModel {
   final CatalogoReservasFiltrosWebPreferencia catalogoReservasFiltrosWeb;
   final ConsultaVendasFiltrosWebPreferencia consultaVendasFiltrosWeb;
   final ConsultaVendasFiltrosWebPreferencia consultaVendasFiltrosMobile;
+  final ConsultaVendasFiltrosWebPreferencia vendasNaoLiquidadasFiltrosMobile;
   final AtendimentosCriadosFiltrosWebPreferencia atendimentosCriadosFiltrosWeb;
   final AtendimentosCriadosFiltrosMobilePreferencia
   atendimentosCriadosFiltrosMobile;
@@ -1002,6 +1000,7 @@ class PreferenciasIndividuaisDoUsuarioModel {
     CatalogoReservasFiltrosWebPreferencia? catalogoReservasFiltrosWeb,
     ConsultaVendasFiltrosWebPreferencia? consultaVendasFiltrosWeb,
     ConsultaVendasFiltrosWebPreferencia? consultaVendasFiltrosMobile,
+    ConsultaVendasFiltrosWebPreferencia? vendasNaoLiquidadasFiltrosMobile,
     AtendimentosCriadosFiltrosWebPreferencia? atendimentosCriadosFiltrosWeb,
     AtendimentosCriadosFiltrosMobilePreferencia?
     atendimentosCriadosFiltrosMobile,
@@ -1078,6 +1077,9 @@ class PreferenciasIndividuaisDoUsuarioModel {
            const ConsultaVendasFiltrosWebPreferencia(
              periodo: ConsultaVendasPeriodoWebPreferencia.hoje,
            ),
+       vendasNaoLiquidadasFiltrosMobile =
+           vendasNaoLiquidadasFiltrosMobile ??
+           ConsultaVendasFiltrosWebPreferencia.vazia(),
        atendimentosCriadosFiltrosWeb =
            atendimentosCriadosFiltrosWeb ??
            AtendimentosCriadosFiltrosWebPreferencia.vazia(),
@@ -1140,6 +1142,8 @@ class PreferenciasIndividuaisDoUsuarioModel {
       consultaVendasFiltrosMobile: const ConsultaVendasFiltrosWebPreferencia(
         periodo: ConsultaVendasPeriodoWebPreferencia.hoje,
       ),
+      vendasNaoLiquidadasFiltrosMobile:
+          ConsultaVendasFiltrosWebPreferencia.vazia(),
       atendimentosCriadosFiltrosWeb:
           AtendimentosCriadosFiltrosWebPreferencia.vazia(),
       atendimentosCriadosFiltrosMobile:
@@ -1234,18 +1238,18 @@ class PreferenciasIndividuaisDoUsuarioModel {
       ),
       agendaFinanceiraFiltrosWeb:
           json['agendaFinanceiraFiltrosWeb'] is Map<String, dynamic> &&
-                  (json['agendaFinanceiraFiltrosWeb'] as Map<String, dynamic>)
-                      .isNotEmpty
-              ? AgendaFinanceiraFiltrosPreferencia.fromJson(
-                json['agendaFinanceiraFiltrosWeb'],
-              )
-              : agendaFinanceiraFiltrosWebLegado,
+              (json['agendaFinanceiraFiltrosWeb'] as Map<String, dynamic>)
+                  .isNotEmpty
+          ? AgendaFinanceiraFiltrosPreferencia.fromJson(
+              json['agendaFinanceiraFiltrosWeb'],
+            )
+          : agendaFinanceiraFiltrosWebLegado,
       agendaFinanceiraFiltrosMobile:
           json['agendaFinanceiraFiltrosMobile'] is Map<String, dynamic>
-              ? AgendaFinanceiraFiltrosPreferencia.fromJson(
-                json['agendaFinanceiraFiltrosMobile'],
-              )
-              : padrao.agendaFinanceiraFiltrosMobile,
+          ? AgendaFinanceiraFiltrosPreferencia.fromJson(
+              json['agendaFinanceiraFiltrosMobile'],
+            )
+          : padrao.agendaFinanceiraFiltrosMobile,
       estoqueFiltrosWeb: EstoqueFiltrosPreferencia.fromJson(
         json['estoqueFiltrosWeb'],
       ),
@@ -1261,11 +1265,17 @@ class PreferenciasIndividuaisDoUsuarioModel {
       ),
       consultaVendasFiltrosMobile:
           json['consultaVendasFiltrosMobile'] is Map<String, dynamic>
-              ? ConsultaVendasFiltrosWebPreferencia.fromJson(
-                json['consultaVendasFiltrosMobile'],
-                periodoPadrao: ConsultaVendasPeriodoWebPreferencia.hoje,
-              )
-              : padrao.consultaVendasFiltrosMobile,
+          ? ConsultaVendasFiltrosWebPreferencia.fromJson(
+              json['consultaVendasFiltrosMobile'],
+              periodoPadrao: ConsultaVendasPeriodoWebPreferencia.hoje,
+            )
+          : padrao.consultaVendasFiltrosMobile,
+      vendasNaoLiquidadasFiltrosMobile:
+          json['vendasNaoLiquidadasFiltrosMobile'] is Map<String, dynamic>
+          ? ConsultaVendasFiltrosWebPreferencia.fromJson(
+              json['vendasNaoLiquidadasFiltrosMobile'],
+            )
+          : padrao.vendasNaoLiquidadasFiltrosMobile,
       atendimentosCriadosFiltrosWeb:
           AtendimentosCriadosFiltrosWebPreferencia.fromJson(
             json['atendimentosCriadosFiltrosWeb'],
@@ -1326,11 +1336,13 @@ class PreferenciasIndividuaisDoUsuarioModel {
       'catalogoReservasFiltrosWeb': catalogoReservasFiltrosWeb.toJson(),
       'consultaVendasFiltrosWeb': consultaVendasFiltrosWeb.toJson(),
       'consultaVendasFiltrosMobile': consultaVendasFiltrosMobile.toJson(),
+      'vendasNaoLiquidadasFiltrosMobile': vendasNaoLiquidadasFiltrosMobile
+          .toJson(),
       'atendimentosCriadosFiltrosWeb': atendimentosCriadosFiltrosWeb.toJson(),
-      'atendimentosCriadosFiltrosMobile':
-          atendimentosCriadosFiltrosMobile.toJson(),
-      'servicosEmAndamentoFiltrosMobile':
-          servicosEmAndamentoFiltrosMobile.toJson(),
+      'atendimentosCriadosFiltrosMobile': atendimentosCriadosFiltrosMobile
+          .toJson(),
+      'servicosEmAndamentoFiltrosMobile': servicosEmAndamentoFiltrosMobile
+          .toJson(),
       'desempenhoInicioFiltrosWeb': desempenhoInicioFiltrosWeb,
       'desempenhoInicioFiltrosMobile': desempenhoInicioFiltrosMobile,
       'ordemCardsGestaoMobile': ordemCardsGestaoMobile
@@ -1371,6 +1383,7 @@ class PreferenciasIndividuaisDoUsuarioModel {
     CatalogoReservasFiltrosWebPreferencia? catalogoReservasFiltrosWeb,
     ConsultaVendasFiltrosWebPreferencia? consultaVendasFiltrosWeb,
     ConsultaVendasFiltrosWebPreferencia? consultaVendasFiltrosMobile,
+    ConsultaVendasFiltrosWebPreferencia? vendasNaoLiquidadasFiltrosMobile,
     AtendimentosCriadosFiltrosWebPreferencia? atendimentosCriadosFiltrosWeb,
     AtendimentosCriadosFiltrosMobilePreferencia?
     atendimentosCriadosFiltrosMobile,
@@ -1393,11 +1406,11 @@ class PreferenciasIndividuaisDoUsuarioModel {
         agendaFinanceiraFiltrosWeb ??
         (atualizouFiltrosAgendaWebLegados
             ? this.agendaFinanceiraFiltrosWeb.copyWith(
-              periodo: agendaFinanceiraPeriodoWeb,
-              tipo: agendaFinanceiraTipoWeb,
-              status: agendaFinanceiraStatusWeb,
-              tiposDePagamento: agendaFinanceiraTipoDePagamentoWeb,
-            )
+                periodo: agendaFinanceiraPeriodoWeb,
+                tipo: agendaFinanceiraTipoWeb,
+                status: agendaFinanceiraStatusWeb,
+                tiposDePagamento: agendaFinanceiraTipoDePagamentoWeb,
+              )
             : this.agendaFinanceiraFiltrosWeb);
     return PreferenciasIndividuaisDoUsuarioModel(
       idiomaDePreferencia: idiomaDePreferencia ?? this.idiomaDePreferencia,
@@ -1443,6 +1456,9 @@ class PreferenciasIndividuaisDoUsuarioModel {
           consultaVendasFiltrosWeb ?? this.consultaVendasFiltrosWeb,
       consultaVendasFiltrosMobile:
           consultaVendasFiltrosMobile ?? this.consultaVendasFiltrosMobile,
+      vendasNaoLiquidadasFiltrosMobile:
+          vendasNaoLiquidadasFiltrosMobile ??
+          this.vendasNaoLiquidadasFiltrosMobile,
       atendimentosCriadosFiltrosWeb:
           atendimentosCriadosFiltrosWeb ?? this.atendimentosCriadosFiltrosWeb,
       atendimentosCriadosFiltrosMobile:
@@ -1641,6 +1657,7 @@ class ConsultaVendasFiltrosWebPreferencia {
     this.dataFim,
     this.statusFinanceiro,
     this.statusDevolucao,
+    this.idsVendedores = const <String>[],
     this.valorMinimo = '',
     this.valorMaximo = '',
     this.ordenacao = 'MAIS_RECENTES',
@@ -1673,6 +1690,7 @@ class ConsultaVendasFiltrosWebPreferencia {
   final DateTime? dataFim;
   final String? statusFinanceiro;
   final String? statusDevolucao;
+  final List<String> idsVendedores;
   final String valorMinimo;
   final String valorMaximo;
   final String ordenacao;
@@ -1707,6 +1725,10 @@ class ConsultaVendasFiltrosWebPreferencia {
         json['statusDevolucao'],
         _statusDevolucaoValidos,
       ),
+      idsVendedores:
+          PreferenciasIndividuaisDoUsuarioModel._normalizarListaDeStrings(
+            json['idsVendedores'],
+          ),
       valorMinimo: json['valorMinimo']?.toString().trim() ?? '',
       valorMaximo: json['valorMaximo']?.toString().trim() ?? '',
       ordenacao:
@@ -1731,6 +1753,7 @@ class ConsultaVendasFiltrosWebPreferencia {
         'statusFinanceiro': statusFinanceiro!.trim(),
       if ((statusDevolucao ?? '').trim().isNotEmpty)
         'statusDevolucao': statusDevolucao!.trim(),
+      if (idsVendedores.isNotEmpty) 'idsVendedores': idsVendedores,
       if (valorMinimo.trim().isNotEmpty) 'valorMinimo': valorMinimo.trim(),
       if (valorMaximo.trim().isNotEmpty) 'valorMaximo': valorMaximo.trim(),
       if (ordenacao != 'MAIS_RECENTES') 'ordenacao': ordenacao,

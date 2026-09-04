@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../design_system/themes/six_mobile_color_scheme.dart';
+import '../../../l10n/six_i18n.dart';
 
 class SixMobileSelectionOption<T> {
   const SixMobileSelectionOption({
@@ -51,6 +52,38 @@ Future<T?> showSixMobileSelectionSheet<T>({
         emptyTitle: emptyTitle,
         emptyMessage: emptyMessage,
         initialSize: initialSize,
+      );
+    },
+  );
+}
+
+Future<Set<T>?> showSixMobileMultiSelectionSheet<T>({
+  required BuildContext context,
+  required String title,
+  required List<SixMobileSelectionOption<T>> options,
+  required Set<T> selectedValues,
+  required String allLabel,
+  required String emptyTitle,
+  String? subtitle,
+  String? searchHint,
+  String? emptyMessage,
+}) {
+  return showModalBottomSheet<Set<T>>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withValues(alpha: 0.44),
+    builder: (BuildContext context) {
+      return _SixMobileMultiSelectionSheet<T>(
+        title: title,
+        subtitle: subtitle,
+        options: options,
+        selectedValues: selectedValues,
+        allLabel: allLabel,
+        searchHint: searchHint,
+        emptyTitle: emptyTitle,
+        emptyMessage: emptyMessage,
       );
     },
   );
@@ -362,6 +395,389 @@ class _SixMobileSelectionSheetState<T>
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _SixMobileMultiSelectionSheet<T> extends StatefulWidget {
+  const _SixMobileMultiSelectionSheet({
+    required this.title,
+    required this.options,
+    required this.selectedValues,
+    required this.allLabel,
+    required this.emptyTitle,
+    this.subtitle,
+    this.searchHint,
+    this.emptyMessage,
+  });
+
+  final String title;
+  final String? subtitle;
+  final List<SixMobileSelectionOption<T>> options;
+  final Set<T> selectedValues;
+  final String allLabel;
+  final String? searchHint;
+  final String emptyTitle;
+  final String? emptyMessage;
+
+  @override
+  State<_SixMobileMultiSelectionSheet<T>> createState() =>
+      _SixMobileMultiSelectionSheetState<T>();
+}
+
+class _SixMobileMultiSelectionSheetState<T>
+    extends State<_SixMobileMultiSelectionSheet<T>> {
+  final TextEditingController _searchController = TextEditingController();
+  late final Set<T> _selection;
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _selection = Set<T>.from(widget.selectedValues);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<SixMobileSelectionOption<T>> get _filteredOptions {
+    final String normalized = _query.trim().toLowerCase();
+    if (normalized.isEmpty) return widget.options;
+    return widget.options
+        .where(
+          (SixMobileSelectionOption<T> option) =>
+              option.title.toLowerCase().contains(normalized) ||
+              (option.subtitle ?? '').toLowerCase().contains(normalized),
+        )
+        .toList(growable: false);
+  }
+
+  void _toggle(T value) {
+    setState(() {
+      if (!_selection.remove(value)) {
+        _selection.add(value);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final List<SixMobileSelectionOption<T>> options = _filteredOptions;
+    final String selectionText = _selection.isEmpty
+        ? widget.allLabel
+        : _mobileSelectedCountLabel(context, _selection.length);
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.84,
+          minChildSize: 0.58,
+          maxChildSize: 0.94,
+          expand: false,
+          builder: (BuildContext context, ScrollController scrollController) {
+            return Material(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(28),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: <Widget>[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.strongBorder,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 16, 12, 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                widget.title,
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(
+                                      color: colors.titleText,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                              ),
+                              if ((widget.subtitle ?? '')
+                                  .trim()
+                                  .isNotEmpty) ...<Widget>[
+                                const SizedBox(height: 4),
+                                Text(
+                                  widget.subtitle!,
+                                  style: TextStyle(
+                                    color: colors.mutedText,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        Container(
+                          margin: const EdgeInsets.only(top: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.softAccentSurface,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: colors.border),
+                          ),
+                          child: Text(
+                            selectionText,
+                            style: TextStyle(
+                              color: colors.accent,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          tooltip: MaterialLocalizations.of(
+                            context,
+                          ).closeButtonTooltip,
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if ((widget.searchHint ?? '').trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: TextField(
+                        controller: _searchController,
+                        textInputAction: TextInputAction.search,
+                        onChanged: (String value) {
+                          setState(() => _query = value);
+                        },
+                        decoration: InputDecoration(
+                          hintText: widget.searchHint,
+                          prefixIcon: const Icon(Icons.search_rounded),
+                          suffixIcon: _query.isEmpty
+                              ? null
+                              : IconButton(
+                                  tooltip: MaterialLocalizations.of(
+                                    context,
+                                  ).deleteButtonTooltip,
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() => _query = '');
+                                  },
+                                  icon: const Icon(Icons.close_rounded),
+                                ),
+                          filled: true,
+                          fillColor: colors.softSurface,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: colors.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: colors.border),
+                          ),
+                        ),
+                      ),
+                    ),
+                  Divider(height: 1, color: colors.border),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
+                    child: _MultiSelectionOptionTile(
+                      title: widget.allLabel,
+                      icon: Icons.groups_rounded,
+                      selected: _selection.isEmpty,
+                      onTap: () => setState(_selection.clear),
+                    ),
+                  ),
+                  Expanded(
+                    child: options.isEmpty
+                        ? _SelectionEmptyState(
+                            title: widget.emptyTitle,
+                            message: widget.emptyMessage,
+                          )
+                        : ListView.separated(
+                            controller: scrollController,
+                            padding: const EdgeInsets.fromLTRB(12, 6, 12, 16),
+                            itemCount: options.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 8),
+                            itemBuilder: (BuildContext context, int index) {
+                              final SixMobileSelectionOption<T> option =
+                                  options[index];
+                              return _MultiSelectionOptionTile(
+                                title: option.title,
+                                subtitle: option.subtitle,
+                                icon: option.icon,
+                                selected: _selection.contains(option.value),
+                                onTap: () => _toggle(option.value),
+                              );
+                            },
+                          ),
+                  ),
+                  Divider(height: 1, color: colors.border),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => setState(_selection.clear),
+                            child: Text(context.t('common.clear')),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () => Navigator.of(
+                              context,
+                            ).pop(Set<T>.from(_selection)),
+                            child: Text(context.t('common.apply')),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+String _mobileSelectedCountLabel(BuildContext context, int count) {
+  final String language = Localizations.localeOf(context).languageCode;
+  final String fallback = switch (language) {
+    'en' => '$count selected',
+    'es' => count == 1 ? '1 seleccionado' : '$count seleccionados',
+    _ => count == 1 ? '1 selecionado' : '$count selecionados',
+  };
+  return context
+      .t(
+        count == 1 ? 'common.oneSelected' : 'common.selectedCount',
+        fallback: fallback,
+      )
+      .replaceAll('{count}', count.toString());
+}
+
+class _MultiSelectionOptionTile extends StatelessWidget {
+  const _MultiSelectionOptionTile({
+    required this.title,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+    this.subtitle,
+  });
+
+  final String title;
+  final String? subtitle;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: title,
+      child: Material(
+        color: selected ? colors.softAccentSurface : colors.softSurface,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 62),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: selected
+                    ? colors.accent.withValues(alpha: 0.52)
+                    : colors.border,
+              ),
+            ),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? colors.accent.withValues(alpha: 0.12)
+                        : colors.iconSurface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: selected ? colors.accent : colors.mutedText,
+                    size: 21,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: colors.titleText,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      if ((subtitle ?? '').trim().isNotEmpty) ...<Widget>[
+                        const SizedBox(height: 3),
+                        Text(
+                          subtitle!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: colors.mutedText,
+                            fontSize: 12,
+                            height: 1.2,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  selected
+                      ? Icons.check_box_rounded
+                      : Icons.check_box_outline_blank_rounded,
+                  color: selected ? colors.accent : colors.mutedText,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
