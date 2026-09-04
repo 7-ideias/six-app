@@ -1085,7 +1085,7 @@ void main() {
         expect(pdfShareService.lastAtendimentoId, 'os-pdf');
         expect(pdfShareService.lastSharePositionOrigin, isNotNull);
         expect(find.byType(SixoAppMobileLoadingScene), findsOneWidget);
-        expect(find.text('SixoApp'), findsOneWidget);
+        expect(find.text('SixoApp'), findsNothing);
         expect(find.text('Gerando PDF do atendimento'), findsOneWidget);
         expect(
           find.text('Aguarde enquanto o documento é preparado.'),

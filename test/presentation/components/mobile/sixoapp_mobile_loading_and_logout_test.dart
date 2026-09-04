@@ -6,7 +6,7 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_logout_sheet.da
 import 'package:sixpos/presentation/components/mobile/sixoapp_mobile_loading_scene.dart';
 
 void main() {
-  testWidgets('themed mobile loading follows light and dark backgrounds', (
+  testWidgets('mobile overlay preserves context with adaptive iOS-like blur', (
     WidgetTester tester,
   ) async {
     for (final Brightness brightness in <Brightness>[
@@ -39,15 +39,29 @@ void main() {
       );
       await tester.pump();
 
-      final ColoredBox background = tester.widget<ColoredBox>(
-        find.byKey(const ValueKey<String>('sixoapp-mobile-loading-background')),
+      final DecoratedBox tint = tester.widget<DecoratedBox>(
+        find.byKey(const ValueKey<String>('sixoapp-mobile-loading-tint')),
       );
-      expect(background.color, colors.background);
-      expect(find.text('SixoApp'), findsOneWidget);
+      final BoxDecoration decoration = tint.decoration as BoxDecoration;
+      expect(
+        decoration.color,
+        colors.background.withValues(
+          alpha: brightness == Brightness.dark ? 0.76 : 0.72,
+        ),
+      );
+      expect(
+        find.byKey(const ValueKey<String>('sixoapp-mobile-loading-blur')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('sixoapp-mobile-loading-logo')),
+        findsOneWidget,
+      );
+      expect(find.text('SixoApp'), findsNothing);
       expect(find.text('Finalizando sua venda...'), findsOneWidget);
       expect(
         find.ancestor(
-          of: find.text('SixoApp'),
+          of: find.text('Finalizando sua venda...'),
           matching: find.byType(Material),
         ),
         findsOneWidget,
@@ -58,6 +72,48 @@ void main() {
       );
       expect(tester.takeException(), isNull);
     }
+  });
+
+  testWidgets('mobile overlay morphs into success only when requested', (
+    WidgetTester tester,
+  ) async {
+    Widget buildOverlay({required bool isLoading, required bool isSuccess}) {
+      return MaterialApp(
+        theme: ThemeData.light(),
+        home: SixoAppMobileLoadingOverlay(
+          isLoading: isLoading,
+          isSuccess: isSuccess,
+          message: 'Finalizando sua venda...',
+          successMessage: 'Venda concluída',
+          child: const ColoredBox(color: Colors.pink),
+        ),
+      );
+    }
+
+    await tester.pumpWidget(buildOverlay(isLoading: true, isSuccess: false));
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey<String>('sixoapp-mobile-loading-logo')),
+      findsOneWidget,
+    );
+
+    await tester.pumpWidget(buildOverlay(isLoading: false, isSuccess: true));
+    await tester.pump(const Duration(milliseconds: 240));
+
+    expect(
+      find.byKey(const ValueKey<String>('sixoapp-mobile-loading-success')),
+      findsOneWidget,
+    );
+    expect(find.text('Venda concluída'), findsOneWidget);
+
+    await tester.pumpWidget(buildOverlay(isLoading: false, isSuccess: false));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(
+      find.byKey(const ValueKey<String>('sixoapp-mobile-loading-visible')),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('logout uses Cupertino presentation and requires full swipe', (

@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
@@ -21,6 +24,9 @@ class SixoAppMobileLoadingOverlay extends StatelessWidget {
     this.supportingMessage,
     this.visibleKey = const ValueKey<String>('sixoapp-mobile-loading-visible'),
     this.blockBackNavigation = false,
+    this.isSuccess = false,
+    this.successMessage,
+    this.successSemanticLabel,
   });
 
   final bool isLoading;
@@ -29,6 +35,9 @@ class SixoAppMobileLoadingOverlay extends StatelessWidget {
   final String? supportingMessage;
   final Key visibleKey;
   final bool blockBackNavigation;
+  final bool isSuccess;
+  final String? successMessage;
+  final String? successSemanticLabel;
   final Widget child;
 
   @override
@@ -37,26 +46,34 @@ class SixoAppMobileLoadingOverlay extends StatelessWidget {
         MediaQuery.disableAnimationsOf(context) ||
         MediaQuery.accessibleNavigationOf(context);
     final Duration duration =
-        reduceMotion ? Duration.zero : const Duration(milliseconds: 380);
+        reduceMotion ? Duration.zero : const Duration(milliseconds: 220);
+    final bool isVisible = isLoading || isSuccess;
+    final bool showSuccess = isSuccess && !isLoading;
+    final String visibleMessage =
+        showSuccess
+            ? successMessage ?? context.t('common.completed')
+            : message;
+    final String? visibleSemanticLabel =
+        showSuccess ? successSemanticLabel : semanticLabel;
 
     return PopScope(
-      canPop: !blockBackNavigation || !isLoading,
+      canPop: !blockBackNavigation || !isVisible,
       child: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          ExcludeSemantics(excluding: isLoading, child: child),
+          ExcludeSemantics(excluding: isVisible, child: child),
           Positioned.fill(
             child: ExcludeSemantics(
-              excluding: !isLoading,
+              excluding: !isVisible,
               child: IgnorePointer(
-                ignoring: !isLoading,
+                ignoring: !isVisible,
                 child: AbsorbPointer(
                   child: AnimatedSwitcher(
                     duration: duration,
                     reverseDuration:
                         reduceMotion
                             ? Duration.zero
-                            : const Duration(milliseconds: 280),
+                            : const Duration(milliseconds: 180),
                     switchInCurve: Curves.easeOutCubic,
                     switchOutCurve: Curves.easeInCubic,
                     layoutBuilder: (
@@ -82,24 +99,20 @@ class SixoAppMobileLoadingOverlay extends StatelessWidget {
                       );
                       return FadeTransition(
                         opacity: curved,
-                        child: ScaleTransition(
-                          scale: Tween<double>(
-                            begin: 0.985,
-                            end: 1,
-                          ).animate(curved),
-                          child: child,
-                        ),
+                        child: child,
                       );
                     },
                     child:
-                        isLoading
+                        isVisible
                             ? Material(
                               type: MaterialType.transparency,
-                              child: SixoAppMobileLoadingScene.themed(
+                              child: _SixoAppMobileContextualLoading(
                                 key: visibleKey,
-                                message: message,
-                                semanticLabel: semanticLabel,
-                                supportingMessage: supportingMessage,
+                                isSuccess: showSuccess,
+                                message: visibleMessage,
+                                semanticLabel: visibleSemanticLabel,
+                                supportingMessage:
+                                    showSuccess ? null : supportingMessage,
                               ),
                             )
                             : const SizedBox.shrink(
@@ -113,6 +126,334 @@ class SixoAppMobileLoadingOverlay extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SixoAppMobileContextualLoading extends StatefulWidget {
+  const _SixoAppMobileContextualLoading({
+    super.key,
+    required this.isSuccess,
+    required this.message,
+    this.semanticLabel,
+    this.supportingMessage,
+  });
+
+  final bool isSuccess;
+  final String message;
+  final String? semanticLabel;
+  final String? supportingMessage;
+
+  @override
+  State<_SixoAppMobileContextualLoading> createState() =>
+      _SixoAppMobileContextualLoadingState();
+}
+
+class _SixoAppMobileContextualLoadingState
+    extends State<_SixoAppMobileContextualLoading>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController;
+  Timer? _messageTimer;
+  bool _reduceMotion = false;
+  bool _showMessage = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1900),
+    );
+    if (widget.isSuccess) {
+      _pulseController.value = 0.25;
+    } else {
+      _pulseController.repeat();
+    }
+    _scheduleMessage();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final MediaQueryData mediaQuery = MediaQuery.of(context);
+    final bool reduceMotion =
+        mediaQuery.disableAnimations || mediaQuery.accessibleNavigation;
+    if (reduceMotion == _reduceMotion) return;
+
+    _reduceMotion = reduceMotion;
+    if (_reduceMotion) {
+      _messageTimer?.cancel();
+      _showMessage = true;
+      _pulseController
+        ..stop()
+        ..value = 0.25;
+    } else if (!widget.isSuccess && !_pulseController.isAnimating) {
+      _pulseController.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _SixoAppMobileContextualLoading oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSuccess == oldWidget.isSuccess) return;
+
+    if (widget.isSuccess) {
+      _messageTimer?.cancel();
+      _showMessage = true;
+      _pulseController.stop();
+    } else {
+      _showMessage = _reduceMotion;
+      if (!_reduceMotion) {
+        _pulseController.repeat();
+        _scheduleMessage();
+      }
+    }
+  }
+
+  void _scheduleMessage() {
+    _messageTimer?.cancel();
+    if (widget.isSuccess || _reduceMotion) {
+      _showMessage = true;
+      return;
+    }
+    _messageTimer = Timer(const Duration(milliseconds: 480), () {
+      if (!mounted) return;
+      setState(() => _showMessage = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _messageTimer?.cancel();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final String supportingMessage = widget.supportingMessage?.trim() ?? '';
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness:
+            isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        systemNavigationBarColor: colors.background,
+        systemNavigationBarDividerColor: colors.background,
+        systemNavigationBarIconBrightness:
+            isDark ? Brightness.light : Brightness.dark,
+      ),
+      child: Semantics(
+        container: true,
+        liveRegion: true,
+        label: widget.semanticLabel ?? 'SixoApp. ${widget.message}',
+        child: ExcludeSemantics(
+          child: Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              ClipRect(
+                key: const ValueKey<String>('sixoapp-mobile-loading-blur'),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                  child: DecoratedBox(
+                    key: const ValueKey<String>('sixoapp-mobile-loading-tint'),
+                    decoration: BoxDecoration(
+                      color: colors.background.withValues(
+                        alpha: isDark ? 0.76 : 0.72,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SafeArea(
+                child: LayoutBuilder(
+                  builder: (
+                    BuildContext context,
+                    BoxConstraints constraints,
+                  ) {
+                    final bool compact = constraints.maxHeight < 560;
+                    final double logoSize =
+                        (constraints.maxWidth * 0.24)
+                            .clamp(
+                              compact ? 72.0 : 80.0,
+                              compact ? 84.0 : 96.0,
+                            )
+                            .toDouble();
+
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            AnimatedBuilder(
+                              animation: _pulseController,
+                              builder: (BuildContext context, Widget? child) {
+                                final double pulse =
+                                    _reduceMotion || widget.isSuccess
+                                        ? 1
+                                        : 1 +
+                                            (math.sin(
+                                                  _pulseController.value *
+                                                      math.pi *
+                                                      2,
+                                                ) *
+                                                0.025);
+                                return AnimatedSwitcher(
+                                  duration:
+                                      _reduceMotion
+                                          ? Duration.zero
+                                          : const Duration(milliseconds: 220),
+                                  switchInCurve: Curves.easeOutCubic,
+                                  switchOutCurve: Curves.easeInCubic,
+                                  transitionBuilder: (
+                                    Widget child,
+                                    Animation<double> animation,
+                                  ) {
+                                    return FadeTransition(
+                                      opacity: animation,
+                                      child: ScaleTransition(
+                                        scale: Tween<double>(
+                                          begin: 0.90,
+                                          end: 1,
+                                        ).animate(animation),
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  child:
+                                      widget.isSuccess
+                                          ? _SixoAppSuccessMark(
+                                            key: const ValueKey<String>(
+                                              'sixoapp-mobile-loading-success',
+                                            ),
+                                            size: logoSize * 0.82,
+                                            colors: colors,
+                                          )
+                                          : Transform.scale(
+                                            key: const ValueKey<String>(
+                                              'sixoapp-mobile-loading-logo',
+                                            ),
+                                            scale: pulse,
+                                            child: _SixoAppAnimatedSymbol(
+                                              size: logoSize,
+                                              progress: _pulseController.value,
+                                              reduceMotion: _reduceMotion,
+                                              enableSweep: false,
+                                            ),
+                                          ),
+                                );
+                              },
+                            ),
+                            SizedBox(height: compact ? 12 : 16),
+                            AnimatedOpacity(
+                              opacity: _showMessage ? 1 : 0,
+                              duration:
+                                  _reduceMotion
+                                      ? Duration.zero
+                                      : const Duration(milliseconds: 180),
+                              curve: Curves.easeOutCubic,
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 300,
+                                ),
+                                child: Text(
+                                  widget.message,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: colors.titleText.withValues(
+                                      alpha: 0.90,
+                                    ),
+                                    fontSize: compact ? 14 : 15,
+                                    height: 1.35,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (supportingMessage.isNotEmpty) ...<Widget>[
+                              const SizedBox(height: 5),
+                              AnimatedOpacity(
+                                opacity: _showMessage ? 1 : 0,
+                                duration:
+                                    _reduceMotion
+                                        ? Duration.zero
+                                        : const Duration(milliseconds: 180),
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 300,
+                                  ),
+                                  child: Text(
+                                    supportingMessage,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: colors.mutedText,
+                                      fontSize: compact ? 12 : 13,
+                                      height: 1.35,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SixoAppSuccessMark extends StatelessWidget {
+  const _SixoAppSuccessMark({
+    super.key,
+    required this.size,
+    required this.colors,
+  });
+
+  final double size;
+  final SixMobileColorScheme colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: colors.softAccentSurface.withValues(alpha: 0.96),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: colors.accent.withValues(alpha: 0.38),
+          width: 1,
+        ),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: colors.accent.withValues(alpha: 0.16),
+            blurRadius: 22,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Icon(
+        CupertinoIcons.check_mark,
+        color: colors.accent,
+        size: size * 0.46,
+        semanticLabel: null,
       ),
     );
   }
@@ -395,7 +736,7 @@ class _SixoAppMobileLoadingSceneState extends State<SixoAppMobileLoadingScene>
   }) {
     return SixMobileAnimatedGradientBackground(
       enabled: !_reduceMotion,
-      intensity: 0.52,
+      intensity: 0.26,
       baseColor: colors.background,
       primaryColor: colors.primary,
       secondaryColor: colors.secondary,
@@ -404,19 +745,14 @@ class _SixoAppMobileLoadingSceneState extends State<SixoAppMobileLoadingScene>
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final bool compact = constraints.maxHeight < 620;
-            final double logoSize = math.min(
-              math.min(
-                constraints.maxWidth * (compact ? 0.38 : 0.44),
-                constraints.maxHeight * (compact ? 0.24 : 0.27),
-              ),
-              compact ? 148 : 188,
-            );
-            final double titleSize =
-                (constraints.maxWidth * 0.085).clamp(29.0, 38.0).toDouble();
+            final double logoSize =
+                (constraints.maxWidth * 0.30)
+                    .clamp(compact ? 88.0 : 96.0, compact ? 112.0 : 128.0)
+                    .toDouble();
             final double pulse =
                 _reduceMotion
                     ? 1
-                    : 1 + (math.sin(progress * math.pi * 2) * 0.022);
+                    : 1 + (math.sin(progress * math.pi * 2) * 0.018);
 
             return Center(
               child: SingleChildScrollView(
@@ -438,22 +774,10 @@ class _SixoAppMobileLoadingSceneState extends State<SixoAppMobileLoadingScene>
                             size: logoSize,
                             progress: progress,
                             reduceMotion: _reduceMotion,
+                            enableSweep: false,
                           ),
                         ),
-                        SizedBox(height: compact ? 8 : 12),
-                        Text(
-                          'SixoApp',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: colors.titleText,
-                            fontSize: titleSize,
-                            height: 1,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -1.1,
-                          ),
-                        ),
-                        SizedBox(height: compact ? 16 : 22),
+                        SizedBox(height: compact ? 14 : 18),
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 320),
                           child: Text(
@@ -463,7 +787,7 @@ class _SixoAppMobileLoadingSceneState extends State<SixoAppMobileLoadingScene>
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: colors.mutedText,
-                              fontSize: compact ? 14 : 16,
+                              fontSize: compact ? 14 : 15,
                               height: 1.35,
                               fontWeight: FontWeight.w600,
                             ),
@@ -487,17 +811,6 @@ class _SixoAppMobileLoadingSceneState extends State<SixoAppMobileLoadingScene>
                             ),
                           ),
                         ],
-                        SizedBox(height: compact ? 16 : 22),
-                        _SixoAppSweepProgress(
-                          progress: progress,
-                          reduceMotion: _reduceMotion,
-                          trackColor: colors.strongBorder.withValues(
-                            alpha: 0.34,
-                          ),
-                          startColor: SixMobilePalette.brandCyan,
-                          endColor: colors.accent,
-                          glowColor: colors.accent.withValues(alpha: 0.42),
-                        ),
                       ],
                     ),
                   ),
@@ -513,14 +826,17 @@ class _SixoAppMobileLoadingSceneState extends State<SixoAppMobileLoadingScene>
 
 class _SixoAppAnimatedSymbol extends StatelessWidget {
   const _SixoAppAnimatedSymbol({
+    super.key,
     required this.size,
     required this.progress,
     required this.reduceMotion,
+    this.enableSweep = true,
   });
 
   final double size;
   final double progress;
   final bool reduceMotion;
+  final bool enableSweep;
 
   @override
   Widget build(BuildContext context) {
@@ -550,7 +866,7 @@ class _SixoAppAnimatedSymbol extends StatelessWidget {
             ),
           ),
           symbol,
-          if (!reduceMotion)
+          if (!reduceMotion && enableSweep)
             ShaderMask(
               blendMode: BlendMode.srcIn,
               shaderCallback: (Rect bounds) {

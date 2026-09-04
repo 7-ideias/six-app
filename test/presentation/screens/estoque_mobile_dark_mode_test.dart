@@ -39,7 +39,7 @@ void main() {
       find.descendant(of: loading, matching: find.byType(ColoredBox)),
     );
     expect(background.color, SixMobileColorScheme.dark.background);
-    expect(find.text('SixoApp'), findsOneWidget);
+    expect(find.text('SixoApp'), findsNothing);
 
     completer.complete(_emptyDashboard);
     await tester.pump();
@@ -64,7 +64,7 @@ void main() {
       find.descendant(of: loading, matching: find.byType(ColoredBox)),
     );
     expect(background.color, SixMobileColorScheme.light.background);
-    expect(find.text('SixoApp'), findsOneWidget);
+    expect(find.text('SixoApp'), findsNothing);
 
     completer.complete(_emptyDashboard);
     await tester.pump();
