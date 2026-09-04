@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sixpos/design_system/helpers/six_color_contrast.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/presentation/components/app_modal_side_sheet.dart';
@@ -390,8 +391,8 @@ class _SixMobileScrollableAppBar extends StatelessWidget
     required BuildContext context,
     required double progress,
   }) {
-    final ThemeData theme = Theme.of(context);
-    final Color surfaceColor = theme.colorScheme.surface;
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final Color surfaceColor = colors.surface;
     final double opacity =
         enableBlur ? (maxOverlayOpacity * progress).clamp(0.0, 1.0) : 0;
     final Color effectiveBackground = Color.alphaBlend(
@@ -402,10 +403,11 @@ class _SixMobileScrollableAppBar extends StatelessWidget
       effectiveBackground,
     );
     final bool useLightForeground = estimatedBrightness == Brightness.dark;
-    final Color foregroundColor =
-        useLightForeground
-            ? theme.colorScheme.onPrimary
-            : theme.colorScheme.onSurface;
+    final Color foregroundColor = SixColorContrast.onColor(
+      effectiveBackground,
+      light: colors.onPrimary,
+      dark: SixMobileColorScheme.light.titleText,
+    );
     final SystemUiOverlayStyle overlayStyle = SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness:

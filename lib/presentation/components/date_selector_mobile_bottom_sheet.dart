@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 
 class DateSelectorMobileBottomSheet extends StatefulWidget {
@@ -547,11 +548,6 @@ class _DayCell extends StatelessWidget {
     required this.onTap,
   });
 
-  static Color get _primaryColor => SixMobilePalette.primary;
-  static Color get _accentColor => SixMobilePalette.accent;
-  static Color get _mutedTextColor => SixMobilePalette.mutedText;
-  static Color get _borderColor => SixMobilePalette.border;
-
   final DateTime date;
   final bool selected;
   final bool today;
@@ -560,12 +556,13 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     final Color foregroundColor =
         !enabled
-            ? _mutedTextColor.withValues(alpha: 0.38)
+            ? colors.mutedText.withValues(alpha: 0.38)
             : selected
-            ? SixMobilePalette.onAccent
-            : _primaryColor;
+            ? colors.onAccent
+            : colors.titleText;
 
     return Material(
       color: Colors.transparent,
@@ -578,15 +575,15 @@ class _DayCell extends StatelessWidget {
           curve: Curves.easeOutCubic,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? _accentColor : Colors.transparent,
+            color: selected ? colors.accent : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color:
                   selected
-                      ? _accentColor
+                      ? colors.accent
                       : today
-                      ? _accentColor.withValues(alpha: 0.42)
-                      : _borderColor.withValues(alpha: enabled ? 1 : 0),
+                      ? colors.accent.withValues(alpha: 0.42)
+                      : colors.border.withValues(alpha: enabled ? 1 : 0),
             ),
           ),
           child: Text(
