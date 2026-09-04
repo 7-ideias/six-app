@@ -1,18 +1,26 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/services/agenda_financeira_acoes_financeiras.dart';
 import '../../data/models/agenda_financeira_lancamento_model.dart';
 import '../../data/models/caixa_models.dart';
+import '../../data/models/colaborador_usuario_model.dart';
+import '../../data/models/usuario_model.dart';
 import '../../data/models/venda_nao_liquidada_models.dart';
 import '../../data/services/caixa/caixa_api_client.dart';
 import '../../data/services/caixa/venda_nao_liquidada_api_client.dart';
+import '../../data/services/desempenho_colaborador/desempenho_colaborador_api_client.dart';
 import '../../design_system/themes/six_mobile_color_scheme.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
+import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
+import '../../providers/usuario_provider.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
 import '../components/mobile/six_mobile_recebimento_bottom_sheet.dart';
+import '../components/mobile/six_mobile_selection_sheet.dart';
 import '../components/mobile/sixoapp_mobile_loading_scene.dart';
 import '../components/mobile_motion.dart';
 
@@ -22,11 +30,15 @@ class VendasNaoLiquidadasMobileScreen extends StatefulWidget {
     this.apiClient,
     this.acoesFinanceiras,
     this.caixaApiClient,
+    this.vendedoresLoader,
+    this.habilitarPersistenciaPreferencias = true,
   });
 
   final VendaNaoLiquidadaApiClient? apiClient;
   final AgendaFinanceiraAcoesFinanceiras? acoesFinanceiras;
   final CaixaApiClient? caixaApiClient;
+  final Future<List<ColaboradorUsuarioResumo>> Function()? vendedoresLoader;
+  final bool habilitarPersistenciaPreferencias;
 
   @override
   State<VendasNaoLiquidadasMobileScreen> createState() =>
@@ -36,10 +48,39 @@ class VendasNaoLiquidadasMobileScreen extends StatefulWidget {
 class _VendasNaoLiquidadasMobileScreenState
     extends State<VendasNaoLiquidadasMobileScreen> {
   static const Duration _stateTransitionDuration = Duration(milliseconds: 240);
+  static const String _periodoHoje = 'HOJE';
+  static const String _periodoUltimos7Dias = 'ULTIMOS_7_DIAS';
+  static const String _periodoUltimos30Dias = 'ULTIMOS_30_DIAS';
+  static const String _periodoEsteMes = 'ESTE_MES';
+  static const String _periodoMesPassado = 'MES_PASSADO';
+  static const String _periodoPersonalizado = 'PERSONALIZADO';
+  static const List<String> _periodos = <String>[
+    _periodoHoje,
+    _periodoUltimos7Dias,
+    _periodoUltimos30Dias,
+    _periodoEsteMes,
+    _periodoMesPassado,
+    _periodoPersonalizado,
+  ];
+  static const List<String> _statusFinanceiros = <String>[
+    'EM_ABERTO',
+    'PARCIAL',
+  ];
+  static const List<String> _ordenacoes = <String>[
+    'MAIS_RECENTES',
+    'MAIS_ANTIGAS',
+    'MAIOR_VALOR',
+    'MENOR_VALOR',
+  ];
 
   late final VendaNaoLiquidadaApiClient _api;
   late final AgendaFinanceiraAcoesFinanceiras _acoesFinanceiras;
   late final CaixaApiClient _caixaApiClient;
+  late final Future<List<ColaboradorUsuarioResumo>> Function()
+  _vendedoresLoader;
+  final UsuarioService _usuarioService = UsuarioService();
+  final UsuarioProvider _usuarioProvider = UsuarioProvider();
+  final TextEditingController _buscaController = TextEditingController();
 
   SixMobileColorScheme get _colors => context.sixMobileColors;
   Color get _backgroundColor => _colors.background;
@@ -58,6 +99,23 @@ class _VendasNaoLiquidadasMobileScreenState
   bool _cancelando = false;
   String? _erro;
   List<VendaNaoLiquidadaModel> _vendas = <VendaNaoLiquidadaModel>[];
+  List<ColaboradorUsuarioResumo> _vendedores =
+      const <ColaboradorUsuarioResumo>[];
+  late DateTime _dataInicial;
+  late DateTime _dataFinal;
+  late DateTime _dataInicioPersonalizada;
+  late DateTime _dataFimPersonalizada;
+  String _periodoSelecionado = _periodoUltimos30Dias;
+  String? _statusFinanceiroSelecionado;
+  Set<String> _idsVendedoresSelecionados = <String>{};
+  String _ordenacaoSelecionada = 'MAIS_RECENTES';
+  String _valorMinimoTexto = '';
+  String _valorMaximoTexto = '';
+  Timer? _salvarFiltrosDebounce;
+  bool _aplicandoPreferencias = false;
+  bool _usuarioAlterouFiltros = false;
+  bool _carregandoVendedores = true;
+  bool _falhaAoCarregarVendedores = false;
 
   static Color _withAlpha(Color color, double opacity) {
     return color.withAlpha((opacity.clamp(0.0, 1.0) * 255).round());
@@ -70,7 +128,73 @@ class _VendasNaoLiquidadasMobileScreenState
     _acoesFinanceiras =
         widget.acoesFinanceiras ?? AgendaFinanceiraAcoesFinanceiras();
     _caixaApiClient = widget.caixaApiClient ?? HttpCaixaApiClient();
-    _carregar();
+    _vendedoresLoader =
+        widget.vendedoresLoader ??
+        () => HttpDesempenhoColaboradorApiClient().listarParticipantes(
+          incluirNaoAtivos: false,
+        );
+    final DateTime hoje = _hojeNormalizado();
+    _dataFinal = hoje;
+    _dataInicial = hoje.subtract(const Duration(days: 29));
+    _dataInicioPersonalizada = _dataInicial;
+    _dataFimPersonalizada = _dataFinal;
+    _buscaController.addListener(_onBuscaChanged);
+    unawaited(_carregarVendedores());
+    unawaited(_carregar());
+    if (widget.habilitarPersistenciaPreferencias) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await _restaurarPreferenciasVendasNaoLiquidadasMobile();
+        if (!mounted) return;
+        unawaited(_restaurarPreferenciasVendasNaoLiquidadasMobileBackend());
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _salvarFiltrosDebounce?.cancel();
+    _buscaController.removeListener(_onBuscaChanged);
+    _buscaController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _carregarVendedores() async {
+    try {
+      final List<ColaboradorUsuarioResumo> resultado =
+          await _vendedoresLoader();
+      final Map<String, ColaboradorUsuarioResumo> vendedoresPorId =
+          <String, ColaboradorUsuarioResumo>{};
+      for (final ColaboradorUsuarioResumo vendedor in resultado) {
+        final String id = vendedor.idUnicoPessoal.trim();
+        if (id.isNotEmpty && vendedor.ativo) {
+          vendedoresPorId[id] = vendedor;
+        }
+      }
+      final List<ColaboradorUsuarioResumo> vendedores =
+          vendedoresPorId.values.toList(growable: false)..sort(
+            (ColaboradorUsuarioResumo first, ColaboradorUsuarioResumo second) =>
+                _nomeVendedor(
+                  first,
+                ).toLowerCase().compareTo(_nomeVendedor(second).toLowerCase()),
+          );
+      if (!mounted) return;
+      setState(() {
+        _vendedores = vendedores;
+        _falhaAoCarregarVendedores = false;
+      });
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Erro ao carregar vendedores das vendas a receber mobile: '
+        '$error\n$stackTrace',
+      );
+      if (mounted) {
+        setState(() => _falhaAoCarregarVendedores = true);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _carregandoVendedores = false);
+      }
+    }
   }
 
   Future<void> _carregar() async {
@@ -101,10 +225,9 @@ class _VendasNaoLiquidadasMobileScreenState
             'Receber venda em aberto',
           ),
           descricao: venda.descricao,
-          contato:
-              venda.nomeCliente.trim().isEmpty
-                  ? null
-                  : venda.nomeCliente.trim(),
+          contato: venda.nomeCliente.trim().isEmpty
+              ? null
+              : venda.nomeCliente.trim(),
           valorOriginal: venda.valorOriginal,
           valorJaRecebido: _valorJaRecebido(venda),
           valorAberto: venda.valorAberto,
@@ -130,10 +253,9 @@ class _VendasNaoLiquidadasMobileScreenState
             observacao:
                 resultado.observacao ??
                 'Recebimento total realizado no PDV mobile.',
-            referencia:
-                venda.idOperacaoApp.isNotEmpty
-                    ? venda.idOperacaoApp
-                    : venda.idOperacaoFinanceira,
+            referencia: venda.idOperacaoApp.isNotEmpty
+                ? venda.idOperacaoApp
+                : venda.idOperacaoFinanceira,
             idSessaoCaixa: idSessaoCaixa,
           ),
         );
@@ -348,8 +470,8 @@ class _VendasNaoLiquidadasMobileScreenState
     if (data == null) {
       return _txt('vendasNaoLiquidadas.semData', 'Sem data');
     }
-    final LocaleSettingsProvider localeSettings =
-        context.read<LocaleSettingsProvider>();
+    final LocaleSettingsProvider localeSettings = context
+        .read<LocaleSettingsProvider>();
     final String dataFormatada = localeSettings.formatDate(data);
     if (!incluirHora) return dataFormatada;
     return '$dataFormatada ${localeSettings.formatTime(data)}';
@@ -366,19 +488,541 @@ class _VendasNaoLiquidadasMobileScreenState
   }
 
   String _formatarQuantidadeItens(int quantidade) {
-    final String label =
-        quantidade == 1
-            ? _txt('vendasNaoLiquidadas.itemSingular', 'item')
-            : _txt('vendasNaoLiquidadas.itemPlural', 'itens');
+    final String label = quantidade == 1
+        ? _txt('vendasNaoLiquidadas.itemSingular', 'item')
+        : _txt('vendasNaoLiquidadas.itemPlural', 'itens');
     return '$quantidade $label';
+  }
+
+  DateTime _hojeNormalizado() {
+    final DateTime agora = DateTime.now();
+    return DateTime(agora.year, agora.month, agora.day);
+  }
+
+  DateTime _normalizarData(DateTime value) {
+    return DateTime(value.year, value.month, value.day);
+  }
+
+  DateTimeRange _resolverPeriodoSelecionado() {
+    final DateTime hoje = _hojeNormalizado();
+    switch (_periodoSelecionado) {
+      case _periodoHoje:
+        return DateTimeRange(start: hoje, end: hoje);
+      case _periodoUltimos7Dias:
+        return DateTimeRange(
+          start: hoje.subtract(const Duration(days: 6)),
+          end: hoje,
+        );
+      case _periodoEsteMes:
+        return DateTimeRange(start: DateTime(hoje.year, hoje.month), end: hoje);
+      case _periodoMesPassado:
+        final DateTime inicioMesAtual = DateTime(hoje.year, hoje.month);
+        final DateTime fimMesPassado = inicioMesAtual.subtract(
+          const Duration(days: 1),
+        );
+        return DateTimeRange(
+          start: DateTime(fimMesPassado.year, fimMesPassado.month),
+          end: fimMesPassado,
+        );
+      case _periodoPersonalizado:
+        final DateTime inicio = _normalizarData(_dataInicioPersonalizada);
+        final DateTime fim = _normalizarData(_dataFimPersonalizada);
+        return DateTimeRange(
+          start: inicio.isAfter(fim) ? fim : inicio,
+          end: fim.isBefore(inicio) ? inicio : fim,
+        );
+      case _periodoUltimos30Dias:
+      default:
+        return DateTimeRange(
+          start: hoje.subtract(const Duration(days: 29)),
+          end: hoje,
+        );
+    }
+  }
+
+  void _sincronizarPeriodoComDatas() {
+    final DateTimeRange periodo = _resolverPeriodoSelecionado();
+    _dataInicial = periodo.start;
+    _dataFinal = periodo.end;
+  }
+
+  List<String> _idsVendedoresOrdenados() {
+    final List<String> ids = _idsVendedoresSelecionados
+        .map((String id) => id.trim())
+        .where((String id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    ids.sort();
+    return ids;
+  }
+
+  String _nomeVendedor(ColaboradorUsuarioResumo vendedor) {
+    for (final String value in <String>[
+      vendedor.nomeDeGuerra,
+      vendedor.nome,
+      vendedor.email,
+      vendedor.idUnicoPessoal,
+    ]) {
+      final String normalizado = value.trim();
+      if (normalizado.isNotEmpty) return normalizado;
+    }
+    return vendedor.idUnicoPessoal;
+  }
+
+  ColaboradorUsuarioResumo? _vendedorPorId(String id) {
+    for (final ColaboradorUsuarioResumo vendedor in _vendedores) {
+      if (vendedor.idUnicoPessoal.trim() == id.trim()) return vendedor;
+    }
+    return null;
+  }
+
+  String _valorFiltroVendedores(Set<String> ids) {
+    if (ids.isEmpty) {
+      return _txt('sales.query.allSellers', 'Todos os vendedores');
+    }
+    if (ids.length == 1) {
+      final ColaboradorUsuarioResumo? vendedor = _vendedorPorId(ids.first);
+      if (vendedor != null) return _nomeVendedor(vendedor);
+      for (final VendaNaoLiquidadaModel venda in _vendas) {
+        if (venda.idColaboradorCriacao.trim() == ids.first.trim() &&
+            venda.nomeColaboradorCriacao.trim().isNotEmpty) {
+          return venda.nomeColaboradorCriacao.trim();
+        }
+      }
+    }
+    final String label = _txt(
+      'sales.query.sellersSelected',
+      '{count} vendedores',
+    );
+    return label.replaceAll('{count}', ids.length.toString());
+  }
+
+  List<SixMobileSelectionOption<String>> _opcoesVendedoresMobile() {
+    final Map<String, SixMobileSelectionOption<String>> opcoes =
+        <String, SixMobileSelectionOption<String>>{};
+    for (final ColaboradorUsuarioResumo vendedor in _vendedores) {
+      final String id = vendedor.idUnicoPessoal.trim();
+      if (id.isEmpty) continue;
+      final String nome = _nomeVendedor(vendedor);
+      final String email = vendedor.email.trim();
+      opcoes[id] = SixMobileSelectionOption<String>(
+        value: id,
+        title: nome,
+        subtitle: email.isNotEmpty && email != nome ? email : null,
+        icon: Icons.person_outline_rounded,
+      );
+    }
+    for (final VendaNaoLiquidadaModel venda in _vendas) {
+      final String id = venda.idColaboradorCriacao.trim();
+      if (id.isEmpty || opcoes.containsKey(id)) continue;
+      final String nome = venda.nomeColaboradorCriacao.trim();
+      opcoes[id] = SixMobileSelectionOption<String>(
+        value: id,
+        title: nome.isEmpty ? id : nome,
+        icon: Icons.person_outline_rounded,
+      );
+    }
+    for (final String id in _idsVendedoresOrdenados()) {
+      opcoes.putIfAbsent(
+        id,
+        () => SixMobileSelectionOption<String>(
+          value: id,
+          title: id,
+          icon: Icons.person_outline_rounded,
+        ),
+      );
+    }
+    final List<SixMobileSelectionOption<String>> resultado =
+        opcoes.values.toList(growable: false)..sort(
+          (
+            SixMobileSelectionOption<String> first,
+            SixMobileSelectionOption<String> second,
+          ) => first.title.toLowerCase().compareTo(second.title.toLowerCase()),
+        );
+    return resultado;
+  }
+
+  double? _parseValor(String texto) {
+    String normalizado = texto.trim().replaceAll(RegExp(r'[^0-9,.-]'), '');
+    if (normalizado.isEmpty) return null;
+    final int ultimaVirgula = normalizado.lastIndexOf(',');
+    final int ultimoPonto = normalizado.lastIndexOf('.');
+    if (ultimaVirgula > ultimoPonto) {
+      normalizado = normalizado.replaceAll('.', '').replaceAll(',', '.');
+    } else if (ultimoPonto > ultimaVirgula && ultimaVirgula >= 0) {
+      normalizado = normalizado.replaceAll(',', '');
+    } else if (ultimaVirgula >= 0) {
+      normalizado = normalizado.replaceAll(',', '.');
+    }
+    return double.tryParse(normalizado);
+  }
+
+  String _statusFinanceiroDaVenda(VendaNaoLiquidadaModel venda) {
+    final String status = venda.status.trim().toUpperCase();
+    return status.contains('PARCIAL') || _valorJaRecebido(venda) > 0
+        ? 'PARCIAL'
+        : 'EM_ABERTO';
+  }
+
+  String _textoBuscaVenda(VendaNaoLiquidadaModel venda) {
+    return <String>[
+      venda.idRecebimento,
+      venda.idOperacaoFinanceira,
+      venda.idOperacaoApp,
+      venda.descricao,
+      venda.idCliente,
+      venda.nomeCliente,
+      venda.idColaboradorCriacao,
+      venda.nomeColaboradorCriacao,
+      ...venda.itens.expand(
+        (VendaNaoLiquidadaItemModel item) => <String>[
+          item.idProduto,
+          item.nome,
+        ],
+      ),
+    ].join(' ').toLowerCase();
+  }
+
+  List<VendaNaoLiquidadaModel> get _vendasFiltradas {
+    final String busca = _buscaController.text.trim().toLowerCase();
+    final double? valorMinimo = _parseValor(_valorMinimoTexto);
+    final double? valorMaximo = _parseValor(_valorMaximoTexto);
+    final List<VendaNaoLiquidadaModel> resultado = _vendas
+        .where((venda) {
+          if (busca.isNotEmpty && !_textoBuscaVenda(venda).contains(busca)) {
+            return false;
+          }
+          if (_idsVendedoresSelecionados.isNotEmpty &&
+              !_idsVendedoresSelecionados.contains(
+                venda.idColaboradorCriacao.trim(),
+              )) {
+            return false;
+          }
+          final DateTime? dataCompetencia = venda.dataCompetencia;
+          if (dataCompetencia == null) return false;
+          final DateTime data = _normalizarData(dataCompetencia);
+          if (data.isBefore(_dataInicial) || data.isAfter(_dataFinal)) {
+            return false;
+          }
+          if (_statusFinanceiroSelecionado != null &&
+              _statusFinanceiroDaVenda(venda) != _statusFinanceiroSelecionado) {
+            return false;
+          }
+          if (valorMinimo != null && venda.valorAberto < valorMinimo)
+            return false;
+          return valorMaximo == null || venda.valorAberto <= valorMaximo;
+        })
+        .toList(growable: false);
+
+    int compararData(
+      VendaNaoLiquidadaModel first,
+      VendaNaoLiquidadaModel second,
+    ) {
+      final DateTime firstDate = first.dataCompetencia ?? DateTime(1970);
+      final DateTime secondDate = second.dataCompetencia ?? DateTime(1970);
+      return firstDate.compareTo(secondDate);
+    }
+
+    switch (_ordenacaoSelecionada) {
+      case 'MAIS_ANTIGAS':
+        resultado.sort(compararData);
+        break;
+      case 'MAIOR_VALOR':
+        resultado.sort(
+          (VendaNaoLiquidadaModel first, VendaNaoLiquidadaModel second) =>
+              second.valorAberto.compareTo(first.valorAberto),
+        );
+        break;
+      case 'MENOR_VALOR':
+        resultado.sort(
+          (VendaNaoLiquidadaModel first, VendaNaoLiquidadaModel second) =>
+              first.valorAberto.compareTo(second.valorAberto),
+        );
+        break;
+      case 'MAIS_RECENTES':
+      default:
+        resultado.sort(
+          (VendaNaoLiquidadaModel first, VendaNaoLiquidadaModel second) =>
+              compararData(second, first),
+        );
+        break;
+    }
+    return resultado;
+  }
+
+  bool get _temFiltrosAtivos =>
+      _buscaController.text.trim().isNotEmpty ||
+      _idsVendedoresSelecionados.isNotEmpty ||
+      _periodoSelecionado != _periodoUltimos30Dias ||
+      _statusFinanceiroSelecionado != null ||
+      _valorMinimoTexto.trim().isNotEmpty ||
+      _valorMaximoTexto.trim().isNotEmpty ||
+      _ordenacaoSelecionada != 'MAIS_RECENTES';
+
+  int get _quantidadeFiltrosAtivos {
+    int quantidade = 0;
+    if (_idsVendedoresSelecionados.isNotEmpty) quantidade++;
+    if (_periodoSelecionado != _periodoUltimos30Dias) quantidade++;
+    if (_statusFinanceiroSelecionado != null) quantidade++;
+    if (_valorMinimoTexto.trim().isNotEmpty) quantidade++;
+    if (_valorMaximoTexto.trim().isNotEmpty) quantidade++;
+    if (_ordenacaoSelecionada != 'MAIS_RECENTES') quantidade++;
+    return quantidade;
+  }
+
+  void _onBuscaChanged() {
+    if (mounted) setState(() {});
+    if (_aplicandoPreferencias) return;
+    _usuarioAlterouFiltros = true;
+    _agendarSalvarPreferencias();
+  }
+
+  void _agendarSalvarPreferencias() {
+    if (!widget.habilitarPersistenciaPreferencias) return;
+    _salvarFiltrosDebounce?.cancel();
+    _salvarFiltrosDebounce = Timer(
+      const Duration(milliseconds: 450),
+      _salvarPreferencias,
+    );
+  }
+
+  void _salvarPreferencias() {
+    if (!widget.habilitarPersistenciaPreferencias) return;
+    _salvarFiltrosDebounce?.cancel();
+    final ConsultaVendasFiltrosWebPreferencia filtros = _preferenciaAtual();
+    unawaited(
+      _usuarioService
+          .atualizarPreferenciasIndividuais(
+            vendasNaoLiquidadasFiltrosMobile: filtros.toJson(),
+          )
+          .catchError((Object error, StackTrace stackTrace) {
+            debugPrint(
+              'Erro ao salvar filtros mobile das vendas a receber: '
+              '$error\n$stackTrace',
+            );
+          }),
+    );
+  }
+
+  ConsultaVendasFiltrosWebPreferencia _preferenciaAtual() {
+    return ConsultaVendasFiltrosWebPreferencia(
+      busca: _buscaController.text,
+      periodo:
+          ConsultaVendasPeriodoWebPreferenciaApi.tryFromCodigo(
+            _periodoSelecionado,
+          ) ??
+          ConsultaVendasPeriodoWebPreferencia.ultimos30Dias,
+      dataInicio: _periodoSelecionado == _periodoPersonalizado
+          ? _dataInicioPersonalizada
+          : null,
+      dataFim: _periodoSelecionado == _periodoPersonalizado
+          ? _dataFimPersonalizada
+          : null,
+      statusFinanceiro: _statusFinanceiroSelecionado,
+      idsVendedores: _idsVendedoresOrdenados(),
+      valorMinimo: _valorMinimoTexto,
+      valorMaximo: _valorMaximoTexto,
+      ordenacao: _ordenacaoSelecionada,
+    );
+  }
+
+  Future<void> _restaurarPreferenciasVendasNaoLiquidadasMobile() async {
+    final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+        await _usuarioService.carregarPreferenciasIndividuaisDoCache();
+    if (!mounted || preferencias == null || _usuarioAlterouFiltros) return;
+    _aplicarPreferencias(preferencias.vendasNaoLiquidadasFiltrosMobile);
+  }
+
+  Future<void> _restaurarPreferenciasVendasNaoLiquidadasMobileBackend() async {
+    try {
+      if (_usuarioProvider.usuario == null) {
+        await _usuarioService.buscarDadosDoUsuario_atualizaProviders();
+      }
+      final PreferenciasIndividuaisDoUsuarioModel? preferencias =
+          _usuarioProvider.usuario?.preferenciasIndividuaisDoUsuario;
+      if (!mounted || preferencias == null || _usuarioAlterouFiltros) return;
+      _aplicarPreferencias(preferencias.vendasNaoLiquidadasFiltrosMobile);
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Erro ao restaurar filtros mobile das vendas a receber: '
+        '$error\n$stackTrace',
+      );
+    }
+  }
+
+  void _aplicarPreferencias(ConsultaVendasFiltrosWebPreferencia filtros) {
+    _aplicandoPreferencias = true;
+    _buscaController.text = filtros.busca;
+    setState(() {
+      _periodoSelecionado = filtros.periodo.codigo;
+      _idsVendedoresSelecionados = filtros.idsVendedores.toSet();
+      _statusFinanceiroSelecionado = filtros.statusFinanceiro;
+      _ordenacaoSelecionada = filtros.ordenacao;
+      _valorMinimoTexto = filtros.valorMinimo;
+      _valorMaximoTexto = filtros.valorMaximo;
+      if (filtros.periodo ==
+          ConsultaVendasPeriodoWebPreferencia.personalizado) {
+        if (filtros.dataInicio != null) {
+          _dataInicioPersonalizada = filtros.dataInicio!;
+        }
+        if (filtros.dataFim != null) {
+          _dataFimPersonalizada = filtros.dataFim!;
+        }
+        if (_dataFimPersonalizada.isBefore(_dataInicioPersonalizada)) {
+          _dataFimPersonalizada = _dataInicioPersonalizada;
+        }
+      }
+      _sincronizarPeriodoComDatas();
+    });
+    _aplicandoPreferencias = false;
+  }
+
+  Future<void> _abrirFiltros() async {
+    final LocaleSettingsProvider regionalizacao = context
+        .read<LocaleSettingsProvider>();
+    final _VendasNaoLiquidadasFilterDraft? draft =
+        await showModalBottomSheet<_VendasNaoLiquidadasFilterDraft>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          backgroundColor: Colors.transparent,
+          barrierColor: _withAlpha(Colors.black, 0.42),
+          builder: (BuildContext context) {
+            return _VendasNaoLiquidadasFilterSheet(
+              initialDraft: _VendasNaoLiquidadasFilterDraft(
+                periodo: _periodoSelecionado,
+                dataInicio: _dataInicioPersonalizada,
+                dataFim: _dataFimPersonalizada,
+                idsVendedores: _idsVendedoresSelecionados,
+                statusFinanceiro: _statusFinanceiroSelecionado,
+                ordenacao: _ordenacaoSelecionada,
+                valorMinimo: _valorMinimoTexto,
+                valorMaximo: _valorMaximoTexto,
+              ),
+              sellerOptions: _opcoesVendedoresMobile(),
+              sellersLoading: _carregandoVendedores,
+              sellersLoadFailed: _falhaAoCarregarVendedores,
+              sellerSelectionLabelBuilder: _valorFiltroVendedores,
+              formatDate: regionalizacao.formatDate,
+              periodLabelBuilder: _periodoLabel,
+              financialStatusLabelBuilder: _statusFinanceiroLabel,
+              orderLabelBuilder: _ordenacaoLabel,
+              showDateSheet: _showDatePickerSheet,
+            );
+          },
+        );
+    if (draft == null || !mounted) return;
+
+    setState(() {
+      _periodoSelecionado = draft.periodo;
+      _dataInicioPersonalizada = draft.dataInicio;
+      _dataFimPersonalizada = draft.dataFim.isBefore(draft.dataInicio)
+          ? draft.dataInicio
+          : draft.dataFim;
+      _idsVendedoresSelecionados = Set<String>.from(draft.idsVendedores);
+      _statusFinanceiroSelecionado = draft.statusFinanceiro;
+      _ordenacaoSelecionada = draft.ordenacao;
+      _valorMinimoTexto = draft.valorMinimo;
+      _valorMaximoTexto = draft.valorMaximo;
+      _sincronizarPeriodoComDatas();
+    });
+    _usuarioAlterouFiltros = true;
+    _salvarPreferencias();
+  }
+
+  Future<DateTime?> _showDatePickerSheet({
+    required DateTime initialDate,
+    required DateTime minimumDate,
+    required String title,
+  }) {
+    return showModalBottomSheet<DateTime>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: _withAlpha(Colors.black, 0.42),
+      builder: (BuildContext context) {
+        return _VendasNaoLiquidadasDateSheet(
+          title: title,
+          initialDate: initialDate,
+          minimumDate: minimumDate,
+          maximumDate: DateTime.now().add(const Duration(days: 365)),
+        );
+      },
+    );
+  }
+
+  Future<void> _limparFiltros() async {
+    final DateTime hoje = _hojeNormalizado();
+    _aplicandoPreferencias = true;
+    _buscaController.clear();
+    setState(() {
+      _periodoSelecionado = _periodoUltimos30Dias;
+      _dataFinal = hoje;
+      _dataInicial = hoje.subtract(const Duration(days: 29));
+      _dataInicioPersonalizada = _dataInicial;
+      _dataFimPersonalizada = _dataFinal;
+      _idsVendedoresSelecionados = <String>{};
+      _statusFinanceiroSelecionado = null;
+      _ordenacaoSelecionada = 'MAIS_RECENTES';
+      _valorMinimoTexto = '';
+      _valorMaximoTexto = '';
+    });
+    _aplicandoPreferencias = false;
+    _usuarioAlterouFiltros = true;
+    _salvarPreferencias();
+  }
+
+  String _periodoLabel(String value) {
+    switch (value) {
+      case _periodoHoje:
+        return _txt('sales.query.period.today', 'Hoje');
+      case _periodoUltimos7Dias:
+        return _txt('sales.query.period.last7Days', 'Últimos 7 dias');
+      case _periodoEsteMes:
+        return _txt('sales.query.period.thisMonth', 'Este mês');
+      case _periodoMesPassado:
+        return _txt('sales.query.period.lastMonth', 'Mês passado');
+      case _periodoPersonalizado:
+        return _txt('sales.query.period.custom', 'Personalizado');
+      case _periodoUltimos30Dias:
+      default:
+        return _txt('sales.query.period.last30Days', 'Últimos 30 dias');
+    }
+  }
+
+  String _statusFinanceiroLabel(String value) {
+    switch (value) {
+      case 'PARCIAL':
+        return _txt('sales.query.financial.partial', 'Parcial');
+      case 'EM_ABERTO':
+      default:
+        return _txt('sales.query.financial.open', 'Em aberto');
+    }
+  }
+
+  String _ordenacaoLabel(String value) {
+    switch (value) {
+      case 'MAIS_ANTIGAS':
+        return _txt('sales.query.order.oldest', 'Mais antigas');
+      case 'MAIOR_VALOR':
+        return _txt('sales.query.order.highestValue', 'Maior valor');
+      case 'MENOR_VALOR':
+        return _txt('sales.query.order.lowestValue', 'Menor valor');
+      case 'MAIS_RECENTES':
+      default:
+        return _txt('sales.query.order.newest', 'Mais recentes');
+    }
   }
 
   int _quantidadeItensDaVenda(VendaNaoLiquidadaModel venda) {
     return venda.itens.fold<int>(0, (soma, item) => soma + item.quantidade);
   }
 
-  double get _totalAberto =>
-      _vendas.fold<double>(0, (soma, venda) => soma + venda.valorAberto);
+  double get _totalAberto => _vendasFiltradas.fold<double>(
+    0,
+    (double soma, VendaNaoLiquidadaModel venda) => soma + venda.valorAberto,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -409,6 +1053,11 @@ class _VendasNaoLiquidadasMobileScreenState
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         actions: <Widget>[
+          IconButton(
+            tooltip: _txt('sales.query.mobile.manageFilters', 'Abrir filtros'),
+            onPressed: _loading || _cancelando ? null : _abrirFiltros,
+            icon: Icon(Icons.tune_rounded),
+          ),
           IconButton(
             tooltip: _txt('common.refresh', 'Atualizar'),
             onPressed: _loading || _cancelando ? null : _carregar,
@@ -478,11 +1127,22 @@ class _VendasNaoLiquidadasMobileScreenState
   }
 
   Widget _successState({Key? key, required bool reduceMotion}) {
+    final List<VendaNaoLiquidadaModel> vendas = _vendasFiltradas;
     return Column(
       key: key,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         _entry(_header(reduceMotion: reduceMotion), reduceMotion: reduceMotion),
+        SizedBox(height: 14),
+        _entry(
+          _filtersCard(),
+          delay: Duration(milliseconds: 55),
+          reduceMotion: reduceMotion,
+        ),
+        if (_temFiltrosAtivos) ...<Widget>[
+          SizedBox(height: 10),
+          _activeFilters(),
+        ],
         SizedBox(height: 18),
         _entry(
           _section(
@@ -492,14 +1152,14 @@ class _VendasNaoLiquidadasMobileScreenState
           reduceMotion: reduceMotion,
         ),
         SizedBox(height: 12),
-        if (_vendas.isEmpty)
+        if (vendas.isEmpty)
           _entry(
-            _empty(),
+            _empty(filtrada: _vendas.isNotEmpty),
             delay: Duration(milliseconds: 110),
             reduceMotion: reduceMotion,
           )
         else
-          ..._vendas.asMap().entries.map((
+          ...vendas.asMap().entries.map((
             MapEntry<int, VendaNaoLiquidadaModel> entry,
           ) {
             return Padding(
@@ -525,6 +1185,7 @@ class _VendasNaoLiquidadasMobileScreenState
   }
 
   Widget _header({required bool reduceMotion}) {
+    final int quantidadeFiltrada = _vendasFiltradas.length;
     return Container(
       padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -568,7 +1229,7 @@ class _VendasNaoLiquidadasMobileScreenState
                     ),
                     SizedBox(height: 4),
                     Text(
-                      _formatarQuantidadeVendas(_vendas.length),
+                      _formatarQuantidadeVendas(quantidadeFiltrada),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -625,19 +1286,181 @@ class _VendasNaoLiquidadasMobileScreenState
     );
   }
 
+  Widget _filtersCard() {
+    final int quantidade = _quantidadeFiltrosAtivos;
+    return Container(
+      padding: EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _borderColor),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: _colors.navigationShadow,
+            blurRadius: 14,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          TextField(
+            key: ValueKey<String>('vendas-a-receber-busca'),
+            controller: _buscaController,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: _txt(
+                'vendasNaoLiquidadas.buscaHint',
+                'Venda, cliente, vendedor ou produto',
+              ),
+              prefixIcon: Icon(Icons.search_rounded),
+              suffixIcon: _buscaController.text.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: _txt('common.clear', 'Limpar'),
+                      onPressed: _buscaController.clear,
+                      icon: Icon(Icons.close_rounded),
+                    ),
+              filled: true,
+              fillColor: _softSurface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: _borderColor),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: _borderColor),
+              ),
+            ),
+          ),
+          SizedBox(height: 12),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: OutlinedButton.icon(
+                  key: ValueKey<String>('vendas-a-receber-abrir-filtros'),
+                  onPressed: _abrirFiltros,
+                  icon: Icon(Icons.tune_rounded, size: 19),
+                  label: Text(
+                    quantidade == 0
+                        ? _txt('common.filters', 'Filtros')
+                        : '${_txt('common.filters', 'Filtros')} ($quantidade)',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _accentColor,
+                    backgroundColor: _softAccentSurface,
+                    side: BorderSide(color: _borderColor),
+                    minimumSize: Size.fromHeight(46),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                ),
+              ),
+              if (_temFiltrosAtivos) ...<Widget>[
+                SizedBox(width: 10),
+                IconButton.outlined(
+                  tooltip: _txt('common.clearFilters', 'Limpar filtros'),
+                  onPressed: _limparFiltros,
+                  style: IconButton.styleFrom(
+                    foregroundColor: _mutedTextColor,
+                    backgroundColor: _softSurface,
+                    side: BorderSide(color: _borderColor),
+                    minimumSize: Size(46, 46),
+                  ),
+                  icon: Icon(Icons.filter_alt_off_rounded, size: 20),
+                ),
+              ],
+            ],
+          ),
+          SizedBox(height: 10),
+          Row(
+            children: <Widget>[
+              Icon(Icons.date_range_rounded, size: 15, color: _mutedTextColor),
+              SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  _periodoLabel(_periodoSelecionado),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: _mutedTextColor,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              SizedBox(width: 10),
+              Icon(Icons.people_alt_outlined, size: 15, color: _mutedTextColor),
+              SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  _valorFiltroVendedores(_idsVendedoresSelecionados),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: TextStyle(
+                    color: _mutedTextColor,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _activeFilters() {
+    final List<Widget> chips = <Widget>[];
+    if (_periodoSelecionado != _periodoUltimos30Dias) {
+      chips.add(_pill(_periodoLabel(_periodoSelecionado)));
+    }
+    if (_idsVendedoresSelecionados.isNotEmpty) {
+      chips.add(_pill(_valorFiltroVendedores(_idsVendedoresSelecionados)));
+    }
+    if (_statusFinanceiroSelecionado != null) {
+      chips.add(_pill(_statusFinanceiroLabel(_statusFinanceiroSelecionado!)));
+    }
+    if (_valorMinimoTexto.trim().isNotEmpty) {
+      chips.add(
+        _pill(
+          '${_txt('sales.query.minimumValue', 'Valor mínimo')}: '
+          '${_valorMinimoTexto.trim()}',
+        ),
+      );
+    }
+    if (_valorMaximoTexto.trim().isNotEmpty) {
+      chips.add(
+        _pill(
+          '${_txt('sales.query.maximumValue', 'Valor máximo')}: '
+          '${_valorMaximoTexto.trim()}',
+        ),
+      );
+    }
+    if (_ordenacaoSelecionada != 'MAIS_RECENTES') {
+      chips.add(_pill(_ordenacaoLabel(_ordenacaoSelecionada)));
+    }
+    if (chips.isEmpty) return SizedBox.shrink();
+    return Wrap(spacing: 8, runSpacing: 8, children: chips);
+  }
+
   Widget _vendaCard(VendaNaoLiquidadaModel venda) {
     final int quantidadeItens = _quantidadeItensDaVenda(venda);
-    final String colaborador =
-        venda.nomeColaboradorCriacao.trim().isEmpty
-            ? _txt('vendasNaoLiquidadas.colaboradorPadrao', 'colaborador')
-            : venda.nomeColaboradorCriacao.trim();
-    final String cliente =
-        venda.nomeCliente.trim().isEmpty
-            ? _txt(
-              'vendasNaoLiquidadas.clienteNaoInformado',
-              'Cliente não informado',
-            )
-            : venda.nomeCliente.trim();
+    final String colaborador = venda.nomeColaboradorCriacao.trim().isEmpty
+        ? _txt('vendasNaoLiquidadas.colaboradorPadrao', 'colaborador')
+        : venda.nomeColaboradorCriacao.trim();
+    final String cliente = venda.nomeCliente.trim().isEmpty
+        ? _txt(
+            'vendasNaoLiquidadas.clienteNaoInformado',
+            'Cliente não informado',
+          )
+        : venda.nomeCliente.trim();
     final Widget detailsButton = _cardDetailsButton(venda);
 
     return Material(
@@ -840,10 +1663,9 @@ class _VendasNaoLiquidadasMobileScreenState
         MediaQuery.disableAnimationsOf(sheetContext) ||
         MediaQuery.accessibleNavigationOf(sheetContext);
     final double valorJaRecebido = _valorJaRecebido(venda);
-    final String colaborador =
-        venda.nomeColaboradorCriacao.trim().isEmpty
-            ? _txt('vendasNaoLiquidadas.colaboradorPadrao', 'colaborador')
-            : venda.nomeColaboradorCriacao.trim();
+    final String colaborador = venda.nomeColaboradorCriacao.trim().isEmpty
+        ? _txt('vendasNaoLiquidadas.colaboradorPadrao', 'colaborador')
+        : venda.nomeColaboradorCriacao.trim();
     final bool podeReceber = !_cancelando && venda.valorAberto > 0;
     final bool podeCancelar = !_cancelando;
 
@@ -986,10 +1808,9 @@ class _VendasNaoLiquidadasMobileScreenState
                   ),
                   -valorJaRecebido,
                   reduceMotion: reduceMotion,
-                  valueColor:
-                      valorJaRecebido > 0
-                          ? SixMobilePalette.error
-                          : _mutedTextColor,
+                  valueColor: valorJaRecebido > 0
+                      ? SixMobilePalette.error
+                      : _mutedTextColor,
                 ),
                 _detailMoneyLine(
                   _txt('vendasNaoLiquidadas.valorAberto', 'Valor em aberto'),
@@ -1022,8 +1843,9 @@ class _VendasNaoLiquidadasMobileScreenState
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool compact = constraints.maxWidth < 360;
-        final double itemWidth =
-            compact ? constraints.maxWidth : (constraints.maxWidth - 10) / 2;
+        final double itemWidth = compact
+            ? constraints.maxWidth
+            : (constraints.maxWidth - 10) / 2;
         return Wrap(
           spacing: 10,
           runSpacing: 10,
@@ -1034,13 +1856,12 @@ class _VendasNaoLiquidadasMobileScreenState
                 label: _txt('vendasNaoLiquidadas.receber', 'Receber'),
                 icon: Icons.payments_outlined,
                 filled: true,
-                onPressed:
-                    podeReceber
-                        ? () => _runAfterClosingSheet(
-                          sheetContext,
-                          () => _receberVenda(venda),
-                        )
-                        : null,
+                onPressed: podeReceber
+                    ? () => _runAfterClosingSheet(
+                        sheetContext,
+                        () => _receberVenda(venda),
+                      )
+                    : null,
               ),
             ),
             SizedBox(
@@ -1051,13 +1872,12 @@ class _VendasNaoLiquidadasMobileScreenState
                   'Cancelar venda',
                 ),
                 icon: Icons.delete_outline_rounded,
-                onPressed:
-                    podeCancelar
-                        ? () => _runAfterClosingSheet(
-                          sheetContext,
-                          () => _confirmarCancelamentoVenda(venda),
-                        )
-                        : null,
+                onPressed: podeCancelar
+                    ? () => _runAfterClosingSheet(
+                        sheetContext,
+                        () => _confirmarCancelamentoVenda(venda),
+                      )
+                    : null,
               ),
             ),
           ],
@@ -1072,18 +1892,17 @@ class _VendasNaoLiquidadasMobileScreenState
     required VoidCallback? onPressed,
     bool filled = false,
   }) {
-    final ButtonStyle style =
-        filled
-            ? FilledButton.styleFrom(
-              backgroundColor: _accentColor,
-              foregroundColor: SixMobilePalette.onAccent,
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            )
-            : OutlinedButton.styleFrom(
-              foregroundColor: _titleTextColor,
-              side: BorderSide(color: _borderColor),
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            );
+    final ButtonStyle style = filled
+        ? FilledButton.styleFrom(
+            backgroundColor: _accentColor,
+            foregroundColor: SixMobilePalette.onAccent,
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          )
+        : OutlinedButton.styleFrom(
+            foregroundColor: _titleTextColor,
+            side: BorderSide(color: _borderColor),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          );
     final Widget child = Row(
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
@@ -1314,10 +2133,9 @@ class _VendasNaoLiquidadasMobileScreenState
           ...venda.itens.map((VendaNaoLiquidadaItemModel item) {
             final double total = item.quantidade * item.valorUnitario;
             return _detailListTile(
-              icon:
-                  item.ehServico
-                      ? Icons.handyman_outlined
-                      : Icons.inventory_2_outlined,
+              icon: item.ehServico
+                  ? Icons.handyman_outlined
+                  : Icons.inventory_2_outlined,
               title: item.nome,
               subtitle:
                   '${item.quantidade} x ${_formatarValor(item.valorUnitario)}',
@@ -1395,7 +2213,7 @@ class _VendasNaoLiquidadasMobileScreenState
     return text.isEmpty ? '-' : text;
   }
 
-  Widget _empty() {
+  Widget _empty({bool filtrada = false}) {
     return _baseCard(
       child: Column(
         children: <Widget>[
@@ -1407,7 +2225,15 @@ class _VendasNaoLiquidadasMobileScreenState
           ),
           SizedBox(height: 12),
           Text(
-            _txt('vendasNaoLiquidadas.vazioTitulo', 'Nenhuma venda em aberto'),
+            filtrada
+                ? _txt(
+                    'vendasNaoLiquidadas.filtrosSemResultadoTitulo',
+                    'Nenhuma venda encontrada',
+                  )
+                : _txt(
+                    'vendasNaoLiquidadas.vazioTitulo',
+                    'Nenhuma venda em aberto',
+                  ),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: _titleTextColor,
@@ -1417,13 +2243,26 @@ class _VendasNaoLiquidadasMobileScreenState
           ),
           SizedBox(height: 6),
           Text(
-            _txt(
-              'vendasNaoLiquidadas.vazioDescricao',
-              'Quando uma venda for marcada para receber depois, ela aparecerá aqui.',
-            ),
+            filtrada
+                ? _txt(
+                    'vendasNaoLiquidadas.filtrosSemResultadoDescricao',
+                    'Revise ou limpe os filtros para ver outras vendas em aberto.',
+                  )
+                : _txt(
+                    'vendasNaoLiquidadas.vazioDescricao',
+                    'Quando uma venda for marcada para receber depois, ela aparecerá aqui.',
+                  ),
             textAlign: TextAlign.center,
             style: TextStyle(color: _mutedTextColor, height: 1.4),
           ),
+          if (filtrada) ...<Widget>[
+            SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: _limparFiltros,
+              icon: Icon(Icons.filter_alt_off_rounded),
+              label: Text(_txt('common.clearFilters', 'Limpar filtros')),
+            ),
+          ],
         ],
       ),
     );
@@ -1495,6 +2334,8 @@ class _VendasNaoLiquidadasMobileScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _loadingHeader(),
+          SizedBox(height: 14),
+          _loadingFiltersCard(),
           SizedBox(height: 18),
           _section(
             _txt('vendasNaoLiquidadas.secaoAbertas', 'Vendas em aberto'),
@@ -1606,6 +2447,21 @@ class _VendasNaoLiquidadasMobileScreenState
           _skeletonLine(width: 145, height: 20),
           SizedBox(height: 10),
           _skeletonLine(width: double.infinity, height: 42),
+        ],
+      ),
+    );
+  }
+
+  Widget _loadingFiltersCard() {
+    return _baseCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _skeletonLine(width: double.infinity, height: 52),
+          SizedBox(height: 12),
+          _skeletonLine(width: 150, height: 42),
+          SizedBox(height: 10),
+          _skeletonLine(width: 230, height: 12),
         ],
       ),
     );
@@ -1732,10 +2588,9 @@ class _VendasNaoLiquidadasMobileScreenState
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color:
-            colorOnDark
-                ? _withAlpha(SixMobilePalette.onPrimary, 0.18)
-                : _withAlpha(_borderColor, 0.55),
+        color: colorOnDark
+            ? _withAlpha(SixMobilePalette.onPrimary, 0.18)
+            : _withAlpha(_borderColor, 0.55),
         borderRadius: BorderRadius.circular(999),
       ),
     );
@@ -1749,6 +2604,634 @@ class _VendasNaoLiquidadasMobileScreenState
         fontSize: 16,
         fontWeight: FontWeight.w900,
         letterSpacing: 0.1,
+      ),
+    );
+  }
+}
+
+class _VendasNaoLiquidadasFilterDraft {
+  const _VendasNaoLiquidadasFilterDraft({
+    required this.periodo,
+    required this.dataInicio,
+    required this.dataFim,
+    required this.idsVendedores,
+    required this.statusFinanceiro,
+    required this.ordenacao,
+    required this.valorMinimo,
+    required this.valorMaximo,
+  });
+
+  final String periodo;
+  final DateTime dataInicio;
+  final DateTime dataFim;
+  final Set<String> idsVendedores;
+  final String? statusFinanceiro;
+  final String ordenacao;
+  final String valorMinimo;
+  final String valorMaximo;
+
+  _VendasNaoLiquidadasFilterDraft copyWith({
+    String? periodo,
+    DateTime? dataInicio,
+    DateTime? dataFim,
+    Set<String>? idsVendedores,
+    String? statusFinanceiro,
+    String? ordenacao,
+    String? valorMinimo,
+    String? valorMaximo,
+    bool limparStatusFinanceiro = false,
+  }) {
+    return _VendasNaoLiquidadasFilterDraft(
+      periodo: periodo ?? this.periodo,
+      dataInicio: dataInicio ?? this.dataInicio,
+      dataFim: dataFim ?? this.dataFim,
+      idsVendedores: Set<String>.from(idsVendedores ?? this.idsVendedores),
+      statusFinanceiro: limparStatusFinanceiro
+          ? null
+          : statusFinanceiro ?? this.statusFinanceiro,
+      ordenacao: ordenacao ?? this.ordenacao,
+      valorMinimo: valorMinimo ?? this.valorMinimo,
+      valorMaximo: valorMaximo ?? this.valorMaximo,
+    );
+  }
+}
+
+class _VendasNaoLiquidadasFilterSheet extends StatefulWidget {
+  const _VendasNaoLiquidadasFilterSheet({
+    required this.initialDraft,
+    required this.sellerOptions,
+    required this.sellersLoading,
+    required this.sellersLoadFailed,
+    required this.sellerSelectionLabelBuilder,
+    required this.formatDate,
+    required this.periodLabelBuilder,
+    required this.financialStatusLabelBuilder,
+    required this.orderLabelBuilder,
+    required this.showDateSheet,
+  });
+
+  final _VendasNaoLiquidadasFilterDraft initialDraft;
+  final List<SixMobileSelectionOption<String>> sellerOptions;
+  final bool sellersLoading;
+  final bool sellersLoadFailed;
+  final String Function(Set<String> values) sellerSelectionLabelBuilder;
+  final String Function(DateTime value) formatDate;
+  final String Function(String value) periodLabelBuilder;
+  final String Function(String value) financialStatusLabelBuilder;
+  final String Function(String value) orderLabelBuilder;
+  final Future<DateTime?> Function({
+    required DateTime initialDate,
+    required DateTime minimumDate,
+    required String title,
+  })
+  showDateSheet;
+
+  @override
+  State<_VendasNaoLiquidadasFilterSheet> createState() =>
+      _VendasNaoLiquidadasFilterSheetState();
+}
+
+class _VendasNaoLiquidadasFilterSheetState
+    extends State<_VendasNaoLiquidadasFilterSheet> {
+  late _VendasNaoLiquidadasFilterDraft _draft;
+  late final TextEditingController _valorMinimoController;
+  late final TextEditingController _valorMaximoController;
+
+  @override
+  void initState() {
+    super.initState();
+    _draft = widget.initialDraft;
+    _valorMinimoController = TextEditingController(text: _draft.valorMinimo);
+    _valorMaximoController = TextEditingController(text: _draft.valorMaximo);
+  }
+
+  @override
+  void dispose() {
+    _valorMinimoController.dispose();
+    _valorMaximoController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickPeriodo() async {
+    final String? selected = await showSixMobileSelectionSheet<String>(
+      context: context,
+      title: context.t('sales.query.period', fallback: 'Período'),
+      subtitle: context.t(
+        'sales.query.mobile.periodSubtitle',
+        fallback: 'Defina o período das vendas em aberto.',
+      ),
+      options: _VendasNaoLiquidadasMobileScreenState._periodos
+          .map(
+            (String value) => SixMobileSelectionOption<String>(
+              value: value,
+              title: widget.periodLabelBuilder(value),
+              icon: Icons.date_range_rounded,
+            ),
+          )
+          .toList(growable: false),
+      selectedValue: _draft.periodo,
+      emptyTitle: context.t('common.noResults', fallback: 'Nenhum resultado'),
+    );
+    if (selected == null || !mounted) return;
+    setState(() => _draft = _draft.copyWith(periodo: selected));
+  }
+
+  Future<void> _pickVendedores() async {
+    final Set<String>?
+    selected = await showSixMobileMultiSelectionSheet<String>(
+      context: context,
+      title: context.t('sales.query.sellers', fallback: 'Vendedores'),
+      subtitle: context.t(
+        'sales.query.mobile.sellersSubtitle',
+        fallback:
+            'Selecione um ou mais vendedores. Sem seleção, todos serão considerados.',
+      ),
+      options: widget.sellerOptions,
+      selectedValues: _draft.idsVendedores,
+      allLabel: context.t(
+        'sales.query.allSellers',
+        fallback: 'Todos os vendedores',
+      ),
+      searchHint: context.t(
+        'sales.query.searchSeller',
+        fallback: 'Buscar vendedor',
+      ),
+      emptyTitle: context.t(
+        widget.sellersLoadFailed
+            ? 'sales.query.sellersLoadError'
+            : 'sales.query.noSellers',
+        fallback: widget.sellersLoadFailed
+            ? 'Não foi possível carregar os vendedores.'
+            : 'Nenhum vendedor encontrado.',
+      ),
+    );
+    if (selected == null || !mounted) return;
+    setState(() => _draft = _draft.copyWith(idsVendedores: selected));
+  }
+
+  Future<void> _pickStatusFinanceiro() async {
+    const String todos = 'TODOS';
+    final String? selected = await showSixMobileSelectionSheet<String>(
+      context: context,
+      title: context.t(
+        'sales.query.financialStatus',
+        fallback: 'Situação financeira',
+      ),
+      options: <SixMobileSelectionOption<String>>[
+        SixMobileSelectionOption<String>(
+          value: todos,
+          title: context.t('common.all', fallback: 'Todas'),
+          icon: Icons.filter_alt_outlined,
+        ),
+        ..._VendasNaoLiquidadasMobileScreenState._statusFinanceiros.map(
+          (String value) => SixMobileSelectionOption<String>(
+            value: value,
+            title: widget.financialStatusLabelBuilder(value),
+            icon: Icons.account_balance_wallet_outlined,
+          ),
+        ),
+      ],
+      selectedValue: _draft.statusFinanceiro ?? todos,
+      emptyTitle: context.t('common.noResults', fallback: 'Nenhum resultado'),
+    );
+    if (selected == null || !mounted) return;
+    setState(() {
+      _draft = _draft.copyWith(
+        statusFinanceiro: selected == todos ? null : selected,
+        limparStatusFinanceiro: selected == todos,
+      );
+    });
+  }
+
+  Future<void> _pickOrdenacao() async {
+    final String? selected = await showSixMobileSelectionSheet<String>(
+      context: context,
+      title: context.t('sales.query.order', fallback: 'Ordenar por'),
+      options: _VendasNaoLiquidadasMobileScreenState._ordenacoes
+          .map(
+            (String value) => SixMobileSelectionOption<String>(
+              value: value,
+              title: widget.orderLabelBuilder(value),
+              icon: Icons.swap_vert_rounded,
+            ),
+          )
+          .toList(growable: false),
+      selectedValue: _draft.ordenacao,
+      emptyTitle: context.t('common.noResults', fallback: 'Nenhum resultado'),
+    );
+    if (selected == null || !mounted) return;
+    setState(() => _draft = _draft.copyWith(ordenacao: selected));
+  }
+
+  Future<void> _pickData({required bool inicio}) async {
+    final DateTime initial = inicio ? _draft.dataInicio : _draft.dataFim;
+    final DateTime minimum = inicio ? DateTime(2020) : _draft.dataInicio;
+    final DateTime? selected = await widget.showDateSheet(
+      initialDate: initial,
+      minimumDate: minimum,
+      title: inicio
+          ? context.t('sales.query.startDate', fallback: 'Data inicial')
+          : context.t('sales.query.endDate', fallback: 'Data final'),
+    );
+    if (selected == null || !mounted) return;
+    setState(() {
+      if (inicio) {
+        _draft = _draft.copyWith(dataInicio: selected);
+        if (_draft.dataFim.isBefore(selected)) {
+          _draft = _draft.copyWith(dataFim: selected);
+        }
+      } else {
+        _draft = _draft.copyWith(dataFim: selected);
+      }
+    });
+  }
+
+  void _clear() {
+    final DateTime hoje = DateTime.now();
+    setState(() {
+      _draft = _draft.copyWith(
+        periodo: _VendasNaoLiquidadasMobileScreenState._periodoUltimos30Dias,
+        dataInicio: hoje.subtract(const Duration(days: 29)),
+        dataFim: hoje,
+        idsVendedores: <String>{},
+        statusFinanceiro: null,
+        ordenacao: 'MAIS_RECENTES',
+        valorMinimo: '',
+        valorMaximo: '',
+        limparStatusFinanceiro: true,
+      );
+      _valorMinimoController.clear();
+      _valorMaximoController.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool sellerEnabled =
+        !widget.sellersLoading ||
+        widget.sellerOptions.isNotEmpty ||
+        _draft.idsVendedores.isNotEmpty;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(10, 0, 10, 10),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.84,
+          minChildSize: 0.58,
+          maxChildSize: 0.94,
+          expand: false,
+          builder: (BuildContext context, ScrollController scrollController) {
+            return Material(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(28),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: <Widget>[
+                  SizedBox(height: 10),
+                  Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.strongBorder,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(18, 16, 12, 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                context.t(
+                                  'vendasNaoLiquidadas.filtrosTitulo',
+                                  fallback: 'Filtros das vendas a receber',
+                                ),
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(
+                                      color: colors.titleText,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                context.t(
+                                  'vendasNaoLiquidadas.filtrosDescricao',
+                                  fallback:
+                                      'Ajuste período, vendedores, situação e valores.',
+                                ),
+                                style: TextStyle(
+                                  color: colors.mutedText,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: MaterialLocalizations.of(
+                            context,
+                          ).closeButtonTooltip,
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: Icon(Icons.close_rounded),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(height: 1, color: colors.border),
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      padding: EdgeInsets.fromLTRB(16, 16, 16, 20),
+                      children: <Widget>[
+                        SixMobileSelectionField(
+                          label: context.t(
+                            'sales.query.period',
+                            fallback: 'Período',
+                          ),
+                          value: widget.periodLabelBuilder(_draft.periodo),
+                          icon: Icons.date_range_rounded,
+                          onTap: _pickPeriodo,
+                        ),
+                        if (_draft.periodo ==
+                            _VendasNaoLiquidadasMobileScreenState
+                                ._periodoPersonalizado) ...<Widget>[
+                          SizedBox(height: 12),
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: SixMobileSelectionField(
+                                  label: context.t(
+                                    'sales.query.startDate',
+                                    fallback: 'Data inicial',
+                                  ),
+                                  value: widget.formatDate(_draft.dataInicio),
+                                  icon: Icons.event_rounded,
+                                  onTap: () => _pickData(inicio: true),
+                                ),
+                              ),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: SixMobileSelectionField(
+                                  label: context.t(
+                                    'sales.query.endDate',
+                                    fallback: 'Data final',
+                                  ),
+                                  value: widget.formatDate(_draft.dataFim),
+                                  icon: Icons.event_available_rounded,
+                                  onTap: () => _pickData(inicio: false),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        SizedBox(height: 12),
+                        SixMobileSelectionField(
+                          label: context.t(
+                            'sales.query.sellers',
+                            fallback: 'Vendedores',
+                          ),
+                          value:
+                              widget.sellersLoading &&
+                                  _draft.idsVendedores.isEmpty &&
+                                  widget.sellerOptions.isEmpty
+                              ? context.t(
+                                  'sales.query.loadingSellers',
+                                  fallback: 'Carregando vendedores...',
+                                )
+                              : widget.sellerSelectionLabelBuilder(
+                                  _draft.idsVendedores,
+                                ),
+                          helperText: widget.sellersLoadFailed
+                              ? context.t(
+                                  'sales.query.sellersLoadErrorShort',
+                                  fallback: 'Lista indisponível no momento',
+                                )
+                              : null,
+                          icon: Icons.people_alt_outlined,
+                          enabled: sellerEnabled,
+                          onTap: _pickVendedores,
+                        ),
+                        SizedBox(height: 12),
+                        SixMobileSelectionField(
+                          label: context.t(
+                            'sales.query.financialStatus',
+                            fallback: 'Situação financeira',
+                          ),
+                          value: _draft.statusFinanceiro == null
+                              ? context.t('common.all', fallback: 'Todas')
+                              : widget.financialStatusLabelBuilder(
+                                  _draft.statusFinanceiro!,
+                                ),
+                          icon: Icons.account_balance_wallet_outlined,
+                          onTap: _pickStatusFinanceiro,
+                        ),
+                        SizedBox(height: 12),
+                        SixMobileSelectionField(
+                          label: context.t(
+                            'sales.query.order',
+                            fallback: 'Ordenar por',
+                          ),
+                          value: widget.orderLabelBuilder(_draft.ordenacao),
+                          icon: Icons.swap_vert_rounded,
+                          onTap: _pickOrdenacao,
+                        ),
+                        SizedBox(height: 12),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: TextField(
+                                controller: _valorMinimoController,
+                                keyboardType: TextInputType.numberWithOptions(
+                                  decimal: true,
+                                ),
+                                decoration: InputDecoration(
+                                  labelText: context.t(
+                                    'sales.query.minimumValue',
+                                    fallback: 'Valor mínimo',
+                                  ),
+                                  filled: true,
+                                  fillColor: colors.softSurface,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: TextField(
+                                controller: _valorMaximoController,
+                                keyboardType: TextInputType.numberWithOptions(
+                                  decimal: true,
+                                ),
+                                decoration: InputDecoration(
+                                  labelText: context.t(
+                                    'sales.query.maximumValue',
+                                    fallback: 'Valor máximo',
+                                  ),
+                                  filled: true,
+                                  fillColor: colors.softSurface,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(height: 1, color: colors.border),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _clear,
+                            child: Text(
+                              context.t('common.clear', fallback: 'Limpar'),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(
+                                _draft.copyWith(
+                                  valorMinimo: _valorMinimoController.text,
+                                  valorMaximo: _valorMaximoController.text,
+                                ),
+                              );
+                            },
+                            child: Text(
+                              context.t('common.apply', fallback: 'Aplicar'),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _VendasNaoLiquidadasDateSheet extends StatefulWidget {
+  const _VendasNaoLiquidadasDateSheet({
+    required this.title,
+    required this.initialDate,
+    required this.minimumDate,
+    required this.maximumDate,
+  });
+
+  final String title;
+  final DateTime initialDate;
+  final DateTime minimumDate;
+  final DateTime maximumDate;
+
+  @override
+  State<_VendasNaoLiquidadasDateSheet> createState() =>
+      _VendasNaoLiquidadasDateSheetState();
+}
+
+class _VendasNaoLiquidadasDateSheetState
+    extends State<_VendasNaoLiquidadasDateSheet> {
+  late DateTime _selectedDate = widget.initialDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(10, 0, 10, 10),
+        child: Material(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(28),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.strongBorder,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                SizedBox(height: 14),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        widget.title,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: colors.titleText,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: MaterialLocalizations.of(
+                        context,
+                      ).closeButtonTooltip,
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                CalendarDatePicker(
+                  initialDate: _selectedDate,
+                  firstDate: widget.minimumDate,
+                  lastDate: widget.maximumDate,
+                  onDateChanged: (DateTime value) {
+                    setState(() => _selectedDate = value);
+                  },
+                ),
+                SizedBox(height: 10),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text(
+                          context.t('common.cancel', fallback: 'Cancelar'),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () =>
+                            Navigator.of(context).pop(_selectedDate),
+                        child: Text(
+                          context.t('common.apply', fallback: 'Aplicar'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

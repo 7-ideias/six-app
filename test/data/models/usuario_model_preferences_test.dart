@@ -346,6 +346,54 @@ void main() {
       );
     });
 
+    test('mantem filtros de vendas a receber separados da consulta mobile', () {
+      final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
+        const <String, dynamic>{
+          'consultaVendasFiltrosMobile': <String, dynamic>{
+            'busca': 'historico',
+            'periodo': 'HOJE',
+          },
+          'vendasNaoLiquidadasFiltrosMobile': <String, dynamic>{
+            'busca': 'pendente',
+            'periodo': 'PERSONALIZADO',
+            'dataInicio': '2026-08-01',
+            'dataFim': '2026-08-31',
+            'statusFinanceiro': 'PARCIAL',
+            'idsVendedores': <String>['vendedor-1', 'vendedor-2'],
+            'valorMinimo': '50',
+            'ordenacao': 'MAIOR_VALOR',
+          },
+        },
+      );
+
+      expect(preferencias.consultaVendasFiltrosMobile.busca, 'historico');
+      final filtros = preferencias.vendasNaoLiquidadasFiltrosMobile;
+      expect(filtros.busca, 'pendente');
+      expect(
+        filtros.periodo,
+        ConsultaVendasPeriodoWebPreferencia.personalizado,
+      );
+      expect(filtros.dataInicio, DateTime(2026, 8, 1));
+      expect(filtros.dataFim, DateTime(2026, 8, 31));
+      expect(filtros.statusFinanceiro, 'PARCIAL');
+      expect(filtros.idsVendedores, <String>['vendedor-1', 'vendedor-2']);
+      expect(filtros.valorMinimo, '50');
+      expect(filtros.ordenacao, 'MAIOR_VALOR');
+      expect(
+        preferencias.toJson()['vendasNaoLiquidadasFiltrosMobile'],
+        <String, dynamic>{
+          'busca': 'pendente',
+          'periodo': 'PERSONALIZADO',
+          'dataInicio': '2026-08-01',
+          'dataFim': '2026-08-31',
+          'statusFinanceiro': 'PARCIAL',
+          'idsVendedores': <String>['vendedor-1', 'vendedor-2'],
+          'valorMinimo': '50',
+          'ordenacao': 'MAIOR_VALOR',
+        },
+      );
+    });
+
     test('mantem multiplos filtros web de atendimentos criados', () {
       final preferencias = PreferenciasIndividuaisDoUsuarioModel.fromJson(
         const <String, dynamic>{

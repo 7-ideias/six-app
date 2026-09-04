@@ -66,6 +66,11 @@ void main() {
           'periodo': 'HOJE',
           'idsVendedores': <String>['vendedor-3'],
         },
+        'vendasNaoLiquidadasFiltrosMobile': <String, dynamic>{
+          'periodo': 'ULTIMOS_30_DIAS',
+          'statusFinanceiro': 'PARCIAL',
+          'idsVendedores': <String>['vendedor-1'],
+        },
         'atendimentosCriadosFiltrosWeb': <String, dynamic>{
           'busca': 'cliente teste',
           'statusKey': 'id:3',
@@ -140,6 +145,11 @@ void main() {
           'busca': 'cliente mobile',
           'periodo': 'HOJE',
           'idsVendedores': <String>['vendedor-3'],
+        },
+        'vendasNaoLiquidadasFiltrosMobile': <String, dynamic>{
+          'periodo': 'ULTIMOS_30_DIAS',
+          'statusFinanceiro': 'PARCIAL',
+          'idsVendedores': <String>['vendedor-1'],
         },
         'atendimentosCriadosFiltrosWeb': <String, dynamic>{
           'busca': 'cliente teste',

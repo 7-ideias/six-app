@@ -11,6 +11,7 @@ import 'package:sixpos/core/services/agenda_financeira_acoes_financeiras.dart';
 import 'package:sixpos/data/datasources/operational_procedure_mock_data_source.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:sixpos/data/models/caixa_models.dart';
+import 'package:sixpos/data/models/colaborador_usuario_model.dart';
 import 'package:sixpos/data/models/regionalizacao_models.dart';
 import 'package:sixpos/data/models/venda_nao_liquidada_models.dart';
 import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
@@ -252,6 +253,50 @@ void main() {
       }
     },
   );
+
+  testWidgets('receivables exposes filters and filters the visible list', (
+    WidgetTester tester,
+  ) async {
+    final _FakeVendaNaoLiquidadaApiClient api = _FakeVendaNaoLiquidadaApiClient(
+      vendas: _sampleSales(),
+    );
+
+    await _pumpReceivables(tester, themeCase: _darkTheme, apiClient: api);
+
+    expect(find.text('Venda, cliente, vendedor ou produto'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('vendas-a-receber-abrir-filtros')),
+      findsOneWidget,
+    );
+    expect(find.text('Últimos 30 dias'), findsOneWidget);
+    expect(find.text('Todos os vendedores'), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('vendas-a-receber-abrir-filtros')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Filtros das vendas a receber'), findsOneWidget);
+    expect(find.text('Período'), findsOneWidget);
+    expect(find.text('Vendedores'), findsOneWidget);
+    expect(find.text('Situação financeira'), findsOneWidget);
+    expect(find.text('Ordenar por'), findsOneWidget);
+    expect(find.text('Valor mínimo'), findsOneWidget);
+    expect(find.text('Valor máximo'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.close_rounded).last);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey<String>('vendas-a-receber-busca')),
+      '1002',
+    );
+    await tester.pump();
+
+    expect(find.text('Venda PDV 1001'), findsNothing);
+    expect(find.text('Venda PDV 1002'), findsOneWidget);
+    expect(find.text('1 venda aguardando liquidação'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'receiving total liquidates the selected sale with fake services',
@@ -609,6 +654,8 @@ Future<void> _pumpReceivables(
       apiClient: apiClient,
       acoesFinanceiras: acoesFinanceiras ?? _FakeAgendaActions(),
       caixaApiClient: caixaApiClient ?? _FakeCaixaApiClient(),
+      vendedoresLoader: () async => _sampleSellers(),
+      habilitarPersistenciaPreferencias: false,
     ),
   );
 }
@@ -639,12 +686,11 @@ Future<void> _pumpMobile(
 
   await tester.pumpWidget(
     ChangeNotifierProvider<LocaleSettingsProvider>(
-      create:
-          (_) => LocaleSettingsProvider(
-            regionalizacaoService: RegionalizacaoService(
-              apiClient: _FakeRegionalizacaoApiClient(),
-            ),
-          ),
+      create: (_) => LocaleSettingsProvider(
+        regionalizacaoService: RegionalizacaoService(
+          apiClient: _FakeRegionalizacaoApiClient(),
+        ),
+      ),
       child: MaterialApp(
         locale: const Locale('pt'),
         supportedLocales: _testSupportedLocales,
@@ -684,14 +730,12 @@ OperationalProcedureFlowCoordinator _procedureCoordinator() {
 }
 
 Future<void> _openFirstSaleDetail(WidgetTester tester) async {
-  final Finder detailsButton =
-      find
-          .byWidgetPredicate(
-            (Widget widget) =>
-                widget is IconButton &&
-                widget.tooltip == 'Ver detalhes da venda',
-          )
-          .first;
+  final Finder detailsButton = find
+      .byWidgetPredicate(
+        (Widget widget) =>
+            widget is IconButton && widget.tooltip == 'Ver detalhes da venda',
+      )
+      .first;
   await Scrollable.ensureVisible(
     tester.element(detailsButton),
     alignment: 0.65,
@@ -788,6 +832,20 @@ List<VendaNaoLiquidadaModel> _sampleSales() {
   ];
 }
 
+List<ColaboradorUsuarioResumo> _sampleSellers() {
+  return <ColaboradorUsuarioResumo>[
+    ColaboradorUsuarioResumo(
+      idUnicoPessoal: 'colab-1',
+      nome: 'Vendedora Six Completo',
+      nomeDeGuerra: 'Vendedora Six',
+      celularDeAcesso: '',
+      email: 'vendedora@six.test',
+      foto: '',
+      dataCadastro: DateTime(2026, 1, 1),
+    ),
+  ];
+}
+
 VendaNaoLiquidadaModel _sale({
   String idRecebimento = 'recv-1',
   String idOperacaoFinanceira = 'fin-1',
@@ -809,7 +867,7 @@ VendaNaoLiquidadaModel _sale({
     valorAberto: valorAberto,
     status: status,
     codigoTipoRecebimento: 'tipo2',
-    dataCompetencia: DateTime(2026, 8, 8, 14, 35),
+    dataCompetencia: DateTime.now().subtract(const Duration(days: 1)),
     dataVencimento: DateTime(2026, 8, 15),
     idCliente: 'cliente-1',
     nomeCliente: cliente,
