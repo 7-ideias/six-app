@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sixpos/design_system/helpers/six_color_contrast.dart';
 import 'package:sixpos/design_system/helpers/six_theme_resolver.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/domain/models/aparencia_models.dart';
@@ -15,11 +16,15 @@ void main() {
       description: 'light',
       brightness: Brightness.light,
       expectedBackground: SixMobileColorScheme.light.background,
+      expectedSurface: SixMobileColorScheme.light.surface,
+      expectedDayText: SixMobileColorScheme.light.titleText,
     ),
     _ThemeCase(
       description: 'dark',
       brightness: Brightness.dark,
       expectedBackground: SixMobileColorScheme.dark.background,
+      expectedSurface: SixMobileColorScheme.dark.surface,
+      expectedDayText: SixMobileColorScheme.dark.titleText,
     ),
   ]) {
     testWidgets(
@@ -46,7 +51,18 @@ void main() {
           isTrue,
         );
 
-        await tester.tap(find.text('5').last);
+        final Finder enabledDay = find.text('5').last;
+        final Text enabledDayText = tester.widget<Text>(enabledDay);
+        expect(enabledDayText.style?.color, themeCase.expectedDayText);
+        expect(
+          SixColorContrast.ratio(
+            themeCase.expectedDayText,
+            themeCase.expectedSurface,
+          ),
+          greaterThanOrEqualTo(SixColorContrast.minimumTextRatio),
+        );
+
+        await tester.tap(enabledDay);
         await tester.pumpAndSettle();
         await tester.tap(find.widgetWithText(FilledButton, 'Aplicar data'));
         await tester.pumpAndSettle();
@@ -147,11 +163,15 @@ class _ThemeCase {
     required this.description,
     required this.brightness,
     required this.expectedBackground,
+    required this.expectedSurface,
+    required this.expectedDayText,
   });
 
   final String description;
   final Brightness brightness;
   final Color expectedBackground;
+  final Color expectedSurface;
+  final Color expectedDayText;
 }
 
 bool _hasDecoratedAncestorColor(

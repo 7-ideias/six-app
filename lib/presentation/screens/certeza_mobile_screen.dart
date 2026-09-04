@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 
 class CertezaMobileScreen extends StatelessWidget {
   const CertezaMobileScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
+      backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        foregroundColor: colors.titleText,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: const SizedBox(), // Oculta o botão voltar
         actions: [
           IconButton(
             icon: const Icon(Icons.close),
+            tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
             onPressed: () => Navigator.pop(context),
           ),
         ],
@@ -24,11 +30,7 @@ class CertezaMobileScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.warning_amber_rounded,
-                size: 100,
-                color: Colors.red,
-              ),
+              Icon(Icons.warning_amber_rounded, size: 100, color: colors.error),
               const SizedBox(height: 24),
               const Text(
                 'Isso é irreversível',
@@ -45,10 +47,10 @@ class CertezaMobileScreen extends StatelessWidget {
                 onPressed: () {
                   // TODO: Ação de exclusão definitiva
                 },
-                child: const Text(
+                child: Text(
                   'Confirme isso',
                   style: TextStyle(
-                    color: Colors.red,
+                    color: colors.error,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -64,8 +66,7 @@ class CertezaMobileScreen extends StatelessWidget {
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              foregroundColor:
-                  Theme.of(context).colorScheme.onPrimaryContainer,
+              foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
