@@ -93,11 +93,14 @@ class SixoAppMobileLoadingOverlay extends StatelessWidget {
                     },
                     child:
                         isLoading
-                            ? SixoAppMobileLoadingScene.themed(
-                              key: visibleKey,
-                              message: message,
-                              semanticLabel: semanticLabel,
-                              supportingMessage: supportingMessage,
+                            ? Material(
+                              type: MaterialType.transparency,
+                              child: SixoAppMobileLoadingScene.themed(
+                                key: visibleKey,
+                                message: message,
+                                semanticLabel: semanticLabel,
+                                supportingMessage: supportingMessage,
+                              ),
                             )
                             : const SizedBox.shrink(
                               key: ValueKey<String>(

@@ -46,6 +46,13 @@ void main() {
       expect(find.text('SixoApp'), findsOneWidget);
       expect(find.text('Finalizando sua venda...'), findsOneWidget);
       expect(
+        find.ancestor(
+          of: find.text('SixoApp'),
+          matching: find.byType(Material),
+        ),
+        findsOneWidget,
+      );
+      expect(
         find.byKey(const ValueKey<String>('sixoapp-mobile-loading-visible')),
         findsOneWidget,
       );
