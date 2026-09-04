@@ -563,7 +563,8 @@ class _DesempenhoColaboradorMobileScreenState
         fontSize: 12,
         fontWeight: FontWeight.w800,
       ),
-      onSelected: (_) {
+      onSelected: (_) async {
+        bool precisaRecarregarResumo = false;
         setState(() {
           _situacao = value;
           if (_idParticipante != null &&
@@ -571,8 +572,12 @@ class _DesempenhoColaboradorMobileScreenState
                 (item) => item.idUnicoPessoal == _idParticipante,
               )) {
             _idParticipante = null;
+            precisaRecarregarResumo = true;
           }
         });
+        if (precisaRecarregarResumo) {
+          await _load();
+        }
       },
     );
   }
