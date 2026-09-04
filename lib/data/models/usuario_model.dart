@@ -1641,6 +1641,7 @@ class ConsultaVendasFiltrosWebPreferencia {
     this.dataFim,
     this.statusFinanceiro,
     this.statusDevolucao,
+    this.idsVendedores = const <String>[],
     this.valorMinimo = '',
     this.valorMaximo = '',
     this.ordenacao = 'MAIS_RECENTES',
@@ -1673,6 +1674,7 @@ class ConsultaVendasFiltrosWebPreferencia {
   final DateTime? dataFim;
   final String? statusFinanceiro;
   final String? statusDevolucao;
+  final List<String> idsVendedores;
   final String valorMinimo;
   final String valorMaximo;
   final String ordenacao;
@@ -1707,6 +1709,10 @@ class ConsultaVendasFiltrosWebPreferencia {
         json['statusDevolucao'],
         _statusDevolucaoValidos,
       ),
+      idsVendedores:
+          PreferenciasIndividuaisDoUsuarioModel._normalizarListaDeStrings(
+            json['idsVendedores'],
+          ),
       valorMinimo: json['valorMinimo']?.toString().trim() ?? '',
       valorMaximo: json['valorMaximo']?.toString().trim() ?? '',
       ordenacao:
@@ -1731,6 +1737,7 @@ class ConsultaVendasFiltrosWebPreferencia {
         'statusFinanceiro': statusFinanceiro!.trim(),
       if ((statusDevolucao ?? '').trim().isNotEmpty)
         'statusDevolucao': statusDevolucao!.trim(),
+      if (idsVendedores.isNotEmpty) 'idsVendedores': idsVendedores,
       if (valorMinimo.trim().isNotEmpty) 'valorMinimo': valorMinimo.trim(),
       if (valorMaximo.trim().isNotEmpty) 'valorMaximo': valorMaximo.trim(),
       if (ordenacao != 'MAIS_RECENTES') 'ordenacao': ordenacao,

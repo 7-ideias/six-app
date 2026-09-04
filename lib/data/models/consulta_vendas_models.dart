@@ -5,6 +5,7 @@ class ConsultaVendasFiltro {
     this.busca,
     this.idCliente,
     this.idColaborador,
+    this.idsColaboradores = const <String>[],
     this.idProduto,
     this.statusFinanceiro,
     this.statusDevolucao,
@@ -20,6 +21,7 @@ class ConsultaVendasFiltro {
   final String? busca;
   final String? idCliente;
   final String? idColaborador;
+  final List<String> idsColaboradores;
   final String? idProduto;
   final String? statusFinanceiro;
   final String? statusDevolucao;
@@ -29,28 +31,42 @@ class ConsultaVendasFiltro {
   final int pagina;
   final int tamanho;
 
-  Map<String, String> toQueryParameters() {
-    final Map<String, String> query = <String, String>{
-      'dataInicial': _dateOnly(dataInicial),
-      'dataFinal': _dateOnly(dataFinal),
-      'ordenacao': ordenacao,
-      'pagina': pagina.toString(),
-      'tamanho': tamanho.toString(),
+  Map<String, List<String>> toQueryParameters() {
+    final Map<String, List<String>> query = <String, List<String>>{
+      'dataInicial': <String>[_dateOnly(dataInicial)],
+      'dataFinal': <String>[_dateOnly(dataFinal)],
+      'ordenacao': <String>[ordenacao],
+      'pagina': <String>[pagina.toString()],
+      'tamanho': <String>[tamanho.toString()],
     };
 
     void addText(String key, String? value) {
       final String normalized = value?.trim() ?? '';
-      if (normalized.isNotEmpty) query[key] = normalized;
+      if (normalized.isNotEmpty) query[key] = <String>[normalized];
     }
+
+    final List<String> idsColaboradoresNormalizados = idsColaboradores
+        .map((String id) => id.trim())
+        .where((String id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
 
     addText('busca', busca);
     addText('idCliente', idCliente);
-    addText('idColaborador', idColaborador);
+    if (idsColaboradoresNormalizados.isNotEmpty) {
+      query['idsColaboradores'] = idsColaboradoresNormalizados;
+    } else {
+      addText('idColaborador', idColaborador);
+    }
     addText('idProduto', idProduto);
     addText('statusFinanceiro', statusFinanceiro);
     addText('statusDevolucao', statusDevolucao);
-    if (valorMinimo != null) query['valorMinimo'] = valorMinimo!.toString();
-    if (valorMaximo != null) query['valorMaximo'] = valorMaximo!.toString();
+    if (valorMinimo != null) {
+      query['valorMinimo'] = <String>[valorMinimo!.toString()];
+    }
+    if (valorMaximo != null) {
+      query['valorMaximo'] = <String>[valorMaximo!.toString()];
+    }
     return query;
   }
 
@@ -60,6 +76,7 @@ class ConsultaVendasFiltro {
     String? busca,
     String? idCliente,
     String? idColaborador,
+    List<String>? idsColaboradores,
     String? idProduto,
     String? statusFinanceiro,
     String? statusDevolucao,
@@ -70,6 +87,7 @@ class ConsultaVendasFiltro {
     int? tamanho,
     bool limparStatusFinanceiro = false,
     bool limparStatusDevolucao = false,
+    bool limparIdsColaboradores = false,
     bool limparValorMinimo = false,
     bool limparValorMaximo = false,
   }) {
@@ -79,6 +97,9 @@ class ConsultaVendasFiltro {
       busca: busca ?? this.busca,
       idCliente: idCliente ?? this.idCliente,
       idColaborador: idColaborador ?? this.idColaborador,
+      idsColaboradores: limparIdsColaboradores
+          ? const <String>[]
+          : idsColaboradores ?? this.idsColaboradores,
       idProduto: idProduto ?? this.idProduto,
       statusFinanceiro: limparStatusFinanceiro
           ? null

@@ -5,14 +5,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/models/colaborador_usuario_model.dart';
 import '../../data/models/consulta_vendas_models.dart';
 import '../../data/models/usuario_model.dart';
+import '../../data/services/desempenho_colaborador/desempenho_colaborador_api_client.dart';
 import '../../data/services/vendas/consulta_vendas_api_client.dart';
 import '../../domain/services/usuario/usuario_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
 import '../components/six_backend_loading.dart';
+import '../components/web/six_web_multi_select_field.dart';
 import '../components/web/six_web_select_field.dart';
 import '../theme/web_theme_tokens.dart';
 
@@ -22,11 +25,13 @@ class ConsultaVendasWebPage extends StatefulWidget {
     this.onNovaVenda,
     this.onAbrirDevolucoes,
     this.apiClient,
+    this.vendedoresLoader,
   });
 
   final VoidCallback? onNovaVenda;
   final ValueChanged<String>? onAbrirDevolucoes;
   final ConsultaVendasApiClient? apiClient;
+  final Future<List<ColaboradorUsuarioResumo>> Function()? vendedoresLoader;
 
   @override
   State<ConsultaVendasWebPage> createState() => _ConsultaVendasWebPageState();
@@ -121,6 +126,8 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
   ];
 
   late final ConsultaVendasApiClient _api;
+  late final Future<List<ColaboradorUsuarioResumo>> Function()
+  _vendedoresLoader;
   final UsuarioService _usuarioService = UsuarioService();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
   final TextEditingController _buscaController = TextEditingController();
@@ -135,6 +142,9 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
   String? _statusDevolucao;
   String _periodoSelecionado = _periodoUltimos30Dias;
   String _ordenacao = 'MAIS_RECENTES';
+  Set<String> _idsVendedoresSelecionados = <String>{};
+  List<ColaboradorUsuarioResumo> _vendedores =
+      const <ColaboradorUsuarioResumo>[];
   int _tamanhoPagina = 25;
   Timer? _salvarFiltrosDebounce;
 
@@ -142,12 +152,19 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
   bool _carregando = false;
   bool _aplicandoPreferencias = false;
   bool _usuarioAlterouFiltros = false;
+  bool _carregandoVendedores = true;
+  bool _falhaAoCarregarVendedores = false;
   String? _erro;
 
   @override
   void initState() {
     super.initState();
     _api = widget.apiClient ?? HttpConsultaVendasApiClient();
+    _vendedoresLoader =
+        widget.vendedoresLoader ??
+        () => HttpDesempenhoColaboradorApiClient().listarParticipantes(
+          incluirNaoAtivos: false,
+        );
     final DateTime hoje = _hojeNormalizado();
     _dataFinal = hoje;
     _dataInicial = hoje.subtract(const Duration(days: 29));
@@ -156,6 +173,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
     _buscaController.addListener(_onTextoFiltrosChanged);
     _valorMinimoController.addListener(_onTextoFiltrosChanged);
     _valorMaximoController.addListener(_onTextoFiltrosChanged);
+    unawaited(_carregarVendedores());
     Future<void>.microtask(() async {
       await _restaurarPreferenciasConsultaVendas();
       await _carregar(pagina: 0);
@@ -163,6 +181,45 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
         _restaurarPreferenciasConsultaVendasBackend(recarregarSeAlterou: true),
       );
     });
+  }
+
+  Future<void> _carregarVendedores() async {
+    try {
+      final List<ColaboradorUsuarioResumo> resultado =
+          await _vendedoresLoader();
+      final Map<String, ColaboradorUsuarioResumo> vendedoresPorId =
+          <String, ColaboradorUsuarioResumo>{};
+      for (final ColaboradorUsuarioResumo vendedor in resultado) {
+        final String id = vendedor.idUnicoPessoal.trim();
+        if (id.isNotEmpty && vendedor.ativo) {
+          vendedoresPorId[id] = vendedor;
+        }
+      }
+      final List<ColaboradorUsuarioResumo> vendedores = vendedoresPorId.values
+        .toList(growable: false)..sort(
+        (ColaboradorUsuarioResumo first, ColaboradorUsuarioResumo second) =>
+            _nomeVendedor(
+              first,
+            ).toLowerCase().compareTo(_nomeVendedor(second).toLowerCase()),
+      );
+      if (!mounted) return;
+      setState(() {
+        _vendedores = vendedores;
+        _falhaAoCarregarVendedores = false;
+      });
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Erro ao carregar vendedores da consulta de vendas: '
+        '$error\n$stackTrace',
+      );
+      if (mounted) {
+        setState(() => _falhaAoCarregarVendedores = true);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _carregandoVendedores = false);
+      }
+    }
   }
 
   @override
@@ -203,6 +260,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
       dataInicial: _dataInicial,
       dataFinal: _dataFinal,
       busca: _buscaController.text,
+      idsColaboradores: _idsVendedoresOrdenados(),
       statusFinanceiro: _statusFinanceiro,
       statusDevolucao: _statusDevolucao,
       valorMinimo: _parseNumero(_valorMinimoController.text),
@@ -330,6 +388,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
       _valorMaximoController.clear();
       _statusFinanceiro = null;
       _statusDevolucao = null;
+      _idsVendedoresSelecionados = <String>{};
       _ordenacao = 'MAIS_RECENTES';
       _tamanhoPagina = 25;
     });
@@ -388,6 +447,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
       _valorMaximoController.text = filtros.valorMaximo;
     }
     setState(() {
+      _idsVendedoresSelecionados = filtros.idsVendedores.toSet();
       _statusFinanceiro = filtros.statusFinanceiro;
       _statusDevolucao = filtros.statusDevolucao;
       _ordenacao = filtros.ordenacao;
@@ -458,6 +518,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
   ConsultaVendasFiltrosWebPreferencia _preferenciaConsultaVendasAtual() {
     return ConsultaVendasFiltrosWebPreferencia(
       busca: _buscaController.text,
+      idsVendedores: _idsVendedoresOrdenados(),
       periodo: _periodoPreferenciaAtual(_periodoSelecionado),
       dataInicio: _usaPeriodoPersonalizado ? _dataInicioPersonalizada : null,
       dataFim: _usaPeriodoPersonalizado ? _dataFimPersonalizada : null,
@@ -475,6 +536,7 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
         _preferenciaConsultaVendasAtual();
     return <String>[
       filtros.busca.trim(),
+      filtros.idsVendedores.join(','),
       filtros.periodo.codigo,
       filtros.dataInicio?.toIso8601String() ?? '',
       filtros.dataFim?.toIso8601String() ?? '',
@@ -489,12 +551,99 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
 
   bool get _temFiltrosAtivos =>
       _buscaController.text.trim().isNotEmpty ||
+      _idsVendedoresSelecionados.isNotEmpty ||
       _periodoSelecionado != _periodoUltimos30Dias ||
       _statusFinanceiro != null ||
       _statusDevolucao != null ||
       _valorMinimoController.text.trim().isNotEmpty ||
       _valorMaximoController.text.trim().isNotEmpty ||
       _ordenacao != 'MAIS_RECENTES';
+
+  List<String> _idsVendedoresOrdenados() {
+    final List<String> ids = _idsVendedoresSelecionados
+        .map((String id) => id.trim())
+        .where((String id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    ids.sort();
+    return ids;
+  }
+
+  String _nomeVendedor(ColaboradorUsuarioResumo vendedor) {
+    for (final String value in <String>[
+      vendedor.nomeDeGuerra,
+      vendedor.nome,
+      vendedor.email,
+      vendedor.idUnicoPessoal,
+    ]) {
+      final String normalized = value.trim();
+      if (normalized.isNotEmpty) return normalized;
+    }
+    return vendedor.idUnicoPessoal;
+  }
+
+  ColaboradorUsuarioResumo? _vendedorPorId(String id) {
+    for (final ColaboradorUsuarioResumo vendedor in _vendedores) {
+      if (vendedor.idUnicoPessoal.trim() == id.trim()) return vendedor;
+    }
+    return null;
+  }
+
+  String _quantidadeVendedoresLabel(BuildContext context, int count) {
+    return _text(
+      context,
+      count == 1
+          ? 'sales.query.oneSellerSelected'
+          : 'sales.query.sellersSelected',
+      pt: count == 1 ? '{count} vendedor' : '{count} vendedores',
+      en: count == 1 ? '{count} seller' : '{count} sellers',
+      es: count == 1 ? '{count} vendedor' : '{count} vendedores',
+    ).replaceAll('{count}', count.toString());
+  }
+
+  String _valorFiltroVendedores(BuildContext context) {
+    if (_idsVendedoresSelecionados.isEmpty) {
+      return _text(
+        context,
+        'sales.query.allSellers',
+        pt: 'Todos os vendedores',
+        en: 'All sellers',
+        es: 'Todos los vendedores',
+      );
+    }
+    if (_idsVendedoresSelecionados.length == 1) {
+      final ColaboradorUsuarioResumo? vendedor = _vendedorPorId(
+        _idsVendedoresSelecionados.first,
+      );
+      if (vendedor != null) return _nomeVendedor(vendedor);
+    }
+    return _quantidadeVendedoresLabel(
+      context,
+      _idsVendedoresSelecionados.length,
+    );
+  }
+
+  List<SixWebMultiSelectOption> _opcoesVendedoresWeb() {
+    final List<SixWebMultiSelectOption> options = _vendedores
+        .map((vendedor) {
+          final String label = _nomeVendedor(vendedor);
+          final String email = vendedor.email.trim();
+          return SixWebMultiSelectOption(
+            value: vendedor.idUnicoPessoal.trim(),
+            label: label,
+            subtitle: email.isNotEmpty && email != label ? email : null,
+          );
+        })
+        .toList(growable: true);
+    final Set<String> idsConhecidos =
+        options.map((SixWebMultiSelectOption option) => option.value).toSet();
+    for (final String id in _idsVendedoresOrdenados()) {
+      if (!idsConhecidos.contains(id)) {
+        options.add(SixWebMultiSelectOption(value: id, label: id));
+      }
+    }
+    return options;
+  }
 
   void _selecionarPeriodoFiltro(String selected) {
     if (!_periodosFiltroData.contains(selected) ||
@@ -925,6 +1074,73 @@ class _ConsultaVendasWebPageState extends State<ConsultaVendasWebPage> {
                       _selecionarPeriodoFiltro(
                         _periodoValueFromLabel(context, selected),
                       );
+                    },
+                  ),
+                  SixWebMultiSelectField(
+                    width: campoMedioLargura,
+                    label: _text(
+                      context,
+                      'sales.query.sellers',
+                      pt: 'Vendedores',
+                      en: 'Sellers',
+                      es: 'Vendedores',
+                    ),
+                    value:
+                        _carregandoVendedores &&
+                                _idsVendedoresSelecionados.isEmpty
+                            ? _text(
+                              context,
+                              'sales.query.loadingSellers',
+                              pt: 'Carregando vendedores...',
+                              en: 'Loading sellers...',
+                              es: 'Cargando vendedores...',
+                            )
+                            : _valorFiltroVendedores(context),
+                    options: _opcoesVendedoresWeb(),
+                    selectedValues: _idsVendedoresSelecionados,
+                    allLabel: _text(
+                      context,
+                      'sales.query.allSellers',
+                      pt: 'Todos os vendedores',
+                      en: 'All sellers',
+                      es: 'Todos los vendedores',
+                    ),
+                    searchHint: _text(
+                      context,
+                      'sales.query.searchSeller',
+                      pt: 'Buscar vendedor',
+                      en: 'Search seller',
+                      es: 'Buscar vendedor',
+                    ),
+                    emptyLabel: _text(
+                      context,
+                      _falhaAoCarregarVendedores
+                          ? 'sales.query.sellersLoadError'
+                          : 'sales.query.noSellers',
+                      pt:
+                          _falhaAoCarregarVendedores
+                              ? 'Não foi possível carregar os vendedores.'
+                              : 'Nenhum vendedor encontrado.',
+                      en:
+                          _falhaAoCarregarVendedores
+                              ? 'Could not load sellers.'
+                              : 'No sellers found.',
+                      es:
+                          _falhaAoCarregarVendedores
+                              ? 'No se pudieron cargar los vendedores.'
+                              : 'No se encontraron vendedores.',
+                    ),
+                    icon: Icons.people_alt_outlined,
+                    enabled:
+                        !_carregandoVendedores ||
+                        _idsVendedoresSelecionados.isNotEmpty,
+                    onChanged: (Set<String> selectedValues) {
+                      setState(() {
+                        _idsVendedoresSelecionados = Set<String>.from(
+                          selectedValues,
+                        );
+                      });
+                      _onFiltroAlterado(salvarImediatamente: true);
                     },
                   ),
                   SixWebSelectField(

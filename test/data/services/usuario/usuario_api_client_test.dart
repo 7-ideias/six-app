@@ -58,11 +58,13 @@ void main() {
           'busca': 'joao',
           'periodo': 'ULTIMOS_30_DIAS',
           'statusFinanceiro': 'QUITADA',
+          'idsVendedores': <String>['vendedor-1', 'vendedor-2'],
           'ordenacao': 'MAIOR_VALOR',
         },
         'consultaVendasFiltrosMobile': <String, dynamic>{
           'busca': 'cliente mobile',
           'periodo': 'HOJE',
+          'idsVendedores': <String>['vendedor-3'],
         },
         'atendimentosCriadosFiltrosWeb': <String, dynamic>{
           'busca': 'cliente teste',
@@ -131,11 +133,13 @@ void main() {
           'busca': 'joao',
           'periodo': 'ULTIMOS_30_DIAS',
           'statusFinanceiro': 'QUITADA',
+          'idsVendedores': <String>['vendedor-1', 'vendedor-2'],
           'ordenacao': 'MAIOR_VALOR',
         },
         'consultaVendasFiltrosMobile': <String, dynamic>{
           'busca': 'cliente mobile',
           'periodo': 'HOJE',
+          'idsVendedores': <String>['vendedor-3'],
         },
         'atendimentosCriadosFiltrosWeb': <String, dynamic>{
           'busca': 'cliente teste',
