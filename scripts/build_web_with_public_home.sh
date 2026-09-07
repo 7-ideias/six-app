@@ -60,6 +60,7 @@ if [ -f web/flutter_service_worker.js ]; then
 fi
 
 bash scripts/verify_web_strategy_a.sh
+bash scripts/verify_public_legal_pages.sh
 
 echo "[LOG SIX] Public home: build/web/index.html"
 echo "[LOG SIX] Public login: build/web/login.html"
