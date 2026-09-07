@@ -5,10 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_config.dart';
 import '../exceptions/google_auth_exception.dart';
 import '../../data/models/auth_response_model.dart';
+import 'empresa_service.dart';
 import 'google_auth_platform_stub.dart'
     if (dart.library.io) 'google_auth_platform_io.dart';
 import 'http_client_factory.dart';
@@ -81,7 +83,8 @@ class GoogleAuthService {
   Future<AuthResponseModel> signIn({
     GoogleAuthIntent intent = GoogleAuthIntent.login,
     bool aceiteTermos = false,
-    required String idioma,
+    String idioma = 'pt-BR',
+    bool persistSession = false,
   }) async {
     if (kIsWeb) {
       throw const GoogleAuthException(
@@ -122,6 +125,7 @@ class GoogleAuthService {
         idioma: idioma,
       );
       _pendingCredentials = null;
+      if (persistSession) await _persistSession(response);
       return response;
     } on GoogleAuthException catch (error) {
       if (error.code != GoogleAuthErrorCode.linkRequired) {
@@ -135,7 +139,8 @@ class GoogleAuthService {
     required String senha,
     required GoogleAuthIntent intent,
     required bool aceiteTermos,
-    required String idioma,
+    String idioma = 'pt-BR',
+    bool persistSession = false,
   }) async {
     final _GoogleCredentials? credentials = _pendingCredentials;
     if (credentials == null) {
@@ -169,7 +174,10 @@ class GoogleAuthService {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       _pendingCredentials = null;
       final dynamic decoded = jsonDecode(response.body);
-      return AuthResponseModel.fromJson(decoded as Map<String, dynamic>);
+      final AuthResponseModel authData =
+          AuthResponseModel.fromJson(decoded as Map<String, dynamic>);
+      if (persistSession) await _persistSession(authData);
+      return authData;
     }
 
     throw GoogleAuthException.fromResponse(
@@ -231,6 +239,34 @@ class GoogleAuthService {
       statusCode: response.statusCode,
       body: response.body,
     );
+  }
+
+  Future<void> _persistSession(AuthResponseModel authData) async {
+    if (kIsWeb) return;
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('accessToken', authData.accessToken);
+    if (authData.refreshToken.trim().isNotEmpty) {
+      await prefs.setString('refreshToken', authData.refreshToken);
+    }
+    await prefs.setString('userData', jsonEncode(authData.usuario.toJson()));
+    if (authData.idUnicoDaEmpresa.isNotEmpty) {
+      await prefs.setString('idUnicoDaEmpresa', authData.idUnicoDaEmpresa.first);
+    }
+    if (authData.expiresIn > 0) {
+      await prefs.setString(
+        'accessTokenExpiresAt',
+        DateTime.now()
+            .add(Duration(seconds: authData.expiresIn))
+            .toUtc()
+            .toIso8601String(),
+      );
+    }
+
+    try {
+      await EmpresaService().buscarDadosDaEmpresa();
+    } catch (error) {
+      debugPrint('Dados da empresa serão carregados sob demanda: $error');
+    }
   }
 
   Future<AuthResponseModel> awaitWebSignIn({
