@@ -3,6 +3,13 @@
   gap: 12px;
 }
 
+.google-auth-primary {
+  padding: 16px;
+  border: 1px solid rgba(20, 91, 255, 0.14);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(20, 91, 255, 0.035), rgba(20, 91, 255, 0.015));
+}
+
 .google-auth-button-shell {
   width: 100%;
   min-height: 44px;
@@ -49,6 +56,84 @@
   content: '';
   height: 1px;
   background: var(--editorial-line);
+}
+
+.auth-method-details {
+  overflow: hidden;
+  border: 1px solid var(--editorial-line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.auth-method-summary {
+  min-height: 68px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  color: var(--editorial-ink);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.auth-method-summary::-webkit-details-marker {
+  display: none;
+}
+
+.auth-method-summary:hover {
+  background: rgba(23, 23, 23, 0.025);
+}
+
+.auth-method-summary-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--editorial-soft);
+  color: var(--editorial-ink);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.auth-method-summary-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.auth-method-summary-copy strong {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.auth-method-summary-copy small {
+  color: var(--editorial-muted);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.auth-method-summary-chevron {
+  color: var(--editorial-muted);
+  font-size: 18px;
+  transition: transform 160ms ease;
+}
+
+.auth-method-details[open] .auth-method-summary-chevron {
+  transform: rotate(180deg);
+}
+
+.auth-method-details-body {
+  display: grid;
+  gap: 18px;
+  padding: 2px 14px 16px;
+}
+
+.auth-method-details[open] .auth-method-summary {
+  border-bottom: 1px solid var(--editorial-line);
 }
 
 .google-link-panel {
@@ -112,5 +197,23 @@
 @media (max-width: 520px) {
   .google-link-actions {
     grid-template-columns: 1fr;
+  }
+
+  .google-auth-primary {
+    padding: 14px;
+  }
+
+  .auth-method-summary {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    padding-inline: 12px;
+  }
+
+  .auth-method-summary-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .auth-method-details-body {
+    padding-inline: 12px;
   }
 }
