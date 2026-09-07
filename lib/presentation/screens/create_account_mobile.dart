@@ -7,6 +7,7 @@ import 'package:sixpos/presentation/components/mobile/sixoapp_auth_mobile_kit.da
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 
 import '../../core/exceptions/google_auth_exception.dart';
+import '../../core/services/auth_service.dart';
 import '../../core/services/google_auth_service.dart';
 import '../../core/services/nova_empresa_service.dart';
 import 'conta_criada_mobile.dart';
@@ -26,7 +27,7 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
   final NovaEmpresaService _novaEmpresaService = NovaEmpresaService();
-  final GoogleAuthService _googleAuthService = GoogleAuthService();
+  final AuthService _authService = AuthService();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -65,11 +66,10 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
     FocusScope.of(context).unfocus();
     setState(() => _isLoading = true);
     try {
-      await _googleAuthService.signIn(
+      await _authService.loginWithGoogle(
         intent: GoogleAuthIntent.registration,
         aceiteTermos: true,
         idioma: _languageTag,
-        persistSession: true,
       );
       if (!mounted) return;
       _navigateToPostLoginSplash();
@@ -104,12 +104,11 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
 
     setState(() => _isLoading = true);
     try {
-      await _googleAuthService.linkPendingAccount(
+      await _authService.linkPendingGoogleAccount(
         senha: password,
         intent: GoogleAuthIntent.registration,
         aceiteTermos: true,
         idioma: _languageTag,
-        persistSession: true,
       );
       if (!mounted) return;
       _navigateToPostLoginSplash();
