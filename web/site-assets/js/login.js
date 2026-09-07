@@ -101,7 +101,7 @@ import {
     passwordVisible: false,
     submitting: false,
     googleBusy: false,
-    pendingGoogleIdToken: null,
+    pendingGoogleAccessToken: null,
   };
 
   function copy(key) {
@@ -113,10 +113,7 @@ import {
   }
 
   function destination() {
-    return resolvePublicLoginRedirect(
-      window.location.search,
-      window.location.origin,
-    );
+    return resolvePublicLoginRedirect(window.location.search, window.location.origin);
   }
 
   function setFeedback(elements, key, focus = false) {
@@ -151,21 +148,21 @@ import {
     elements.passwordToggleLabel.textContent = copy(labelKey);
   }
 
+  function updateGoogleAvailability(elements) {
+    const disabled = state.mobileBlocked || state.submitting || state.googleBusy || !state.googleClientId;
+    elements.googleButtonShell.classList.toggle('is-disabled', disabled);
+    const button = elements.googleButtonShell.querySelector('button');
+    if (button) button.disabled = disabled;
+    elements.googleLinkSubmit.disabled = state.googleBusy;
+    elements.googleLinkCancel.disabled = state.googleBusy;
+    elements.googleLinkPassword.disabled = state.googleBusy;
+  }
+
   function applyMobileBlockState(elements) {
     elements.mobileBlock.hidden = !state.mobileBlocked;
     elements.card.classList.toggle('is-mobile-blocked', state.mobileBlocked);
     elements.form.setAttribute('aria-disabled', state.mobileBlocked ? 'true' : 'false');
     updateGoogleAvailability(elements);
-  }
-
-  function updateGoogleAvailability(elements) {
-    elements.googleButtonShell.classList.toggle(
-      'is-disabled',
-      state.mobileBlocked || state.submitting || state.googleBusy || !state.googleClientId,
-    );
-    elements.googleLinkSubmit.disabled = state.googleBusy;
-    elements.googleLinkCancel.disabled = state.googleBusy;
-    elements.googleLinkPassword.disabled = state.googleBusy;
   }
 
   function setLoading(elements, isLoading) {
@@ -225,6 +222,7 @@ import {
     }
     const values = validateForm(elements);
     if (!values) return;
+
     setLoading(elements, true);
     try {
       await performPublicLogin({
@@ -242,13 +240,13 @@ import {
   }
 
   function hideGoogleLink(elements) {
-    state.pendingGoogleIdToken = null;
+    state.pendingGoogleAccessToken = null;
     elements.googleLinkPassword.value = '';
     elements.googleLinkPanel.hidden = true;
   }
 
-  function showGoogleLink(elements, idToken) {
-    state.pendingGoogleIdToken = idToken;
+  function showGoogleLink(elements, accessToken) {
+    state.pendingGoogleAccessToken = accessToken;
     elements.googleLinkPanel.hidden = false;
     setFeedback(elements, 'google.link.required', false);
     elements.googleLinkPassword.focus();
@@ -256,11 +254,17 @@ import {
 
   async function handleGoogleCredential(elements, response) {
     if (state.mobileBlocked || state.googleBusy || state.submitting) return;
-    const idToken = String(response?.credential || '').trim();
-    if (!idToken) {
+    if (response?.error) {
       setFeedback(elements, 'google.error.invalidCredential', true);
       return;
     }
+
+    const accessToken = String(response?.access_token || '').trim();
+    if (!accessToken) {
+      setFeedback(elements, 'google.error.invalidCredential', true);
+      return;
+    }
+
     clearFeedback(elements);
     elements.googleRegisterHint.hidden = true;
     hideGoogleLink(elements);
@@ -268,7 +272,7 @@ import {
     try {
       await performGoogleLogin({
         apiBaseUrl: state.apiConfig.apiBaseUrl,
-        idToken,
+        accessToken,
         idioma: state.language,
       });
       window.location.replace(destination());
@@ -276,7 +280,7 @@ import {
       setGoogleBusy(elements, false);
       const key = googleErrorKey(error, 'login');
       if (key === 'google.link.required') {
-        showGoogleLink(elements, idToken);
+        showGoogleLink(elements, accessToken);
         return;
       }
       if (key === 'google.error.registrationRequired') {
@@ -287,19 +291,20 @@ import {
   }
 
   async function handleGoogleLink(elements) {
-    if (!state.pendingGoogleIdToken || state.googleBusy) return;
+    if (!state.pendingGoogleAccessToken || state.googleBusy) return;
     const senha = elements.googleLinkPassword.value;
     if (!senha) {
       setFeedback(elements, 'google.link.passwordRequired', true);
       elements.googleLinkPassword.focus();
       return;
     }
+
     clearFeedback(elements);
     setGoogleBusy(elements, true);
     try {
       await performGoogleLink({
         apiBaseUrl: state.apiConfig.apiBaseUrl,
-        idToken: state.pendingGoogleIdToken,
+        accessToken: state.pendingGoogleAccessToken,
         senha,
         fluxo: 'LOGIN',
         aceiteTermos: false,
@@ -358,7 +363,7 @@ import {
   }
 
   function hasRequiredElements(elements) {
-    return Object.keys(elements).every((key) => Boolean(elements[key]));
+    return Object.values(elements).every(Boolean);
   }
 
   function initialize() {
@@ -387,24 +392,13 @@ import {
     state.mobileBlocked = shouldBlockPublicLoginOnMobile(window);
     updatePasswordToggle(elements);
     applyMobileBlockState(elements);
+
     elements.passwordToggle.addEventListener('click', () => {
       state.passwordVisible = !state.passwordVisible;
       updatePasswordToggle(elements);
       elements.password.focus();
     });
-
-    if (!state.mobileBlocked) {
-      try {
-        state.apiConfig = resolvePublicApiConfig(window.SIXAPP_PUBLIC_CONFIG);
-        state.googleClientId = resolveGoogleWebClientId(window.SIXAPP_PUBLIC_CONFIG);
-      } catch (_) {
-        disableForConfigError(elements);
-      }
-    }
-
-    elements.googleLinkSubmit.addEventListener('click', () => {
-      void handleGoogleLink(elements);
-    });
+    elements.googleLinkSubmit.addEventListener('click', () => void handleGoogleLink(elements));
     elements.googleLinkCancel.addEventListener('click', () => {
       hideGoogleLink(elements);
       clearFeedback(elements);
@@ -415,6 +409,15 @@ import {
         void handleGoogleLink(elements);
       }
     });
+
+    if (!state.mobileBlocked) {
+      try {
+        state.apiConfig = resolvePublicApiConfig(window.SIXAPP_PUBLIC_CONFIG);
+        state.googleClientId = resolveGoogleWebClientId(window.SIXAPP_PUBLIC_CONFIG);
+      } catch (_) {
+        disableForConfigError(elements);
+      }
+    }
 
     setLoading(elements, false);
     elements.form.addEventListener('submit', (event) => handleSubmit(elements, event));
