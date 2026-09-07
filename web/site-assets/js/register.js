@@ -27,15 +27,15 @@ import {
 
   const GOOGLE_COPY = Object.freeze({
     pt: Object.freeze({
-      'google.helper.enabled': 'Continue com sua Conta Google. O acesso ficará vinculado ao SixoApp.',
-      'google.helper.disabled': 'Aceite os termos acima para continuar com Google.',
+      'google.helper.enabled': 'Crie sua conta diretamente com o Google. Nenhuma senha do SixoApp será criada.',
+      'google.helper.disabled': 'Aceite os termos acima para criar sua conta com Google.',
       'google.divider': 'ou crie com login e senha',
       'google.terms.prefix': 'Concordo com os ',
       'google.terms.link': 'Termos de Serviço',
       'google.privacy.prefix': ' e a ',
       'google.privacy.link': 'Política de Privacidade',
       'google.link.title': 'Este e-mail já possui um acesso SixoApp',
-      'google.link.body': 'Informe sua senha atual para vincular a Conta Google. Se você for colaborador em outro comércio, sua nova empresa continuará separada.',
+      'google.link.body': 'Informe sua senha atual somente para vincular esta Conta Google ao acesso existente. Sua senha não será alterada.',
       'google.link.password': 'Senha atual',
       'google.link.submit': 'Vincular e criar minha empresa',
       'google.link.cancel': 'Cancelar',
@@ -52,15 +52,15 @@ import {
       'google.error.registrationRequired': 'Não foi possível localizar o cadastro.',
     }),
     en: Object.freeze({
-      'google.helper.enabled': 'Continue with your Google Account. It will be linked to SixoApp.',
-      'google.helper.disabled': 'Accept the terms above to continue with Google.',
+      'google.helper.enabled': 'Create your account directly with Google. No SixoApp password will be created.',
+      'google.helper.disabled': 'Accept the terms above to create your account with Google.',
       'google.divider': 'or create a login and password',
       'google.terms.prefix': 'I agree to the ',
       'google.terms.link': 'Terms of Service',
       'google.privacy.prefix': ' and the ',
       'google.privacy.link': 'Privacy Policy',
       'google.link.title': 'This email already has SixoApp access',
-      'google.link.body': 'Enter your current password to link your Google Account. If you collaborate with another business, your new company will remain separate.',
+      'google.link.body': 'Enter your current password only to link this Google Account to your existing access. Your password will not be changed.',
       'google.link.password': 'Current password',
       'google.link.submit': 'Link and create my company',
       'google.link.cancel': 'Cancel',
@@ -77,15 +77,15 @@ import {
       'google.error.registrationRequired': 'Could not find the registration.',
     }),
     es: Object.freeze({
-      'google.helper.enabled': 'Continúa con tu Cuenta de Google. Quedará vinculada a SixoApp.',
-      'google.helper.disabled': 'Acepta los términos de arriba para continuar con Google.',
+      'google.helper.enabled': 'Crea tu cuenta directamente con Google. No se creará una contraseña de SixoApp.',
+      'google.helper.disabled': 'Acepta los términos para crear tu cuenta con Google.',
       'google.divider': 'o crea un login y contraseña',
       'google.terms.prefix': 'Acepto los ',
       'google.terms.link': 'Términos de Servicio',
       'google.privacy.prefix': ' y la ',
       'google.privacy.link': 'Política de Privacidad',
       'google.link.title': 'Este e-mail ya tiene acceso a SixoApp',
-      'google.link.body': 'Informa tu contraseña actual para vincular la Cuenta de Google. Si colaboras con otro comercio, tu nueva empresa seguirá separada.',
+      'google.link.body': 'Informa tu contraseña actual solo para vincular esta Cuenta de Google al acceso existente. Tu contraseña no será modificada.',
       'google.link.password': 'Contraseña actual',
       'google.link.submit': 'Vincular y crear mi empresa',
       'google.link.cancel': 'Cancelar',
@@ -111,9 +111,8 @@ import {
     confirmPasswordVisible: false,
     submitting: false,
     googleBusy: false,
-    pendingGoogleIdToken: null,
+    pendingGoogleAccessToken: null,
     feedbackKey: null,
-    mismatchVisible: false,
     completed: false,
   };
 
@@ -138,7 +137,7 @@ import {
     elements.feedback.textContent = '';
   }
 
-  function updateGoogleCopy(elements) {
+  function updateCopy(elements) {
     elements.googleDivider.textContent = copy('google.divider');
     elements.googleTermsPrefix.textContent = copy('google.terms.prefix');
     elements.googleTermsLink.textContent = copy('google.terms.link');
@@ -152,17 +151,15 @@ import {
     updateGoogleAvailability(elements);
   }
 
-  function updatePasswordToggle(elements, type) {
-    const isConfirm = type === 'confirm';
-    const visible = isConfirm ? state.confirmPasswordVisible : state.passwordVisible;
-    const input = isConfirm ? elements.confirmPassword : elements.password;
-    const toggle = isConfirm ? elements.confirmPasswordToggle : elements.passwordToggle;
-    const label = isConfirm ? elements.confirmPasswordToggleLabel : elements.passwordToggleLabel;
+  function updatePasswordToggle(elements, confirm = false) {
+    const visible = confirm ? state.confirmPasswordVisible : state.passwordVisible;
+    const input = confirm ? elements.confirmPassword : elements.password;
+    const toggle = confirm ? elements.confirmPasswordToggle : elements.passwordToggle;
+    const label = confirm ? elements.confirmPasswordToggleLabel : elements.passwordToggleLabel;
     const textKey = visible ? 'form.password.hide' : 'form.password.show';
-    const ariaKey = isConfirm
+    const ariaKey = confirm
       ? (visible ? 'form.confirmPassword.hideAria' : 'form.confirmPassword.showAria')
       : (visible ? 'form.password.hideAria' : 'form.password.showAria');
-
     input.type = visible ? 'text' : 'password';
     toggle.setAttribute('aria-pressed', visible ? 'true' : 'false');
     toggle.setAttribute('aria-label', copy(ariaKey));
@@ -170,11 +167,12 @@ import {
   }
 
   function updateMismatch(elements) {
-    const hasConfirmation = elements.confirmPassword.value.length > 0;
-    const mismatched = hasConfirmation && elements.password.value !== elements.confirmPassword.value;
-    state.mismatchVisible = mismatched;
+    const mismatched = elements.confirmPassword.value.length > 0 &&
+      elements.password.value !== elements.confirmPassword.value;
     elements.passwordMatchFeedback.hidden = !mismatched;
-    elements.passwordMatchFeedback.textContent = mismatched ? copy('error.passwordMismatch') : '';
+    elements.passwordMatchFeedback.textContent = mismatched
+      ? copy('error.passwordMismatch')
+      : '';
   }
 
   function updateGoogleAvailability(elements) {
@@ -186,6 +184,8 @@ import {
       !state.completed,
     );
     elements.googleButtonShell.classList.toggle('is-disabled', !enabled);
+    const button = elements.googleButtonShell.querySelector('button');
+    if (button) button.disabled = !enabled;
     elements.googleHelper.textContent = copy(
       enabled ? 'google.helper.enabled' : 'google.helper.disabled',
     );
@@ -194,10 +194,10 @@ import {
     elements.googleLinkPassword.disabled = state.googleBusy;
   }
 
-  function setLoading(elements, isLoading) {
-    state.submitting = isLoading;
-    elements.form.setAttribute('aria-busy', isLoading ? 'true' : 'false');
-    const disabled = isLoading || state.apiConfig === null || state.completed;
+  function setLoading(elements, loading) {
+    state.submitting = loading;
+    elements.form.setAttribute('aria-busy', loading ? 'true' : 'false');
+    const disabled = loading || state.apiConfig === null || state.completed;
     elements.submit.disabled = disabled;
     elements.login.disabled = disabled;
     elements.password.disabled = disabled;
@@ -205,8 +205,8 @@ import {
     elements.terms.disabled = disabled;
     elements.passwordToggle.disabled = disabled;
     elements.confirmPasswordToggle.disabled = disabled;
-    elements.submit.classList.toggle('is-loading', isLoading);
-    elements.submitLabel.textContent = copy(isLoading ? 'form.loading' : 'form.submit');
+    elements.submit.classList.toggle('is-loading', loading);
+    elements.submitLabel.textContent = copy(loading ? 'form.loading' : 'form.submit');
     updateGoogleAvailability(elements);
   }
 
@@ -215,38 +215,17 @@ import {
     updateGoogleAvailability(elements);
   }
 
-  function disableForConfigError(elements) {
-    state.apiConfig = null;
-    setLoading(elements, false);
-    setFeedback(elements, 'error.config', false);
-  }
-
   function focusValidationTarget(elements, error) {
     if (!(error instanceof PublicRegisterValidationError)) return;
-    if (error.code === 'terms') {
-      elements.terms.focus();
-      return;
-    }
-    if (error.code === 'passwordTooShort') {
-      elements.password.focus();
-      return;
-    }
-    if (error.code === 'passwordMismatch') {
-      elements.confirmPassword.focus();
-      return;
-    }
-    if (!elements.login.value.trim()) {
-      elements.login.focus();
-      return;
-    }
-    if (!elements.password.value) {
-      elements.password.focus();
-      return;
-    }
+    if (error.code === 'terms') return elements.terms.focus();
+    if (error.code === 'passwordTooShort') return elements.password.focus();
+    if (error.code === 'passwordMismatch') return elements.confirmPassword.focus();
+    if (!elements.login.value.trim()) return elements.login.focus();
+    if (!elements.password.value) return elements.password.focus();
     elements.confirmPassword.focus();
   }
 
-  function validateForm(elements) {
+  function validateTraditional(elements) {
     try {
       return validateRegisterFields({
         login: elements.login.value,
@@ -262,26 +241,6 @@ import {
     }
   }
 
-  function clearSensitiveFields(elements) {
-    elements.login.value = '';
-    elements.password.value = '';
-    elements.confirmPassword.value = '';
-    elements.terms.checked = false;
-    elements.googleLinkPassword.value = '';
-    updateMismatch(elements);
-    updateGoogleAvailability(elements);
-  }
-
-  function showSuccess(elements) {
-    state.completed = true;
-    clearSensitiveFields(elements);
-    clearFeedback(elements);
-    setLoading(elements, false);
-    elements.formCard.hidden = true;
-    elements.successCard.hidden = false;
-    elements.successTitle.focus({ preventScroll: false });
-  }
-
   async function handleSubmit(elements, event) {
     event.preventDefault();
     if (state.submitting || state.googleBusy) {
@@ -290,11 +249,12 @@ import {
     }
     clearFeedback(elements);
     if (state.apiConfig === null) {
-      disableForConfigError(elements);
+      setFeedback(elements, 'error.config', true);
       return;
     }
-    const values = validateForm(elements);
+    const values = validateTraditional(elements);
     if (!values) return;
+
     setLoading(elements, true);
     try {
       await performPublicRegister({
@@ -305,7 +265,12 @@ import {
         aceitaTermos: elements.terms.checked,
         timeoutMs: REGISTER_TIMEOUT_MS,
       });
-      showSuccess(elements);
+      state.completed = true;
+      elements.password.value = '';
+      elements.confirmPassword.value = '';
+      elements.formCard.hidden = true;
+      elements.successCard.hidden = false;
+      elements.successTitle.focus({ preventScroll: false });
     } catch (error) {
       setLoading(elements, false);
       setFeedback(elements, registerErrorKeyFromError(error), true);
@@ -313,13 +278,13 @@ import {
   }
 
   function hideGoogleLink(elements) {
-    state.pendingGoogleIdToken = null;
+    state.pendingGoogleAccessToken = null;
     elements.googleLinkPassword.value = '';
     elements.googleLinkPanel.hidden = true;
   }
 
-  function showGoogleLink(elements, idToken) {
-    state.pendingGoogleIdToken = idToken;
+  function showGoogleLink(elements, accessToken) {
+    state.pendingGoogleAccessToken = accessToken;
     elements.googleLinkPanel.hidden = false;
     setFeedback(elements, 'google.link.required', false);
     elements.googleLinkPassword.focus();
@@ -332,18 +297,24 @@ import {
       elements.terms.focus();
       return;
     }
-    const idToken = String(response?.credential || '').trim();
-    if (!idToken) {
+    if (response?.error) {
       setFeedback(elements, 'google.error.invalidCredential', true);
       return;
     }
+
+    const accessToken = String(response?.access_token || '').trim();
+    if (!accessToken) {
+      setFeedback(elements, 'google.error.invalidCredential', true);
+      return;
+    }
+
     clearFeedback(elements);
     hideGoogleLink(elements);
     setGoogleBusy(elements, true);
     try {
       await performGoogleRegistration({
         apiBaseUrl: state.apiConfig.apiBaseUrl,
-        idToken,
+        accessToken,
         aceiteTermos: true,
         idioma: state.language,
       });
@@ -352,7 +323,7 @@ import {
       setGoogleBusy(elements, false);
       const key = googleErrorKey(error, 'register');
       if (key === 'google.link.required') {
-        showGoogleLink(elements, idToken);
+        showGoogleLink(elements, accessToken);
         return;
       }
       setFeedback(elements, key, true);
@@ -360,9 +331,10 @@ import {
   }
 
   async function handleGoogleLink(elements) {
-    if (!state.pendingGoogleIdToken || state.googleBusy) return;
+    if (!state.pendingGoogleAccessToken || state.googleBusy) return;
     if (!elements.terms.checked) {
       setFeedback(elements, 'google.error.termsRequired', true);
+      elements.terms.focus();
       return;
     }
     const senha = elements.googleLinkPassword.value;
@@ -371,12 +343,13 @@ import {
       elements.googleLinkPassword.focus();
       return;
     }
+
     clearFeedback(elements);
     setGoogleBusy(elements, true);
     try {
       await performGoogleLink({
         apiBaseUrl: state.apiConfig.apiBaseUrl,
-        idToken: state.pendingGoogleIdToken,
+        accessToken: state.pendingGoogleAccessToken,
         senha,
         fluxo: 'CADASTRO',
         aceiteTermos: true,
@@ -441,56 +414,48 @@ import {
     };
   }
 
-  function hasRequiredElements(elements) {
-    return Object.keys(elements).every((key) => Boolean(elements[key]));
-  }
-
   function initialize() {
     const elements = collectElements();
-    if (!hasRequiredElements(elements)) return;
+    if (!Object.values(elements).every(Boolean)) return;
 
     document.documentElement.classList.add('has-js');
     state.language = applyPublicLanguage({
       dictionary: REGISTER_DICTIONARY,
       language: selectPublicLanguage(),
     });
-    updateGoogleCopy(elements);
+    updateCopy(elements);
 
     setupPublicLanguageSwitcher({
       dictionary: REGISTER_DICTIONARY,
       onChange: (language) => {
         state.language = language;
-        updatePasswordToggle(elements, 'password');
-        updatePasswordToggle(elements, 'confirm');
+        updatePasswordToggle(elements, false);
+        updatePasswordToggle(elements, true);
         updateMismatch(elements);
-        updateGoogleCopy(elements);
+        updateCopy(elements);
         if (state.feedbackKey) elements.feedback.textContent = copy(state.feedbackKey);
-        setLoading(elements, state.submitting);
         void renderGoogle(elements);
       },
     });
 
-    updatePasswordToggle(elements, 'password');
-    updatePasswordToggle(elements, 'confirm');
-
+    updatePasswordToggle(elements, false);
+    updatePasswordToggle(elements, true);
     elements.passwordToggle.addEventListener('click', () => {
       state.passwordVisible = !state.passwordVisible;
-      updatePasswordToggle(elements, 'password');
+      updatePasswordToggle(elements, false);
       elements.password.focus();
     });
     elements.confirmPasswordToggle.addEventListener('click', () => {
       state.confirmPasswordVisible = !state.confirmPasswordVisible;
-      updatePasswordToggle(elements, 'confirm');
+      updatePasswordToggle(elements, true);
       elements.confirmPassword.focus();
     });
     elements.password.addEventListener('input', () => updateMismatch(elements));
     elements.confirmPassword.addEventListener('input', () => updateMismatch(elements));
     elements.terms.addEventListener('change', () => updateGoogleAvailability(elements));
-
     elements.successLogin.addEventListener('click', () => {
       window.location.replace(REGISTER_SUCCESS_LOGIN_PATH);
     });
-
     elements.googleLinkSubmit.addEventListener('click', () => void handleGoogleLink(elements));
     elements.googleLinkCancel.addEventListener('click', () => {
       hideGoogleLink(elements);
@@ -507,7 +472,8 @@ import {
       state.apiConfig = resolvePublicApiConfig(window.SIXAPP_PUBLIC_CONFIG);
       state.googleClientId = resolveGoogleWebClientId(window.SIXAPP_PUBLIC_CONFIG);
     } catch (_) {
-      disableForConfigError(elements);
+      state.apiConfig = null;
+      setFeedback(elements, 'error.config', false);
     }
 
     setLoading(elements, false);
