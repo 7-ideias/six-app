@@ -27,6 +27,8 @@ import {
 
   const GOOGLE_COPY = Object.freeze({
     pt: Object.freeze({
+      'google.form.subtitle': 'Crie com Google sem senha do SixoApp ou escolha um login e senha tradicionais.',
+      'google.traditional.subtitle': 'Use esta opção somente se preferir criar um login e uma senha do SixoApp.',
       'google.helper.enabled': 'Crie sua conta diretamente com o Google. Nenhuma senha do SixoApp será criada.',
       'google.helper.disabled': 'Aceite os termos acima para criar sua conta com Google.',
       'google.divider': 'ou crie com login e senha',
@@ -52,6 +54,8 @@ import {
       'google.error.registrationRequired': 'Não foi possível localizar o cadastro.',
     }),
     en: Object.freeze({
+      'google.form.subtitle': 'Create with Google without a SixoApp password, or choose a traditional login and password.',
+      'google.traditional.subtitle': 'Use this option only if you prefer to create a SixoApp login and password.',
       'google.helper.enabled': 'Create your account directly with Google. No SixoApp password will be created.',
       'google.helper.disabled': 'Accept the terms above to create your account with Google.',
       'google.divider': 'or create a login and password',
@@ -77,6 +81,8 @@ import {
       'google.error.registrationRequired': 'Could not find the registration.',
     }),
     es: Object.freeze({
+      'google.form.subtitle': 'Crea con Google sin contraseña de SixoApp o elige un login y contraseña tradicionales.',
+      'google.traditional.subtitle': 'Usa esta opción solo si prefieres crear un login y una contraseña de SixoApp.',
       'google.helper.enabled': 'Crea tu cuenta directamente con Google. No se creará una contraseña de SixoApp.',
       'google.helper.disabled': 'Acepta los términos para crear tu cuenta con Google.',
       'google.divider': 'o crea un login y contraseña',
@@ -138,6 +144,8 @@ import {
   }
 
   function updateCopy(elements) {
+    elements.formSubtitle.textContent = copy('google.form.subtitle');
+    elements.traditionalSubtitle.textContent = copy('google.traditional.subtitle');
     elements.googleDivider.textContent = copy('google.divider');
     elements.googleTermsPrefix.textContent = copy('google.terms.prefix');
     elements.googleTermsLink.textContent = copy('google.terms.link');
@@ -381,6 +389,8 @@ import {
   function collectElements() {
     return {
       formCard: document.querySelector('[data-register-form-card]'),
+      formSubtitle: document.querySelector('.register-card-header p'),
+      traditionalSubtitle: document.querySelector('.auth-method-summary-copy small'),
       successCard: document.querySelector('[data-register-success-card]'),
       successTitle: document.querySelector('[data-register-success-title]'),
       successLogin: document.querySelector('[data-register-success-login]'),
