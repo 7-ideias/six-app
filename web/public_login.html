@@ -73,7 +73,7 @@
             <p data-i18n="mobileBlock.body">Este login web não está disponível em navegador de celular. Para continuar, use um computador.</p>
           </section>
 
-          <div class="google-auth-section" data-google-auth-section>
+          <div class="google-auth-section google-auth-primary" data-google-auth-section>
             <div class="google-auth-button-shell" data-google-login-button aria-label="Entrar com Google"></div>
             <p class="google-auth-helper" data-google-helper>Use sua Conta Google para entrar com segurança.</p>
             <p class="google-register-hint" data-google-register-hint hidden>
@@ -81,6 +81,15 @@
               <a href="/register" data-google-register-link>Criar conta com Google</a>
             </p>
           </div>
+
+          <p
+            class="form-alert google-auth-feedback"
+            id="login-feedback"
+            data-login-feedback
+            role="alert"
+            aria-live="polite"
+            tabindex="-1"
+            hidden></p>
 
           <div class="auth-divider" aria-hidden="true"><span data-google-divider>ou use sua senha</span></div>
 
@@ -133,15 +142,6 @@
             <div class="form-row">
               <a class="form-link" href="/forgot-password" data-i18n="form.forgot">Esqueci minha senha</a>
             </div>
-
-            <p
-              class="form-alert"
-              id="login-feedback"
-              data-login-feedback
-              role="alert"
-              aria-live="polite"
-              tabindex="-1"
-              hidden></p>
 
             <button class="button button-primary submit-button" type="submit" data-login-submit disabled>
               <span class="submit-spinner" aria-hidden="true"></span>
