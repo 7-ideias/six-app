@@ -74,91 +74,104 @@
               </span>
             </label>
 
-            <div class="google-auth-section" data-google-auth-section>
+            <div class="google-auth-section google-auth-primary" data-google-auth-section>
               <div class="google-auth-button-shell is-disabled" data-google-register-button aria-label="Criar conta com Google"></div>
               <p class="google-auth-helper" data-google-helper>Aceite os termos acima para continuar com Google.</p>
             </div>
 
-            <div class="auth-divider" aria-hidden="true"><span data-google-divider>ou crie com login e senha</span></div>
-
-            <div class="field">
-              <label for="register-login" data-i18n="form.login.label">Login</label>
-              <div class="input-shell">
-                <input
-                  id="register-login"
-                  data-register-login
-                  name="login"
-                  type="text"
-                  autocomplete="username"
-                  spellcheck="false"
-                  required
-                  inputmode="text"
-                  placeholder="Informe seu login de acesso"
-                  data-i18n-placeholder="form.login.placeholder"
-                  disabled>
-              </div>
-            </div>
-
-            <div class="field">
-              <label for="register-password" data-i18n="form.password.label">Senha</label>
-              <div class="input-shell">
-                <input
-                  id="register-password"
-                  data-register-password
-                  name="senha"
-                  type="password"
-                  autocomplete="new-password"
-                  required
-                  minlength="8"
-                  placeholder="Mínimo 8 caracteres"
-                  data-i18n-placeholder="form.password.placeholder"
-                  disabled>
-                <button
-                  class="password-toggle"
-                  type="button"
-                  data-register-password-toggle
-                  aria-pressed="false"
-                  aria-label="Mostrar senha"
-                  disabled>
-                  <span data-register-password-toggle-label data-i18n="form.password.show">Mostrar</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="field">
-              <label for="register-confirm-password" data-i18n="form.confirmPassword.label">Confirme a senha</label>
-              <div class="input-shell">
-                <input
-                  id="register-confirm-password"
-                  data-register-confirm-password
-                  name="confirmarSenha"
-                  type="password"
-                  autocomplete="new-password"
-                  required
-                  minlength="8"
-                  placeholder="Repita sua senha"
-                  data-i18n-placeholder="form.confirmPassword.placeholder"
-                  aria-describedby="register-password-match"
-                  disabled>
-                <button
-                  class="password-toggle"
-                  type="button"
-                  data-register-confirm-password-toggle
-                  aria-pressed="false"
-                  aria-label="Mostrar confirmação da senha"
-                  disabled>
-                  <span data-register-confirm-password-toggle-label data-i18n="form.password.show">Mostrar</span>
-                </button>
-              </div>
-              <p class="field-error" id="register-password-match" data-register-password-match-feedback aria-live="polite" hidden>As senhas não coincidem.</p>
-            </div>
-
             <p class="form-alert" id="register-feedback" data-register-feedback role="alert" aria-live="polite" tabindex="-1" hidden></p>
 
-            <button class="button button-primary submit-button" type="submit" data-register-submit disabled>
-              <span class="submit-spinner" aria-hidden="true"></span>
-              <span data-register-submit-label data-i18n="form.submit">Cadastrar</span>
-            </button>
+            <div class="auth-divider" aria-hidden="true"><span data-google-divider>ou crie com login e senha</span></div>
+
+            <details class="auth-method-details" data-register-password-method>
+              <summary class="auth-method-summary">
+                <span class="auth-method-summary-icon" aria-hidden="true">Aa</span>
+                <span class="auth-method-summary-copy">
+                  <strong>Criar com login e senha</strong>
+                  <small>Use esta opção se preferir um acesso tradicional ao SixoApp.</small>
+                </span>
+                <span class="auth-method-summary-chevron" aria-hidden="true">⌄</span>
+              </summary>
+
+              <div class="auth-method-details-body">
+                <div class="field">
+                  <label for="register-login" data-i18n="form.login.label">Login</label>
+                  <div class="input-shell">
+                    <input
+                      id="register-login"
+                      data-register-login
+                      name="login"
+                      type="text"
+                      autocomplete="username"
+                      spellcheck="false"
+                      required
+                      inputmode="text"
+                      placeholder="Informe seu login de acesso"
+                      data-i18n-placeholder="form.login.placeholder"
+                      disabled>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label for="register-password" data-i18n="form.password.label">Senha</label>
+                  <div class="input-shell">
+                    <input
+                      id="register-password"
+                      data-register-password
+                      name="senha"
+                      type="password"
+                      autocomplete="new-password"
+                      required
+                      minlength="8"
+                      placeholder="Mínimo 8 caracteres"
+                      data-i18n-placeholder="form.password.placeholder"
+                      disabled>
+                    <button
+                      class="password-toggle"
+                      type="button"
+                      data-register-password-toggle
+                      aria-pressed="false"
+                      aria-label="Mostrar senha"
+                      disabled>
+                      <span data-register-password-toggle-label data-i18n="form.password.show">Mostrar</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label for="register-confirm-password" data-i18n="form.confirmPassword.label">Confirme a senha</label>
+                  <div class="input-shell">
+                    <input
+                      id="register-confirm-password"
+                      data-register-confirm-password
+                      name="confirmarSenha"
+                      type="password"
+                      autocomplete="new-password"
+                      required
+                      minlength="8"
+                      placeholder="Repita sua senha"
+                      data-i18n-placeholder="form.confirmPassword.placeholder"
+                      aria-describedby="register-password-match"
+                      disabled>
+                    <button
+                      class="password-toggle"
+                      type="button"
+                      data-register-confirm-password-toggle
+                      aria-pressed="false"
+                      aria-label="Mostrar confirmação da senha"
+                      disabled>
+                      <span data-register-confirm-password-toggle-label data-i18n="form.password.show">Mostrar</span>
+                    </button>
+                  </div>
+                  <p class="field-error" id="register-password-match" data-register-password-match-feedback aria-live="polite" hidden>As senhas não coincidem.</p>
+                </div>
+
+                <button class="button button-primary submit-button" type="submit" data-register-submit disabled>
+                  <span class="submit-spinner" aria-hidden="true"></span>
+                  <span data-register-submit-label data-i18n="form.submit">Cadastrar</span>
+                </button>
+              </div>
+            </details>
           </form>
 
           <section class="google-link-panel" data-google-link-panel hidden aria-labelledby="google-register-link-title">
