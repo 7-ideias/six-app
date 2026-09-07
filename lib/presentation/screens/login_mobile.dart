@@ -26,7 +26,6 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   final FocusNode _passwordFocusNode = FocusNode();
   final GlobalKey _submitButtonKey = GlobalKey();
   final AuthService _authService = AuthService();
-  final GoogleAuthService _googleAuthService = GoogleAuthService();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -101,10 +100,9 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     if (_isLoading) return;
     setState(() => _isLoading = true);
     try {
-      await _googleAuthService.signIn(
+      await _authService.loginWithGoogle(
         intent: GoogleAuthIntent.login,
         idioma: _languageTag,
-        persistSession: true,
       );
       if (!mounted) return;
       _navigateToPostLoginSplash();
@@ -143,12 +141,11 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
 
     setState(() => _isLoading = true);
     try {
-      await _googleAuthService.linkPendingAccount(
+      await _authService.linkPendingGoogleAccount(
         senha: password,
         intent: GoogleAuthIntent.login,
         aceiteTermos: false,
         idioma: _languageTag,
-        persistSession: true,
       );
       if (!mounted) return;
       _navigateToPostLoginSplash();
