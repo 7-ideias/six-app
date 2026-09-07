@@ -26,8 +26,9 @@ import {
 
   const GOOGLE_COPY = Object.freeze({
     pt: Object.freeze({
+      'google.form.subtitle': 'Entre com sua Conta Google ou use seu login e senha do SixoApp.',
       'google.helper': 'Use sua Conta Google para entrar com segurança.',
-      'google.divider': 'ou use sua senha',
+      'google.divider': 'ou use seu login e senha',
       'google.register.copy': 'Esta Conta Google ainda não tem cadastro.',
       'google.register.link': 'Criar conta com Google',
       'google.link.title': 'Vincule sua Conta Google ao acesso existente',
@@ -48,8 +49,9 @@ import {
       'google.error.notFound': 'Não foi possível localizar a conta.',
     }),
     en: Object.freeze({
+      'google.form.subtitle': 'Sign in with your Google Account or use your SixoApp login and password.',
       'google.helper': 'Use your Google Account to sign in securely.',
-      'google.divider': 'or use your password',
+      'google.divider': 'or use your login and password',
       'google.register.copy': 'This Google Account does not have a SixoApp account yet.',
       'google.register.link': 'Create account with Google',
       'google.link.title': 'Link your Google Account to your existing access',
@@ -70,8 +72,9 @@ import {
       'google.error.notFound': 'Could not find the account.',
     }),
     es: Object.freeze({
+      'google.form.subtitle': 'Entra con tu Cuenta de Google o usa tu login y contraseña de SixoApp.',
       'google.helper': 'Usa tu Cuenta de Google para entrar de forma segura.',
-      'google.divider': 'o usa tu contraseña',
+      'google.divider': 'o usa tu login y contraseña',
       'google.register.copy': 'Esta Cuenta de Google aún no tiene una cuenta SixoApp.',
       'google.register.link': 'Crear cuenta con Google',
       'google.link.title': 'Vincula tu Cuenta de Google al acceso existente',
@@ -128,6 +131,7 @@ import {
   }
 
   function updateGoogleCopy(elements) {
+    elements.formSubtitle.textContent = copy('google.form.subtitle');
     elements.googleHelper.textContent = copy('google.helper');
     elements.googleDivider.textContent = copy('google.divider');
     elements.googleRegisterCopy.textContent = copy('google.register.copy');
@@ -337,6 +341,7 @@ import {
   function collectElements() {
     return {
       card: document.querySelector('[data-login-card]'),
+      formSubtitle: document.querySelector('.login-card-header p'),
       form: document.querySelector('[data-login-form]'),
       login: document.querySelector('[data-login-input]'),
       mobileBlock: document.querySelector('[data-login-mobile-block]'),
