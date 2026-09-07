@@ -100,10 +100,12 @@
   display: none;
 }
 
-.google-register-hint a {
+.google-register-hint a,
+.terms-row a {
   color: var(--editorial-ink);
   font-weight: 700;
   text-decoration: underline;
+  text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
 
