@@ -32,7 +32,7 @@ class GoogleAuthService {
   }
 
   static const String _serverClientId =
-      '194419403668-manc56voom9d29bv0n7m4pilub8j864a.apps.googleusercontent.com';
+      '841074493827-srvp19o45fh2edon9gq1kgcr1nhrtk5u.apps.googleusercontent.com';
 
   static GoogleSignIn _defaultGoogleSignIn() {
     if (kIsWeb) {
@@ -63,8 +63,6 @@ class GoogleAuthService {
     return Uri.parse('${AppConfig.baseUrl}/auth/$path/google');
   }
 
-  /// Mobile/desktop entry point. Opens the native Google picker and exchanges
-  /// the resulting idToken with the backend.
   Future<AuthResponseModel> signIn() async {
     if (kIsWeb) {
       throw const GoogleAuthException(
@@ -123,12 +121,6 @@ class GoogleAuthService {
     return _exchangeIdToken(idToken);
   }
 
-  /// Web entry point. Starts listening for an account emitted by the
-  /// `onCurrentUserChanged` stream (triggered when the user taps the rendered
-  /// Google button) and also attempts a silent sign-in for returning users.
-  ///
-  /// The returned Future completes with the backend auth response once the
-  /// user finishes the Google flow.
   Future<AuthResponseModel> awaitWebSignIn() {
     assert(kIsWeb, 'awaitWebSignIn must only be used on Flutter web.');
 
@@ -169,9 +161,7 @@ class GoogleAuthService {
       },
     );
 
-    // Fire-and-forget silent sign-in for returning users.
     unawaited(_googleSignIn.signInSilently().catchError((_) => null));
-
     return completer.future;
   }
 
@@ -191,7 +181,10 @@ class GoogleAuthService {
       response = await _client.post(
         _googleLoginUri,
         headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({'idToken': idToken}),
+        body: jsonEncode({
+          'idToken': idToken,
+          'fluxo': 'LOGIN',
+        }),
       );
     } on http.ClientException {
       throw GoogleAuthException.network();
