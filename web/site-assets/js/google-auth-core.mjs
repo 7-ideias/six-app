@@ -1,5 +1,6 @@
 const GOOGLE_GSI_SRC = 'https://accounts.google.com/gsi/client';
 export const GOOGLE_AUTH_TIMEOUT_MS = 20000;
+const GOOGLE_AUTH_SCOPES = 'openid email profile';
 
 export class PublicGoogleAuthError extends Error {
   constructor(message, { status = null, code = null } = {}) {
@@ -57,7 +58,8 @@ function extractBackendCode(body) {
 
 async function performGoogleRequest({
   apiBaseUrl,
-  idToken,
+  accessToken,
+  idToken = null,
   fluxo,
   aceiteTermos,
   idioma,
@@ -70,19 +72,22 @@ async function performGoogleRequest({
   if (typeof fetchImpl !== 'function') {
     throw new PublicGoogleAuthError('Fetch indisponivel.', { code: 'network' });
   }
-  const credential = String(idToken || '').trim();
-  if (!credential) {
-    throw new PublicGoogleAuthError('Google nao retornou uma credencial valida.', {
+
+  const oauthAccessToken = String(accessToken || '').trim();
+  if (!oauthAccessToken) {
+    throw new PublicGoogleAuthError('Google nao retornou um access token valido.', {
       code: 'missingCredential',
     });
   }
 
   const body = {
-    idToken: credential,
+    idToken: String(idToken || '').trim() || null,
+    accessToken: oauthAccessToken,
     fluxo: String(fluxo || 'LOGIN').toUpperCase(),
     aceiteTermos: Boolean(aceiteTermos),
     idioma: googleBackendLanguage(idioma),
   };
+
   if (link) {
     const password = String(senha || '');
     if (!password) {
@@ -121,9 +126,8 @@ async function performGoogleRequest({
 
   try {
     const response = await Promise.race([fetchPromise, timeoutPromise]);
-    if (response?.ok) {
-      return response;
-    }
+    if (response?.ok) return response;
+
     const responseBody = response ? await response.text() : '';
     throw new PublicGoogleAuthError('Google authentication backend rejected request.', {
       status: response?.status ?? 0,
@@ -156,7 +160,7 @@ export function performGoogleLink(options = {}) {
 
 export function googleErrorKey(error, mode = 'login') {
   if (!(error instanceof PublicGoogleAuthError)) return 'google.error.unexpected';
-  if (error.code === 'config') return 'google.error.config';
+  if (error.code === 'config' || error.code === 'gsiUnavailable') return 'google.error.config';
   if (error.code === 'timeout') return 'google.error.timeout';
   if (error.code === 'network') return 'google.error.network';
   if (error.code === 'passwordRequired') return 'google.link.passwordRequired';
@@ -183,8 +187,8 @@ export function loadGoogleIdentityServices({
   windowRef = globalThis.window,
   timeoutMs = 12000,
 } = {}) {
-  if (windowRef?.google?.accounts?.id) {
-    return Promise.resolve(windowRef.google.accounts.id);
+  if (windowRef?.google?.accounts?.oauth2) {
+    return Promise.resolve(windowRef.google.accounts.oauth2);
   }
   if (gsiPromise) return gsiPromise;
 
@@ -192,18 +196,20 @@ export function loadGoogleIdentityServices({
     const existing = documentRef.querySelector(`script[src="${GOOGLE_GSI_SRC}"]`);
     const script = existing || documentRef.createElement('script');
     let settled = false;
+
     const finish = () => {
       if (settled) return;
       settled = true;
       clearTimeout(timeoutId);
-      if (windowRef?.google?.accounts?.id) {
-        resolve(windowRef.google.accounts.id);
+      if (windowRef?.google?.accounts?.oauth2) {
+        resolve(windowRef.google.accounts.oauth2);
       } else {
         reject(new PublicGoogleAuthError('Google Identity Services indisponivel.', {
           code: 'gsiUnavailable',
         }));
       }
     };
+
     const fail = () => {
       if (settled) return;
       settled = true;
@@ -212,8 +218,8 @@ export function loadGoogleIdentityServices({
         code: 'gsiUnavailable',
       }));
     };
-    const timeoutId = setTimeout(fail, timeoutMs);
 
+    const timeoutId = setTimeout(fail, timeoutMs);
     script.addEventListener('load', finish, { once: true });
     script.addEventListener('error', fail, { once: true });
     if (!existing) {
@@ -228,6 +234,14 @@ export function loadGoogleIdentityServices({
   return gsiPromise;
 }
 
+function googleButtonLabel(text, language) {
+  const lang = String(language || 'pt').toLowerCase();
+  const signup = text === 'signup_with';
+  if (lang.startsWith('en')) return signup ? 'Sign up with Google' : 'Sign in with Google';
+  if (lang.startsWith('es')) return signup ? 'Crear cuenta con Google' : 'Entrar con Google';
+  return signup ? 'Criar conta com Google' : 'Entrar com Google';
+}
+
 export async function renderGoogleButton({
   container,
   clientId,
@@ -240,25 +254,34 @@ export async function renderGoogleButton({
   if (!container) {
     throw new PublicGoogleAuthError('Container Google ausente.', { code: 'config' });
   }
+
   await loadGoogleIdentityServices({ documentRef, windowRef });
-  const googleId = windowRef.google.accounts.id;
-  googleId.initialize({
+  const oauth2 = windowRef.google.accounts.oauth2;
+  const tokenClient = oauth2.initTokenClient({
     client_id: clientId,
-    callback,
-    auto_select: false,
-    cancel_on_tap_outside: true,
-    itp_support: true,
-    use_fedcm_for_prompt: true,
+    scope: GOOGLE_AUTH_SCOPES,
+    include_granted_scopes: false,
+    callback: (response) => {
+      if (response?.error) {
+        callback({ error: response.error, error_description: response.error_description });
+        return;
+      }
+      callback(response);
+    },
   });
-  container.replaceChildren();
-  googleId.renderButton(container, {
-    type: 'standard',
-    theme: 'outline',
-    size: 'large',
-    text,
-    shape: 'pill',
-    logo_alignment: 'left',
-    width: Math.max(240, Math.floor(container.clientWidth || 360)),
-    locale: String(language || 'pt').toLowerCase(),
+
+  const button = documentRef.createElement('button');
+  button.type = 'button';
+  button.className = 'google-oauth-button';
+  button.setAttribute('aria-label', googleButtonLabel(text, language));
+  button.innerHTML = `
+    <span class="google-oauth-g" aria-hidden="true">G</span>
+    <span>${googleButtonLabel(text, language)}</span>
+  `;
+  button.addEventListener('click', () => {
+    tokenClient.requestAccessToken({ prompt: 'select_account' });
   });
+
+  container.replaceChildren(button);
+  return tokenClient;
 }
