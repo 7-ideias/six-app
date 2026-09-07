@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/mobile/google_account_link_mobile_sheet.dart';
 import 'package:sixpos/presentation/components/mobile/sixoapp_auth_mobile_kit.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 
 import '../../core/exceptions/google_auth_exception.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/google_auth_service.dart';
 import 'create_account_mobile.dart';
 import 'esqueceu_senha_mobile.dart';
 import 'post_login_splash_mobile_page.dart';
@@ -24,6 +26,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   final FocusNode _passwordFocusNode = FocusNode();
   final GlobalKey _submitButtonKey = GlobalKey();
   final AuthService _authService = AuthService();
+  final GoogleAuthService _googleAuthService = GoogleAuthService();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -66,15 +69,16 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     );
   }
 
+  String get _languageTag => Localizations.localeOf(context).toLanguageTag();
+
   Future<void> _login() async {
     final String login = _loginController.text.trim();
-    final String senha = _passwordController.text.trim();
-
+    final String senha = _passwordController.text;
     if (login.isEmpty || senha.isEmpty) {
       _showSnack(
         context.t(
           'auth.loginRequiredFields',
-          fallback: 'Por favor, preencha o e-mail e a senha',
+          fallback: 'Por favor, preencha o e-mail e a senha.',
         ),
       );
       return;
@@ -93,6 +97,84 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     }
   }
 
+  Future<void> _loginWithGoogle() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      await _googleAuthService.signIn(
+        intent: GoogleAuthIntent.login,
+        idioma: _languageTag,
+        persistSession: true,
+      );
+      if (!mounted) return;
+      _navigateToPostLoginSplash();
+    } on GoogleAuthException catch (error) {
+      if (!mounted) return;
+      if (error.code == GoogleAuthErrorCode.cancelledByUser) return;
+      if (error.code == GoogleAuthErrorCode.registrationRequired) {
+        _openCreateAccount();
+        return;
+      }
+      if (error.code == GoogleAuthErrorCode.linkRequired) {
+        await _linkGoogleAccount();
+        return;
+      }
+      _showSnack(_googleMessage(error));
+    } catch (_) {
+      if (mounted) {
+        _showSnack(
+          context.t(
+            'auth.googleLoginError',
+            fallback: 'Não foi possível concluir o login com Google.',
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _linkGoogleAccount() async {
+    final String? password = await showGoogleAccountLinkMobileSheet(
+      context,
+      creatingAccount: false,
+    );
+    if (!mounted || password == null) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await _googleAuthService.linkPendingAccount(
+        senha: password,
+        intent: GoogleAuthIntent.login,
+        aceiteTermos: false,
+        idioma: _languageTag,
+        persistSession: true,
+      );
+      if (!mounted) return;
+      _navigateToPostLoginSplash();
+    } on GoogleAuthException catch (error) {
+      if (mounted) _showSnack(_googleMessage(error));
+    }
+  }
+
+  String _googleMessage(GoogleAuthException error) {
+    return switch (error.code) {
+      GoogleAuthErrorCode.invalidExistingPassword => context.t(
+          'auth.googleLink.invalidPassword',
+          fallback: 'A senha atual informada não foi aceita.',
+        ),
+      GoogleAuthErrorCode.unavailable => context.t(
+          'auth.googleUnavailable',
+          fallback: 'O login com Google está temporariamente indisponível.',
+        ),
+      GoogleAuthErrorCode.network => context.t(
+          'auth.googleNetworkError',
+          fallback: 'Falha de conexão. Verifique sua internet e tente novamente.',
+        ),
+      _ => error.message,
+    };
+  }
+
   void _navigateToPostLoginSplash() {
     Navigator.pushReplacement(
       context,
@@ -103,31 +185,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  Future<void> _loginWithGoogle() async {
-    if (_isLoading) return;
-    setState(() => _isLoading = true);
-    try {
-      await _authService.loginWithGoogle();
-      if (!mounted) return;
-      _navigateToPostLoginSplash();
-    } on GoogleAuthException catch (error) {
-      if (error.code == GoogleAuthErrorCode.cancelledByUser) return;
-      _showSnack(error.message);
-    } catch (_) {
-      _showSnack(
-        context.t(
-          'auth.googleLoginError',
-          fallback: 'Não foi possível concluir o login com Google.',
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _forgotPassword() {
@@ -137,7 +195,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     );
   }
 
-  void _createAccount() {
+  void _openCreateAccount() {
     Navigator.push(
       context,
       MaterialPageRoute<void>(builder: (_) => const CreateAccountMobile()),
@@ -147,7 +205,6 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   @override
   Widget build(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
-    final String backLabel = context.t('common.back', fallback: 'Voltar');
 
     return SixoAppAuthMobileScaffold(
       title: context.t(
@@ -160,7 +217,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
       ),
       compactHeader: true,
       onBack: () => Navigator.of(context).maybePop(),
-      backSemanticLabel: backLabel,
+      backSemanticLabel: context.t('common.back', fallback: 'Voltar'),
       body: AutofillGroup(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -182,7 +239,26 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
             ),
             const SizedBox(height: 18),
             SixStaggeredEntry(
-              delay: const Duration(milliseconds: 60),
+              delay: const Duration(milliseconds: 50),
+              child: SixoAppAuthSecondaryButton(
+                label: context.t(
+                  'auth.signInWithGoogle',
+                  fallback: 'Entrar com Google',
+                ),
+                onPressed: _isLoading ? null : _loginWithGoogle,
+                leading: const _GoogleGlyph(),
+              ),
+            ),
+            const SizedBox(height: 18),
+            SixoAppAuthDivider(
+              label: context.t(
+                'auth.mobileLogin.socialDivider',
+                fallback: 'ou entre com e-mail e senha',
+              ),
+            ),
+            const SizedBox(height: 18),
+            SixStaggeredEntry(
+              delay: const Duration(milliseconds: 80),
               child: SixoAppAuthField(
                 controller: _loginController,
                 hint: context.t(
@@ -202,7 +278,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
             ),
             const SizedBox(height: 14),
             SixStaggeredEntry(
-              delay: const Duration(milliseconds: 100),
+              delay: const Duration(milliseconds: 110),
               child: SixoAppAuthField(
                 controller: _passwordController,
                 focusNode: _passwordFocusNode,
@@ -253,47 +329,23 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                     'auth.forgotPassword',
                     fallback: 'Esqueceu a senha?',
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
             ),
             const SizedBox(height: 8),
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 140),
-              child: KeyedSubtree(
-                key: _submitButtonKey,
-                child: SixoAppAuthPrimaryButton(
-                  label: context.t(
-                    'auth.mobileLogin.submit',
-                    fallback: 'Entrar',
-                  ),
-                  onPressed: _login,
-                  isLoading: _isLoading,
-                ),
-              ),
-            ),
-            const SizedBox(height: 22),
-            SixoAppAuthDivider(
-              label: context.t(
-                'auth.mobileLogin.socialDivider',
-                fallback: 'ou continue com',
-              ),
-            ),
-            const SizedBox(height: 16),
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 180),
-              child: SixoAppAuthSecondaryButton(
+            KeyedSubtree(
+              key: _submitButtonKey,
+              child: SixoAppAuthPrimaryButton(
                 label: context.t(
-                  'auth.signInWithGoogle',
-                  fallback: 'Entrar com Google',
+                  'auth.mobileLogin.submit',
+                  fallback: 'Entrar',
                 ),
-                onPressed: _isLoading ? null : _loginWithGoogle,
-                leading: const _GoogleGlyph(),
+                onPressed: _login,
+                isLoading: _isLoading,
               ),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 20),
             Wrap(
               alignment: WrapAlignment.center,
               crossAxisAlignment: WrapCrossAlignment.center,
@@ -310,7 +362,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                   ),
                 ),
                 TextButton(
-                  onPressed: _createAccount,
+                  onPressed: _openCreateAccount,
                   child: Text(
                     context.t(
                       'auth.mobileEntry.createAction',
@@ -324,55 +376,25 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            _TermsText(
-              prefix: context.t(
-                'auth.termsPrefix',
-                fallback: 'Ao continuar, declaro ter lido e concordo com os ',
-              ),
-              terms: context.t(
-                'auth.terms',
-                fallback: 'Termos de Uso e Política de Privacidade',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TermsText extends StatelessWidget {
-  const _TermsText({required this.prefix, required this.terms});
-
-  final String prefix;
-  final String terms;
-
-  @override
-  Widget build(BuildContext context) {
-    final SixMobileColorScheme colors = context.sixMobileColors;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Text.rich(
-        TextSpan(
-          style: TextStyle(
-            color: colors.mutedText,
-            fontSize: 11.5,
-            height: 1.45,
-          ),
-          children: <InlineSpan>[
-            TextSpan(text: prefix),
-            TextSpan(
-              text: terms,
-              style: TextStyle(
-                color: colors.titleText,
-                decoration: TextDecoration.underline,
-                fontWeight: FontWeight.w700,
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                context.t(
+                  'auth.mobileLogin.googleNote',
+                  fallback:
+                      'O Google não altera sua senha existente. Se o e-mail já estiver cadastrado, o vínculo será confirmado uma única vez.',
+                ),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: colors.mutedText,
+                  fontSize: 11.5,
+                  height: 1.45,
+                ),
               ),
             ),
           ],
         ),
-        textAlign: TextAlign.center,
       ),
     );
   }
