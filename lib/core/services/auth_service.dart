@@ -99,16 +99,7 @@ class AuthService {
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
       final authData = AuthResponseModel.fromJson(decoded);
-      await _saveAuthData(authData);
-      _scheduleRefreshTimer(authData);
-
-      try {
-        await EmpresaService().buscarDadosDaEmpresa();
-        debugPrint('Dados da empresa buscados e armazenados com sucesso');
-      } catch (e) {
-        debugPrint('Erro ao buscar dados da empresa: $e');
-      }
-
+      await _completeAuthenticatedSession(authData);
       return authData;
     }
 
@@ -117,18 +108,46 @@ class AuthService {
     );
   }
 
-  Future<AuthResponseModel> loginWithGoogle() async {
-    final authData = await GoogleAuthService().signIn();
+  Future<AuthResponseModel> loginWithGoogle({
+    GoogleAuthIntent intent = GoogleAuthIntent.login,
+    bool aceiteTermos = false,
+    String idioma = 'pt-BR',
+  }) async {
+    final authData = await GoogleAuthService().signIn(
+      intent: intent,
+      aceiteTermos: aceiteTermos,
+      idioma: idioma,
+    );
+    await _completeAuthenticatedSession(authData);
+    return authData;
+  }
+
+  Future<AuthResponseModel> linkPendingGoogleAccount({
+    required String senha,
+    required GoogleAuthIntent intent,
+    required bool aceiteTermos,
+    String idioma = 'pt-BR',
+  }) async {
+    final authData = await GoogleAuthService().linkPendingAccount(
+      senha: senha,
+      intent: intent,
+      aceiteTermos: aceiteTermos,
+      idioma: idioma,
+    );
+    await _completeAuthenticatedSession(authData);
+    return authData;
+  }
+
+  Future<void> _completeAuthenticatedSession(AuthResponseModel authData) async {
     await _saveAuthData(authData);
     _scheduleRefreshTimer(authData);
 
     try {
       await EmpresaService().buscarDadosDaEmpresa();
-    } catch (e) {
-      debugPrint('Erro ao buscar dados da empresa: $e');
+      debugPrint('Dados da empresa buscados e armazenados com sucesso');
+    } catch (error) {
+      debugPrint('Dados da empresa serão carregados sob demanda: $error');
     }
-
-    return authData;
   }
 
   void cancelPendingWebGoogleLogin() {
@@ -137,17 +156,11 @@ class AuthService {
 
   /// Web-only entry point. Awaits the result of the rendered Google button
   /// and persists the backend auth response.
-  Future<AuthResponseModel> awaitWebGoogleLogin() async {
-    final authData = await GoogleAuthService().awaitWebSignIn();
-    await _saveAuthData(authData);
-    _scheduleRefreshTimer(authData);
-
-    try {
-      await EmpresaService().buscarDadosDaEmpresa();
-    } catch (e) {
-      debugPrint('Erro ao buscar dados da empresa: $e');
-    }
-
+  Future<AuthResponseModel> awaitWebGoogleLogin({
+    String idioma = 'pt-BR',
+  }) async {
+    final authData = await GoogleAuthService().awaitWebSignIn(idioma: idioma);
+    await _completeAuthenticatedSession(authData);
     return authData;
   }
 
