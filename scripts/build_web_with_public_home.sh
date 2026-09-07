@@ -62,6 +62,7 @@ fi
 bash scripts/verify_web_strategy_a.sh
 bash scripts/verify_public_legal_pages.sh
 bash scripts/verify_public_google_auth.sh
+"$NODE_BIN" --test scripts/tests/google_auth_core_test.mjs
 
 echo "[LOG SIX] Public home: build/web/index.html"
 echo "[LOG SIX] Public login: build/web/login.html"
