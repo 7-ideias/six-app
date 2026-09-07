@@ -13,6 +13,15 @@ import 'google_auth_platform_stub.dart'
     if (dart.library.io) 'google_auth_platform_io.dart';
 import 'http_client_factory.dart';
 
+enum GoogleAuthIntent { login, registration }
+
+class _GoogleCredentials {
+  const _GoogleCredentials({required this.idToken, required this.accessToken});
+
+  final String idToken;
+  final String accessToken;
+}
+
 class GoogleAuthService {
   GoogleAuthService._internal({http.Client? client, GoogleSignIn? googleSignIn})
       : _client = client ?? createHttpClient(),
@@ -38,7 +47,7 @@ class GoogleAuthService {
     if (kIsWeb) {
       return GoogleSignIn(
         clientId: _serverClientId,
-        scopes: const ['email', 'profile', 'openid'],
+        scopes: const <String>['email', 'profile', 'openid'],
       );
     }
 
@@ -46,7 +55,7 @@ class GoogleAuthService {
     return GoogleSignIn(
       clientId: config.clientId,
       serverClientId: _serverClientId,
-      scopes: const ['email', 'profile', 'openid'],
+      scopes: const <String>['email', 'profile', 'openid'],
     );
   }
 
@@ -55,109 +64,207 @@ class GoogleAuthService {
 
   StreamSubscription<GoogleSignInAccount?>? _webAccountSub;
   Completer<AuthResponseModel>? _webCompleter;
+  _GoogleCredentials? _pendingCredentials;
 
   GoogleSignIn get googleSignIn => _googleSignIn;
 
   Uri get _googleLoginUri {
-    final path = kIsWeb ? 'web' : 'mobile';
+    final String path = kIsWeb ? 'web' : 'mobile';
     return Uri.parse('${AppConfig.baseUrl}/auth/$path/google');
   }
 
-  Future<AuthResponseModel> signIn() async {
+  Uri get _googleLinkUri {
+    final String path = kIsWeb ? 'web' : 'mobile';
+    return Uri.parse('${AppConfig.baseUrl}/auth/$path/google/link');
+  }
+
+  Future<AuthResponseModel> signIn({
+    GoogleAuthIntent intent = GoogleAuthIntent.login,
+    bool aceiteTermos = false,
+    required String idioma,
+  }) async {
     if (kIsWeb) {
       throw const GoogleAuthException(
         code: GoogleAuthErrorCode.unknown,
-        message:
-            'No web, utilize o botão oficial do Google renderizado na tela.',
+        message: 'No Web, utilize o botão Google exibido na página.',
       );
     }
-
-    _ensurePlatformConfigured();
 
     final GoogleSignInAccount? account;
     try {
       await _googleSignIn.signOut();
       account = await _googleSignIn.signIn();
-    } on PlatformException catch (e, s) {
-      debugPrint('GoogleSignIn PlatformException: ${e.code} | ${e.message}');
-      debugPrint('$s');
-      if (e.code == GoogleSignIn.kSignInCanceledError) {
+    } on PlatformException catch (error, stack) {
+      debugPrint('GoogleSignIn PlatformException: ${error.code}');
+      debugPrint('$stack');
+      if (error.code == GoogleSignIn.kSignInCanceledError) {
         throw GoogleAuthException.cancelled();
       }
-      if (e.code == GoogleSignIn.kNetworkError) {
+      if (error.code == GoogleSignIn.kNetworkError) {
         throw GoogleAuthException.network();
       }
-      throw GoogleAuthException(
-        code: GoogleAuthErrorCode.unknown,
-        message: 'Falha no Google Sign-In (${e.code}): ${e.message ?? ''}',
+      throw GoogleAuthException.unknown();
+    } catch (error, stack) {
+      debugPrint('GoogleSignIn error: ${error.runtimeType}');
+      debugPrint('$stack');
+      throw GoogleAuthException.unknown();
+    }
+
+    if (account == null) throw GoogleAuthException.cancelled();
+
+    final _GoogleCredentials credentials = await _credentialsFromAccount(account);
+    _pendingCredentials = credentials;
+    try {
+      final AuthResponseModel response = await _exchangeCredentials(
+        credentials,
+        intent: intent,
+        aceiteTermos: aceiteTermos,
+        idioma: idioma,
       );
-    } catch (e, s) {
-      debugPrint('GoogleSignIn error: $e');
-      debugPrint('$s');
-      throw GoogleAuthException(
+      _pendingCredentials = null;
+      return response;
+    } on GoogleAuthException catch (error) {
+      if (error.code != GoogleAuthErrorCode.linkRequired) {
+        _pendingCredentials = null;
+      }
+      rethrow;
+    }
+  }
+
+  Future<AuthResponseModel> linkPendingAccount({
+    required String senha,
+    required GoogleAuthIntent intent,
+    required bool aceiteTermos,
+    required String idioma,
+  }) async {
+    final _GoogleCredentials? credentials = _pendingCredentials;
+    if (credentials == null) {
+      throw const GoogleAuthException(
         code: GoogleAuthErrorCode.unknown,
-        message: 'Falha no Google Sign-In: $e',
+        message: 'A autorização Google expirou. Tente novamente.',
       );
     }
 
-    if (account == null) {
-      throw GoogleAuthException.cancelled();
+    final http.Response response;
+    try {
+      response = await _client.post(
+        _googleLinkUri,
+        headers: const <String, String>{'Content-Type': 'application/json'},
+        body: jsonEncode(<String, Object?>{
+          'idToken': credentials.idToken,
+          'accessToken': credentials.accessToken,
+          'senha': senha,
+          'fluxo': _flow(intent),
+          'aceiteTermos': aceiteTermos,
+          'idioma': idioma,
+        }),
+      );
+    } on http.ClientException {
+      throw GoogleAuthException.network();
+    } catch (error) {
+      if (isGoogleAuthNetworkError(error)) throw GoogleAuthException.network();
+      rethrow;
     }
 
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      _pendingCredentials = null;
+      final dynamic decoded = jsonDecode(response.body);
+      return AuthResponseModel.fromJson(decoded as Map<String, dynamic>);
+    }
+
+    throw GoogleAuthException.fromResponse(
+      statusCode: response.statusCode,
+      body: response.body,
+      linking: true,
+    );
+  }
+
+  Future<_GoogleCredentials> _credentialsFromAccount(
+    GoogleSignInAccount account,
+  ) async {
     final GoogleSignInAuthentication auth;
     try {
       auth = await account.authentication;
-    } catch (e, s) {
-      debugPrint('GoogleSignIn authentication error: $e');
-      debugPrint('$s');
+    } catch (_) {
       throw GoogleAuthException.missingIdToken();
     }
 
-    final idToken = auth.idToken;
-    if (idToken == null || idToken.isEmpty) {
-      throw GoogleAuthException.missingIdToken();
-    }
-
-    return _exchangeIdToken(idToken);
+    final String idToken = auth.idToken?.trim() ?? '';
+    final String accessToken = auth.accessToken?.trim() ?? '';
+    if (idToken.isEmpty) throw GoogleAuthException.missingIdToken();
+    if (accessToken.isEmpty) throw GoogleAuthException.missingAccessToken();
+    return _GoogleCredentials(idToken: idToken, accessToken: accessToken);
   }
 
-  Future<AuthResponseModel> awaitWebSignIn() {
-    assert(kIsWeb, 'awaitWebSignIn must only be used on Flutter web.');
-
-    final existing = _webCompleter;
-    if (existing != null && !existing.isCompleted) {
-      return existing.future;
+  Future<AuthResponseModel> _exchangeCredentials(
+    _GoogleCredentials credentials, {
+    required GoogleAuthIntent intent,
+    required bool aceiteTermos,
+    required String idioma,
+  }) async {
+    final http.Response response;
+    try {
+      response = await _client.post(
+        _googleLoginUri,
+        headers: const <String, String>{'Content-Type': 'application/json'},
+        body: jsonEncode(<String, Object?>{
+          'idToken': credentials.idToken,
+          'accessToken': credentials.accessToken,
+          'fluxo': _flow(intent),
+          'aceiteTermos': aceiteTermos,
+          'idioma': idioma,
+        }),
+      );
+    } on http.ClientException {
+      throw GoogleAuthException.network();
+    } catch (error) {
+      if (isGoogleAuthNetworkError(error)) throw GoogleAuthException.network();
+      rethrow;
     }
 
-    final completer = Completer<AuthResponseModel>();
-    _webCompleter = completer;
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final dynamic decoded = jsonDecode(response.body);
+      return AuthResponseModel.fromJson(decoded as Map<String, dynamic>);
+    }
 
+    throw GoogleAuthException.fromResponse(
+      statusCode: response.statusCode,
+      body: response.body,
+    );
+  }
+
+  Future<AuthResponseModel> awaitWebSignIn({
+    String idioma = 'pt-BR',
+  }) {
+    assert(kIsWeb, 'awaitWebSignIn must only be used on Flutter web.');
+
+    final Completer<AuthResponseModel>? existing = _webCompleter;
+    if (existing != null && !existing.isCompleted) return existing.future;
+
+    final Completer<AuthResponseModel> completer = Completer<AuthResponseModel>();
+    _webCompleter = completer;
     _webAccountSub?.cancel();
     _webAccountSub = _googleSignIn.onCurrentUserChanged.listen(
-      (account) async {
+      (GoogleSignInAccount? account) async {
         if (account == null || completer.isCompleted) return;
         try {
-          final auth = await account.authentication;
-          final idToken = auth.idToken;
-          if (idToken == null || idToken.isEmpty) {
-            completer.completeError(GoogleAuthException.missingIdToken());
-            return;
-          }
-          final response = await _exchangeIdToken(idToken);
+          final _GoogleCredentials credentials =
+              await _credentialsFromAccount(account);
+          _pendingCredentials = credentials;
+          final AuthResponseModel response = await _exchangeCredentials(
+            credentials,
+            intent: GoogleAuthIntent.login,
+            aceiteTermos: false,
+            idioma: idioma,
+          );
+          _pendingCredentials = null;
           if (!completer.isCompleted) completer.complete(response);
-        } catch (e) {
-          if (!completer.isCompleted) completer.completeError(e);
+        } catch (error) {
+          if (!completer.isCompleted) completer.completeError(error);
         }
       },
-      onError: (Object e) {
-        if (!completer.isCompleted) {
-          completer.completeError(
-            GoogleAuthException(
-              code: GoogleAuthErrorCode.unknown,
-              message: 'Falha no Google Sign-In: $e',
-            ),
-          );
-        }
+      onError: (Object error) {
+        if (!completer.isCompleted) completer.completeError(error);
       },
     );
 
@@ -168,58 +275,21 @@ class GoogleAuthService {
   void cancelWebSignIn() {
     _webAccountSub?.cancel();
     _webAccountSub = null;
-    final completer = _webCompleter;
+    final Completer<AuthResponseModel>? completer = _webCompleter;
     if (completer != null && !completer.isCompleted) {
       completer.completeError(GoogleAuthException.cancelled());
     }
     _webCompleter = null;
   }
 
-  Future<AuthResponseModel> _exchangeIdToken(String idToken) async {
-    final http.Response response;
-    try {
-      response = await _client.post(
-        _googleLoginUri,
-        headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'idToken': idToken,
-          'fluxo': 'LOGIN',
-        }),
-      );
-    } on http.ClientException {
-      throw GoogleAuthException.network();
-    } catch (e) {
-      if (isGoogleAuthNetworkError(e)) throw GoogleAuthException.network();
-      rethrow;
-    }
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-      return AuthResponseModel.fromJson(decoded);
-    }
-
-    throw GoogleAuthException.fromResponse(
-      statusCode: response.statusCode,
-      body: response.body,
-    );
-  }
-
   Future<void> signOut() async {
     cancelWebSignIn();
+    _pendingCredentials = null;
     try {
       await _googleSignIn.signOut();
     } catch (_) {}
   }
 
-  void _ensurePlatformConfigured() {
-    if (kIsWeb) return;
-    const iosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
-    if (defaultTargetPlatform == TargetPlatform.iOS && iosClientId.isEmpty) {
-      throw const GoogleAuthException(
-        code: GoogleAuthErrorCode.unknown,
-        message:
-            'Google Sign-In não configurado para iOS. Defina GOOGLE_IOS_CLIENT_ID via --dart-define e atualize o Info.plist.',
-      );
-    }
-  }
+  static String _flow(GoogleAuthIntent intent) =>
+      intent == GoogleAuthIntent.registration ? 'CADASTRO' : 'LOGIN';
 }
