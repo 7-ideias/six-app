@@ -34,6 +34,8 @@ cp web/public_checkout.html build/web/checkout.html
 cp web/public_catalog.html build/web/catalogo.html
 cp web/public_collaborator_invite.html build/web/collaborator-invite.html
 cp web/public_customer_signup.html build/web/customer-signup.html
+cp web/public_privacy.html build/web/privacy.html
+cp web/public_terms.html build/web/terms.html
 rm -f build/web/public_home.html
 rm -f build/web/public_login.html
 rm -f build/web/public_register.html
@@ -43,6 +45,8 @@ rm -f build/web/public_checkout.html
 rm -f build/web/public_catalog.html
 rm -f build/web/public_collaborator_invite.html
 rm -f build/web/public_customer_signup.html
+rm -f build/web/public_privacy.html
+rm -f build/web/public_terms.html
 
 if [ -d web/site-assets ]; then
   rm -rf build/web/site-assets
@@ -66,4 +70,6 @@ echo "[LOG SIX] Public checkout: build/web/checkout.html"
 echo "[LOG SIX] Public catalog: build/web/catalogo.html"
 echo "[LOG SIX] Public collaborator invitation: build/web/collaborator-invite.html"
 echo "[LOG SIX] Public customer signup: build/web/customer-signup.html"
+echo "[LOG SIX] Public privacy policy: build/web/privacy.html"
+echo "[LOG SIX] Public terms of service: build/web/terms.html"
 echo "[LOG SIX] Flutter entry: build/web/flutter.html"
