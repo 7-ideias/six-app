@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="/site-assets/css/public-base.css">
   <link rel="stylesheet" href="/site-assets/css/home.css">
   <link rel="stylesheet" href="/site-assets/css/login.css">
+  <link rel="stylesheet" href="/site-assets/css/google-auth.css">
   <link rel="stylesheet" href="/site-assets/css/sixoapp-public.css">
   <title>SixoApp - Entrar</title>
 </head>
@@ -71,6 +72,17 @@
             <strong data-i18n="mobileBlock.title">Acesso indisponível neste dispositivo</strong>
             <p data-i18n="mobileBlock.body">Este login web não está disponível em navegador de celular. Para continuar, use um computador.</p>
           </section>
+
+          <div class="google-auth-section" data-google-auth-section>
+            <div class="google-auth-button-shell" data-google-login-button aria-label="Entrar com Google"></div>
+            <p class="google-auth-helper" data-google-helper>Use sua Conta Google para entrar com segurança.</p>
+            <p class="google-register-hint" data-google-register-hint hidden>
+              <span data-google-register-copy>Esta Conta Google ainda não tem cadastro.</span>
+              <a href="/register" data-google-register-link>Criar conta com Google</a>
+            </p>
+          </div>
+
+          <div class="auth-divider" aria-hidden="true"><span data-google-divider>ou use sua senha</span></div>
 
           <form class="login-form" id="login-form" data-login-form novalidate>
             <div class="field">
@@ -136,6 +148,21 @@
               <span data-login-submit-label data-i18n="form.submit">Entrar</span>
             </button>
           </form>
+
+          <section class="google-link-panel" data-google-link-panel hidden aria-labelledby="google-link-title">
+            <strong id="google-link-title" data-google-link-title>Vincule sua Conta Google ao acesso existente</strong>
+            <p data-google-link-body>Por segurança, informe uma vez a senha atual do SixoApp. Sua senha não será alterada.</p>
+            <div class="field">
+              <label for="google-link-password" data-google-link-password-label>Senha atual</label>
+              <div class="input-shell">
+                <input id="google-link-password" type="password" autocomplete="current-password" data-google-link-password>
+              </div>
+            </div>
+            <div class="google-link-actions">
+              <button class="button button-primary" type="button" data-google-link-submit>Vincular e entrar</button>
+              <button class="button button-quiet" type="button" data-google-link-cancel>Cancelar</button>
+            </div>
+          </section>
 
           <div class="login-card-footer auth-card-footer">
             <span>

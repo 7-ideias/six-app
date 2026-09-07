@@ -1,0 +1,116 @@
+.google-auth-section {
+  display: grid;
+  gap: 12px;
+}
+
+.google-auth-button-shell {
+  width: 100%;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  transition: opacity 160ms ease, filter 160ms ease;
+}
+
+.google-auth-button-shell > div,
+.google-auth-button-shell iframe {
+  max-width: 100% !important;
+}
+
+.google-auth-button-shell.is-disabled {
+  opacity: 0.48;
+  filter: grayscale(0.25);
+  pointer-events: none;
+}
+
+.google-auth-helper {
+  margin: 0;
+  color: var(--editorial-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.auth-divider {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 2px;
+  color: var(--editorial-subtle);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  height: 1px;
+  background: var(--editorial-line);
+}
+
+.google-link-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 4px;
+  padding: 18px;
+  border: 1px solid rgba(20, 91, 255, 0.18);
+  border-radius: 20px;
+  background: rgba(20, 91, 255, 0.045);
+}
+
+.google-link-panel[hidden] {
+  display: none;
+}
+
+.google-link-panel strong {
+  color: var(--editorial-ink);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.google-link-panel p {
+  margin: 0;
+  color: var(--editorial-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.google-link-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.google-link-actions .button {
+  min-height: 46px;
+}
+
+.google-register-hint {
+  margin: 0;
+  color: var(--editorial-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.google-register-hint[hidden] {
+  display: none;
+}
+
+.google-register-hint a,
+.terms-row a {
+  color: var(--editorial-ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .google-link-actions {
+    grid-template-columns: 1fr;
+  }
+}

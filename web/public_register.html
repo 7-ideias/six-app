@@ -14,13 +14,14 @@
   <meta property="og:image" content="/site-assets/images/sixoapp-mark.png">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="SixoApp - Criar conta">
-  <meta name="twitter:description" content="Comece sua conta no SixoApp com login e senha.">
+  <meta name="twitter:description" content="Comece sua conta no SixoApp com login, senha ou Conta Google.">
   <meta name="twitter:image" content="/site-assets/images/sixoapp-mark.png">
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/site-assets/images/sixoapp-mark.png">
   <link rel="stylesheet" href="/site-assets/css/public-base.css">
   <link rel="stylesheet" href="/site-assets/css/home.css">
   <link rel="stylesheet" href="/site-assets/css/register.css">
+  <link rel="stylesheet" href="/site-assets/css/google-auth.css">
   <link rel="stylesheet" href="/site-assets/css/sixoapp-public.css">
   <title>SixoApp - Criar conta</title>
 </head>
@@ -59,10 +60,27 @@
         <section class="register-card auth-card" aria-labelledby="register-title" data-register-form-card>
           <div class="register-card-header auth-card-header">
             <h2 id="register-title" data-i18n="form.title">Criar conta SixoApp</h2>
-            <p data-i18n="form.subtitle">Informe um login e uma senha para começar.</p>
+            <p data-i18n="form.subtitle">Use sua Conta Google ou crie um login e senha.</p>
           </div>
 
           <form class="register-form" id="register-form" data-register-form novalidate>
+            <label class="terms-row">
+              <input type="checkbox" data-register-terms name="aceiteTermos" disabled>
+              <span>
+                <span data-google-terms-prefix>Concordo com os </span>
+                <a href="/terms" target="_blank" rel="noopener" data-google-terms-link>Termos de Serviço</a>
+                <span data-google-privacy-prefix> e a </span>
+                <a href="/privacy" target="_blank" rel="noopener" data-google-privacy-link>Política de Privacidade</a>.
+              </span>
+            </label>
+
+            <div class="google-auth-section" data-google-auth-section>
+              <div class="google-auth-button-shell is-disabled" data-google-register-button aria-label="Criar conta com Google"></div>
+              <p class="google-auth-helper" data-google-helper>Aceite os termos acima para continuar com Google.</p>
+            </div>
+
+            <div class="auth-divider" aria-hidden="true"><span data-google-divider>ou crie com login e senha</span></div>
+
             <div class="field">
               <label for="register-login" data-i18n="form.login.label">Login</label>
               <div class="input-shell">
@@ -132,40 +150,31 @@
                   <span data-register-confirm-password-toggle-label data-i18n="form.password.show">Mostrar</span>
                 </button>
               </div>
-              <p
-                class="field-error"
-                id="register-password-match"
-                data-register-password-match-feedback
-                aria-live="polite"
-                hidden>As senhas não coincidem.</p>
+              <p class="field-error" id="register-password-match" data-register-password-match-feedback aria-live="polite" hidden>As senhas não coincidem.</p>
             </div>
 
-            <label class="terms-row">
-              <input
-                type="checkbox"
-                data-register-terms
-                name="aceiteTermos"
-                disabled>
-              <span>
-                <span data-i18n="form.terms.prefix">Concordo com os </span>
-                <strong data-i18n="form.terms.link">Termos e Condições</strong>
-              </span>
-            </label>
-
-            <p
-              class="form-alert"
-              id="register-feedback"
-              data-register-feedback
-              role="alert"
-              aria-live="polite"
-              tabindex="-1"
-              hidden></p>
+            <p class="form-alert" id="register-feedback" data-register-feedback role="alert" aria-live="polite" tabindex="-1" hidden></p>
 
             <button class="button button-primary submit-button" type="submit" data-register-submit disabled>
               <span class="submit-spinner" aria-hidden="true"></span>
               <span data-register-submit-label data-i18n="form.submit">Cadastrar</span>
             </button>
           </form>
+
+          <section class="google-link-panel" data-google-link-panel hidden aria-labelledby="google-register-link-title">
+            <strong id="google-register-link-title" data-google-link-title>Este e-mail já possui um acesso SixoApp</strong>
+            <p data-google-link-body>Informe sua senha atual para vincular a Conta Google. Se você for colaborador em outro comércio, sua nova empresa continuará separada.</p>
+            <div class="field">
+              <label for="google-register-link-password" data-google-link-password-label>Senha atual</label>
+              <div class="input-shell">
+                <input id="google-register-link-password" type="password" autocomplete="current-password" data-google-link-password>
+              </div>
+            </div>
+            <div class="google-link-actions">
+              <button class="button button-primary" type="button" data-google-link-submit>Vincular e criar minha empresa</button>
+              <button class="button button-quiet" type="button" data-google-link-cancel>Cancelar</button>
+            </div>
+          </section>
 
           <div class="register-card-footer auth-card-footer">
             <span>
@@ -184,9 +193,7 @@
         </section>
 
         <section class="register-card register-success-card auth-card" aria-labelledby="register-success-title" data-register-success-card hidden>
-          <div class="success-illustration" aria-hidden="true">
-            <span></span>
-          </div>
+          <div class="success-illustration" aria-hidden="true"><span></span></div>
           <p class="editorial-pill auth-eyebrow" data-i18n="success.eyebrow">Conta criada</p>
           <h2 id="register-success-title" data-register-success-title data-i18n="success.title" tabindex="-1">Tudo certo!</h2>
           <p data-i18n="success.body">Sua conta foi criada com sucesso. Faça login para começar a usar o SixoApp.</p>

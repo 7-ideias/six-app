@@ -11,6 +11,9 @@ NODE_BIN="$(resolve_node)"
 API_URL="$("$NODE_BIN" scripts/lib/resolve_public_api_base_url.mjs)"
 export SIXAPP_PUBLIC_API_BASE_URL="$API_URL"
 
+GOOGLE_WEB_CLIENT_ID="841074493827-srvp19o45fh2edon9gq1kgcr1nhrtk5u.apps.googleusercontent.com"
+GOOGLE_WEB_CLIENT_ID_LEGACY="194419403668-manc56voom9d29bv0n7m4pilub8j864a.apps.googleusercontent.com"
+
 echo "[LOG SIX] Building Flutter Web with public HTML home"
 echo "[LOG SIX] Web API base URL: $API_URL"
 
@@ -21,6 +24,21 @@ flutter build web --release --no-wasm-dry-run --dart-define="API_BASE_URL=$API_U
 
 grep -Fq 'name="sixapp-entrypoint" content="flutter-app"' build/web/index.html || {
   echo "[ERRO SIX] Flutter build nao gerou index.html com marker flutter-app" >&2
+  exit 1
+}
+
+# A rota Flutter de compatibilidade ainda nasce do web/index.html. Garante que
+# o client_id usado pelo GoogleSignIn seja o mesmo Web Client de producao usado
+# pelo backend/Keycloak, mesmo enquanto o HTML fonte legado e limpo em etapa
+# posterior.
+sed -i "s/${GOOGLE_WEB_CLIENT_ID_LEGACY}/${GOOGLE_WEB_CLIENT_ID}/g" build/web/index.html
+if grep -Fq "$GOOGLE_WEB_CLIENT_ID_LEGACY" build/web/index.html; then
+  echo "[ERRO SIX] Flutter Web ainda contem Google Web Client ID legado" >&2
+  exit 1
+fi
+
+grep -Fq "$GOOGLE_WEB_CLIENT_ID" build/web/index.html || {
+  echo "[ERRO SIX] Flutter Web nao contem Google Web Client ID de producao" >&2
   exit 1
 }
 
@@ -61,6 +79,8 @@ fi
 
 bash scripts/verify_web_strategy_a.sh
 bash scripts/verify_public_legal_pages.sh
+bash scripts/verify_public_google_auth.sh
+"$NODE_BIN" --test scripts/tests/google_auth_core_test.mjs
 
 echo "[LOG SIX] Public home: build/web/index.html"
 echo "[LOG SIX] Public login: build/web/login.html"
