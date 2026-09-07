@@ -74,6 +74,8 @@ requireRedirect('/onboarding/flutter', '/register');
 requireRewrite('/atendimento/status', 'https://api.sixappback.com/atendimento/status');
 requireRewrite('/atendimento/status/assinatura', 'https://api.sixappback.com/atendimento/status/assinatura');
 requireRewrite('/public/status/:path*', 'https://api.sixappback.com/public/status/:path*');
+requireRewrite('/privacy', '/privacy.html');
+requireRewrite('/terms', '/terms.html');
 requireRewrite('/login', '/login.html');
 requireRewrite('/login/flutter', '/flutter.html');
 requireRewrite('/register', '/register.html');
@@ -147,8 +149,21 @@ for (const source of sensitiveSources) {
   requireHeader(source, 'X-Frame-Options', 'DENY');
 }
 
+const legalSources = ['/privacy', '/terms'];
+for (const source of legalSources) {
+  requireHeader(source, 'Cache-Control', 'public, max-age=300, must-revalidate');
+  requireHeader(source, 'X-Content-Type-Options', 'nosniff');
+  requireHeader(source, 'Referrer-Policy', 'strict-origin-when-cross-origin');
+  requireHeader(source, 'X-Frame-Options', 'DENY');
+}
+
+const allowedSecurityHeaderSources = new Set([
+  ...sensitiveSources,
+  ...legalSources,
+]);
+
 if (Array.isArray(config.headers) && config.headers.some((entry) => (
-  !sensitiveSources.includes(entry?.source) &&
+  !allowedSecurityHeaderSources.has(entry?.source) &&
   Array.isArray(entry?.headers) &&
   entry.headers.some((header) => (
     (header?.key === 'Cache-Control' && header?.value === 'no-store, max-age=0') ||

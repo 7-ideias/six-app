@@ -54,9 +54,11 @@ require_contains build/web/terms.html '/privacy'
 
 require_file build/web/site-assets/css/legal.css
 require_file build/web/site-assets/js/legal.js
-require_contains vercel.json '"source": "/privacy"'
-require_contains vercel.json '"destination": "/privacy.html"'
-require_contains vercel.json '"source": "/terms"'
-require_contains vercel.json '"destination": "/terms.html"'
+
+# As rotas e os headers de /privacy e /terms sao validados estruturalmente
+# por scripts/lib/verify_vercel_config.mjs, executado antes deste script em
+# verify_web_strategy_a.sh. Nao repetir essa validacao com grep textual:
+# JSON equivalente pode ter espacamento/formatacao diferentes sem alterar
+# a configuracao efetiva da Vercel.
 
 echo "[OK SIX] Public legal pages validated"
