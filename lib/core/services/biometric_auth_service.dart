@@ -99,7 +99,28 @@ class BiometricAuthService {
     }
   }
 
-  Future<bool> isEnabled() => _secureStorage.isBiometricEnabled();
+  Future<bool> isEnabled() async {
+    if (!await _secureStorage.isBiometricEnabled()) {
+      return false;
+    }
+
+    final String owner = (await _secureStorage.readBiometricUserId())?.trim() ?? '';
+    if (owner.isNotEmpty) {
+      return true;
+    }
+
+    // A flag biométrica é apenas uma preferência local. Se o metadado que
+    // identifica o usuário desaparecer (migração de Keychain, restauração do
+    // aparelho ou gravação interrompida), não existe motivo para destruir a
+    // sessão Keycloak. Desabilitamos somente a biometria e deixamos a camada de
+    // sessão validar normalmente o refresh token existente.
+    debugPrint(
+      '[BiometricAuthService] Biometria sem usuário proprietário; '
+      'desabilitando somente a biometria e preservando a sessão.',
+    );
+    await _secureStorage.disableBiometric();
+    return false;
+  }
 
   Future<String?> enabledUserId() => _secureStorage.readBiometricUserId();
 
