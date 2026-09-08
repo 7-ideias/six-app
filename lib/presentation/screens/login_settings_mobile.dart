@@ -22,6 +22,7 @@ import 'package:sixpos/providers/usuario_provider.dart';
 
 import 'chat_suporte_mobile_screen.dart';
 import 'meu_perfil_mobile_screen.dart';
+import 'security_settings_mobile_screen.dart';
 
 class _AccountPanelColors {
   const _AccountPanelColors({
@@ -374,6 +375,26 @@ class _LoginSettingsMobileState extends State<LoginSettingsMobile> {
                                       () => _openScreen(
                                         context,
                                         MeuPerfilMobileScreen(),
+                                      ),
+                                ),
+                                _GroupedItemData(
+                                  icon: Icons.shield_outlined,
+                                  title: context.t(
+                                    'account.settings.security.title',
+                                    fallback: 'Segurança',
+                                  ),
+                                  subtitle: context.t(
+                                    'account.settings.security.subtitle',
+                                    fallback: 'Face ID, Touch ID e biometria',
+                                  ),
+                                  semanticsLabel: context.t(
+                                    'account.settings.security.open',
+                                    fallback: 'Abrir configurações de segurança',
+                                  ),
+                                  onTap:
+                                      () => _openScreen(
+                                        context,
+                                        const SecuritySettingsMobileScreen(),
                                       ),
                                 ),
                                 _GroupedItemData(
