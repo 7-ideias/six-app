@@ -4,5 +4,7 @@
 <dict>
 	<key>aps-environment</key>
 	<string>$(APS_ENVIRONMENT)</string>
+	<key>keychain-access-groups</key>
+	<array/>
 </dict>
 </plist>

@@ -8,7 +8,9 @@ import 'package:sixpos/presentation/components/mobile_motion.dart';
 
 import '../../core/exceptions/google_auth_exception.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/biometric_auth_service.dart';
 import '../../core/services/google_auth_service.dart';
+import '../../core/services/mobile_session_restoration_service.dart';
 import 'create_account_mobile.dart';
 import 'esqueceu_senha_mobile.dart';
 import 'post_login_splash_mobile_page.dart';
@@ -26,14 +28,24 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   final FocusNode _passwordFocusNode = FocusNode();
   final GlobalKey _submitButtonKey = GlobalKey();
   final AuthService _authService = AuthService();
+  final BiometricAuthService _biometricAuthService = BiometricAuthService();
+  final MobileSessionRestorationService _sessionRestorationService =
+      MobileSessionRestorationService();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _biometricEnabled = false;
+  bool _hasProtectedSession = false;
+  MobileBiometricAvailability _biometricAvailability =
+      const MobileBiometricAvailability.unavailable();
 
   @override
   void initState() {
     super.initState();
     _passwordFocusNode.addListener(_handlePasswordFocusChange);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadBiometricState();
+    });
   }
 
   @override
@@ -70,6 +82,71 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
 
   String get _languageTag => Localizations.localeOf(context).toLanguageTag();
 
+  String _localized({
+    required String pt,
+    required String en,
+    required String es,
+  }) {
+    return switch (Localizations.localeOf(context).languageCode) {
+      'en' => en,
+      'es' => es,
+      _ => pt,
+    };
+  }
+
+  String _biometricName([MobileBiometricAvailability? availability]) {
+    final MobileBiometricAvailability current =
+        availability ?? _biometricAvailability;
+    return switch (current.kind) {
+      MobileBiometricKind.faceId => 'Face ID',
+      MobileBiometricKind.touchId => 'Touch ID',
+      MobileBiometricKind.face => _localized(
+          pt: 'reconhecimento facial',
+          en: 'face recognition',
+          es: 'reconocimiento facial',
+        ),
+      MobileBiometricKind.fingerprint => _localized(
+          pt: 'impressão digital',
+          en: 'fingerprint',
+          es: 'huella digital',
+        ),
+      MobileBiometricKind.generic => _localized(
+          pt: 'biometria',
+          en: 'biometrics',
+          es: 'biometría',
+        ),
+    };
+  }
+
+  IconData _biometricIcon([MobileBiometricAvailability? availability]) {
+    final MobileBiometricAvailability current =
+        availability ?? _biometricAvailability;
+    return switch (current.kind) {
+      MobileBiometricKind.fingerprint || MobileBiometricKind.touchId =>
+        Icons.fingerprint_rounded,
+      MobileBiometricKind.faceId || MobileBiometricKind.face =>
+        Icons.face_retouching_natural_rounded,
+      MobileBiometricKind.generic => Icons.shield_outlined,
+    };
+  }
+
+  Future<void> _loadBiometricState() async {
+    final MobileBiometricAvailability availability =
+        await _biometricAuthService.availability();
+    final String? userId = await _authService.getUserId();
+    final bool enabled = await _biometricAuthService.isEnabled();
+    final bool protectedSession =
+        enabled &&
+        await _biometricAuthService.hasProtectedSessionForUser(userId);
+
+    if (!mounted) return;
+    setState(() {
+      _biometricAvailability = availability;
+      _biometricEnabled = enabled;
+      _hasProtectedSession = protectedSession;
+    });
+  }
+
   Future<void> _login() async {
     final String login = _loginController.text.trim();
     final String senha = _passwordController.text;
@@ -88,7 +165,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     try {
       await _authService.login(login, senha);
       if (!mounted) return;
-      _navigateToPostLoginSplash();
+      await _afterInteractiveLogin();
     } catch (error) {
       _showSnack(error.toString().replaceAll('Exception: ', ''));
     } finally {
@@ -105,7 +182,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
         idioma: _languageTag,
       );
       if (!mounted) return;
-      _navigateToPostLoginSplash();
+      await _afterInteractiveLogin();
     } on GoogleAuthException catch (error) {
       if (!mounted) return;
       if (error.code == GoogleAuthErrorCode.cancelledByUser) return;
@@ -132,6 +209,222 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     }
   }
 
+  Future<void> _loginWithBiometrics() async {
+    if (_isLoading || !_hasProtectedSession) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final String? userId = await _authService.getUserId();
+      if (!await _biometricAuthService.hasProtectedSessionForUser(userId)) {
+        await _loadBiometricState();
+        if (mounted) {
+          _showSnack(
+            _localized(
+              pt: 'A sessão biométrica não está mais disponível. Entre com sua senha.',
+              en: 'The biometric session is no longer available. Sign in with your password.',
+              es: 'La sesión biométrica ya no está disponible. Entra con tu contraseña.',
+            ),
+          );
+        }
+        return;
+      }
+
+      final bool authenticated = await _biometricAuthService.authenticate(
+        localizedReason: _localized(
+          pt: 'Confirme sua identidade para acessar o SixoApp.',
+          en: 'Confirm your identity to access SixoApp.',
+          es: 'Confirma tu identidad para acceder a SixoApp.',
+        ),
+      );
+      if (!authenticated) return;
+
+      final MobileSessionRestorationResult restoration =
+          await _sessionRestorationService.restore();
+      if (!mounted) return;
+
+      switch (restoration.status) {
+        case MobileSessionRestorationStatus.restored:
+          _navigateToPostLoginSplash();
+          return;
+        case MobileSessionRestorationStatus.noStoredSession:
+        case MobileSessionRestorationStatus.invalidSession:
+          await _loadBiometricState();
+          if (mounted) {
+            _showSnack(
+              _localized(
+                pt: 'Sua sessão expirou. Entre novamente para continuar.',
+                en: 'Your session expired. Sign in again to continue.',
+                es: 'Tu sesión expiró. Vuelve a entrar para continuar.',
+              ),
+            );
+          }
+          return;
+        case MobileSessionRestorationStatus.temporaryFailure:
+          _showSnack(
+            _localized(
+              pt: 'Não foi possível validar sua sessão agora. Verifique sua conexão.',
+              en: 'We could not validate your session right now. Check your connection.',
+              es: 'No pudimos validar tu sesión ahora. Revisa tu conexión.',
+            ),
+          );
+          return;
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _afterInteractiveLogin() async {
+    final String? userId = await _authService.getUserId();
+    await _biometricAuthService.reconcileAuthenticatedUser(userId);
+    if (!mounted) return;
+
+    await _maybeOfferBiometricEnrollment(userId);
+    if (!mounted) return;
+    _navigateToPostLoginSplash();
+  }
+
+  Future<void> _maybeOfferBiometricEnrollment(String? userId) async {
+    final String normalizedUserId = userId?.trim() ?? '';
+    if (normalizedUserId.isEmpty || await _biometricAuthService.isEnabled()) {
+      return;
+    }
+
+    final MobileBiometricAvailability availability =
+        await _biometricAuthService.availability();
+    if (!availability.canAuthenticate || !mounted) {
+      return;
+    }
+
+    final bool? wantsToEnable = await showModalBottomSheet<bool>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: SixMobilePalette.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (BuildContext sheetContext) {
+        final String biometricName = _biometricName(availability);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 6, 24, 22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: SixMobilePalette.softAccentSurface,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(
+                    _biometricIcon(availability),
+                    color: SixMobilePalette.accent,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _localized(
+                    pt: 'Ativar $biometricName?',
+                    en: 'Enable $biometricName?',
+                    es: '¿Activar $biometricName?',
+                  ),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: SixMobilePalette.titleText,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _localized(
+                    pt: 'Na próxima abertura, você poderá acessar sua sessão sem digitar a senha. A biometria é validada somente pelo aparelho e não é enviada ao SixoApp.',
+                    en: 'Next time you open the app, you can access your session without typing your password. Biometrics are validated only by your device and are never sent to SixoApp.',
+                    es: 'La próxima vez que abras la app, podrás acceder a tu sesión sin escribir la contraseña. La biometría se valida solo en tu dispositivo y nunca se envía a SixoApp.',
+                  ),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: SixMobilePalette.mutedText,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: FilledButton.icon(
+                    onPressed: () => Navigator.of(sheetContext).pop(true),
+                    icon: Icon(_biometricIcon(availability), size: 20),
+                    label: Text(
+                      _localized(
+                        pt: 'Ativar $biometricName',
+                        en: 'Enable $biometricName',
+                        es: 'Activar $biometricName',
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: SixMobilePalette.accent,
+                      foregroundColor: SixMobilePalette.onAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => Navigator.of(sheetContext).pop(false),
+                  child: Text(
+                    _localized(
+                      pt: 'Agora não',
+                      en: 'Not now',
+                      es: 'Ahora no',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (wantsToEnable != true || !mounted) {
+      return;
+    }
+
+    final bool enabled = await _biometricAuthService.enableForUser(
+      userId: normalizedUserId,
+      localizedReason: _localized(
+        pt: 'Confirme sua identidade para ativar o acesso biométrico ao SixoApp.',
+        en: 'Confirm your identity to enable biometric access to SixoApp.',
+        es: 'Confirma tu identidad para activar el acceso biométrico a SixoApp.',
+      ),
+    );
+
+    if (!mounted) return;
+    if (enabled) {
+      _showSnack(
+        _localized(
+          pt: '${_biometricName(availability)} ativado neste aparelho.',
+          en: '${_biometricName(availability)} enabled on this device.',
+          es: '${_biometricName(availability)} activado en este dispositivo.',
+        ),
+      );
+    } else {
+      _showSnack(
+        _localized(
+          pt: 'Não foi possível ativar a biometria. Você poderá tentar novamente depois.',
+          en: 'Biometrics could not be enabled. You can try again later.',
+          es: 'No se pudo activar la biometría. Podrás intentarlo de nuevo más tarde.',
+        ),
+      );
+    }
+  }
+
   Future<void> _linkGoogleAccount() async {
     final String? password = await showGoogleAccountLinkMobileSheet(
       context,
@@ -148,7 +441,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
         idioma: _languageTag,
       );
       if (!mounted) return;
-      _navigateToPostLoginSplash();
+      await _afterInteractiveLogin();
     } on GoogleAuthException catch (error) {
       if (mounted) _showSnack(_googleMessage(error));
     }
@@ -202,6 +495,10 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   @override
   Widget build(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool showBiometricLogin =
+        _biometricEnabled &&
+        _hasProtectedSession &&
+        _biometricAvailability.canAuthenticate;
 
     return SixoAppAuthMobileScaffold(
       title: context.t(
@@ -235,6 +532,25 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
               ),
             ),
             const SizedBox(height: 18),
+            if (showBiometricLogin) ...<Widget>[
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 35),
+                child: SixoAppAuthSecondaryButton(
+                  label: _localized(
+                    pt: 'Entrar com ${_biometricName()}',
+                    en: 'Sign in with ${_biometricName()}',
+                    es: 'Entrar con ${_biometricName()}',
+                  ),
+                  onPressed: _isLoading ? null : _loginWithBiometrics,
+                  leading: Icon(
+                    _biometricIcon(),
+                    color: colors.titleText,
+                    size: 21,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             SixStaggeredEntry(
               delay: const Duration(milliseconds: 50),
               child: SixoAppAuthSecondaryButton(

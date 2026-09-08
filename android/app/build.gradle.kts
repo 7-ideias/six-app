@@ -26,9 +26,8 @@ android {
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "br.com.seteideias.appplanilha"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // local_auth 3.x suporta Android API 24+.
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -43,7 +42,8 @@ android {
     }
 
     dependencies {
-        // suas dependências existentes
+        // Theme.AppCompat é exigido pelo prompt biométrico nativo do local_auth.
+        implementation("androidx.appcompat:appcompat:1.7.0")
 
         coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4") // ✅ esta é a dependência necessária
     }

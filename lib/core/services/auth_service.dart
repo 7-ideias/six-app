@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'google_auth_service.dart';
 import 'http_client_factory.dart';
 import 'empresa_service.dart';
+import 'secure_auth_storage_service.dart';
 import '../config/app_config.dart';
 import '../../data/models/auth_response_model.dart';
 
@@ -51,6 +52,8 @@ class AuthService {
     registerUnauthorizedTokenRefreshHandler(_recoverFromUnauthorized);
   }
 
+  final SecureAuthStorageService _secureAuthStorage =
+      SecureAuthStorageService();
   Timer? _refreshTimer;
   Future<void>? _refreshFuture;
 
@@ -315,7 +318,8 @@ class AuthService {
     }
 
     if (!kIsWeb && authData.refreshToken.isNotEmpty) {
-      await prefs.setString(_refreshTokenKey, authData.refreshToken);
+      await _secureAuthStorage.writeRefreshToken(authData.refreshToken);
+      await prefs.remove(_refreshTokenKey);
     }
   }
 
@@ -325,7 +329,7 @@ class AuthService {
     if (accessToken == null || accessToken.trim().isEmpty) {
       if (!kIsWeb) {
         final String storedRefreshToken =
-            prefs.getString(_refreshTokenKey)?.trim() ?? '';
+            (await getRefreshToken())?.trim() ?? '';
         if (storedRefreshToken.isEmpty) {
           return accessToken;
         }
@@ -402,6 +406,10 @@ class AuthService {
   }
 
   Future<String?> getRefreshToken() async {
+    if (!kIsWeb) {
+      return _secureAuthStorage.readRefreshToken();
+    }
+
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_refreshTokenKey);
   }
@@ -446,6 +454,10 @@ class AuthService {
     await prefs.remove(_userDataKey);
     await prefs.remove(_empresaIdKey);
     await prefs.remove(_accessTokenExpiresAtKey);
+    if (!kIsWeb) {
+      await _secureAuthStorage.deleteRefreshToken();
+      await _secureAuthStorage.disableBiometric();
+    }
 
     try {
       await GoogleAuthService().signOut();
