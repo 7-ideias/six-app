@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'secure_auth_storage_service.dart';
 
@@ -99,7 +102,29 @@ class BiometricAuthService {
     }
   }
 
-  Future<bool> isEnabled() => _secureStorage.isBiometricEnabled();
+  Future<bool> isEnabled() async {
+    if (!await _secureStorage.isBiometricEnabled()) {
+      return false;
+    }
+
+    final String owner = (await _secureStorage.readBiometricUserId())?.trim() ?? '';
+    if (owner.isEmpty) {
+      await _disableInconsistentBiometric(
+        'Biometria sem usuário proprietário',
+      );
+      return false;
+    }
+
+    final String currentSessionUserId = await _currentStoredSessionUserId();
+    if (currentSessionUserId.isNotEmpty && owner != currentSessionUserId) {
+      await _disableInconsistentBiometric(
+        'Biometria pertence a outro usuário local',
+      );
+      return false;
+    }
+
+    return true;
+  }
 
   Future<String?> enabledUserId() => _secureStorage.readBiometricUserId();
 
@@ -157,6 +182,62 @@ class BiometricAuthService {
   }
 
   Future<void> disable() => _secureStorage.disableBiometric();
+
+  Future<void> _disableInconsistentBiometric(String reason) async {
+    debugPrint(
+      '[BiometricAuthService] $reason; desabilitando somente a biometria '
+      'e preservando a sessão Keycloak.',
+    );
+    await _secureStorage.disableBiometric();
+  }
+
+  Future<String> _currentStoredSessionUserId() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    final String accessToken = prefs.getString('accessToken')?.trim() ?? '';
+    final String subject = _subjectFromJwt(accessToken);
+    if (subject.isNotEmpty) {
+      return subject;
+    }
+
+    final String rawUserData = prefs.getString('userData')?.trim() ?? '';
+    if (rawUserData.isEmpty) {
+      return '';
+    }
+
+    try {
+      final dynamic decoded = jsonDecode(rawUserData);
+      if (decoded is! Map<String, dynamic>) {
+        return '';
+      }
+
+      final String keycloakId = decoded['keycloakId']?.toString().trim() ?? '';
+      if (keycloakId.isNotEmpty) {
+        return keycloakId;
+      }
+
+      return decoded['id']?.toString().trim() ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _subjectFromJwt(String token) {
+    if (token.isEmpty) return '';
+
+    final List<String> parts = token.split('.');
+    if (parts.length < 2) return '';
+
+    try {
+      final String normalized = base64Url.normalize(parts[1]);
+      final String payload = utf8.decode(base64Url.decode(normalized));
+      final dynamic decoded = jsonDecode(payload);
+      if (decoded is! Map<String, dynamic>) return '';
+      return decoded['sub']?.toString().trim() ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
 
   MobileBiometricKind _resolveKind(List<BiometricType> available) {
     if (available.contains(BiometricType.face)) {

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sixpos/core/services/auth_service.dart';
@@ -20,7 +21,39 @@ void main() {
       expect(gateway.clearCalls, 0);
     });
 
-    test('restaura uma sessão válida', () async {
+    test('não renova ao retomar quando o access token ainda é válido', () async {
+      final _FakeMobileSessionAuthGateway gateway =
+          _FakeMobileSessionAuthGateway(
+            refreshToken: 'refresh-token',
+            accessToken: _jwtExpirandoEm(const Duration(minutes: 5)),
+          );
+      final MobileSessionRestorationService service =
+          MobileSessionRestorationService(gateway: gateway);
+
+      final MobileSessionRestorationResult result = await service.restore();
+
+      expect(result.status, MobileSessionRestorationStatus.restored);
+      expect(gateway.refreshCalls, 0);
+      expect(gateway.clearCalls, 0);
+    });
+
+    test('renova quando o access token está expirado', () async {
+      final _FakeMobileSessionAuthGateway gateway =
+          _FakeMobileSessionAuthGateway(
+            refreshToken: 'refresh-token',
+            accessToken: _jwtExpirandoEm(const Duration(minutes: -1)),
+          );
+      final MobileSessionRestorationService service =
+          MobileSessionRestorationService(gateway: gateway);
+
+      final MobileSessionRestorationResult result = await service.restore();
+
+      expect(result.status, MobileSessionRestorationStatus.restored);
+      expect(gateway.refreshCalls, 1);
+      expect(gateway.clearCalls, 0);
+    });
+
+    test('restaura uma sessão válida sem access token local', () async {
       final _FakeMobileSessionAuthGateway gateway =
           _FakeMobileSessionAuthGateway(refreshToken: 'refresh-token');
       final MobileSessionRestorationService service =
@@ -109,15 +142,29 @@ void main() {
   });
 }
 
+String _jwtExpirandoEm(Duration duration) {
+  final int exp = DateTime.now().toUtc().add(duration).millisecondsSinceEpoch ~/ 1000;
+  final String header = base64Url
+      .encode(utf8.encode(jsonEncode(<String, Object>{'alg': 'none'})))
+      .replaceAll('=', '');
+  final String payload = base64Url
+      .encode(utf8.encode(jsonEncode(<String, Object>{'exp': exp})))
+      .replaceAll('=', '');
+  return '$header.$payload.';
+}
+
 class _FakeMobileSessionAuthGateway implements MobileSessionAuthGateway {
   _FakeMobileSessionAuthGateway({
     required String? refreshToken,
+    String? accessToken,
     this.getRefreshTokenError,
     this.refreshError,
     this.refreshCompleter,
-  }) : _storedRefreshToken = refreshToken;
+  }) : _storedRefreshToken = refreshToken,
+       _storedAccessToken = accessToken;
 
   final String? _storedRefreshToken;
+  final String? _storedAccessToken;
   final Object? getRefreshTokenError;
   final Object? refreshError;
   final Completer<void>? refreshCompleter;
@@ -136,6 +183,9 @@ class _FakeMobileSessionAuthGateway implements MobileSessionAuthGateway {
     }
     return _storedRefreshToken;
   }
+
+  @override
+  Future<String?> getStoredAccessToken() async => _storedAccessToken;
 
   @override
   Future<void> refreshToken() async {
