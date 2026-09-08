@@ -42,7 +42,8 @@ android {
     }
 
     dependencies {
-        // suas dependências existentes
+        // Theme.AppCompat é exigido pelo prompt biométrico nativo do local_auth.
+        implementation("androidx.appcompat:appcompat:1.7.0")
 
         coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4") // ✅ esta é a dependência necessária
     }
