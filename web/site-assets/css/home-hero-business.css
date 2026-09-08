@@ -9,20 +9,31 @@
   grid-template-columns: minmax(0, 1fr) auto !important;
 }
 
+/*
+ * Os cenários novos usam fotos externas quando disponíveis, mas o hero nunca
+ * pode ficar vazio se o CDN atrasar, for bloqueado ou falhar. Cada slide novo
+ * recebe abaixo um asset local já versionado no SixoApp como fallback visual.
+ * O background aparece durante o carregamento e permanece visível em caso de
+ * erro do <img>, eliminando os quadros vazios observados em produção/preview.
+ */
 .public-home-page .impact-hero-frame .impact-hero-slide:nth-child(2) {
   object-position: 50% center;
+  background: #08152b url('/site-assets/images/home-impact/hero-carousel/02-atendimento-domiciliar.jpg') center / cover no-repeat;
 }
 
 .public-home-page .impact-hero-frame .impact-hero-slide:nth-child(3) {
   object-position: 52% center;
+  background: #08152b url('/site-assets/images/home-impact/hero.webp') 67% center / cover no-repeat;
 }
 
 .public-home-page .impact-hero-frame .impact-hero-slide:nth-child(4) {
   object-position: 50% center;
+  background: #08152b url('/site-assets/images/home-impact/hero-carousel/04-servico-em-campo.jpg') 61% center / cover no-repeat;
 }
 
 .public-home-page .impact-hero-frame .impact-hero-slide:nth-child(5) {
   object-position: 52% center;
+  background: #08152b url('/site-assets/images/home-impact/hero-carousel/05-cliente-aprova-web.jpg') 38% center / cover no-repeat;
 }
 
 .public-home-page .impact-localized {
