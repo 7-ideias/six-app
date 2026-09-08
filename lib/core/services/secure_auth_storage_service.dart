@@ -97,9 +97,6 @@ class SecureAuthStorageService {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String cached = _cachedRefreshToken?.trim() ?? '';
     if (cached.isNotEmpty) {
-      // Se uma gravação anterior falhou depois de o backend rotacionar o token,
-      // o valor mais novo ficou preservado em memória. Reaproveitamos esse
-      // valor imediatamente e tentamos repersisti-lo sem derrubar a sessão.
       try {
         await _writeSecureValueWithRetry(_refreshTokenKey, cached);
         await prefs.setBool(_refreshTokenExpectedKey, true);
@@ -132,7 +129,6 @@ class SecureAuthStorageService {
       );
     }
 
-    // Compatibilidade com instalações anteriores à migração para secure storage.
     final String legacyValue =
         prefs.getString(legacyRefreshTokenKey)?.trim() ?? '';
     if (legacyValue.isNotEmpty) {
@@ -143,8 +139,6 @@ class SecureAuthStorageService {
         await _writeSecureValueWithRetry(_refreshTokenKey, legacyValue);
         await prefs.remove(legacyRefreshTokenKey);
       } catch (error) {
-        // Não elimina a sessão antiga se a migração segura falhar. O token
-        // legado permanece disponível apenas até uma migração futura ter êxito.
         debugPrint(
           '[SecureAuthStorageService] Migração do refresh token legado será '
           'tentada novamente: $error',
@@ -155,9 +149,6 @@ class SecureAuthStorageService {
     }
 
     if (_hasStoredSessionHint(prefs)) {
-      // Uma pequena segunda tentativa cobre a janela de retomada do iOS em que
-      // o app já recebeu `resumed`, mas o protected data ainda está sendo
-      // disponibilizado pelo sistema.
       await Future<void>.delayed(const Duration(milliseconds: 250));
       try {
         final String retryValue =
@@ -255,9 +246,6 @@ class SecureAuthStorageService {
       return null;
     }
 
-    // A primeira implementação foi gravada com `unlocked` (default). Como a
-    // acessibilidade faz parte da consulta ao Keychain, tentamos esse formato
-    // antigo e, encontrando valor, regravamos no novo formato.
     try {
       final String? legacyValue = await _legacyIosStorage.read(key: key);
       if (legacyValue == null || legacyValue.trim().isEmpty) {
@@ -281,6 +269,24 @@ class SecureAuthStorageService {
         return;
       } catch (error) {
         lastError = error;
+
+        // errSecDuplicateItem (-25299): pode ocorrer no iOS quando uma versão
+        // anterior gravou o mesmo account/service com outra acessibilidade
+        // (por exemplo, `unlocked`) e a versão atual tenta migrar para
+        // `first_unlock_this_device`. O Keychain considera o item existente,
+        // mas a atualização não encontra a entrada por causa dos atributos
+        // diferentes. Nesse caso recuperamos de forma idempotente: o valor já
+        // está em memória, removemos as variantes antigas e gravamos novamente
+        // com a configuração atual.
+        if (_isIOS && _isDuplicateKeychainItemError(error)) {
+          try {
+            await _recoverDuplicateIosItemAndWrite(key, value);
+            return;
+          } catch (recoveryError) {
+            lastError = recoveryError;
+          }
+        }
+
         if (attempt < 2) {
           await Future<void>.delayed(
             Duration(milliseconds: 120 * (attempt + 1)),
@@ -290,6 +296,46 @@ class SecureAuthStorageService {
     }
 
     throw SecureAuthStorageTemporarilyUnavailableException(lastError);
+  }
+
+  bool _isDuplicateKeychainItemError(Object error) {
+    final String message = error.toString().toLowerCase();
+    return message.contains('-25299') ||
+        message.contains('specified item already exists') ||
+        message.contains('item already exists in the keychain');
+  }
+
+  Future<void> _recoverDuplicateIosItemAndWrite(
+    String key,
+    String value,
+  ) async {
+    debugPrint(
+      '[SecureAuthStorageService] Item duplicado no Keychain detectado para '
+      '$key; migrando para a acessibilidade atual.',
+    );
+
+    // Não usamos _deleteSecureValueAcrossIosAccessibility aqui porque esse
+    // método propaga falhas de limpeza. Na recuperação de -25299 tentamos as
+    // duas variantes e seguimos se ao menos a gravação final tiver sucesso.
+    try {
+      await _secureStorage.delete(key: key);
+    } catch (error) {
+      debugPrint(
+        '[SecureAuthStorageService] Limpeza da variante atual durante '
+        'recuperação de -25299 falhou: $error',
+      );
+    }
+
+    try {
+      await _legacyIosStorage.delete(key: key);
+    } catch (error) {
+      debugPrint(
+        '[SecureAuthStorageService] Limpeza da variante legada durante '
+        'recuperação de -25299 falhou: $error',
+      );
+    }
+
+    await _secureStorage.write(key: key, value: value);
   }
 
   Future<void> _deleteSecureValueAcrossIosAccessibility(String key) async {
@@ -310,8 +356,6 @@ class SecureAuthStorageService {
     }
 
     if (primaryError != null) {
-      // Limpeza explícita deve continuar sinalizando falha. Não usamos esse
-      // caminho durante restauração automática de sessão.
       throw primaryError;
     }
   }
