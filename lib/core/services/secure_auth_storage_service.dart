@@ -94,12 +94,25 @@ class SecureAuthStorageService {
   Future<String?> readRefreshToken() async {
     if (kIsWeb) return null;
 
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String cached = _cachedRefreshToken?.trim() ?? '';
     if (cached.isNotEmpty) {
+      // Se uma gravação anterior falhou depois de o backend rotacionar o token,
+      // o valor mais novo ficou preservado em memória. Reaproveitamos esse
+      // valor imediatamente e tentamos repersisti-lo sem derrubar a sessão.
+      try {
+        await _writeSecureValueWithRetry(_refreshTokenKey, cached);
+        await prefs.setBool(_refreshTokenExpectedKey, true);
+        await prefs.remove(legacyRefreshTokenKey);
+      } catch (error) {
+        debugPrint(
+          '[SecureAuthStorageService] Refresh token em memória preservado; '
+          'repersistência será tentada novamente: $error',
+        );
+      }
       return cached;
     }
 
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
     Object? secureReadError;
 
     try {
