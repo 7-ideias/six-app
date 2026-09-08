@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sixpos/core/services/auth_service.dart';
 import 'package:sixpos/core/services/mobile_session_restoration_service.dart';
+import 'package:sixpos/core/services/secure_auth_storage_service.dart';
 
 void main() {
   group('MobileSessionRestorationService', () {
@@ -68,6 +69,26 @@ void main() {
       expect(gateway.clearCalls, 0);
     });
 
+    test(
+      'preserva a sessão quando o Keychain está temporariamente indisponível',
+      () async {
+        final _FakeMobileSessionAuthGateway gateway =
+            _FakeMobileSessionAuthGateway(
+              refreshToken: null,
+              getRefreshTokenError:
+                  const SecureAuthStorageTemporarilyUnavailableException(),
+            );
+        final MobileSessionRestorationService service =
+            MobileSessionRestorationService(gateway: gateway);
+
+        final MobileSessionRestorationResult result = await service.restore();
+
+        expect(result.status, MobileSessionRestorationStatus.temporaryFailure);
+        expect(gateway.refreshCalls, 0);
+        expect(gateway.clearCalls, 0);
+      },
+    );
+
     test('compartilha uma restauração concorrente', () async {
       final _FakeMobileSessionAuthGateway gateway =
           _FakeMobileSessionAuthGateway(
@@ -91,11 +112,13 @@ void main() {
 class _FakeMobileSessionAuthGateway implements MobileSessionAuthGateway {
   _FakeMobileSessionAuthGateway({
     required String? refreshToken,
+    this.getRefreshTokenError,
     this.refreshError,
     this.refreshCompleter,
   }) : _storedRefreshToken = refreshToken;
 
   final String? _storedRefreshToken;
+  final Object? getRefreshTokenError;
   final Object? refreshError;
   final Completer<void>? refreshCompleter;
   int refreshCalls = 0;
@@ -107,7 +130,12 @@ class _FakeMobileSessionAuthGateway implements MobileSessionAuthGateway {
   }
 
   @override
-  Future<String?> getRefreshToken() async => _storedRefreshToken;
+  Future<String?> getRefreshToken() async {
+    if (getRefreshTokenError != null) {
+      throw getRefreshTokenError!;
+    }
+    return _storedRefreshToken;
+  }
 
   @override
   Future<void> refreshToken() async {
