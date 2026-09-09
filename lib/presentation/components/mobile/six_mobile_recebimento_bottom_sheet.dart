@@ -100,6 +100,9 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
       isDismissible: true,
       enableDrag: true,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(
+        alpha: Theme.of(context).brightness == Brightness.dark ? 0.62 : 0.44,
+      ),
       builder: (_) => SixMobileRecebimentoBottomSheet(
         titulo: titulo,
         descricao: descricao,
@@ -449,11 +452,14 @@ class _SixMobileRecebimentoBottomSheetState
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: <Color>[
-                      stateColor.withValues(alpha: 0.10),
-                      colors.surface.withValues(alpha: 0.98),
+                      Color.alphaBlend(
+                        stateColor.withValues(alpha: 0.08),
+                        colors.surface,
+                      ),
+                      colors.surface,
                       colors.surface,
                     ],
-                    stops: const <double>[0, 0.28, 0.70],
+                    stops: const <double>[0, 0.24, 0.58],
                   ),
             border: Border(
               top: BorderSide(
@@ -1053,6 +1059,8 @@ class _SixMobileRecebimentoBottomSheetState
 
   Widget _formaRecebimentoCard(int index, _RecebimentoFormaDraft forma) {
     final SixMobileColorScheme colors = _colors;
+    final LocaleSettingsProvider formatter =
+        context.watch<LocaleSettingsProvider>();
     final Set<String> usadosEmOutrasFormas = _formas
         .where((item) => !identical(item, forma))
         .map((item) => item.opcao.codigoTipo)
@@ -1091,6 +1099,11 @@ class _SixMobileRecebimentoBottomSheetState
                         '${context.t('recebimento.valorForma', fallback: 'Valor da forma')} ${index + 1}',
                     filled: true,
                     fillColor: colors.surface,
+                    prefixText: formatter.currencySymbol + ' ',
+                    prefixStyle: TextStyle(
+                      color: colors.titleText,
+                      fontWeight: FontWeight.w800,
+                    ),
                     suffixIcon: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
