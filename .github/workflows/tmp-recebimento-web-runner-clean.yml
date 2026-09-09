@@ -1,0 +1,35 @@
+name: Temporary web receipt runner clean
+
+on:
+  push:
+    branches:
+      - feature/20260908-fluxo-recebimento-mobile
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/20260908-fluxo-recebimento-mobile
+          fetch-depth: 0
+      - name: Patch web receipt
+        run: python3 .github/scripts/patch_recebimento_web_parity.py
+      - name: Cleanup temporary files
+        run: git rm .github/scripts/patch_recebimento_web_parity.py .github/workflows/tmp-recebimento-web-parity.yml .github/workflows/tmp-recebimento-web-parity-run.yml .github/workflows/tmp-recebimento-web-runner-clean.yml
+      - name: Format
+        run: dart format lib/presentation/screens/recebimento_pagamento_web.dart
+      - name: Dependencies
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze lib/presentation/screens/recebimento_pagamento_web.dart
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/presentation/screens/recebimento_pagamento_web.dart
+          git commit -m "feat(web): equipara experiencia de recebimento ao mobile"
+          git push origin HEAD:feature/20260908-fluxo-recebimento-mobile
