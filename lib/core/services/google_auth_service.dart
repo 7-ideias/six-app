@@ -95,19 +95,40 @@ class GoogleAuthService {
       await _googleSignIn.signOut();
       account = await _googleSignIn.signIn();
     } on PlatformException catch (error, stack) {
-      debugPrint('GoogleSignIn PlatformException: ${error.code}');
+      final String nativeMessage = error.message?.trim() ?? '';
+      final String nativeDetails = error.details?.toString().trim() ?? '';
+      final String diagnostic = <String>[
+        'GoogleSignIn',
+        'code=${error.code}',
+        if (nativeMessage.isNotEmpty) 'message=$nativeMessage',
+        if (nativeDetails.isNotEmpty) 'details=$nativeDetails',
+      ].join(' | ');
+
+      debugPrint('[GoogleAuthService] $diagnostic');
       debugPrint('$stack');
+
       if (error.code == GoogleSignIn.kSignInCanceledError) {
         throw GoogleAuthException.cancelled();
       }
       if (error.code == GoogleSignIn.kNetworkError) {
         throw GoogleAuthException.network();
       }
-      throw GoogleAuthException.unknown();
+
+      // Diagnóstico temporário exibido no SnackBar/"toast" da tela de login.
+      // Não inclui tokens nem credenciais; apenas o erro nativo do plugin.
+      throw GoogleAuthException(
+        code: GoogleAuthErrorCode.unknown,
+        message: diagnostic,
+      );
     } catch (error, stack) {
-      debugPrint('GoogleSignIn error: ${error.runtimeType}');
+      final String diagnostic =
+          'GoogleSignIn | error=${error.runtimeType} | message=$error';
+      debugPrint('[GoogleAuthService] $diagnostic');
       debugPrint('$stack');
-      throw GoogleAuthException.unknown();
+      throw GoogleAuthException(
+        code: GoogleAuthErrorCode.unknown,
+        message: diagnostic,
+      );
     }
 
     if (account == null) throw GoogleAuthException.cancelled();
