@@ -8,18 +8,22 @@ class GoogleAuthPlatformConfig {
 
 GoogleAuthPlatformConfig resolveGoogleAuthPlatformConfig() {
   const iosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
-  const androidClientId = String.fromEnvironment('GOOGLE_ANDROID_CLIENT_ID');
 
   if (Platform.isIOS || Platform.isMacOS) {
     return GoogleAuthPlatformConfig(
       clientId: iosClientId.isEmpty ? null : iosClientId,
     );
   }
+
   if (Platform.isAndroid) {
-    return GoogleAuthPlatformConfig(
-      clientId: androidClientId.isEmpty ? null : androidClientId,
-    );
+    // google_sign_in_android 6.x não usa o OAuth Android client id como
+    // `clientId`. No Android, a identidade do app é validada pelo package name
+    // + certificado SHA cadastrados no Google/Firebase. O OAuth Web usado para
+    // emitir idToken para o backend é informado separadamente em
+    // `serverClientId` pelo GoogleAuthService.
+    return const GoogleAuthPlatformConfig();
   }
+
   return const GoogleAuthPlatformConfig();
 }
 
