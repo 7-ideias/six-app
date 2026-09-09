@@ -8,18 +8,16 @@ class GoogleAuthPlatformConfig {
 
 GoogleAuthPlatformConfig resolveGoogleAuthPlatformConfig() {
   const iosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
-  const androidClientId = String.fromEnvironment('GOOGLE_ANDROID_CLIENT_ID');
 
   if (Platform.isIOS || Platform.isMacOS) {
     return GoogleAuthPlatformConfig(
       clientId: iosClientId.isEmpty ? null : iosClientId,
     );
   }
-  if (Platform.isAndroid) {
-    return GoogleAuthPlatformConfig(
-      clientId: androidClientId.isEmpty ? null : androidClientId,
-    );
-  }
+
+  // No Android, o OAuth client nativo é resolvido pelo package name +
+  // certificado SHA cadastrados no Google/Firebase. O GoogleAuthService envia
+  // separadamente o OAuth Web como serverClientId para emissão do idToken.
   return const GoogleAuthPlatformConfig();
 }
 
