@@ -2,59 +2,51 @@ name: Temporary receipt mobile patch
 
 on:
   push:
-    branches:
-      - feature/20260908-fluxo-recebimento-mobile
+    branches: ["feature/20260908-fluxo-recebimento-mobile"]
 
 permissions:
   contents: write
 
 jobs:
-  patch-call-sites:
-    if: github.event.head_commit.message != 'chore: apply receipt callsite metadata'
+  patch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout branch
+        uses: actions/checkout@v4
         with:
           ref: feature/20260908-fluxo-recebimento-mobile
           fetch-depth: 0
 
-      - name: Wire operation metadata into mobile receipt sheet
+      - name: Patch mobile receipt call sites
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          files_and_replacements = {
-              Path('lib/presentation/screens/pdv_mobile.dart'): [
-                  (
-                      "      codigoTipoInicial: venda?.codigoTipoRecebimento,\n      permitirParcial: true,",
-                      "      codigoTipoInicial: venda?.codigoTipoRecebimento,\n      idUnicoDaOperacao: venda == null\n          ? null\n          : (venda.idOperacaoApp.trim().isNotEmpty\n              ? venda.idOperacaoApp\n              : venda.idOperacaoFinanceira),\n      dataOperacao: venda?.dataCompetencia,\n      permitirParcial: true,",
-                  ),
-              ],
-              Path('lib/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart'): [
-                  (
-                      "          codigoTipoInicial: venda.codigoTipoRecebimento,\n          permitirParcial: true,",
-                      "          codigoTipoInicial: venda.codigoTipoRecebimento,\n          idUnicoDaOperacao: venda.idOperacaoApp.trim().isNotEmpty\n              ? venda.idOperacaoApp\n              : venda.idOperacaoFinanceira,\n          dataOperacao: venda.dataCompetencia,\n          permitirParcial: true,",
-                  ),
-              ],
+          replacements = {
+              Path('lib/presentation/screens/pdv_mobile.dart'): (
+                  "      codigoTipoInicial: venda?.codigoTipoRecebimento,\n      permitirParcial: true,",
+                  "      codigoTipoInicial: venda?.codigoTipoRecebimento,\n      idUnicoDaOperacao: venda == null\n          ? null\n          : (venda.idOperacaoApp.trim().isNotEmpty\n              ? venda.idOperacaoApp\n              : venda.idOperacaoFinanceira),\n      dataOperacao: venda?.dataCompetencia,\n      permitirParcial: true,",
+              ),
+              Path('lib/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart'): (
+                  "          codigoTipoInicial: venda.codigoTipoRecebimento,\n          permitirParcial: true,",
+                  "          codigoTipoInicial: venda.codigoTipoRecebimento,\n          idUnicoDaOperacao: venda.idOperacaoApp.trim().isNotEmpty\n              ? venda.idOperacaoApp\n              : venda.idOperacaoFinanceira,\n          dataOperacao: venda.dataCompetencia,\n          permitirParcial: true,",
+              ),
           }
 
-          for path, replacements in files_and_replacements.items():
+          for path, (old, new) in replacements.items():
               text = path.read_text()
-              for old, new in replacements:
-                  if old not in text:
-                      raise SystemExit(f'Expected snippet not found in {path}: {old!r}')
-                  text = text.replace(old, new, 1)
-              path.write_text(text)
+              if old not in text:
+                  raise SystemExit(f'Expected snippet not found in {path}')
+              path.write_text(text.replace(old, new, 1))
           PY
 
-      - name: Remove temporary workflow
-        run: git rm .github/workflows/tmp-recebimento-mobile-patch.yml
-
-      - name: Commit and push
+      - name: Remove temporary workflow and push patch
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/tmp-recebimento-mobile-patch.yml
           git add lib/presentation/screens/pdv_mobile.dart lib/presentation/screens/vendas_nao_liquidadas_mobile_screen.dart
           git commit -m "chore: apply receipt callsite metadata"
           git push origin HEAD:feature/20260908-fluxo-recebimento-mobile
