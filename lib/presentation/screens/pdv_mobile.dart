@@ -465,6 +465,12 @@ class _PdvMobileScreenState extends State<PdvMobileScreen> {
       valorJaRecebido: 0,
       valorAberto: _total,
       codigoTipoInicial: venda?.codigoTipoRecebimento,
+      idUnicoDaOperacao: venda == null
+          ? null
+          : (venda.idOperacaoApp.trim().isNotEmpty
+              ? venda.idOperacaoApp
+              : venda.idOperacaoFinanceira),
+      dataOperacao: venda?.dataCompetencia,
       permitirParcial: true,
       observacaoInicial:
           _editandoVendaNaoLiquidada
