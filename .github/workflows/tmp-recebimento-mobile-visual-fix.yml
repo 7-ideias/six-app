@@ -9,8 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  patch-receipt-visual:
-    if: github.event.head_commit.message != 'fix(mobile): melhora contraste do recebimento'
+  patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,54 +17,43 @@ jobs:
           ref: feature/20260908-fluxo-recebimento-mobile
           fetch-depth: 0
 
-      - name: Ajustar contraste e moeda do recebimento
+      - name: Patch file
         shell: bash
         run: |
-          python3 - <<'PY'
+          python3 <<'PY'
           from pathlib import Path
-
-          path = Path('lib/presentation/components/mobile/six_mobile_recebimento_bottom_sheet.dart')
-          text = path.read_text()
-
-          replacements = [
-              (
-                  "      backgroundColor: Colors.transparent,\n      builder: (_) => SixMobileRecebimentoBottomSheet(",
-                  "      backgroundColor: Colors.transparent,\n      barrierColor: Colors.black.withValues(\n        alpha: Theme.of(context).brightness == Brightness.dark ? 0.62 : 0.44,\n      ),\n      builder: (_) => SixMobileRecebimentoBottomSheet(",
-              ),
-              (
-                  "            gradient: stateColor == null\n                ? null\n                : LinearGradient(\n                    begin: Alignment.topCenter,\n                    end: Alignment.bottomCenter,\n                    colors: <Color>[\n                      stateColor.withValues(alpha: 0.10),\n                      colors.surface.withValues(alpha: 0.98),\n                      colors.surface,\n                    ],\n                    stops: const <double>[0, 0.28, 0.70],\n                  ),",
-                  "            gradient: stateColor == null\n                ? null\n                : LinearGradient(\n                    begin: Alignment.topCenter,\n                    end: Alignment.bottomCenter,\n                    colors: <Color>[\n                      Color.alphaBlend(\n                        stateColor.withValues(alpha: 0.08),\n                        colors.surface,\n                      ),\n                      colors.surface,\n                      colors.surface,\n                    ],\n                    stops: const <double>[0, 0.24, 0.58],\n                  ),",
-              ),
-              (
-                  "  Widget _formaRecebimentoCard(int index, _RecebimentoFormaDraft forma) {\n    final SixMobileColorScheme colors = _colors;",
-                  "  Widget _formaRecebimentoCard(int index, _RecebimentoFormaDraft forma) {\n    final SixMobileColorScheme colors = _colors;\n    final LocaleSettingsProvider formatter =\n        context.watch<LocaleSettingsProvider>();",
-              ),
-              (
-                  "                    filled: true,\n                    fillColor: colors.surface,\n                    suffixIcon: Row(",
-                  "                    filled: true,\n                    fillColor: colors.surface,\n                    prefixText: '${formatter.currencySymbol} ',\n                    prefixStyle: TextStyle(\n                      color: colors.titleText,\n                      fontWeight: FontWeight.w800,\n                    ),\n                    suffixIcon: Row(",
-              ),
-          ]
-
-          for old, new in replacements:
-              if old not in text:
-                  raise SystemExit(f'Expected snippet not found: {old!r}')
-              text = text.replace(old, new, 1)
-
-          path.write_text(text)
+          p = Path('lib/presentation/components/mobile/six_mobile_recebimento_bottom_sheet.dart')
+          s = p.read_text()
+          s = s.replace(
+              "      backgroundColor: Colors.transparent,\n      builder: (_) => SixMobileRecebimentoBottomSheet(",
+              "      backgroundColor: Colors.transparent,\n      barrierColor: Colors.black.withValues(\n        alpha: Theme.of(context).brightness == Brightness.dark ? 0.62 : 0.44,\n      ),\n      builder: (_) => SixMobileRecebimentoBottomSheet(",
+              1,
+          )
+          s = s.replace(
+              "                      stateColor.withValues(alpha: 0.10),\n                      colors.surface.withValues(alpha: 0.98),\n                      colors.surface,\n                    ],\n                    stops: const <double>[0, 0.28, 0.70],",
+              "                      Color.alphaBlend(\n                        stateColor.withValues(alpha: 0.08),\n                        colors.surface,\n                      ),\n                      colors.surface,\n                      colors.surface,\n                    ],\n                    stops: const <double>[0, 0.24, 0.58],",
+              1,
+          )
+          s = s.replace(
+              "  Widget _formaRecebimentoCard(int index, _RecebimentoFormaDraft forma) {\n    final SixMobileColorScheme colors = _colors;",
+              "  Widget _formaRecebimentoCard(int index, _RecebimentoFormaDraft forma) {\n    final SixMobileColorScheme colors = _colors;\n    final LocaleSettingsProvider formatter =\n        context.watch<LocaleSettingsProvider>();",
+              1,
+          )
+          s = s.replace(
+              "                    filled: true,\n                    fillColor: colors.surface,\n                    suffixIcon: Row(",
+              "                    filled: true,\n                    fillColor: colors.surface,\n                    prefixText: formatter.currencySymbol + ' ',\n                    prefixStyle: TextStyle(\n                      color: colors.titleText,\n                      fontWeight: FontWeight.w800,\n                    ),\n                    suffixIcon: Row(",
+              1,
+          )
+          p.write_text(s)
           PY
 
-      - name: Remover workflow temporario
+      - name: Remove temporary workflow
         run: git rm .github/workflows/tmp-recebimento-mobile-visual-fix.yml
 
-      - name: Formatar arquivo alterado
-        run: dart format lib/presentation/components/mobile/six_mobile_recebimento_bottom_sheet.dart
-
-      - name: Commit e push
+      - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add lib/presentation/components/mobile/six_mobile_recebimento_bottom_sheet.dart
           git commit -m "fix(mobile): melhora contraste do recebimento"
           git push origin HEAD:feature/20260908-fluxo-recebimento-mobile
-
-# retry registered workflow
