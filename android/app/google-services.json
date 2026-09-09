@@ -12,7 +12,12 @@
           "package_name": "br.com.seteideias.appplanilha"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "841074493827-srvp19o45fh2edon9gq1kgcr1nhrtk5u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyA8Hq0Livcf2DyDzbM-mzauwxxQRmkzVB0"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "841074493827-srvp19o45fh2edon9gq1kgcr1nhrtk5u.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "841074493827-2i7fbt2g0fsv7pn2ikg9k9hlfh6jl6ud.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.sixoapp.app"
+              }
+            }
+          ]
         }
       }
     }
