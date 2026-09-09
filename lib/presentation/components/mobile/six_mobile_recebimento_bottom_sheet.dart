@@ -60,6 +60,8 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
     this.permitirParcial = true,
     this.observacaoInicial,
     this.codigoTipoInicial,
+    this.idUnicoDaOperacao,
+    this.dataOperacao,
     this.caixaApiClient,
   });
 
@@ -72,6 +74,8 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
   final bool permitirParcial;
   final String? observacaoInicial;
   final String? codigoTipoInicial;
+  final String? idUnicoDaOperacao;
+  final DateTime? dataOperacao;
   final CaixaApiClient? caixaApiClient;
 
   static Future<SixMobileRecebimentoResultado?> show(
@@ -85,6 +89,8 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
     bool permitirParcial = true,
     String? observacaoInicial,
     String? codigoTipoInicial,
+    String? idUnicoDaOperacao,
+    DateTime? dataOperacao,
     CaixaApiClient? caixaApiClient,
   }) {
     return showModalBottomSheet<SixMobileRecebimentoResultado>(
@@ -94,19 +100,23 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
       isDismissible: true,
       enableDrag: true,
       backgroundColor: Colors.transparent,
-      builder:
-          (_) => SixMobileRecebimentoBottomSheet(
-            titulo: titulo,
-            descricao: descricao,
-            valorAberto: valorAberto,
-            valorOriginal: valorOriginal,
-            valorJaRecebido: valorJaRecebido,
-            contato: contato,
-            permitirParcial: permitirParcial,
-            observacaoInicial: observacaoInicial,
-            codigoTipoInicial: codigoTipoInicial,
-            caixaApiClient: caixaApiClient,
-          ),
+      barrierColor: Colors.black.withValues(
+        alpha: Theme.of(context).brightness == Brightness.dark ? 0.62 : 0.44,
+      ),
+      builder: (_) => SixMobileRecebimentoBottomSheet(
+        titulo: titulo,
+        descricao: descricao,
+        valorAberto: valorAberto,
+        valorOriginal: valorOriginal,
+        valorJaRecebido: valorJaRecebido,
+        contato: contato,
+        permitirParcial: permitirParcial,
+        observacaoInicial: observacaoInicial,
+        codigoTipoInicial: codigoTipoInicial,
+        idUnicoDaOperacao: idUnicoDaOperacao,
+        dataOperacao: dataOperacao,
+        caixaApiClient: caixaApiClient,
+      ),
     );
   }
 
@@ -118,6 +128,9 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
 class _SixMobileRecebimentoBottomSheetState
     extends State<SixMobileRecebimentoBottomSheet> {
   static const Duration _numberMotionDuration = Duration(milliseconds: 680);
+  static const Duration _revealDuration = Duration(milliseconds: 320);
+  static const Color _totalColor = Color(0xFF22C55E);
+  static const Color _partialColor = Color(0xFFF59E0B);
 
   late final CaixaApiClient _caixaApiClient;
   final ScrollController _scrollController = ScrollController();
@@ -127,7 +140,7 @@ class _SixMobileRecebimentoBottomSheetState
 
   bool _carregandoTipos = true;
   String? _erroValor;
-  SixMobileRecebimentoTipo _tipo = SixMobileRecebimentoTipo.total;
+  SixMobileRecebimentoTipo? _tipo;
   List<SixMobileTipoRecebimentoOpcao> _opcoes = _opcoesFallback;
 
   SixMobileColorScheme get _colors => context.sixMobileColors;
@@ -180,16 +193,6 @@ class _SixMobileRecebimentoBottomSheetState
   void initState() {
     super.initState();
     _caixaApiClient = widget.caixaApiClient ?? HttpCaixaApiClient();
-    _formas.add(
-      _RecebimentoFormaDraft(
-        opcao: _resolverInicial(_opcoes),
-        controller: TextEditingController(
-          text: _formatarValorDigitavel(widget.valorAberto),
-        ),
-        focusNode: FocusNode(),
-      ),
-    );
-    _registrarListenersDeFoco();
     _observacaoController.text = widget.observacaoInicial ?? '';
     _carregarTipos();
   }
@@ -203,42 +206,6 @@ class _SixMobileRecebimentoBottomSheetState
     _scrollController.dispose();
     _observacaoController.dispose();
     super.dispose();
-  }
-
-  void _registrarListenersDeFoco() {
-    for (final _RecebimentoFormaDraft forma in _formas) {
-      forma.focusNode.removeListener(forma.onFocusChanged);
-      forma.onFocusChanged = () {
-        if (forma.focusNode.hasFocus) {
-          _revelarBotaoReceber();
-        }
-      };
-      forma.focusNode.addListener(forma.onFocusChanged);
-    }
-  }
-
-  Future<void> _revelarBotaoReceber() async {
-    await Future<void>.delayed(const Duration(milliseconds: 180));
-    if (!mounted) return;
-
-    final BuildContext? confirmContext = _confirmActionKey.currentContext;
-    if (confirmContext != null && confirmContext.mounted) {
-      await Scrollable.ensureVisible(
-        confirmContext,
-        duration: const Duration(milliseconds: 260),
-        curve: Curves.easeOutCubic,
-        alignment: 0.92,
-      );
-      return;
-    }
-
-    if (_scrollController.hasClients) {
-      await _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 260),
-        curve: Curves.easeOutCubic,
-      );
-    }
   }
 
   Future<void> _carregarTipos() async {
@@ -266,18 +233,17 @@ class _SixMobileRecebimentoBottomSheetState
   List<SixMobileTipoRecebimentoOpcao> _montarOpcoes(
     List<TiposRecebimento> tipos,
   ) {
-    final List<TiposRecebimento> ativos =
-        tipos
-            .where((TiposRecebimento tipo) => tipo.ativo)
-            .where(
-              (TiposRecebimento tipo) =>
-                  tipo.naturezaRecebimento.trim().toUpperCase() != 'FUTURO',
-            )
-            .toList()
-          ..sort(
-            (TiposRecebimento a, TiposRecebimento b) =>
-                a.ordemExibicao.compareTo(b.ordemExibicao),
-          );
+    final List<TiposRecebimento> ativos = tipos
+        .where((TiposRecebimento tipo) => tipo.ativo)
+        .where(
+          (TiposRecebimento tipo) =>
+              tipo.naturezaRecebimento.trim().toUpperCase() != 'FUTURO',
+        )
+        .toList()
+      ..sort(
+        (TiposRecebimento a, TiposRecebimento b) =>
+            a.ordemExibicao.compareTo(b.ordemExibicao),
+      );
 
     final List<SixMobileTipoRecebimentoOpcao> opcoes =
         <SixMobileTipoRecebimentoOpcao>[];
@@ -285,14 +251,11 @@ class _SixMobileRecebimentoBottomSheetState
       final String codigo = tipo.codigoTipo.trim().toLowerCase();
       final String? backend = _formaPagamentoBackendPorCodigo(codigo);
       if (backend == null) continue;
-      final String descricao =
-          tipo.descricaoExibicao.trim().isNotEmpty
-              ? tipo.descricaoExibicao.trim()
-              : _descricaoPadraoPorBackend(backend);
-      if (descricao.isEmpty) continue;
-      if (opcoes.any(
-        (SixMobileTipoRecebimentoOpcao opcao) => opcao.codigoTipo == codigo,
-      )) {
+      final String descricao = tipo.descricaoExibicao.trim().isNotEmpty
+          ? tipo.descricaoExibicao.trim()
+          : _descricaoPadraoPorBackend(backend);
+      if (descricao.isEmpty ||
+          opcoes.any((opcao) => opcao.codigoTipo == codigo)) {
         continue;
       }
       opcoes.add(
@@ -334,41 +297,82 @@ class _SixMobileRecebimentoBottomSheetState
   }
 
   void _alterarTipo(SixMobileRecebimentoTipo tipo) {
+    if (_tipo == tipo) return;
     setState(() {
       _tipo = tipo;
       _erroValor = null;
-      if (tipo == SixMobileRecebimentoTipo.total && _formas.length == 1) {
+      if (_formas.isEmpty) {
+        _formas.add(_novaFormaInicial(tipo));
+        _registrarListenersDeFoco();
+      } else if (tipo == SixMobileRecebimentoTipo.total &&
+          _formas.length == 1) {
         _formas.first.controller.text = _formatarValorDigitavel(
           widget.valorAberto,
         );
+      } else if (tipo == SixMobileRecebimentoTipo.parcial &&
+          _formas.length == 1 &&
+          _parseValor(_formas.first.controller.text) >= widget.valorAberto) {
+        _formas.first.controller.clear();
       }
     });
   }
 
+  _RecebimentoFormaDraft _novaFormaInicial(SixMobileRecebimentoTipo tipo) {
+    return _RecebimentoFormaDraft(
+      opcao: _resolverInicial(_opcoes),
+      controller: TextEditingController(
+        text: tipo == SixMobileRecebimentoTipo.total
+            ? _formatarValorDigitavel(widget.valorAberto)
+            : '',
+      ),
+      focusNode: FocusNode(),
+    );
+  }
+
+  void _registrarListenersDeFoco() {
+    for (final _RecebimentoFormaDraft forma in _formas) {
+      forma.focusNode.removeListener(forma.onFocusChanged);
+      forma.onFocusChanged = () {
+        if (forma.focusNode.hasFocus) _revelarBotaoReceber();
+      };
+      forma.focusNode.addListener(forma.onFocusChanged);
+    }
+  }
+
+  Future<void> _revelarBotaoReceber() async {
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    if (!mounted) return;
+    final BuildContext? confirmContext = _confirmActionKey.currentContext;
+    if (confirmContext != null && confirmContext.mounted) {
+      await Scrollable.ensureVisible(
+        confirmContext,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+        alignment: 0.92,
+      );
+    }
+  }
+
   void _confirmar() {
+    final SixMobileRecebimentoTipo? tipo = _tipo;
+    if (tipo == null) return;
+
     final Set<String> codigos = <String>{};
     final List<RecebimentoFormaInput> recebimentos = <RecebimentoFormaInput>[];
     for (final _RecebimentoFormaDraft forma in _formas) {
       if (!codigos.add(forma.opcao.codigoTipo)) {
-        setState(
-          () =>
-              _erroValor = context.t(
-                'recebimento.erroFormaDuplicada',
-                fallback:
-                    'Cada forma de recebimento pode ser usada apenas uma vez.',
-              ),
-        );
+        setState(() => _erroValor = context.t(
+              'recebimento.erroFormaDuplicada',
+              fallback: 'Cada forma de recebimento pode ser usada apenas uma vez.',
+            ));
         return;
       }
       final double valor = _parseValor(forma.controller.text);
       if (valor <= 0) {
-        setState(
-          () =>
-              _erroValor = context.t(
-                'recebimento.erroValoresMaioresQueZero',
-                fallback: 'Informe valores maiores que zero.',
-              ),
-        );
+        setState(() => _erroValor = context.t(
+              'recebimento.erroValoresMaioresQueZero',
+              fallback: 'Informe valores maiores que zero.',
+            ));
         return;
       }
       recebimentos.add(
@@ -384,52 +388,35 @@ class _SixMobileRecebimentoBottomSheetState
       0,
       (double total, RecebimentoFormaInput forma) => total + forma.valor,
     );
-    if (valor <= 0) {
-      setState(
-        () =>
-            _erroValor = context.t(
-              'recebimento.erroValorMaiorQueZero',
-              fallback: 'Informe um valor maior que zero.',
-            ),
-      );
-      return;
-    }
-    if (_tipo == SixMobileRecebimentoTipo.parcial &&
+    if (tipo == SixMobileRecebimentoTipo.parcial &&
         valor >= widget.valorAberto) {
-      setState(
-        () =>
-            _erroValor = context.t(
-              'recebimento.erroParcialMenorQueAberto',
-              fallback: 'Para parcial, informe um valor menor que o aberto.',
-            ),
-      );
+      setState(() => _erroValor = context.t(
+            'recebimento.erroParcialMenorQueAberto',
+            fallback: 'Para parcial, informe um valor menor que o aberto.',
+          ));
       return;
     }
-    if (_tipo == SixMobileRecebimentoTipo.total &&
+    if (tipo == SixMobileRecebimentoTipo.total &&
         (valor - widget.valorAberto).abs() > 0.009) {
-      setState(
-        () =>
-            _erroValor = context.t(
-              'recebimento.erroTotalIgualSaldo',
-              fallback: 'Para total, o valor precisa quitar o saldo aberto.',
-            ),
-      );
+      setState(() => _erroValor = context.t(
+            'recebimento.erroTotalIgualSaldo',
+            fallback: 'Para total, o valor precisa quitar o saldo aberto.',
+          ));
       return;
     }
 
     final _RecebimentoFormaDraft primeiraForma = _formas.first;
     Navigator.of(context).pop(
       SixMobileRecebimentoResultado(
-        tipo: _tipo,
+        tipo: tipo,
         valor: valor,
         codigoTipoRecebimento: primeiraForma.opcao.codigoTipo,
         descricaoTipoRecebimento: primeiraForma.opcao.descricao,
         formaPagamentoBackend: primeiraForma.opcao.formaPagamentoBackend,
         recebimentos: recebimentos,
-        observacao:
-            _observacaoController.text.trim().isEmpty
-                ? null
-                : _observacaoController.text.trim(),
+        observacao: _observacaoController.text.trim().isEmpty
+            ? null
+            : _observacaoController.text.trim(),
       ),
     );
   }
@@ -439,18 +426,46 @@ class _SixMobileRecebimentoBottomSheetState
     final ThemeData theme = Theme.of(context);
     final SixMobileColorScheme colors = _colors;
     final EdgeInsets viewInsets = MediaQuery.of(context).viewInsets;
+    final Color? stateColor = _tipo == SixMobileRecebimentoTipo.total
+        ? _totalColor
+        : _tipo == SixMobileRecebimentoTipo.parcial
+            ? _partialColor
+            : null;
+
     return SafeArea(
       top: false,
       child: Padding(
         padding: EdgeInsets.only(bottom: viewInsets.bottom),
-        child: Container(
+        child: AnimatedContainer(
+          duration: _revealDuration,
+          curve: Curves.easeOutCubic,
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.88,
+            maxHeight: MediaQuery.of(context).size.height * 0.90,
           ),
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
           decoration: BoxDecoration(
             color: colors.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            gradient: stateColor == null
+                ? null
+                : LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: <Color>[
+                      Color.alphaBlend(
+                        stateColor.withValues(alpha: 0.08),
+                        colors.surface,
+                      ),
+                      colors.surface,
+                      colors.surface,
+                    ],
+                    stops: const <double>[0, 0.24, 0.58],
+                  ),
+            border: Border(
+              top: BorderSide(
+                color: stateColor?.withValues(alpha: 0.35) ?? colors.border,
+              ),
+            ),
           ),
           child: SingleChildScrollView(
             controller: _scrollController,
@@ -469,97 +484,233 @@ class _SixMobileRecebimentoBottomSheetState
                     ),
                   ),
                 ),
-                Row(
-                  children: <Widget>[
-                    _modalIcon(Icons.payments_outlined),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            widget.titulo,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          Text(
-                            widget.descricao,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colors.mutedText,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                if (widget.contato != null && widget.contato!.trim().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      widget.contato!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: colors.mutedText,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
+                _header(theme),
                 const SizedBox(height: 16),
                 _resumoValor(),
-                const SizedBox(height: 14),
-                if (widget.permitirParcial) _tipoSelector(),
-                if (widget.permitirParcial) const SizedBox(height: 14),
-                _formasRecebimentoSection(),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: _observacaoController,
-                  minLines: 2,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    labelText: context.t(
-                      'recebimento.observacao',
-                      fallback: 'Observação',
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                KeyedSubtree(
-                  key: _confirmActionKey,
-                  child: FilledButton.icon(
-                    onPressed: _carregandoTipos ? null : _confirmar,
-                    icon: const Icon(Icons.check_circle_outline),
-                    label: Text(
-                      _tipo == SixMobileRecebimentoTipo.total
-                          ? context.t(
-                            'recebimento.receberTotal',
-                            fallback: 'Receber total',
-                          )
-                          : context.t(
-                            'recebimento.receberParcial',
-                            fallback: 'Receber parcial',
-                          ),
-                    ),
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                    ),
-                  ),
+                const SizedBox(height: 16),
+                _decisionTitle(),
+                const SizedBox(height: 10),
+                _tipoSelector(),
+                AnimatedSize(
+                  duration: _revealDuration,
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.topCenter,
+                  child: _tipo == null
+                      ? const SizedBox.shrink()
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            const SizedBox(height: 16),
+                            _formasRecebimentoSection(),
+                            const SizedBox(height: 14),
+                            TextField(
+                              controller: _observacaoController,
+                              minLines: 2,
+                              maxLines: 3,
+                              decoration: InputDecoration(
+                                labelText: context.t(
+                                  'recebimento.observacao',
+                                  fallback: 'Observação',
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            KeyedSubtree(
+                              key: _confirmActionKey,
+                              child: FilledButton.icon(
+                                onPressed: _carregandoTipos ? null : _confirmar,
+                                icon: const Icon(Icons.check_circle_outline),
+                                label: Text(
+                                  _tipo == SixMobileRecebimentoTipo.total
+                                      ? context.t(
+                                          'recebimento.receberTotal',
+                                          fallback: 'Receber total',
+                                        )
+                                      : context.t(
+                                          'recebimento.receberParcial',
+                                          fallback: 'Receber parcial',
+                                        ),
+                                ),
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(50),
+                                  backgroundColor: stateColor,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _header(ThemeData theme) {
+    final _DescricaoMetadata metadata = _descricaoMetadata;
+    final String? contato = widget.contato?.trim();
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        _modalIcon(Icons.payments_outlined),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                widget.titulo,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                metadata.descricaoLimpa,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: _muted,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (contato != null && contato.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 4),
+                Text(
+                  contato,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: _muted,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+              if (metadata.data != null || metadata.idOperacao != null) ...<Widget>[
+                const SizedBox(height: 8),
+                _metadataRow(metadata),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _metadataRow(_DescricaoMetadata metadata) {
+    final DateTime? data = metadata.data;
+    final String? id = metadata.idOperacao;
+    final LocaleSettingsProvider formatter =
+        context.read<LocaleSettingsProvider>();
+    final String? dataFormatada = data == null
+        ? null
+        : '${formatter.formatDate(data.toLocal())} • ${formatter.formatTime(data.toLocal())}';
+
+    return Row(
+      children: <Widget>[
+        if (dataFormatada != null) ...<Widget>[
+          Icon(Icons.schedule_rounded, size: 15, color: _muted),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              dataFormatada,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: _muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+        if (dataFormatada != null && id != null) const SizedBox(width: 12),
+        if (id != null) ...<Widget>[
+          Icon(Icons.tag_rounded, size: 15, color: _accent),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              _idOperacaoAmigavel(id),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: _accent,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  _DescricaoMetadata get _descricaoMetadata {
+    String descricao = widget.descricao.trim();
+    DateTime? data = widget.dataOperacao;
+    String? id = widget.idUnicoDaOperacao?.trim();
+
+    final RegExp isoPattern = RegExp(
+      r'\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?\b',
+    );
+    final RegExpMatch? isoMatch = isoPattern.firstMatch(descricao);
+    if (data == null && isoMatch != null) {
+      data = DateTime.tryParse(isoMatch.group(0)!);
+    }
+    if (isoMatch != null) {
+      descricao = descricao.replaceFirst(isoMatch.group(0)!, '').trim();
+    }
+
+    if (id == null || id.isEmpty) {
+      final RegExp idNamedPattern = RegExp(
+        r'(?:idUnicoDaOperacao|idOperacao|opera[cç][aã]o)\s*[:=#-]?\s*([A-Za-z0-9_-]{5,})',
+        caseSensitive: false,
+      );
+      final RegExpMatch? idNamedMatch = idNamedPattern.firstMatch(descricao);
+      if (idNamedMatch != null) {
+        id = idNamedMatch.group(1)?.trim();
+        descricao = descricao.replaceFirst(idNamedMatch.group(0)!, '').trim();
+      }
+    }
+
+    descricao = descricao
+        .replaceAll(RegExp(r'\s{2,}'), ' ')
+        .replaceAll(RegExp(r'[•|\-]\s*$'), '')
+        .trim();
+
+    return _DescricaoMetadata(
+      descricaoLimpa: descricao.isEmpty ? widget.descricao.trim() : descricao,
+      data: data,
+      idOperacao: id == null || id.isEmpty ? null : id,
+    );
+  }
+
+  String _idOperacaoAmigavel(String id) {
+    final String limpo = id.trim();
+    if (limpo.length <= 12) return '#$limpo';
+    return '#${limpo.substring(0, 8)}…';
+  }
+
+  Widget _decisionTitle() {
+    return Text(
+      context.t(
+        'recebimento.escolhaTipo',
+        fallback: 'Como deseja receber esta venda?',
+      ),
+      style: TextStyle(
+        color: _title,
+        fontSize: 14,
+        fontWeight: FontWeight.w900,
       ),
     );
   }
@@ -692,8 +843,7 @@ class _SixMobileRecebimentoBottomSheetState
     required Color color,
     required String animationKey,
   }) {
-    final bool reduceMotion =
-        MediaQuery.disableAnimationsOf(context) ||
+    final bool reduceMotion = MediaQuery.disableAnimationsOf(context) ||
         MediaQuery.accessibleNavigationOf(context);
 
     return TweenAnimationBuilder<double>(
@@ -727,16 +877,20 @@ class _SixMobileRecebimentoBottomSheetState
             label: context.t('recebimento.total', fallback: 'Total'),
             icon: Icons.done_all_rounded,
             tipo: SixMobileRecebimentoTipo.total,
+            selectedColor: _totalColor,
           ),
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _tipoPill(
-            label: context.t('recebimento.parcial', fallback: 'Parcial'),
-            icon: Icons.call_split_rounded,
-            tipo: SixMobileRecebimentoTipo.parcial,
+        if (widget.permitirParcial) ...<Widget>[
+          const SizedBox(width: 10),
+          Expanded(
+            child: _tipoPill(
+              label: context.t('recebimento.parcial', fallback: 'Parcial'),
+              icon: Icons.call_split_rounded,
+              tipo: SixMobileRecebimentoTipo.parcial,
+              selectedColor: _partialColor,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -745,16 +899,31 @@ class _SixMobileRecebimentoBottomSheetState
     required String label,
     required IconData icon,
     required SixMobileRecebimentoTipo tipo,
+    required Color selectedColor,
   }) {
     final bool selecionado = _tipo == tipo;
     final SixMobileColorScheme colors = _colors;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      height: 44,
+      duration: const Duration(milliseconds: 220),
+      height: 48,
       decoration: BoxDecoration(
-        color: selecionado ? colors.accent : colors.surfaceElevated,
+        color: selecionado
+            ? selectedColor.withValues(alpha: 0.16)
+            : colors.surfaceElevated,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: selecionado ? colors.accent : colors.border),
+        border: Border.all(
+          color: selecionado ? selectedColor : colors.border,
+          width: selecionado ? 1.4 : 1,
+        ),
+        boxShadow: selecionado
+            ? <BoxShadow>[
+                BoxShadow(
+                  color: selectedColor.withValues(alpha: 0.10),
+                  blurRadius: 18,
+                  spreadRadius: 1,
+                ),
+              ]
+            : null,
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
@@ -765,13 +934,13 @@ class _SixMobileRecebimentoBottomSheetState
             Icon(
               icon,
               size: 18,
-              color: selecionado ? colors.onAccent : colors.accent,
+              color: selecionado ? selectedColor : colors.accent,
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: selecionado ? colors.onAccent : colors.titleText,
+                color: selecionado ? selectedColor : colors.titleText,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -806,8 +975,6 @@ class _SixMobileRecebimentoBottomSheetState
                   'recebimento.carregandoTipos',
                   fallback: 'Carregando tipos de recebimento...',
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: colors.titleText,
                   fontWeight: FontWeight.w800,
@@ -855,22 +1022,18 @@ class _SixMobileRecebimentoBottomSheetState
           ],
         ),
         const SizedBox(height: 10),
-        ..._formas.asMap().entries.map((
-          MapEntry<int, _RecebimentoFormaDraft> entry,
-        ) {
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: entry.key == _formas.length - 1 ? 0 : 12,
-            ),
-            child: _formaRecebimentoCard(entry.key, entry.value),
-          );
-        }),
+        ..._formas.asMap().entries.map((entry) => Padding(
+              padding: EdgeInsets.only(
+                bottom: entry.key == _formas.length - 1 ? 0 : 12,
+              ),
+              child: _formaRecebimentoCard(entry.key, entry.value),
+            )),
         if (_erroValor != null) ...<Widget>[
           const SizedBox(height: 8),
           Text(
             _erroValor!,
-            style: const TextStyle(
-              color: Colors.redAccent,
+            style: TextStyle(
+              color: colors.error,
               fontSize: 12,
               fontWeight: FontWeight.w800,
             ),
@@ -881,10 +1044,7 @@ class _SixMobileRecebimentoBottomSheetState
           onPressed: podeAdicionar ? _adicionarForma : null,
           icon: const Icon(Icons.add_rounded),
           label: Text(
-            context.t(
-              'recebimento.adicionarForma',
-              fallback: 'Adicionar forma',
-            ),
+            context.t('recebimento.adicionarForma', fallback: 'Adicionar forma'),
           ),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size.fromHeight(42),
@@ -899,6 +1059,19 @@ class _SixMobileRecebimentoBottomSheetState
 
   Widget _formaRecebimentoCard(int index, _RecebimentoFormaDraft forma) {
     final SixMobileColorScheme colors = _colors;
+    final LocaleSettingsProvider formatter =
+        context.watch<LocaleSettingsProvider>();
+    final Set<String> usadosEmOutrasFormas = _formas
+        .where((item) => !identical(item, forma))
+        .map((item) => item.opcao.codigoTipo)
+        .toSet();
+    final List<SixMobileTipoRecebimentoOpcao> opcoesDisponiveis = _opcoes
+        .where(
+          (opcao) =>
+              forma.opcao.codigoTipo == opcao.codigoTipo ||
+              !usadosEmOutrasFormas.contains(opcao.codigoTipo),
+        )
+        .toList(growable: false);
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -926,23 +1099,22 @@ class _SixMobileRecebimentoBottomSheetState
                         '${context.t('recebimento.valorForma', fallback: 'Valor da forma')} ${index + 1}',
                     filled: true,
                     fillColor: colors.surface,
+                    prefixText: formatter.currencySymbol + ' ',
+                    prefixStyle: TextStyle(
+                      color: colors.titleText,
+                      fontWeight: FontWeight.w800,
+                    ),
                     suffixIcon: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         IconButton(
-                          tooltip: context.t(
-                            'common.complete',
-                            fallback: 'Completar',
-                          ),
+                          tooltip: context.t('common.complete', fallback: 'Completar'),
                           icon: const Icon(Icons.vertical_align_top_rounded),
                           onPressed: () => _completarValorDaForma(index),
                         ),
                         if (forma.controller.text.trim().isNotEmpty)
                           IconButton(
-                            tooltip: context.t(
-                              'common.clear',
-                              fallback: 'Limpar',
-                            ),
+                            tooltip: context.t('common.clear', fallback: 'Limpar'),
                             icon: const Icon(Icons.close_rounded),
                             onPressed: () {
                               setState(() {
@@ -976,35 +1148,17 @@ class _SixMobileRecebimentoBottomSheetState
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: _opcoes
-                .map((SixMobileTipoRecebimentoOpcao opcao) {
-                  return _tipoRecebimentoPill(
-                    opcao: opcao,
-                    selecionado: forma.opcao.codigoTipo == opcao.codigoTipo,
-                    onTap: () {
-                      final bool usadaEmOutraForma = _formas.any(
-                        (_RecebimentoFormaDraft item) =>
-                            !identical(item, forma) &&
-                            item.opcao.codigoTipo == opcao.codigoTipo,
-                      );
-                      if (usadaEmOutraForma) {
-                        setState(
-                          () =>
-                              _erroValor = context.t(
-                                'recebimento.erroFormaDuplicada',
-                                fallback:
-                                    'Cada forma de recebimento pode ser usada apenas uma vez.',
-                              ),
-                        );
-                        return;
-                      }
-                      setState(() {
-                        forma.opcao = opcao;
-                        _erroValor = null;
-                      });
-                    },
-                  );
-                })
+            children: opcoesDisponiveis
+                .map((opcao) => _tipoRecebimentoPill(
+                      opcao: opcao,
+                      selecionado: forma.opcao.codigoTipo == opcao.codigoTipo,
+                      onTap: () {
+                        setState(() {
+                          forma.opcao = opcao;
+                          _erroValor = null;
+                        });
+                      },
+                    ))
                 .toList(growable: false),
           ),
         ],
@@ -1018,7 +1172,6 @@ class _SixMobileRecebimentoBottomSheetState
     required VoidCallback onTap,
   }) {
     final SixMobileColorScheme colors = _colors;
-
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       constraints: const BoxConstraints(minHeight: 38),
@@ -1057,9 +1210,7 @@ class _SixMobileRecebimentoBottomSheetState
 
   void _adicionarForma() {
     final Set<String> usados =
-        _formas
-            .map((_RecebimentoFormaDraft forma) => forma.opcao.codigoTipo)
-            .toSet();
+        _formas.map((forma) => forma.opcao.codigoTipo).toSet();
     SixMobileTipoRecebimentoOpcao? novaOpcao;
     for (final SixMobileTipoRecebimentoOpcao opcao in _opcoes) {
       if (!usados.contains(opcao.codigoTipo)) {
@@ -1080,7 +1231,9 @@ class _SixMobileRecebimentoBottomSheetState
         _RecebimentoFormaDraft(
           opcao: novaOpcao!,
           controller: TextEditingController(
-            text: _formatarValorDigitavel(restante > 0 ? restante : 0),
+            text: _tipo == SixMobileRecebimentoTipo.total && restante > 0
+                ? _formatarValorDigitavel(restante)
+                : '',
           ),
           focusNode: FocusNode(),
         ),
@@ -1101,18 +1254,16 @@ class _SixMobileRecebimentoBottomSheetState
 
   void _completarValorDaForma(int index) {
     if (index < 0 || index >= _formas.length) return;
-
-    final double totalOutrasFormas = _formas.asMap().entries.fold<double>(0, (
-      double total,
-      MapEntry<int, _RecebimentoFormaDraft> entry,
-    ) {
-      if (entry.key == index) return total;
-      return total + _parseValor(entry.value.controller.text);
-    });
-    final double restante =
-        (widget.valorAberto - totalOutrasFormas)
-            .clamp(0, widget.valorAberto)
-            .toDouble();
+    final double totalOutrasFormas = _formas.asMap().entries.fold<double>(
+      0,
+      (double total, MapEntry<int, _RecebimentoFormaDraft> entry) {
+        if (entry.key == index) return total;
+        return total + _parseValor(entry.value.controller.text);
+      },
+    );
+    final double restante = (widget.valorAberto - totalOutrasFormas)
+        .clamp(0, widget.valorAberto)
+        .toDouble();
 
     setState(() {
       _formas[index].controller.text = _formatarValorDigitavel(restante);
@@ -1121,7 +1272,6 @@ class _SixMobileRecebimentoBottomSheetState
       );
       _erroValor = null;
     });
-
     _revelarBotaoReceber();
   }
 
@@ -1130,10 +1280,7 @@ class _SixMobileRecebimentoBottomSheetState
     if (informado != null && informado.isFinite && informado > 0) {
       return informado;
     }
-
-    final double recebido = _valorJaRecebidoResumo;
-    final double aberto = _valorSeguro(widget.valorAberto);
-    return aberto + recebido;
+    return _valorSeguro(widget.valorAberto) + _valorJaRecebidoResumo;
   }
 
   double get _valorJaRecebidoResumo {
@@ -1141,14 +1288,9 @@ class _SixMobileRecebimentoBottomSheetState
     if (informado != null && informado.isFinite) {
       return informado < 0 ? -informado : informado;
     }
-
-    final double? originalInformado = widget.valorOriginal;
-    if (originalInformado == null || !originalInformado.isFinite) {
-      return 0;
-    }
-
-    final double recebido =
-        originalInformado - _valorSeguro(widget.valorAberto);
+    final double? original = widget.valorOriginal;
+    if (original == null || !original.isFinite) return 0;
+    final double recebido = original - _valorSeguro(widget.valorAberto);
     return recebido > 0 ? recebido : 0;
   }
 
@@ -1161,16 +1303,28 @@ class _SixMobileRecebimentoBottomSheetState
 
   String _formatarMoeda(double valor) =>
       context.read<LocaleSettingsProvider>().formatCurrency(valor);
-  String _formatarValorDigitavel(double valor) =>
-      valor.toStringAsFixed(2).replaceAll('.', ',');
+
+  String _formatarValorDigitavel(double valor) {
+    final LocaleSettingsProvider formatter =
+        context.read<LocaleSettingsProvider>();
+    return formatter.formatCurrency(
+      valor,
+      showCurrencySymbol: false,
+      showCurrencyCode: false,
+    );
+  }
 
   double _parseValor(String value) {
-    final String texto = value.trim().replaceAll('R\$', '').trim();
-    final String normalizado =
-        texto.contains(',') && texto.contains('.')
-            ? texto.replaceAll('.', '').replaceAll(',', '.')
-            : texto.replaceAll(',', '.');
-    return double.tryParse(normalizado) ?? 0;
+    final LocaleSettingsProvider formatter =
+        context.read<LocaleSettingsProvider>();
+    String texto = formatter.stripCurrencyMarkers(value).trim();
+    if (formatter.thousandSeparator.isNotEmpty) {
+      texto = texto.replaceAll(formatter.thousandSeparator, '');
+    }
+    if (formatter.decimalSeparator != '.') {
+      texto = texto.replaceAll(formatter.decimalSeparator, '.');
+    }
+    return double.tryParse(texto) ?? 0;
   }
 
   String? _formaPagamentoBackendPorCodigo(String codigoTipo) {
@@ -1229,6 +1383,18 @@ class _SixMobileRecebimentoBottomSheetState
         return Icons.payments_outlined;
     }
   }
+}
+
+class _DescricaoMetadata {
+  const _DescricaoMetadata({
+    required this.descricaoLimpa,
+    this.data,
+    this.idOperacao,
+  });
+
+  final String descricaoLimpa;
+  final DateTime? data;
+  final String? idOperacao;
 }
 
 class _RecebimentoFormaDraft {

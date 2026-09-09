@@ -232,6 +232,10 @@ class _VendasNaoLiquidadasMobileScreenState
           valorJaRecebido: _valorJaRecebido(venda),
           valorAberto: venda.valorAberto,
           codigoTipoInicial: venda.codigoTipoRecebimento,
+          idUnicoDaOperacao: venda.idOperacaoApp.trim().isNotEmpty
+              ? venda.idOperacaoApp
+              : venda.idOperacaoFinanceira,
+          dataOperacao: venda.dataCompetencia,
           permitirParcial: true,
           observacaoInicial: 'Recebimento realizado no PDV mobile.',
           caixaApiClient: _caixaApiClient,
