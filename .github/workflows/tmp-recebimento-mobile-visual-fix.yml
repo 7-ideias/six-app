@@ -67,3 +67,5 @@ jobs:
           git add lib/presentation/components/mobile/six_mobile_recebimento_bottom_sheet.dart
           git commit -m "fix(mobile): melhora contraste do recebimento"
           git push origin HEAD:feature/20260908-fluxo-recebimento-mobile
+
+# retry registered workflow
