@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../../data/models/auth_response_model.dart';
 import '../config/app_config.dart';
+import '../exceptions/google_auth_exception.dart';
 import 'http_client_factory.dart';
 
 class MobileOidcConfig {
@@ -196,6 +197,14 @@ class MobileOidcAuthService {
         'Authorization': 'Bearer $accessToken',
       },
     );
+
+    if (response.statusCode == 404) {
+      throw const GoogleAuthException(
+        code: GoogleAuthErrorCode.registrationRequired,
+        message: 'Esta Conta Google ainda não possui uma conta SixoApp.',
+        statusCode: 404,
+      );
+    }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw StateError(
