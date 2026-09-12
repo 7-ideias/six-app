@@ -160,7 +160,7 @@ class MobileOidcAuthService {
     }
   }
 
-  ExternalUserAgent? get _interactiveExternalUserAgent {
+  ExternalUserAgent get _interactiveExternalUserAgent {
     // No iOS, uma autenticação interativa deve ser independente da sessão
     // persistida no Safari/ASWebAuthenticationSession. Isso evita que logout,
     // reinstalação ou troca de usuário reutilizem silenciosamente a conta Google
@@ -170,7 +170,9 @@ class MobileOidcAuthService {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
       return ExternalUserAgent.ephemeralAsWebAuthenticationSession;
     }
-    return null;
+
+    // Nas demais plataformas preserva o comportamento padrão do AppAuth.
+    return ExternalUserAgent.asWebAuthenticationSession;
   }
 
   Future<MobileOidcConfig> _config() async {
