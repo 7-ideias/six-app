@@ -12,6 +12,7 @@ import '../../data/models/auth_response_model.dart';
 import 'google_auth_platform_stub.dart'
     if (dart.library.io) 'google_auth_platform_io.dart';
 import 'http_client_factory.dart';
+import 'mobile_oidc_auth_service.dart';
 
 enum GoogleAuthIntent { login, registration }
 
@@ -90,6 +91,15 @@ class GoogleAuthService {
       );
     }
 
+    // Login Google mobile passa pelo próprio Keycloak usando Authorization
+    // Code + PKCE e solicita offline_access. Assim a biometria desbloqueia uma
+    // sessão renovável mesmo após o app ficar suspenso por horas ou dias.
+    // Cadastro e vínculo continuam temporariamente no fluxo Google nativo já
+    // existente, pois possuem regras adicionais de termos/provisionamento.
+    if (intent == GoogleAuthIntent.login) {
+      return MobileOidcAuthService().loginComGoogle();
+    }
+
     final GoogleSignInAccount? account;
     try {
       await _googleSignIn.signOut();
@@ -114,8 +124,6 @@ class GoogleAuthService {
         throw GoogleAuthException.network();
       }
 
-      // Diagnóstico temporário exibido no SnackBar/"toast" da tela de login.
-      // Não inclui tokens nem credenciais; apenas o erro nativo do plugin.
       throw GoogleAuthException(
         code: GoogleAuthErrorCode.unknown,
         message: diagnostic,
