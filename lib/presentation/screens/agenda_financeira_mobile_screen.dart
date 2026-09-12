@@ -2998,3 +2998,482 @@ class _AgendaFinanceiraMobileScreenState
           (soma, item) => soma + _toDouble(item[campo] ?? item['valor']),
         );
   }
+
+  String _acaoLabel(String? acao) {
+    switch ((acao ?? '').toUpperCase()) {
+      case 'EDITAR':
+      case 'ALTERAR':
+        return 'Editar';
+      case 'REGISTRAR_RECEBIMENTO':
+      case 'RECEBER':
+      case 'REGISTRAR_PAGAMENTO':
+      case 'PAGAR':
+        return 'Liquidar';
+      case 'REGISTRAR_PARCIAL':
+        return 'Registrar parcial';
+      case 'DETALHAR':
+      case 'DETALHES':
+        return 'Detalhes';
+      default:
+        return '';
+    }
+  }
+
+  String _statusLabel(String? status) {
+    switch ((status ?? '').toUpperCase()) {
+      case 'PAGO':
+        return 'Pago';
+      case 'RECEBIDO':
+        return 'Recebido';
+      case 'PARCIAL':
+        return 'Parcial';
+      case 'CANCELADO':
+        return 'Cancelado';
+      case 'VENCIDO':
+        return 'Vencido';
+      case 'VENCE_HOJE':
+        return 'Vence hoje';
+      case 'PREVISTO':
+        return 'Previsto';
+      default:
+        return 'Pendente';
+    }
+  }
+
+  String _formaPagamentoLabel(String? formaPagamento) {
+    final String normalizada = (formaPagamento ?? '').trim();
+    final String? descricaoCodigo =
+        _descricaoPorCodigoTipoFormaPagamento[normalizada.toLowerCase()];
+    if (descricaoCodigo != null && descricaoCodigo.trim().isNotEmpty) {
+      return descricaoCodigo;
+    }
+    switch (normalizada.toUpperCase()) {
+      case 'BOLETO':
+        return _descricaoTipoRecebimentoOuFallback('tipo5', 'Boleto');
+      case 'TRANSFERENCIA':
+        return _descricaoTipoRecebimentoOuFallback('tipo8', 'Transferência');
+      case 'CARTAO_CREDITO':
+        return _descricaoTipoRecebimentoOuFallback(
+          'tipo3',
+          'Cartão de crédito',
+        );
+      case 'CARTAO_DEBITO':
+        return _descricaoTipoRecebimentoOuFallback('tipo4', 'Cartão de débito');
+      case 'DINHEIRO':
+        return _descricaoTipoRecebimentoOuFallback('tipo1', 'Dinheiro');
+      case 'DEBITO_AUTOMATICO':
+        return _descricaoTipoRecebimentoOuFallback(
+          'tipo7',
+          'Débito automático',
+        );
+      default:
+        return normalizada.isNotEmpty ? normalizada : 'Pix';
+    }
+  }
+
+  String? _codigoTipoRecebimentoItem(Map<String, dynamic> item) {
+    final codigo =
+        item['codigoTipoRecebimento']?.toString().trim().toLowerCase();
+    if (codigo != null && RegExp(r'^tipo(10|[1-9])$').hasMatch(codigo)) {
+      return codigo;
+    }
+    return _codigoTipoPorFormaPagamentoAntiga(
+      item['formaPagamento']?.toString(),
+    );
+  }
+
+  String? _codigoTipoPorFormaPagamentoAntiga(String? formaPagamento) {
+    switch ((formaPagamento ?? '').trim().toUpperCase()) {
+      case 'DINHEIRO':
+        return 'tipo1';
+      case 'PIX':
+        return 'tipo2';
+      case 'CARTAO_CREDITO':
+        return 'tipo3';
+      case 'CARTAO_DEBITO':
+        return 'tipo4';
+      case 'BOLETO':
+        return 'tipo5';
+      case 'DEBITO_AUTOMATICO':
+        return 'tipo7';
+      case 'TRANSFERENCIA':
+        return 'tipo8';
+      default:
+        return null;
+    }
+  }
+
+  String _descricaoTipoRecebimentoOuFallback(String codigo, String fallback) {
+    final descricao =
+        _descricaoPorCodigoTipoFormaPagamento[codigo.trim().toLowerCase()];
+    return descricao != null && descricao.trim().isNotEmpty
+        ? descricao
+        : fallback;
+  }
+
+  String _empresaNome(dynamic empresa) {
+    if (empresa is Map<String, dynamic>) {
+      return empresa['nome']?.toString() ?? '';
+    }
+    return empresa?.toString() ?? '';
+  }
+
+  DateTime? _parseDataBr(String? data) {
+    if (data == null || data.trim().isEmpty) return null;
+    final partes = data.split('/');
+    if (partes.length != 3) return null;
+    final dia = int.tryParse(partes[0]);
+    final mes = int.tryParse(partes[1]);
+    final ano = int.tryParse(partes[2]);
+    if (dia == null || mes == null || ano == null) return null;
+    return DateTime(ano, mes, dia);
+  }
+
+  String _formatarDataIsoParaBr(String? dataIso) {
+    if (dataIso == null || dataIso.trim().isEmpty) return '-';
+    try {
+      final data = DateTime.parse(dataIso);
+      return '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}';
+    } catch (_) {
+      return dataIso;
+    }
+  }
+
+  String _formatarDataCurta(DateTime data) {
+    final DateTime normalizada = _normalizarData(data);
+    return '${normalizada.day.toString().padLeft(2, '0')}/'
+        '${normalizada.month.toString().padLeft(2, '0')}/'
+        '${normalizada.year}';
+  }
+
+  double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      final texto = value.trim();
+      final normalizado =
+          texto.contains(',') && texto.contains('.')
+              ? texto.replaceAll('.', '').replaceAll(',', '.')
+              : texto.replaceAll(',', '.');
+      return double.tryParse(normalizado) ?? 0;
+    }
+    return 0;
+  }
+
+  String _formatarMoeda(double valor) {
+    final negativo = valor < 0;
+    final absoluto = valor.abs();
+    final partes = absoluto.toStringAsFixed(2).split('.');
+    final inteiro = partes[0];
+    final decimal = partes[1];
+    final buffer = StringBuffer();
+    for (var i = 0; i < inteiro.length; i++) {
+      final indexInvertido = inteiro.length - i;
+      buffer.write(inteiro[i]);
+      if (indexInvertido > 1 && indexInvertido % 3 == 1) buffer.write('.');
+    }
+    final prefixo = negativo ? r'-R$ ' : r'R$ ';
+    return '$prefixo${buffer.toString()},$decimal';
+  }
+}
+
+class _AgendaMobileFiltro {
+  const _AgendaMobileFiltro({
+    required this.periodo,
+    required this.dataInicio,
+    required this.dataFim,
+    required this.tipo,
+    required this.status,
+    required this.formasPagamento,
+  });
+  final String periodo;
+  final DateTime dataInicio;
+  final DateTime dataFim;
+  final String tipo;
+  final String status;
+  final Set<String> formasPagamento;
+}
+
+class _AgendaParcialResultado {
+  const _AgendaParcialResultado({
+    required this.valor,
+    required this.codigoTipoRecebimento,
+    required this.observacao,
+  });
+
+  final double valor;
+  final String codigoTipoRecebimento;
+  final String observacao;
+}
+
+class _AgendaParcialBottomSheet extends StatefulWidget {
+  const _AgendaParcialBottomSheet({
+    required this.valorAberto,
+    required this.valorAbertoFormatado,
+    required this.formasDisponiveis,
+    required this.codigoTipoPorDescricaoFormaPagamento,
+    required this.formaInicial,
+  });
+
+  final double valorAberto;
+  final String valorAbertoFormatado;
+  final List<String> formasDisponiveis;
+  final Map<String, String> codigoTipoPorDescricaoFormaPagamento;
+  final String formaInicial;
+
+  @override
+  State<_AgendaParcialBottomSheet> createState() =>
+      _AgendaParcialBottomSheetState();
+}
+
+class _AgendaParcialBottomSheetState extends State<_AgendaParcialBottomSheet> {
+  final TextEditingController _valorController = TextEditingController();
+  final TextEditingController _observacaoController = TextEditingController();
+
+  late String _formaSelecionada = widget.formaInicial;
+  String? _erroValor;
+
+  @override
+  void dispose() {
+    _valorController.dispose();
+    _observacaoController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final ButtonStyle outlinedCtaStyle = OutlinedButton.styleFrom(
+      backgroundColor: colors.softSurface,
+      foregroundColor: colors.accent,
+      disabledBackgroundColor: colors.softSurface.withValues(alpha: 0.72),
+      disabledForegroundColor: colors.mutedText,
+      side: BorderSide(color: colors.accent.withValues(alpha: 0.34)),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+    );
+    final ButtonStyle filledCtaStyle = FilledButton.styleFrom(
+      backgroundColor: colors.accent,
+      foregroundColor: colors.onAccent,
+      disabledBackgroundColor: colors.softSurface,
+      disabledForegroundColor: colors.mutedText,
+      elevation: 0,
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+    );
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        18,
+        14,
+        18,
+        MediaQuery.of(context).viewInsets.bottom + 18,
+      ),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.strongBorder,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              SizedBox(height: 18),
+              Text(
+                'Registrar parcial',
+                style: TextStyle(
+                  color: colors.titleText,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Valor em aberto: ${widget.valorAbertoFormatado}',
+                style: TextStyle(
+                  color: colors.mutedText,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: _valorController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                cursorColor: colors.accent,
+                style: TextStyle(color: colors.titleText),
+                decoration: InputDecoration(
+                  labelText: 'Valor parcial',
+                  errorText: _erroValor,
+                  filled: true,
+                  fillColor: colors.softSurface,
+                  labelStyle: TextStyle(color: colors.mutedText),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: colors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: colors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: colors.accent, width: 1.3),
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Tipo de recebimento',
+                style: TextStyle(
+                  color: colors.mutedText,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children:
+                    widget.formasDisponiveis.map((String forma) {
+                      final bool selecionado = forma == _formaSelecionada;
+                      return ChoiceChip(
+                        selected: selecionado,
+                        label: Text(forma),
+                        avatar:
+                            selecionado
+                                ? Icon(
+                                  Icons.check_rounded,
+                                  size: 16,
+                                  color: colors.onPrimary,
+                                )
+                                : Icon(Icons.payments_outlined, size: 16),
+                        selectedColor: colors.primary,
+                        backgroundColor: colors.softSurface,
+                        side: BorderSide(
+                          color: selecionado ? colors.primary : colors.border,
+                        ),
+                        showCheckmark: false,
+                        labelStyle: TextStyle(
+                          color:
+                              selecionado ? colors.onPrimary : colors.titleText,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        onSelected:
+                            (_) => setState(() => _formaSelecionada = forma),
+                      );
+                    }).toList(),
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: _observacaoController,
+                minLines: 2,
+                maxLines: 3,
+                cursorColor: colors.accent,
+                style: TextStyle(color: colors.titleText),
+                decoration: InputDecoration(
+                  labelText: 'Observação',
+                  filled: true,
+                  fillColor: colors.softSurface,
+                  labelStyle: TextStyle(color: colors.mutedText),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: colors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: colors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: colors.accent, width: 1.3),
+                  ),
+                ),
+              ),
+              SizedBox(height: 18),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(null),
+                      style: outlinedCtaStyle,
+                      child: Text('Cancelar'),
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton.icon(
+                      icon: Icon(Icons.check_rounded),
+                      label: Text('Salvar'),
+                      style: filledCtaStyle,
+                      onPressed: _salvar,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _salvar() {
+    final double valorDigitado = _toDouble(_valorController.text);
+    if (valorDigitado <= 0) {
+      setState(() => _erroValor = 'Informe um valor maior que zero.');
+      return;
+    }
+    if (valorDigitado >= widget.valorAberto) {
+      setState(() => _erroValor = 'Informe um valor menor que o aberto.');
+      return;
+    }
+    final String? codigoTipo =
+        widget.codigoTipoPorDescricaoFormaPagamento[_formaSelecionada];
+    if (codigoTipo == null || codigoTipo.trim().isEmpty) {
+      setState(() => _erroValor = 'Selecione um tipo de recebimento.');
+      return;
+    }
+    Navigator.of(context).pop(
+      _AgendaParcialResultado(
+        valor: valorDigitado,
+        codigoTipoRecebimento: codigoTipo,
+        observacao: _observacaoController.text.trim(),
+      ),
+    );
+  }
+
+  double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      final String texto = value.trim();
+      final String normalizado =
+          texto.contains(',') && texto.contains('.')
+              ? texto.replaceAll('.', '').replaceAll(',', '.')
+              : texto.replaceAll(',', '.');
+      return double.tryParse(normalizado) ?? 0;
+    }
+    return 0;
+  }
+}
+
+class _ResumoAgendaCardData {
+  const _ResumoAgendaCardData(this.title, this.value, this.icon, this.color);
+  final String title;
+  final double value;
+  final IconData icon;
+  final Color color;
+}
