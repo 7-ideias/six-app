@@ -123,11 +123,12 @@ class _AuthGateMobileState extends State<AuthGateMobile> {
         (await _biometricAuthService.enabledUserId())?.trim() ?? '';
     final String currentUserId = (await _authService.getUserId())?.trim() ?? '';
 
-    // Não permite que uma preferência biométrica de outro usuário proteja a
-    // sessão atual. Em caso de inconsistência, exige autenticação completa.
+    // A biometria é somente uma camada local. Se os metadados biométricos
+    // estiverem inconsistentes, desabilitamos apenas a biometria e preservamos
+    // a sessão Keycloak para que a restauração normal decida sua validade.
     if (ownerId.isEmpty ||
         (currentUserId.isNotEmpty && ownerId != currentUserId)) {
-      await _authService.clearLocalSession();
+      await _biometricAuthService.disable();
       return true;
     }
 
