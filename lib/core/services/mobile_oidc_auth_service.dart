@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:http/http.dart' as http;
 
@@ -85,6 +86,8 @@ class MobileOidcAuthService {
             config.redirectUri,
             serviceConfiguration: config.serviceConfiguration,
             scopes: config.scopes,
+            promptValues: const <String>['login'],
+            externalUserAgent: _interactiveExternalUserAgent,
             additionalParameters: <String, String>{
               'kc_idp_hint': config.identityProviderAlias,
             },
@@ -155,6 +158,19 @@ class MobileOidcAuthService {
     } catch (_) {
       // Logout remoto é best-effort. A sessão local será apagada pelo AuthService.
     }
+  }
+
+  ExternalUserAgent? get _interactiveExternalUserAgent {
+    // No iOS, uma autenticação interativa deve ser independente da sessão
+    // persistida no Safari/ASWebAuthenticationSession. Isso evita que logout,
+    // reinstalação ou troca de usuário reutilizem silenciosamente a conta Google
+    // anterior. A sessão longa do SixoApp continua sendo mantida pelo refresh
+    // token offline salvo no Keychain; esta opção só afeta uma nova entrada
+    // manual no fluxo Google.
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      return ExternalUserAgent.ephemeralAsWebAuthenticationSession;
+    }
+    return null;
   }
 
   Future<MobileOidcConfig> _config() async {
