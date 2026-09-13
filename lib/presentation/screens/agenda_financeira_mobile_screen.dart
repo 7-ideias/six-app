@@ -355,15 +355,22 @@ class _AgendaFinanceiraMobileScreenState
     setState(() => _carregando = true);
     try {
       final request = _buildRequest();
-      final agenda = await _service.consultarLancamentos(request);
-      final confirmados = await _service.consultarValoresConfirmados(request);
+      final resultado = await _service.consultarAgendaEmParalelo(request);
       if (!mounted) return;
-      _aplicarAgenda(agenda);
-      _aplicarConfirmados(confirmados);
+      _aplicarAgenda(resultado.agenda);
+      _aplicarConfirmados(resultado.valoresConfirmados);
       _sincronizarValoresConfirmadosNosLancamentos();
       _ultimaConsultaEm = DateTime.now();
       _erroConsulta = null;
-      if (mostrarFeedback) {
+      if (!resultado.valoresConfirmadosDisponiveis) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Agenda atualizada, mas os valores confirmados não puderam ser carregados.',
+            ),
+          ),
+        );
+      } else if (mostrarFeedback) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

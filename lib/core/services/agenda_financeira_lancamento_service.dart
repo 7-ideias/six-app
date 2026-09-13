@@ -134,6 +134,44 @@ class AgendaFinanceiraLancamentoService {
     return decoded;
   }
 
+  Future<AgendaFinanceiraConsultaParalela> consultarAgendaEmParalelo(
+    AgendaFinanceiraConsultaRequest request,
+  ) async {
+    final resultados = await Future.wait<_ResultadoConsultaAgenda>([
+      _capturarConsulta(() => consultarLancamentos(request)),
+      _capturarConsulta(() => consultarValoresConfirmados(request)),
+    ]);
+    final resultadoAgenda = resultados[0];
+    final resultadoConfirmados = resultados[1];
+
+    if (resultadoAgenda.erro != null) {
+      Error.throwWithStackTrace(
+        resultadoAgenda.erro!,
+        resultadoAgenda.stackTrace ?? StackTrace.current,
+      );
+    }
+
+    return AgendaFinanceiraConsultaParalela(
+      agenda: resultadoAgenda.dados,
+      valoresConfirmados: resultadoConfirmados.dados,
+      erroValoresConfirmados: resultadoConfirmados.erro,
+    );
+  }
+
+  Future<_ResultadoConsultaAgenda> _capturarConsulta(
+    Future<Map<String, dynamic>> Function() consulta,
+  ) async {
+    try {
+      return _ResultadoConsultaAgenda(dados: await consulta());
+    } catch (erro, stackTrace) {
+      return _ResultadoConsultaAgenda(
+        dados: const <String, dynamic>{},
+        erro: erro,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   Future<Map<String, dynamic>> buscarDetalheLancamento(
     String idLancamento,
   ) async {
@@ -234,6 +272,32 @@ class AgendaFinanceiraLancamentoService {
 
     return LancamentoAgendaFinanceiraResponse.fromJson(decoded);
   }
+}
+
+class AgendaFinanceiraConsultaParalela {
+  const AgendaFinanceiraConsultaParalela({
+    required this.agenda,
+    required this.valoresConfirmados,
+    this.erroValoresConfirmados,
+  });
+
+  final Map<String, dynamic> agenda;
+  final Map<String, dynamic> valoresConfirmados;
+  final Object? erroValoresConfirmados;
+
+  bool get valoresConfirmadosDisponiveis => erroValoresConfirmados == null;
+}
+
+class _ResultadoConsultaAgenda {
+  const _ResultadoConsultaAgenda({
+    required this.dados,
+    this.erro,
+    this.stackTrace,
+  });
+
+  final Map<String, dynamic> dados;
+  final Object? erro;
+  final StackTrace? stackTrace;
 }
 
 class AgendaFinanceiraLancamentoApiException implements Exception {
