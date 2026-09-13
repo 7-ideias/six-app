@@ -86,7 +86,7 @@ class MobileOidcAuthService {
             config.redirectUri,
             serviceConfiguration: config.serviceConfiguration,
             scopes: config.scopes,
-            promptValues: const <String>['login'],
+            promptValues: _interactivePromptValues,
             externalUserAgent: _interactiveExternalUserAgent,
             additionalParameters: <String, String>{
               'kc_idp_hint': config.identityProviderAlias,
@@ -160,18 +160,21 @@ class MobileOidcAuthService {
     }
   }
 
-  ExternalUserAgent get _interactiveExternalUserAgent {
-    // No iOS, uma autenticação interativa deve ser independente da sessão
-    // persistida no Safari/ASWebAuthenticationSession. Isso evita que logout,
-    // reinstalação ou troca de usuário reutilizem silenciosamente a conta Google
-    // anterior. A sessão longa do SixoApp continua sendo mantida pelo refresh
-    // token offline salvo no Keychain; esta opção só afeta uma nova entrada
-    // manual no fluxo Google.
+  List<String> get _interactivePromptValues {
+    // No iOS, uma entrada Google manual deve permitir escolher entre as contas
+    // já autenticadas no aparelho/navegador, sem obrigar o usuário a digitar
+    // novamente e-mail e senha. Android mantém exatamente o comportamento atual.
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-      return ExternalUserAgent.ephemeralAsWebAuthenticationSession;
+      return const <String>['select_account'];
     }
+    return const <String>['login'];
+  }
 
-    // Nas demais plataformas preserva o comportamento padrão do AppAuth.
+  ExternalUserAgent get _interactiveExternalUserAgent {
+    // O iOS precisa usar a sessão normal do ASWebAuthenticationSession para
+    // reaproveitar o contexto de contas Google já conhecidas. O modo efêmero
+    // descartava esse contexto e forçava autenticação completa em toda entrada.
+    // Android já usa esta opção e permanece sem alteração de comportamento.
     return ExternalUserAgent.asWebAuthenticationSession;
   }
 
