@@ -2282,6 +2282,12 @@ class _AgendaFinanceiraMobileScreenState
                     ),
                     child: Column(
                       children: <Widget>[
+                        if ((item['codigoOperacao']?.toString().trim() ?? '')
+                            .isNotEmpty)
+                          _detalheLinha(
+                            'Código da operação',
+                            item['codigoOperacao'].toString(),
+                          ),
                         _detalheLinha(
                           'Vencimento',
                           item['vencimento']?.toString() ?? '-',

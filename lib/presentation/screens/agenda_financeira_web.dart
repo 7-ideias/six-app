@@ -2984,6 +2984,10 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     final historico = _listaMapas(detalhe['historico']);
     final liquidacoes = _liquidacoes();
     final comprovantes = _listaStrings(detalhe['comprovantes']);
+    final String codigoOperacao = _texto(
+      detalhe['codigoOperacao'],
+      item['codigoOperacao'],
+    ).trim();
     final acoes = _listaStrings(detalhe['acoesDisponiveis']);
     final valorOriginal = _numero(
       detalhe['valorOriginal'],
@@ -3095,16 +3099,10 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                               ),
                               _chip(
                                 theme,
-                                'ID: ${_texto(detalhe['idLancamento'], item['id'])}',
+                                codigoOperacao.isNotEmpty
+                                    ? 'Operação: $codigoOperacao'
+                                    : 'Operação sem código',
                               ),
-                              if (_texto(
-                                detalhe['codigoOperacao'],
-                                item['codigoOperacao'],
-                              ).trim().isNotEmpty)
-                                _chip(
-                                  theme,
-                                  'Operação: ${_texto(detalhe['codigoOperacao'], item['codigoOperacao'])}',
-                                ),
                             ],
                           ),
                           const SizedBox(height: 18),
@@ -3199,7 +3197,6 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                                   item['origem'],
                                 ),
                               ),
-                              _info('Referência', _texto(origem['id'])),
                             ],
                           ),
                           _section(
