@@ -1,3 +1,8 @@
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
+import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
+import 'package:sixpos/presentation/components/mobile/agenda_recorrencia_mobile_fields.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
@@ -35,6 +40,8 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   static Color get _borderColor => SixMobilePalette.border;
   static Color get _softBlueColor => SixMobilePalette.softAccentSurface;
   static Color get _softNeutralColor => SixMobilePalette.softNeutralSurface;
+
+  AgendaFinanceiraRecorrencia _recorrencia = AgendaFinanceiraRecorrencia();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final AgendaFinanceiraLancamentoService _service =
@@ -92,6 +99,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
 
   bool _salvando = false;
   bool _carregandoDetalhe = false;
+  bool _detalheDisponivel = false;
   bool _carregandoTiposRecebimento = false;
   double _valorConfirmado = 0;
   double _valorRestante = 0;
@@ -129,6 +137,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   }
 
   void _preencherComItem(Map<String, dynamic> item) {
+    _recorrencia = AgendaFinanceiraRecorrencia.fromJson(item);
     _idLancamento = item['id']?.toString() ?? '';
     _uuidOperacaoApp = item['uuidOperacaoApp']?.toString() ?? _idLancamento;
 
@@ -181,20 +190,28 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     try {
       final Map<String, dynamic> detalhe = await _service
           .buscarDetalheLancamento(_idLancamento);
-      if (!mounted || detalhe.isEmpty) return;
+      if (!mounted) return;
+      if (detalhe.isEmpty) throw const FormatException('Detalhe vazio');
       setState(() {
+        _detalheDisponivel = true;
         _detalhe = detalhe;
         _preencherComDetalhe(detalhe);
       });
     } catch (_) {
-      // Mantém os dados da listagem quando o detalhe não carregar.
+      // Fallback somente para exibição; edição exige o detalhe atual.
+      if (mounted) setState(() => _detalheDisponivel = false);
     } finally {
       if (mounted) setState(() => _carregandoDetalhe = false);
     }
   }
 
   void _preencherComDetalhe(Map<String, dynamic> detalhe) {
+    _recorrencia = AgendaFinanceiraRecorrencia.fromJson(detalhe);
     _idLancamento = _texto(detalhe['idLancamento'], fallback: _idLancamento);
+    _uuidOperacaoApp = _texto(
+      detalhe['uuidOperacaoApp'],
+      fallback: _uuidOperacaoApp,
+    );
     _uuidOperacaoApp =
         _uuidOperacaoApp.trim().isNotEmpty ? _uuidOperacaoApp : _idLancamento;
 
@@ -354,7 +371,74 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     return descricoes;
   }
 
+  Future<void> _excluir() async {
+    final colors = context.sixMobileColors;
+    final confirmar = await showModalBottomSheet<bool>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: colors.surface,
+      builder:
+          (sheetContext) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    recorrenciaLabel(context, 'deleteConfirm'),
+                    style: TextStyle(color: colors.titleText),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(recorrenciaLabel(context, _recorrencia.escopo)),
+                  const SizedBox(height: 20),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(sheetContext, true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colors.error,
+                      foregroundColor: colors.surface,
+                    ),
+                    child: Text(
+                      context.t('common.confirm', fallback: 'Confirmar'),
+                    ),
+                  ),
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(sheetContext, false),
+                    child: Text(
+                      context.t('common.cancel', fallback: 'Cancelar'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+    if (confirmar != true || !mounted) return;
+    setState(() => _salvando = true);
+    try {
+      await _service.excluirLancamento(
+        _idLancamento,
+        escopo: _recorrencia.escopo,
+      );
+      if (mounted)
+        Navigator.pop(context, <String, dynamic>{
+          'deleted': true,
+          'id': _idLancamento,
+        });
+    } on AgendaFinanceiraLancamentoApiException catch (error) {
+      if (mounted)
+        _mostrarSnack(
+          recorrenciaLabel(context, error.codigoRecorrencia ?? 'saveError'),
+        );
+    } catch (_) {
+      if (mounted) _mostrarSnack(recorrenciaLabel(context, 'saveError'));
+    } finally {
+      if (mounted) setState(() => _salvando = false);
+    }
+  }
+
   Future<void> _salvar() async {
+    if (_carregandoDetalhe || !_detalheDisponivel) return;
     final FormState? formState = _formKey.currentState;
     if (formState == null || !formState.validate()) return;
     final double valorTotal = _toDouble(_valorController.text);
@@ -367,6 +451,20 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       return;
     }
 
+    final erroRecorrencia = _recorrencia.validar(_dataVencimento);
+    if (erroRecorrencia != null ||
+        (_recorrencia.ativa &&
+            !['Pendente', 'Previsto'].contains(_statusSelecionado))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            recorrenciaLabel(context, erroRecorrencia ?? 'pendingError'),
+          ),
+        ),
+      );
+      return;
+    }
+
     final LancamentoAgendaFinanceiraRequest request = _buildRequest(valorTotal);
     setState(() => _salvando = true);
     try {
@@ -376,6 +474,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                 ? request.uuidOperacaoApp
                 : _idLancamento,
             request,
+            escopo: _recorrencia.escopo,
           );
       if (!mounted) return;
       _mostrarSnack('Lançamento atualizado com sucesso.');
@@ -386,7 +485,9 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       );
     } on AgendaFinanceiraLancamentoApiException catch (e) {
       if (!mounted) return;
-      _mostrarSnack('Erro ao atualizar lançamento (${e.statusCode}).');
+      _mostrarSnack(
+        recorrenciaLabel(context, e.codigoRecorrencia ?? 'saveError'),
+      );
     } catch (_) {
       if (!mounted) return;
       _mostrarSnack('Não foi possível atualizar o lançamento.');
@@ -472,12 +573,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
           _observacoesController.text.trim().isEmpty
               ? null
               : _observacoesController.text.trim(),
-      recorrente: false,
-      frequenciaRecorrencia: 'Nao recorrente',
-      recorrenciaInicio: _dataVencimento,
-      recorrenciaFim: _dataVencimento,
-      quantidadeParcelas: 1,
-      diaVencimentoRecorrencia: _dataVencimento.day,
+      configuracaoRecorrencia: _recorrencia,
       payloadOriginalJson: payload,
     );
   }
@@ -532,6 +628,19 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     return Scaffold(
       backgroundColor: _backgroundColor,
       appBar: AppBar(
+        actions: [
+          if (!_detalheDisponivel && !_carregandoDetalhe)
+            IconButton(
+              tooltip: context.t('common.refresh', fallback: 'Atualizar'),
+              onPressed: _carregarDetalhe,
+              icon: const Icon(Icons.refresh),
+            ),
+          IconButton(
+            tooltip: recorrenciaLabel(context, 'delete'),
+            onPressed: _salvando || _carregandoDetalhe ? null : _excluir,
+            icon: const Icon(Icons.delete_outline),
+          ),
+        ],
         elevation: 0,
         centerTitle: true,
         backgroundColor: _primaryColor,
@@ -728,6 +837,13 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                     ],
                   ),
                   const SizedBox(height: 14),
+                  AgendaRecorrenciaMobileFields(
+                    config: _recorrencia,
+                    vencimento: _dataVencimento,
+                    enabled: !_salvando && !_carregandoDetalhe,
+                    onChanged: () => setState(() {}),
+                  ),
+                  const SizedBox(height: 14),
                   _buildSection(
                     title: 'Contato e classificação',
                     icon: Icons.person_outline,
@@ -827,7 +943,10 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
               Expanded(
                 flex: 2,
                 child: FilledButton.icon(
-                  onPressed: _salvando ? null : _salvar,
+                  onPressed:
+                      _salvando || _carregandoDetalhe || !_detalheDisponivel
+                          ? null
+                          : _salvar,
                   icon:
                       _salvando
                           ? const SizedBox(

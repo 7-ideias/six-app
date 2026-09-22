@@ -1,0 +1,105 @@
+// Executável também com Dart puro, sem inicializar o Flutter.
+import '../../lib/data/models/agenda_financeira_recorrencia.dart';
+import '../../lib/data/models/agenda_financeira_lancamento_model.dart';
+
+void check(bool condition, String message) {
+  if (!condition) throw StateError(message);
+}
+
+void main() {
+  final date = DateTime(2026, 9, 10);
+  final legacy = AgendaFinanceiraRecorrencia.fromJson({});
+  check(!legacy.ativa, 'Dados antigos incompletos devem continuar exibíveis');
+  final recurrence = AgendaFinanceiraRecorrencia()..ativa = true;
+  final infinite = recurrence.toJson(date);
+  check(
+    infinite['quantidadeParcelas'] == null &&
+        infinite['recorrenciaFim'] == null,
+    'Sem fim não pode virar uma única parcela',
+  );
+  recurrence.termino = 'DATA';
+  recurrence.fim = DateTime(2026, 9, 9);
+  check(
+    recurrence.validar(date) == 'endError',
+    'Rejeitar término antes do início',
+  );
+  recurrence.fim = date;
+  check(
+    recurrence.validar(date) == null,
+    'Permitir uma única ocorrência por data',
+  );
+  recurrence.termino = 'QUANTIDADE';
+  recurrence.quantidade = 0;
+  check(
+    recurrence.validar(date) == 'quantityError',
+    'Rejeitar zero ocorrências',
+  );
+  recurrence.quantidade = 12;
+  final request = LancamentoAgendaFinanceiraRequest(
+    uuidOperacaoApp: 'test',
+    descricao: 'Aluguel',
+    tipoOperacao: 'PAGAR',
+    statusOperacao: 'PENDENTE',
+    dataOperacao: date,
+    dataVencimento: date,
+    dataCompetencia: date,
+    statusQuitada: false,
+    operacaoFinalizadaProntaCaixa: false,
+    clientePediuParaApagar: false,
+    origem: 'DESPESA_MANUAL',
+    formaPagamento: 'tipo1',
+    empresa: 'Teste',
+    categoria: 'Aluguel',
+    idColaborador: 'test',
+    nomeColaborador: 'Teste',
+    valorTotalProdutos: 0,
+    valorTotalServicos: 0,
+    valorTotalOperacao: 2000,
+    configuracaoRecorrencia: recurrence,
+    payloadOriginalJson: {'agendaFinanceira': {}, 'contato': {}},
+  );
+  final json = request.toJson();
+  final nested = json['payloadOriginalJson']['recorrencia'];
+  check(
+    json['recorrente'] == true && nested['recorrente'] == true,
+    'Contrato externo e interno devem concordar',
+  );
+  check(
+    json['quantidadeParcelas'] == 12 && nested['quantidadeParcelas'] == 12,
+    'Quantidade deve sobreviver à serialização',
+  );
+  check(
+    json['frequenciaRecorrencia'] == 'MENSAL' &&
+        nested['frequencia'] == 'MENSAL',
+    'Enviar código técnico da frequência',
+  );
+  check(
+    request.toAgendaItem()['recorrente'] == true,
+    'Resultado local mantém recorrência',
+  );
+  final existing = AgendaFinanceiraRecorrencia.fromJson({
+    'recorrente': true,
+    'serieRecorrenciaId': 'serie',
+    'numeroOcorrencia': 4,
+    'frequenciaRecorrencia': 'MENSAL',
+    'quantidadeParcelas': 12,
+    'recorrenciaInicio': '2026-01-10',
+  });
+  check(
+    !existing.permiteConfigurar && existing.escopo == 'ESTE',
+    'Edição padrão deve preservar série',
+  );
+  check(existing.quantidade == 9, 'Este e próximos usa a quantidade restante');
+  existing.escopo = 'ESTE_E_PROXIMOS';
+  check(
+    existing.toJson(date)['recorrenciaInicio'] == date.toIso8601String(),
+    'Nova série inicia no vencimento selecionado',
+  );
+  recurrence.ativa = false;
+  check(
+    request.toJson()['quantidadeParcelas'] == 1 &&
+        request.toJson()['recorrente'] == false,
+    'Desativar repetição gera lançamento único',
+  );
+  print('13 verificações de recorrência e contrato concluídas.');
+}

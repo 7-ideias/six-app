@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -869,6 +870,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             : <String>[];
     if (!acoes.contains('Detalhes')) acoes.add('Detalhes');
     return <String, dynamic>{
+      ...item,
       'id': item['idLancamento']?.toString() ?? '',
       'tipo': tipo,
       'descricao': item['descricao']?.toString() ?? 'Sem descrição',
@@ -897,6 +899,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final tipo =
         item['tipo']?.toString().toUpperCase() == 'PAGAR' ? 'pagar' : 'receber';
     return <String, dynamic>{
+      ...item,
       'id': item['idLancamento']?.toString() ?? '',
       'tipo': tipo,
       'descricao': item['descricao']?.toString() ?? 'Sem descrição',
@@ -1509,6 +1512,35 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Future<void> _editarLancamento(Map<String, dynamic> item) async {
+    try {
+      final detalhe = await _service.buscarDetalheLancamento(
+        item['id'].toString(),
+      );
+      if (detalhe.isEmpty) throw const FormatException('Detalhe vazio');
+      if (!mounted) return;
+      item = {
+        ...item,
+        for (final key in [
+          'uuidOperacaoApp',
+          'recorrente',
+          'frequenciaRecorrencia',
+          'recorrenciaInicio',
+          'recorrenciaFim',
+          'quantidadeParcelas',
+          'diaVencimentoRecorrencia',
+          'serieRecorrenciaId',
+          'numeroOcorrencia',
+        ])
+          if (detalhe.containsKey(key)) key: detalhe[key],
+      };
+    } catch (_) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(recorrenciaLabel(context, 'saveError'))),
+        );
+      return;
+    }
+
     final empresaAtual = _empresaNome(item['empresa']).trim();
     final empresas = <String>[empresaAtual.isEmpty ? 'Empresa' : empresaAtual];
     final atualizado = await showSubPainelLancamentoAgendaFinanceiraWeb(
@@ -2219,6 +2251,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                     tokens.info,
                     icon: Icons.payments_outlined,
                   ),
+                  if (item['recorrente'] == true)
+                    _agendaPill(
+                      recorrenciaLabel(context, 'badge'),
+                      tokens.info,
+                      icon: Icons.repeat,
+                    ),
                   if (_toDouble(item['valorConfirmado']) > 0)
                     _agendaPill(
                       'Confirmado: ${_formatarMoeda(_toDouble(item['valorConfirmado']))}',

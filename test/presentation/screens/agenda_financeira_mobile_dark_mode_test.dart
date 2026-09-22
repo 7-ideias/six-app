@@ -322,8 +322,9 @@ class _FakeAgendaService extends AgendaFinanceiraLancamentoService {
   @override
   Future<LancamentoAgendaFinanceiraResponse> editarLancamento(
     String idLancamento,
-    LancamentoAgendaFinanceiraRequest request,
-  ) {
+    LancamentoAgendaFinanceiraRequest request, {
+    String escopo = 'ESTE',
+  }) {
     return Future<LancamentoAgendaFinanceiraResponse>.value(
       LancamentoAgendaFinanceiraResponse(id: idLancamento, status: 'OK'),
     );

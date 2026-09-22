@@ -1,3 +1,4 @@
+import 'agenda_financeira_recorrencia.dart';
 import 'recebimento_forma_input.dart';
 
 class LancamentoAgendaFinanceiraRequest {
@@ -30,12 +31,13 @@ class LancamentoAgendaFinanceiraRequest {
     required this.valorTotalServicos,
     required this.valorTotalOperacao,
     this.observacoes,
-    required this.recorrente,
-    required this.frequenciaRecorrencia,
-    required this.recorrenciaInicio,
-    required this.recorrenciaFim,
-    required this.quantidadeParcelas,
-    required this.diaVencimentoRecorrencia,
+    this.configuracaoRecorrencia,
+    this.recorrente = false,
+    this.frequenciaRecorrencia = 'NAO_RECORRENTE',
+    this.recorrenciaInicio,
+    this.recorrenciaFim,
+    this.quantidadeParcelas = 1,
+    this.diaVencimentoRecorrencia,
     required this.payloadOriginalJson,
   });
 
@@ -67,13 +69,27 @@ class LancamentoAgendaFinanceiraRequest {
   final double valorTotalServicos;
   final double valorTotalOperacao;
   final String? observacoes;
+  final AgendaFinanceiraRecorrencia? configuracaoRecorrencia;
   final bool recorrente;
   final String frequenciaRecorrencia;
-  final DateTime recorrenciaInicio;
-  final DateTime recorrenciaFim;
-  final int quantidadeParcelas;
-  final int diaVencimentoRecorrencia;
+  final DateTime? recorrenciaInicio;
+  final DateTime? recorrenciaFim;
+  final int? quantidadeParcelas;
+  final int? diaVencimentoRecorrencia;
   final Map<String, dynamic> payloadOriginalJson;
+
+  Map<String, dynamic> get dadosRecorrencia =>
+      configuracaoRecorrencia?.toJson(dataVencimento) ??
+      {
+        'recorrente': recorrente,
+        'frequenciaRecorrencia': frequenciaRecorrencia,
+        'recorrenciaInicio':
+            (recorrenciaInicio ?? dataVencimento).toIso8601String(),
+        'recorrenciaFim': recorrenciaFim?.toIso8601String(),
+        'quantidadeParcelas': quantidadeParcelas,
+        'diaVencimentoRecorrencia':
+            diaVencimentoRecorrencia ?? dataVencimento.day,
+      };
 
   Map<String, dynamic> toJson() {
     return {
@@ -105,13 +121,17 @@ class LancamentoAgendaFinanceiraRequest {
       'idColaborador': idColaborador,
       'nomeColaborador': nomeColaborador,
       'observacoes': observacoes,
-      'recorrente': recorrente,
-      'frequenciaRecorrencia': frequenciaRecorrencia,
-      'recorrenciaInicio': recorrenciaInicio.toIso8601String(),
-      'recorrenciaFim': recorrenciaFim.toIso8601String(),
-      'quantidadeParcelas': quantidadeParcelas,
-      'diaVencimentoRecorrencia': diaVencimentoRecorrencia,
-      'payloadOriginalJson': payloadOriginalJson,
+      ...dadosRecorrencia,
+      'payloadOriginalJson': {
+        ...payloadOriginalJson,
+        'recorrencia': {
+          'recorrente': dadosRecorrencia['recorrente'],
+          'frequencia': dadosRecorrencia['frequenciaRecorrencia'],
+          'inicio': dadosRecorrencia['recorrenciaInicio'],
+          'fim': dadosRecorrencia['recorrenciaFim'],
+          'quantidadeParcelas': dadosRecorrencia['quantidadeParcelas'],
+        },
+      },
     };
   }
 
@@ -139,15 +159,10 @@ class LancamentoAgendaFinanceiraRequest {
       'centroDeCusto': centroDeCusto,
       'dataOperacao': dataOperacao.toIso8601String(),
       'dataCompetencia': dataCompetencia.toIso8601String(),
-      'recorrente': recorrente,
-      'frequenciaRecorrencia': frequenciaRecorrencia,
-      'recorrenciaInicio': recorrenciaInicio.toIso8601String(),
-      'recorrenciaFim': recorrenciaFim.toIso8601String(),
-      'quantidadeParcelas': quantidadeParcelas,
+      ...dadosRecorrencia,
+      'serieRecorrenciaId': configuracaoRecorrencia?.serieId,
       'historico': [
         'Lançamento criado em ${_formatarDataHoraBr(DateTime.now())}',
-        if (recorrente)
-          'Recorrência $frequenciaRecorrencia iniciada em ${_formatarDataBr(recorrenciaInicio)}',
       ],
       'acoes':
           tipoRecebimento

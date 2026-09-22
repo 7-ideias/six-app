@@ -1,3 +1,6 @@
+import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
+import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
+import 'package:sixpos/presentation/components/agenda_recorrencia_web_fields.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
@@ -140,6 +143,9 @@ class _LancamentoAgendaFinanceiraWebBody extends StatefulWidget {
 
 class _LancamentoAgendaFinanceiraWebBodyState
     extends State<_LancamentoAgendaFinanceiraWebBody> {
+  final String _uuidCriacao = 'web-${DateTime.now().microsecondsSinceEpoch}';
+  AgendaFinanceiraRecorrencia _recorrencia = AgendaFinanceiraRecorrencia();
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final AgendaFinanceiraLancamentoService _service =
       AgendaFinanceiraLancamentoService();
@@ -268,6 +274,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   void _preencherCamposEdicao(Map<String, dynamic> item) {
+    _recorrencia = AgendaFinanceiraRecorrencia.fromJson(item);
     _idLancamentoEdicao = item['id']?.toString();
     _uuidOperacaoAppEdicao =
         item['uuidOperacaoApp']?.toString() ?? item['id']?.toString();
@@ -580,9 +587,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   LancamentoAgendaFinanceiraRequest _buildRequest() {
     final double valorTotal = _toDouble(_valorController.text);
-    final String idLocal =
-        _uuidOperacaoAppEdicao ??
-        DateTime.now().millisecondsSinceEpoch.toString();
+    final String idLocal = _uuidOperacaoAppEdicao ?? _uuidCriacao;
     final String tipoOperacao = _tipoOperacaoParaBackend();
     final String origem = _origemParaBackend();
     final String formaPagamento = _formaPagamentoParaBackend();
@@ -647,12 +652,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
           _observacoesController.text.trim().isEmpty
               ? null
               : _observacoesController.text.trim(),
-      recorrente: false,
-      frequenciaRecorrencia: 'Nao recorrente',
-      recorrenciaInicio: _dataVencimento,
-      recorrenciaFim: _dataVencimento,
-      quantidadeParcelas: 1,
-      diaVencimentoRecorrencia: _dataVencimento.day,
+      configuracaoRecorrencia: _recorrencia,
       payloadOriginalJson: payload,
     );
   }
@@ -666,10 +666,23 @@ class _LancamentoAgendaFinanceiraWebBodyState
       return;
     }
 
+    final erroRecorrencia = _recorrencia.validar(_dataVencimento);
+    if (erroRecorrencia != null ||
+        (_recorrencia.ativa &&
+            !['Pendente', 'Previsto'].contains(_statusSelecionado))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            recorrenciaLabel(context, erroRecorrencia ?? 'pendingError'),
+          ),
+        ),
+      );
+      return;
+    }
+
     final LancamentoAgendaFinanceiraRequest request = _buildRequest();
     setState(() => _isLoading = true);
     String? idGerado;
-    String? aviso;
 
     try {
       final LancamentoAgendaFinanceiraResponse response =
@@ -677,34 +690,26 @@ class _LancamentoAgendaFinanceiraWebBodyState
               ? await _service.editarLancamento(
                 _idLancamentoEdicao ?? request.uuidOperacaoApp,
                 request,
+                escopo: _recorrencia.escopo,
               )
               : await _service.cadastrarLancamento(request);
       idGerado = response.id;
-    } on AgendaFinanceiraLancamentoApiException catch (e) {
-      if (e.statusCode == 404 || e.statusCode == 405 || e.statusCode == 501) {
-        aviso =
-            widget.modoEdicao
-                ? 'Endpoint de edição ainda não publicado. Alterações mantidas localmente.'
-                : 'Endpoint de lançamento financeiro ainda não publicado. Payload foi montado e mantido localmente.';
-      } else {
-        if (!mounted) return;
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.modoEdicao
-                  ? 'Erro ao atualizar lançamento: ${e.statusCode}'
-                  : 'Erro ao salvar lançamento: ${e.statusCode}',
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            recorrenciaLabel(
+              context,
+              error is AgendaFinanceiraLancamentoApiException
+                  ? error.codigoRecorrencia ?? 'saveError'
+                  : 'saveError',
             ),
           ),
-        );
-        return;
-      }
-    } catch (_) {
-      aviso =
-          widget.modoEdicao
-              ? 'Não foi possível confirmar a API no momento. Alterações mantidas localmente.'
-              : 'Não foi possível confirmar a API no momento. Payload foi montado e mantido localmente.';
+        ),
+      );
+      return;
     }
 
     if (!mounted) return;
@@ -712,10 +717,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          aviso ??
-              (widget.modoEdicao
-                  ? 'Lançamento atualizado com sucesso.'
-                  : 'Lançamento salvo com sucesso.'),
+          (widget.modoEdicao
+              ? 'Lançamento atualizado com sucesso.'
+              : 'Lançamento salvo com sucesso.'),
         ),
       ),
     );
@@ -747,8 +751,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
               backgroundColor: tokens.surfaceElevated,
               surfaceTintColor: Colors.transparent,
               title: const Text('Excluir lançamento?'),
-              content: const Text(
-                'Esta ação vai apagar de forma definitiva este lançamento financeiro. Essa operação não pode ser desfeita.',
+              content: Text(
+                '${recorrenciaLabel(context, 'deleteConfirm')}\n${recorrenciaLabel(context, _recorrencia.escopo)}',
               ),
               actions: <Widget>[
                 TextButton(
@@ -778,7 +782,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     setState(() => _isLoading = true);
     try {
       final LancamentoAgendaFinanceiraResponse response = await _service
-          .excluirLancamento(idLancamento);
+          .excluirLancamento(idLancamento, escopo: _recorrencia.escopo);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lançamento excluído definitivamente.')),
@@ -1457,6 +1461,13 @@ class _LancamentoAgendaFinanceiraWebBodyState
                           ),
                         ],
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    AgendaRecorrenciaWebFields(
+                      config: _recorrencia,
+                      vencimento: _dataVencimento,
+                      enabled: !_isLoading,
+                      onChanged: () => setState(() {}),
                     ),
                     const SizedBox(height: 16),
                     _buildSectionCard(
