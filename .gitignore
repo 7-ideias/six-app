@@ -9,6 +9,7 @@
 /linux/
 /docs/*
 !/docs/ios-testflight-ci.md
+!/docs/agenda-financeira-email.md
 /screenshots/
 *.p8
 *.p12
