@@ -1,4 +1,5 @@
 import '../../lib/data/models/recebimento_forma_input.dart';
+import '../../lib/data/models/venda_nao_liquidada_models.dart';
 // Executável também com Dart puro, sem inicializar o Flutter.
 import '../../lib/data/models/agenda_financeira_recorrencia.dart';
 import '../../lib/data/models/agenda_financeira_lancamento_model.dart';
@@ -198,7 +199,17 @@ void main() {
         detalheManual.toJson().containsKey('codigoOperacao'),
     'Preservar codigoOperacao nulo em lançamentos manuais',
   );
+  final vendaAberta = VendaNaoLiquidadaModel.fromJson({
+    'idRecebimento': 'recebimento-1',
+    'idOperacaoFinanceira': 'financeiro-1',
+    'idOperacaoApp': 'operacao-1',
+    'codigoOperacao': 'VEN-789',
+  });
+  check(
+    vendaAberta.codigoOperacao == 'VEN-789',
+    'Mapear codigoOperacao de venda não liquidada',
+  );
   print(
-    '31 verificações de recorrência, status, liquidação e detalhe concluídas.',
+    '32 verificações de recorrência, status, liquidação e detalhe concluídas.',
   );
 }

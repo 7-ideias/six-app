@@ -170,13 +170,13 @@ class _VendasNaoLiquidadasMobileScreenState
           vendedoresPorId[id] = vendedor;
         }
       }
-      final List<ColaboradorUsuarioResumo> vendedores =
-          vendedoresPorId.values.toList(growable: false)..sort(
-            (ColaboradorUsuarioResumo first, ColaboradorUsuarioResumo second) =>
-                _nomeVendedor(
-                  first,
-                ).toLowerCase().compareTo(_nomeVendedor(second).toLowerCase()),
-          );
+      final List<ColaboradorUsuarioResumo> vendedores = vendedoresPorId.values
+        .toList(growable: false)..sort(
+        (ColaboradorUsuarioResumo first, ColaboradorUsuarioResumo second) =>
+            _nomeVendedor(
+              first,
+            ).toLowerCase().compareTo(_nomeVendedor(second).toLowerCase()),
+      );
       if (!mounted) return;
       setState(() {
         _vendedores = vendedores;
@@ -225,16 +225,18 @@ class _VendasNaoLiquidadasMobileScreenState
             'Receber venda em aberto',
           ),
           descricao: venda.descricao,
-          contato: venda.nomeCliente.trim().isEmpty
-              ? null
-              : venda.nomeCliente.trim(),
+          contato:
+              venda.nomeCliente.trim().isEmpty
+                  ? null
+                  : venda.nomeCliente.trim(),
           valorOriginal: venda.valorOriginal,
           valorJaRecebido: _valorJaRecebido(venda),
           valorAberto: venda.valorAberto,
           codigoTipoInicial: venda.codigoTipoRecebimento,
-          idUnicoDaOperacao: venda.idOperacaoApp.trim().isNotEmpty
-              ? venda.idOperacaoApp
-              : venda.idOperacaoFinanceira,
+          idUnicoDaOperacao:
+              venda.idOperacaoApp.trim().isNotEmpty
+                  ? venda.idOperacaoApp
+                  : venda.idOperacaoFinanceira,
           dataOperacao: venda.dataCompetencia,
           permitirParcial: true,
           observacaoInicial: 'Recebimento realizado no PDV mobile.',
@@ -257,9 +259,10 @@ class _VendasNaoLiquidadasMobileScreenState
             observacao:
                 resultado.observacao ??
                 'Recebimento total realizado no PDV mobile.',
-            referencia: venda.idOperacaoApp.isNotEmpty
-                ? venda.idOperacaoApp
-                : venda.idOperacaoFinanceira,
+            referencia:
+                venda.idOperacaoApp.isNotEmpty
+                    ? venda.idOperacaoApp
+                    : venda.idOperacaoFinanceira,
             idSessaoCaixa: idSessaoCaixa,
           ),
         );
@@ -474,8 +477,8 @@ class _VendasNaoLiquidadasMobileScreenState
     if (data == null) {
       return _txt('vendasNaoLiquidadas.semData', 'Sem data');
     }
-    final LocaleSettingsProvider localeSettings = context
-        .read<LocaleSettingsProvider>();
+    final LocaleSettingsProvider localeSettings =
+        context.read<LocaleSettingsProvider>();
     final String dataFormatada = localeSettings.formatDate(data);
     if (!incluirHora) return dataFormatada;
     return '$dataFormatada ${localeSettings.formatTime(data)}';
@@ -492,9 +495,10 @@ class _VendasNaoLiquidadasMobileScreenState
   }
 
   String _formatarQuantidadeItens(int quantidade) {
-    final String label = quantidade == 1
-        ? _txt('vendasNaoLiquidadas.itemSingular', 'item')
-        : _txt('vendasNaoLiquidadas.itemPlural', 'itens');
+    final String label =
+        quantidade == 1
+            ? _txt('vendasNaoLiquidadas.itemSingular', 'item')
+            : _txt('vendasNaoLiquidadas.itemPlural', 'itens');
     return '$quantidade $label';
   }
 
@@ -636,13 +640,13 @@ class _VendasNaoLiquidadasMobileScreenState
         ),
       );
     }
-    final List<SixMobileSelectionOption<String>> resultado =
-        opcoes.values.toList(growable: false)..sort(
-          (
-            SixMobileSelectionOption<String> first,
-            SixMobileSelectionOption<String> second,
-          ) => first.title.toLowerCase().compareTo(second.title.toLowerCase()),
-        );
+    final List<SixMobileSelectionOption<String>> resultado = opcoes.values
+      .toList(growable: false)..sort(
+      (
+        SixMobileSelectionOption<String> first,
+        SixMobileSelectionOption<String> second,
+      ) => first.title.toLowerCase().compareTo(second.title.toLowerCase()),
+    );
     return resultado;
   }
 
@@ -673,6 +677,7 @@ class _VendasNaoLiquidadasMobileScreenState
       venda.idRecebimento,
       venda.idOperacaoFinanceira,
       venda.idOperacaoApp,
+      venda.codigoOperacao,
       venda.descricao,
       venda.idCliente,
       venda.nomeCliente,
@@ -816,12 +821,14 @@ class _VendasNaoLiquidadasMobileScreenState
             _periodoSelecionado,
           ) ??
           ConsultaVendasPeriodoWebPreferencia.ultimos30Dias,
-      dataInicio: _periodoSelecionado == _periodoPersonalizado
-          ? _dataInicioPersonalizada
-          : null,
-      dataFim: _periodoSelecionado == _periodoPersonalizado
-          ? _dataFimPersonalizada
-          : null,
+      dataInicio:
+          _periodoSelecionado == _periodoPersonalizado
+              ? _dataInicioPersonalizada
+              : null,
+      dataFim:
+          _periodoSelecionado == _periodoPersonalizado
+              ? _dataFimPersonalizada
+              : null,
       statusFinanceiro: _statusFinanceiroSelecionado,
       idsVendedores: _idsVendedoresOrdenados(),
       valorMinimo: _valorMinimoTexto,
@@ -882,8 +889,8 @@ class _VendasNaoLiquidadasMobileScreenState
   }
 
   Future<void> _abrirFiltros() async {
-    final LocaleSettingsProvider regionalizacao = context
-        .read<LocaleSettingsProvider>();
+    final LocaleSettingsProvider regionalizacao =
+        context.read<LocaleSettingsProvider>();
     final _VendasNaoLiquidadasFilterDraft? draft =
         await showModalBottomSheet<_VendasNaoLiquidadasFilterDraft>(
           context: context,
@@ -920,9 +927,10 @@ class _VendasNaoLiquidadasMobileScreenState
     setState(() {
       _periodoSelecionado = draft.periodo;
       _dataInicioPersonalizada = draft.dataInicio;
-      _dataFimPersonalizada = draft.dataFim.isBefore(draft.dataInicio)
-          ? draft.dataInicio
-          : draft.dataFim;
+      _dataFimPersonalizada =
+          draft.dataFim.isBefore(draft.dataInicio)
+              ? draft.dataInicio
+              : draft.dataFim;
       _idsVendedoresSelecionados = Set<String>.from(draft.idsVendedores);
       _statusFinanceiroSelecionado = draft.statusFinanceiro;
       _ordenacaoSelecionada = draft.ordenacao;
@@ -1319,13 +1327,14 @@ class _VendasNaoLiquidadasMobileScreenState
                 'Venda, cliente, vendedor ou produto',
               ),
               prefixIcon: Icon(Icons.search_rounded),
-              suffixIcon: _buscaController.text.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: _txt('common.clear', 'Limpar'),
-                      onPressed: _buscaController.clear,
-                      icon: Icon(Icons.close_rounded),
-                    ),
+              suffixIcon:
+                  _buscaController.text.isEmpty
+                      ? null
+                      : IconButton(
+                        tooltip: _txt('common.clear', 'Limpar'),
+                        onPressed: _buscaController.clear,
+                        icon: Icon(Icons.close_rounded),
+                      ),
               filled: true,
               fillColor: _softSurface,
               border: OutlineInputBorder(
@@ -1456,15 +1465,17 @@ class _VendasNaoLiquidadasMobileScreenState
 
   Widget _vendaCard(VendaNaoLiquidadaModel venda) {
     final int quantidadeItens = _quantidadeItensDaVenda(venda);
-    final String colaborador = venda.nomeColaboradorCriacao.trim().isEmpty
-        ? _txt('vendasNaoLiquidadas.colaboradorPadrao', 'colaborador')
-        : venda.nomeColaboradorCriacao.trim();
-    final String cliente = venda.nomeCliente.trim().isEmpty
-        ? _txt(
-            'vendasNaoLiquidadas.clienteNaoInformado',
-            'Cliente não informado',
-          )
-        : venda.nomeCliente.trim();
+    final String colaborador =
+        venda.nomeColaboradorCriacao.trim().isEmpty
+            ? _txt('vendasNaoLiquidadas.colaboradorPadrao', 'colaborador')
+            : venda.nomeColaboradorCriacao.trim();
+    final String cliente =
+        venda.nomeCliente.trim().isEmpty
+            ? _txt(
+              'vendasNaoLiquidadas.clienteNaoInformado',
+              'Cliente não informado',
+            )
+            : venda.nomeCliente.trim();
     final Widget detailsButton = _cardDetailsButton(venda);
 
     return Material(
@@ -1667,9 +1678,10 @@ class _VendasNaoLiquidadasMobileScreenState
         MediaQuery.disableAnimationsOf(sheetContext) ||
         MediaQuery.accessibleNavigationOf(sheetContext);
     final double valorJaRecebido = _valorJaRecebido(venda);
-    final String colaborador = venda.nomeColaboradorCriacao.trim().isEmpty
-        ? _txt('vendasNaoLiquidadas.colaboradorPadrao', 'colaborador')
-        : venda.nomeColaboradorCriacao.trim();
+    final String colaborador =
+        venda.nomeColaboradorCriacao.trim().isEmpty
+            ? _txt('vendasNaoLiquidadas.colaboradorPadrao', 'colaborador')
+            : venda.nomeColaboradorCriacao.trim();
     final bool podeReceber = !_cancelando && venda.valorAberto > 0;
     final bool podeCancelar = !_cancelando;
 
@@ -1812,9 +1824,10 @@ class _VendasNaoLiquidadasMobileScreenState
                   ),
                   -valorJaRecebido,
                   reduceMotion: reduceMotion,
-                  valueColor: valorJaRecebido > 0
-                      ? SixMobilePalette.error
-                      : _mutedTextColor,
+                  valueColor:
+                      valorJaRecebido > 0
+                          ? SixMobilePalette.error
+                          : _mutedTextColor,
                 ),
                 _detailMoneyLine(
                   _txt('vendasNaoLiquidadas.valorAberto', 'Valor em aberto'),
@@ -1847,9 +1860,8 @@ class _VendasNaoLiquidadasMobileScreenState
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool compact = constraints.maxWidth < 360;
-        final double itemWidth = compact
-            ? constraints.maxWidth
-            : (constraints.maxWidth - 10) / 2;
+        final double itemWidth =
+            compact ? constraints.maxWidth : (constraints.maxWidth - 10) / 2;
         return Wrap(
           spacing: 10,
           runSpacing: 10,
@@ -1860,12 +1872,13 @@ class _VendasNaoLiquidadasMobileScreenState
                 label: _txt('vendasNaoLiquidadas.receber', 'Receber'),
                 icon: Icons.payments_outlined,
                 filled: true,
-                onPressed: podeReceber
-                    ? () => _runAfterClosingSheet(
-                        sheetContext,
-                        () => _receberVenda(venda),
-                      )
-                    : null,
+                onPressed:
+                    podeReceber
+                        ? () => _runAfterClosingSheet(
+                          sheetContext,
+                          () => _receberVenda(venda),
+                        )
+                        : null,
               ),
             ),
             SizedBox(
@@ -1876,12 +1889,13 @@ class _VendasNaoLiquidadasMobileScreenState
                   'Cancelar venda',
                 ),
                 icon: Icons.delete_outline_rounded,
-                onPressed: podeCancelar
-                    ? () => _runAfterClosingSheet(
-                        sheetContext,
-                        () => _confirmarCancelamentoVenda(venda),
-                      )
-                    : null,
+                onPressed:
+                    podeCancelar
+                        ? () => _runAfterClosingSheet(
+                          sheetContext,
+                          () => _confirmarCancelamentoVenda(venda),
+                        )
+                        : null,
               ),
             ),
           ],
@@ -1896,17 +1910,18 @@ class _VendasNaoLiquidadasMobileScreenState
     required VoidCallback? onPressed,
     bool filled = false,
   }) {
-    final ButtonStyle style = filled
-        ? FilledButton.styleFrom(
-            backgroundColor: _accentColor,
-            foregroundColor: SixMobilePalette.onAccent,
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          )
-        : OutlinedButton.styleFrom(
-            foregroundColor: _titleTextColor,
-            side: BorderSide(color: _borderColor),
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          );
+    final ButtonStyle style =
+        filled
+            ? FilledButton.styleFrom(
+              backgroundColor: _accentColor,
+              foregroundColor: SixMobilePalette.onAccent,
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            )
+            : OutlinedButton.styleFrom(
+              foregroundColor: _titleTextColor,
+              side: BorderSide(color: _borderColor),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            );
     final Widget child = Row(
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
@@ -2137,9 +2152,10 @@ class _VendasNaoLiquidadasMobileScreenState
           ...venda.itens.map((VendaNaoLiquidadaItemModel item) {
             final double total = item.quantidade * item.valorUnitario;
             return _detailListTile(
-              icon: item.ehServico
-                  ? Icons.handyman_outlined
-                  : Icons.inventory_2_outlined,
+              icon:
+                  item.ehServico
+                      ? Icons.handyman_outlined
+                      : Icons.inventory_2_outlined,
               title: item.nome,
               subtitle:
                   '${item.quantidade} x ${_formatarValor(item.valorUnitario)}',
@@ -2231,13 +2247,13 @@ class _VendasNaoLiquidadasMobileScreenState
           Text(
             filtrada
                 ? _txt(
-                    'vendasNaoLiquidadas.filtrosSemResultadoTitulo',
-                    'Nenhuma venda encontrada',
-                  )
+                  'vendasNaoLiquidadas.filtrosSemResultadoTitulo',
+                  'Nenhuma venda encontrada',
+                )
                 : _txt(
-                    'vendasNaoLiquidadas.vazioTitulo',
-                    'Nenhuma venda em aberto',
-                  ),
+                  'vendasNaoLiquidadas.vazioTitulo',
+                  'Nenhuma venda em aberto',
+                ),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: _titleTextColor,
@@ -2249,13 +2265,13 @@ class _VendasNaoLiquidadasMobileScreenState
           Text(
             filtrada
                 ? _txt(
-                    'vendasNaoLiquidadas.filtrosSemResultadoDescricao',
-                    'Revise ou limpe os filtros para ver outras vendas em aberto.',
-                  )
+                  'vendasNaoLiquidadas.filtrosSemResultadoDescricao',
+                  'Revise ou limpe os filtros para ver outras vendas em aberto.',
+                )
                 : _txt(
-                    'vendasNaoLiquidadas.vazioDescricao',
-                    'Quando uma venda for marcada para receber depois, ela aparecerá aqui.',
-                  ),
+                  'vendasNaoLiquidadas.vazioDescricao',
+                  'Quando uma venda for marcada para receber depois, ela aparecerá aqui.',
+                ),
             textAlign: TextAlign.center,
             style: TextStyle(color: _mutedTextColor, height: 1.4),
           ),
@@ -2592,9 +2608,10 @@ class _VendasNaoLiquidadasMobileScreenState
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: colorOnDark
-            ? _withAlpha(SixMobilePalette.onPrimary, 0.18)
-            : _withAlpha(_borderColor, 0.55),
+        color:
+            colorOnDark
+                ? _withAlpha(SixMobilePalette.onPrimary, 0.18)
+                : _withAlpha(_borderColor, 0.55),
         borderRadius: BorderRadius.circular(999),
       ),
     );
@@ -2650,9 +2667,10 @@ class _VendasNaoLiquidadasFilterDraft {
       dataInicio: dataInicio ?? this.dataInicio,
       dataFim: dataFim ?? this.dataFim,
       idsVendedores: Set<String>.from(idsVendedores ?? this.idsVendedores),
-      statusFinanceiro: limparStatusFinanceiro
-          ? null
-          : statusFinanceiro ?? this.statusFinanceiro,
+      statusFinanceiro:
+          limparStatusFinanceiro
+              ? null
+              : statusFinanceiro ?? this.statusFinanceiro,
       ordenacao: ordenacao ?? this.ordenacao,
       valorMinimo: valorMinimo ?? this.valorMinimo,
       valorMaximo: valorMaximo ?? this.valorMaximo,
@@ -2764,9 +2782,10 @@ class _VendasNaoLiquidadasFilterSheetState
         widget.sellersLoadFailed
             ? 'sales.query.sellersLoadError'
             : 'sales.query.noSellers',
-        fallback: widget.sellersLoadFailed
-            ? 'Não foi possível carregar os vendedores.'
-            : 'Nenhum vendedor encontrado.',
+        fallback:
+            widget.sellersLoadFailed
+                ? 'Não foi possível carregar os vendedores.'
+                : 'Nenhum vendedor encontrado.',
       ),
     );
     if (selected == null || !mounted) return;
@@ -2833,9 +2852,10 @@ class _VendasNaoLiquidadasFilterSheetState
     final DateTime? selected = await widget.showDateSheet(
       initialDate: initial,
       minimumDate: minimum,
-      title: inicio
-          ? context.t('sales.query.startDate', fallback: 'Data inicial')
-          : context.t('sales.query.endDate', fallback: 'Data final'),
+      title:
+          inicio
+              ? context.t('sales.query.startDate', fallback: 'Data inicial')
+              : context.t('sales.query.endDate', fallback: 'Data final'),
     );
     if (selected == null || !mounted) return;
     setState(() {
@@ -2915,11 +2935,12 @@ class _VendasNaoLiquidadasFilterSheetState
                                   'vendasNaoLiquidadas.filtrosTitulo',
                                   fallback: 'Filtros das vendas a receber',
                                 ),
-                                style: Theme.of(context).textTheme.titleLarge
-                                    ?.copyWith(
-                                      color: colors.titleText,
-                                      fontWeight: FontWeight.w900,
-                                    ),
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.titleLarge?.copyWith(
+                                  color: colors.titleText,
+                                  fontWeight: FontWeight.w900,
+                                ),
                               ),
                               SizedBox(height: 4),
                               Text(
@@ -2937,9 +2958,10 @@ class _VendasNaoLiquidadasFilterSheetState
                           ),
                         ),
                         IconButton(
-                          tooltip: MaterialLocalizations.of(
-                            context,
-                          ).closeButtonTooltip,
+                          tooltip:
+                              MaterialLocalizations.of(
+                                context,
+                              ).closeButtonTooltip,
                           onPressed: () => Navigator.of(context).pop(),
                           icon: Icon(Icons.close_rounded),
                         ),
@@ -3001,21 +3023,22 @@ class _VendasNaoLiquidadasFilterSheetState
                           ),
                           value:
                               widget.sellersLoading &&
-                                  _draft.idsVendedores.isEmpty &&
-                                  widget.sellerOptions.isEmpty
-                              ? context.t(
-                                  'sales.query.loadingSellers',
-                                  fallback: 'Carregando vendedores...',
-                                )
-                              : widget.sellerSelectionLabelBuilder(
-                                  _draft.idsVendedores,
-                                ),
-                          helperText: widget.sellersLoadFailed
-                              ? context.t(
-                                  'sales.query.sellersLoadErrorShort',
-                                  fallback: 'Lista indisponível no momento',
-                                )
-                              : null,
+                                      _draft.idsVendedores.isEmpty &&
+                                      widget.sellerOptions.isEmpty
+                                  ? context.t(
+                                    'sales.query.loadingSellers',
+                                    fallback: 'Carregando vendedores...',
+                                  )
+                                  : widget.sellerSelectionLabelBuilder(
+                                    _draft.idsVendedores,
+                                  ),
+                          helperText:
+                              widget.sellersLoadFailed
+                                  ? context.t(
+                                    'sales.query.sellersLoadErrorShort',
+                                    fallback: 'Lista indisponível no momento',
+                                  )
+                                  : null,
                           icon: Icons.people_alt_outlined,
                           enabled: sellerEnabled,
                           onTap: _pickVendedores,
@@ -3026,11 +3049,12 @@ class _VendasNaoLiquidadasFilterSheetState
                             'sales.query.financialStatus',
                             fallback: 'Situação financeira',
                           ),
-                          value: _draft.statusFinanceiro == null
-                              ? context.t('common.all', fallback: 'Todas')
-                              : widget.financialStatusLabelBuilder(
-                                  _draft.statusFinanceiro!,
-                                ),
+                          value:
+                              _draft.statusFinanceiro == null
+                                  ? context.t('common.all', fallback: 'Todas')
+                                  : widget.financialStatusLabelBuilder(
+                                    _draft.statusFinanceiro!,
+                                  ),
                           icon: Icons.account_balance_wallet_outlined,
                           onTap: _pickStatusFinanceiro,
                         ),
@@ -3192,9 +3216,8 @@ class _VendasNaoLiquidadasDateSheetState
                       ),
                     ),
                     IconButton(
-                      tooltip: MaterialLocalizations.of(
-                        context,
-                      ).closeButtonTooltip,
+                      tooltip:
+                          MaterialLocalizations.of(context).closeButtonTooltip,
                       onPressed: () => Navigator.of(context).pop(),
                       icon: Icon(Icons.close_rounded),
                     ),
@@ -3223,8 +3246,8 @@ class _VendasNaoLiquidadasDateSheetState
                     SizedBox(width: 10),
                     Expanded(
                       child: FilledButton(
-                        onPressed: () =>
-                            Navigator.of(context).pop(_selectedDate),
+                        onPressed:
+                            () => Navigator.of(context).pop(_selectedDate),
                         child: Text(
                           context.t('common.apply', fallback: 'Aplicar'),
                         ),
