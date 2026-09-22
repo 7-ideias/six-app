@@ -91,12 +91,22 @@ class LancamentoAgendaFinanceiraRequest {
             diaVencimentoRecorrencia ?? dataVencimento.day,
       };
 
+  /// Indicadores de vencimento não são estados financeiros persistidos.
+  static String normalizarStatus(String status) {
+    final codigo = status.trim().toUpperCase().replaceAll(' ', '_');
+    return switch (codigo) {
+      'VENCE_HOJE' || 'VENCIDO' || 'VENCIDA' => 'PENDENTE',
+      'CANCELADA' => 'CANCELADO',
+      _ => codigo,
+    };
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'uuidOperacaoApp': uuidOperacaoApp,
       'descricao': descricao,
       'tipoOperacao': tipoOperacao,
-      'statusOperacao': statusOperacao,
+      'statusOperacao': normalizarStatus(statusOperacao),
       'statusQuitada': statusQuitada,
       'operacaoFinalizadaProntaCaixa': operacaoFinalizadaProntaCaixa,
       'clientePediuParaApagar': clientePediuParaApagar,
@@ -124,6 +134,12 @@ class LancamentoAgendaFinanceiraRequest {
       ...dadosRecorrencia,
       'payloadOriginalJson': {
         ...payloadOriginalJson,
+        'agendaFinanceira': {
+          ...Map<String, dynamic>.from(
+            payloadOriginalJson['agendaFinanceira'] as Map? ?? const {},
+          ),
+          'statusFiltro': normalizarStatus(statusOperacao),
+        },
         'recorrencia': {
           'recorrente': dadosRecorrencia['recorrente'],
           'frequencia': dadosRecorrencia['frequenciaRecorrencia'],

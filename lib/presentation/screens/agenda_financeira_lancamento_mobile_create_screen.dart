@@ -977,12 +977,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
     );
   }
 
-  List<String> _statusParaTipo() {
-    if (_tipoSelecionado == 'Receber') {
-      return <String>['Previsto', 'Pendente', 'Recebido'];
-    }
-    return <String>['Previsto', 'Pendente', 'Pago'];
-  }
+  List<String> _statusParaTipo() => <String>['Previsto', 'Pendente'];
 
   List<String> _origensParaTipo() {
     if (_tipoSelecionado == 'Receber') {

@@ -187,16 +187,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   DateTime _dataCompetencia = DateTime.now();
 
   static const List<String> _tipos = <String>['Pagar', 'Receber'];
-  static const List<String> _status = <String>[
-    'Previsto',
-    'Pendente',
-    'Vence hoje',
-    'Vencido',
-    'Pago',
-    'Recebido',
-    'Parcial',
-    'Cancelado',
-  ];
+  static const List<String> _status = <String>['Previsto', 'Pendente'];
   static const List<String> _origens = <String>[
     'Venda',
     'Ordem de serviço',
@@ -286,8 +277,19 @@ class _LancamentoAgendaFinanceiraWebBodyState
       _tipoSelecionado = 'Pagar';
     }
 
-    final String status = item['status']?.toString() ?? '';
-    if (_status.contains(status)) _statusSelecionado = status;
+    final codigoStatus = LancamentoAgendaFinanceiraRequest.normalizarStatus(
+      item['status']?.toString() ?? 'PENDENTE',
+    );
+    final String status = switch (codigoStatus) {
+      'PREVISTO' => 'Previsto',
+      'PENDENTE' => 'Pendente',
+      'PAGO' => 'Pago',
+      'RECEBIDO' => 'Recebido',
+      'PARCIAL' => 'Parcial',
+      'CANCELADO' => 'Cancelado',
+      _ => item['status']?.toString() ?? '',
+    };
+    _statusSelecionado = status;
 
     final double valorConfirmado = _toDoubleDynamic(item['valorConfirmado']);
     final double valorRestante = _toDoubleDynamic(item['valorRestante']);
@@ -296,7 +298,14 @@ class _LancamentoAgendaFinanceiraWebBodyState
         statusNormalizado == 'PAGO' ||
         statusNormalizado == 'RECEBIDO' ||
         (valorConfirmado > 0 && valorRestante <= 0);
-    _bloquearTipoStatusPorConfirmacao = _statusQuitada;
+    if (valorConfirmado > 0 && _status.contains(_statusSelecionado)) {
+      _statusSelecionado =
+          valorRestante > 0
+              ? 'Parcial'
+              : (_tipoSelecionado == 'Receber' ? 'Recebido' : 'Pago');
+    }
+    _bloquearTipoStatusPorConfirmacao =
+        _statusQuitada || valorConfirmado > 0 || !_status.contains(status);
 
     final String origem = item['origem']?.toString() ?? '';
     if (_origens.contains(origem)) _origemSelecionada = origem;
@@ -1248,67 +1257,6 @@ class _LancamentoAgendaFinanceiraWebBodyState
     );
   }
 
-  Widget _buildConfirmationCard() {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _statusQuitada ? tokens.selectedBackground : tokens.surfaceMuted,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: _statusQuitada ? tokens.selectedBorder : tokens.cardBorder,
-        ),
-      ),
-      child: Wrap(
-        spacing: 14,
-        runSpacing: 10,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: <Widget>[
-          FilterChip(
-            selected: _statusQuitada,
-            onSelected:
-                _bloquearTipoStatus
-                    ? null
-                    : (bool value) {
-                      setState(() {
-                        _statusQuitada = value;
-                        if (value) {
-                          _statusSelecionado =
-                              _tipoSelecionado == 'Receber'
-                                  ? 'Recebido'
-                                  : 'Pago';
-                          _valorConfirmadoController.text =
-                              _valorController.text;
-                        } else {
-                          _statusSelecionado = 'Pendente';
-                          _valorConfirmadoController.text = '0,00';
-                        }
-                      });
-                    },
-            label: Text(
-              _tipoSelecionado == 'Receber' ? 'Já recebido' : 'Já pago',
-            ),
-            avatar: const Icon(Icons.check_circle_outline_rounded, size: 18),
-          ),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: Text(
-              _bloquearTipoStatus
-                  ? 'Este lançamento já foi confirmado e mantém tipo, status e quitação bloqueados.'
-                  : 'Use esta opção apenas quando o lançamento já nasceu quitado.',
-              style: TextStyle(
-                color: tokens.secondaryText,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -1381,7 +1329,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
                             child: _buildDropdownField(
                               label: 'Status',
                               value: _statusSelecionado,
-                              items: _status,
+                              items:
+                                  _status.contains(_statusSelecionado)
+                                      ? _status
+                                      : <String>[_statusSelecionado],
                               icon: Icons.flag_outlined,
                               enabled: !_bloquearTipoStatus,
                               onChanged:
@@ -1615,14 +1566,6 @@ class _LancamentoAgendaFinanceiraWebBodyState
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildSectionCard(
-                      title: 'Status de confirmação',
-                      subtitle:
-                          'Marque apenas se o lançamento já nasceu quitado.',
-                      icon: Icons.verified_outlined,
-                      child: _buildConfirmationCard(),
                     ),
                     const SizedBox(height: 16),
                     _buildActionsBar(),

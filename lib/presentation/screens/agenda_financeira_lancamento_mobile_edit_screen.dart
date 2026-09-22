@@ -61,16 +61,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   final TextEditingController _centroCustoController = TextEditingController();
 
   static const List<String> _tipos = <String>['Pagar', 'Receber'];
-  static const List<String> _status = <String>[
-    'Previsto',
-    'Pendente',
-    'Vence hoje',
-    'Vencido',
-    'Pago',
-    'Recebido',
-    'Parcial',
-    'Cancelado',
-  ];
+  static const List<String> _status = <String>['Previsto', 'Pendente'];
   static const List<String> _origens = <String>[
     'Venda',
     'Ordem de serviço',
@@ -145,7 +136,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     _tipoSelecionado = tipo == 'receber' ? 'Receber' : 'Pagar';
 
     final String status = _statusLabel(item['status']?.toString());
-    if (_status.contains(status)) _statusSelecionado = status;
+    _statusSelecionado = status;
 
     _origemSelecionada = _origemLabel(
       item['origem']?.toString(),
@@ -222,7 +213,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     if (_tipos.contains(tipo)) _tipoSelecionado = tipo;
 
     final String status = _statusLabel(detalhe['status']?.toString());
-    if (_status.contains(status)) _statusSelecionado = status;
+    _statusSelecionado = status;
 
     _descricaoController.text = _texto(
       detalhe['descricao'],
@@ -235,6 +226,12 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       detalhe['valorPagoRecebido'] ?? _valorConfirmado,
     );
     _valorRestante = _toDouble(detalhe['valorAberto'] ?? _valorRestante);
+    if (_valorConfirmado > 0 && _status.contains(_statusSelecionado)) {
+      _statusSelecionado =
+          _valorRestante > 0
+              ? 'Parcial'
+              : (_tipoSelecionado == 'Receber' ? 'Recebido' : 'Pago');
+    }
 
     _dataCompetencia = _parseData(
       detalhe['dataCompetencia'],
@@ -701,14 +698,17 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                               value: _statusSelecionado,
                               icon: Icons.flag_outlined,
                               onTap:
-                                  () => _selecionarValor(
-                                    titulo: 'Selecionar status',
-                                    opcoes: _status,
-                                    selecionado: _statusSelecionado,
-                                    onSelected:
-                                        (String value) =>
-                                            _statusSelecionado = value,
-                                  ),
+                                  !_status.contains(_statusSelecionado) ||
+                                          _valorConfirmado > 0
+                                      ? null
+                                      : () => _selecionarValor(
+                                        titulo: 'Selecionar status',
+                                        opcoes: _status,
+                                        selecionado: _statusSelecionado,
+                                        onSelected:
+                                            (String value) =>
+                                                _statusSelecionado = value,
+                                      ),
                             ),
                           ),
                         ],
@@ -1276,7 +1276,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   }
 
   String _statusLabel(String? status) {
-    switch ((status ?? '').toUpperCase()) {
+    switch (LancamentoAgendaFinanceiraRequest.normalizarStatus(status ?? '')) {
       case 'PAGO':
         return 'Pago';
       case 'RECEBIDO':
@@ -1286,10 +1286,6 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       case 'CANCELADO':
       case 'CANCELADA':
         return 'Cancelado';
-      case 'VENCIDO':
-        return 'Vencido';
-      case 'VENCE_HOJE':
-        return 'Vence hoje';
       case 'PREVISTO':
         return 'Previsto';
       case 'PENDENTE':

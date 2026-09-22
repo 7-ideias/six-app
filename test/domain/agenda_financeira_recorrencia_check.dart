@@ -39,7 +39,7 @@ void main() {
     uuidOperacaoApp: 'test',
     descricao: 'Aluguel',
     tipoOperacao: 'PAGAR',
-    statusOperacao: 'PENDENTE',
+    statusOperacao: 'Vence hoje',
     dataOperacao: date,
     dataVencimento: date,
     dataCompetencia: date,
@@ -59,6 +59,35 @@ void main() {
     payloadOriginalJson: {'agendaFinanceira': {}, 'contato': {}},
   );
   final json = request.toJson();
+  check(
+    json['statusOperacao'] == 'PENDENTE',
+    'Vence hoje deve ser enviado como PENDENTE',
+  );
+  check(
+    json['payloadOriginalJson']['agendaFinanceira']['statusFiltro'] ==
+        'PENDENTE',
+    'Status interno e externo devem concordar',
+  );
+  for (final indicador in ['Vence hoje', 'VENCE_HOJE', 'Vencido', 'VENCIDA']) {
+    check(
+      LancamentoAgendaFinanceiraRequest.normalizarStatus(indicador) ==
+          'PENDENTE',
+      'Indicador de data não pode virar status financeiro',
+    );
+  }
+  for (final estado in [
+    'PREVISTO',
+    'PENDENTE',
+    'PAGO',
+    'RECEBIDO',
+    'PARCIAL',
+    'CANCELADO',
+  ]) {
+    check(
+      LancamentoAgendaFinanceiraRequest.normalizarStatus(estado) == estado,
+      'Não reabrir nem alterar estado financeiro existente',
+    );
+  }
   final nested = json['payloadOriginalJson']['recorrencia'];
   check(
     json['recorrente'] == true && nested['recorrente'] == true,
@@ -101,5 +130,5 @@ void main() {
         request.toJson()['recorrente'] == false,
     'Desativar repetição gera lançamento único',
   );
-  print('13 verificações de recorrência e contrato concluídas.');
+  print('25 verificações de recorrência, status e contrato concluídas.');
 }
