@@ -96,8 +96,9 @@ class ManagementOverviewProvider extends ChangeNotifier {
 
     final int? products = health?.overview.products.quantity;
     final int? services = health?.overview.services.quantity;
-    final int? lowStockItems =
-        health?.metric(CatalogHealthMetricType.lowStock)?.value;
+    final int? lowStockItems = health
+        ?.metric(CatalogHealthMetricType.lowStock)
+        ?.value;
     final int? attentionItems = health?.attentionItems;
     final int? categoryCount = categories?.total;
 
@@ -145,10 +146,9 @@ class ManagementOverviewProvider extends ChangeNotifier {
       ManagementPeopleOverview(
         clientCount: clients?.total,
         collaboratorCount: collaborators?.length,
-        activeCollaboratorCount:
-            collaborators
-                ?.where((ColaboradorUsuarioResumo item) => item.ativo)
-                .length,
+        activeCollaboratorCount: collaborators
+            ?.where((ColaboradorUsuarioResumo item) => item.ativo)
+            .length,
         supplierCount: null,
       ),
     );
@@ -186,6 +186,7 @@ class ManagementOverviewProvider extends ChangeNotifier {
         categorias: const <String>[],
         formasPagamento: const <String>[],
         codigosTipoRecebimento: const <String>[],
+        centrosCusto: const <String>[],
         clienteFornecedor: null,
         somenteCriticos: false,
       ),

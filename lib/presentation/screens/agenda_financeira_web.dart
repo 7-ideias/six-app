@@ -1,3 +1,7 @@
+import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -10,10 +14,6 @@ import 'package:sixpos/data/models/caixa_models.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
-import 'package:sixpos/l10n/six_i18n.dart';
-import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
-import 'package:sixpos/presentation/components/web/six_web_animated_dialog.dart';
-import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
 
@@ -100,6 +100,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       };
 
   List<String> _tiposRecebimentoFiltro = <String>['Todos'];
+  List<CentroCustoModel> _centrosCusto = <CentroCustoModel>[];
   final List<Map<String, dynamic>> _gruposAgenda = <Map<String, dynamic>>[];
   final List<Map<String, dynamic>> _itensConfirmados = <Map<String, dynamic>>[];
 
@@ -110,19 +111,17 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   String _tipoSelecionado = 'Todos';
   String _statusSelecionado = 'Todos';
   final Set<String> _formasPagamentoSelecionadas = <String>{};
+  final Set<String> _centrosCustoSelecionados = <String>{};
   bool _carregando = false;
   bool _executandoAcao = false;
   bool _overlayInicialAberto = false;
   bool _usuarioAlterouFiltros = false;
   DateTime? _ultimaConsultaEm;
 
-  List<Map<String, dynamic>> get _itensAgenda =>
-      _gruposAgenda
-          .expand(
-            (grupo) => (grupo['itens'] as List).cast<Map<String, dynamic>>(),
-          )
-          .where(_passaFiltrosLocais)
-          .toList();
+  List<Map<String, dynamic>> get _itensAgenda => _gruposAgenda
+      .expand((grupo) => (grupo['itens'] as List).cast<Map<String, dynamic>>())
+      .where(_passaFiltrosLocais)
+      .toList();
 
   List<Map<String, dynamic>> get _itensConfirmadosFiltrados =>
       _itensConfirmados.where(_passaFiltrosLocais).toList();
@@ -152,6 +151,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       if (abriuOverlay || !mounted) return;
       await _restaurarPreferenciasAgendaFinanceira();
       await _carregarTiposPagamentoConfigurados();
+      await _carregarCentrosCusto();
       await _restaurarPreferenciasAgendaFinanceira();
       await _restaurarPreferenciasAgendaFinanceiraBackend();
       await _consultar();
@@ -193,12 +193,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final String periodo = _periodoLabelPreferencia(filtros.periodo);
     final String tipo = _tipoLabelPreferencia(filtros.tipo);
     final String status = _statusLabelPreferencia(filtros.status);
-    final Set<String> formasPagamento =
-        filtros.tiposDePagamento
-            .map(_formaPagamentoLabelPorCodigoPreferencia)
-            .whereType<String>()
-            .where(_tiposRecebimentoFiltro.contains)
-            .toSet();
+    final Set<String> formasPagamento = filtros.tiposDePagamento
+        .map(_formaPagamentoLabelPorCodigoPreferencia)
+        .whereType<String>()
+        .where(_tiposRecebimentoFiltro.contains)
+        .toSet();
 
     setState(() {
       if (_periodos.contains(periodo)) {
@@ -294,6 +293,16 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     } catch (_) {}
   }
 
+  Future<void> _carregarCentrosCusto() async {
+    try {
+      final centros = await _service.listarCentrosCusto();
+      if (!mounted) return;
+      setState(() => _centrosCusto = centros);
+    } catch (_) {
+      // Mantém a agenda disponível mesmo sem o catálogo.
+    }
+  }
+
   List<String> _montarFormasPagamento(List<TiposRecebimento> tipos) {
     final descricoes = <String>[];
     final backendAtualizado = Map<String, String>.from(
@@ -305,16 +314,14 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final codigoAtualizado = Map<String, String>.from(
       _codigoTipoPorDescricaoFormaPagamento,
     );
-    final ativos =
-        tipos.where((tipo) => tipo.ativo).toList()
-          ..sort((a, b) => a.ordemExibicao.compareTo(b.ordemExibicao));
+    final ativos = tipos.where((tipo) => tipo.ativo).toList()
+      ..sort((a, b) => a.ordemExibicao.compareTo(b.ordemExibicao));
     for (final tipo in ativos) {
       final codigoTipo = tipo.codigoTipo.trim().toLowerCase();
       final backend = _backendFormaPagamentoPorCodigoTipo(codigoTipo);
-      final descricao =
-          tipo.descricaoExibicao.trim().isNotEmpty
-              ? tipo.descricaoExibicao.trim()
-              : (_descricaoPorBackendFormaPagamento[backend] ?? codigoTipo);
+      final descricao = tipo.descricaoExibicao.trim().isNotEmpty
+          ? tipo.descricaoExibicao.trim()
+          : (_descricaoPorBackendFormaPagamento[backend] ?? codigoTipo);
       if (descricao.isEmpty || descricoes.contains(descricao)) continue;
       descricoes.add(descricao);
       codigoAtualizado[descricao] = codigoTipo;
@@ -371,16 +378,18 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         _codigosTipoRecebimentoFiltro().contains(
           item['codigoTipoRecebimento']?.toString().trim().toLowerCase(),
         );
-    return tipoOk && statusOk && formaOk;
+    final centroOk =
+        _centrosCustoSelecionados.isEmpty ||
+        _centrosCustoSelecionados.contains(item['centroDeCusto']?.toString());
+    return tipoOk && statusOk && formaOk && centroOk;
   }
 
   Future<void> _consultar({bool mostrarFeedback = false}) async {
     if (_carregando) return;
     final erroPeriodo = _validarPeriodoSelecionado();
     if (erroPeriodo != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(erroPeriodo)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(erroPeriodo)));
       return;
     }
     setState(() => _carregando = true);
@@ -430,24 +439,23 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     return AgendaFinanceiraConsultaRequest(
       periodo: _periodoRequest(),
       filtros: AgendaFinanceiraFiltrosRequest(
-        tipo:
-            _tipoSelecionado == 'Todos'
-                ? 'TODOS'
-                : _tipoSelecionado.toUpperCase(),
+        tipo: _tipoSelecionado == 'Todos'
+            ? 'TODOS'
+            : _tipoSelecionado.toUpperCase(),
         status: _statusFiltro(),
         origens: const <String>[],
         categorias: const <String>[],
         formasPagamento: const <String>[],
         codigosTipoRecebimento: _codigosTipoRecebimentoFiltro(),
+        centrosCusto: _centrosCustoSelecionados.toList(growable: false),
         clienteFornecedor: null,
         somenteCriticos: false,
       ),
-      visaoSelecionada:
-          _abaSelecionada == 0
-              ? 'AGENDA'
-              : (_abaSelecionada == 1
-                  ? 'CALENDARIO'
-                  : (_abaSelecionada == 2
+      visaoSelecionada: _abaSelecionada == 0
+          ? 'AGENDA'
+          : (_abaSelecionada == 1
+                ? 'CALENDARIO'
+                : (_abaSelecionada == 2
                       ? 'FLUXO_PREVISTO'
                       : 'VALORES_CONFIRMADOS')),
     );
@@ -565,10 +573,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   void _selecionarTiposPagamento(Set<String> resultado) {
-    final Set<String> valoresValidos =
-        resultado
-            .where((forma) => _tiposRecebimentoFiltro.contains(forma))
-            .toSet();
+    final Set<String> valoresValidos = resultado
+        .where((forma) => _tiposRecebimentoFiltro.contains(forma))
+        .toSet();
     setState(() {
       _formasPagamentoSelecionadas
         ..clear()
@@ -585,8 +592,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             _periodoCodigoPreferencia(_periodoSelecionado),
             AgendaFinanceiraPeriodoWebPreferencia.proximos7Dias,
           ),
-          dataInicio:
-              _usaPeriodoPersonalizado ? _inicioPeriodoPersonalizado() : null,
+          dataInicio: _usaPeriodoPersonalizado
+              ? _inicioPeriodoPersonalizado()
+              : null,
           dataFim: _usaPeriodoPersonalizado ? _fimPeriodoPersonalizado() : null,
           tipo: AgendaFinanceiraTipoWebPreferenciaApi.fromCodigo(
             _tipoCodigoPreferencia(_tipoSelecionado),
@@ -766,10 +774,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final inicio = _normalizarData(_dataInicioPersonalizada);
     final limite = _limiteFimPeriodoPersonalizado(inicio);
     final fimAtual = _normalizarData(_dataFimPersonalizada);
-    final initialDate =
-        fimAtual.isBefore(inicio)
-            ? inicio
-            : (fimAtual.isAfter(limite) ? limite : fimAtual);
+    final initialDate = fimAtual.isBefore(inicio)
+        ? inicio
+        : (fimAtual.isAfter(limite) ? limite : fimAtual);
     final selecionada = await showDatePicker(
       context: context,
       initialDate: initialDate,
@@ -825,13 +832,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         grupos.add(<String, dynamic>{
           'grupo': grupo['titulo']?.toString() ?? 'Lançamentos',
           'descricao': grupo['descricao']?.toString() ?? '',
-          'itens':
-              itensRaw is List
-                  ? itensRaw
-                      .whereType<Map<String, dynamic>>()
-                      .map(_mapearItemAgenda)
-                      .toList()
-                  : <Map<String, dynamic>>[],
+          'itens': itensRaw is List
+              ? itensRaw
+                    .whereType<Map<String, dynamic>>()
+                    .map(_mapearItemAgenda)
+                    .toList()
+              : <Map<String, dynamic>>[],
         });
       }
     }
@@ -847,30 +853,30 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       ..addAll(
         itens is List
             ? itens
-                .whereType<Map<String, dynamic>>()
-                .map(_mapearItemConfirmado)
-                .toList()
+                  .whereType<Map<String, dynamic>>()
+                  .map(_mapearItemConfirmado)
+                  .toList()
             : <Map<String, dynamic>>[],
       );
   }
 
   Map<String, dynamic> _mapearItemAgenda(Map<String, dynamic> item) {
-    final tipo =
-        item['tipo']?.toString().toUpperCase() == 'PAGAR' ? 'pagar' : 'receber';
+    final tipo = item['tipo']?.toString().toUpperCase() == 'PAGAR'
+        ? 'pagar'
+        : 'receber';
     final valorOriginal = _toDouble(item['valorOriginal'] ?? item['valor']);
     final valorConfirmado = _toDouble(item['valorConfirmado']);
     final valorRestante = _toDouble(
       item['valorRestante'] ?? (valorOriginal - valorConfirmado),
     );
     final acoesRaw = item['acoesDisponiveis'];
-    final acoes =
-        acoesRaw is List
-            ? acoesRaw
-                .map((acao) => _acaoLabel(acao?.toString()))
-                .where((acao) => acao.isNotEmpty)
-                .toSet()
-                .toList()
-            : <String>[];
+    final acoes = acoesRaw is List
+        ? acoesRaw
+              .map((acao) => _acaoLabel(acao?.toString()))
+              .where((acao) => acao.isNotEmpty)
+              .toSet()
+              .toList()
+        : <String>[];
     if (!acoes.contains('Detalhes')) acoes.add('Detalhes');
     return <String, dynamic>{
       ...item,
@@ -892,6 +898,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       ),
       'empresa': _empresaNome(item['empresa']),
       'categoria': item['categoria']?.toString() ?? '',
+      'centroCustoId': item['centroCustoId']?.toString(),
+      'centroDeCusto': item['centroDeCusto']?.toString() ?? '',
       'responsavel': item['responsavel']?.toString() ?? '',
       'observacoes': item['observacaoResumida']?.toString() ?? '',
       'acoes': acoes,
@@ -900,8 +908,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   Map<String, dynamic> _mapearItemConfirmado(Map<String, dynamic> item) {
-    final tipo =
-        item['tipo']?.toString().toUpperCase() == 'PAGAR' ? 'pagar' : 'receber';
+    final tipo = item['tipo']?.toString().toUpperCase() == 'PAGAR'
+        ? 'pagar'
+        : 'receber';
     return <String, dynamic>{
       ...item,
       'id': item['idLancamento']?.toString() ?? '',
@@ -924,13 +933,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     };
   }
 
-  List<Map<String, dynamic>> _mapearLiquidacoes(dynamic raw) =>
-      raw is List
-          ? raw
-              .whereType<Map<String, dynamic>>()
-              .map((item) => Map<String, dynamic>.from(item))
-              .toList()
-          : <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _mapearLiquidacoes(dynamic raw) => raw is List
+      ? raw
+            .whereType<Map<String, dynamic>>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList()
+      : <Map<String, dynamic>>[];
 
   void _sincronizarValoresConfirmadosNosLancamentos() {
     final confirmadosPorId = <String, Map<String, dynamic>>{
@@ -994,26 +1002,22 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       if (mounted) setState(() => _executandoAcao = false);
     }
     if (!mounted) return;
-    final alterado = await showSixWebAnimatedDialog<bool>(
+    final pageTokens = WebThemeTokens.of(context);
+    final alterado = await showDialog<bool>(
       context: context,
+      barrierColor: pageTokens.workspaceBackground.withValues(alpha: 0.72),
       barrierDismissible: true,
-      barrierLabel: context.t(
-        'agenda.details.closeBarrier',
-        fallback: 'Fechar detalhes do lançamento',
+      builder: (dialogContext) => _LancamentoDetalhesDialog(
+        item: item,
+        detalhe: detalhe,
+        fallback: fallback,
+        formatarMoeda: _formatarMoeda,
+        formatarData: _formatarDataFlexivel,
+        formaPagamentoLabel: _formaPagamentoLabel,
+        onExcluirLancamento: () => _confirmarExcluirLancamentoDetalhe(item),
+        onExcluirLiquidacao: (liquidacao) =>
+            _confirmarExcluirLiquidacaoDetalhe(item, liquidacao),
       ),
-      builder:
-          (dialogContext) => _LancamentoDetalhesDialog(
-            item: item,
-            detalhe: detalhe,
-            fallback: fallback,
-            formatarMoeda: _formatarMoeda,
-            formatarData: _formatarDataFlexivel,
-            formaPagamentoLabel: _formaPagamentoLabel,
-            onExcluirLancamento: () => _confirmarExcluirLancamentoDetalhe(item),
-            onExcluirLiquidacao:
-                (liquidacao) =>
-                    _confirmarExcluirLiquidacaoDetalhe(item, liquidacao),
-          ),
     );
     if (alterado == true && mounted) await _consultar(mostrarFeedback: true);
   }
@@ -1025,32 +1029,30 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     if (id.trim().isEmpty) return false;
     final confirmado = await showDialog<bool>(
       context: context,
-      barrierColor: WebThemeTokens.of(
-        context,
-      ).workspaceBackground.withValues(alpha: 0.72),
+      barrierColor: WebThemeTokens.of(context).workspaceBackground
+          .withValues(alpha: 0.72),
       barrierDismissible: false,
-      builder:
-          (dialogContext) => AlertDialog(
-            title: const Text('Excluir lançamento?'),
-            content: const Text(
-              'Esta ação vai apagar definitivamente todo o lançamento financeiro e suas confirmações/parciais. Essa operação não pode ser desfeita.',
-            ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton.icon(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                icon: const Icon(Icons.delete_forever_outlined),
-                label: const Text('Excluir lançamento'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: WebThemeTokens.of(dialogContext).danger,
-                  foregroundColor: WebThemeTokens.of(dialogContext).onDanger,
-                ),
-              ),
-            ],
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir lançamento?'),
+        content: const Text(
+          'Esta ação vai apagar definitivamente todo o lançamento financeiro e suas confirmações/parciais. Essa operação não pode ser desfeita.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
           ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            icon: const Icon(Icons.delete_forever_outlined),
+            label: const Text('Excluir lançamento'),
+            style: FilledButton.styleFrom(
+              backgroundColor: WebThemeTokens.of(dialogContext).danger,
+              foregroundColor: WebThemeTokens.of(dialogContext).onDanger,
+            ),
+          ),
+        ],
+      ),
     );
     if (confirmado != true) return false;
     try {
@@ -1094,32 +1096,30 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
     final confirmado = await showDialog<bool>(
       context: context,
-      barrierColor: WebThemeTokens.of(
-        context,
-      ).workspaceBackground.withValues(alpha: 0.72),
+      barrierColor: WebThemeTokens.of(context).workspaceBackground
+          .withValues(alpha: 0.72),
       barrierDismissible: false,
-      builder:
-          (dialogContext) => AlertDialog(
-            title: const Text('Excluir parcial?'),
-            content: const Text(
-              'Esta ação vai remover apenas esta confirmação/parcial e recalcular o valor em aberto do lançamento.',
-            ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton.icon(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                icon: const Icon(Icons.delete_outline_rounded),
-                label: const Text('Excluir parcial'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: WebThemeTokens.of(dialogContext).danger,
-                  foregroundColor: WebThemeTokens.of(dialogContext).onDanger,
-                ),
-              ),
-            ],
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir parcial?'),
+        content: const Text(
+          'Esta ação vai remover apenas esta confirmação/parcial e recalcular o valor em aberto do lançamento.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
           ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            icon: const Icon(Icons.delete_outline_rounded),
+            label: const Text('Excluir parcial'),
+            style: FilledButton.styleFrom(
+              backgroundColor: WebThemeTokens.of(dialogContext).danger,
+              foregroundColor: WebThemeTokens.of(dialogContext).onDanger,
+            ),
+          ),
+        ],
+      ),
     );
     if (confirmado != true) return false;
     try {
@@ -1174,10 +1174,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       contato: item['contato']?.toString(),
       valorAberto: valorAberto,
       pagamento: pagamento,
-      tipoInicial:
-          parcialInicial
-              ? SixWebRecebimentoTipo.parcial
-              : SixWebRecebimentoTipo.total,
+      tipoInicial: parcialInicial
+          ? SixWebRecebimentoTipo.parcial
+          : SixWebRecebimentoTipo.total,
       codigoTipoInicial: item['codigoTipoRecebimento']?.toString(),
       caixaApiClient: _caixaApiClient,
     );
@@ -1229,8 +1228,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   String? _codigoTipoFormaPagamentoSelecionada(String formaSelecionada) {
-    final codigo =
-        _codigoTipoPorDescricaoFormaPagamento[formaSelecionada]?.trim();
+    final codigo = _codigoTipoPorDescricaoFormaPagamento[formaSelecionada]
+        ?.trim();
     if (codigo == null || codigo.isEmpty) {
       return null;
     }
@@ -1293,11 +1292,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           if (detalhe.containsKey(key)) key: detalhe[key],
       };
     } catch (_) {
-      if (mounted) {
+      if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(recorrenciaLabel(context, 'saveError'))),
         );
-      }
       return;
     }
 
@@ -1463,10 +1461,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       dataTableTheme: webTheme.dataTableTheme.copyWith(
         headingRowColor: WidgetStatePropertyAll<Color>(tokens.surfaceMuted),
         dataRowColor: WidgetStateProperty.resolveWith<Color?>(
-          (Set<WidgetState> states) =>
-              states.contains(WidgetState.hovered)
-                  ? tokens.hoverBackground
-                  : tokens.cardBackground,
+          (Set<WidgetState> states) => states.contains(WidgetState.hovered)
+              ? tokens.hoverBackground
+              : tokens.cardBackground,
         ),
         headingTextStyle: TextStyle(
           color: tokens.secondaryText,
@@ -1533,16 +1530,15 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           return Material(
             color: tokens.workspaceBackground,
             child: SafeArea(
-              child:
-                  podeFecharTela
-                      ? CallbackShortcuts(
-                        bindings: <ShortcutActivator, VoidCallback>{
-                          const SingleActivator(LogicalKeyboardKey.escape):
-                              _fechar,
-                        },
-                        child: content,
-                      )
-                      : content,
+              child: podeFecharTela
+                  ? CallbackShortcuts(
+                      bindings: <ShortcutActivator, VoidCallback>{
+                        const SingleActivator(LogicalKeyboardKey.escape):
+                            _fechar,
+                      },
+                      child: content,
+                    )
+                  : content,
             ),
           );
         },
@@ -1593,8 +1589,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           ),
           OutlinedButton.icon(
             style: _secondaryCtaStyle(theme),
-            onPressed:
-                _carregando ? null : () => _consultar(mostrarFeedback: true),
+            onPressed: _carregando
+                ? null
+                : () => _consultar(mostrarFeedback: true),
             icon: const Icon(Icons.refresh_rounded),
             label: const Text('Atualizar'),
           ),
@@ -1642,10 +1639,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           _drop('Tipo', _tipoSelecionado, _tipos, _selecionarTipo),
           _drop('Status', _statusSelecionado, _status, _selecionarStatus),
           _multiSelectTipoPagamento(theme),
+          if (_centrosCusto.isNotEmpty) _multiSelectCentroCusto(theme),
           FilledButton.icon(
             style: _primaryCtaStyle(theme),
-            onPressed:
-                _carregando ? null : () => _consultar(mostrarFeedback: true),
+            onPressed: _carregando
+                ? null
+                : () => _consultar(mostrarFeedback: true),
             icon: const Icon(Icons.search_rounded),
             label: const Text('Buscar'),
           ),
@@ -1669,12 +1668,40 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       width: 260,
       label: 'Tipo de pagamento',
       value: _formasPagamentoFiltroLabel(),
-      values:
-          _tiposRecebimentoFiltro.where((forma) => forma != 'Todos').toList(),
+      values: _tiposRecebimentoFiltro
+          .where((forma) => forma != 'Todos')
+          .toList(),
       selectedValues: _formasPagamentoSelecionadas,
       icon: Icons.payments_outlined,
       onChanged: _selecionarTiposPagamento,
     );
+  }
+
+  Widget _multiSelectCentroCusto(ThemeData theme) {
+    return _AgendaMultiSelectDropdown(
+      width: 260,
+      label: 'Centro de custos',
+      value: _centrosCustoFiltroLabel(),
+      values: _centrosCusto.map((centro) => centro.nome).toList(),
+      selectedValues: _centrosCustoSelecionados,
+      icon: Icons.account_tree_outlined,
+      onChanged: (selecionados) {
+        setState(() {
+          _centrosCustoSelecionados
+            ..clear()
+            ..addAll(selecionados);
+          _usuarioAlterouFiltros = true;
+        });
+      },
+    );
+  }
+
+  String _centrosCustoFiltroLabel() {
+    if (_centrosCustoSelecionados.isEmpty) return 'Todos';
+    if (_centrosCustoSelecionados.length == 1) {
+      return _centrosCustoSelecionados.first;
+    }
+    return '${_centrosCustoSelecionados.length} centros selecionados';
   }
 
   String _formasPagamentoFiltroLabel() {
@@ -1758,22 +1785,20 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     ];
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double width =
-            constraints.maxWidth >= 1500
-                ? (constraints.maxWidth - 60) / 6
-                : constraints.maxWidth >= 1000
-                ? (constraints.maxWidth - 36) / 4
-                : (constraints.maxWidth - 12) / 2;
+        final double width = constraints.maxWidth >= 1500
+            ? (constraints.maxWidth - 60) / 6
+            : constraints.maxWidth >= 1000
+            ? (constraints.maxWidth - 36) / 4
+            : (constraints.maxWidth - 12) / 2;
         return Wrap(
           spacing: 12,
           runSpacing: 12,
-          children:
-              cards
-                  .map(
-                    (card) =>
-                        SizedBox(width: width, child: _resumoCard(theme, card)),
-                  )
-                  .toList(),
+          children: cards
+              .map(
+                (card) =>
+                    SizedBox(width: width, child: _resumoCard(theme, card)),
+              )
+              .toList(),
         );
       },
     );
@@ -1885,10 +1910,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     final titulo = card['titulo'] as String;
     final Color accent =
         titulo.contains('receber') || titulo.contains('Recebido')
-            ? tokens.financialPositive
-            : titulo.contains('pagar') || titulo.contains('Pago')
-            ? tokens.financialNegative
-            : tokens.info;
+        ? tokens.financialPositive
+        : titulo.contains('pagar') || titulo.contains('Pago')
+        ? tokens.financialNegative
+        : tokens.info;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1937,8 +1962,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   Widget _buildAbas(ThemeData theme) => SegmentedButton<int>(
     selected: <int>{_abaSelecionada},
-    onSelectionChanged:
-        (value) => setState(() => _abaSelecionada = value.first),
+    onSelectionChanged: (value) =>
+        setState(() => _abaSelecionada = value.first),
     segments: const <ButtonSegment<int>>[
       ButtonSegment<int>(value: 0, label: Text('Agenda')),
       ButtonSegment<int>(value: 1, label: Text('Calendário')),
@@ -1996,10 +2021,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                   _agendaPill(
                     tipoEntrada ? 'Receber' : 'Pagar',
                     tipoAccent,
-                    icon:
-                        tipoEntrada
-                            ? Icons.south_west_rounded
-                            : Icons.north_east_rounded,
+                    icon: tipoEntrada
+                        ? Icons.south_west_rounded
+                        : Icons.north_east_rounded,
                   ),
                   _agendaPill(
                     item['status']?.toString() ?? '-',
@@ -2058,8 +2082,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                 runSpacing: 8,
                 children: <Widget>[
                   OutlinedButton.icon(
-                    onPressed:
-                        _executandoAcao ? null : () => _editarLancamento(item),
+                    onPressed: _executandoAcao
+                        ? null
+                        : () => _editarLancamento(item),
                     icon: const Icon(Icons.edit_outlined, size: 18),
                     label: const Text('Editar'),
                   ),
@@ -2067,10 +2092,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
                       .take(4)
                       .map(
                         (acao) => OutlinedButton(
-                          onPressed:
-                              _executandoAcao
-                                  ? null
-                                  : () => _executarAcao(acao, item),
+                          onPressed: _executandoAcao
+                              ? null
+                              : () => _executarAcao(acao, item),
                           child: Text(acao),
                         ),
                       ),
@@ -2094,49 +2118,49 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       );
     }
     return Column(
-      children:
-          itens.map((item) {
-            final tokens = WebThemeTokens.of(context);
-            final accent = _agendaTipoAccent(item['tipo']?.toString());
-            return Card(
-              child: ListTile(
-                onTap: () => _mostrarDetalhesLancamento(item),
-                leading: Icon(
-                  item['tipo'] == 'receber'
-                      ? Icons.south_west_rounded
-                      : Icons.north_east_rounded,
-                  color: accent,
-                ),
-                title: Text(
-                  item['descricao']?.toString() ?? '',
-                  style: TextStyle(
-                    color: tokens.primaryText,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                subtitle: Text(
-                  '${item['contato']} • ${item['data']} • ${item['formaPagamento']} • Restante: ${_formatarMoeda(_toDouble(item['valorRestante']))}',
-                  style: TextStyle(color: tokens.secondaryText),
-                ),
-                trailing: Text(
-                  _formatarMoeda(_toDouble(item['valorConfirmado'])),
-                  style: TextStyle(
-                    color: tokens.primaryText,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+      children: itens.map((item) {
+        final tokens = WebThemeTokens.of(context);
+        final accent = _agendaTipoAccent(item['tipo']?.toString());
+        return Card(
+          child: ListTile(
+            onTap: () => _mostrarDetalhesLancamento(item),
+            leading: Icon(
+              item['tipo'] == 'receber'
+                  ? Icons.south_west_rounded
+                  : Icons.north_east_rounded,
+              color: accent,
+            ),
+            title: Text(
+              item['descricao']?.toString() ?? '',
+              style: TextStyle(
+                color: tokens.primaryText,
+                fontWeight: FontWeight.w800,
               ),
-            );
-          }).toList(),
+            ),
+            subtitle: Text(
+              '${item['contato']} • ${item['data']} • ${item['formaPagamento']} • Restante: ${_formatarMoeda(_toDouble(item['valorRestante']))}',
+              style: TextStyle(color: tokens.secondaryText),
+            ),
+            trailing: Text(
+              _formatarMoeda(_toDouble(item['valorConfirmado'])),
+              style: TextStyle(
+                color: tokens.primaryText,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
   Widget _buildCalendario(ThemeData theme) {
-    final itens = List<Map<String, dynamic>>.from(_itensAgenda)..sort(
-      (a, b) => (a['vencimento']?.toString() ?? '').compareTo(
-        b['vencimento']?.toString() ?? '',
-      ),
-    );
+    final itens = List<Map<String, dynamic>>.from(_itensAgenda)
+      ..sort(
+        (a, b) => (a['vencimento']?.toString() ?? '').compareTo(
+          b['vencimento']?.toString() ?? '',
+        ),
+      );
     if (itens.isEmpty) {
       return const Card(
         child: Padding(
@@ -2157,44 +2181,41 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
             DataColumn(label: Text('Valor'), numeric: true),
             DataColumn(label: Text('Ações')),
           ],
-          rows:
-              itens
-                  .map(
-                    (item) => DataRow(
-                      cells: <DataCell>[
-                        DataCell(Text(item['vencimento']?.toString() ?? '-')),
-                        DataCell(
-                          Text(item['tipo'] == 'receber' ? 'Receber' : 'Pagar'),
-                        ),
-                        DataCell(
-                          Text(item['formaPagamento']?.toString() ?? '-'),
-                        ),
-                        DataCell(
-                          SizedBox(
-                            width: 340,
-                            child: Text(
-                              item['descricao']?.toString() ?? '-',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                        DataCell(
-                          Text(
-                            _formatarMoeda(
-                              _toDouble(item['valorRestante'] ?? item['valor']),
-                            ),
-                          ),
-                        ),
-                        DataCell(
-                          TextButton(
-                            onPressed: () => _mostrarDetalhesLancamento(item),
-                            child: const Text('Detalhes'),
-                          ),
-                        ),
-                      ],
+          rows: itens
+              .map(
+                (item) => DataRow(
+                  cells: <DataCell>[
+                    DataCell(Text(item['vencimento']?.toString() ?? '-')),
+                    DataCell(
+                      Text(item['tipo'] == 'receber' ? 'Receber' : 'Pagar'),
                     ),
-                  )
-                  .toList(),
+                    DataCell(Text(item['formaPagamento']?.toString() ?? '-')),
+                    DataCell(
+                      SizedBox(
+                        width: 340,
+                        child: Text(
+                          item['descricao']?.toString() ?? '-',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    DataCell(
+                      Text(
+                        _formatarMoeda(
+                          _toDouble(item['valorRestante'] ?? item['valor']),
+                        ),
+                      ),
+                    ),
+                    DataCell(
+                      TextButton(
+                        onPressed: () => _mostrarDetalhesLancamento(item),
+                        child: const Text('Detalhes'),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              .toList(),
         ),
       ),
     );
@@ -2321,8 +2342,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   }
 
   String? _codigoTipoRecebimentoItem(Map<String, dynamic> item) {
-    final codigo =
-        item['codigoTipoRecebimento']?.toString().trim().toLowerCase();
+    final codigo = item['codigoTipoRecebimento']
+        ?.toString()
+        .trim()
+        .toLowerCase();
     if (codigo != null && RegExp(r'^tipo(10|[1-9])$').hasMatch(codigo)) {
       return codigo;
     }
@@ -2331,10 +2354,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     );
   }
 
-  String _empresaNome(dynamic empresa) =>
-      empresa is Map<String, dynamic>
-          ? empresa['nome']?.toString() ?? ''
-          : empresa?.toString() ?? '';
+  String _empresaNome(dynamic empresa) => empresa is Map<String, dynamic>
+      ? empresa['nome']?.toString() ?? ''
+      : empresa?.toString() ?? '';
 
   String _formatarDataIsoParaBr(String? dataIso) {
     if (dataIso == null || dataIso.trim().isEmpty) return '-';
@@ -2360,10 +2382,9 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     if (value is num) return value.toDouble();
     if (value is String) {
       final texto = value.trim();
-      final normalizado =
-          texto.contains(',') && texto.contains('.')
-              ? texto.replaceAll('.', '').replaceAll(',', '.')
-              : texto.replaceAll(',', '.');
+      final normalizado = texto.contains(',') && texto.contains('.')
+          ? texto.replaceAll('.', '').replaceAll(',', '.')
+          : texto.replaceAll(',', '.');
       return double.tryParse(normalizado) ?? 0;
     }
     return 0;
@@ -2432,23 +2453,19 @@ class _AgendaFilterDropdownState extends State<_AgendaFilterDropdown> {
       elevation: 12,
       color: tokens.menuBackground,
       constraints: BoxConstraints.tightFor(width: box.size.width),
-      items:
-          widget.values
-              .map(
-                (item) => PopupMenuItem<String>(
-                  value: item,
-                  height: 44,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  child: _AgendaFilterMenuItem(
-                    label: item,
-                    selected: item == safeValue,
-                  ),
-                ),
-              )
-              .toList(),
+      items: widget.values
+          .map(
+            (item) => PopupMenuItem<String>(
+              value: item,
+              height: 44,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              child: _AgendaFilterMenuItem(
+                label: item,
+                selected: item == safeValue,
+              ),
+            ),
+          )
+          .toList(),
     );
 
     if (!mounted) return;
@@ -2680,10 +2697,8 @@ class _AgendaMultiSelectMenuEntryState
                 ),
                 const SizedBox(width: 8),
                 FilledButton(
-                  onPressed:
-                      () => Navigator.of(
-                        context,
-                      ).pop(Set<String>.from(_selection)),
+                  onPressed: () =>
+                      Navigator.of(context).pop(Set<String>.from(_selection)),
                   child: const Text('Aplicar'),
                 ),
               ],
@@ -2784,10 +2799,12 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool enabled = widget.onTap != null;
     final bool active = enabled && (widget.open || _hover);
-    final Color borderColor =
-        active ? tokens.selectedBorder : tokens.cardBorder;
-    final Color backgroundColor =
-        active ? tokens.selectedBackground : tokens.inputBackground;
+    final Color borderColor = active
+        ? tokens.selectedBorder
+        : tokens.cardBorder;
+    final Color backgroundColor = active
+        ? tokens.selectedBackground
+        : tokens.inputBackground;
     final Widget content = Semantics(
       button: true,
       enabled: enabled,
@@ -2817,16 +2834,15 @@ class _AgendaFilterTriggerState extends State<_AgendaFilterTrigger> {
                   color: backgroundColor,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: borderColor),
-                  boxShadow:
-                      active
-                          ? <BoxShadow>[
-                            BoxShadow(
-                              color: tokens.info.withValues(alpha: 0.10),
-                              blurRadius: 18,
-                              offset: const Offset(0, 8),
-                            ),
-                          ]
-                          : null,
+                  boxShadow: active
+                      ? <BoxShadow>[
+                          BoxShadow(
+                            color: tokens.info.withValues(alpha: 0.10),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Row(
                   children: <Widget>[
@@ -2988,8 +3004,10 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     final historico = _listaMapas(detalhe['historico']);
     final liquidacoes = _liquidacoes();
     final comprovantes = _listaStrings(detalhe['comprovantes']);
-    final String codigoOperacao =
-        _texto(detalhe['codigoOperacao'], item['codigoOperacao']).trim();
+    final String codigoOperacao = _texto(
+      detalhe['codigoOperacao'],
+      item['codigoOperacao'],
+    ).trim();
     final acoes = _listaStrings(detalhe['acoesDisponiveis']);
     final valorOriginal = _numero(
       detalhe['valorOriginal'],
@@ -3110,10 +3128,9 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                           const SizedBox(height: 18),
                           LayoutBuilder(
                             builder: (context, constraints) {
-                              final width =
-                                  constraints.maxWidth >= 760
-                                      ? (constraints.maxWidth - 24) / 3
-                                      : double.infinity;
+                              final width = constraints.maxWidth >= 760
+                                  ? (constraints.maxWidth - 24) / 3
+                                  : double.infinity;
                               return Wrap(
                                 spacing: 12,
                                 runSpacing: 12,
@@ -3191,6 +3208,17 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                                   item['categoria'],
                                 ),
                               ),
+                              if (_texto(
+                                detalhe['centroDeCusto'],
+                                item['centroDeCusto'],
+                              ).trim().isNotEmpty)
+                                _info(
+                                  'Centro de custos',
+                                  _texto(
+                                    detalhe['centroDeCusto'],
+                                    item['centroDeCusto'],
+                                  ),
+                                ),
                               _info(
                                 'Origem',
                                 _texto(
@@ -3283,10 +3311,9 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                                 Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
-                                  children:
-                                      acoes
-                                          .map((a) => Chip(label: Text(a)))
-                                          .toList(),
+                                  children: acoes
+                                      .map((a) => Chip(label: Text(a)))
+                                      .toList(),
                                 ),
                               ],
                             ),
@@ -3542,20 +3569,18 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     return _listaMapas(item['liquidacoes']);
   }
 
-  List<Map<String, dynamic>> _listaMapas(dynamic raw) =>
-      raw is List
-          ? raw
-              .whereType<Map<String, dynamic>>()
-              .map((item) => Map<String, dynamic>.from(item))
-              .toList()
-          : <Map<String, dynamic>>[];
-  List<String> _listaStrings(dynamic raw) =>
-      raw is List
-          ? raw
-              .map((item) => item?.toString() ?? '')
-              .where((item) => item.trim().isNotEmpty)
-              .toList()
-          : <String>[];
+  List<Map<String, dynamic>> _listaMapas(dynamic raw) => raw is List
+      ? raw
+            .whereType<Map<String, dynamic>>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList()
+      : <Map<String, dynamic>>[];
+  List<String> _listaStrings(dynamic raw) => raw is List
+      ? raw
+            .map((item) => item?.toString() ?? '')
+            .where((item) => item.trim().isNotEmpty)
+            .toList()
+      : <String>[];
   Map<String, dynamic> _mapa(dynamic raw) =>
       raw is Map<String, dynamic> ? raw : <String, dynamic>{};
   dynamic _valor(dynamic primary, dynamic fallback) =>
@@ -3573,10 +3598,9 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     final value = _valor(primary, fallback);
     if (value is num) return value.toDouble();
     if (value is String) {
-      final normalizado =
-          value.contains(',') && value.contains('.')
-              ? value.replaceAll('.', '').replaceAll(',', '.')
-              : value.replaceAll(',', '.');
+      final normalizado = value.contains(',') && value.contains('.')
+          ? value.replaceAll('.', '').replaceAll(',', '.')
+          : value.replaceAll(',', '.');
       return double.tryParse(normalizado) ?? 0;
     }
     return 0;

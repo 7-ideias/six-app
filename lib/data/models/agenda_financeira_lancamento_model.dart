@@ -27,6 +27,7 @@ class LancamentoAgendaFinanceiraRequest {
     this.referenciaExterna,
     this.documentoFiscal,
     this.centroDeCusto,
+    this.centroCustoId,
     required this.valorTotalProdutos,
     required this.valorTotalServicos,
     required this.valorTotalOperacao,
@@ -65,6 +66,7 @@ class LancamentoAgendaFinanceiraRequest {
   final String? referenciaExterna;
   final String? documentoFiscal;
   final String? centroDeCusto;
+  final String? centroCustoId;
   final double valorTotalProdutos;
   final double valorTotalServicos;
   final double valorTotalOperacao;
@@ -83,8 +85,8 @@ class LancamentoAgendaFinanceiraRequest {
       {
         'recorrente': recorrente,
         'frequenciaRecorrencia': frequenciaRecorrencia,
-        'recorrenciaInicio':
-            (recorrenciaInicio ?? dataVencimento).toIso8601String(),
+        'recorrenciaInicio': (recorrenciaInicio ?? dataVencimento)
+            .toIso8601String(),
         'recorrenciaFim': recorrenciaFim?.toIso8601String(),
         'quantidadeParcelas': quantidadeParcelas,
         'diaVencimentoRecorrencia':
@@ -125,6 +127,7 @@ class LancamentoAgendaFinanceiraRequest {
       'referenciaExterna': referenciaExterna,
       'documentoFiscal': documentoFiscal,
       'centroDeCusto': centroDeCusto,
+      'centroCustoId': centroCustoId,
       'valorTotalProdutos': valorTotalProdutos,
       'valorTotalServicos': valorTotalServicos,
       'valorTotalOperacao': valorTotalOperacao,
@@ -173,6 +176,7 @@ class LancamentoAgendaFinanceiraRequest {
       'referenciaExterna': referenciaExterna,
       'documentoFiscal': documentoFiscal,
       'centroDeCusto': centroDeCusto,
+      'centroCustoId': centroCustoId,
       'dataOperacao': dataOperacao.toIso8601String(),
       'dataCompetencia': dataCompetencia.toIso8601String(),
       ...dadosRecorrencia,
@@ -180,10 +184,9 @@ class LancamentoAgendaFinanceiraRequest {
       'historico': [
         'Lançamento criado em ${_formatarDataHoraBr(DateTime.now())}',
       ],
-      'acoes':
-          tipoRecebimento
-              ? ['Receber', 'Enviar cobrança', 'Detalhes']
-              : ['Pagar', 'Reagendar', 'Detalhes'],
+      'acoes': tipoRecebimento
+          ? ['Receber', 'Enviar cobrança', 'Detalhes']
+          : ['Pagar', 'Reagendar', 'Detalhes'],
     };
   }
 
@@ -378,6 +381,7 @@ class AgendaFinanceiraFiltrosRequest {
     required this.categorias,
     required this.formasPagamento,
     required this.codigosTipoRecebimento,
+    required this.centrosCusto,
     this.clienteFornecedor,
     required this.somenteCriticos,
   });
@@ -388,6 +392,7 @@ class AgendaFinanceiraFiltrosRequest {
   final List<String> categorias;
   final List<String> formasPagamento;
   final List<String> codigosTipoRecebimento;
+  final List<String> centrosCusto;
   final String? clienteFornecedor;
   final bool somenteCriticos;
 
@@ -399,9 +404,41 @@ class AgendaFinanceiraFiltrosRequest {
       'categorias': categorias,
       'formasPagamento': formasPagamento,
       'codigosTipoRecebimento': codigosTipoRecebimento,
+      'centrosCusto': centrosCusto,
       'clienteFornecedor': clienteFornecedor,
       'somenteCriticos': somenteCriticos,
     };
+  }
+}
+
+class CentroCustoModel {
+  const CentroCustoModel({
+    required this.id,
+    required this.codigo,
+    required this.nome,
+    required this.tipo,
+    required this.ativo,
+    this.centroPaiId,
+  });
+
+  final String id;
+  final String codigo;
+  final String nome;
+  final String tipo;
+  final bool ativo;
+  final String? centroPaiId;
+
+  String get descricao => codigo.trim().isEmpty ? nome : '$codigo • $nome';
+
+  factory CentroCustoModel.fromJson(Map<String, dynamic> json) {
+    return CentroCustoModel(
+      id: json['id']?.toString() ?? '',
+      codigo: json['codigo']?.toString() ?? '',
+      nome: json['nome']?.toString() ?? '',
+      tipo: json['tipo']?.toString() ?? 'AMBOS',
+      ativo: json['ativo'] != false,
+      centroPaiId: json['centroPaiId']?.toString(),
+    );
   }
 }
 
