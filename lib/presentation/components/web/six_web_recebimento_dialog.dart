@@ -133,6 +133,9 @@ class SixWebRecebimentoDialog extends StatefulWidget {
 
 class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
     with SingleTickerProviderStateMixin {
+  static const Color _totalColor = Color(0xFF22C55E);
+  static const Color _partialColor = Color(0xFFF59E0B);
+
   late final CaixaApiClient _caixaApiClient;
   final TextEditingController _observacaoController = TextEditingController();
   final List<_RecebimentoFormaDraft> _formas = <_RecebimentoFormaDraft>[];
@@ -146,6 +149,9 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
 
   bool get _reduceMotion =>
       MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+  Color get _stateColor =>
+      _tipo == SixWebRecebimentoTipo.total ? _totalColor : _partialColor;
 
   static const List<SixWebTipoRecebimentoOpcao> _opcoesFallback =
       <SixWebTipoRecebimentoOpcao>[
@@ -422,7 +428,7 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Color accent = tokens.info;
+    final Color accent = _stateColor;
     final Color surface =
         theme.brightness == Brightness.dark
             ? const Color(0xFF17253A)
@@ -500,11 +506,39 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                       surfaceTintColor: Colors.transparent,
                       child: Stack(
                         children: <Widget>[
+                          Positioned.fill(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: <Color>[
+                                    Color.alphaBlend(
+                                      accent.withValues(
+                                        alpha:
+                                            theme.brightness == Brightness.dark
+                                                ? 0.14
+                                                : 0.08,
+                                      ),
+                                      surface,
+                                    ),
+                                    surface,
+                                    surface,
+                                  ],
+                                  stops: const <double>[0, 0.25, 0.58],
+                                ),
+                              ),
+                            ),
+                          ),
                           Positioned(
                             top: 0,
                             left: 0,
                             right: 0,
-                            child: Container(height: 3, color: accent),
+                            child: Container(
+                              key: const Key('six-web-recebimento-state-strip'),
+                              height: 3,
+                              color: accent,
+                            ),
                           ),
                           Padding(
                             padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
@@ -587,53 +621,74 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                             data: theme.copyWith(
                                               segmentedButtonTheme: SegmentedButtonThemeData(
                                                 style: ButtonStyle(
-                                                  backgroundColor:
-                                                      WidgetStateProperty.resolveWith((
-                                                        Set<WidgetState> states,
-                                                      ) {
-                                                        if (states.contains(
-                                                          WidgetState.selected,
-                                                        )) {
-                                                          return accent.withValues(
-                                                            alpha:
-                                                                theme.brightness ==
-                                                                        Brightness
-                                                                            .dark
-                                                                    ? 0.18
-                                                                    : 0.12,
-                                                          );
-                                                        }
-                                                        return surface;
-                                                      }),
+                                                  backgroundColor: WidgetStateProperty.resolveWith((
+                                                    Set<WidgetState> states,
+                                                  ) {
+                                                    if (states.contains(
+                                                      WidgetState.selected,
+                                                    )) {
+                                                      final bool selectedTotal =
+                                                          _tipo ==
+                                                          SixWebRecebimentoTipo
+                                                              .total;
+                                                      final Color
+                                                      selectedColor =
+                                                          selectedTotal
+                                                              ? _totalColor
+                                                              : _partialColor;
+                                                      return selectedColor.withValues(
+                                                        alpha:
+                                                            theme.brightness ==
+                                                                    Brightness
+                                                                        .dark
+                                                                ? 0.18
+                                                                : 0.12,
+                                                      );
+                                                    }
+                                                    return surface;
+                                                  }),
                                                   foregroundColor:
                                                       WidgetStateProperty.resolveWith((
                                                         Set<WidgetState> states,
                                                       ) {
+                                                        final bool
+                                                        selectedTotal =
+                                                            _tipo ==
+                                                            SixWebRecebimentoTipo
+                                                                .total;
+                                                        final Color
+                                                        selectedColor =
+                                                            selectedTotal
+                                                                ? _totalColor
+                                                                : _partialColor;
                                                         return states.contains(
                                                               WidgetState
                                                                   .selected,
                                                             )
-                                                            ? accent
+                                                            ? selectedColor
                                                             : tokens
                                                                 .secondaryText;
                                                       }),
-                                                  side: WidgetStateProperty.resolveWith(
-                                                    (Set<WidgetState> states) {
-                                                      return BorderSide(
-                                                        color:
-                                                            states.contains(
-                                                                  WidgetState
-                                                                      .selected,
-                                                                )
-                                                                ? accent
-                                                                    .withValues(
-                                                                      alpha:
-                                                                          0.65,
-                                                                    )
-                                                                : outline,
-                                                      );
-                                                    },
-                                                  ),
+                                                  side: WidgetStateProperty.resolveWith((
+                                                    Set<WidgetState> states,
+                                                  ) {
+                                                    return BorderSide(
+                                                      color:
+                                                          states.contains(
+                                                                WidgetState
+                                                                    .selected,
+                                                              )
+                                                              ? (_tipo ==
+                                                                          SixWebRecebimentoTipo
+                                                                              .total
+                                                                      ? _totalColor
+                                                                      : _partialColor)
+                                                                  .withValues(
+                                                                    alpha: 0.65,
+                                                                  )
+                                                              : outline,
+                                                    );
+                                                  }),
                                                   overlayColor:
                                                       WidgetStateProperty.all(
                                                         accent.withValues(
