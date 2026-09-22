@@ -672,38 +672,39 @@ class _CollapsedChildMenuEntry extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final bool brandedSidebar = _useBrandedSidebar(colorScheme);
     final Color accent =
-        brandedSidebar
-            ? colorScheme.onPrimary
-            : colorScheme.brightness == Brightness.dark
+        colorScheme.brightness == Brightness.dark
             ? tokens.info
             : colorScheme.primary;
-    final Color foreground =
-        brandedSidebar
-            ? colorScheme.onPrimary.withValues(alpha: 0.82)
-            : tokens.secondaryText;
-    final Color textColor =
-        brandedSidebar
-            ? colorScheme.onPrimary.withValues(alpha: 0.9)
-            : tokens.primaryText;
+    final Color foreground = tokens.secondaryText;
+    final Color textColor = tokens.primaryText;
 
-    return Row(
-      children: <Widget>[
-        Icon(item.icon, size: 18, color: active ? accent : foreground),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            _navigationLabel(context, item),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: active ? accent : textColor,
-              fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+    return Container(
+      decoration: BoxDecoration(
+        color: active ? tokens.selectedBackground : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: active ? tokens.selectedBorder : Colors.transparent,
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Row(
+        children: <Widget>[
+          Icon(item.icon, size: 18, color: active ? accent : foreground),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _navigationLabel(context, item),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: active ? tokens.primaryText : textColor,
+                fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
