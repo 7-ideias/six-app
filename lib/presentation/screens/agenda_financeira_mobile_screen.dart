@@ -777,6 +777,7 @@ class _AgendaFinanceiraMobileScreenState
       ...item,
       'id': item['idLancamento']?.toString() ?? '',
       'uuidOperacaoApp': item['uuidOperacaoApp']?.toString(),
+      'codigoOperacao': item['codigoOperacao']?.toString(),
       'tipo': tipo,
       'descricao': item['descricao']?.toString() ?? 'Sem descrição',
       'contato': item['nomeContato']?.toString() ?? 'Não informado',
@@ -902,7 +903,7 @@ class _AgendaFinanceiraMobileScreenState
   Future<void> _executarAcao(String acao, Map<String, dynamic> item) async {
     final comando = acao.trim().toLowerCase();
     if (comando == 'detalhes') {
-      _mostrarDetalhes(item);
+      await _mostrarDetalhes(item);
       return;
     }
     if (comando == 'editar') {
@@ -2834,7 +2835,23 @@ class _AgendaFinanceiraMobileScreenState
     );
   }
 
-  void _mostrarDetalhes(Map<String, dynamic> item) {
+  Future<void> _mostrarDetalhes(Map<String, dynamic> item) async {
+    final String id = item['id']?.toString() ?? '';
+    if (id.isNotEmpty) {
+      try {
+        final Map<String, dynamic> detalhe = await _service
+            .buscarDetalheLancamento(id);
+        if (detalhe.isNotEmpty) {
+          item = <String, dynamic>{
+            ...item,
+            'codigoOperacao': detalhe['codigoOperacao']?.toString(),
+          };
+        }
+      } catch (_) {
+        // Os dados resumidos continuam disponíveis como fallback de exibição.
+      }
+    }
+    if (!mounted) return;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -2884,6 +2901,12 @@ class _AgendaFinanceiraMobileScreenState
                     item['vencimento']?.toString() ?? '-',
                   ),
                   _detalheLinha('Status', item['status']?.toString() ?? '-'),
+                  if ((item['codigoOperacao']?.toString().trim() ?? '')
+                      .isNotEmpty)
+                    _detalheLinha(
+                      'Código da operação',
+                      item['codigoOperacao'].toString(),
+                    ),
                   _detalheLinha(
                     'Forma de recebimento',
                     item['formaPagamento']?.toString() ?? '-',

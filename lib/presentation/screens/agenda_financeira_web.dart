@@ -874,6 +874,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     return <String, dynamic>{
       ...item,
       'id': item['idLancamento']?.toString() ?? '',
+      'codigoOperacao': item['codigoOperacao']?.toString(),
       'tipo': tipo,
       'descricao': item['descricao']?.toString() ?? 'Sem descrição',
       'contato': item['nomeContato']?.toString() ?? 'Não informado',
@@ -1276,6 +1277,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         ...item,
         for (final key in [
           'uuidOperacaoApp',
+          'codigoOperacao',
           'recorrente',
           'frequenciaRecorrencia',
           'recorrenciaInicio',
@@ -3095,6 +3097,14 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
                                 theme,
                                 'ID: ${_texto(detalhe['idLancamento'], item['id'])}',
                               ),
+                              if (_texto(
+                                detalhe['codigoOperacao'],
+                                item['codigoOperacao'],
+                              ).trim().isNotEmpty)
+                                _chip(
+                                  theme,
+                                  'Operação: ${_texto(detalhe['codigoOperacao'], item['codigoOperacao'])}',
+                                ),
                             ],
                           ),
                           const SizedBox(height: 18),

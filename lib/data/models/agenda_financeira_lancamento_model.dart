@@ -224,6 +224,36 @@ class LancamentoAgendaFinanceiraResponse {
   }
 }
 
+class AgendaFinanceiraLancamentoDetalhe {
+  AgendaFinanceiraLancamentoDetalhe._({
+    required this.idLancamento,
+    required this.codigoOperacao,
+    required this.dados,
+  });
+
+  final String idLancamento;
+  final String? codigoOperacao;
+  final Map<String, dynamic> dados;
+
+  factory AgendaFinanceiraLancamentoDetalhe.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final String idLancamento = json['idLancamento']?.toString().trim() ?? '';
+    final String codigo = json['codigoOperacao']?.toString().trim() ?? '';
+    return AgendaFinanceiraLancamentoDetalhe._(
+      idLancamento: idLancamento,
+      codigoOperacao: codigo.isEmpty ? null : codigo,
+      dados: Map<String, dynamic>.from(json),
+    );
+  }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    ...dados,
+    'idLancamento': idLancamento,
+    'codigoOperacao': codigoOperacao,
+  };
+}
+
 class AgendaFinanceiraLiquidacaoRequest {
   AgendaFinanceiraLiquidacaoRequest({
     required this.tipoLiquidacao,

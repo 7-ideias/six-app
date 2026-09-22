@@ -178,5 +178,27 @@ void main() {
       );
     }
   }
-  print('29 verificações de recorrência, status e liquidação concluídas.');
+  final detalhe = AgendaFinanceiraLancamentoDetalhe.fromJson({
+    'idLancamento': 'lancamento-1',
+    'codigoOperacao': 'VEN-123',
+    'descricao': 'Venda',
+  });
+  check(
+    detalhe.codigoOperacao == 'VEN-123' &&
+        detalhe.toJson()['codigoOperacao'] == 'VEN-123' &&
+        detalhe.toJson()['descricao'] == 'Venda',
+    'Mapear código da operação sem perder os demais campos do detalhe',
+  );
+  final detalheManual = AgendaFinanceiraLancamentoDetalhe.fromJson({
+    'idLancamento': 'manual-1',
+    'codigoOperacao': null,
+  });
+  check(
+    detalheManual.codigoOperacao == null &&
+        detalheManual.toJson().containsKey('codigoOperacao'),
+    'Preservar codigoOperacao nulo em lançamentos manuais',
+  );
+  print(
+    '31 verificações de recorrência, status, liquidação e detalhe concluídas.',
+  );
 }
