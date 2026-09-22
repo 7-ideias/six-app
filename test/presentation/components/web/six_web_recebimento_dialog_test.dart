@@ -57,6 +57,30 @@ void main() {
     expect(result, isNull);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('uses semantic state color for total and partial', (
+    WidgetTester tester,
+  ) async {
+    await _pumpHarness(tester);
+
+    await tester.tap(find.text('Abrir recebimento'));
+    await tester.pumpAndSettle();
+
+    expect(_stateStripColor(tester), const Color(0xFF22C55E));
+
+    await tester.tap(find.text('Parcial'));
+    await tester.pumpAndSettle();
+
+    expect(_stateStripColor(tester), const Color(0xFFF59E0B));
+    expect(tester.takeException(), isNull);
+  });
+}
+
+Color? _stateStripColor(WidgetTester tester) {
+  final Container strip = tester.widget<Container>(
+    find.byKey(const Key('six-web-recebimento-state-strip')),
+  );
+  return strip.color;
 }
 
 Future<void> _pumpHarness(
