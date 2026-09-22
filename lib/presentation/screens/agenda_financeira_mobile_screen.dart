@@ -1,3 +1,4 @@
+import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -771,6 +772,7 @@ class _AgendaFinanceiraMobileScreenState
             : <String>[];
 
     return <String, dynamic>{
+      ...item,
       'id': item['idLancamento']?.toString() ?? '',
       'uuidOperacaoApp': item['uuidOperacaoApp']?.toString(),
       'tipo': tipo,
@@ -805,6 +807,7 @@ class _AgendaFinanceiraMobileScreenState
     final tipo =
         item['tipo']?.toString().toUpperCase() == 'PAGAR' ? 'pagar' : 'receber';
     return <String, dynamic>{
+      ...item,
       'id': item['idLancamento']?.toString() ?? '',
       'uuidOperacaoApp': item['uuidOperacaoApp']?.toString(),
       'tipo': tipo,
@@ -2065,7 +2068,7 @@ class _AgendaFinanceiraMobileScreenState
             : _toDouble(item['valorOriginal'] ?? item['valor']);
     final String titulo = item['descricao']?.toString() ?? 'Sem descrição';
     final String subtitulo =
-        '${item['contato']} • ${item['status']} • vence ${item['vencimento']}';
+        '${item['recorrente'] == true ? '${recorrenciaLabel(context, 'badge')} • ' : ''}${item['contato']} • ${item['status']} • vence ${item['vencimento']}';
 
     return Semantics(
       button: true,

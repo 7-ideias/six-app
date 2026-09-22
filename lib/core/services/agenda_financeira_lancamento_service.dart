@@ -177,10 +177,7 @@ class AgendaFinanceiraLancamentoService {
   ) async {
     final uri = Uri.parse(_endpointLancamento(idLancamento));
 
-    final response = await _httpClient.get(
-      uri,
-      headers: await _buildHeaders(),
-    );
+    final response = await _httpClient.get(uri, headers: await _buildHeaders());
 
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw AgendaFinanceiraLancamentoApiException(
@@ -203,9 +200,12 @@ class AgendaFinanceiraLancamentoService {
 
   Future<LancamentoAgendaFinanceiraResponse> editarLancamento(
     String idLancamento,
-    LancamentoAgendaFinanceiraRequest request,
-  ) async {
-    final uri = Uri.parse(_endpointLancamento(idLancamento));
+    LancamentoAgendaFinanceiraRequest request, {
+    String escopo = 'ESTE',
+  }) async {
+    final uri = Uri.parse(
+      _endpointLancamento(idLancamento),
+    ).replace(queryParameters: {'escopo': escopo});
 
     final response = await _httpClient.put(
       uri,
@@ -239,9 +239,12 @@ class AgendaFinanceiraLancamentoService {
   }
 
   Future<LancamentoAgendaFinanceiraResponse> excluirLancamento(
-    String idLancamento,
-  ) async {
-    final uri = Uri.parse(_endpointLancamento(idLancamento));
+    String idLancamento, {
+    String escopo = 'ESTE',
+  }) async {
+    final uri = Uri.parse(
+      _endpointLancamento(idLancamento),
+    ).replace(queryParameters: {'escopo': escopo});
 
     final response = await _httpClient.delete(
       uri,
@@ -308,6 +311,21 @@ class AgendaFinanceiraLancamentoApiException implements Exception {
 
   final int statusCode;
   final String body;
+
+  String? get codigoRecorrencia {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map) {
+        for (final key in ['code', 'message', 'detail', 'reason']) {
+          final value = decoded[key]?.toString() ?? '';
+          if (value.startsWith('RECORRENCIA_')) return value;
+        }
+      }
+    } catch (_) {
+      /* Erro sem JSON usa mensagem genérica da apresentação. */
+    }
+    return null;
+  }
 
   @override
   String toString() {

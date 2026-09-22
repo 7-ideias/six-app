@@ -1,3 +1,6 @@
+import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
+import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
+import 'package:sixpos/presentation/components/mobile/agenda_recorrencia_mobile_fields.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
@@ -34,6 +37,10 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
   static Color get _titleTextColor => SixMobilePalette.titleText;
   static Color get _borderColor => SixMobilePalette.border;
   static Color get _softBlueColor => SixMobilePalette.softAccentSurface;
+
+  final String _uuidCriacao = 'mobile-${DateTime.now().microsecondsSinceEpoch}';
+  final AgendaFinanceiraRecorrencia _recorrencia =
+      AgendaFinanceiraRecorrencia();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final AgendaFinanceiraLancamentoService _service =
@@ -137,7 +144,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
           padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 112),
           children: <Widget>[
             SixStaggeredEntry(child: _buildHeaderCard()),
-            SizedBox(height: 14),
+            const SizedBox(height: 14),
             SixStaggeredEntry(
               delay: Duration(milliseconds: 60),
               child: _buildMainSection(),
@@ -151,6 +158,13 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
             SixStaggeredEntry(
               delay: Duration(milliseconds: 160),
               child: _buildDateSection(),
+            ),
+            SizedBox(height: 14),
+            AgendaRecorrenciaMobileFields(
+              config: _recorrencia,
+              vencimento: _dataVencimento,
+              enabled: !_salvando,
+              onChanged: () => setState(() {}),
             ),
             SizedBox(height: 14),
             SixStaggeredEntry(
@@ -855,6 +869,20 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       return;
     }
 
+    final erroRecorrencia = _recorrencia.validar(_dataVencimento);
+    if (erroRecorrencia != null ||
+        (_recorrencia.ativa &&
+            !['Pendente', 'Previsto'].contains(_statusSelecionado))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            recorrenciaLabel(context, erroRecorrencia ?? 'pendingError'),
+          ),
+        ),
+      );
+      return;
+    }
+
     final LancamentoAgendaFinanceiraRequest request = _buildRequest(valorTotal);
     setState(() => _salvando = true);
     try {
@@ -867,7 +895,9 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
       Navigator.of(context).pop(request.toAgendaItem(idFallback: idRetorno));
     } on AgendaFinanceiraLancamentoApiException catch (e) {
       if (!mounted) return;
-      _mostrarSnack('Erro ao salvar lançamento (${e.statusCode}).');
+      _mostrarSnack(
+        recorrenciaLabel(context, e.codigoRecorrencia ?? 'saveError'),
+      );
     } catch (_) {
       if (!mounted) return;
       _mostrarSnack('Não foi possível salvar o lançamento.');
@@ -887,7 +917,7 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
     final String contatoNome = _contatoController.text.trim();
     final String statusBackend = _statusParaBackend(_statusSelecionado);
     final bool statusQuitada = _statusEstaQuitada(statusBackend);
-    final String uuid = 'mobile-${DateTime.now().microsecondsSinceEpoch}';
+    final String uuid = _uuidCriacao;
 
     final Map<String, dynamic> payload = <String, dynamic>{
       'agendaFinanceira': <String, dynamic>{
@@ -942,22 +972,12 @@ class _AgendaFinanceiraLancamentoMobileCreateScreenState
           _observacoesController.text.trim().isEmpty
               ? null
               : _observacoesController.text.trim(),
-      recorrente: false,
-      frequenciaRecorrencia: 'NAO_RECORRENTE',
-      recorrenciaInicio: _dataVencimento,
-      recorrenciaFim: _dataVencimento,
-      quantidadeParcelas: 1,
-      diaVencimentoRecorrencia: _dataVencimento.day,
+      configuracaoRecorrencia: _recorrencia,
       payloadOriginalJson: payload,
     );
   }
 
-  List<String> _statusParaTipo() {
-    if (_tipoSelecionado == 'Receber') {
-      return <String>['Previsto', 'Pendente', 'Recebido'];
-    }
-    return <String>['Previsto', 'Pendente', 'Pago'];
-  }
+  List<String> _statusParaTipo() => <String>['Previsto', 'Pendente'];
 
   List<String> _origensParaTipo() {
     if (_tipoSelecionado == 'Receber') {

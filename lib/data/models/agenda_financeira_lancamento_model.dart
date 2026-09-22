@@ -1,3 +1,4 @@
+import 'agenda_financeira_recorrencia.dart';
 import 'recebimento_forma_input.dart';
 
 class LancamentoAgendaFinanceiraRequest {
@@ -30,12 +31,13 @@ class LancamentoAgendaFinanceiraRequest {
     required this.valorTotalServicos,
     required this.valorTotalOperacao,
     this.observacoes,
-    required this.recorrente,
-    required this.frequenciaRecorrencia,
-    required this.recorrenciaInicio,
-    required this.recorrenciaFim,
-    required this.quantidadeParcelas,
-    required this.diaVencimentoRecorrencia,
+    this.configuracaoRecorrencia,
+    this.recorrente = false,
+    this.frequenciaRecorrencia = 'NAO_RECORRENTE',
+    this.recorrenciaInicio,
+    this.recorrenciaFim,
+    this.quantidadeParcelas = 1,
+    this.diaVencimentoRecorrencia,
     required this.payloadOriginalJson,
   });
 
@@ -67,20 +69,44 @@ class LancamentoAgendaFinanceiraRequest {
   final double valorTotalServicos;
   final double valorTotalOperacao;
   final String? observacoes;
+  final AgendaFinanceiraRecorrencia? configuracaoRecorrencia;
   final bool recorrente;
   final String frequenciaRecorrencia;
-  final DateTime recorrenciaInicio;
-  final DateTime recorrenciaFim;
-  final int quantidadeParcelas;
-  final int diaVencimentoRecorrencia;
+  final DateTime? recorrenciaInicio;
+  final DateTime? recorrenciaFim;
+  final int? quantidadeParcelas;
+  final int? diaVencimentoRecorrencia;
   final Map<String, dynamic> payloadOriginalJson;
+
+  Map<String, dynamic> get dadosRecorrencia =>
+      configuracaoRecorrencia?.toJson(dataVencimento) ??
+      {
+        'recorrente': recorrente,
+        'frequenciaRecorrencia': frequenciaRecorrencia,
+        'recorrenciaInicio':
+            (recorrenciaInicio ?? dataVencimento).toIso8601String(),
+        'recorrenciaFim': recorrenciaFim?.toIso8601String(),
+        'quantidadeParcelas': quantidadeParcelas,
+        'diaVencimentoRecorrencia':
+            diaVencimentoRecorrencia ?? dataVencimento.day,
+      };
+
+  /// Indicadores de vencimento não são estados financeiros persistidos.
+  static String normalizarStatus(String status) {
+    final codigo = status.trim().toUpperCase().replaceAll(' ', '_');
+    return switch (codigo) {
+      'VENCE_HOJE' || 'VENCIDO' || 'VENCIDA' => 'PENDENTE',
+      'CANCELADA' => 'CANCELADO',
+      _ => codigo,
+    };
+  }
 
   Map<String, dynamic> toJson() {
     return {
       'uuidOperacaoApp': uuidOperacaoApp,
       'descricao': descricao,
       'tipoOperacao': tipoOperacao,
-      'statusOperacao': statusOperacao,
+      'statusOperacao': normalizarStatus(statusOperacao),
       'statusQuitada': statusQuitada,
       'operacaoFinalizadaProntaCaixa': operacaoFinalizadaProntaCaixa,
       'clientePediuParaApagar': clientePediuParaApagar,
@@ -105,13 +131,23 @@ class LancamentoAgendaFinanceiraRequest {
       'idColaborador': idColaborador,
       'nomeColaborador': nomeColaborador,
       'observacoes': observacoes,
-      'recorrente': recorrente,
-      'frequenciaRecorrencia': frequenciaRecorrencia,
-      'recorrenciaInicio': recorrenciaInicio.toIso8601String(),
-      'recorrenciaFim': recorrenciaFim.toIso8601String(),
-      'quantidadeParcelas': quantidadeParcelas,
-      'diaVencimentoRecorrencia': diaVencimentoRecorrencia,
-      'payloadOriginalJson': payloadOriginalJson,
+      ...dadosRecorrencia,
+      'payloadOriginalJson': {
+        ...payloadOriginalJson,
+        'agendaFinanceira': {
+          ...Map<String, dynamic>.from(
+            payloadOriginalJson['agendaFinanceira'] as Map? ?? const {},
+          ),
+          'statusFiltro': normalizarStatus(statusOperacao),
+        },
+        'recorrencia': {
+          'recorrente': dadosRecorrencia['recorrente'],
+          'frequencia': dadosRecorrencia['frequenciaRecorrencia'],
+          'inicio': dadosRecorrencia['recorrenciaInicio'],
+          'fim': dadosRecorrencia['recorrenciaFim'],
+          'quantidadeParcelas': dadosRecorrencia['quantidadeParcelas'],
+        },
+      },
     };
   }
 
@@ -139,15 +175,10 @@ class LancamentoAgendaFinanceiraRequest {
       'centroDeCusto': centroDeCusto,
       'dataOperacao': dataOperacao.toIso8601String(),
       'dataCompetencia': dataCompetencia.toIso8601String(),
-      'recorrente': recorrente,
-      'frequenciaRecorrencia': frequenciaRecorrencia,
-      'recorrenciaInicio': recorrenciaInicio.toIso8601String(),
-      'recorrenciaFim': recorrenciaFim.toIso8601String(),
-      'quantidadeParcelas': quantidadeParcelas,
+      ...dadosRecorrencia,
+      'serieRecorrenciaId': configuracaoRecorrencia?.serieId,
       'historico': [
         'Lançamento criado em ${_formatarDataHoraBr(DateTime.now())}',
-        if (recorrente)
-          'Recorrência $frequenciaRecorrencia iniciada em ${_formatarDataBr(recorrenciaInicio)}',
       ],
       'acoes':
           tipoRecebimento

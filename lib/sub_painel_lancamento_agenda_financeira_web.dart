@@ -1,3 +1,6 @@
+import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
+import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
+import 'package:sixpos/presentation/components/agenda_recorrencia_web_fields.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
@@ -140,6 +143,9 @@ class _LancamentoAgendaFinanceiraWebBody extends StatefulWidget {
 
 class _LancamentoAgendaFinanceiraWebBodyState
     extends State<_LancamentoAgendaFinanceiraWebBody> {
+  final String _uuidCriacao = 'web-${DateTime.now().microsecondsSinceEpoch}';
+  AgendaFinanceiraRecorrencia _recorrencia = AgendaFinanceiraRecorrencia();
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final AgendaFinanceiraLancamentoService _service =
       AgendaFinanceiraLancamentoService();
@@ -181,16 +187,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   DateTime _dataCompetencia = DateTime.now();
 
   static const List<String> _tipos = <String>['Pagar', 'Receber'];
-  static const List<String> _status = <String>[
-    'Previsto',
-    'Pendente',
-    'Vence hoje',
-    'Vencido',
-    'Pago',
-    'Recebido',
-    'Parcial',
-    'Cancelado',
-  ];
+  static const List<String> _status = <String>['Previsto', 'Pendente'];
   static const List<String> _origens = <String>[
     'Venda',
     'Ordem de serviço',
@@ -268,6 +265,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   }
 
   void _preencherCamposEdicao(Map<String, dynamic> item) {
+    _recorrencia = AgendaFinanceiraRecorrencia.fromJson(item);
     _idLancamentoEdicao = item['id']?.toString();
     _uuidOperacaoAppEdicao =
         item['uuidOperacaoApp']?.toString() ?? item['id']?.toString();
@@ -279,8 +277,19 @@ class _LancamentoAgendaFinanceiraWebBodyState
       _tipoSelecionado = 'Pagar';
     }
 
-    final String status = item['status']?.toString() ?? '';
-    if (_status.contains(status)) _statusSelecionado = status;
+    final codigoStatus = LancamentoAgendaFinanceiraRequest.normalizarStatus(
+      item['status']?.toString() ?? 'PENDENTE',
+    );
+    final String status = switch (codigoStatus) {
+      'PREVISTO' => 'Previsto',
+      'PENDENTE' => 'Pendente',
+      'PAGO' => 'Pago',
+      'RECEBIDO' => 'Recebido',
+      'PARCIAL' => 'Parcial',
+      'CANCELADO' => 'Cancelado',
+      _ => item['status']?.toString() ?? '',
+    };
+    _statusSelecionado = status;
 
     final double valorConfirmado = _toDoubleDynamic(item['valorConfirmado']);
     final double valorRestante = _toDoubleDynamic(item['valorRestante']);
@@ -289,7 +298,14 @@ class _LancamentoAgendaFinanceiraWebBodyState
         statusNormalizado == 'PAGO' ||
         statusNormalizado == 'RECEBIDO' ||
         (valorConfirmado > 0 && valorRestante <= 0);
-    _bloquearTipoStatusPorConfirmacao = _statusQuitada;
+    if (valorConfirmado > 0 && _status.contains(_statusSelecionado)) {
+      _statusSelecionado =
+          valorRestante > 0
+              ? 'Parcial'
+              : (_tipoSelecionado == 'Receber' ? 'Recebido' : 'Pago');
+    }
+    _bloquearTipoStatusPorConfirmacao =
+        _statusQuitada || valorConfirmado > 0 || !_status.contains(status);
 
     final String origem = item['origem']?.toString() ?? '';
     if (_origens.contains(origem)) _origemSelecionada = origem;
@@ -580,9 +596,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
   LancamentoAgendaFinanceiraRequest _buildRequest() {
     final double valorTotal = _toDouble(_valorController.text);
-    final String idLocal =
-        _uuidOperacaoAppEdicao ??
-        DateTime.now().millisecondsSinceEpoch.toString();
+    final String idLocal = _uuidOperacaoAppEdicao ?? _uuidCriacao;
     final String tipoOperacao = _tipoOperacaoParaBackend();
     final String origem = _origemParaBackend();
     final String formaPagamento = _formaPagamentoParaBackend();
@@ -647,12 +661,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
           _observacoesController.text.trim().isEmpty
               ? null
               : _observacoesController.text.trim(),
-      recorrente: false,
-      frequenciaRecorrencia: 'Nao recorrente',
-      recorrenciaInicio: _dataVencimento,
-      recorrenciaFim: _dataVencimento,
-      quantidadeParcelas: 1,
-      diaVencimentoRecorrencia: _dataVencimento.day,
+      configuracaoRecorrencia: _recorrencia,
       payloadOriginalJson: payload,
     );
   }
@@ -666,10 +675,23 @@ class _LancamentoAgendaFinanceiraWebBodyState
       return;
     }
 
+    final erroRecorrencia = _recorrencia.validar(_dataVencimento);
+    if (erroRecorrencia != null ||
+        (_recorrencia.ativa &&
+            !['Pendente', 'Previsto'].contains(_statusSelecionado))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            recorrenciaLabel(context, erroRecorrencia ?? 'pendingError'),
+          ),
+        ),
+      );
+      return;
+    }
+
     final LancamentoAgendaFinanceiraRequest request = _buildRequest();
     setState(() => _isLoading = true);
     String? idGerado;
-    String? aviso;
 
     try {
       final LancamentoAgendaFinanceiraResponse response =
@@ -677,34 +699,26 @@ class _LancamentoAgendaFinanceiraWebBodyState
               ? await _service.editarLancamento(
                 _idLancamentoEdicao ?? request.uuidOperacaoApp,
                 request,
+                escopo: _recorrencia.escopo,
               )
               : await _service.cadastrarLancamento(request);
       idGerado = response.id;
-    } on AgendaFinanceiraLancamentoApiException catch (e) {
-      if (e.statusCode == 404 || e.statusCode == 405 || e.statusCode == 501) {
-        aviso =
-            widget.modoEdicao
-                ? 'Endpoint de edição ainda não publicado. Alterações mantidas localmente.'
-                : 'Endpoint de lançamento financeiro ainda não publicado. Payload foi montado e mantido localmente.';
-      } else {
-        if (!mounted) return;
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.modoEdicao
-                  ? 'Erro ao atualizar lançamento: ${e.statusCode}'
-                  : 'Erro ao salvar lançamento: ${e.statusCode}',
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            recorrenciaLabel(
+              context,
+              error is AgendaFinanceiraLancamentoApiException
+                  ? error.codigoRecorrencia ?? 'saveError'
+                  : 'saveError',
             ),
           ),
-        );
-        return;
-      }
-    } catch (_) {
-      aviso =
-          widget.modoEdicao
-              ? 'Não foi possível confirmar a API no momento. Alterações mantidas localmente.'
-              : 'Não foi possível confirmar a API no momento. Payload foi montado e mantido localmente.';
+        ),
+      );
+      return;
     }
 
     if (!mounted) return;
@@ -712,10 +726,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          aviso ??
-              (widget.modoEdicao
-                  ? 'Lançamento atualizado com sucesso.'
-                  : 'Lançamento salvo com sucesso.'),
+          (widget.modoEdicao
+              ? 'Lançamento atualizado com sucesso.'
+              : 'Lançamento salvo com sucesso.'),
         ),
       ),
     );
@@ -747,8 +760,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
               backgroundColor: tokens.surfaceElevated,
               surfaceTintColor: Colors.transparent,
               title: const Text('Excluir lançamento?'),
-              content: const Text(
-                'Esta ação vai apagar de forma definitiva este lançamento financeiro. Essa operação não pode ser desfeita.',
+              content: Text(
+                '${recorrenciaLabel(context, 'deleteConfirm')}\n${recorrenciaLabel(context, _recorrencia.escopo)}',
               ),
               actions: <Widget>[
                 TextButton(
@@ -778,7 +791,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     setState(() => _isLoading = true);
     try {
       final LancamentoAgendaFinanceiraResponse response = await _service
-          .excluirLancamento(idLancamento);
+          .excluirLancamento(idLancamento, escopo: _recorrencia.escopo);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lançamento excluído definitivamente.')),
@@ -1244,67 +1257,6 @@ class _LancamentoAgendaFinanceiraWebBodyState
     );
   }
 
-  Widget _buildConfirmationCard() {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _statusQuitada ? tokens.selectedBackground : tokens.surfaceMuted,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: _statusQuitada ? tokens.selectedBorder : tokens.cardBorder,
-        ),
-      ),
-      child: Wrap(
-        spacing: 14,
-        runSpacing: 10,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: <Widget>[
-          FilterChip(
-            selected: _statusQuitada,
-            onSelected:
-                _bloquearTipoStatus
-                    ? null
-                    : (bool value) {
-                      setState(() {
-                        _statusQuitada = value;
-                        if (value) {
-                          _statusSelecionado =
-                              _tipoSelecionado == 'Receber'
-                                  ? 'Recebido'
-                                  : 'Pago';
-                          _valorConfirmadoController.text =
-                              _valorController.text;
-                        } else {
-                          _statusSelecionado = 'Pendente';
-                          _valorConfirmadoController.text = '0,00';
-                        }
-                      });
-                    },
-            label: Text(
-              _tipoSelecionado == 'Receber' ? 'Já recebido' : 'Já pago',
-            ),
-            avatar: const Icon(Icons.check_circle_outline_rounded, size: 18),
-          ),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: Text(
-              _bloquearTipoStatus
-                  ? 'Este lançamento já foi confirmado e mantém tipo, status e quitação bloqueados.'
-                  : 'Use esta opção apenas quando o lançamento já nasceu quitado.',
-              style: TextStyle(
-                color: tokens.secondaryText,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -1377,7 +1329,10 @@ class _LancamentoAgendaFinanceiraWebBodyState
                             child: _buildDropdownField(
                               label: 'Status',
                               value: _statusSelecionado,
-                              items: _status,
+                              items:
+                                  _status.contains(_statusSelecionado)
+                                      ? _status
+                                      : <String>[_statusSelecionado],
                               icon: Icons.flag_outlined,
                               enabled: !_bloquearTipoStatus,
                               onChanged:
@@ -1457,6 +1412,13 @@ class _LancamentoAgendaFinanceiraWebBodyState
                           ),
                         ],
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    AgendaRecorrenciaWebFields(
+                      config: _recorrencia,
+                      vencimento: _dataVencimento,
+                      enabled: !_isLoading,
+                      onChanged: () => setState(() {}),
                     ),
                     const SizedBox(height: 16),
                     _buildSectionCard(
@@ -1604,14 +1566,6 @@ class _LancamentoAgendaFinanceiraWebBodyState
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildSectionCard(
-                      title: 'Status de confirmação',
-                      subtitle:
-                          'Marque apenas se o lançamento já nasceu quitado.',
-                      icon: Icons.verified_outlined,
-                      child: _buildConfirmationCard(),
                     ),
                     const SizedBox(height: 16),
                     _buildActionsBar(),
