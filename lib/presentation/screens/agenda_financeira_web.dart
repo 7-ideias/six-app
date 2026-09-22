@@ -1,3 +1,5 @@
+import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
 import 'dart:async';
 
@@ -1142,288 +1144,75 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     }
   }
 
-  Future<void> _registrarParcial(Map<String, dynamic> item) async {
-    final valorController = TextEditingController();
-    final observacaoController = TextEditingController();
-    final formasDisponiveis =
-        await _carregarFormasPagamentoDisponiveisParaLiquidacao();
-    if (!mounted) {
-      valorController.dispose();
-      observacaoController.dispose();
-      return;
-    }
-    if (formasDisponiveis.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Carregue os tipos de recebimento antes de registrar parcial.',
-          ),
-        ),
-      );
-      valorController.dispose();
-      observacaoController.dispose();
-      return;
-    }
-    String formaSelecionada = _formaPagamentoInicialLiquidacao(
-      item,
-      formasDisponiveis,
+  Future<void> _registrarParcial(Map<String, dynamic> item) =>
+      _liquidarComFormas(item, parcialInicial: true);
+
+  Future<void> _confirmarTotal(Map<String, dynamic> item, String label) =>
+      _liquidarComFormas(item, parcialInicial: false);
+
+  Future<void> _liquidarComFormas(
+    Map<String, dynamic> item, {
+    required bool parcialInicial,
+  }) async {
+    if (_executandoAcao) return;
+    final bool pagamento = item['tipo']?.toString().toLowerCase() == 'pagar';
+    final double valorAberto = _toDouble(
+      item['valorRestante'] ?? item['valor'],
     );
-    String? erroValor;
-    final resultado = await showDialog<_ParcialLancamentoResultado>(
-      context: context,
-      barrierColor: WebThemeTokens.of(
-        context,
-      ).workspaceBackground.withValues(alpha: 0.72),
-      builder:
-          (dialogContext) => StatefulBuilder(
-            builder:
-                (dialogContext, setDialogState) => AlertDialog(
-                  title: const Text('Registrar parcial'),
-                  content: SizedBox(
-                    width: 420,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        Text(
-                          'Valor em aberto: ${_formatarMoeda(_toDouble(item['valorRestante'] ?? item['valor']))}',
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: valorController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: InputDecoration(
-                            labelText: 'Valor parcial',
-                            errorText: erroValor,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _AgendaFilterDropdown(
-                          label: 'Tipo de recebimento',
-                          value: formaSelecionada,
-                          values: formasDisponiveis,
-                          icon: Icons.payments_outlined,
-                          onChanged: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return;
-                            }
-                            setDialogState(() => formaSelecionada = value);
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: observacaoController,
-                          minLines: 2,
-                          maxLines: 3,
-                          decoration: const InputDecoration(
-                            labelText: 'Observação',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  actions: <Widget>[
-                    TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(null),
-                      child: const Text('Cancelar'),
-                    ),
-                    FilledButton(
-                      onPressed: () {
-                        final digitado = _toDouble(valorController.text);
-                        final aberto = _toDouble(
-                          item['valorRestante'] ?? item['valor'],
-                        );
-                        if (digitado <= 0) {
-                          setDialogState(
-                            () =>
-                                erroValor = 'Informe um valor maior que zero.',
-                          );
-                          return;
-                        }
-                        if (digitado >= aberto) {
-                          setDialogState(
-                            () =>
-                                erroValor =
-                                    'Informe um valor menor que o aberto.',
-                          );
-                          return;
-                        }
-                        final codigoTipo = _codigoTipoFormaPagamentoSelecionada(
-                          formaSelecionada,
-                        );
-                        if (codigoTipo == null) {
-                          setDialogState(
-                            () =>
-                                erroValor = 'Selecione um tipo de recebimento.',
-                          );
-                          return;
-                        }
-                        Navigator.of(dialogContext).pop(
-                          _ParcialLancamentoResultado(
-                            valor: digitado,
-                            codigoTipoRecebimento: codigoTipo,
-                          ),
-                        );
-                      },
-                      child: const Text('Salvar'),
-                    ),
-                  ],
-                ),
-          ),
+    final resultado = await SixWebRecebimentoDialog.show(
+      context,
+      titulo: context.t(
+        pagamento
+            ? 'agenda.settlement.payTitle'
+            : 'agenda.settlement.receiveTitle',
+      ),
+      descricao: item['descricao']?.toString() ?? '',
+      contato: item['contato']?.toString(),
+      valorAberto: valorAberto,
+      pagamento: pagamento,
+      tipoInicial:
+          parcialInicial
+              ? SixWebRecebimentoTipo.parcial
+              : SixWebRecebimentoTipo.total,
+      codigoTipoInicial: item['codigoTipoRecebimento']?.toString(),
+      caixaApiClient: _caixaApiClient,
     );
-    final observacao = observacaoController.text.trim();
-    valorController.dispose();
-    observacaoController.dispose();
-    if (resultado == null) {
-      return;
-    }
+    if (resultado == null || !mounted) return;
     await _executarComLoading(() async {
       final String? idSessaoCaixa = await _buscarIdSessaoCaixaAberta();
-      await _acoesService.executarAbatimento(
-        idLancamento: item['id'].toString(),
-        request: AgendaFinanceiraParcialRequest(
-          tipoLiquidacao: 'PARCIAL',
-          dataLiquidacao: DateTime.now(),
-          valorLiquidado: resultado.valor,
-          formaPagamentoRealizada: resultado.codigoTipoRecebimento,
-          observacoes:
-              observacao.isEmpty
-                  ? 'Lançamento parcial registrado pela agenda financeira.'
-                  : observacao,
-          idSessaoCaixa: idSessaoCaixa,
-        ),
-      );
-      await _consultar();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Parcial registrada com sucesso.')),
+      if (resultado.total) {
+        await _acoesService.executarTotal(
+          idLancamento: item['id'].toString(),
+          request: AgendaFinanceiraLiquidacaoRequest(
+            tipoLiquidacao: 'TOTAL',
+            dataLiquidacao: DateTime.now(),
+            valorLiquidado: resultado.valor,
+            formaPagamentoRealizada: resultado.codigoTipoRecebimento,
+            recebimentos: resultado.recebimentos,
+            observacoes: resultado.observacao,
+            referenciaExterna: item['id']?.toString(),
+            idSessaoCaixa: idSessaoCaixa,
+          ),
+        );
+      } else {
+        await _acoesService.executarAbatimento(
+          idLancamento: item['id'].toString(),
+          request: AgendaFinanceiraParcialRequest(
+            tipoLiquidacao: 'PARCIAL',
+            dataLiquidacao: DateTime.now(),
+            valorLiquidado: resultado.valor,
+            formaPagamentoRealizada: resultado.codigoTipoRecebimento,
+            recebimentos: resultado.recebimentos,
+            observacoes: resultado.observacao,
+            idSessaoCaixa: idSessaoCaixa,
+          ),
         );
       }
-    });
-  }
-
-  Future<void> _confirmarTotal(Map<String, dynamic> item, String label) async {
-    final valor = _toDouble(item['valorRestante'] ?? item['valor']);
-    final formasDisponiveis =
-        await _carregarFormasPagamentoDisponiveisParaLiquidacao();
-    if (!mounted) {
-      return;
-    }
-    if (formasDisponiveis.isEmpty) {
+      await _consultar();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Carregue os tipos de recebimento antes de liquidar o lançamento.',
-          ),
-        ),
+        SnackBar(content: Text(context.t('agenda.settlement.success'))),
       );
-      return;
-    }
-
-    String formaSelecionada = _formaPagamentoInicialLiquidacao(
-      item,
-      formasDisponiveis,
-    );
-    String? erroForma;
-    final codigoTipoRecebimento = await showDialog<String>(
-      context: context,
-      barrierColor: WebThemeTokens.of(
-        context,
-      ).workspaceBackground.withValues(alpha: 0.72),
-      builder:
-          (dialogContext) => StatefulBuilder(
-            builder:
-                (dialogContext, setDialogState) => AlertDialog(
-                  title: const Text('Liquidar lançamento'),
-                  content: SizedBox(
-                    width: 420,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        Text(
-                          'Confirmar liquidação de ${_formatarMoeda(valor)}?',
-                        ),
-                        const SizedBox(height: 14),
-                        _AgendaFilterDropdown(
-                          label: 'Tipo de recebimento',
-                          value: formaSelecionada,
-                          values: formasDisponiveis,
-                          icon: Icons.payments_outlined,
-                          onChanged: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return;
-                            }
-                            setDialogState(() {
-                              formaSelecionada = value;
-                              erroForma = null;
-                            });
-                          },
-                        ),
-                        if (erroForma != null) ...<Widget>[
-                          const SizedBox(height: 8),
-                          Text(
-                            erroForma!,
-                            style: TextStyle(
-                              color: WebThemeTokens.of(dialogContext).danger,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  actions: <Widget>[
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      child: const Text('Cancelar'),
-                    ),
-                    FilledButton(
-                      onPressed: () {
-                        final codigoTipo = _codigoTipoFormaPagamentoSelecionada(
-                          formaSelecionada,
-                        );
-                        if (codigoTipo == null) {
-                          setDialogState(
-                            () =>
-                                erroForma = 'Selecione um tipo de recebimento.',
-                          );
-                          return;
-                        }
-                        Navigator.pop(dialogContext, codigoTipo);
-                      },
-                      child: Text(label),
-                    ),
-                  ],
-                ),
-          ),
-    );
-    if (codigoTipoRecebimento == null) {
-      return;
-    }
-    await _executarComLoading(() async {
-      final String? idSessaoCaixa = await _buscarIdSessaoCaixaAberta();
-      await _acoesService.executarTotal(
-        idLancamento: item['id'].toString(),
-        request: AgendaFinanceiraLiquidacaoRequest(
-          tipoLiquidacao: 'TOTAL',
-          dataLiquidacao: DateTime.now(),
-          valorLiquidado: valor,
-          formaPagamentoRealizada: codigoTipoRecebimento,
-          observacoes: 'Liquidação realizada pela agenda financeira.',
-          referenciaExterna: item['id']?.toString(),
-          idSessaoCaixa: idSessaoCaixa,
-        ),
-      );
-      await _consultar();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Lançamento liquidado com sucesso.')),
-        );
-      }
     });
   }
 
@@ -1433,41 +1222,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     return idSessaoCaixa == null || idSessaoCaixa.isEmpty
         ? null
         : idSessaoCaixa;
-  }
-
-  List<String> _formasPagamentoDisponiveisParaLiquidacao() {
-    return _tiposRecebimentoFiltro
-        .where((forma) => forma != 'Todos' && forma.trim().isNotEmpty)
-        .toList();
-  }
-
-  Future<List<String>>
-  _carregarFormasPagamentoDisponiveisParaLiquidacao() async {
-    final formasAtuais = _formasPagamentoDisponiveisParaLiquidacao();
-    if (formasAtuais.isNotEmpty) {
-      return formasAtuais;
-    }
-    await _carregarTiposPagamentoConfigurados();
-    return _formasPagamentoDisponiveisParaLiquidacao();
-  }
-
-  String _formaPagamentoInicialLiquidacao(
-    Map<String, dynamic> item,
-    List<String> formasDisponiveis,
-  ) {
-    if (formasDisponiveis.isEmpty) {
-      return '';
-    }
-    final formaAtual = item['formaPagamento']?.toString().trim() ?? '';
-    if (formasDisponiveis.contains(formaAtual)) {
-      return formaAtual;
-    }
-    final codigoAtual =
-        item['codigoTipoRecebimento']?.toString().trim().toLowerCase() ?? '';
-    return formasDisponiveis.firstWhere(
-      (forma) => _codigoTipoPorDescricaoFormaPagamento[forma] == codigoAtual,
-      orElse: () => formasDisponiveis.first,
-    );
   }
 
   String? _codigoTipoFormaPagamentoSelecionada(String formaSelecionada) {
@@ -2611,15 +2365,6 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
 
   String _formatarMoeda(double valor) =>
       context.read<LocaleSettingsProvider>().formatCurrency(valor);
-}
-
-class _ParcialLancamentoResultado {
-  const _ParcialLancamentoResultado({
-    required this.valor,
-    required this.codigoTipoRecebimento,
-  });
-  final double valor;
-  final String codigoTipoRecebimento;
 }
 
 class _AgendaFilterDropdown extends StatefulWidget {

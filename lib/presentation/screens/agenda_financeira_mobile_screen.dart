@@ -1,3 +1,5 @@
+import 'package:sixpos/presentation/components/mobile/six_mobile_recebimento_bottom_sheet.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
 import 'dart:async';
 
@@ -923,118 +925,76 @@ class _AgendaFinanceiraMobileScreenState
     );
   }
 
-  Future<void> _registrarParcial(Map<String, dynamic> item) async {
-    final List<String> formasDisponiveis =
-        _formasPagamentoFiltro
-            .where(
-              (String forma) => forma != 'Todos' && forma.trim().isNotEmpty,
-            )
-            .toList();
-    if (formasDisponiveis.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Carregue os tipos de recebimento antes de registrar parcial.',
-          ),
-        ),
-      );
-      return;
-    }
-    final String codigoAtual =
-        item['codigoTipoRecebimento']?.toString().trim().toLowerCase() ?? '';
-    String formaSelecionada = formasDisponiveis.firstWhere(
-      (String forma) =>
-          _codigoTipoPorDescricaoFormaPagamento[forma] == codigoAtual,
-      orElse: () => formasDisponiveis.first,
-    );
+  Future<void> _registrarParcial(Map<String, dynamic> item) =>
+      _liquidarComFormas(item, parcialInicial: true);
+
+  Future<void> _confirmarTotal(Map<String, dynamic> item, String label) =>
+      _liquidarComFormas(item, parcialInicial: false);
+
+  Future<void> _liquidarComFormas(
+    Map<String, dynamic> item, {
+    required bool parcialInicial,
+  }) async {
+    if (_executandoAcao) return;
+    final bool pagamento = item['tipo']?.toString().toLowerCase() == 'pagar';
     final double valorAberto = _toDouble(
       item['valorRestante'] ?? item['valor'],
     );
-    final _AgendaParcialResultado? resultado =
-        await showModalBottomSheet<_AgendaParcialResultado>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (BuildContext sheetContext) {
-            return _AgendaParcialBottomSheet(
-              valorAberto: valorAberto,
-              valorAbertoFormatado: _formatarMoeda(valorAberto),
-              formasDisponiveis: formasDisponiveis,
-              codigoTipoPorDescricaoFormaPagamento:
-                  _codigoTipoPorDescricaoFormaPagamento,
-              formaInicial: formaSelecionada,
-            );
-          },
-        );
-    if (resultado == null) return;
-    await Future<void>.delayed(Duration(milliseconds: 80));
-    if (!mounted) return;
-    await _executarComLoading(() async {
-      final String? idSessaoCaixa = await _buscarIdSessaoCaixaAberta();
-      await _acoesService.executarAbatimento(
-        idLancamento: item['id'].toString(),
-        request: AgendaFinanceiraParcialRequest(
-          tipoLiquidacao: 'PARCIAL',
-          dataLiquidacao: DateTime.now(),
-          valorLiquidado: resultado.valor,
-          formaPagamentoRealizada: resultado.codigoTipoRecebimento,
-          observacoes:
-              resultado.observacao.trim().isEmpty
-                  ? 'Lançamento parcial registrado pela agenda financeira.'
-                  : resultado.observacao.trim(),
-          idSessaoCaixa: idSessaoCaixa,
-        ),
-      );
-      await _consultar();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Parcial registrada com sucesso.')),
-      );
-    });
-  }
-
-  Future<void> _confirmarTotal(Map<String, dynamic> item, String label) async {
-    final valor = _toDouble(item['valorRestante'] ?? item['valor']);
-    final confirmado = await showDialog<bool>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Text('Liquidar lançamento'),
-            content: Text('Confirmar liquidação de ${_formatarMoeda(valor)}?'),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text('Cancelar'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(label),
-              ),
-            ],
-          ),
+    final resultado = await SixMobileRecebimentoBottomSheet.show(
+      context,
+      titulo: context.t(
+        pagamento
+            ? 'agenda.settlement.payTitle'
+            : 'agenda.settlement.receiveTitle',
+      ),
+      descricao: item['descricao']?.toString() ?? '',
+      contato: item['contato']?.toString(),
+      valorAberto: valorAberto,
+      valorOriginal: _toDouble(item['valorOriginal'] ?? item['valor']),
+      valorJaRecebido: _toDouble(item['valorConfirmado']),
+      pagamento: pagamento,
+      tipoInicial:
+          parcialInicial
+              ? SixMobileRecebimentoTipo.parcial
+              : SixMobileRecebimentoTipo.total,
+      codigoTipoInicial: item['codigoTipoRecebimento']?.toString(),
+      caixaApiClient: _caixaApiClient,
     );
-    if (confirmado != true) return;
+    if (resultado == null || !mounted) return;
     await _executarComLoading(() async {
       final String? idSessaoCaixa = await _buscarIdSessaoCaixaAberta();
-      await _acoesService.executarTotal(
-        idLancamento: item['id'].toString(),
-        request: AgendaFinanceiraLiquidacaoRequest(
-          tipoLiquidacao: 'TOTAL',
-          dataLiquidacao: DateTime.now(),
-          valorLiquidado: valor,
-          formaPagamentoRealizada:
-              item['codigoTipoRecebimento']?.toString() ??
-              _codigoTipoRecebimentoItem(item) ??
-              'tipo2',
-          observacoes: 'Liquidação realizada pela agenda financeira.',
-          referenciaExterna: item['id']?.toString(),
-          idSessaoCaixa: idSessaoCaixa,
-        ),
-      );
+      if (resultado.total) {
+        await _acoesService.executarTotal(
+          idLancamento: item['id'].toString(),
+          request: AgendaFinanceiraLiquidacaoRequest(
+            tipoLiquidacao: 'TOTAL',
+            dataLiquidacao: DateTime.now(),
+            valorLiquidado: resultado.valor,
+            formaPagamentoRealizada: resultado.codigoTipoRecebimento,
+            recebimentos: resultado.recebimentos,
+            observacoes: resultado.observacao,
+            referenciaExterna: item['id']?.toString(),
+            idSessaoCaixa: idSessaoCaixa,
+          ),
+        );
+      } else {
+        await _acoesService.executarAbatimento(
+          idLancamento: item['id'].toString(),
+          request: AgendaFinanceiraParcialRequest(
+            tipoLiquidacao: 'PARCIAL',
+            dataLiquidacao: DateTime.now(),
+            valorLiquidado: resultado.valor,
+            formaPagamentoRealizada: resultado.codigoTipoRecebimento,
+            recebimentos: resultado.recebimentos,
+            observacoes: resultado.observacao,
+            idSessaoCaixa: idSessaoCaixa,
+          ),
+        );
+      }
       await _consultar();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lançamento liquidado com sucesso.')),
+        SnackBar(content: Text(context.t('agenda.settlement.success'))),
       );
     });
   }
@@ -3194,283 +3154,6 @@ class _AgendaMobileFiltro {
   final String tipo;
   final String status;
   final Set<String> formasPagamento;
-}
-
-class _AgendaParcialResultado {
-  const _AgendaParcialResultado({
-    required this.valor,
-    required this.codigoTipoRecebimento,
-    required this.observacao,
-  });
-
-  final double valor;
-  final String codigoTipoRecebimento;
-  final String observacao;
-}
-
-class _AgendaParcialBottomSheet extends StatefulWidget {
-  const _AgendaParcialBottomSheet({
-    required this.valorAberto,
-    required this.valorAbertoFormatado,
-    required this.formasDisponiveis,
-    required this.codigoTipoPorDescricaoFormaPagamento,
-    required this.formaInicial,
-  });
-
-  final double valorAberto;
-  final String valorAbertoFormatado;
-  final List<String> formasDisponiveis;
-  final Map<String, String> codigoTipoPorDescricaoFormaPagamento;
-  final String formaInicial;
-
-  @override
-  State<_AgendaParcialBottomSheet> createState() =>
-      _AgendaParcialBottomSheetState();
-}
-
-class _AgendaParcialBottomSheetState extends State<_AgendaParcialBottomSheet> {
-  final TextEditingController _valorController = TextEditingController();
-  final TextEditingController _observacaoController = TextEditingController();
-
-  late String _formaSelecionada = widget.formaInicial;
-  String? _erroValor;
-
-  @override
-  void dispose() {
-    _valorController.dispose();
-    _observacaoController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final SixMobileColorScheme colors = context.sixMobileColors;
-    final ButtonStyle outlinedCtaStyle = OutlinedButton.styleFrom(
-      backgroundColor: colors.softSurface,
-      foregroundColor: colors.accent,
-      disabledBackgroundColor: colors.softSurface.withValues(alpha: 0.72),
-      disabledForegroundColor: colors.mutedText,
-      side: BorderSide(color: colors.accent.withValues(alpha: 0.34)),
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      textStyle: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-    );
-    final ButtonStyle filledCtaStyle = FilledButton.styleFrom(
-      backgroundColor: colors.accent,
-      foregroundColor: colors.onAccent,
-      disabledBackgroundColor: colors.softSurface,
-      disabledForegroundColor: colors.mutedText,
-      elevation: 0,
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      textStyle: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-    );
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        18,
-        14,
-        18,
-        MediaQuery.of(context).viewInsets.bottom + 18,
-      ),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Center(
-                child: Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.strongBorder,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              SizedBox(height: 18),
-              Text(
-                'Registrar parcial',
-                style: TextStyle(
-                  color: colors.titleText,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Valor em aberto: ${widget.valorAbertoFormatado}',
-                style: TextStyle(
-                  color: colors.mutedText,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SizedBox(height: 16),
-              TextField(
-                controller: _valorController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                cursorColor: colors.accent,
-                style: TextStyle(color: colors.titleText),
-                decoration: InputDecoration(
-                  labelText: 'Valor parcial',
-                  errorText: _erroValor,
-                  filled: true,
-                  fillColor: colors.softSurface,
-                  labelStyle: TextStyle(color: colors.mutedText),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: colors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: colors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: colors.accent, width: 1.3),
-                  ),
-                ),
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Tipo de recebimento',
-                style: TextStyle(
-                  color: colors.mutedText,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children:
-                    widget.formasDisponiveis.map((String forma) {
-                      final bool selecionado = forma == _formaSelecionada;
-                      return ChoiceChip(
-                        selected: selecionado,
-                        label: Text(forma),
-                        avatar:
-                            selecionado
-                                ? Icon(
-                                  Icons.check_rounded,
-                                  size: 16,
-                                  color: colors.onPrimary,
-                                )
-                                : Icon(Icons.payments_outlined, size: 16),
-                        selectedColor: colors.primary,
-                        backgroundColor: colors.softSurface,
-                        side: BorderSide(
-                          color: selecionado ? colors.primary : colors.border,
-                        ),
-                        showCheckmark: false,
-                        labelStyle: TextStyle(
-                          color:
-                              selecionado ? colors.onPrimary : colors.titleText,
-                          fontWeight: FontWeight.w800,
-                        ),
-                        onSelected:
-                            (_) => setState(() => _formaSelecionada = forma),
-                      );
-                    }).toList(),
-              ),
-              SizedBox(height: 16),
-              TextField(
-                controller: _observacaoController,
-                minLines: 2,
-                maxLines: 3,
-                cursorColor: colors.accent,
-                style: TextStyle(color: colors.titleText),
-                decoration: InputDecoration(
-                  labelText: 'Observação',
-                  filled: true,
-                  fillColor: colors.softSurface,
-                  labelStyle: TextStyle(color: colors.mutedText),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: colors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: colors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: colors.accent, width: 1.3),
-                  ),
-                ),
-              ),
-              SizedBox(height: 18),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(null),
-                      style: outlinedCtaStyle,
-                      child: Text('Cancelar'),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: FilledButton.icon(
-                      icon: Icon(Icons.check_rounded),
-                      label: Text('Salvar'),
-                      style: filledCtaStyle,
-                      onPressed: _salvar,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _salvar() {
-    final double valorDigitado = _toDouble(_valorController.text);
-    if (valorDigitado <= 0) {
-      setState(() => _erroValor = 'Informe um valor maior que zero.');
-      return;
-    }
-    if (valorDigitado >= widget.valorAberto) {
-      setState(() => _erroValor = 'Informe um valor menor que o aberto.');
-      return;
-    }
-    final String? codigoTipo =
-        widget.codigoTipoPorDescricaoFormaPagamento[_formaSelecionada];
-    if (codigoTipo == null || codigoTipo.trim().isEmpty) {
-      setState(() => _erroValor = 'Selecione um tipo de recebimento.');
-      return;
-    }
-    Navigator.of(context).pop(
-      _AgendaParcialResultado(
-        valor: valorDigitado,
-        codigoTipoRecebimento: codigoTipo,
-        observacao: _observacaoController.text.trim(),
-      ),
-    );
-  }
-
-  double _toDouble(dynamic value) {
-    if (value is num) return value.toDouble();
-    if (value is String) {
-      final String texto = value.trim();
-      final String normalizado =
-          texto.contains(',') && texto.contains('.')
-              ? texto.replaceAll('.', '').replaceAll(',', '.')
-              : texto.replaceAll(',', '.');
-      return double.tryParse(normalizado) ?? 0;
-    }
-    return 0;
-  }
 }
 
 class _ResumoAgendaCardData {

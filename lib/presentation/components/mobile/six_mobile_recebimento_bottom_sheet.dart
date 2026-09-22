@@ -58,6 +58,8 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
     this.valorJaRecebido,
     this.contato,
     this.permitirParcial = true,
+    this.pagamento = false,
+    this.tipoInicial,
     this.observacaoInicial,
     this.codigoTipoInicial,
     this.idUnicoDaOperacao,
@@ -72,6 +74,8 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
   final double? valorJaRecebido;
   final String? contato;
   final bool permitirParcial;
+  final bool pagamento;
+  final SixMobileRecebimentoTipo? tipoInicial;
   final String? observacaoInicial;
   final String? codigoTipoInicial;
   final String? idUnicoDaOperacao;
@@ -87,6 +91,8 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
     double? valorJaRecebido,
     String? contato,
     bool permitirParcial = true,
+    bool pagamento = false,
+    SixMobileRecebimentoTipo? tipoInicial,
     String? observacaoInicial,
     String? codigoTipoInicial,
     String? idUnicoDaOperacao,
@@ -103,20 +109,23 @@ class SixMobileRecebimentoBottomSheet extends StatefulWidget {
       barrierColor: Colors.black.withValues(
         alpha: Theme.of(context).brightness == Brightness.dark ? 0.62 : 0.44,
       ),
-      builder: (_) => SixMobileRecebimentoBottomSheet(
-        titulo: titulo,
-        descricao: descricao,
-        valorAberto: valorAberto,
-        valorOriginal: valorOriginal,
-        valorJaRecebido: valorJaRecebido,
-        contato: contato,
-        permitirParcial: permitirParcial,
-        observacaoInicial: observacaoInicial,
-        codigoTipoInicial: codigoTipoInicial,
-        idUnicoDaOperacao: idUnicoDaOperacao,
-        dataOperacao: dataOperacao,
-        caixaApiClient: caixaApiClient,
-      ),
+      builder:
+          (_) => SixMobileRecebimentoBottomSheet(
+            titulo: titulo,
+            descricao: descricao,
+            valorAberto: valorAberto,
+            valorOriginal: valorOriginal,
+            valorJaRecebido: valorJaRecebido,
+            contato: contato,
+            permitirParcial: permitirParcial,
+            pagamento: pagamento,
+            tipoInicial: tipoInicial,
+            observacaoInicial: observacaoInicial,
+            codigoTipoInicial: codigoTipoInicial,
+            idUnicoDaOperacao: idUnicoDaOperacao,
+            dataOperacao: dataOperacao,
+            caixaApiClient: caixaApiClient,
+          ),
     );
   }
 
@@ -192,8 +201,16 @@ class _SixMobileRecebimentoBottomSheetState
   @override
   void initState() {
     super.initState();
+    _tipo =
+        widget.permitirParcial
+            ? widget.tipoInicial
+            : SixMobileRecebimentoTipo.total;
     _caixaApiClient = widget.caixaApiClient ?? HttpCaixaApiClient();
     _observacaoController.text = widget.observacaoInicial ?? '';
+    if (_tipo != null) {
+      _formas.add(_novaFormaInicial(_tipo!));
+      _registrarListenersDeFoco();
+    }
     _carregarTipos();
   }
 
@@ -361,18 +378,28 @@ class _SixMobileRecebimentoBottomSheetState
     final List<RecebimentoFormaInput> recebimentos = <RecebimentoFormaInput>[];
     for (final _RecebimentoFormaDraft forma in _formas) {
       if (!codigos.add(forma.opcao.codigoTipo)) {
-        setState(() => _erroValor = context.t(
-              'recebimento.erroFormaDuplicada',
-              fallback: 'Cada forma de recebimento pode ser usada apenas uma vez.',
-            ));
+        setState(
+          () =>
+              _erroValor =
+                  (widget.pagamento
+                      ? context.t('agenda.settlement.duplicateMethod')
+                      : context.t(
+                        'recebimento.erroFormaDuplicada',
+                        fallback:
+                            'Cada forma de recebimento pode ser usada apenas uma vez.',
+                      )),
+        );
         return;
       }
       final double valor = _parseValor(forma.controller.text);
       if (valor <= 0) {
-        setState(() => _erroValor = context.t(
-              'recebimento.erroValoresMaioresQueZero',
-              fallback: 'Informe valores maiores que zero.',
-            ));
+        setState(
+          () =>
+              _erroValor = context.t(
+                'recebimento.erroValoresMaioresQueZero',
+                fallback: 'Informe valores maiores que zero.',
+              ),
+        );
         return;
       }
       recebimentos.add(
@@ -390,18 +417,24 @@ class _SixMobileRecebimentoBottomSheetState
     );
     if (tipo == SixMobileRecebimentoTipo.parcial &&
         valor >= widget.valorAberto) {
-      setState(() => _erroValor = context.t(
-            'recebimento.erroParcialMenorQueAberto',
-            fallback: 'Para parcial, informe um valor menor que o aberto.',
-          ));
+      setState(
+        () =>
+            _erroValor = context.t(
+              'recebimento.erroParcialMenorQueAberto',
+              fallback: 'Para parcial, informe um valor menor que o aberto.',
+            ),
+      );
       return;
     }
     if (tipo == SixMobileRecebimentoTipo.total &&
         (valor - widget.valorAberto).abs() > 0.009) {
-      setState(() => _erroValor = context.t(
-            'recebimento.erroTotalIgualSaldo',
-            fallback: 'Para total, o valor precisa quitar o saldo aberto.',
-          ));
+      setState(
+        () =>
+            _erroValor = context.t(
+              'recebimento.erroTotalIgualSaldo',
+              fallback: 'Para total, o valor precisa quitar o saldo aberto.',
+            ),
+      );
       return;
     }
 
@@ -446,21 +479,22 @@ class _SixMobileRecebimentoBottomSheetState
           decoration: BoxDecoration(
             color: colors.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            gradient: stateColor == null
-                ? null
-                : LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: <Color>[
-                      Color.alphaBlend(
-                        stateColor.withValues(alpha: 0.08),
+            gradient:
+                stateColor == null
+                    ? null
+                    : LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: <Color>[
+                        Color.alphaBlend(
+                          stateColor.withValues(alpha: 0.08),
+                          colors.surface,
+                        ),
                         colors.surface,
-                      ),
-                      colors.surface,
-                      colors.surface,
-                    ],
-                    stops: const <double>[0, 0.24, 0.58],
-                  ),
+                        colors.surface,
+                      ],
+                      stops: const <double>[0, 0.24, 0.58],
+                    ),
             border: Border(
               top: BorderSide(
                 color: stateColor?.withValues(alpha: 0.35) ?? colors.border,
@@ -495,57 +529,67 @@ class _SixMobileRecebimentoBottomSheetState
                   duration: _revealDuration,
                   curve: Curves.easeOutCubic,
                   alignment: Alignment.topCenter,
-                  child: _tipo == null
-                      ? const SizedBox.shrink()
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            const SizedBox(height: 16),
-                            _formasRecebimentoSection(),
-                            const SizedBox(height: 14),
-                            TextField(
-                              controller: _observacaoController,
-                              minLines: 2,
-                              maxLines: 3,
-                              decoration: InputDecoration(
-                                labelText: context.t(
-                                  'recebimento.observacao',
-                                  fallback: 'Observação',
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 18),
-                            KeyedSubtree(
-                              key: _confirmActionKey,
-                              child: FilledButton.icon(
-                                onPressed: _carregandoTipos ? null : _confirmar,
-                                icon: const Icon(Icons.check_circle_outline),
-                                label: Text(
-                                  _tipo == SixMobileRecebimentoTipo.total
-                                      ? context.t(
-                                          'recebimento.receberTotal',
-                                          fallback: 'Receber total',
-                                        )
-                                      : context.t(
-                                          'recebimento.receberParcial',
-                                          fallback: 'Receber parcial',
-                                        ),
-                                ),
-                                style: FilledButton.styleFrom(
-                                  minimumSize: const Size.fromHeight(50),
-                                  backgroundColor: stateColor,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(18),
+                  child:
+                      _tipo == null
+                          ? const SizedBox.shrink()
+                          : Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              const SizedBox(height: 16),
+                              _formasRecebimentoSection(),
+                              const SizedBox(height: 14),
+                              TextField(
+                                controller: _observacaoController,
+                                minLines: 2,
+                                maxLines: 3,
+                                decoration: InputDecoration(
+                                  labelText: context.t(
+                                    'recebimento.observacao',
+                                    fallback: 'Observação',
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
+                              const SizedBox(height: 18),
+                              KeyedSubtree(
+                                key: _confirmActionKey,
+                                child: FilledButton.icon(
+                                  onPressed:
+                                      _carregandoTipos ? null : _confirmar,
+                                  icon: const Icon(Icons.check_circle_outline),
+                                  label: Text(
+                                    _tipo == SixMobileRecebimentoTipo.total
+                                        ? (widget.pagamento
+                                            ? context.t(
+                                              'agenda.settlement.payTotal',
+                                            )
+                                            : context.t(
+                                              'recebimento.receberTotal',
+                                              fallback: 'Receber total',
+                                            ))
+                                        : (widget.pagamento
+                                            ? context.t(
+                                              'agenda.settlement.payPartial',
+                                            )
+                                            : context.t(
+                                              'recebimento.receberParcial',
+                                              fallback: 'Receber parcial',
+                                            )),
+                                  ),
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(50),
+                                    backgroundColor: stateColor,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                 ),
               ],
             ),
@@ -703,10 +747,12 @@ class _SixMobileRecebimentoBottomSheetState
 
   Widget _decisionTitle() {
     return Text(
-      context.t(
-        'recebimento.escolhaTipo',
-        fallback: 'Como deseja receber esta venda?',
-      ),
+      (widget.pagamento
+          ? context.t('agenda.settlement.choosePayment')
+          : context.t(
+            'recebimento.escolhaTipo',
+            fallback: 'Como deseja receber esta venda?',
+          )),
       style: TextStyle(
         color: _title,
         fontSize: 14,
@@ -743,10 +789,12 @@ class _SixMobileRecebimentoBottomSheetState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Text(
-            context.t(
-              'recebimento.valoresTitulo',
-              fallback: 'Valores do recebimento',
-            ),
+            (widget.pagamento
+                ? context.t('agenda.settlement.values')
+                : context.t(
+                  'recebimento.valoresTitulo',
+                  fallback: 'Valores do recebimento',
+                )),
             style: TextStyle(color: _title, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 10),
@@ -765,10 +813,13 @@ class _SixMobileRecebimentoBottomSheetState
           Divider(height: 1, color: _accent.withValues(alpha: 0.10)),
           const SizedBox(height: 6),
           _valorResumoItem(
-            label: context.t(
-              'recebimento.valorJaRecebido',
-              fallback: 'Valor já recebido',
-            ),
+            label:
+                (widget.pagamento
+                    ? context.t('agenda.settlement.alreadyPaid')
+                    : context.t(
+                      'recebimento.valorJaRecebido',
+                      fallback: 'Valor já recebido',
+                    )),
             value: valorRecebidoNegativo,
             color: _received,
             icon: Icons.remove_circle_outline_rounded,
@@ -971,10 +1022,12 @@ class _SixMobileRecebimentoBottomSheetState
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                context.t(
-                  'recebimento.carregandoTipos',
-                  fallback: 'Carregando tipos de recebimento...',
-                ),
+                (widget.pagamento
+                    ? context.t('agenda.settlement.loadingMethods')
+                    : context.t(
+                      'recebimento.carregandoTipos',
+                      fallback: 'Carregando tipos de recebimento...',
+                    )),
                 style: TextStyle(
                   color: colors.titleText,
                   fontWeight: FontWeight.w800,
@@ -1001,10 +1054,12 @@ class _SixMobileRecebimentoBottomSheetState
           children: <Widget>[
             Expanded(
               child: Text(
-                context.t(
-                  'recebimento.formasRecebimento',
-                  fallback: 'Formas de recebimento',
-                ),
+                (widget.pagamento
+                    ? context.t('agenda.settlement.methods')
+                    : context.t(
+                      'recebimento.formasRecebimento',
+                      fallback: 'Formas de recebimento',
+                    )),
                 style: TextStyle(
                   color: colors.titleText,
                   fontWeight: FontWeight.w900,
@@ -1022,12 +1077,14 @@ class _SixMobileRecebimentoBottomSheetState
           ],
         ),
         const SizedBox(height: 10),
-        ..._formas.asMap().entries.map((entry) => Padding(
-              padding: EdgeInsets.only(
-                bottom: entry.key == _formas.length - 1 ? 0 : 12,
-              ),
-              child: _formaRecebimentoCard(entry.key, entry.value),
-            )),
+        ..._formas.asMap().entries.map(
+          (entry) => Padding(
+            padding: EdgeInsets.only(
+              bottom: entry.key == _formas.length - 1 ? 0 : 12,
+            ),
+            child: _formaRecebimentoCard(entry.key, entry.value),
+          ),
+        ),
         if (_erroValor != null) ...<Widget>[
           const SizedBox(height: 8),
           Text(
@@ -1044,7 +1101,10 @@ class _SixMobileRecebimentoBottomSheetState
           onPressed: podeAdicionar ? _adicionarForma : null,
           icon: const Icon(Icons.add_rounded),
           label: Text(
-            context.t('recebimento.adicionarForma', fallback: 'Adicionar forma'),
+            context.t(
+              'recebimento.adicionarForma',
+              fallback: 'Adicionar forma',
+            ),
           ),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size.fromHeight(42),
@@ -1108,13 +1168,19 @@ class _SixMobileRecebimentoBottomSheetState
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         IconButton(
-                          tooltip: context.t('common.complete', fallback: 'Completar'),
+                          tooltip: context.t(
+                            'common.complete',
+                            fallback: 'Completar',
+                          ),
                           icon: const Icon(Icons.vertical_align_top_rounded),
                           onPressed: () => _completarValorDaForma(index),
                         ),
                         if (forma.controller.text.trim().isNotEmpty)
                           IconButton(
-                            tooltip: context.t('common.clear', fallback: 'Limpar'),
+                            tooltip: context.t(
+                              'common.clear',
+                              fallback: 'Limpar',
+                            ),
                             icon: const Icon(Icons.close_rounded),
                             onPressed: () {
                               setState(() {
@@ -1149,16 +1215,18 @@ class _SixMobileRecebimentoBottomSheetState
             spacing: 8,
             runSpacing: 8,
             children: opcoesDisponiveis
-                .map((opcao) => _tipoRecebimentoPill(
-                      opcao: opcao,
-                      selecionado: forma.opcao.codigoTipo == opcao.codigoTipo,
-                      onTap: () {
-                        setState(() {
-                          forma.opcao = opcao;
-                          _erroValor = null;
-                        });
-                      },
-                    ))
+                .map(
+                  (opcao) => _tipoRecebimentoPill(
+                    opcao: opcao,
+                    selecionado: forma.opcao.codigoTipo == opcao.codigoTipo,
+                    onTap: () {
+                      setState(() {
+                        forma.opcao = opcao;
+                        _erroValor = null;
+                      });
+                    },
+                  ),
+                )
                 .toList(growable: false),
           ),
         ],
@@ -1254,16 +1322,17 @@ class _SixMobileRecebimentoBottomSheetState
 
   void _completarValorDaForma(int index) {
     if (index < 0 || index >= _formas.length) return;
-    final double totalOutrasFormas = _formas.asMap().entries.fold<double>(
-      0,
-      (double total, MapEntry<int, _RecebimentoFormaDraft> entry) {
-        if (entry.key == index) return total;
-        return total + _parseValor(entry.value.controller.text);
-      },
-    );
-    final double restante = (widget.valorAberto - totalOutrasFormas)
-        .clamp(0, widget.valorAberto)
-        .toDouble();
+    final double totalOutrasFormas = _formas.asMap().entries.fold<double>(0, (
+      double total,
+      MapEntry<int, _RecebimentoFormaDraft> entry,
+    ) {
+      if (entry.key == index) return total;
+      return total + _parseValor(entry.value.controller.text);
+    });
+    final double restante =
+        (widget.valorAberto - totalOutrasFormas)
+            .clamp(0, widget.valorAberto)
+            .toDouble();
 
     setState(() {
       _formas[index].controller.text = _formatarValorDigitavel(restante);

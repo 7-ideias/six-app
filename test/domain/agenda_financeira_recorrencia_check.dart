@@ -1,3 +1,4 @@
+import '../../lib/data/models/recebimento_forma_input.dart';
 // Executável também com Dart puro, sem inicializar o Flutter.
 import '../../lib/data/models/agenda_financeira_recorrencia.dart';
 import '../../lib/data/models/agenda_financeira_lancamento_model.dart';
@@ -130,5 +131,52 @@ void main() {
         request.toJson()['recorrente'] == false,
     'Desativar repetição gera lançamento único',
   );
-  print('25 verificações de recorrência, status e contrato concluídas.');
+  for (final total in [true, false]) {
+    for (final multiplas in [true, false]) {
+      final formas = [
+        RecebimentoFormaInput(
+          codigo: 'tipo1',
+          valor: multiplas ? 20 : 50,
+          descricao: 'Dinheiro',
+        ),
+        if (multiplas)
+          RecebimentoFormaInput(codigo: 'tipo2', valor: 30, descricao: 'Pix'),
+      ];
+      final Map<String, dynamic> payload =
+          total
+              ? AgendaFinanceiraLiquidacaoRequest(
+                tipoLiquidacao: 'TOTAL',
+                dataLiquidacao: date,
+                valorLiquidado: 50,
+                formaPagamentoRealizada: 'tipo1',
+                recebimentos: formas,
+                observacoes: 'Teste',
+                idSessaoCaixa: 'sessao',
+              ).toJson()
+              : AgendaFinanceiraParcialRequest(
+                tipoLiquidacao: 'PARCIAL',
+                dataLiquidacao: date,
+                valorLiquidado: 50,
+                formaPagamentoRealizada: 'tipo1',
+                recebimentos: formas,
+                observacoes: 'Teste',
+                idSessaoCaixa: 'sessao',
+              ).toJson();
+      final linhas = payload['recebimentos'] as List;
+      check(
+        linhas.length == formas.length &&
+            linhas.fold<double>(
+                  0,
+                  (sum, row) => sum + (row['valor'] as num).toDouble(),
+                ) ==
+                50 &&
+            linhas.last['codigo'] == formas.last.codigo &&
+            payload['tipoLiquidacao'] == (total ? 'TOTAL' : 'PARCIAL') &&
+            payload['observacoes'] == 'Teste' &&
+            payload['idSessaoCaixa'] == 'sessao',
+        'Preservar formas, valores, modo e contexto em uma única requisição',
+      );
+    }
+  }
+  print('29 verificações de recorrência, status e liquidação concluídas.');
 }
