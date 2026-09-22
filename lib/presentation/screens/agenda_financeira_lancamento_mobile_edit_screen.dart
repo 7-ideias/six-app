@@ -56,6 +56,8 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   final TextEditingController _valorController = TextEditingController();
   final TextEditingController _observacoesController = TextEditingController();
   final TextEditingController _referenciaController = TextEditingController();
+  final TextEditingController _codigoOperacaoController =
+      TextEditingController();
   final TextEditingController _documentoFiscalController =
       TextEditingController();
   final TextEditingController _centroCustoController = TextEditingController();
@@ -72,6 +74,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
   ];
   String _idLancamento = '';
   String _uuidOperacaoApp = '';
+  String? _referenciaTecnicaPersistida;
   String _tipoSelecionado = 'Pagar';
   String _statusSelecionado = 'Pendente';
   String _origemSelecionada = 'Despesa manual';
@@ -122,6 +125,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     _valorController.dispose();
     _observacoesController.dispose();
     _referenciaController.dispose();
+    _codigoOperacaoController.dispose();
     _documentoFiscalController.dispose();
     _centroCustoController.dispose();
     super.dispose();
@@ -162,7 +166,8 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     _responsavelController.text = _texto(item['responsavel']);
     _valorController.text = _formatarValorParaCampo(valorOriginal);
     _observacoesController.text = _texto(item['observacoes']);
-    _referenciaController.text = _texto(item['referenciaExterna']);
+    _codigoOperacaoController.text = _texto(item['codigoOperacao']);
+    _aplicarReferenciaParaExibicao(_texto(item['referenciaExterna']));
     _documentoFiscalController.text = _texto(item['documentoFiscal']);
     _centroCustoController.text = _texto(item['centroDeCusto']);
     _idContato = item['idContato']?.toString();
@@ -205,6 +210,10 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     );
     _uuidOperacaoApp =
         _uuidOperacaoApp.trim().isNotEmpty ? _uuidOperacaoApp : _idLancamento;
+    _codigoOperacaoController.text = _texto(
+      detalhe['codigoOperacao'],
+      fallback: _codigoOperacaoController.text,
+    );
 
     final String tipo = _tipoLabel(
       detalhe['tipo']?.toString(),
@@ -288,9 +297,8 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       _texto(origem['tipo'], fallback: _origemSelecionada),
       _tipoSelecionado,
     );
-    _referenciaController.text = _texto(
-      origem['id'],
-      fallback: _referenciaController.text,
+    _aplicarReferenciaParaExibicao(
+      _texto(origem['id'], fallback: _referenciaController.text),
     );
 
     final Map<String, dynamic> responsavel = _mapa(detalhe['responsavel']);
@@ -553,7 +561,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
           !isReceber && contatoNome.isNotEmpty ? contatoNome : _nomeFornecedor,
       referenciaExterna:
           _referenciaController.text.trim().isEmpty
-              ? null
+              ? _referenciaTecnicaPersistida
               : _referenciaController.text.trim(),
       documentoFiscal:
           _documentoFiscalController.text.trim().isEmpty
@@ -881,12 +889,23 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                     title: 'Informações adicionais',
                     icon: Icons.more_horiz_outlined,
                     children: <Widget>[
-                      _textField(
-                        controller: _referenciaController,
-                        label: 'Referência',
-                        icon: Icons.tag_outlined,
-                      ),
-                      const SizedBox(height: 12),
+                      if (_codigoOperacaoController.text.trim().isNotEmpty) ...[
+                        _textField(
+                          controller: _codigoOperacaoController,
+                          label: 'Código da operação',
+                          icon: Icons.confirmation_number_outlined,
+                          readOnly: true,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (_referenciaTecnicaPersistida == null) ...[
+                        _textField(
+                          controller: _referenciaController,
+                          label: 'Referência',
+                          icon: Icons.tag_outlined,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       _textField(
                         controller: _documentoFiscalController,
                         label: 'Documento fiscal',
@@ -1086,9 +1105,11 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
     String? Function(String?)? validator,
     int minLines = 1,
     int maxLines = 1,
+    bool readOnly = false,
   }) {
     return TextFormField(
       controller: controller,
+      readOnly: readOnly,
       keyboardType: keyboardType,
       validator: validator,
       minLines: minLines,
@@ -1114,6 +1135,25 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
       cursorColor: _accentColor,
       style: TextStyle(color: _titleTextColor),
     );
+  }
+
+  void _aplicarReferenciaParaExibicao(String referencia) {
+    final String valor = referencia.trim();
+    final bool correspondeAoIdInterno =
+        valor.isNotEmpty &&
+        (valor == _idLancamento || valor == _uuidOperacaoApp);
+    final bool possuiFormatoTecnico =
+        RegExp(
+          r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+        ).hasMatch(valor) ||
+        RegExp(r'^[0-9a-fA-F]{24,64}$').hasMatch(valor);
+    if (correspondeAoIdInterno || possuiFormatoTecnico) {
+      _referenciaTecnicaPersistida = valor;
+      _referenciaController.clear();
+      return;
+    }
+    _referenciaTecnicaPersistida = null;
+    _referenciaController.text = valor;
   }
 
   Widget _selectorTile({

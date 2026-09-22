@@ -5,6 +5,7 @@ class VendaNaoLiquidadaModel {
     required this.idRecebimento,
     required this.idOperacaoFinanceira,
     required this.idOperacaoApp,
+    this.codigoOperacao = '',
     required this.descricao,
     required this.valorOriginal,
     required this.valorAberto,
@@ -23,6 +24,7 @@ class VendaNaoLiquidadaModel {
   final String idRecebimento;
   final String idOperacaoFinanceira;
   final String idOperacaoApp;
+  final String codigoOperacao;
   final String descricao;
   final double valorOriginal;
   final double valorAberto;
@@ -45,6 +47,7 @@ class VendaNaoLiquidadaModel {
       idRecebimento: (json['idRecebimento'] ?? '').toString(),
       idOperacaoFinanceira: (json['idOperacaoFinanceira'] ?? '').toString(),
       idOperacaoApp: (json['idOperacaoApp'] ?? '').toString(),
+      codigoOperacao: (json['codigoOperacao'] ?? '').toString(),
       descricao: (json['descricao'] ?? 'Venda não liquidada').toString(),
       valorOriginal: _toDouble(json['valorOriginal']),
       valorAberto: _toDouble(json['valorAberto']),

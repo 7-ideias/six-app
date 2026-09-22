@@ -56,6 +56,8 @@ class SixWebRecebimentoDialog extends StatefulWidget {
     this.caixaApiClient,
     this.contato,
     this.permitirParcial = true,
+    this.pagamento = false,
+    this.tipoInicial = SixWebRecebimentoTipo.total,
     this.observacaoInicial,
     this.codigoTipoInicial,
   });
@@ -66,6 +68,8 @@ class SixWebRecebimentoDialog extends StatefulWidget {
   final CaixaApiClient? caixaApiClient;
   final String? contato;
   final bool permitirParcial;
+  final bool pagamento;
+  final SixWebRecebimentoTipo tipoInicial;
   final String? observacaoInicial;
   final String? codigoTipoInicial;
 
@@ -76,6 +80,8 @@ class SixWebRecebimentoDialog extends StatefulWidget {
     required double valorAberto,
     String? contato,
     bool permitirParcial = true,
+    bool pagamento = false,
+    SixWebRecebimentoTipo tipoInicial = SixWebRecebimentoTipo.total,
     String? observacaoInicial,
     String? codigoTipoInicial,
     CaixaApiClient? caixaApiClient,
@@ -103,6 +109,8 @@ class SixWebRecebimentoDialog extends StatefulWidget {
             caixaApiClient: caixaApiClient,
             contato: contato,
             permitirParcial: permitirParcial,
+            pagamento: pagamento,
+            tipoInicial: tipoInicial,
             observacaoInicial: observacaoInicial,
             codigoTipoInicial: codigoTipoInicial,
           ),
@@ -176,6 +184,10 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
   @override
   void initState() {
     super.initState();
+    _tipo =
+        widget.permitirParcial
+            ? widget.tipoInicial
+            : SixWebRecebimentoTipo.total;
     _caixaApiClient = widget.caixaApiClient ?? HttpCaixaApiClient();
     _iconController = AnimationController(
       vsync: this,
@@ -185,7 +197,10 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
       _RecebimentoFormaDraft(
         opcao: _resolverInicial(_opcoes),
         controller: TextEditingController(
-          text: _formatarValorDigitavel(widget.valorAberto),
+          text:
+              _tipo == SixWebRecebimentoTipo.total
+                  ? _formatarValorDigitavel(widget.valorAberto)
+                  : '',
         ),
       ),
     );
@@ -316,11 +331,14 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
       if (!codigos.add(forma.opcao.codigoTipo)) {
         setState(
           () =>
-              _erroValor = context.t(
-                'recebimento.erroFormaDuplicada',
-                fallback:
-                    'Cada forma de recebimento pode ser usada apenas uma vez.',
-              ),
+              _erroValor =
+                  (widget.pagamento
+                      ? context.t('agenda.settlement.duplicateMethod')
+                      : context.t(
+                        'recebimento.erroFormaDuplicada',
+                        fallback:
+                            'Cada forma de recebimento pode ser usada apenas uma vez.',
+                      )),
         );
         return;
       }
@@ -790,14 +808,22 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
                                             )
                                             : _tipo ==
                                                 SixWebRecebimentoTipo.total
-                                            ? context.t(
-                                              'recebimento.receberTotal',
-                                              fallback: 'Receber total',
-                                            )
-                                            : context.t(
-                                              'recebimento.receberParcial',
-                                              fallback: 'Receber parcial',
-                                            ),
+                                            ? (widget.pagamento
+                                                ? context.t(
+                                                  'agenda.settlement.payTotal',
+                                                )
+                                                : context.t(
+                                                  'recebimento.receberTotal',
+                                                  fallback: 'Receber total',
+                                                ))
+                                            : (widget.pagamento
+                                                ? context.t(
+                                                  'agenda.settlement.payPartial',
+                                                )
+                                                : context.t(
+                                                  'recebimento.receberParcial',
+                                                  fallback: 'Receber parcial',
+                                                )),
                                       ),
                                     ),
                                   ],
@@ -872,10 +898,13 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
           accent: accent,
           surfaceSoft: surfaceSoft,
           icon: Icons.layers_outlined,
-          label: context.t(
-            'recebimento.formasRecebimento',
-            fallback: 'Formas de recebimento',
-          ),
+          label:
+              (widget.pagamento
+                  ? context.t('agenda.settlement.methods')
+                  : context.t(
+                    'recebimento.formasRecebimento',
+                    fallback: 'Formas de recebimento',
+                  )),
           value: _formas.length.toString(),
         ),
       ],
@@ -983,10 +1012,12 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                context.t(
-                  'recebimento.carregandoTipos',
-                  fallback: 'Carregando tipos de recebimento...',
-                ),
+                (widget.pagamento
+                    ? context.t('agenda.settlement.loadingMethods')
+                    : context.t(
+                      'recebimento.carregandoTipos',
+                      fallback: 'Carregando tipos de recebimento...',
+                    )),
                 style: TextStyle(color: tokens.primaryText),
               ),
             ),
@@ -1010,10 +1041,12 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
           children: <Widget>[
             Expanded(
               child: Text(
-                context.t(
-                  'recebimento.formasRecebimento',
-                  fallback: 'Formas de recebimento',
-                ),
+                (widget.pagamento
+                    ? context.t('agenda.settlement.methods')
+                    : context.t(
+                      'recebimento.formasRecebimento',
+                      fallback: 'Formas de recebimento',
+                    )),
                 style: const TextStyle(fontWeight: FontWeight.w900),
               ),
             ),
@@ -1130,10 +1163,13 @@ class _SixWebRecebimentoDialogState extends State<SixWebRecebimentoDialog>
           ),
           const SizedBox(height: 10),
           _TipoRecebimentoDropdown(
-            label: context.t(
-              'recebimento.tipoRecebimento',
-              fallback: 'Tipo de recebimento',
-            ),
+            label:
+                (widget.pagamento
+                    ? context.t('agenda.settlement.methodType')
+                    : context.t(
+                      'recebimento.tipoRecebimento',
+                      fallback: 'Tipo de recebimento',
+                    )),
             value: forma.opcao,
             options: opcoesDisponiveis,
             onSelected: (SixWebTipoRecebimentoOpcao value) {

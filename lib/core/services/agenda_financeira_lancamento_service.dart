@@ -101,7 +101,7 @@ class AgendaFinanceiraLancamentoService {
       return <String, dynamic>{};
     }
 
-    return decoded;
+    return AgendaFinanceiraLancamentoDetalhe.fromJson(decoded).toJson();
   }
 
   Future<Map<String, dynamic>> consultarValoresConfirmados(

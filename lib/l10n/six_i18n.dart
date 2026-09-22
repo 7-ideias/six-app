@@ -71,6 +71,19 @@ extension SixI18nBuildContext on BuildContext {
 
 const Map<String, Map<String, String>> _fallbacks = {
   'pt': {
+    'agenda.settlement.payTitle': 'Pagar lançamento',
+    'agenda.settlement.receiveTitle': 'Receber lançamento',
+    'agenda.settlement.payTotal': 'Pagar total',
+    'agenda.settlement.payPartial': 'Pagar parcial',
+    'agenda.settlement.methods': 'Formas de pagamento',
+    'agenda.settlement.methodType': 'Tipo de pagamento',
+    'agenda.settlement.values': 'Valores do pagamento',
+    'agenda.settlement.alreadyPaid': 'Valor já pago',
+    'agenda.settlement.loadingMethods': 'Carregando formas de pagamento...',
+    'agenda.settlement.duplicateMethod':
+        'Cada forma de pagamento pode ser usada apenas uma vez.',
+    'agenda.settlement.choosePayment': 'Como deseja pagar este lançamento?',
+    'agenda.settlement.success': 'Liquidação registrada com sucesso.',
     'produto.journey.changeMode': 'Alterar',
     'clientes.journey.title': 'Escolha a jornada de cadastro',
     'clientes.journey.subtitle':
@@ -2622,6 +2635,19 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Indisponível',
   },
   'en': {
+    'agenda.settlement.payTitle': 'Pay entry',
+    'agenda.settlement.receiveTitle': 'Receive entry',
+    'agenda.settlement.payTotal': 'Pay in full',
+    'agenda.settlement.payPartial': 'Pay partially',
+    'agenda.settlement.methods': 'Payment methods',
+    'agenda.settlement.methodType': 'Payment type',
+    'agenda.settlement.values': 'Payment amounts',
+    'agenda.settlement.alreadyPaid': 'Amount already paid',
+    'agenda.settlement.loadingMethods': 'Loading payment methods...',
+    'agenda.settlement.duplicateMethod':
+        'Each payment method can only be used once.',
+    'agenda.settlement.choosePayment': 'How would you like to pay this entry?',
+    'agenda.settlement.success': 'Settlement recorded successfully.',
     'produto.journey.changeMode': 'Change',
     'clientes.journey.title': 'Choose the registration journey',
     'clientes.journey.subtitle':
@@ -4957,6 +4983,19 @@ const Map<String, Map<String, String>> _fallbacks = {
     'produto.catalog.unavailableStatus': 'Unavailable',
   },
   'es': {
+    'agenda.settlement.payTitle': 'Pagar movimiento',
+    'agenda.settlement.receiveTitle': 'Cobrar movimiento',
+    'agenda.settlement.payTotal': 'Pagar total',
+    'agenda.settlement.payPartial': 'Pagar parcial',
+    'agenda.settlement.methods': 'Formas de pago',
+    'agenda.settlement.methodType': 'Tipo de pago',
+    'agenda.settlement.values': 'Importes del pago',
+    'agenda.settlement.alreadyPaid': 'Importe ya pagado',
+    'agenda.settlement.loadingMethods': 'Cargando formas de pago...',
+    'agenda.settlement.duplicateMethod':
+        'Cada forma de pago solo puede utilizarse una vez.',
+    'agenda.settlement.choosePayment': '¿Cómo desea pagar este movimiento?',
+    'agenda.settlement.success': 'Liquidación registrada correctamente.',
     'produto.journey.changeMode': 'Cambiar',
     'clientes.journey.title': 'Elige la jornada de registro',
     'clientes.journey.subtitle':
