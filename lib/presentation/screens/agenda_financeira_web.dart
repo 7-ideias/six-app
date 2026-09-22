@@ -1,6 +1,3 @@
-import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
-import 'package:sixpos/l10n/six_i18n.dart';
-import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -13,6 +10,10 @@ import 'package:sixpos/data/models/caixa_models.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
+import 'package:sixpos/presentation/components/web/six_web_animated_dialog.dart';
+import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
 
@@ -993,11 +994,13 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       if (mounted) setState(() => _executandoAcao = false);
     }
     if (!mounted) return;
-    final pageTokens = WebThemeTokens.of(context);
-    final alterado = await showDialog<bool>(
+    final alterado = await showSixWebAnimatedDialog<bool>(
       context: context,
-      barrierColor: pageTokens.workspaceBackground.withValues(alpha: 0.72),
       barrierDismissible: true,
+      barrierLabel: context.t(
+        'agenda.details.closeBarrier',
+        fallback: 'Fechar detalhes do lançamento',
+      ),
       builder:
           (dialogContext) => _LancamentoDetalhesDialog(
             item: item,
@@ -1290,10 +1293,11 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           if (detalhe.containsKey(key)) key: detalhe[key],
       };
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(recorrenciaLabel(context, 'saveError'))),
         );
+      }
       return;
     }
 
@@ -2984,10 +2988,8 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
     final historico = _listaMapas(detalhe['historico']);
     final liquidacoes = _liquidacoes();
     final comprovantes = _listaStrings(detalhe['comprovantes']);
-    final String codigoOperacao = _texto(
-      detalhe['codigoOperacao'],
-      item['codigoOperacao'],
-    ).trim();
+    final String codigoOperacao =
+        _texto(detalhe['codigoOperacao'], item['codigoOperacao']).trim();
     final acoes = _listaStrings(detalhe['acoesDisponiveis']);
     final valorOriginal = _numero(
       detalhe['valorOriginal'],
