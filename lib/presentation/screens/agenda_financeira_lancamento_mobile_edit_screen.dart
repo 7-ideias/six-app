@@ -2,7 +2,7 @@ import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
-import 'package:sixpos/presentation/components/agenda_centro_custo_field.dart';
+import 'package:sixpos/presentation/components/mobile/agenda_centro_custo_mobile_field.dart';
 import 'package:sixpos/presentation/components/mobile/agenda_recorrencia_mobile_fields.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
@@ -866,7 +866,7 @@ class _AgendaFinanceiraLancamentoMobileEditScreenState
                         icon: Icons.badge_outlined,
                       ),
                       const SizedBox(height: 12),
-                      AgendaCentroCustoField(
+                      AgendaCentroCustoMobileField(
                         initialId: _centroCustoId,
                         initialName: _centroCustoController.text,
                         enabled: !_salvando,

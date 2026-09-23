@@ -249,13 +249,42 @@ class AgendaFinanceiraLancamentoService {
     return CentroCustoModel.fromJson(decoded);
   }
 
+  Future<CentroCustoModel> atualizarCentroCusto({
+    required CentroCustoModel centro,
+    required String nome,
+  }) async {
+    final response = await _httpClient.put(
+      Uri.parse('$_endpointCentrosCusto/${centro.id}'),
+      headers: await _buildHeaders(),
+      body: jsonEncode(<String, dynamic>{
+        'nome': nome.trim(),
+        'codigo': centro.codigo,
+        'tipo': centro.tipo,
+        'ativo': centro.ativo,
+        'centroPaiId': centro.centroPaiId,
+      }),
+    );
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw AgendaFinanceiraLancamentoApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+    final dynamic decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Centro de custos inválido.');
+    }
+    return CentroCustoModel.fromJson(decoded);
+  }
+
   Future<LancamentoAgendaFinanceiraResponse> editarLancamento(
     String idLancamento,
     LancamentoAgendaFinanceiraRequest request, {
     String escopo = 'ESTE',
   }) async {
-    final uri = Uri.parse(_endpointLancamento(idLancamento))
-        .replace(queryParameters: {'escopo': escopo});
+    final uri = Uri.parse(
+      _endpointLancamento(idLancamento),
+    ).replace(queryParameters: {'escopo': escopo});
 
     final response = await _httpClient.put(
       uri,
@@ -292,8 +321,9 @@ class AgendaFinanceiraLancamentoService {
     String idLancamento, {
     String escopo = 'ESTE',
   }) async {
-    final uri = Uri.parse(_endpointLancamento(idLancamento))
-        .replace(queryParameters: {'escopo': escopo});
+    final uri = Uri.parse(
+      _endpointLancamento(idLancamento),
+    ).replace(queryParameters: {'escopo': escopo});
 
     final response = await _httpClient.delete(
       uri,

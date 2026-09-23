@@ -1,7 +1,7 @@
 import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_web_fields.dart';
-import 'package:sixpos/presentation/components/agenda_centro_custo_field.dart';
+import 'package:sixpos/presentation/components/web/agenda_centro_custo_web_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
@@ -103,8 +103,9 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
 }) {
   return showDialog<Map<String, dynamic>>(
     context: context,
-    barrierColor: WebThemeTokens.of(context).workspaceBackground
-        .withValues(alpha: 0.72),
+    barrierColor: WebThemeTokens.of(
+      context,
+    ).workspaceBackground.withValues(alpha: 0.72),
     barrierDismissible: true,
     builder: (BuildContext dialogContext) {
       return SubPainelLancamentoAgendaFinanceiraWeb(
@@ -773,9 +774,9 @@ class _LancamentoAgendaFinanceiraWebBodyState
                   label: const Text('Excluir/apagar'),
                   style: FilledButton.styleFrom(
                     backgroundColor: tokens.danger,
-                    foregroundColor: Theme.of(dialogContext)
-                        .colorScheme
-                        .onError,
+                    foregroundColor: Theme.of(
+                      dialogContext,
+                    ).colorScheme.onError,
                   ),
                 ),
               ],
@@ -1293,7 +1294,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
                     ),
                     _buildSectionCard(
                       title: 'Dados principais',
-                      subtitle: 'Campos que alimentam filtros e detalhes da Agenda Financeira.',
+                      subtitle:
+                          'Campos que alimentam filtros e detalhes da Agenda Financeira.',
                       icon: Icons.badge_outlined,
                       child: Wrap(
                         spacing: 16,
@@ -1413,7 +1415,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
                     const SizedBox(height: 16),
                     _buildSectionCard(
                       title: 'Classificação e filtros',
-                      subtitle: 'Informações usadas para segmentação por origem, empresa e forma prevista de pagamento.',
+                      subtitle:
+                          'Informações usadas para segmentação por origem, empresa e forma prevista de pagamento.',
                       icon: Icons.filter_alt_outlined,
                       child: Wrap(
                         spacing: 16,
@@ -1474,7 +1477,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
                           ),
                           _buildFieldSlot(
                             width: larguraCampo(320, 280),
-                            child: AgendaCentroCustoField(
+                            child: AgendaCentroCustoWebField(
                               initialId: _centroCustoId,
                               initialName: _centroCustoController.text,
                               enabled: !_isLoading,
@@ -1501,7 +1504,8 @@ class _LancamentoAgendaFinanceiraWebBodyState
                     const SizedBox(height: 16),
                     _buildSectionCard(
                       title: 'Contato e responsabilidade',
-                      subtitle: 'Dados opcionais exibidos nos cards da agenda e usados para cobrança/pagamento.',
+                      subtitle:
+                          'Dados opcionais exibidos nos cards da agenda e usados para cobrança/pagamento.',
                       icon: Icons.person_outline,
                       child: Wrap(
                         spacing: 16,

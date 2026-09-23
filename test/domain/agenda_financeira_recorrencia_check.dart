@@ -223,8 +223,19 @@ void main() {
     'ativo': true,
   });
   check(
-    centro.descricao == 'ADM • Administrativo' && centro.ativo,
+    centro.descricao == 'Administrativo • ADM' && centro.ativo,
     'Mapear catálogo de centros de custos',
+  );
+  final centroSemRepeticao = CentroCustoModel.fromJson({
+    'id': 'centro-2',
+    'codigo': 'FUNCIONARIOS',
+    'nome': 'FUNCIONARIOS',
+    'tipo': 'CUSTO',
+    'ativo': true,
+  });
+  check(
+    centroSemRepeticao.descricao == 'FUNCIONARIOS',
+    'Não repetir código e nome idênticos no seletor',
   );
   final filtros = AgendaFinanceiraFiltrosRequest(
     tipo: 'TODOS',
@@ -241,6 +252,6 @@ void main() {
     'Enviar filtro de centro de custos para a agenda',
   );
   print(
-    '35 verificações de recorrência, status, liquidação e centro de custos concluídas.',
+    '36 verificações de recorrência, status, liquidação e centro de custos concluídas.',
   );
 }

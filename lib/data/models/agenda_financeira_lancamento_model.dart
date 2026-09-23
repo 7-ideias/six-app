@@ -428,7 +428,15 @@ class CentroCustoModel {
   final bool ativo;
   final String? centroPaiId;
 
-  String get descricao => codigo.trim().isEmpty ? nome : '$codigo • $nome';
+  String get descricao {
+    final String nomeLimpo = nome.trim();
+    final String codigoLimpo = codigo.trim();
+    if (codigoLimpo.isEmpty ||
+        codigoLimpo.toUpperCase() == nomeLimpo.toUpperCase()) {
+      return nomeLimpo;
+    }
+    return '$nomeLimpo • $codigoLimpo';
+  }
 
   factory CentroCustoModel.fromJson(Map<String, dynamic> json) {
     return CentroCustoModel(
