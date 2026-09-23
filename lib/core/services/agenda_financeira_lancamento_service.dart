@@ -21,6 +21,9 @@ class AgendaFinanceiraLancamentoService {
   String get _endpointValoresConfirmados =>
       '${AppConfig.baseUrl}/private/api/agenda-financeira/valores-confirmados';
 
+  String get _endpointCentrosCusto =>
+      '${AppConfig.baseUrl}/private/api/agenda-financeira/centros-custo';
+
   String _endpointLancamento(String idLancamento) =>
       '${AppConfig.baseUrl}/private/api/agenda-financeira/lancamentos/$idLancamento';
 
@@ -196,6 +199,82 @@ class AgendaFinanceiraLancamentoService {
     }
 
     return decoded;
+  }
+
+  Future<List<CentroCustoModel>> listarCentrosCusto() async {
+    final response = await _httpClient.get(
+      Uri.parse(_endpointCentrosCusto),
+      headers: await _buildHeaders(),
+    );
+    if (response.statusCode != 200) {
+      throw AgendaFinanceiraLancamentoApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+    final dynamic decoded = jsonDecode(response.body);
+    if (decoded is! List) return <CentroCustoModel>[];
+    return decoded
+        .whereType<Map<String, dynamic>>()
+        .map(CentroCustoModel.fromJson)
+        .where((centro) => centro.id.isNotEmpty && centro.ativo)
+        .toList(growable: false);
+  }
+
+  Future<CentroCustoModel> criarCentroCusto({
+    required String nome,
+    String? codigo,
+    String tipo = 'AMBOS',
+  }) async {
+    final response = await _httpClient.post(
+      Uri.parse(_endpointCentrosCusto),
+      headers: await _buildHeaders(),
+      body: jsonEncode(<String, dynamic>{
+        'nome': nome.trim(),
+        'codigo': codigo?.trim(),
+        'tipo': tipo,
+        'ativo': true,
+      }),
+    );
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw AgendaFinanceiraLancamentoApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+    final dynamic decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Centro de custos inválido.');
+    }
+    return CentroCustoModel.fromJson(decoded);
+  }
+
+  Future<CentroCustoModel> atualizarCentroCusto({
+    required CentroCustoModel centro,
+    required String nome,
+  }) async {
+    final response = await _httpClient.put(
+      Uri.parse('$_endpointCentrosCusto/${centro.id}'),
+      headers: await _buildHeaders(),
+      body: jsonEncode(<String, dynamic>{
+        'nome': nome.trim(),
+        'codigo': centro.codigo,
+        'tipo': centro.tipo,
+        'ativo': centro.ativo,
+        'centroPaiId': centro.centroPaiId,
+      }),
+    );
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw AgendaFinanceiraLancamentoApiException(
+        statusCode: response.statusCode,
+        body: response.body,
+      );
+    }
+    final dynamic decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Centro de custos inválido.');
+    }
+    return CentroCustoModel.fromJson(decoded);
   }
 
   Future<LancamentoAgendaFinanceiraResponse> editarLancamento(

@@ -75,6 +75,7 @@ AgendaFinanceiraConsultaRequest _request() {
       categorias: <String>[],
       formasPagamento: <String>[],
       codigosTipoRecebimento: <String>[],
+      centrosCusto: <String>[],
       somenteCriticos: false,
     ),
     visaoSelecionada: 'AGENDA',

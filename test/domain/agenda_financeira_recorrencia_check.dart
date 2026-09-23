@@ -54,6 +54,8 @@ void main() {
     categoria: 'Aluguel',
     idColaborador: 'test',
     nomeColaborador: 'Teste',
+    centroCustoId: 'centro-1',
+    centroDeCusto: 'Administrativo',
     valorTotalProdutos: 0,
     valorTotalServicos: 0,
     valorTotalOperacao: 2000,
@@ -61,6 +63,11 @@ void main() {
     payloadOriginalJson: {'agendaFinanceira': {}, 'contato': {}},
   );
   final json = request.toJson();
+  check(
+    json['centroCustoId'] == 'centro-1' &&
+        json['centroDeCusto'] == 'Administrativo',
+    'Preservar vínculo e nome do centro de custos no lançamento',
+  );
   check(
     json['statusOperacao'] == 'PENDENTE',
     'Vence hoje deve ser enviado como PENDENTE',
@@ -143,26 +150,25 @@ void main() {
         if (multiplas)
           RecebimentoFormaInput(codigo: 'tipo2', valor: 30, descricao: 'Pix'),
       ];
-      final Map<String, dynamic> payload =
-          total
-              ? AgendaFinanceiraLiquidacaoRequest(
-                tipoLiquidacao: 'TOTAL',
-                dataLiquidacao: date,
-                valorLiquidado: 50,
-                formaPagamentoRealizada: 'tipo1',
-                recebimentos: formas,
-                observacoes: 'Teste',
-                idSessaoCaixa: 'sessao',
-              ).toJson()
-              : AgendaFinanceiraParcialRequest(
-                tipoLiquidacao: 'PARCIAL',
-                dataLiquidacao: date,
-                valorLiquidado: 50,
-                formaPagamentoRealizada: 'tipo1',
-                recebimentos: formas,
-                observacoes: 'Teste',
-                idSessaoCaixa: 'sessao',
-              ).toJson();
+      final Map<String, dynamic> payload = total
+          ? AgendaFinanceiraLiquidacaoRequest(
+              tipoLiquidacao: 'TOTAL',
+              dataLiquidacao: date,
+              valorLiquidado: 50,
+              formaPagamentoRealizada: 'tipo1',
+              recebimentos: formas,
+              observacoes: 'Teste',
+              idSessaoCaixa: 'sessao',
+            ).toJson()
+          : AgendaFinanceiraParcialRequest(
+              tipoLiquidacao: 'PARCIAL',
+              dataLiquidacao: date,
+              valorLiquidado: 50,
+              formaPagamentoRealizada: 'tipo1',
+              recebimentos: formas,
+              observacoes: 'Teste',
+              idSessaoCaixa: 'sessao',
+            ).toJson();
       final linhas = payload['recebimentos'] as List;
       check(
         linhas.length == formas.length &&
@@ -209,7 +215,43 @@ void main() {
     vendaAberta.codigoOperacao == 'VEN-789',
     'Mapear codigoOperacao de venda não liquidada',
   );
+  final centro = CentroCustoModel.fromJson({
+    'id': 'centro-1',
+    'codigo': 'ADM',
+    'nome': 'Administrativo',
+    'tipo': 'CUSTO',
+    'ativo': true,
+  });
+  check(
+    centro.descricao == 'Administrativo • ADM' && centro.ativo,
+    'Mapear catálogo de centros de custos',
+  );
+  final centroSemRepeticao = CentroCustoModel.fromJson({
+    'id': 'centro-2',
+    'codigo': 'FUNCIONARIOS',
+    'nome': 'FUNCIONARIOS',
+    'tipo': 'CUSTO',
+    'ativo': true,
+  });
+  check(
+    centroSemRepeticao.descricao == 'FUNCIONARIOS',
+    'Não repetir código e nome idênticos no seletor',
+  );
+  final filtros = AgendaFinanceiraFiltrosRequest(
+    tipo: 'TODOS',
+    status: const [],
+    origens: const [],
+    categorias: const [],
+    formasPagamento: const [],
+    codigosTipoRecebimento: const [],
+    centrosCusto: const ['Administrativo'],
+    somenteCriticos: false,
+  );
+  check(
+    (filtros.toJson()['centrosCusto'] as List).single == 'Administrativo',
+    'Enviar filtro de centro de custos para a agenda',
+  );
   print(
-    '32 verificações de recorrência, status, liquidação e detalhe concluídas.',
+    '36 verificações de recorrência, status, liquidação e centro de custos concluídas.',
   );
 }

@@ -1,3 +1,9 @@
+import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
+import 'package:sixpos/presentation/components/web/six_web_financial_launch_delete_dialog.dart';
+import 'package:sixpos/presentation/components/web/six_web_animated_dialog.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -10,10 +16,6 @@ import 'package:sixpos/data/models/caixa_models.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
 import 'package:sixpos/domain/services/usuario/usuario_service.dart';
-import 'package:sixpos/l10n/six_i18n.dart';
-import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
-import 'package:sixpos/presentation/components/web/six_web_animated_dialog.dart';
-import 'package:sixpos/presentation/components/web/six_web_recebimento_dialog.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 import 'package:sixpos/sub_painel_lancamento_agenda_financeira_web.dart';
 
@@ -100,6 +102,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       };
 
   List<String> _tiposRecebimentoFiltro = <String>['Todos'];
+  List<CentroCustoModel> _centrosCusto = <CentroCustoModel>[];
   final List<Map<String, dynamic>> _gruposAgenda = <Map<String, dynamic>>[];
   final List<Map<String, dynamic>> _itensConfirmados = <Map<String, dynamic>>[];
 
@@ -110,6 +113,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   String _tipoSelecionado = 'Todos';
   String _statusSelecionado = 'Todos';
   final Set<String> _formasPagamentoSelecionadas = <String>{};
+  final Set<String> _centrosCustoSelecionados = <String>{};
   bool _carregando = false;
   bool _executandoAcao = false;
   bool _overlayInicialAberto = false;
@@ -152,6 +156,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       if (abriuOverlay || !mounted) return;
       await _restaurarPreferenciasAgendaFinanceira();
       await _carregarTiposPagamentoConfigurados();
+      await _carregarCentrosCusto();
       await _restaurarPreferenciasAgendaFinanceira();
       await _restaurarPreferenciasAgendaFinanceiraBackend();
       await _consultar();
@@ -294,6 +299,16 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
     } catch (_) {}
   }
 
+  Future<void> _carregarCentrosCusto() async {
+    try {
+      final centros = await _service.listarCentrosCusto();
+      if (!mounted) return;
+      setState(() => _centrosCusto = centros);
+    } catch (_) {
+      // Mantém a agenda disponível mesmo sem o catálogo.
+    }
+  }
+
   List<String> _montarFormasPagamento(List<TiposRecebimento> tipos) {
     final descricoes = <String>[];
     final backendAtualizado = Map<String, String>.from(
@@ -371,7 +386,10 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         _codigosTipoRecebimentoFiltro().contains(
           item['codigoTipoRecebimento']?.toString().trim().toLowerCase(),
         );
-    return tipoOk && statusOk && formaOk;
+    final centroOk =
+        _centrosCustoSelecionados.isEmpty ||
+        _centrosCustoSelecionados.contains(item['centroDeCusto']?.toString());
+    return tipoOk && statusOk && formaOk && centroOk;
   }
 
   Future<void> _consultar({bool mostrarFeedback = false}) async {
@@ -439,6 +457,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
         categorias: const <String>[],
         formasPagamento: const <String>[],
         codigosTipoRecebimento: _codigosTipoRecebimentoFiltro(),
+        centrosCusto: _centrosCustoSelecionados.toList(growable: false),
         clienteFornecedor: null,
         somenteCriticos: false,
       ),
@@ -892,6 +911,8 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       ),
       'empresa': _empresaNome(item['empresa']),
       'categoria': item['categoria']?.toString() ?? '',
+      'centroCustoId': item['centroCustoId']?.toString(),
+      'centroDeCusto': item['centroDeCusto']?.toString() ?? '',
       'responsavel': item['responsavel']?.toString() ?? '',
       'observacoes': item['observacaoResumida']?.toString() ?? '',
       'acoes': acoes,
@@ -998,9 +1019,12 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       context: context,
       barrierDismissible: true,
       barrierLabel: context.t(
-        'agenda.details.closeBarrier',
-        fallback: 'Fechar detalhes do lançamento',
+        'agenda.launchDetails.dialogBarrier',
+        fallback: 'Detalhes do lançamento financeiro',
       ),
+      overlayColor: const Color(0xC20B1324),
+      overlayBlurSigma: 12,
+      transitionDuration: const Duration(milliseconds: 320),
       builder:
           (dialogContext) => _LancamentoDetalhesDialog(
             item: item,
@@ -1023,57 +1047,51 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
   ) async {
     final id = item['id']?.toString() ?? '';
     if (id.trim().isEmpty) return false;
-    final confirmado = await showDialog<bool>(
+
+    final descricao = item['descricao']?.toString().trim();
+    final valor = _toDouble(
+      item['valorOriginal'] ?? item['valorTotalOperacao'] ?? item['valor'],
+    );
+    final status = item['status']?.toString().trim();
+
+    final confirmado = await showSixWebFinancialLaunchDeleteDialog(
       context: context,
-      barrierColor: WebThemeTokens.of(
-        context,
-      ).workspaceBackground.withValues(alpha: 0.72),
-      barrierDismissible: false,
-      builder:
-          (dialogContext) => AlertDialog(
-            title: const Text('Excluir lançamento?'),
-            content: const Text(
-              'Esta ação vai apagar definitivamente todo o lançamento financeiro e suas confirmações/parciais. Essa operação não pode ser desfeita.',
-            ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Cancelar'),
+      description:
+          descricao?.isNotEmpty == true
+              ? descricao!
+              : context.t(
+                'agenda.launchDelete.unnamedLaunch',
+                fallback: 'Lançamento sem descrição',
               ),
-              FilledButton.icon(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                icon: const Icon(Icons.delete_forever_outlined),
-                label: const Text('Excluir lançamento'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: WebThemeTokens.of(dialogContext).danger,
-                  foregroundColor: WebThemeTokens.of(dialogContext).onDanger,
-                ),
-              ),
-            ],
-          ),
+      amountLabel: _formatarMoeda(valor),
+      statusLabel:
+          status?.isNotEmpty == true
+              ? status!
+              : context.t('common.notInformed', fallback: 'Não informada'),
+      onConfirm: () async {
+        setState(() => _executandoAcao = true);
+        try {
+          await _service.excluirLancamento(id);
+        } finally {
+          if (mounted) setState(() => _executandoAcao = false);
+        }
+      },
+      errorMessageBuilder: (Object error) {
+        if (error is AgendaFinanceiraLancamentoApiException) {
+          return context.t(
+            'agenda.launchDelete.apiError',
+            fallback: 'Falha ao excluir lançamento.',
+          );
+        }
+        return context.t(
+          'agenda.launchDelete.error',
+          fallback:
+              'Não foi possível excluir o lançamento agora. Tente novamente em instantes.',
+        );
+      },
     );
     if (confirmado != true) return false;
-    try {
-      setState(() => _executandoAcao = true);
-      await _service.excluirLancamento(id);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Lançamento excluído com sucesso.')),
-        );
-      }
-      return true;
-    } on AgendaFinanceiraLancamentoApiException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Falha ao excluir lançamento (${e.statusCode}).'),
-          ),
-        );
-      }
-      return false;
-    } finally {
-      if (mounted) setState(() => _executandoAcao = false);
-    }
+    return true;
   }
 
   Future<bool> _confirmarExcluirLiquidacaoDetalhe(
@@ -1642,6 +1660,7 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
           _drop('Tipo', _tipoSelecionado, _tipos, _selecionarTipo),
           _drop('Status', _statusSelecionado, _status, _selecionarStatus),
           _multiSelectTipoPagamento(theme),
+          if (_centrosCusto.isNotEmpty) _multiSelectCentroCusto(theme),
           FilledButton.icon(
             style: _primaryCtaStyle(theme),
             onPressed:
@@ -1675,6 +1694,33 @@ class _AgendaFinanceiraWebState extends State<AgendaFinanceiraWeb> {
       icon: Icons.payments_outlined,
       onChanged: _selecionarTiposPagamento,
     );
+  }
+
+  Widget _multiSelectCentroCusto(ThemeData theme) {
+    return _AgendaMultiSelectDropdown(
+      width: 260,
+      label: 'Centro de custos',
+      value: _centrosCustoFiltroLabel(),
+      values: _centrosCusto.map((centro) => centro.nome).toList(),
+      selectedValues: _centrosCustoSelecionados,
+      icon: Icons.account_tree_outlined,
+      onChanged: (selecionados) {
+        setState(() {
+          _centrosCustoSelecionados
+            ..clear()
+            ..addAll(selecionados);
+          _usuarioAlterouFiltros = true;
+        });
+      },
+    );
+  }
+
+  String _centrosCustoFiltroLabel() {
+    if (_centrosCustoSelecionados.isEmpty) return 'Todos';
+    if (_centrosCustoSelecionados.length == 1) {
+      return _centrosCustoSelecionados.first;
+    }
+    return '${_centrosCustoSelecionados.length} centros selecionados';
   }
 
   String _formasPagamentoFiltroLabel() {
@@ -3006,300 +3052,329 @@ class _LancamentoDetalhesDialog extends StatelessWidget {
       _texto(detalhe['status'], item['status']),
       valorAberto,
     );
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 28),
-      backgroundColor: tokens.surfaceElevated,
-      surfaceTintColor: Colors.transparent,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 980, maxHeight: 760),
-        child: Column(
-          children: <Widget>[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: tokens.surfaceMuted,
-                border: Border(bottom: BorderSide(color: tokens.cardBorder)),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
+    return Semantics(
+      namesRoute: true,
+      label: context.t(
+        'agenda.launchDetails.dialogBarrier',
+        fallback: 'Detalhes do lançamento financeiro',
+      ),
+      child: Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 28),
+        backgroundColor: tokens.surfaceElevated,
+        surfaceTintColor: Colors.transparent,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 980, maxHeight: 760),
+          child: Column(
+            children: <Widget>[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  color: tokens.surfaceMuted,
+                  border: Border(bottom: BorderSide(color: tokens.cardBorder)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(28),
+                  ),
                 ),
-              ),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        const Text(
-                          'Detalhes do lançamento',
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          descricao,
-                          style: TextStyle(
-                            color: tokens.primaryText,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  TextButton.icon(
-                    onPressed: () async {
-                      final excluido = await onExcluirLancamento();
-                      if (excluido && context.mounted) {
-                        Navigator.of(context).pop(true);
-                      }
-                    },
-                    icon: const Icon(Icons.delete_forever_outlined),
-                    label: const Text('Excluir lançamento'),
-                    style: TextButton.styleFrom(foregroundColor: tokens.danger),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    icon: Icon(Icons.close_rounded, color: tokens.mutedText),
-                    tooltip: 'Fechar',
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Stack(
-                children: <Widget>[
-                  Positioned.fill(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(22),
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          if (fallback) _avisoFallback(theme),
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
-                            children: <Widget>[
-                              _chip(
-                                theme,
-                                _texto(
-                                  detalhe['tipo'],
-                                  item['tipo'] == 'pagar' ? 'Pagar' : 'Receber',
-                                ),
-                              ),
-                              _chip(
-                                theme,
-                                _texto(detalhe['status'], item['status']),
-                              ),
-                              _chip(
-                                theme,
-                                formaPagamentoLabel(
-                                  _texto(
-                                    detalhe['formaPagamento'],
-                                    item['formaPagamento'],
-                                  ),
-                                ),
-                              ),
-                              _chip(
-                                theme,
-                                codigoOperacao.isNotEmpty
-                                    ? 'Operação: $codigoOperacao'
-                                    : 'Operação sem código',
-                              ),
-                            ],
+                          const Text(
+                            'Detalhes do lançamento',
+                            style: TextStyle(fontWeight: FontWeight.w700),
                           ),
-                          const SizedBox(height: 18),
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              final width =
-                                  constraints.maxWidth >= 760
-                                      ? (constraints.maxWidth - 24) / 3
-                                      : double.infinity;
-                              return Wrap(
-                                spacing: 12,
-                                runSpacing: 12,
-                                children: <Widget>[
-                                  SizedBox(
-                                    width: width,
-                                    child: _valorCard(
-                                      theme,
-                                      'Valor original',
-                                      formatarMoeda(valorOriginal),
-                                      Icons.receipt_long_outlined,
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: width,
-                                    child: _valorCard(
-                                      theme,
-                                      'Confirmado',
-                                      formatarMoeda(valorPago),
-                                      Icons.verified_outlined,
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: width,
-                                    child: _valorCard(
-                                      theme,
-                                      'Em aberto',
-                                      formatarMoeda(valorAberto),
-                                      Icons.account_balance_wallet_outlined,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 18),
-                          _section(
-                            theme,
-                            'Datas',
-                            Icons.calendar_month_outlined,
-                            <Widget>[
-                              _info(
-                                'Competência',
-                                formatarData(detalhe['dataCompetencia']),
-                              ),
-                              _info(
-                                'Vencimento',
-                                formatarData(
-                                  _valor(
-                                    detalhe['dataVencimento'],
-                                    item['vencimento'],
-                                  ),
-                                ),
-                              ),
-                              _info(
-                                'Liquidação',
-                                formatarData(detalhe['dataLiquidacao']),
-                              ),
-                            ],
-                          ),
-                          _section(
-                            theme,
-                            'Classificação',
-                            Icons.filter_alt_outlined,
-                            <Widget>[
-                              _info(
-                                'Empresa',
-                                _texto(empresa['nome'], item['empresa']),
-                              ),
-                              _info(
-                                'Categoria',
-                                _texto(
-                                  categoria['nome'],
-                                  categoria['descricao'],
-                                  item['categoria'],
-                                ),
-                              ),
-                              _info(
-                                'Origem',
-                                _texto(
-                                  origem['codigoExibicao'],
-                                  origem['tipo'],
-                                  item['origem'],
-                                ),
-                              ),
-                            ],
-                          ),
-                          _section(
-                            theme,
-                            'Contato e responsabilidade',
-                            Icons.people_alt_outlined,
-                            <Widget>[
-                              _info(
-                                'Contato',
-                                _texto(contato['nome'], item['contato']),
-                              ),
-                              _info('Tipo', _texto(contato['tipo'])),
-                              _info('Documento', _texto(contato['documento'])),
-                              _info('Telefone', _texto(contato['telefone'])),
-                              _info('E-mail', _texto(contato['email'])),
-                              _info(
-                                'Responsável',
-                                _texto(
-                                  responsavel['nome'],
-                                  item['responsavel'],
-                                ),
-                              ),
-                            ],
-                          ),
-                          _section(
-                            theme,
-                            'Observações',
-                            Icons.notes_outlined,
-                            <Widget>[
-                              SizedBox(
-                                width: double.infinity,
-                                child: SelectableText(
-                                  _texto(
-                                    detalhe['observacoes'],
-                                    item['observacoes'],
-                                    'Sem observações.',
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (liquidacoes.isNotEmpty)
-                            _section(
-                              theme,
-                              'Confirmações e liquidações',
-                              Icons.payments_outlined,
-                              liquidacoes
-                                  .map(
-                                    (l) => _liquidacaoTile(context, theme, l),
-                                  )
-                                  .toList(),
+                          const SizedBox(height: 6),
+                          Text(
+                            descricao,
+                            style: TextStyle(
+                              color: tokens.primaryText,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
                             ),
-                          if (historico.isNotEmpty)
-                            _section(
-                              theme,
-                              'Histórico',
-                              Icons.history_outlined,
-                              historico
-                                  .map(
-                                    (h) => _info(
-                                      formatarData(h['dataHora']),
-                                      _texto(h['descricao']),
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                          if (comprovantes.isNotEmpty)
-                            _section(
-                              theme,
-                              'Comprovantes',
-                              Icons.attach_file_outlined,
-                              comprovantes
-                                  .map((c) => _info('Arquivo', c))
-                                  .toList(),
-                            ),
-                          if (acoes.isNotEmpty)
-                            _section(
-                              theme,
-                              'Ações disponíveis',
-                              Icons.touch_app_outlined,
-                              <Widget>[
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children:
-                                      acoes
-                                          .map((a) => Chip(label: Text(a)))
-                                          .toList(),
-                                ),
-                              ],
-                            ),
+                          ),
                         ],
                       ),
                     ),
-                  ),
-                  if (stamp != null)
-                    Positioned(top: 18, right: 28, child: _statusStamp(stamp)),
-                ],
+                    TextButton.icon(
+                      onPressed: () async {
+                        final excluido = await onExcluirLancamento();
+                        if (excluido && context.mounted) {
+                          Navigator.of(context).pop(true);
+                        }
+                      },
+                      icon: const Icon(Icons.delete_forever_outlined),
+                      label: const Text('Excluir lançamento'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: tokens.danger,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      icon: Icon(Icons.close_rounded, color: tokens.mutedText),
+                      tooltip: 'Fechar',
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              Expanded(
+                child: Stack(
+                  children: <Widget>[
+                    Positioned.fill(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(22),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            if (fallback) _avisoFallback(theme),
+                            Wrap(
+                              spacing: 10,
+                              runSpacing: 10,
+                              children: <Widget>[
+                                _chip(
+                                  theme,
+                                  _texto(
+                                    detalhe['tipo'],
+                                    item['tipo'] == 'pagar'
+                                        ? 'Pagar'
+                                        : 'Receber',
+                                  ),
+                                ),
+                                _chip(
+                                  theme,
+                                  _texto(detalhe['status'], item['status']),
+                                ),
+                                _chip(
+                                  theme,
+                                  formaPagamentoLabel(
+                                    _texto(
+                                      detalhe['formaPagamento'],
+                                      item['formaPagamento'],
+                                    ),
+                                  ),
+                                ),
+                                _chip(
+                                  theme,
+                                  codigoOperacao.isNotEmpty
+                                      ? 'Operação: $codigoOperacao'
+                                      : 'Operação sem código',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 18),
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final width =
+                                    constraints.maxWidth >= 760
+                                        ? (constraints.maxWidth - 24) / 3
+                                        : double.infinity;
+                                return Wrap(
+                                  spacing: 12,
+                                  runSpacing: 12,
+                                  children: <Widget>[
+                                    SizedBox(
+                                      width: width,
+                                      child: _valorCard(
+                                        theme,
+                                        'Valor original',
+                                        formatarMoeda(valorOriginal),
+                                        Icons.receipt_long_outlined,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: width,
+                                      child: _valorCard(
+                                        theme,
+                                        'Confirmado',
+                                        formatarMoeda(valorPago),
+                                        Icons.verified_outlined,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: width,
+                                      child: _valorCard(
+                                        theme,
+                                        'Em aberto',
+                                        formatarMoeda(valorAberto),
+                                        Icons.account_balance_wallet_outlined,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 18),
+                            _section(
+                              theme,
+                              'Datas',
+                              Icons.calendar_month_outlined,
+                              <Widget>[
+                                _info(
+                                  'Competência',
+                                  formatarData(detalhe['dataCompetencia']),
+                                ),
+                                _info(
+                                  'Vencimento',
+                                  formatarData(
+                                    _valor(
+                                      detalhe['dataVencimento'],
+                                      item['vencimento'],
+                                    ),
+                                  ),
+                                ),
+                                _info(
+                                  'Liquidação',
+                                  formatarData(detalhe['dataLiquidacao']),
+                                ),
+                              ],
+                            ),
+                            _section(
+                              theme,
+                              'Classificação',
+                              Icons.filter_alt_outlined,
+                              <Widget>[
+                                _info(
+                                  'Empresa',
+                                  _texto(empresa['nome'], item['empresa']),
+                                ),
+                                _info(
+                                  'Categoria',
+                                  _texto(
+                                    categoria['nome'],
+                                    categoria['descricao'],
+                                    item['categoria'],
+                                  ),
+                                ),
+                                if (_texto(
+                                  detalhe['centroDeCusto'],
+                                  item['centroDeCusto'],
+                                ).trim().isNotEmpty)
+                                  _info(
+                                    'Centro de custos',
+                                    _texto(
+                                      detalhe['centroDeCusto'],
+                                      item['centroDeCusto'],
+                                    ),
+                                  ),
+                                _info(
+                                  'Origem',
+                                  _texto(
+                                    origem['codigoExibicao'],
+                                    origem['tipo'],
+                                    item['origem'],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            _section(
+                              theme,
+                              'Contato e responsabilidade',
+                              Icons.people_alt_outlined,
+                              <Widget>[
+                                _info(
+                                  'Contato',
+                                  _texto(contato['nome'], item['contato']),
+                                ),
+                                _info('Tipo', _texto(contato['tipo'])),
+                                _info(
+                                  'Documento',
+                                  _texto(contato['documento']),
+                                ),
+                                _info('Telefone', _texto(contato['telefone'])),
+                                _info('E-mail', _texto(contato['email'])),
+                                _info(
+                                  'Responsável',
+                                  _texto(
+                                    responsavel['nome'],
+                                    item['responsavel'],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            _section(
+                              theme,
+                              'Observações',
+                              Icons.notes_outlined,
+                              <Widget>[
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: SelectableText(
+                                    _texto(
+                                      detalhe['observacoes'],
+                                      item['observacoes'],
+                                      'Sem observações.',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (liquidacoes.isNotEmpty)
+                              _section(
+                                theme,
+                                'Confirmações e liquidações',
+                                Icons.payments_outlined,
+                                liquidacoes
+                                    .map(
+                                      (l) => _liquidacaoTile(context, theme, l),
+                                    )
+                                    .toList(),
+                              ),
+                            if (historico.isNotEmpty)
+                              _section(
+                                theme,
+                                'Histórico',
+                                Icons.history_outlined,
+                                historico
+                                    .map(
+                                      (h) => _info(
+                                        formatarData(h['dataHora']),
+                                        _texto(h['descricao']),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            if (comprovantes.isNotEmpty)
+                              _section(
+                                theme,
+                                'Comprovantes',
+                                Icons.attach_file_outlined,
+                                comprovantes
+                                    .map((c) => _info('Arquivo', c))
+                                    .toList(),
+                              ),
+                            if (acoes.isNotEmpty)
+                              _section(
+                                theme,
+                                'Ações disponíveis',
+                                Icons.touch_app_outlined,
+                                <Widget>[
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children:
+                                        acoes
+                                            .map((a) => Chip(label: Text(a)))
+                                            .toList(),
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (stamp != null)
+                      Positioned(
+                        top: 18,
+                        right: 28,
+                        child: _statusStamp(stamp),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

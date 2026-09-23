@@ -1,12 +1,15 @@
 import 'package:sixpos/data/models/agenda_financeira_recorrencia.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_labels.dart';
 import 'package:sixpos/presentation/components/agenda_recorrencia_web_fields.dart';
+import 'package:sixpos/presentation/components/web/agenda_centro_custo_web_field.dart';
+import 'package:sixpos/presentation/components/web/six_web_animated_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sixpos/core/services/agenda_financeira_lancamento_service.dart';
 import 'package:sixpos/data/models/agenda_financeira_lancamento_model.dart';
 import 'package:sixpos/data/models/caixa_models.dart';
 import 'package:sixpos/data/services/caixa/caixa_api_client.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 
 class SubPainelLancamentoAgendaFinanceiraWeb extends StatelessWidget {
@@ -40,50 +43,54 @@ class SubPainelLancamentoAgendaFinanceiraWeb extends StatelessWidget {
         child: Focus(
           autofocus: true,
           child: Center(
-            child: AnimatedContainer(
-              duration: WebThemeTokens.transitionDuration,
-              curve: WebThemeTokens.transitionCurve,
-              width: MediaQuery.of(context).size.width * 0.9,
-              height: MediaQuery.of(context).size.height * 0.9,
-              decoration: BoxDecoration(
-                color: tokens.surfaceElevated,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: tokens.cardBorder),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: theme.colorScheme.shadow.withValues(alpha: 0.18),
-                    blurRadius: 34,
-                    offset: const Offset(0, 18),
-                  ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Scaffold(
-                backgroundColor: tokens.workspaceBackground,
-                appBar: AppBar(
-                  titleSpacing: 22,
-                  title: Text(
-                    textoDaAppBar,
-                    style: TextStyle(
-                      color: tokens.primaryText,
-                      fontWeight: FontWeight.w900,
+            child: Semantics(
+              namesRoute: true,
+              label: textoDaAppBar,
+              child: AnimatedContainer(
+                duration: WebThemeTokens.transitionDuration,
+                curve: WebThemeTokens.transitionCurve,
+                width: MediaQuery.of(context).size.width * 0.9,
+                height: MediaQuery.of(context).size.height * 0.9,
+                decoration: BoxDecoration(
+                  color: tokens.surfaceElevated,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: tokens.cardBorder),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: theme.colorScheme.shadow.withValues(alpha: 0.18),
+                      blurRadius: 34,
+                      offset: const Offset(0, 18),
                     ),
-                  ),
-                  backgroundColor: tokens.surfaceMuted,
-                  foregroundColor: tokens.primaryText,
-                  surfaceTintColor: Colors.transparent,
-                  elevation: 0,
-                  shape: Border(bottom: BorderSide(color: tokens.cardBorder)),
-                  actions: <Widget>[
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: () => _fecharSubPainel(context),
-                      tooltip: 'Fechar',
-                    ),
-                    const SizedBox(width: 8),
                   ],
                 ),
-                body: body,
+                clipBehavior: Clip.antiAlias,
+                child: Scaffold(
+                  backgroundColor: tokens.workspaceBackground,
+                  appBar: AppBar(
+                    titleSpacing: 22,
+                    title: Text(
+                      textoDaAppBar,
+                      style: TextStyle(
+                        color: tokens.primaryText,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    backgroundColor: tokens.surfaceMuted,
+                    foregroundColor: tokens.primaryText,
+                    surfaceTintColor: Colors.transparent,
+                    elevation: 0,
+                    shape: Border(bottom: BorderSide(color: tokens.cardBorder)),
+                    actions: <Widget>[
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => _fecharSubPainel(context),
+                        tooltip: context.t('common.close', fallback: 'Fechar'),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                  ),
+                  body: body,
+                ),
               ),
             ),
           ),
@@ -100,12 +107,20 @@ Future<Map<String, dynamic>?> showSubPainelLancamentoAgendaFinanceiraWeb(
   bool modoEdicao = false,
   Map<String, dynamic>? lancamentoInicial,
 }) {
-  return showDialog<Map<String, dynamic>>(
+  return showSixWebAnimatedDialog<Map<String, dynamic>>(
     context: context,
-    barrierColor: WebThemeTokens.of(
-      context,
-    ).workspaceBackground.withValues(alpha: 0.72),
     barrierDismissible: true,
+    barrierLabel: context.t(
+      'agenda.launch.dialogBarrier',
+      fallback:
+          modoEdicao
+              ? 'Editar lançamento financeiro'
+              : 'Novo lançamento financeiro',
+    ),
+    overlayColor: const Color(0xC20B1324),
+    overlayBlurSigma: 12,
+    transitionDuration: const Duration(milliseconds: 320),
+    padding: const EdgeInsets.all(12),
     builder: (BuildContext dialogContext) {
       return SubPainelLancamentoAgendaFinanceiraWeb(
         textoDaAppBar:
@@ -175,6 +190,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
   bool _bloquearTipoStatusPorConfirmacao = false;
   String? _idLancamentoEdicao;
   String? _uuidOperacaoAppEdicao;
+  String? _centroCustoId;
 
   String _tipoSelecionado = 'Pagar';
   String _statusSelecionado = 'Pendente';
@@ -341,6 +357,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
     _referenciaController.text = item['referenciaExterna']?.toString() ?? '';
     _documentoFiscalController.text = item['documentoFiscal']?.toString() ?? '';
     _centroCustoController.text = item['centroDeCusto']?.toString() ?? '';
+    _centroCustoId = item['centroCustoId']?.toString();
 
     _dataVencimento = _parseData(item['vencimento'], fallback: _dataVencimento);
     _dataOperacao = _parseData(item['dataOperacao'], fallback: _dataVencimento);
@@ -654,6 +671,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
           _centroCustoController.text.trim().isEmpty
               ? null
               : _centroCustoController.text.trim(),
+      centroCustoId: _centroCustoId,
       valorTotalProdutos: 0,
       valorTotalServicos: 0,
       valorTotalOperacao: valorTotal,
@@ -691,7 +709,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
 
     final LancamentoAgendaFinanceiraRequest request = _buildRequest();
     setState(() => _isLoading = true);
-    String? idGerado;
+    late final String idGerado;
 
     try {
       final LancamentoAgendaFinanceiraResponse response =
@@ -732,9 +750,7 @@ class _LancamentoAgendaFinanceiraWebBodyState
         ),
       ),
     );
-    final String idRetorno =
-        idGerado ?? _idLancamentoEdicao ?? request.uuidOperacaoApp;
-    Navigator.of(context).pop(request.toAgendaItem(idFallback: idRetorno));
+    Navigator.of(context).pop(request.toAgendaItem(idFallback: idGerado));
   }
 
   Future<void> _confirmarExcluirLancamento() async {
@@ -1490,10 +1506,17 @@ class _LancamentoAgendaFinanceiraWebBodyState
                           ),
                           _buildFieldSlot(
                             width: larguraCampo(320, 280),
-                            child: _buildTextField(
-                              controller: _centroCustoController,
-                              label: 'Centro de custo',
-                              icon: Icons.account_tree_outlined,
+                            child: AgendaCentroCustoWebField(
+                              initialId: _centroCustoId,
+                              initialName: _centroCustoController.text,
+                              enabled: !_isLoading,
+                              onChanged: (centro) {
+                                setState(() {
+                                  _centroCustoId = centro?.id;
+                                  _centroCustoController.text =
+                                      centro?.nome ?? '';
+                                });
+                              },
                             ),
                           ),
                           _buildFieldSlot(
