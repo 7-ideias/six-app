@@ -84,6 +84,26 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Cada forma de pagamento pode ser usada apenas uma vez.',
     'agenda.settlement.choosePayment': 'Como deseja pagar este lançamento?',
     'agenda.settlement.success': 'Liquidação registrada com sucesso.',
+    'agenda.launchDetails.dialogBarrier': 'Detalhes do lançamento financeiro',
+    'agenda.launchDelete.dialogBarrier':
+        'Confirmar exclusão do lançamento financeiro',
+    'agenda.launchDelete.title': 'Excluir lançamento financeiro?',
+    'agenda.launchDelete.subtitle':
+        'Revise o resumo antes de apagar. Esta ação remove o lançamento e suas confirmações financeiras vinculadas.',
+    'agenda.launchDelete.summaryLaunch': 'Lançamento',
+    'agenda.launchDelete.summaryAmount': 'Valor',
+    'agenda.launchDelete.summaryStatus': 'Status',
+    'agenda.launchDelete.impact':
+        'O lançamento será apagado definitivamente junto com confirmações, parciais e vínculos financeiros exibidos neste detalhe.',
+    'agenda.launchDelete.processing': 'Excluindo...',
+    'agenda.launchDelete.confirm': 'Excluir lançamento',
+    'agenda.launchDelete.successTitle': 'Lançamento excluído',
+    'agenda.launchDelete.successMessage':
+        'A Agenda Financeira será atualizada com o lançamento removido.',
+    'agenda.launchDelete.error':
+        'Não foi possível excluir o lançamento agora. Tente novamente em instantes.',
+    'agenda.launchDelete.apiError': 'Falha ao excluir lançamento.',
+    'agenda.launchDelete.unnamedLaunch': 'Lançamento sem descrição',
     'produto.journey.changeMode': 'Alterar',
     'clientes.journey.title': 'Escolha a jornada de cadastro',
     'clientes.journey.subtitle':
@@ -172,8 +192,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'common.lastUpdatedAt': 'Última atualização às',
     'common.notInformed': 'Não informada',
     'pdv.mobile.finalizingSale': 'Finalizando sua venda...',
-    'pdv.mobile.finalizingSaleSemantics':
-        'SixoApp finalizando sua venda',
+    'pdv.mobile.finalizingSaleSemantics': 'SixoApp finalizando sua venda',
     'pdv.mobile.saleCompleted': 'Venda concluída',
     'pdv.mobile.saleCompletedSemantics': 'Venda concluída com sucesso',
     'pdv.quantityEditor.title': 'Editar quantidade',
@@ -1109,8 +1128,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'stockMovement.exit.title': 'Registrar saída',
     'stockMovement.subtitle':
         'A movimentação será registrada com usuário, data e motivo.',
-    'stockMovement.mobile.subtitle':
-        'Informe o item, a quantidade e o motivo.',
+    'stockMovement.mobile.subtitle': 'Informe o item, a quantidade e o motivo.',
     'stockMovement.product': 'Produto',
     'stockMovement.unnamedProduct': 'Produto sem nome',
     'stockMovement.currentBalance': 'Saldo atual: {value}',
@@ -1125,8 +1143,7 @@ const Map<String, Map<String, String>> _fallbacks = {
     'stockMovement.validation.quantity':
         'Informe uma quantidade maior que zero.',
     'stockMovement.validation.cost': 'Informe um custo válido.',
-    'stockMovement.validation.reason':
-        'Informe o motivo da movimentação.',
+    'stockMovement.validation.reason': 'Informe o motivo da movimentação.',
     'stockMovement.saving': 'Registrando...',
     'stockMovement.confirm': 'Confirmar movimentação',
     'stockMovement.success':
@@ -1135,8 +1152,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Cadastre um produto antes de movimentar o estoque.',
     'stockMovement.errors.loadProducts':
         'Não foi possível carregar os produtos.',
-    'stockMovement.errors.save':
-        'Não foi possível registrar a movimentação.',
+    'stockMovement.errors.save': 'Não foi possível registrar a movimentação.',
     'stockMovement.errors.insufficientStock':
         'A saída é maior que o saldo disponível.',
     'stockMovement.errors.permission':
@@ -2648,6 +2664,25 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Each payment method can only be used once.',
     'agenda.settlement.choosePayment': 'How would you like to pay this entry?',
     'agenda.settlement.success': 'Settlement recorded successfully.',
+    'agenda.launchDetails.dialogBarrier': 'Financial entry details',
+    'agenda.launchDelete.dialogBarrier': 'Confirm financial entry deletion',
+    'agenda.launchDelete.title': 'Delete financial entry?',
+    'agenda.launchDelete.subtitle':
+        'Review the summary before deleting. This action removes the entry and its linked financial confirmations.',
+    'agenda.launchDelete.summaryLaunch': 'Entry',
+    'agenda.launchDelete.summaryAmount': 'Amount',
+    'agenda.launchDelete.summaryStatus': 'Status',
+    'agenda.launchDelete.impact':
+        'The entry will be permanently deleted along with confirmations, partial payments, and financial links shown in this detail.',
+    'agenda.launchDelete.processing': 'Deleting...',
+    'agenda.launchDelete.confirm': 'Delete entry',
+    'agenda.launchDelete.successTitle': 'Entry deleted',
+    'agenda.launchDelete.successMessage':
+        'The Financial Agenda will be refreshed with the entry removed.',
+    'agenda.launchDelete.error':
+        'The entry could not be deleted right now. Try again in a moment.',
+    'agenda.launchDelete.apiError': 'Failed to delete entry.',
+    'agenda.launchDelete.unnamedLaunch': 'Entry without description',
     'produto.journey.changeMode': 'Change',
     'clientes.journey.title': 'Choose the registration journey',
     'clientes.journey.subtitle':
@@ -3011,16 +3046,14 @@ const Map<String, Map<String, String>> _fallbacks = {
     'stockMovement.exit.title': 'Record stock exit',
     'stockMovement.subtitle':
         'The movement will include the user, date, and reason.',
-    'stockMovement.mobile.subtitle':
-        'Enter the item, quantity, and reason.',
+    'stockMovement.mobile.subtitle': 'Enter the item, quantity, and reason.',
     'stockMovement.product': 'Product',
     'stockMovement.unnamedProduct': 'Unnamed product',
     'stockMovement.currentBalance': 'Current balance: {value}',
     'stockMovement.quantity': 'Quantity',
     'stockMovement.unitCost': 'Unit cost (optional)',
     'stockMovement.reason': 'Reason',
-    'stockMovement.reasonHint':
-        'E.g. supplier receipt or inventory adjustment',
+    'stockMovement.reasonHint': 'E.g. supplier receipt or inventory adjustment',
     'stockMovement.mobile.reasonHint': 'E.g. receipt or inventory adjustment',
     'stockMovement.validation.product': 'Select a product.',
     'stockMovement.validation.quantity': 'Enter a quantity greater than zero.',
@@ -4996,6 +5029,26 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Cada forma de pago solo puede utilizarse una vez.',
     'agenda.settlement.choosePayment': '¿Cómo desea pagar este movimiento?',
     'agenda.settlement.success': 'Liquidación registrada correctamente.',
+    'agenda.launchDetails.dialogBarrier': 'Detalles del movimiento financiero',
+    'agenda.launchDelete.dialogBarrier':
+        'Confirmar exclusión del movimiento financiero',
+    'agenda.launchDelete.title': '¿Eliminar movimiento financiero?',
+    'agenda.launchDelete.subtitle':
+        'Revisa el resumen antes de eliminar. Esta acción quita el movimiento y sus confirmaciones financieras vinculadas.',
+    'agenda.launchDelete.summaryLaunch': 'Movimiento',
+    'agenda.launchDelete.summaryAmount': 'Importe',
+    'agenda.launchDelete.summaryStatus': 'Estado',
+    'agenda.launchDelete.impact':
+        'El movimiento se eliminará definitivamente junto con confirmaciones, parciales y vínculos financieros mostrados en este detalle.',
+    'agenda.launchDelete.processing': 'Eliminando...',
+    'agenda.launchDelete.confirm': 'Eliminar movimiento',
+    'agenda.launchDelete.successTitle': 'Movimiento eliminado',
+    'agenda.launchDelete.successMessage':
+        'La Agenda Financiera se actualizará con el movimiento eliminado.',
+    'agenda.launchDelete.error':
+        'No se pudo eliminar el movimiento ahora. Inténtalo de nuevo en unos instantes.',
+    'agenda.launchDelete.apiError': 'Error al eliminar el movimiento.',
+    'agenda.launchDelete.unnamedLaunch': 'Movimiento sin descripción',
     'produto.journey.changeMode': 'Cambiar',
     'clientes.journey.title': 'Elige la jornada de registro',
     'clientes.journey.subtitle':
@@ -5379,22 +5432,18 @@ const Map<String, Map<String, String>> _fallbacks = {
     'stockMovement.reason': 'Motivo',
     'stockMovement.reasonHint':
         'Ej.: recepción del proveedor o ajuste de inventario',
-    'stockMovement.mobile.reasonHint':
-        'Ej.: recepción o ajuste de inventario',
+    'stockMovement.mobile.reasonHint': 'Ej.: recepción o ajuste de inventario',
     'stockMovement.validation.product': 'Seleccione un producto.',
-    'stockMovement.validation.quantity':
-        'Informe una cantidad mayor que cero.',
+    'stockMovement.validation.quantity': 'Informe una cantidad mayor que cero.',
     'stockMovement.validation.cost': 'Informe un costo válido.',
-    'stockMovement.validation.reason':
-        'Informe el motivo del movimiento.',
+    'stockMovement.validation.reason': 'Informe el motivo del movimiento.',
     'stockMovement.saving': 'Registrando...',
     'stockMovement.confirm': 'Confirmar movimiento',
     'stockMovement.success':
         'Movimiento registrado. El inventario fue actualizado.',
     'stockMovement.emptyProducts':
         'Cree un producto antes de mover el inventario.',
-    'stockMovement.errors.loadProducts':
-        'No se pudieron cargar los productos.',
+    'stockMovement.errors.loadProducts': 'No se pudieron cargar los productos.',
     'stockMovement.errors.save': 'No se pudo registrar el movimiento.',
     'stockMovement.errors.insufficientStock':
         'La salida supera el saldo disponible.',

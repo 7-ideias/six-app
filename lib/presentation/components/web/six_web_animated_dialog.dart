@@ -13,16 +13,20 @@ Future<T?> showSixWebAnimatedDialog<T>({
   EdgeInsets padding = const EdgeInsets.all(24),
 }) {
   assert(overlayBlurSigma >= 0);
+  final bool reduceMotion =
+      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: barrierDismissible,
     barrierLabel: barrierLabel,
     barrierColor: Colors.transparent,
-    transitionDuration: transitionDuration,
+    transitionDuration:
+        reduceMotion ? const Duration(milliseconds: 1) : transitionDuration,
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
       return _SixWebAnimatedDialogFrame(
         animation: animation,
+        reduceMotion: reduceMotion,
         overlayColor: overlayColor,
         overlayBlurSigma: overlayBlurSigma,
         padding: padding,
@@ -40,6 +44,7 @@ Future<T?> showSixWebAnimatedDialog<T>({
 class _SixWebAnimatedDialogFrame extends StatelessWidget {
   const _SixWebAnimatedDialogFrame({
     required this.animation,
+    required this.reduceMotion,
     required this.overlayColor,
     required this.overlayBlurSigma,
     required this.padding,
@@ -49,6 +54,7 @@ class _SixWebAnimatedDialogFrame extends StatelessWidget {
   });
 
   final Animation<double> animation;
+  final bool reduceMotion;
   final Color overlayColor;
   final double overlayBlurSigma;
   final EdgeInsets padding;
@@ -70,7 +76,7 @@ class _SixWebAnimatedDialogFrame extends StatelessWidget {
         animation: curvedAnimation,
         child: child,
         builder: (context, dialogChild) {
-          final progress = curvedAnimation.value;
+          final progress = reduceMotion ? 1.0 : curvedAnimation.value;
           final tint = Color.lerp(Colors.transparent, overlayColor, progress)!;
 
           return Stack(
