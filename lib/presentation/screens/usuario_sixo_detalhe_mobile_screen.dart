@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../providers/agenda_email_reenvio_controller.dart';
+import '../../l10n/agenda_email_texts.dart';
+import '../components/mobile/agenda_email_reenvio_mobile_sheet.dart';
 import '../../core/services/admin_portal_service.dart';
 import '../../design_system/themes/six_mobile_color_scheme.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
@@ -31,6 +34,7 @@ class _UsuarioSixoDetalheMobileScreenState
   bool _loadFailed = false;
   bool _updatingOnboarding = false;
   bool _resettingPassword = false;
+  bool _reenvioAberto = false;
 
   String get _idUsuario =>
       widget.usuario.idUnicoDoUsuario.trim().isNotEmpty
@@ -161,6 +165,23 @@ class _UsuarioSixoDetalheMobileScreenState
           ),
         ),
       );
+    }
+  }
+
+  Future<void> _reenviarAgenda() async {
+    final detail = _detail;
+    if (detail == null || _reenvioAberto) return;
+    setState(() => _reenvioAberto = true);
+    final controller = AgendaEmailReenvioController(
+      _service,
+      detail.identificador,
+    );
+    controller.carregar();
+    try {
+      await showAgendaEmailMobileSheet(context, controller);
+    } finally {
+      controller.dispose();
+      if (mounted) setState(() => _reenvioAberto = false);
     }
   }
 
@@ -312,6 +333,18 @@ class _UsuarioSixoDetalheMobileScreenState
           complete: detail.fezOnboardingInicial,
           loading: _updatingOnboarding,
           onPressed: _changeOnboarding,
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: context.sixMobileColors.accent,
+            backgroundColor: context.sixMobileColors.softAccentSurface,
+            side: BorderSide(color: context.sixMobileColors.border),
+            minimumSize: const Size.fromHeight(48),
+          ),
+          onPressed: _reenvioAberto ? null : _reenviarAgenda,
+          icon: const Icon(Icons.forward_to_inbox_outlined),
+          label: Text(agendaEmailText(context, 'action')),
         ),
         const SizedBox(height: 12),
         _MobilePasswordResetCard(
