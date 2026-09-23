@@ -1,3 +1,4 @@
+import '../../l10n/password_recovery_texts.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -21,7 +22,7 @@ class VerificarCodigoRecuperacaoMobile extends StatefulWidget {
 class _VerificarCodigoRecuperacaoMobileState
     extends State<VerificarCodigoRecuperacaoMobile> {
   static const int _codeLength = 6;
-  static const int _resendCooldownSeconds = 45;
+  static const int _resendCooldownSeconds = 60;
 
   final List<TextEditingController> _controllers = List.generate(
     _codeLength,
@@ -118,12 +119,15 @@ class _VerificarCodigoRecuperacaoMobileState
     if (_isResending || _resendSecondsLeft > 0) return;
     setState(() => _isResending = true);
     try {
-      await _service.enviarCodigo(widget.email);
+      await _service.enviarCodigo(
+        widget.email,
+        languageCode: Localizations.localeOf(context).languageCode,
+      );
       if (!mounted) return;
-      _showSnack('Novo código enviado para ${widget.email}');
+      _showSnack(passwordRecoveryText(context, 'neutral'));
       _startResendTimer();
     } on RecuperacaoSenhaException catch (e) {
-      _showSnack(e.message);
+      if (mounted) _showSnack(passwordRecoveryError(context, e));
     } catch (_) {
       _showSnack('Não foi possível reenviar o código. Tente novamente.');
     } finally {
@@ -150,7 +154,7 @@ class _VerificarCodigoRecuperacaoMobileState
         ),
       );
     } on RecuperacaoSenhaException catch (e) {
-      _showSnack(e.message);
+      if (mounted) _showSnack(passwordRecoveryError(context, e));
       _clearCode();
     } catch (_) {
       _showSnack('Não foi possível validar o código. Tente novamente.');
@@ -206,32 +210,8 @@ class _VerificarCodigoRecuperacaoMobileState
                 ),
               ),
               const SizedBox(height: 10),
-              RichText(
-                textAlign: TextAlign.center,
-                text: TextSpan(
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: labelGrey,
-                    height: 1.45,
-                  ),
-                  children: [
-                    const TextSpan(
-                      text:
-                          'Digite o código de 6 dígitos que\nenviamos para o e-mail ',
-                    ),
-                    TextSpan(
-                      text: widget.email,
-                      style:
-                          TextSpan(
-                            style: TextStyle(
-                              color: primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ).style,
-                    ),
-                  ],
-                ),
-              ),
+              Text(passwordRecoveryText(context, 'neutral')),
+              Text(widget.email, textAlign: TextAlign.center),
               const SizedBox(height: 32),
 
               // ── Campos de dígitos ─────────────────────────────────────

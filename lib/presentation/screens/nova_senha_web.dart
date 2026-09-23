@@ -1,3 +1,5 @@
+import '../../core/services/auth_service.dart';
+import '../../l10n/password_recovery_texts.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/utils/browser_location.dart';
 
@@ -36,11 +38,16 @@ class _NovaSenhaWebState extends State<NovaSenhaWeb> {
   }
 
   Future<void> _redefinir() async {
-    final senha = _senhaCtrl.text.trim();
-    final confirmar = _confirmarCtrl.text.trim();
+    final senha = _senhaCtrl.text;
+    final confirmar = _confirmarCtrl.text;
 
     if (senha.isEmpty || confirmar.isEmpty) {
       _showSnack('Preencha todos os campos');
+      return;
+    }
+
+    if (senha.length < 8 || senha.length > 64) {
+      _showSnack(passwordRecoveryText(context, 'length'));
       return;
     }
 
@@ -55,7 +62,9 @@ class _NovaSenhaWebState extends State<NovaSenhaWeb> {
         email: widget.email,
         codigo: widget.codigo,
         novaSenha: senha,
+        languageCode: Localizations.localeOf(context).languageCode,
       );
+      await AuthService().clearLocalSession();
       if (!mounted) return;
       _showSnack('Senha redefinida com sucesso!');
       if (replaceBrowserLocation('/login')) {
@@ -65,7 +74,10 @@ class _NovaSenhaWebState extends State<NovaSenhaWeb> {
         context,
       ).pushNamedAndRemoveUntil('/login/flutter', (route) => false);
     } on RecuperacaoSenhaException catch (e) {
-      _showSnack(e.message);
+      if (e.code == RecuperacaoSenhaErrorCode.sessionsPending) {
+        await AuthService().clearLocalSession();
+      }
+      if (mounted) _showSnack(passwordRecoveryError(context, e));
     } catch (_) {
       _showSnack('Não foi possível redefinir a senha. Tente novamente.');
     } finally {
@@ -120,8 +132,8 @@ class _NovaSenhaWebState extends State<NovaSenhaWeb> {
                 color: WebAuthShell.labelGrey(),
                 size: 20,
               ),
-              onPressed: () =>
-                  setState(() => _obscureConfirmar = !_obscureConfirmar),
+              onPressed:
+                  () => setState(() => _obscureConfirmar = !_obscureConfirmar),
             ),
           ),
           const SizedBox(height: 28),

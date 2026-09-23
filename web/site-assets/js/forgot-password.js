@@ -322,6 +322,7 @@ import {
     setLoading(elements, 'send');
     try {
       await performForgotPasswordSendCode({
+        language: state.language,
         apiBaseUrl: state.apiConfig.apiBaseUrl,
         email,
         timeoutMs: FORGOT_PASSWORD_TIMEOUT_MS,
@@ -362,6 +363,7 @@ import {
     setLoading(elements, 'resend');
     try {
       await performForgotPasswordSendCode({
+        language: state.language,
         apiBaseUrl: state.apiConfig.apiBaseUrl,
         email: state.email,
         timeoutMs: FORGOT_PASSWORD_TIMEOUT_MS,
@@ -469,6 +471,7 @@ import {
     setLoading(elements, 'reset');
     try {
       await performForgotPasswordReset({
+        language: state.language,
         apiBaseUrl: state.apiConfig.apiBaseUrl,
         email: state.email,
         codigo: state.codigo,

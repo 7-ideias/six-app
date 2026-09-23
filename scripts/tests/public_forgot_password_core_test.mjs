@@ -70,14 +70,14 @@ test('validacao diferencia codigo vazio e formato invalido', () => {
   );
 });
 
-test('nova senha preserva trim do fluxo Flutter atual', () => {
-  assert.equal(normalizeRecoveryPassword('  password1  '), 'password1');
+test('nova senha preserva os espaços escolhidos pelo usuário', () => {
+  assert.equal(normalizeRecoveryPassword('  password1  '), '  password1  ');
   assert.deepEqual(
     validateRecoveryPasswordFields({
       novaSenha: '  password1  ',
-      confirmarSenha: 'password1',
+      confirmarSenha: '  password1  ',
     }),
-    { novaSenha: 'password1' },
+    { novaSenha: '  password1  ' },
   );
 });
 
@@ -174,7 +174,7 @@ test('request de redefinicao nao envia token nem confirmacao', () => {
     email: 'cliente@six.app',
     codigo: '123456',
     novaSenha: '  password1  ',
-    confirmarSenha: 'password1',
+    confirmarSenha: '  password1  ',
   });
   const body = JSON.parse(request.options.body);
 
@@ -185,7 +185,7 @@ test('request de redefinicao nao envia token nem confirmacao', () => {
   assert.deepEqual(body, {
     email: 'cliente@six.app',
     codigo: '123456',
-    novaSenha: 'password1',
+    novaSenha: '  password1  ',
   });
   assert.equal(Object.hasOwn(body, 'token'), false);
   assert.equal(Object.hasOwn(body, 'confirmarSenha'), false);
@@ -398,3 +398,8 @@ test('fontes publicas nao persistem codigo, senha ou token', () => {
   assert.equal(combined.includes('document.cookie'), false);
   assert.equal(combined.includes('innerHTML'), false);
 });
+
+ test('falha após consumo exige novo código e revogação parcial tem aviso específico', () => {
+  assert.equal(forgotPasswordErrorKeyForStatus(502, 'PWD_RESTART', 'reset'), 'error.restart');
+  assert.equal(forgotPasswordErrorKeyForStatus(502, 'PWD_SESSIONS_PENDING', 'reset'), 'error.sessions');
+ });

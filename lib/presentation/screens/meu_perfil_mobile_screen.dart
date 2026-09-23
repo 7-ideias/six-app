@@ -1,3 +1,5 @@
+import 'esqueceu_senha_mobile.dart';
+import '../../l10n/password_recovery_texts.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
@@ -661,6 +663,22 @@ class _MeuPerfilMobileScreenState extends State<MeuPerfilMobileScreen> {
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: EdgeInsets.fromLTRB(16, topInset + 8, 16, 24),
         children: <Widget>[
+          ListTile(
+            leading: const Icon(Icons.lock_outline),
+            title: Text(passwordRecoveryText(context, 'change')),
+            subtitle: Text(passwordRecoveryText(context, 'proof')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap:
+                () => Navigator.of(context, rootNavigator: true).push(
+                  MaterialPageRoute<void>(
+                    builder:
+                        (_) => EsqueceuSenhaMobile(
+                          initialEmail: _emailController.text.trim(),
+                        ),
+                  ),
+                ),
+          ),
+
           _buildProfileSummary(context),
           SizedBox(height: 14),
           Consumer<StreakProvider>(

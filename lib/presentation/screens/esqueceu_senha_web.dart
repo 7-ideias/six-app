@@ -1,3 +1,4 @@
+import '../../l10n/password_recovery_texts.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/utils/browser_location.dart';
 import 'package:sixpos/l10n/web_root_l10n.dart';
@@ -13,7 +14,8 @@ import 'verificar_codigo_recuperacao_web.dart';
 /// "Voltar" usa `pushReplacementNamed('/login')` quando não há histórico,
 /// garantindo URL correta no browser.
 class EsqueceuSenhaWeb extends StatefulWidget {
-  const EsqueceuSenhaWeb({super.key});
+  const EsqueceuSenhaWeb({super.key, this.initialEmail = ''});
+  final String initialEmail;
 
   @override
   State<EsqueceuSenhaWeb> createState() => _EsqueceuSenhaWebState();
@@ -27,6 +29,12 @@ class _EsqueceuSenhaWebState extends State<EsqueceuSenhaWeb> {
 
   // Strings l10n capturadas no build para uso em callbacks assíncronos.
   late WebRootL10n _l10n;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailCtrl.text = widget.initialEmail;
+  }
 
   @override
   void dispose() {
@@ -59,7 +67,10 @@ class _EsqueceuSenhaWebState extends State<EsqueceuSenhaWeb> {
 
     setState(() => _isLoading = true);
     try {
-      await _service.enviarCodigo(email);
+      await _service.enviarCodigo(
+        email,
+        languageCode: Localizations.localeOf(context).languageCode,
+      );
       if (!mounted) return;
       Navigator.push(
         context,
@@ -68,7 +79,7 @@ class _EsqueceuSenhaWebState extends State<EsqueceuSenhaWeb> {
         ),
       );
     } on RecuperacaoSenhaException catch (e) {
-      _showSnack(e.message);
+      if (mounted) _showSnack(passwordRecoveryError(context, e));
     } catch (_) {
       _showSnack(_l10n.authErrSendCode);
     } finally {

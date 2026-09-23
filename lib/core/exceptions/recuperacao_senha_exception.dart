@@ -1,10 +1,16 @@
+import 'dart:convert';
+
 /// Códigos de erro retornados pelo backend no fluxo de recuperação de senha.
 enum RecuperacaoSenhaErrorCode {
   emailNaoEncontrado, // PWD_001 → 404
-  codigoInvalido,     // PWD_002 → 401
-  codigoExpirado,     // PWD_003 → 410
-  smtpFailure,        // PWD_004 → 502
-  senhaInvalida,      // PWD_005 → 422
+  codigoInvalido, // PWD_002 → 401
+  codigoExpirado, // PWD_003 → 410
+  smtpFailure, // PWD_004 → 502
+  senhaInvalida, // PWD_005 → 422
+  rateLimited,
+  unavailable,
+  sessionsPending,
+  restartRequired,
   unknown,
 }
 
@@ -23,14 +29,28 @@ class RecuperacaoSenhaException implements Exception {
     required int statusCode,
     required String body,
   }) {
-    final codeFromStatus = switch (statusCode) {
-      401 => RecuperacaoSenhaErrorCode.codigoInvalido,
-      404 => RecuperacaoSenhaErrorCode.emailNaoEncontrado,
-      410 => RecuperacaoSenhaErrorCode.codigoExpirado,
-      422 => RecuperacaoSenhaErrorCode.senhaInvalida,
-      502 => RecuperacaoSenhaErrorCode.smtpFailure,
-      _ => RecuperacaoSenhaErrorCode.unknown,
-    };
+    String? backendCode;
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map) backendCode = decoded['code'] as String?;
+    } catch (_) {
+      /* Ignore unsafe or malformed provider messages. */
+    }
+    final codeFromStatus =
+        backendCode == 'PWD_SESSIONS_PENDING'
+            ? RecuperacaoSenhaErrorCode.sessionsPending
+            : backendCode == 'PWD_RESTART'
+            ? RecuperacaoSenhaErrorCode.restartRequired
+            : switch (statusCode) {
+              401 => RecuperacaoSenhaErrorCode.codigoInvalido,
+              404 => RecuperacaoSenhaErrorCode.emailNaoEncontrado,
+              410 => RecuperacaoSenhaErrorCode.codigoExpirado,
+              422 => RecuperacaoSenhaErrorCode.senhaInvalida,
+              429 => RecuperacaoSenhaErrorCode.rateLimited,
+              503 => RecuperacaoSenhaErrorCode.unavailable,
+              502 => RecuperacaoSenhaErrorCode.smtpFailure,
+              _ => RecuperacaoSenhaErrorCode.unknown,
+            };
 
     return RecuperacaoSenhaException(
       code: codeFromStatus,
@@ -51,6 +71,12 @@ class RecuperacaoSenhaException implements Exception {
         'Não foi possível enviar o e-mail agora. Tente novamente em instantes.',
       RecuperacaoSenhaErrorCode.senhaInvalida =>
         'A nova senha não atende aos requisitos mínimos.',
+      RecuperacaoSenhaErrorCode.rateLimited =>
+        'Aguarde antes de tentar novamente.',
+      RecuperacaoSenhaErrorCode.unavailable => 'Recuperação indisponível.',
+      RecuperacaoSenhaErrorCode.sessionsPending =>
+        'Senha alterada. Entre novamente e contate o suporte.',
+      RecuperacaoSenhaErrorCode.restartRequired => 'Solicite um novo código.',
       RecuperacaoSenhaErrorCode.unknown =>
         'Não foi possível concluir a operação. Tente novamente.',
     };

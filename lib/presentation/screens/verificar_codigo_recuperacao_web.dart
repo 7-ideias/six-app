@@ -1,3 +1,4 @@
+import '../../l10n/password_recovery_texts.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -21,12 +22,16 @@ class VerificarCodigoRecuperacaoWeb extends StatefulWidget {
 class _VerificarCodigoRecuperacaoWebState
     extends State<VerificarCodigoRecuperacaoWeb> {
   static const int _codeLength = 6;
-  static const int _resendCooldownSeconds = 45;
+  static const int _resendCooldownSeconds = 60;
 
-  final List<TextEditingController> _controllers =
-      List.generate(_codeLength, (_) => TextEditingController());
-  final List<FocusNode> _focusNodes =
-      List.generate(_codeLength, (_) => FocusNode());
+  final List<TextEditingController> _controllers = List.generate(
+    _codeLength,
+    (_) => TextEditingController(),
+  );
+  final List<FocusNode> _focusNodes = List.generate(
+    _codeLength,
+    (_) => FocusNode(),
+  );
 
   final RecuperacaoSenhaService _service = RecuperacaoSenhaService();
 
@@ -114,12 +119,15 @@ class _VerificarCodigoRecuperacaoWebState
     if (_isResending || _resendSecondsLeft > 0) return;
     setState(() => _isResending = true);
     try {
-      await _service.enviarCodigo(widget.email);
+      await _service.enviarCodigo(
+        widget.email,
+        languageCode: Localizations.localeOf(context).languageCode,
+      );
       if (!mounted) return;
-      _showSnack('Novo código enviado para ${widget.email}');
+      _showSnack(passwordRecoveryText(context, 'neutral'));
       _startResendTimer();
     } on RecuperacaoSenhaException catch (e) {
-      _showSnack(e.message);
+      if (mounted) _showSnack(passwordRecoveryError(context, e));
     } catch (_) {
       _showSnack('Não foi possível reenviar o código. Tente novamente.');
     } finally {
@@ -146,7 +154,7 @@ class _VerificarCodigoRecuperacaoWebState
         ),
       );
     } on RecuperacaoSenhaException catch (e) {
-      _showSnack(e.message);
+      if (mounted) _showSnack(passwordRecoveryError(context, e));
       _clearCode();
     } catch (_) {
       _showSnack('Não foi possível validar o código. Tente novamente.');
@@ -175,28 +183,8 @@ class _VerificarCodigoRecuperacaoWebState
         children: [
           const WebAuthTitle(title: 'Verificar código'),
           const SizedBox(height: 10),
-          RichText(
-            text: TextSpan(
-              style: TextStyle(
-                fontSize: 14.5,
-                color: WebAuthShell.labelGrey(),
-                height: 1.5,
-              ),
-              children: [
-                const TextSpan(
-                  text:
-                      'Digite o código de 6 dígitos que enviamos para o e-mail ',
-                ),
-                TextSpan(
-                  text: widget.email,
-                  style: TextStyle(
-                    color: primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          Text(passwordRecoveryText(context, 'neutral')),
+          Text(widget.email, textAlign: TextAlign.center),
           const SizedBox(height: 32),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -212,38 +200,40 @@ class _VerificarCodigoRecuperacaoWebState
           ),
           const SizedBox(height: 22),
           Center(
-            child: _resendSecondsLeft > 0
-                ? Text(
-                    'Não recebeu? Reenviar em ${_resendSecondsLeft}s',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      color: WebAuthShell.labelGrey(),
-                    ),
-                  )
-                : GestureDetector(
-                    onTap: _isResending ? null : _reenviarCodigo,
-                    behavior: HitTestBehavior.opaque,
-                    child: RichText(
-                      text: TextSpan(
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          color: WebAuthShell.labelGrey(),
-                        ),
-                        children: [
-                          const TextSpan(text: 'Não recebeu? '),
-                          TextSpan(
-                            text: _isResending
-                                ? 'Enviando...'
-                                : 'Reenviar código',
-                            style: TextStyle(
-                              color: primary,
-                              fontWeight: FontWeight.w700,
-                            ),
+            child:
+                _resendSecondsLeft > 0
+                    ? Text(
+                      'Não recebeu? Reenviar em ${_resendSecondsLeft}s',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        color: WebAuthShell.labelGrey(),
+                      ),
+                    )
+                    : GestureDetector(
+                      onTap: _isResending ? null : _reenviarCodigo,
+                      behavior: HitTestBehavior.opaque,
+                      child: RichText(
+                        text: TextSpan(
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            color: WebAuthShell.labelGrey(),
                           ),
-                        ],
+                          children: [
+                            const TextSpan(text: 'Não recebeu? '),
+                            TextSpan(
+                              text:
+                                  _isResending
+                                      ? 'Enviando...'
+                                      : 'Reenviar código',
+                              style: TextStyle(
+                                color: primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
           ),
           const SizedBox(height: 28),
           WebAuthPrimaryButton(

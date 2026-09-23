@@ -4,7 +4,7 @@ import {
 } from './login-core.mjs';
 
 export const FORGOT_PASSWORD_TIMEOUT_MS = 15000;
-export const FORGOT_PASSWORD_RESEND_COOLDOWN_SECONDS = 45;
+export const FORGOT_PASSWORD_RESEND_COOLDOWN_SECONDS = 60;
 export const FORGOT_PASSWORD_SUCCESS_LOGIN_PATH = '/login';
 
 const SAFE_BACKEND_ERROR_CODES = Object.freeze([
@@ -17,6 +17,8 @@ const SAFE_BACKEND_ERROR_CODES = Object.freeze([
   'PWD_003',
   'PWD_004',
   'PWD_005',
+  'PWD_RESTART',
+  'PWD_SESSIONS_PENDING',
 ]);
 
 export const FORGOT_PASSWORD_DICTIONARY = Object.freeze({
@@ -108,6 +110,8 @@ export const FORGOT_PASSWORD_DICTIONARY = Object.freeze({
     'error.timeout': 'A conexão demorou mais do que o esperado. Tente novamente.',
     'error.network': 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.',
     'error.unexpected': 'Não foi possível concluir a recuperação agora. Tente novamente em instantes.',
+    'error.restart': "Não foi possível confirmar a alteração. Solicite um novo código para tentar novamente.",
+    'error.sessions': "Sua senha foi alterada, mas não foi possível encerrar todas as sessões. Entre novamente e contate o suporte.",
     'error.pending': 'Aguarde a tentativa atual terminar.'
   }),
   en: Object.freeze({
@@ -198,6 +202,8 @@ export const FORGOT_PASSWORD_DICTIONARY = Object.freeze({
     'error.timeout': 'The connection took longer than expected. Try again.',
     'error.network': 'Could not connect to the server. Check your connection and try again.',
     'error.unexpected': 'Could not complete recovery right now. Try again shortly.',
+    'error.restart': "The password change could not be confirmed. Request a new code to try again.",
+    'error.sessions': "Your password was changed, but some sessions could not be closed. Sign in again and contact support.",
     'error.pending': 'Wait for the current attempt to finish.'
   }),
   es: Object.freeze({
@@ -288,6 +294,8 @@ export const FORGOT_PASSWORD_DICTIONARY = Object.freeze({
     'error.timeout': 'La conexión tardó más de lo esperado. Intenta nuevamente.',
     'error.network': 'No fue posible conectar al servidor. Verifica tu conexión e intenta nuevamente.',
     'error.unexpected': 'No fue posible completar la recuperación ahora. Intenta nuevamente en instantes.',
+    'error.restart': "No se pudo confirmar el cambio. Solicita un nuevo código para volver a intentar.",
+    'error.sessions': "Tu contraseña cambió, pero no se pudieron cerrar todas las sesiones. Inicia sesión otra vez y contacta al soporte.",
     'error.pending': 'Espera a que termine la tentativa actual.'
   })
 });
@@ -347,7 +355,7 @@ export function normalizeRecoveryCode(value) {
 }
 
 export function normalizeRecoveryPassword(value) {
-  return String(value || '').trim();
+  return String(value || '');
 }
 
 export function validateRecoveryEmail(email) {
@@ -392,7 +400,7 @@ export function validateRecoveryPasswordFields({
   return Object.freeze({ novaSenha: password });
 }
 
-function buildJsonPostRequest(endpoint, payload) {
+function buildJsonPostRequest(endpoint, payload, language = 'pt') {
   return Object.freeze({
     endpoint,
     options: Object.freeze({
@@ -401,18 +409,20 @@ function buildJsonPostRequest(endpoint, payload) {
       cache: 'no-store',
       headers: Object.freeze({
         'Content-Type': 'application/json',
-        Accept: 'application/json'
+        Accept: 'application/json',
+        'Accept-Language': ['pt', 'en', 'es'].includes(language) ? language : 'pt'
       }),
       body: JSON.stringify(payload)
     })
   });
 }
 
-export function buildSendCodeRequest({ apiBaseUrl, email }) {
+export function buildSendCodeRequest({ apiBaseUrl, email, language = 'pt' }) {
   const normalizedEmail = validateRecoveryEmail(email);
   return buildJsonPostRequest(
     createSendCodeEndpoint(apiBaseUrl),
     { email: normalizedEmail },
+    language,
   );
 }
 
@@ -427,6 +437,7 @@ export function buildValidateCodeRequest({ apiBaseUrl, email, codigo }) {
 
 export function buildResetPasswordRequest({
   apiBaseUrl,
+  language = 'pt',
   email,
   codigo,
   novaSenha,
@@ -445,6 +456,7 @@ export function buildResetPasswordRequest({
       codigo: normalizedCode,
       novaSenha: passwordValues.novaSenha
     },
+    language,
   );
 }
 
@@ -481,6 +493,8 @@ export function forgotPasswordErrorKeyForStatus(
     return 'error.emailUnavailable';
   }
   if (backendCode === 'OTP_003') return 'error.codeNotVerified';
+  if (backendCode === 'PWD_RESTART') return 'error.restart';
+  if (backendCode === 'PWD_SESSIONS_PENDING') return 'error.sessions';
   if (backendCode === 'PWD_005') return 'error.passwordInvalid';
   if (backendCode === 'PWD_001') return 'error.recoveryNotCompleted';
 
@@ -601,12 +615,13 @@ async function performForgotPasswordRequest({
 
 export async function performForgotPasswordSendCode({
   apiBaseUrl,
+  language = 'pt',
   email,
   fetchImpl = globalThis.fetch,
   timeoutMs = FORGOT_PASSWORD_TIMEOUT_MS,
   AbortControllerClass = globalThis.AbortController,
 } = {}) {
-  const request = buildSendCodeRequest({ apiBaseUrl, email });
+  const request = buildSendCodeRequest({ apiBaseUrl, email, language });
   return performForgotPasswordRequest({
     request,
     action: 'send',
@@ -636,6 +651,7 @@ export async function performForgotPasswordValidateCode({
 
 export async function performForgotPasswordReset({
   apiBaseUrl,
+  language = 'pt',
   email,
   codigo,
   novaSenha,
@@ -646,6 +662,7 @@ export async function performForgotPasswordReset({
 } = {}) {
   const request = buildResetPasswordRequest({
     apiBaseUrl,
+    language,
     email,
     codigo,
     novaSenha,
