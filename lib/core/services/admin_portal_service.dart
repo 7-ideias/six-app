@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import 'auth_service.dart';
 import 'http_client_factory.dart';
+import '../../data/models/agenda_email_models.dart';
 
 enum AdminRequestWindowUnit {
   minutes('MINUTES'),
@@ -558,6 +559,52 @@ class AdminPortalService {
       }),
     );
     return _parseUsuarioDetalhe(response, 'alterar o onboarding do usuário');
+  }
+
+  Future<List<AgendaEmailDestino>> listarDestinosAgendaEmail(
+    String idUsuario,
+  ) async {
+    final response = await _client.get(
+      Uri.parse(
+        '${AppConfig.baseUrl}/private/api/admin/usuarios-sixo/${Uri.encodeComponent(idUsuario)}/agenda-email/destinos',
+      ),
+      headers: await _headers(),
+    ).timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) {
+      throw AgendaEmailException.fromResponse(response);
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List) throw const AgendaEmailException('RESPOSTA_INVALIDA');
+    return decoded
+        .map(
+          (item) => AgendaEmailDestino.fromJson(item as Map<String, dynamic>),
+        )
+        .toList();
+  }
+
+  Future<AgendaEmailResultado> reenviarAgendaEmail({
+    required String idUsuario,
+    required String idEmpresa,
+    required String chaveRequisicao,
+  }) async {
+    final headers = await _headers();
+    headers['content-type'] = 'application/json';
+    final response = await _client.post(
+      Uri.parse(
+        '${AppConfig.baseUrl}/private/api/admin/usuarios-sixo/${Uri.encodeComponent(idUsuario)}/agenda-email/reenvios',
+      ),
+      headers: headers,
+      body: jsonEncode({
+        'idEmpresa': idEmpresa,
+        'chaveRequisicao': chaveRequisicao,
+      }),
+    ).timeout(const Duration(seconds: 45));
+    if (response.statusCode != 200) {
+      throw AgendaEmailException.fromResponse(response);
+    }
+    return AgendaEmailResultado.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
   }
 
   Future<void> resetarSenhaUsuarioSixo({required String idUsuario}) async {
