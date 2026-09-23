@@ -1,3 +1,4 @@
+import '../../l10n/password_recovery_texts.dart';
 import 'package:flutter/material.dart';
 import 'package:sixpos/design_system/tokens/auth_tokens.dart';
 
@@ -6,7 +7,8 @@ import '../../core/services/recuperacao_senha_service.dart';
 import 'verificar_codigo_recuperacao_mobile.dart';
 
 class EsqueceuSenhaMobile extends StatefulWidget {
-  const EsqueceuSenhaMobile({super.key});
+  const EsqueceuSenhaMobile({super.key, this.initialEmail = ''});
+  final String initialEmail;
 
   @override
   State<EsqueceuSenhaMobile> createState() => _EsqueceuSenhaMobileState();
@@ -17,6 +19,12 @@ class _EsqueceuSenhaMobileState extends State<EsqueceuSenhaMobile> {
   final RecuperacaoSenhaService _service = RecuperacaoSenhaService();
 
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailCtrl.text = widget.initialEmail;
+  }
 
   @override
   void dispose() {
@@ -37,7 +45,10 @@ class _EsqueceuSenhaMobileState extends State<EsqueceuSenhaMobile> {
 
     setState(() => _isLoading = true);
     try {
-      await _service.enviarCodigo(email);
+      await _service.enviarCodigo(
+        email,
+        languageCode: Localizations.localeOf(context).languageCode,
+      );
       if (!mounted) return;
       Navigator.push(
         context,
@@ -46,7 +57,7 @@ class _EsqueceuSenhaMobileState extends State<EsqueceuSenhaMobile> {
         ),
       );
     } on RecuperacaoSenhaException catch (e) {
-      _showSnack(e.message);
+      if (mounted) _showSnack(passwordRecoveryError(context, e));
     } catch (_) {
       _showSnack('Não foi possível enviar o código. Tente novamente.');
     } finally {

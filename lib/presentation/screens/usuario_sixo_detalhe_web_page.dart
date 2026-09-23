@@ -124,14 +124,14 @@ class _UsuarioSixoDetalheWebPageState extends State<UsuarioSixoDetalheWebPage> {
           title: Text(
             context.t(
               'usuariosSixo.passwordReset.dialogTitle',
-              fallback: 'Resetar a senha deste usuário?',
+              fallback: 'Enviar instruções de recuperação?',
             ),
           ),
           content: Text(
             context.t(
               'usuariosSixo.passwordReset.dialogMessage',
               fallback:
-                  'A ação será aplicada imediatamente ao usuário selecionado.',
+                  'O titular receberá um código no e-mail cadastrado. A senha só será alterada após a confirmação do código pelo usuário.',
             ),
           ),
           actions: <Widget>[
@@ -145,7 +145,7 @@ class _UsuarioSixoDetalheWebPageState extends State<UsuarioSixoDetalheWebPage> {
               label: Text(
                 context.t(
                   'usuariosSixo.passwordReset.action',
-                  fallback: 'Resetar senha',
+                  fallback: 'Enviar recuperação',
                 ),
               ),
             ),
@@ -164,7 +164,8 @@ class _UsuarioSixoDetalheWebPageState extends State<UsuarioSixoDetalheWebPage> {
           content: Text(
             context.t(
               'usuariosSixo.passwordReset.successMessage',
-              fallback: 'O reset de senha foi concluído com sucesso.',
+              fallback:
+                  'Solicitação de recuperação recebida. O envio será processado em instantes.',
             ),
           ),
         ),
@@ -177,7 +178,7 @@ class _UsuarioSixoDetalheWebPageState extends State<UsuarioSixoDetalheWebPage> {
             context.t(
               'usuariosSixo.passwordReset.errorMessage',
               fallback:
-                  'Não foi possível resetar a senha agora. Tente novamente.',
+                  'Não foi possível solicitar a recuperação. Confira o e-mail cadastrado e aguarde antes de tentar novamente.',
             ),
           ),
         ),
@@ -526,7 +527,7 @@ class _WebUserHero extends StatelessWidget {
                 label: Text(
                   context.t(
                     'usuariosSixo.passwordReset.action',
-                    fallback: 'Resetar senha',
+                    fallback: 'Enviar recuperação',
                   ),
                 ),
               ),

@@ -8,25 +8,32 @@ import 'http_client_factory.dart';
 
 class RecuperacaoSenhaService {
   RecuperacaoSenhaService({http.Client? client})
-      : _client = client ?? createHttpClient();
+    : _client = client ?? createHttpClient();
 
   final http.Client _client;
 
   Uri get _enviarCodigoUri =>
       Uri.parse('${AppConfig.baseUrl}/public/api/esqueceu-senha/enviar-codigo');
 
-  Uri get _validarCodigoUri =>
-      Uri.parse('${AppConfig.baseUrl}/public/api/esqueceu-senha/validar-codigo');
+  Uri get _validarCodigoUri => Uri.parse(
+    '${AppConfig.baseUrl}/public/api/esqueceu-senha/validar-codigo',
+  );
 
-  Uri get _redefinirSenhaUri =>
-      Uri.parse('${AppConfig.baseUrl}/public/api/esqueceu-senha/redefinir-senha');
+  Uri get _redefinirSenhaUri => Uri.parse(
+    '${AppConfig.baseUrl}/public/api/esqueceu-senha/redefinir-senha',
+  );
 
-  Future<void> enviarCodigo(String email) async {
-    final response = await _client.post(
-      _enviarCodigoUri,
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email}),
-    );
+  Future<void> enviarCodigo(String email, {String languageCode = 'pt'}) async {
+    final response = await _client
+        .post(
+          _enviarCodigoUri,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept-Language': languageCode,
+          },
+          body: jsonEncode({'email': email}),
+        )
+        .timeout(const Duration(seconds: 30));
 
     if (response.statusCode >= 200 && response.statusCode < 300) return;
 
@@ -40,11 +47,13 @@ class RecuperacaoSenhaService {
     required String email,
     required String codigo,
   }) async {
-    final response = await _client.post(
-      _validarCodigoUri,
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'codigo': codigo}),
-    );
+    final response = await _client
+        .post(
+          _validarCodigoUri,
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode({'email': email, 'codigo': codigo}),
+        )
+        .timeout(const Duration(seconds: 30));
 
     if (response.statusCode >= 200 && response.statusCode < 300) return;
 
@@ -58,16 +67,22 @@ class RecuperacaoSenhaService {
     required String email,
     required String codigo,
     required String novaSenha,
+    String languageCode = 'pt',
   }) async {
-    final response = await _client.post(
-      _redefinirSenhaUri,
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'codigo': codigo,
-        'novaSenha': novaSenha,
-      }),
-    );
+    final response = await _client
+        .post(
+          _redefinirSenhaUri,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept-Language': languageCode,
+          },
+          body: jsonEncode({
+            'email': email,
+            'codigo': codigo,
+            'novaSenha': novaSenha,
+          }),
+        )
+        .timeout(const Duration(seconds: 30));
 
     if (response.statusCode >= 200 && response.statusCode < 300) return;
 

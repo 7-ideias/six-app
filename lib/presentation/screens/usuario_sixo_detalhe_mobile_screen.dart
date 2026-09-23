@@ -197,14 +197,14 @@ class _UsuarioSixoDetalheMobileScreenState
           title: Text(
             context.t(
               'usuariosSixo.passwordReset.dialogTitle',
-              fallback: 'Resetar a senha deste usuário?',
+              fallback: 'Enviar instruções de recuperação?',
             ),
           ),
           content: Text(
             context.t(
               'usuariosSixo.passwordReset.dialogMessage',
               fallback:
-                  'A ação será aplicada imediatamente ao usuário selecionado.',
+                  'O titular receberá um código no e-mail cadastrado. A senha só será alterada após a confirmação do código pelo usuário.',
             ),
           ),
           actions: <Widget>[
@@ -218,7 +218,7 @@ class _UsuarioSixoDetalheMobileScreenState
               label: Text(
                 context.t(
                   'usuariosSixo.passwordReset.action',
-                  fallback: 'Resetar senha',
+                  fallback: 'Enviar recuperação',
                 ),
               ),
             ),
@@ -237,7 +237,8 @@ class _UsuarioSixoDetalheMobileScreenState
           content: Text(
             context.t(
               'usuariosSixo.passwordReset.successMessage',
-              fallback: 'O reset de senha foi concluído com sucesso.',
+              fallback:
+                  'Solicitação de recuperação recebida. O envio será processado em instantes.',
             ),
           ),
         ),
@@ -250,7 +251,7 @@ class _UsuarioSixoDetalheMobileScreenState
             context.t(
               'usuariosSixo.passwordReset.errorMessage',
               fallback:
-                  'Não foi possível resetar a senha agora. Tente novamente.',
+                  'Não foi possível solicitar a recuperação. Confira o e-mail cadastrado e aguarde antes de tentar novamente.',
             ),
           ),
         ),
@@ -624,7 +625,7 @@ class _MobilePasswordResetCard extends StatelessWidget {
                     Text(
                       context.t(
                         'usuariosSixo.passwordReset.title',
-                        fallback: 'Resetar senha',
+                        fallback: 'Enviar recuperação',
                       ),
                       style: TextStyle(
                         color: colors.titleText,
@@ -636,7 +637,7 @@ class _MobilePasswordResetCard extends StatelessWidget {
                       context.t(
                         'usuariosSixo.passwordReset.subtitle',
                         fallback:
-                            'Use esta ação quando o usuário precisar redefinir a senha de acesso.',
+                            'Envie instruções ao titular para que ele escolha uma nova senha.',
                       ),
                       style: TextStyle(
                         color: colors.mutedText,
@@ -673,7 +674,7 @@ class _MobilePasswordResetCard extends StatelessWidget {
               label: Text(
                 context.t(
                   'usuariosSixo.passwordReset.action',
-                  fallback: 'Resetar senha',
+                  fallback: 'Enviar recuperação',
                 ),
               ),
             ),

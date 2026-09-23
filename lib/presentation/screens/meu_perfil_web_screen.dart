@@ -1,3 +1,5 @@
+import 'esqueceu_senha_web.dart';
+import '../../l10n/password_recovery_texts.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -783,6 +785,22 @@ class _MeuPerfilWebScreenState extends State<MeuPerfilWebScreen> {
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
       child: Column(
         children: <Widget>[
+          ListTile(
+            leading: const Icon(Icons.lock_outline),
+            title: Text(passwordRecoveryText(context, 'change')),
+            subtitle: Text(passwordRecoveryText(context, 'proof')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap:
+                () => Navigator.of(context, rootNavigator: true).push(
+                  MaterialPageRoute<void>(
+                    builder:
+                        (_) => EsqueceuSenhaWeb(
+                          initialEmail: _emailController.text.trim(),
+                        ),
+                  ),
+                ),
+          ),
+
           Consumer<StreakProvider>(
             builder: (BuildContext context, StreakProvider provider, _) {
               return StreakSummaryWebCard(
