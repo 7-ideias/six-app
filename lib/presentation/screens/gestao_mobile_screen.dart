@@ -20,6 +20,7 @@ import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/mobile/six_imagem_canetinha.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
+import 'package:sixpos/presentation/components/mobile/six_mobile_reorderable_card.dart';
 import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/catalog_health_mobile_screen.dart';
@@ -62,6 +63,7 @@ class GestaoMobileScreen extends StatefulWidget {
   @override
   State<GestaoMobileScreen> createState() => _GestaoMobileScreenState();
 }
+
 class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   static const double _horizontalPadding = 16;
   static const double _sectionContentBottomPadding = 24;
@@ -408,73 +410,17 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     required double cardHeight,
   }) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    Widget buildCard() {
-      return Stack(
-        fit: StackFit.expand,
-        children: <Widget>[
-          _GestaoHubActionCard(data: action),
-          Positioned(
-            top: 8,
-            right: 8,
-            child: ExcludeSemantics(
-              child: IgnorePointer(
-                child: Icon(
-                  Icons.drag_indicator_rounded,
-                  size: 18,
-                  color: action.accentColor.withAlpha(isDark ? 150 : 112),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    final Widget card = buildCard();
-
-    return DragTarget<GestaoMobileCardPreferencia>(
+    return SixStaggeredEntry(
       key: ValueKey<String>('gestao-hub-reorder-${action.id}'),
-      onWillAcceptWithDetails:
-          (DragTargetDetails<GestaoMobileCardPreferencia> details) =>
-              details.data != action.preferencia,
-      onAcceptWithDetails: (
-        DragTargetDetails<GestaoMobileCardPreferencia> details,
-      ) {
-        _reordenarCardsGestaoMobile(details.data, action.preferencia);
-      },
-      builder: (
-        BuildContext context,
-        List<GestaoMobileCardPreferencia?> candidateData,
-        List<dynamic> rejectedData,
-      ) {
-        final bool isDestino = candidateData.isNotEmpty;
-        return AnimatedScale(
-          scale: isDestino ? 1.025 : 1,
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutCubic,
-          child: LongPressDraggable<GestaoMobileCardPreferencia>(
-            data: action.preferencia,
-            dragAnchorStrategy: pointerDragAnchorStrategy,
-            maxSimultaneousDrags: 1,
-            feedback: Material(
-              color: Colors.transparent,
-              child: Transform.scale(
-                scale: 1.025,
-                child: SizedBox(
-                  width: itemWidth,
-                  height: cardHeight,
-                  child: buildCard(),
-                ),
-              ),
-            ),
-            childWhenDragging: Opacity(opacity: 0.28, child: card),
-            child: SixStaggeredEntry(
-              delay: Duration(milliseconds: 90 + (index * 45)),
-              child: card,
-            ),
-          ),
-        );
-      },
+      delay: Duration(milliseconds: 90 + (index * 45)),
+      child: SixMobileReorderableCard<GestaoMobileCardPreferencia>(
+        value: action.preferencia,
+        onReorder: _reordenarCardsGestaoMobile,
+        feedbackWidth: itemWidth,
+        feedbackHeight: cardHeight,
+        handleColor: action.accentColor.withAlpha(isDark ? 220 : 190),
+        cardBuilder: () => _GestaoHubActionCard(data: action),
+      ),
     );
   }
 
@@ -1146,10 +1092,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             ),
           if (autorizacoes.podeVerEstoqueDeProduto)
             _ManagementItem(
-              title: context.t(
-                'gestao.catalog.inventory',
-                fallback: 'Estoque',
-              ),
+              title: context.t('gestao.catalog.inventory', fallback: 'Estoque'),
               subtitle: context.t(
                 'gestao.catalog.inventoryDesc',
                 fallback: 'Saldos, entradas e ajustes',
@@ -1173,8 +1116,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               icon: Icons.language_outlined,
               accentColor: colors.accent,
               emphasis: ManagementActionEmphasis.secondary,
-              onTap: () =>
-                  _navigateTo(context, const CatalogoVirtualMobileScreen()),
+              onTap:
+                  () =>
+                      _navigateTo(context, const CatalogoVirtualMobileScreen()),
             ),
         ],
       ),
@@ -1226,10 +1170,11 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
               icon: Icons.trending_up_rounded,
               accentColor: colors.accent,
               emphasis: ManagementActionEmphasis.secondary,
-              onTap: () => _navigateTo(
-                context,
-                const DesempenhoColaboradorMobileScreen(),
-              ),
+              onTap:
+                  () => _navigateTo(
+                    context,
+                    const DesempenhoColaboradorMobileScreen(),
+                  ),
             ),
           if (autorizacoes.ehSuperUsuario)
             _ManagementItem(
