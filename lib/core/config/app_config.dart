@@ -26,11 +26,11 @@ class AppConfig {
 
   static const String appVersion = String.fromEnvironment(
     'APP_VERSION',
-    defaultValue: '1.234.0',
+    defaultValue: '1.235.0',
   );
 
   static const String appBuildNumber = String.fromEnvironment(
     'APP_BUILD_NUMBER',
-    defaultValue: '235',
+    defaultValue: '236',
   );
 }
