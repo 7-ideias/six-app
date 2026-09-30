@@ -739,6 +739,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.loading.subtitle':
         'Buscando a situação atual desta empresa.',
     'workspaceHome.error.title': 'Não foi possível carregar o resumo do dia.',
+    'colaboradores.firstCollaboratorTitle': 'Cadastre seu primeiro colaborador',
+    'colaboradores.firstCollaboratorSubtitle':
+        'Comece adicionando quem vai ajudar nas vendas, atendimentos ou gestão do comércio.',
+    'colaboradores.noCollaboratorFoundSubtitle':
+        'Tente buscar por outro nome, e-mail, celular ou apelido.',
     'collaboratorHome.title': 'Meu painel',
     'collaboratorHome.subtitle':
         'Acompanhe metas, vendas, serviços e prioridades do seu trabalho.',
@@ -3427,6 +3432,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.loading.subtitle':
         'Fetching the current situation for this business.',
     'workspaceHome.error.title': 'Could not load the day summary.',
+    'colaboradores.firstCollaboratorTitle': 'Add your first collaborator',
+    'colaboradores.firstCollaboratorSubtitle':
+        'Start by adding who will help with sales, service, or business management.',
+    'colaboradores.noCollaboratorFoundSubtitle':
+        'Try searching by another name, email, phone, or nickname.',
     'collaboratorHome.title': 'My dashboard',
     'collaboratorHome.subtitle':
         'Track your goals, sales, services, and work priorities.',
@@ -5830,6 +5840,11 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.loading.subtitle':
         'Buscando la situación actual de este comercio.',
     'workspaceHome.error.title': 'No fue posible cargar el resumen del día.',
+    'colaboradores.firstCollaboratorTitle': 'Registra tu primer colaborador',
+    'colaboradores.firstCollaboratorSubtitle':
+        'Empieza agregando a quien ayudará en ventas, atención o gestión del comercio.',
+    'colaboradores.noCollaboratorFoundSubtitle':
+        'Intenta buscar por otro nombre, correo, celular o apodo.',
     'collaboratorHome.title': 'Mi panel',
     'collaboratorHome.subtitle':
         'Sigue tus metas, ventas, servicios y prioridades de trabajo.',

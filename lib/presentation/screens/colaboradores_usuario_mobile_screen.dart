@@ -270,7 +270,8 @@ class _ColaboradoresUsuarioMobileScreenState
   Widget build(BuildContext context) {
     context.watch<LocaleSettingsProvider>();
     final bool podeAcessarDesempenho =
-        !context.watch<ColaboradorAutorizacoesProvider>().ehColaborador;
+        !context.watch<ColaboradorAutorizacoesProvider>().ehColaborador &&
+        _colaboradores.isNotEmpty;
 
     return SixMobilePageShell(
       title: _t('colaboradores.title', 'Colaboradores'),
@@ -314,6 +315,20 @@ class _ColaboradoresUsuarioMobileScreenState
 
     if (_erro != null && _colaboradores.isEmpty) {
       return _errorState();
+    }
+
+    if (_colaboradores.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _reload,
+        child: ListView(
+          controller: scrollController,
+          physics: AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(16, topInset, 16, 24),
+          children: <Widget>[
+            _entry(order: 0, child: _emptyState(firstCollaborator: true)),
+          ],
+        ),
+      );
     }
 
     return RefreshIndicator(
@@ -366,7 +381,7 @@ class _ColaboradoresUsuarioMobileScreenState
           ),
           SizedBox(height: 12),
           if (_items.isEmpty)
-            _emptyState()
+            _emptyState(searchResult: true)
           else
             ..._items.toList().asMap().entries.map(
               (MapEntry<int, ColaboradorUsuarioResumo> entry) => _entry(
@@ -1111,7 +1126,41 @@ class _ColaboradoresUsuarioMobileScreenState
     );
   }
 
-  Widget _emptyState() {
+  Widget _emptyState({
+    bool firstCollaborator = false,
+    bool searchResult = false,
+  }) {
+    final String title =
+        firstCollaborator
+            ? _t(
+              'colaboradores.firstCollaboratorTitle',
+              'Cadastre seu primeiro colaborador',
+            )
+            : searchResult
+            ? _t(
+              'colaboradores.noCollaboratorFound',
+              'Nenhum colaborador encontrado',
+            )
+            : _t(
+              'colaboradores.noCollaboratorRegistered',
+              'Nenhum colaborador cadastrado',
+            );
+    final String subtitle =
+        firstCollaborator
+            ? _t(
+              'colaboradores.firstCollaboratorSubtitle',
+              'Comece adicionando quem vai ajudar nas vendas, atendimentos ou gestão do comércio.',
+            )
+            : searchResult
+            ? _t(
+              'colaboradores.noCollaboratorFoundSubtitle',
+              'Tente buscar por outro nome, e-mail, celular ou apelido.',
+            )
+            : _t(
+              'colaboradores.emptySubtitle',
+              'Convide colaboradores para vendas, atendimento e gestão diária.',
+            );
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(18),
@@ -1133,10 +1182,8 @@ class _ColaboradoresUsuarioMobileScreenState
           ),
           SizedBox(height: 12),
           Text(
-            _t(
-              'colaboradores.noCollaboratorFound',
-              'Nenhum colaborador encontrado',
-            ),
+            title,
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: _titleTextColor,
               fontWeight: FontWeight.w900,
@@ -1144,21 +1191,19 @@ class _ColaboradoresUsuarioMobileScreenState
           ),
           SizedBox(height: 5),
           Text(
-            _t(
-              'colaboradores.emptySubtitle',
-              'Convide colaboradores para vendas, atendimento e gestão diária.',
-            ),
+            subtitle,
             textAlign: TextAlign.center,
             style: TextStyle(color: _mutedTextColor),
           ),
           SizedBox(height: 14),
-          FilledButton.icon(
-            onPressed: _openNovoColaborador,
-            icon: Icon(Icons.add_rounded),
-            label: Text(
-              _t('colaboradores.newCollaborator', 'Novo colaborador'),
+          if (!searchResult)
+            FilledButton.icon(
+              onPressed: _openNovoColaborador,
+              icon: Icon(Icons.add_rounded),
+              label: Text(
+                _t('colaboradores.newCollaborator', 'Novo colaborador'),
+              ),
             ),
-          ),
         ],
       ),
     );

@@ -456,6 +456,28 @@ class _ColaboradoresUsuarioListPageState
       return _errorState();
     }
 
+    if (_colaboradores.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _reload,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(
+                widget.embedded ? 24 : 16,
+                widget.embedded ? 24 : 14,
+                widget.embedded ? 24 : 16,
+                widget.embedded ? 28 : 96,
+              ),
+              children: <Widget>[
+                SixWebEntry(order: 0, child: _empty(firstCollaborator: true)),
+              ],
+            );
+          },
+        ),
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: _reload,
       child: LayoutBuilder(
@@ -496,7 +518,10 @@ class _ColaboradoresUsuarioListPageState
                 ],
               ),
               const SizedBox(height: 12),
-              if (_items.isEmpty) _empty() else ..._items.map(_card),
+              if (_items.isEmpty)
+                _empty(searchResult: true)
+              else
+                ..._items.map(_card),
             ],
           );
         },
@@ -890,22 +915,52 @@ class _ColaboradoresUsuarioListPageState
     }
   }
 
-  Widget _empty() {
+  Widget _empty({bool firstCollaborator = false, bool searchResult = false}) {
+    final String title =
+        firstCollaborator
+            ? _t(
+              'colaboradores.firstCollaboratorTitle',
+              'Cadastre seu primeiro colaborador',
+            )
+            : searchResult
+            ? _t(
+              'colaboradores.noCollaboratorFound',
+              'Nenhum colaborador encontrado',
+            )
+            : _t(
+              'colaboradores.noCollaboratorRegistered',
+              'Nenhum colaborador cadastrado',
+            );
+    final String subtitle =
+        firstCollaborator
+            ? _t(
+              'colaboradores.firstCollaboratorSubtitle',
+              'Comece adicionando quem vai ajudar nas vendas, atendimentos ou gestão do comércio.',
+            )
+            : searchResult
+            ? _t(
+              'colaboradores.noCollaboratorFoundSubtitle',
+              'Tente buscar por outro nome, e-mail, celular ou apelido.',
+            )
+            : _t(
+              'colaboradores.noCollaboratorRegisteredSubtitle',
+              'Convide colaboradores para operar vendas, atendimento técnico e rotinas do comércio com permissões controladas.',
+            );
+
     return SixWebSectionCard(
-      title: _t(
-        'colaboradores.noCollaboratorRegistered',
-        'Nenhum colaborador cadastrado',
-      ),
-      subtitle: _t(
-        'colaboradores.noCollaboratorRegisteredSubtitle',
-        'Convide colaboradores para operar vendas, atendimento técnico e rotinas do comércio com permissões controladas.',
-      ),
+      title: title,
+      subtitle: subtitle,
       icon: Icons.group_add_outlined,
-      child: FilledButton.icon(
-        onPressed: _openNovoColaborador,
-        icon: const Icon(Icons.group_add_outlined),
-        label: Text(_t('colaboradores.newCollaborator', 'Novo colaborador')),
-      ),
+      child:
+          searchResult
+              ? const SizedBox.shrink()
+              : FilledButton.icon(
+                onPressed: _openNovoColaborador,
+                icon: const Icon(Icons.group_add_outlined),
+                label: Text(
+                  _t('colaboradores.newCollaborator', 'Novo colaborador'),
+                ),
+              ),
     );
   }
 
