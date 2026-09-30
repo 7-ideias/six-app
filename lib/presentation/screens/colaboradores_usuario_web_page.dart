@@ -7,6 +7,7 @@ import '../../data/services/colaborador_usuario/colaborador_usuario_api_client.d
 import '../../domain/services/etiqueta/etiqueta_service.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
+import '../components/web/six_web_animated_dialog.dart';
 import '../components/web_dashboard_widgets.dart';
 import '../theme/web_theme_tokens.dart';
 import 'colaborador_convite_web_body.dart';
@@ -153,33 +154,35 @@ class _ColaboradoresUsuarioListPageState
   }
 
   Future<void> _openNovoColaborador() async {
-    final WebThemeTokens pageTokens = WebThemeTokens.of(context);
-    await showDialog<void>(
+    await showSixWebAnimatedDialog<void>(
       context: context,
       barrierDismissible: true,
-      barrierColor: pageTokens.workspaceBackground.withValues(
-        alpha: Theme.of(context).brightness == Brightness.dark ? 0.70 : 0.42,
-      ),
+      barrierLabel: _t('colaboradores.newCollaborator', 'Novo colaborador'),
+      overlayColor: const Color(0xC20B1324),
+      overlayBlurSigma: 12,
+      transitionDuration: const Duration(milliseconds: 320),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       builder: (BuildContext dialogContext) {
         final WebThemeTokens tokens = WebThemeTokens.of(dialogContext);
         final Size size = MediaQuery.of(dialogContext).size;
         return _EscCloseScope(
-          child: Dialog(
-            backgroundColor: tokens.surfaceElevated,
-            surfaceTintColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 24,
-            ),
-            clipBehavior: Clip.antiAlias,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28),
-              side: BorderSide(color: tokens.cardBorder),
-            ),
-            child: SizedBox(
-              width: size.width * 0.78,
-              height: size.height * 0.84,
-              child: const ColaboradorConviteWebBody(),
+          child: Semantics(
+            namesRoute: true,
+            label: _t('colaboradores.newCollaborator', 'Novo colaborador'),
+            child: Dialog(
+              backgroundColor: tokens.surfaceElevated,
+              surfaceTintColor: Colors.transparent,
+              insetPadding: EdgeInsets.zero,
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+                side: BorderSide(color: tokens.cardBorder),
+              ),
+              child: SizedBox(
+                width: size.width * 0.78,
+                height: size.height * 0.84,
+                child: const ColaboradorConviteWebBody(),
+              ),
             ),
           ),
         );
