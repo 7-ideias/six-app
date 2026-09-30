@@ -745,6 +745,17 @@ const Map<String, Map<String, String>> _fallbacks = {
     'colaboradores.noCollaboratorFoundSubtitle':
         'Tente buscar por outro nome, e-mail, celular ou apelido.',
     'colaborador.invite.shareAction': 'Compartilhar convite',
+    'colaborador.invite.sendAction': 'Enviar convite',
+    'colaborador.invite.emailAction': 'Enviar direto pelo e-mail',
+    'colaborador.invite.emailActionSubtitle':
+        'O convite será enviado para o e-mail informado.',
+    'colaborador.invite.shareActionSubtitle':
+        'Use WhatsApp, mensagens ou outro app do aparelho.',
+    'colaborador.invite.actionTitle': 'Enviar convite',
+    'colaborador.invite.actionSubtitle':
+        'Escolha como o colaborador vai receber o convite.',
+    'colaborador.invite.sendingEmail': 'Enviando...',
+    'colaborador.invite.emailSent': 'Convite enviado por e-mail.',
     'colaborador.invite.shareSubject': 'Convite SixoApp',
     'colaborador.invite.shareMessage':
         'Olá! Use este link para aceitar o convite de colaborador no SixoApp:\n{link}',
@@ -3444,6 +3455,17 @@ const Map<String, Map<String, String>> _fallbacks = {
     'colaboradores.noCollaboratorFoundSubtitle':
         'Try searching by another name, email, phone, or nickname.',
     'colaborador.invite.shareAction': 'Share invite',
+    'colaborador.invite.sendAction': 'Send invite',
+    'colaborador.invite.emailAction': 'Send directly by email',
+    'colaborador.invite.emailActionSubtitle':
+        'The invite will be sent to the email entered.',
+    'colaborador.invite.shareActionSubtitle':
+        'Use WhatsApp, messages, or another app on this device.',
+    'colaborador.invite.actionTitle': 'Send invite',
+    'colaborador.invite.actionSubtitle':
+        'Choose how the collaborator will receive the invite.',
+    'colaborador.invite.sendingEmail': 'Sending...',
+    'colaborador.invite.emailSent': 'Invite sent by email.',
     'colaborador.invite.shareSubject': 'SixoApp invite',
     'colaborador.invite.shareMessage':
         'Hi! Use this link to accept the collaborator invite in SixoApp:\n{link}',
@@ -5858,6 +5880,17 @@ const Map<String, Map<String, String>> _fallbacks = {
     'colaboradores.noCollaboratorFoundSubtitle':
         'Intenta buscar por otro nombre, correo, celular o apodo.',
     'colaborador.invite.shareAction': 'Compartir invitación',
+    'colaborador.invite.sendAction': 'Enviar invitación',
+    'colaborador.invite.emailAction': 'Enviar directo por e-mail',
+    'colaborador.invite.emailActionSubtitle':
+        'La invitación se enviará al e-mail informado.',
+    'colaborador.invite.shareActionSubtitle':
+        'Usa WhatsApp, mensajes u otra app del dispositivo.',
+    'colaborador.invite.actionTitle': 'Enviar invitación',
+    'colaborador.invite.actionSubtitle':
+        'Elige cómo el colaborador recibirá la invitación.',
+    'colaborador.invite.sendingEmail': 'Enviando...',
+    'colaborador.invite.emailSent': 'Invitación enviada por e-mail.',
     'colaborador.invite.shareSubject': 'Invitación SixoApp',
     'colaborador.invite.shareMessage':
         '¡Hola! Usa este link para aceptar la invitación de colaborador en SixoApp:\n{link}',

@@ -11,11 +11,9 @@ class ColaboradorConviteWebService {
   final AuthService _authService;
   final http.Client _client;
 
-  ColaboradorConviteWebService({
-    AuthService? authService,
-    http.Client? client,
-  })  : _authService = authService ?? AuthService(),
-        _client = client ?? createHttpClient();
+  ColaboradorConviteWebService({AuthService? authService, http.Client? client})
+    : _authService = authService ?? AuthService(),
+      _client = client ?? createHttpClient();
 
   Future<ColaboradorConviteResponse> criarConvite(
     ColaboradorConviteRequest request,
@@ -23,7 +21,9 @@ class ColaboradorConviteWebService {
     final String? token = await _authService.getAccessToken();
     final String? empresaId = await _authService.getEmpresaId();
 
-    final Uri uri = Uri.parse('${AppConfig.baseUrl}/private/api/colaborador/convites');
+    final Uri uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/colaborador/convites',
+    );
     final http.Response response = await _client.post(
       uri,
       headers: <String, String>{
@@ -35,7 +35,9 @@ class ColaboradorConviteWebService {
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Erro ao gerar convite de colaborador: ${response.statusCode} ${response.body}');
+      throw Exception(
+        'Erro ao gerar convite de colaborador: ${response.statusCode} ${response.body}',
+      );
     }
 
     return ColaboradorConviteResponse.fromJson(
@@ -43,17 +45,54 @@ class ColaboradorConviteWebService {
     );
   }
 
+  Future<void> enviarConvitePorEmail({
+    required String idConvite,
+    required String linkConvite,
+    required String idioma,
+  }) async {
+    final String? token = await _authService.getAccessToken();
+    final String? empresaId = await _authService.getEmpresaId();
+
+    final Uri uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/colaborador/convites/$idConvite/enviar-email',
+    );
+    final http.Response response = await _client.post(
+      uri,
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+        'idUnicoDaEmpresa': empresaId ?? '',
+      },
+      body: jsonEncode(<String, String>{
+        'linkConvite': linkConvite,
+        'idioma': idioma,
+      }),
+    );
+
+    if (response.statusCode != 200 &&
+        response.statusCode != 201 &&
+        response.statusCode != 204) {
+      throw Exception(
+        'Erro ao enviar convite por e-mail: ${response.statusCode} ${response.body}',
+      );
+    }
+  }
+
   Future<ColaboradorConvitePublicoResponse> validarConvitePublico(
     String codigo,
   ) async {
-    final Uri uri = Uri.parse('${AppConfig.baseUrl}/public/api/colaborador/convites/$codigo');
+    final Uri uri = Uri.parse(
+      '${AppConfig.baseUrl}/public/api/colaborador/convites/$codigo',
+    );
     final http.Response response = await _client.get(
       uri,
       headers: const <String, String>{'Content-Type': 'application/json'},
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Erro ao validar convite de colaborador: ${response.statusCode} ${response.body}');
+      throw Exception(
+        'Erro ao validar convite de colaborador: ${response.statusCode} ${response.body}',
+      );
     }
 
     return ColaboradorConvitePublicoResponse.fromJson(
@@ -65,7 +104,9 @@ class ColaboradorConviteWebService {
     String codigo,
     String email,
   ) async {
-    final Uri uri = Uri.parse('${AppConfig.baseUrl}/public/api/colaborador/convites/$codigo/confirmar-email');
+    final Uri uri = Uri.parse(
+      '${AppConfig.baseUrl}/public/api/colaborador/convites/$codigo/confirmar-email',
+    );
     final http.Response response = await _client.post(
       uri,
       headers: const <String, String>{'Content-Type': 'application/json'},
@@ -73,7 +114,9 @@ class ColaboradorConviteWebService {
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Erro ao confirmar e-mail do convite: ${response.statusCode} ${response.body}');
+      throw Exception(
+        'Erro ao confirmar e-mail do convite: ${response.statusCode} ${response.body}',
+      );
     }
 
     return ColaboradorConviteResponse.fromJson(
@@ -84,10 +127,14 @@ class ColaboradorConviteWebService {
   Future<void> aceitarConvite(String codigo) async {
     final String? token = await _authService.getAccessToken();
     if (token == null || token.trim().isEmpty) {
-      throw Exception('Faça login com o e-mail convidado para aceitar este convite.');
+      throw Exception(
+        'Faça login com o e-mail convidado para aceitar este convite.',
+      );
     }
 
-    final Uri uri = Uri.parse('${AppConfig.baseUrl}/private/api/colaborador/convites/$codigo/aceitar');
+    final Uri uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/colaborador/convites/$codigo/aceitar',
+    );
     final http.Response response = await _client.post(
       uri,
       headers: <String, String>{
@@ -97,13 +144,17 @@ class ColaboradorConviteWebService {
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Erro ao aceitar convite de colaborador: ${response.statusCode} ${response.body}');
+      throw Exception(
+        'Erro ao aceitar convite de colaborador: ${response.statusCode} ${response.body}',
+      );
     }
   }
 
   Future<List<EmpresaVinculoWebModel>> listarVinculos() async {
     final String? token = await _authService.getAccessToken();
-    final Uri uri = Uri.parse('${AppConfig.baseUrl}/private/api/usuario/empresas-vinculos');
+    final Uri uri = Uri.parse(
+      '${AppConfig.baseUrl}/private/api/usuario/empresas-vinculos',
+    );
     final http.Response response = await _client.get(
       uri,
       headers: <String, String>{
@@ -113,7 +164,9 @@ class ColaboradorConviteWebService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Erro ao buscar vínculos do usuário: ${response.statusCode} ${response.body}');
+      throw Exception(
+        'Erro ao buscar vínculos do usuário: ${response.statusCode} ${response.body}',
+      );
     }
 
     final List<dynamic> decoded = jsonDecode(response.body) as List<dynamic>;

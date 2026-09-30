@@ -12,6 +12,8 @@ import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
 
+enum _ConviteDeliveryAction { email, share }
+
 class ColaboradorCadastroMobileScreen extends StatefulWidget {
   const ColaboradorCadastroMobileScreen({super.key});
 
@@ -71,6 +73,7 @@ class _ColaboradorCadastroMobileScreenState
   bool _geraRelatorio = false;
   bool _gerenciaPermissoes = false;
   bool _loading = false;
+  _ConviteDeliveryAction? _loadingAction;
   ColaboradorConviteResponse? _convite;
 
   SixMobileColorScheme get _colors => context.sixMobileColors;
@@ -229,10 +232,11 @@ class _ColaboradorCadastroMobileScreenState
     );
   }
 
-  Future<void> _criarConvite() async {
+  Future<void> _criarConvite(_ConviteDeliveryAction action) async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       _loading = true;
+      _loadingAction = action;
       _convite = null;
     });
     try {
@@ -241,7 +245,7 @@ class _ColaboradorCadastroMobileScreenState
       );
       if (!mounted) return;
       setState(() => _convite = response);
-      await _compartilharConvite(response);
+      await _executarAcaoConvite(response, action);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -263,17 +267,91 @@ class _ColaboradorCadastroMobileScreenState
         ),
       );
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _loadingAction = null;
+        });
+      }
     }
   }
 
-  Future<void> _compartilharOuCriarConvite() async {
-    final ColaboradorConviteResponse? convite = _convite;
-    if (convite != null) {
-      await _compartilharConvite(convite);
+  Future<void> _selecionarAcaoConvite() async {
+    final _ConviteDeliveryAction? action =
+        await showModalBottomSheet<_ConviteDeliveryAction>(
+          context: context,
+          useSafeArea: true,
+          backgroundColor: Colors.transparent,
+          builder: _buildInviteActionSheet,
+        );
+    if (action == null) {
       return;
     }
-    await _criarConvite();
+    await _compartilharOuCriarConvite(action);
+  }
+
+  Future<void> _compartilharOuCriarConvite(
+    _ConviteDeliveryAction action,
+  ) async {
+    final ColaboradorConviteResponse? convite = _convite;
+    if (convite != null) {
+      setState(() {
+        _loading = true;
+        _loadingAction = action;
+      });
+      try {
+        await _executarAcaoConvite(convite, action);
+      } catch (error) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _loading = false;
+            _loadingAction = null;
+          });
+        }
+      }
+      return;
+    }
+    await _criarConvite(action);
+  }
+
+  Future<void> _executarAcaoConvite(
+    ColaboradorConviteResponse convite,
+    _ConviteDeliveryAction action,
+  ) async {
+    switch (action) {
+      case _ConviteDeliveryAction.email:
+        await _enviarConvitePorEmail(convite);
+      case _ConviteDeliveryAction.share:
+        await _compartilharConvite(convite);
+    }
+  }
+
+  Future<void> _enviarConvitePorEmail(
+    ColaboradorConviteResponse convite,
+  ) async {
+    await _service.enviarConvitePorEmail(
+      idConvite: convite.id,
+      linkConvite: _inviteLink(convite),
+      idioma:
+          context.read<LocaleSettingsProvider>().currentLocale.toLanguageTag(),
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _t('colaborador.invite.emailSent', 'Convite enviado por e-mail.'),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _compartilharConvite(ColaboradorConviteResponse convite) async {
@@ -349,7 +427,7 @@ class _ColaboradorCadastroMobileScreenState
     if (_etapaAtual < _etapas.length - 1) {
       setState(() => _etapaAtual += 1);
     } else {
-      _compartilharOuCriarConvite();
+      _selecionarAcaoConvite();
     }
   }
 
@@ -1581,6 +1659,7 @@ class _ColaboradorCadastroMobileScreenState
 
   Widget _bottomActions() {
     final bool last = _etapaAtual == _etapas.length - 1;
+    final bool sendingEmail = _loadingAction == _ConviteDeliveryAction.email;
     return SafeArea(
       top: false,
       child: Container(
@@ -1612,21 +1691,173 @@ class _ColaboradorCadastroMobileScreenState
                         )
                         : Icon(
                           last
-                              ? Icons.ios_share_rounded
+                              ? Icons.send_rounded
                               : Icons.arrow_forward_rounded,
                         ),
                 label: Text(
                   _loading
-                      ? _t('colaborador.invite.generating', 'Gerando...')
+                      ? sendingEmail
+                          ? _t('colaborador.invite.sendingEmail', 'Enviando...')
+                          : _t('colaborador.invite.generating', 'Gerando...')
                       : last
-                      ? _t(
-                        'colaborador.invite.shareAction',
-                        'Compartilhar convite',
-                      )
+                      ? _t('colaborador.invite.sendAction', 'Enviar convite')
                       : _t('common.continue', 'Continuar'),
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInviteActionSheet(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: colors.border),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Center(
+              child: Container(
+                width: 38,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colors.strongBorder,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _t('colaborador.invite.actionTitle', 'Enviar convite'),
+              style: TextStyle(
+                color: colors.titleText,
+                fontWeight: FontWeight.w900,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _t(
+                'colaborador.invite.actionSubtitle',
+                'Escolha como o colaborador vai receber o convite.',
+              ),
+              style: TextStyle(color: colors.mutedText, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            _inviteActionTile(
+              icon: Icons.alternate_email_rounded,
+              title: _t(
+                'colaborador.invite.emailAction',
+                'Enviar direto pelo e-mail',
+              ),
+              subtitle:
+                  _email.text.trim().isEmpty
+                      ? _t(
+                        'colaborador.invite.emailActionSubtitle',
+                        'O convite será enviado para o e-mail informado.',
+                      )
+                      : _email.text.trim(),
+              onTap:
+                  () => Navigator.of(context).pop(_ConviteDeliveryAction.email),
+            ),
+            const SizedBox(height: 10),
+            _inviteActionTile(
+              icon: Icons.ios_share_rounded,
+              title: _t(
+                'colaborador.invite.shareAction',
+                'Compartilhar convite',
+              ),
+              subtitle: _t(
+                'colaborador.invite.shareActionSubtitle',
+                'Use WhatsApp, mensagens ou outro app do aparelho.',
+              ),
+              onTap:
+                  () => Navigator.of(context).pop(_ConviteDeliveryAction.share),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(_t('common.cancel', 'Cancelar')),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _inviteActionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: _colors.softSurface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _colors.border),
+        ),
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: _colors.softAccentSurface,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: _colors.accent),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: _colors.titleText,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: _colors.mutedText, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.chevron_right_rounded, color: _colors.mutedText),
           ],
         ),
       ),
