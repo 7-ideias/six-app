@@ -744,6 +744,12 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Comece adicionando quem vai ajudar nas vendas, atendimentos ou gestão do comércio.',
     'colaboradores.noCollaboratorFoundSubtitle':
         'Tente buscar por outro nome, e-mail, celular ou apelido.',
+    'colaborador.invite.shareAction': 'Compartilhar convite',
+    'colaborador.invite.shareSubject': 'Convite SixoApp',
+    'colaborador.invite.shareMessage':
+        'Olá! Use este link para aceitar o convite de colaborador no SixoApp:\n{link}',
+    'colaborador.invite.shareFallback':
+        'O compartilhamento não está disponível. O link foi copiado.',
     'collaboratorHome.title': 'Meu painel',
     'collaboratorHome.subtitle':
         'Acompanhe metas, vendas, serviços e prioridades do seu trabalho.',
@@ -3437,6 +3443,12 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Start by adding who will help with sales, service, or business management.',
     'colaboradores.noCollaboratorFoundSubtitle':
         'Try searching by another name, email, phone, or nickname.',
+    'colaborador.invite.shareAction': 'Share invite',
+    'colaborador.invite.shareSubject': 'SixoApp invite',
+    'colaborador.invite.shareMessage':
+        'Hi! Use this link to accept the collaborator invite in SixoApp:\n{link}',
+    'colaborador.invite.shareFallback':
+        'Sharing is not available. The link was copied.',
     'collaboratorHome.title': 'My dashboard',
     'collaboratorHome.subtitle':
         'Track your goals, sales, services, and work priorities.',
@@ -5845,6 +5857,12 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Empieza agregando a quien ayudará en ventas, atención o gestión del comercio.',
     'colaboradores.noCollaboratorFoundSubtitle':
         'Intenta buscar por otro nombre, correo, celular o apodo.',
+    'colaborador.invite.shareAction': 'Compartir invitación',
+    'colaborador.invite.shareSubject': 'Invitación SixoApp',
+    'colaborador.invite.shareMessage':
+        '¡Hola! Usa este link para aceptar la invitación de colaborador en SixoApp:\n{link}',
+    'colaborador.invite.shareFallback':
+        'El uso compartido no está disponible. El link fue copiado.',
     'collaboratorHome.title': 'Mi panel',
     'collaboratorHome.subtitle':
         'Sigue tus metas, ventas, servicios y prioridades de trabajo.',

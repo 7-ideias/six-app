@@ -78,7 +78,6 @@ class SixWebDashboardHeader extends StatelessWidget {
               if (onBack != null)
                 IconButton.filledTonal(
                   onPressed: onBack,
-                  tooltip: 'Fechar',
                   icon: const Icon(Icons.close_rounded),
                 ),
             ],
@@ -355,9 +354,10 @@ class SixWebLoadingBlock extends StatelessWidget {
             width: 120,
             height: 14,
             decoration: BoxDecoration(
-              color: highlight
-                  ? accent.withValues(alpha: 0.20)
-                  : tokens.surfaceMuted,
+              color:
+                  highlight
+                      ? accent.withValues(alpha: 0.20)
+                      : tokens.surfaceMuted,
               borderRadius: BorderRadius.circular(999),
             ),
           ),

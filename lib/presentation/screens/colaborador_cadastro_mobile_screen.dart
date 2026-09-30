@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart' as sharing;
 
 import '../../core/config/app_config.dart';
 import '../../core/services/colaborador_convite_web_service.dart';
@@ -240,6 +241,8 @@ class _ColaboradorCadastroMobileScreenState
       );
       if (!mounted) return;
       setState(() => _convite = response);
+      await _compartilharConvite(response);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -261,6 +264,50 @@ class _ColaboradorCadastroMobileScreenState
       );
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _compartilharOuCriarConvite() async {
+    final ColaboradorConviteResponse? convite = _convite;
+    if (convite != null) {
+      await _compartilharConvite(convite);
+      return;
+    }
+    await _criarConvite();
+  }
+
+  Future<void> _compartilharConvite(ColaboradorConviteResponse convite) async {
+    final String link = _inviteLink(convite);
+    final String message = _t(
+      'colaborador.invite.shareMessage',
+      'Olá! Use este link para aceitar o convite de colaborador no SixoApp:\n{link}',
+    ).replaceAll('{link}', link);
+    final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
+    final Rect? shareOrigin =
+        renderBox == null
+            ? null
+            : renderBox.localToGlobal(Offset.zero) & renderBox.size;
+
+    try {
+      await sharing.Share.share(
+        message,
+        subject: _t('colaborador.invite.shareSubject', 'Convite SixoApp'),
+        sharePositionOrigin: shareOrigin,
+      );
+    } catch (_) {
+      await Clipboard.setData(ClipboardData(text: link));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _t(
+              'colaborador.invite.shareFallback',
+              'O compartilhamento não está disponível. O link foi copiado.',
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -302,7 +349,7 @@ class _ColaboradorCadastroMobileScreenState
     if (_etapaAtual < _etapas.length - 1) {
       setState(() => _etapaAtual += 1);
     } else {
-      _criarConvite();
+      _compartilharOuCriarConvite();
     }
   }
 
@@ -1565,14 +1612,17 @@ class _ColaboradorCadastroMobileScreenState
                         )
                         : Icon(
                           last
-                              ? Icons.send_outlined
+                              ? Icons.ios_share_rounded
                               : Icons.arrow_forward_rounded,
                         ),
                 label: Text(
                   _loading
                       ? _t('colaborador.invite.generating', 'Gerando...')
                       : last
-                      ? _t('colaborador.invite.generate', 'Gerar convite')
+                      ? _t(
+                        'colaborador.invite.shareAction',
+                        'Compartilhar convite',
+                      )
                       : _t('common.continue', 'Continuar'),
                 ),
               ),
