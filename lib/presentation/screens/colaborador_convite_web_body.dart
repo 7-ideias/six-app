@@ -10,6 +10,8 @@ import '../../providers/locale_settings_provider.dart';
 import '../components/web_dashboard_widgets.dart';
 import '../theme/web_theme_tokens.dart';
 
+enum _ConviteWebAction { generate, email }
+
 class ColaboradorConviteWebBody extends StatefulWidget {
   const ColaboradorConviteWebBody({super.key});
 
@@ -68,26 +70,27 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
   bool _editaCliente = true;
   bool _podeReceberNoCaixa = false;
   bool _podeVerQuantoVendeu = false;
-  bool _acessaEtiquetas = false;
   bool _geraRelatorio = false;
   bool _gerenciaPermissoes = false;
   bool _isLoading = false;
+  _ConviteWebAction? _loadingAction;
   ColaboradorConviteResponse? _ultimoConvite;
 
   bool get _cadastroCompleto =>
       _tipoCadastro == ColaboradorCadastroQuality.tipoCompleto;
 
-  List<String> get _etapas => _cadastroCompleto
-      ? <String>[
-          _t('colaborador.journey.essentialStep', 'Essenciais'),
-          _t('colaborador.journey.personalStep', 'Pessoa e endereço'),
-          _t('colaborador.journey.contractStep', 'Contrato e pagamento'),
-          _t('colaborador.journey.permissionsStep', 'Permissões'),
-        ]
-      : <String>[
-          _t('colaborador.journey.essentialStep', 'Essenciais'),
-          _t('colaborador.journey.permissionsStep', 'Permissões'),
-        ];
+  List<String> get _etapas =>
+      _cadastroCompleto
+          ? <String>[
+            _t('colaborador.journey.essentialStep', 'Essenciais'),
+            _t('colaborador.journey.personalStep', 'Pessoa e endereço'),
+            _t('colaborador.journey.contractStep', 'Contrato e pagamento'),
+            _t('colaborador.journey.permissionsStep', 'Permissões'),
+          ]
+          : <String>[
+            _t('colaborador.journey.essentialStep', 'Essenciais'),
+            _t('colaborador.journey.permissionsStep', 'Permissões'),
+          ];
 
   @override
   void dispose() {
@@ -135,7 +138,6 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
     if (_editaCliente) 'CLIENTES_EDITAR',
     if (_podeReceberNoCaixa) 'FINANCEIRO_ACESSAR',
     if (_podeVerQuantoVendeu) 'VENDAS_CONSULTAR',
-    if (_acessaEtiquetas) 'ETIQUETAS_GERENCIAR',
     if (_geraRelatorio) 'RELATORIOS_GERAR',
     if (_gerenciaPermissoes) 'PERMISSOES_GERENCIAR',
   ];
@@ -187,52 +189,57 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
       permissoes: _permissoesSelecionadas(),
       tipoCadastro: _tipoCadastro,
       percentualQualidadeCadastro: qualidade.percentual,
-      dadosPessoais: !_cadastroCompleto
-          ? null
-          : ColaboradorDadosPessoaisCadastro(
-              nomeSocial: _nomeSocial.text.trim(),
-              cpf: _cpf.text.trim(),
-              rg: _rg.text.trim(),
-              dataNascimento: _dataNascimento.text.trim(),
-              cep: _cep.text.trim(),
-              logradouro: _logradouro.text.trim(),
-              numero: _numero.text.trim(),
-              complemento: _complemento.text.trim(),
-              bairro: _bairro.text.trim(),
-              cidade: _cidade.text.trim(),
-              estado: _estado.text.trim(),
-              pais: _pais.text.trim().toUpperCase(),
-            ),
-      dadosContratuais: !_cadastroCompleto
-          ? null
-          : ColaboradorDadosContratuaisCadastro(
-              tipoVinculo: _tipoVinculo,
-              numeroContrato: _numeroContrato.text.trim(),
-              cargo: _cargo.text.trim(),
-              departamento: _departamento.text.trim(),
-              dataInicio: _dataInicio.text.trim(),
-              dataTermino: _dataTermino.text.trim(),
-              cargaHorariaSemanal: int.tryParse(_cargaHoraria.text.trim()),
-              regimeTrabalho: _regimeTrabalho,
-              valorBase: _parseDecimal(_valorBase.text),
-              moeda: _moeda,
-              periodicidadePagamento: _periodicidade,
-              diaPagamento: int.tryParse(_diaPagamento.text.trim()),
-              metodoPagamento: _metodoPagamento,
-              banco: _banco.text.trim(),
-              agencia: _agencia.text.trim(),
-              conta: _conta.text.trim(),
-              chavePix: _chavePix.text.trim(),
-              escopoPrestacaoServico: _escopoServico.text.trim(),
-              observacoes: _observacoes.text.trim(),
-            ),
+      dadosPessoais:
+          !_cadastroCompleto
+              ? null
+              : ColaboradorDadosPessoaisCadastro(
+                nomeSocial: _nomeSocial.text.trim(),
+                cpf: _cpf.text.trim(),
+                rg: _rg.text.trim(),
+                dataNascimento: _dataNascimento.text.trim(),
+                cep: _cep.text.trim(),
+                logradouro: _logradouro.text.trim(),
+                numero: _numero.text.trim(),
+                complemento: _complemento.text.trim(),
+                bairro: _bairro.text.trim(),
+                cidade: _cidade.text.trim(),
+                estado: _estado.text.trim(),
+                pais: _pais.text.trim().toUpperCase(),
+              ),
+      dadosContratuais:
+          !_cadastroCompleto
+              ? null
+              : ColaboradorDadosContratuaisCadastro(
+                tipoVinculo: _tipoVinculo,
+                numeroContrato: _numeroContrato.text.trim(),
+                cargo: _cargo.text.trim(),
+                departamento: _departamento.text.trim(),
+                dataInicio: _dataInicio.text.trim(),
+                dataTermino: _dataTermino.text.trim(),
+                cargaHorariaSemanal: int.tryParse(_cargaHoraria.text.trim()),
+                regimeTrabalho: _regimeTrabalho,
+                valorBase: _parseDecimal(_valorBase.text),
+                moeda: _moeda,
+                periodicidadePagamento: _periodicidade,
+                diaPagamento: int.tryParse(_diaPagamento.text.trim()),
+                metodoPagamento: _metodoPagamento,
+                banco: _banco.text.trim(),
+                agencia: _agencia.text.trim(),
+                conta: _conta.text.trim(),
+                chavePix: _chavePix.text.trim(),
+                escopoPrestacaoServico: _escopoServico.text.trim(),
+                observacoes: _observacoes.text.trim(),
+              ),
     );
   }
 
-  Future<void> _criarConvite() async {
+  Future<void> _criarConvite({
+    _ConviteWebAction action = _ConviteWebAction.generate,
+  }) async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       _isLoading = true;
+      _loadingAction = action;
       _ultimoConvite = null;
     });
 
@@ -242,6 +249,10 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
       );
       if (!mounted) return;
       setState(() => _ultimoConvite = response);
+      if (action == _ConviteWebAction.email) {
+        await _enviarConvitePorEmail(response);
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -262,7 +273,12 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
         ),
       );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadingAction = null;
+        });
+      }
     }
   }
 
@@ -278,6 +294,56 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
       SnackBar(
         content: Text(
           _t('colaboradores.inviteLinkCopied', 'Link do convite copiado.'),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _enviarUltimoConvitePorEmail() async {
+    final ColaboradorConviteResponse? convite = _ultimoConvite;
+    if (convite == null) {
+      await _criarConvite(action: _ConviteWebAction.email);
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+      _loadingAction = _ConviteWebAction.email;
+    });
+    try {
+      await _enviarConvitePorEmail(convite);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadingAction = null;
+        });
+      }
+    }
+  }
+
+  Future<void> _enviarConvitePorEmail(
+    ColaboradorConviteResponse convite,
+  ) async {
+    await _service.enviarConvitePorEmail(
+      idConvite: convite.id,
+      linkConvite: _linkConvite(convite),
+      idioma:
+          context.read<LocaleSettingsProvider>().currentLocale.toLanguageTag(),
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _t('colaborador.invite.emailSent', 'Convite enviado por e-mail.'),
         ),
         behavior: SnackBarBehavior.floating,
       ),
@@ -414,22 +480,24 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
         'Você pode trocar o nível sem perder os dados já preenchidos.',
       ),
       icon: Icons.route_outlined,
-      child: compact
-          ? Column(
-              children: <Widget>[
-                cards[0],
-                const SizedBox(height: 12),
-                cards[1],
-              ],
-            )
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Expanded(child: cards[0]),
-                const SizedBox(width: 14),
-                Expanded(child: cards[1]),
-              ],
-            ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double cardWidth =
+              compact ? constraints.maxWidth : (constraints.maxWidth - 14) / 2;
+          return Wrap(
+            spacing: 14,
+            runSpacing: 12,
+            children: cards
+                .map(
+                  (Widget card) => SizedBox(
+                    width: cardWidth.clamp(260.0, constraints.maxWidth),
+                    child: card,
+                  ),
+                )
+                .toList(growable: false),
+          );
+        },
+      ),
     );
   }
 
@@ -446,6 +514,7 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
       onTap: () => _selecionarTipo(type),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
+        constraints: const BoxConstraints(minHeight: 92),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: selected ? tokens.selectedBackground : tokens.surfaceMuted,
@@ -507,8 +576,8 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
   Widget _qualityAndSteps(bool compact) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final QualidadeCadastroColaborador qualidade = _qualidade;
-    final LocaleSettingsProvider locale = context
-        .read<LocaleSettingsProvider>();
+    final LocaleSettingsProvider locale =
+        context.read<LocaleSettingsProvider>();
     final List<MelhoriaQualidadeCadastroColaborador> melhorias = qualidade
         .melhorias
         .take(2)
@@ -519,31 +588,32 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
         TweenAnimationBuilder<double>(
           tween: Tween<double>(end: qualidade.percentual / 100),
           duration: const Duration(milliseconds: 320),
-          builder: (_, double value, __) => SizedBox(
-            width: 58,
-            height: 58,
-            child: Stack(
-              alignment: Alignment.center,
-              children: <Widget>[
-                SizedBox.expand(
-                  child: CircularProgressIndicator(
-                    value: value,
-                    strokeWidth: 6,
-                    strokeCap: StrokeCap.round,
-                    color: tokens.info,
-                    backgroundColor: tokens.cardBorder,
-                  ),
+          builder:
+              (_, double value, __) => SizedBox(
+                width: 58,
+                height: 58,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    SizedBox.expand(
+                      child: CircularProgressIndicator(
+                        value: value,
+                        strokeWidth: 6,
+                        strokeCap: StrokeCap.round,
+                        color: tokens.info,
+                        backgroundColor: tokens.cardBorder,
+                      ),
+                    ),
+                    Text(
+                      locale.formatPercent(value * 100),
+                      style: TextStyle(
+                        color: tokens.primaryText,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  locale.formatPercent(value * 100),
-                  style: TextStyle(
-                    color: tokens.primaryText,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
         ),
         const SizedBox(width: 12),
         Column(
@@ -569,41 +639,44 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
         ),
       ],
     );
-    final Widget suggestions = melhorias.isEmpty
-        ? Text(
-            _t(
-              'colaborador.quality.completeMessage',
-              'Cadastro bem preparado para esta jornada.',
-            ),
-            style: TextStyle(color: tokens.secondaryText),
-          )
-        : Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: melhorias
-                .map(
-                  (MelhoriaQualidadeCadastroColaborador melhoria) => Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: tokens.surfaceMuted,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: tokens.cardBorder),
-                    ),
-                    child: Text(
-                      '${_improvementLabel(melhoria.criterio)} +${locale.formatPercent(melhoria.pontos)}',
-                      style: TextStyle(
-                        color: tokens.primaryText,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+    final Widget suggestions =
+        melhorias.isEmpty
+            ? Text(
+              _t(
+                'colaborador.quality.completeMessage',
+                'Cadastro bem preparado para esta jornada.',
+              ),
+              style: TextStyle(color: tokens.secondaryText),
+            )
+            : Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: melhorias
+                  .map(
+                    (
+                      MelhoriaQualidadeCadastroColaborador melhoria,
+                    ) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: tokens.surfaceMuted,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: tokens.cardBorder),
+                      ),
+                      child: Text(
+                        '${_improvementLabel(melhoria.criterio)} +${locale.formatPercent(melhoria.pontos)}',
+                        style: TextStyle(
+                          color: tokens.primaryText,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                )
-                .toList(growable: false),
-          );
+                  )
+                  .toList(growable: false),
+            );
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -930,8 +1003,8 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
                   'OUTRO',
                 ],
                 labelFor: _contractTypeLabel,
-                onChanged: (String value) =>
-                    setState(() => _tipoVinculo = value),
+                onChanged:
+                    (String value) => setState(() => _tipoVinculo = value),
               ),
               _field(
                 controller: _numeroContrato,
@@ -985,8 +1058,8 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
                 width: normal,
                 values: const <String>['PRESENCIAL', 'HIBRIDO', 'REMOTO'],
                 labelFor: _workModeLabel,
-                onChanged: (String value) =>
-                    setState(() => _regimeTrabalho = value),
+                onChanged:
+                    (String value) => setState(() => _regimeTrabalho = value),
               ),
               if (_tipoVinculo == 'PRESTACAO_SERVICO')
                 _field(
@@ -1054,8 +1127,8 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
                   'POR_SERVICO',
                 ],
                 labelFor: _frequencyLabel,
-                onChanged: (String value) =>
-                    setState(() => _periodicidade = value),
+                onChanged:
+                    (String value) => setState(() => _periodicidade = value),
               ),
               _field(
                 controller: _diaPagamento,
@@ -1076,8 +1149,8 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
                   'OUTRO',
                 ],
                 labelFor: _paymentMethodLabel,
-                onChanged: (String value) =>
-                    setState(() => _metodoPagamento = value),
+                onChanged:
+                    (String value) => setState(() => _metodoPagamento = value),
               ),
               _field(
                 controller: _banco,
@@ -1155,16 +1228,6 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
         icon: Icons.query_stats_outlined,
         value: _podeVerQuantoVendeu,
         onChanged: (bool value) => setState(() => _podeVerQuantoVendeu = value),
-      ),
-      _switchCard(
-        title: _t('colaboradores.labels', 'Etiquetas'),
-        subtitle: _t(
-          'colaboradores.canManageLabels',
-          'Pode criar e gerar etiquetas.',
-        ),
-        icon: Icons.local_offer_outlined,
-        value: _acessaEtiquetas,
-        onChanged: (bool value) => setState(() => _acessaEtiquetas = value),
       ),
       _switchCard(
         title: _t('colaboradores.reports', 'Relatórios'),
@@ -1245,7 +1308,7 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
     return SizedBox(
       width: width,
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         decoration: _decoration(label, icon),
         items: values
             .map(
@@ -1255,11 +1318,12 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
               ),
             )
             .toList(growable: false),
-        onChanged: _isLoading
-            ? null
-            : (String? selected) {
-                if (selected != null) onChanged(selected);
-              },
+        onChanged:
+            _isLoading
+                ? null
+                : (String? selected) {
+                  if (selected != null) onChanged(selected);
+                },
       ),
     );
   }
@@ -1344,53 +1408,96 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
   Widget _actionsBar(bool compact) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool last = _etapaAtual == _etapas.length - 1;
+    final bool sendingEmail = _loadingAction == _ConviteWebAction.email;
+    final Widget backButton = OutlinedButton.icon(
+      onPressed: _isLoading ? null : _voltar,
+      icon: const Icon(Icons.arrow_back_rounded),
+      label: Text(
+        _etapaAtual == 0
+            ? _t('common.cancel', 'Cancelar')
+            : _t('common.back', 'Voltar'),
+      ),
+    );
+    final List<Widget> actionButtons = <Widget>[
+      if (last)
+        FilledButton.icon(
+          onPressed: _isLoading ? null : _enviarUltimoConvitePorEmail,
+          icon:
+              sendingEmail
+                  ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                  : const Icon(Icons.alternate_email_rounded),
+          label: Text(
+            sendingEmail
+                ? _t('colaborador.invite.sendingEmail', 'Enviando...')
+                : _ultimoConvite == null
+                ? _t(
+                  'colaborador.invite.generateAndEmail',
+                  'Gerar e enviar por e-mail',
+                )
+                : _t(
+                  'colaborador.invite.emailAction',
+                  'Enviar direto pelo e-mail',
+                ),
+          ),
+        ),
+      if (_ultimoConvite != null)
+        OutlinedButton.icon(
+          onPressed: _isLoading ? null : _copiarLink,
+          icon: const Icon(Icons.copy_outlined),
+          label: Text(_t('colaborador.invite.copy', 'Copiar link')),
+        ),
+      if (!last)
+        FilledButton.icon(
+          onPressed: _isLoading ? null : _avancar,
+          icon:
+              _isLoading
+                  ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                  : const Icon(Icons.arrow_forward_rounded),
+          label: Text(
+            _isLoading
+                ? _t('colaborador.invite.generating', 'Gerando convite...')
+                : _t('common.continue', 'Continuar'),
+          ),
+        ),
+    ];
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       decoration: BoxDecoration(
         color: tokens.surfaceElevated,
         border: Border(top: BorderSide(color: tokens.cardBorder)),
       ),
-      child: Row(
-        children: <Widget>[
-          OutlinedButton.icon(
-            onPressed: _isLoading ? null : _voltar,
-            icon: const Icon(Icons.arrow_back_rounded),
-            label: Text(
-              _etapaAtual == 0
-                  ? _t('common.cancel', 'Cancelar')
-                  : _t('common.back', 'Voltar'),
-            ),
-          ),
-          const Spacer(),
-          if (_ultimoConvite != null) ...<Widget>[
-            OutlinedButton.icon(
-              onPressed: _copiarLink,
-              icon: const Icon(Icons.copy_outlined),
-              label: Text(_t('colaborador.invite.copy', 'Copiar link')),
-            ),
-            const SizedBox(width: 10),
-          ],
-          FilledButton.icon(
-            onPressed: _isLoading ? null : _avancar,
-            icon: _isLoading
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Icon(
-                    last ? Icons.send_outlined : Icons.arrow_forward_rounded,
-                  ),
-            label: Text(
-              _isLoading
-                  ? _t('colaborador.invite.generating', 'Gerando convite...')
-                  : last
-                  ? _t('colaborador.invite.generate', 'Gerar convite')
-                  : _t('common.continue', 'Continuar'),
-            ),
-          ),
-        ],
-      ),
+      child:
+          compact
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  backButton,
+                  const SizedBox(height: 10),
+                  for (final Widget button in actionButtons) ...<Widget>[
+                    button,
+                    if (button != actionButtons.last)
+                      const SizedBox(height: 10),
+                  ],
+                ],
+              )
+              : Row(
+                children: <Widget>[
+                  backButton,
+                  const Spacer(),
+                  for (final Widget button in actionButtons) ...<Widget>[
+                    button,
+                    if (button != actionButtons.last) const SizedBox(width: 10),
+                  ],
+                ],
+              ),
     );
   }
 

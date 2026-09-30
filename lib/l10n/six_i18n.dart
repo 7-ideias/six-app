@@ -563,9 +563,13 @@ const Map<String, Map<String, String>> _fallbacks = {
     'initialOnboarding.eyebrow': 'Configuração inicial',
     'initialOnboarding.step': 'Etapa',
     'initialOnboarding.of': 'de',
+    'initialOnboarding.languageTitle': 'Escolha seu idioma',
+    'initialOnboarding.languageSubtitle':
+        'Português vem selecionado por padrão. Você pode trocar agora.',
     'initialOnboarding.identityTitle': 'Vamos começar pelo essencial',
     'initialOnboarding.identitySubtitle':
         'Confirme seus dados para personalizarmos sua experiência.',
+    'initialOnboarding.identitySectionTitle': 'Seus dados',
     'initialOnboarding.businessTitle': 'O que seu negócio faz?',
     'initialOnboarding.businessSubtitle':
         'Isso apenas organiza módulos e atalhos. Você poderá alterar depois.',
@@ -735,6 +739,29 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.loading.subtitle':
         'Buscando a situação atual desta empresa.',
     'workspaceHome.error.title': 'Não foi possível carregar o resumo do dia.',
+    'colaboradores.firstCollaboratorTitle': 'Cadastre seu primeiro colaborador',
+    'colaboradores.firstCollaboratorSubtitle':
+        'Comece adicionando quem vai ajudar nas vendas, atendimentos ou gestão do comércio.',
+    'colaboradores.noCollaboratorFoundSubtitle':
+        'Tente buscar por outro nome, e-mail, celular ou apelido.',
+    'colaborador.invite.shareAction': 'Compartilhar convite',
+    'colaborador.invite.sendAction': 'Enviar convite',
+    'colaborador.invite.generateAndEmail': 'Gerar e enviar por e-mail',
+    'colaborador.invite.emailAction': 'Enviar direto pelo e-mail',
+    'colaborador.invite.emailActionSubtitle':
+        'O convite será enviado para o e-mail informado.',
+    'colaborador.invite.shareActionSubtitle':
+        'Use WhatsApp, mensagens ou outro app do aparelho.',
+    'colaborador.invite.actionTitle': 'Enviar convite',
+    'colaborador.invite.actionSubtitle':
+        'Escolha como o colaborador vai receber o convite.',
+    'colaborador.invite.sendingEmail': 'Enviando...',
+    'colaborador.invite.emailSent': 'Convite enviado por e-mail.',
+    'colaborador.invite.shareSubject': 'Convite SixoApp',
+    'colaborador.invite.shareMessage':
+        'Olá! Use este link para aceitar o convite de colaborador no SixoApp:\n{link}',
+    'colaborador.invite.shareFallback':
+        'O compartilhamento não está disponível. O link foi copiado.',
     'collaboratorHome.title': 'Meu painel',
     'collaboratorHome.subtitle':
         'Acompanhe metas, vendas, serviços e prioridades do seu trabalho.',
@@ -1571,6 +1598,13 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileCreate.passwordMismatchInline': 'As senhas não coincidem.',
     'auth.mobileCreate.passwordMismatchError':
         'As senhas informadas não são iguais. Verifique e tente novamente.',
+    'auth.mobileAccountCreated.heroTitle': 'Conta criada',
+    'auth.mobileAccountCreated.heroSubtitle':
+        'Seu espaço no SixoApp está pronto para começar.',
+    'auth.mobileAccountCreated.title': 'Tudo certo!',
+    'auth.mobileAccountCreated.message':
+        'Sua conta foi criada com sucesso. Faça login para começar a usar o SixoApp.',
+    'auth.mobileAccountCreated.loginAction': 'Ir para o login',
     'auth.entry.title': 'Bem-vindo ao SixoApp',
     'auth.entry.subtitle':
         'Antes de continuar, diga como deseja acessar o app.',
@@ -3240,9 +3274,13 @@ const Map<String, Map<String, String>> _fallbacks = {
     'initialOnboarding.eyebrow': 'Initial setup',
     'initialOnboarding.step': 'Step',
     'initialOnboarding.of': 'of',
+    'initialOnboarding.languageTitle': 'Choose your language',
+    'initialOnboarding.languageSubtitle':
+        'Portuguese is selected by default. You can change it now.',
     'initialOnboarding.identityTitle': 'Let’s start with the essentials',
     'initialOnboarding.identitySubtitle':
         'Confirm your information so we can personalize your experience.',
+    'initialOnboarding.identitySectionTitle': 'Your information',
     'initialOnboarding.businessTitle': 'What does your business do?',
     'initialOnboarding.businessSubtitle':
         'This only organizes modules and shortcuts. You can change it later.',
@@ -3412,6 +3450,29 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.loading.subtitle':
         'Fetching the current situation for this business.',
     'workspaceHome.error.title': 'Could not load the day summary.',
+    'colaboradores.firstCollaboratorTitle': 'Add your first collaborator',
+    'colaboradores.firstCollaboratorSubtitle':
+        'Start by adding who will help with sales, service, or business management.',
+    'colaboradores.noCollaboratorFoundSubtitle':
+        'Try searching by another name, email, phone, or nickname.',
+    'colaborador.invite.shareAction': 'Share invite',
+    'colaborador.invite.sendAction': 'Send invite',
+    'colaborador.invite.generateAndEmail': 'Generate and send by email',
+    'colaborador.invite.emailAction': 'Send directly by email',
+    'colaborador.invite.emailActionSubtitle':
+        'The invite will be sent to the email entered.',
+    'colaborador.invite.shareActionSubtitle':
+        'Use WhatsApp, messages, or another app on this device.',
+    'colaborador.invite.actionTitle': 'Send invite',
+    'colaborador.invite.actionSubtitle':
+        'Choose how the collaborator will receive the invite.',
+    'colaborador.invite.sendingEmail': 'Sending...',
+    'colaborador.invite.emailSent': 'Invite sent by email.',
+    'colaborador.invite.shareSubject': 'SixoApp invite',
+    'colaborador.invite.shareMessage':
+        'Hi! Use this link to accept the collaborator invite in SixoApp:\n{link}',
+    'colaborador.invite.shareFallback':
+        'Sharing is not available. The link was copied.',
     'collaboratorHome.title': 'My dashboard',
     'collaboratorHome.subtitle':
         'Track your goals, sales, services, and work priorities.',
@@ -4448,6 +4509,13 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileCreate.passwordMismatchInline': 'Passwords do not match.',
     'auth.mobileCreate.passwordMismatchError':
         'The passwords are different. Check them and try again.',
+    'auth.mobileAccountCreated.heroTitle': 'Account created',
+    'auth.mobileAccountCreated.heroSubtitle':
+        'Your SixoApp workspace is ready to start.',
+    'auth.mobileAccountCreated.title': 'All set!',
+    'auth.mobileAccountCreated.message':
+        'Your account was created successfully. Sign in to start using SixoApp.',
+    'auth.mobileAccountCreated.loginAction': 'Go to sign in',
     'auth.entry.title': 'Welcome to SixoApp',
     'auth.entry.subtitle':
         'Before continuing, choose how you want to access the app.',
@@ -5629,9 +5697,13 @@ const Map<String, Map<String, String>> _fallbacks = {
     'initialOnboarding.eyebrow': 'Configuración inicial',
     'initialOnboarding.step': 'Paso',
     'initialOnboarding.of': 'de',
+    'initialOnboarding.languageTitle': 'Elige tu idioma',
+    'initialOnboarding.languageSubtitle':
+        'Portugués está seleccionado por defecto. Puedes cambiarlo ahora.',
     'initialOnboarding.identityTitle': 'Empecemos por lo esencial',
     'initialOnboarding.identitySubtitle':
         'Confirma tus datos para personalizar tu experiencia.',
+    'initialOnboarding.identitySectionTitle': 'Tus datos',
     'initialOnboarding.businessTitle': '¿Qué hace tu negocio?',
     'initialOnboarding.businessSubtitle':
         'Esto solo organiza módulos y accesos. Podrás cambiarlo después.',
@@ -5804,6 +5876,29 @@ const Map<String, Map<String, String>> _fallbacks = {
     'workspaceHome.loading.subtitle':
         'Buscando la situación actual de este comercio.',
     'workspaceHome.error.title': 'No fue posible cargar el resumen del día.',
+    'colaboradores.firstCollaboratorTitle': 'Registra tu primer colaborador',
+    'colaboradores.firstCollaboratorSubtitle':
+        'Empieza agregando a quien ayudará en ventas, atención o gestión del comercio.',
+    'colaboradores.noCollaboratorFoundSubtitle':
+        'Intenta buscar por otro nombre, correo, celular o apodo.',
+    'colaborador.invite.shareAction': 'Compartir invitación',
+    'colaborador.invite.sendAction': 'Enviar invitación',
+    'colaborador.invite.generateAndEmail': 'Generar y enviar por e-mail',
+    'colaborador.invite.emailAction': 'Enviar directo por e-mail',
+    'colaborador.invite.emailActionSubtitle':
+        'La invitación se enviará al e-mail informado.',
+    'colaborador.invite.shareActionSubtitle':
+        'Usa WhatsApp, mensajes u otra app del dispositivo.',
+    'colaborador.invite.actionTitle': 'Enviar invitación',
+    'colaborador.invite.actionSubtitle':
+        'Elige cómo el colaborador recibirá la invitación.',
+    'colaborador.invite.sendingEmail': 'Enviando...',
+    'colaborador.invite.emailSent': 'Invitación enviada por e-mail.',
+    'colaborador.invite.shareSubject': 'Invitación SixoApp',
+    'colaborador.invite.shareMessage':
+        '¡Hola! Usa este link para aceptar la invitación de colaborador en SixoApp:\n{link}',
+    'colaborador.invite.shareFallback':
+        'El uso compartido no está disponible. El link fue copiado.',
     'collaboratorHome.title': 'Mi panel',
     'collaboratorHome.subtitle':
         'Sigue tus metas, ventas, servicios y prioridades de trabajo.',
@@ -6509,6 +6604,13 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileCreate.passwordMismatchInline': 'Las contraseñas no coinciden.',
     'auth.mobileCreate.passwordMismatchError':
         'Las contraseñas son diferentes. Verifícalas e inténtalo de nuevo.',
+    'auth.mobileAccountCreated.heroTitle': 'Cuenta creada',
+    'auth.mobileAccountCreated.heroSubtitle':
+        'Tu espacio en SixoApp está listo para comenzar.',
+    'auth.mobileAccountCreated.title': '¡Todo listo!',
+    'auth.mobileAccountCreated.message':
+        'Tu cuenta se creó correctamente. Inicia sesión para empezar a usar SixoApp.',
+    'auth.mobileAccountCreated.loginAction': 'Ir al inicio de sesión',
     'auth.entry.title': 'Bienvenido a SixoApp',
     'auth.entry.subtitle':
         'Antes de continuar, elige cómo quieres acceder a la app.',

@@ -101,20 +101,20 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
       MobileBiometricKind.faceId => 'Face ID',
       MobileBiometricKind.touchId => 'Touch ID',
       MobileBiometricKind.face => _localized(
-          pt: 'reconhecimento facial',
-          en: 'face recognition',
-          es: 'reconocimiento facial',
-        ),
+        pt: 'reconhecimento facial',
+        en: 'face recognition',
+        es: 'reconocimiento facial',
+      ),
       MobileBiometricKind.fingerprint => _localized(
-          pt: 'impressão digital',
-          en: 'fingerprint',
-          es: 'huella digital',
-        ),
+        pt: 'impressão digital',
+        en: 'fingerprint',
+        es: 'huella digital',
+      ),
       MobileBiometricKind.generic => _localized(
-          pt: 'biometria',
-          en: 'biometrics',
-          es: 'biometría',
-        ),
+        pt: 'biometria',
+        en: 'biometrics',
+        es: 'biometría',
+      ),
     };
   }
 
@@ -122,10 +122,10 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     final MobileBiometricAvailability current =
         availability ?? _biometricAvailability;
     return switch (current.kind) {
-      MobileBiometricKind.fingerprint || MobileBiometricKind.touchId =>
-        Icons.fingerprint_rounded,
-      MobileBiometricKind.faceId || MobileBiometricKind.face =>
-        Icons.face_retouching_natural_rounded,
+      MobileBiometricKind.fingerprint ||
+      MobileBiometricKind.touchId => Icons.fingerprint_rounded,
+      MobileBiometricKind.faceId ||
+      MobileBiometricKind.face => Icons.face_retouching_natural_rounded,
       MobileBiometricKind.generic => Icons.shield_outlined,
     };
   }
@@ -220,9 +220,12 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
         if (mounted) {
           _showSnack(
             _localized(
-              pt: 'A sessão biométrica não está mais disponível. Entre com sua senha.',
-              en: 'The biometric session is no longer available. Sign in with your password.',
-              es: 'La sesión biométrica ya no está disponible. Entra con tu contraseña.',
+              pt:
+                  'A sessão biométrica não está mais disponível. Entre com sua senha.',
+              en:
+                  'The biometric session is no longer available. Sign in with your password.',
+              es:
+                  'La sesión biométrica ya no está disponible. Entra con tu contraseña.',
             ),
           );
         }
@@ -262,8 +265,10 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
         case MobileSessionRestorationStatus.temporaryFailure:
           _showSnack(
             _localized(
-              pt: 'Não foi possível validar sua sessão agora. Verifique sua conexão.',
-              en: 'We could not validate your session right now. Check your connection.',
+              pt:
+                  'Não foi possível validar sua sessão agora. Verifique sua conexão.',
+              en:
+                  'We could not validate your session right now. Check your connection.',
               es: 'No pudimos validar tu sesión ahora. Revisa tu conexión.',
             ),
           );
@@ -341,9 +346,12 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                 const SizedBox(height: 8),
                 Text(
                   _localized(
-                    pt: 'Na próxima abertura, você poderá acessar sua sessão sem digitar a senha. A biometria é validada somente pelo aparelho e não é enviada ao SixoApp.',
-                    en: 'Next time you open the app, you can access your session without typing your password. Biometrics are validated only by your device and are never sent to SixoApp.',
-                    es: 'La próxima vez que abras la app, podrás acceder a tu sesión sin escribir la contraseña. La biometría se valida solo en tu dispositivo y nunca se envía a SixoApp.',
+                    pt:
+                        'Na próxima abertura, você poderá acessar sua sessão sem digitar a senha. A biometria é validada somente pelo aparelho e não é enviada ao SixoApp.',
+                    en:
+                        'Next time you open the app, you can access your session without typing your password. Biometrics are validated only by your device and are never sent to SixoApp.',
+                    es:
+                        'La próxima vez que abras la app, podrás acceder a tu sesión sin escribir la contraseña. La biometría se valida solo en tu dispositivo y nunca se envía a SixoApp.',
                   ),
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -378,11 +386,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                 TextButton(
                   onPressed: () => Navigator.of(sheetContext).pop(false),
                   child: Text(
-                    _localized(
-                      pt: 'Agora não',
-                      en: 'Not now',
-                      es: 'Ahora no',
-                    ),
+                    _localized(pt: 'Agora não', en: 'Not now', es: 'Ahora no'),
                   ),
                 ),
               ],
@@ -417,9 +421,11 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     } else {
       _showSnack(
         _localized(
-          pt: 'Não foi possível ativar a biometria. Você poderá tentar novamente depois.',
+          pt:
+              'Não foi possível ativar a biometria. Você poderá tentar novamente depois.',
           en: 'Biometrics could not be enabled. You can try again later.',
-          es: 'No se pudo activar la biometría. Podrás intentarlo de nuevo más tarde.',
+          es:
+              'No se pudo activar la biometría. Podrás intentarlo de nuevo más tarde.',
         ),
       );
     }
@@ -450,17 +456,17 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   String _googleMessage(GoogleAuthException error) {
     return switch (error.code) {
       GoogleAuthErrorCode.invalidExistingPassword => context.t(
-          'auth.googleLink.invalidPassword',
-          fallback: 'A senha atual informada não foi aceita.',
-        ),
+        'auth.googleLink.invalidPassword',
+        fallback: 'A senha atual informada não foi aceita.',
+      ),
       GoogleAuthErrorCode.unavailable => context.t(
-          'auth.googleUnavailable',
-          fallback: 'O login com Google está temporariamente indisponível.',
-        ),
+        'auth.googleUnavailable',
+        fallback: 'O login com Google está temporariamente indisponível.',
+      ),
       GoogleAuthErrorCode.network => context.t(
-          'auth.googleNetworkError',
-          fallback: 'Falha de conexão. Verifique sua internet e tente novamente.',
-        ),
+        'auth.googleNetworkError',
+        fallback: 'Falha de conexão. Verifique sua internet e tente novamente.',
+      ),
       _ => error.message,
     };
   }
@@ -475,7 +481,9 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _forgotPassword() {
@@ -495,6 +503,8 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   @override
   Widget build(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
+    final NavigatorState navigator = Navigator.of(context);
+    final bool canNavigateBack = navigator.canPop();
     final bool showBiometricLogin =
         _biometricEnabled &&
         _hasProtectedSession &&
@@ -510,8 +520,9 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
         fallback: 'Entre para continuar de onde parou.',
       ),
       compactHeader: true,
-      onBack: () => Navigator.of(context).maybePop(),
-      backSemanticLabel: context.t('common.back', fallback: 'Voltar'),
+      onBack: canNavigateBack ? () => navigator.maybePop() : null,
+      backSemanticLabel:
+          canNavigateBack ? context.t('common.back', fallback: 'Voltar') : null,
       body: AutofillGroup(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -650,10 +661,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
             KeyedSubtree(
               key: _submitButtonKey,
               child: SixoAppAuthPrimaryButton(
-                label: context.t(
-                  'auth.mobileLogin.submit',
-                  fallback: 'Entrar',
-                ),
+                label: context.t('auth.mobileLogin.submit', fallback: 'Entrar'),
                 onPressed: _login,
                 isLoading: _isLoading,
               ),

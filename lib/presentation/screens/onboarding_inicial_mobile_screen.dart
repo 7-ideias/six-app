@@ -11,10 +11,7 @@ import '../../providers/locale_settings_provider.dart';
 import '../../providers/onboarding_inicial_provider.dart';
 
 class OnboardingInicialMobileScreen extends StatefulWidget {
-  const OnboardingInicialMobileScreen({
-    super.key,
-    required this.onCompleted,
-  });
+  const OnboardingInicialMobileScreen({super.key, required this.onCompleted});
 
   final ValueChanged<BuildContext> onCompleted;
 
@@ -39,19 +36,19 @@ class _OnboardingInicialMobileScreenState
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_initialized) return;
-    final OnboardingInicialModel? estado = context
-        .read<OnboardingInicialProvider>()
-        .estado;
+    final OnboardingInicialModel? estado =
+        context.read<OnboardingInicialProvider>().estado;
     if (estado == null) return;
     _initialized = true;
     _nomeController.text = estado.nomeUsuario;
     _empresaController.text = estado.nomeEmpresa;
-    _idioma = _normalizarIdioma(
-      estado.idiomaPreferencial,
-      context.read<LocaleSettingsProvider>().currentLocale,
-    );
+    _idioma = _normalizarIdioma(estado.idiomaPreferencial);
     _realizaVendas = estado.realizaVendas;
     _prestaServicos = estado.prestaServicosTecnicos;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _applyLocale(_idioma);
+    });
   }
 
   @override
@@ -64,12 +61,12 @@ class _OnboardingInicialMobileScreenState
   @override
   Widget build(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
-    final OnboardingInicialProvider provider = context
-        .watch<OnboardingInicialProvider>();
+    final OnboardingInicialProvider provider =
+        context.watch<OnboardingInicialProvider>();
     final OnboardingInicialModel? estado = provider.estado;
     if (estado == null) return const SizedBox.shrink();
 
-    final int totalSteps = estado.podeConfigurarEmpresa ? 2 : 1;
+    final int totalSteps = estado.podeConfigurarEmpresa ? 3 : 2;
     final bool finalStep = _step == totalSteps - 1;
 
     return PopScope(
@@ -111,10 +108,11 @@ class _OnboardingInicialMobileScreenState
                             children: <Widget>[
                               _heading(context),
                               const SizedBox(height: 25),
-                              if (_step == 0)
-                                _identityStep(context, estado)
-                              else
-                                _businessStep(context),
+                              switch (_step) {
+                                0 => _languageStep(context),
+                                1 => _identityStep(context, estado),
+                                _ => _businessStep(context),
+                              },
                               if (_errorKey != null) ...<Widget>[
                                 const SizedBox(height: 16),
                                 _error(context),
@@ -122,12 +120,7 @@ class _OnboardingInicialMobileScreenState
                             ],
                           ),
                         ),
-                        _actions(
-                          context,
-                          estado,
-                          finalStep,
-                          provider.salvando,
-                        ),
+                        _actions(context, estado, finalStep, provider.salvando),
                       ],
                     ),
                   ),
@@ -185,7 +178,10 @@ class _OnboardingInicialMobileScreenState
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(99),
@@ -207,11 +203,14 @@ class _OnboardingInicialMobileScreenState
               return Expanded(
                 child: Container(
                   height: 5,
-                  margin: EdgeInsets.only(right: index < totalSteps - 1 ? 7 : 0),
+                  margin: EdgeInsets.only(
+                    right: index < totalSteps - 1 ? 7 : 0,
+                  ),
                   decoration: BoxDecoration(
-                    color: index <= _step
-                        ? SixMobilePalette.brandCyan
-                        : Colors.white.withValues(alpha: 0.16),
+                    color:
+                        index <= _step
+                            ? SixMobilePalette.brandCyan
+                            : Colors.white.withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
@@ -236,24 +235,31 @@ class _OnboardingInicialMobileScreenState
             shape: BoxShape.circle,
           ),
           child: Icon(
-            _step == 0
-                ? Icons.person_outline_rounded
-                : Icons.dashboard_customize_outlined,
+            switch (_step) {
+              0 => Icons.language_rounded,
+              1 => Icons.person_outline_rounded,
+              _ => Icons.dashboard_customize_outlined,
+            },
             color: colors.accent,
             size: 19,
           ),
         ),
         const SizedBox(height: 14),
         Text(
-          _step == 0
-              ? context.t(
-                  'initialOnboarding.identityTitle',
-                  fallback: 'Vamos começar pelo essencial',
-                )
-              : context.t(
-                  'initialOnboarding.businessTitle',
-                  fallback: 'O que seu negócio faz?',
-                ),
+          switch (_step) {
+            0 => context.t(
+              'initialOnboarding.languageTitle',
+              fallback: 'Escolha seu idioma',
+            ),
+            1 => context.t(
+              'initialOnboarding.identityTitle',
+              fallback: 'Vamos começar pelo essencial',
+            ),
+            _ => context.t(
+              'initialOnboarding.businessTitle',
+              fallback: 'O que seu negócio faz?',
+            ),
+          },
           style: TextStyle(
             color: colors.titleText,
             fontSize: 27,
@@ -262,32 +268,28 @@ class _OnboardingInicialMobileScreenState
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          _step == 0
-              ? context.t(
-                  'initialOnboarding.identitySubtitle',
-                  fallback:
-                      'Confirme seus dados para personalizarmos sua experiência.',
-                )
-              : context.t(
-                  'initialOnboarding.businessSubtitle',
-                  fallback:
-                      'Isso organiza módulos e atalhos. Você poderá alterar depois.',
-                ),
-          style: TextStyle(
-            color: colors.mutedText,
-            fontSize: 14,
-            height: 1.45,
+        Text(switch (_step) {
+          0 => context.t(
+            'initialOnboarding.languageSubtitle',
+            fallback:
+                'Português vem selecionado por padrão. Você pode trocar agora.',
           ),
-        ),
+          1 => context.t(
+            'initialOnboarding.identitySubtitle',
+            fallback:
+                'Confirme seus dados para personalizarmos sua experiência.',
+          ),
+          _ => context.t(
+            'initialOnboarding.businessSubtitle',
+            fallback:
+                'Isso organiza módulos e atalhos. Você poderá alterar depois.',
+          ),
+        }, style: TextStyle(color: colors.mutedText, fontSize: 14, height: 1.45)),
       ],
     );
   }
 
-  Widget _identityStep(
-    BuildContext context,
-    OnboardingInicialModel estado,
-  ) {
+  Widget _languageStep(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,16 +306,31 @@ class _OnboardingInicialMobileScreenState
           ),
         ),
         const SizedBox(height: 11),
-        Row(
-          children: <Widget>[
-            Expanded(child: _language('PT', 'Português', 'pt-BR')),
-            const SizedBox(width: 8),
-            Expanded(child: _language('EN', 'English', 'en-US')),
-            const SizedBox(width: 8),
-            Expanded(child: _language('ES', 'Español', 'es-ES')),
-          ],
+        _language('PT', 'Português', 'pt-BR'),
+        const SizedBox(height: 10),
+        _language('EN', 'English', 'en-US'),
+        const SizedBox(height: 10),
+        _language('ES', 'Español', 'es-ES'),
+      ],
+    );
+  }
+
+  Widget _identityStep(BuildContext context, OnboardingInicialModel estado) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          context.t(
+            'initialOnboarding.identitySectionTitle',
+            fallback: 'Seus dados',
+          ),
+          style: TextStyle(
+            color: context.sixMobileColors.titleText,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+          ),
         ),
-        const SizedBox(height: 23),
+        const SizedBox(height: 11),
         _field(
           context,
           controller: _nomeController,
@@ -322,9 +339,10 @@ class _OnboardingInicialMobileScreenState
             fallback: 'Como podemos chamar você?',
           ),
           icon: Icons.person_outline_rounded,
-          action: estado.podeConfigurarEmpresa
-              ? TextInputAction.next
-              : TextInputAction.done,
+          action:
+              estado.podeConfigurarEmpresa
+                  ? TextInputAction.next
+                  : TextInputAction.done,
         ),
         if (estado.podeConfigurarEmpresa) ...<Widget>[
           const SizedBox(height: 14),
@@ -397,10 +415,11 @@ class _OnboardingInicialMobileScreenState
             fallback: 'PDV, catálogo, estoque e vendas.',
           ),
           selected: _realizaVendas,
-          onTap: () => setState(() {
-            _realizaVendas = !_realizaVendas;
-            _errorKey = null;
-          }),
+          onTap:
+              () => setState(() {
+                _realizaVendas = !_realizaVendas;
+                _errorKey = null;
+              }),
         ),
         const SizedBox(height: 12),
         _MobileActivityTile(
@@ -415,10 +434,11 @@ class _OnboardingInicialMobileScreenState
             fallback: 'Atendimentos, ordens de serviço e procedimentos.',
           ),
           selected: _prestaServicos,
-          onTap: () => setState(() {
-            _prestaServicos = !_prestaServicos;
-            _errorKey = null;
-          }),
+          onTap:
+              () => setState(() {
+                _prestaServicos = !_prestaServicos;
+                _errorKey = null;
+              }),
         ),
       ],
     );
@@ -484,12 +504,13 @@ class _OnboardingInicialMobileScreenState
                 width: 51,
                 height: 51,
                 child: OutlinedButton(
-                  onPressed: saving
-                      ? null
-                      : () => setState(() {
-                          _step = 0;
-                          _errorKey = null;
-                        }),
+                  onPressed:
+                      saving
+                          ? null
+                          : () => setState(() {
+                            _step -= 1;
+                            _errorKey = null;
+                          }),
                   style: OutlinedButton.styleFrom(
                     padding: EdgeInsets.zero,
                     side: BorderSide(color: colors.border),
@@ -506,11 +527,12 @@ class _OnboardingInicialMobileScreenState
               child: SizedBox(
                 height: 51,
                 child: FilledButton.icon(
-                  onPressed: saving
-                      ? null
-                      : finalStep
-                      ? () => _finish(estado)
-                      : () => _next(estado),
+                  onPressed:
+                      saving
+                          ? null
+                          : finalStep
+                          ? () => _finish(estado)
+                          : () => _next(estado),
                   style: FilledButton.styleFrom(
                     backgroundColor: SixMobilePalette.brandNavyBright,
                     foregroundColor: Colors.white,
@@ -518,25 +540,26 @@ class _OnboardingInicialMobileScreenState
                       borderRadius: BorderRadius.circular(15),
                     ),
                   ),
-                  icon: saving
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
+                  icon:
+                      saving
+                          ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                          : Icon(
+                            finalStep
+                                ? Icons.auto_awesome_rounded
+                                : Icons.arrow_forward_rounded,
                           ),
-                        )
-                      : Icon(
-                          finalStep
-                              ? Icons.auto_awesome_rounded
-                              : Icons.arrow_forward_rounded,
-                        ),
                   label: Text(
                     finalStep
                         ? context.t(
-                            'initialOnboarding.start',
-                            fallback: 'Começar a usar o SixoApp',
-                          )
+                          'initialOnboarding.start',
+                          fallback: 'Começar a usar o SixoApp',
+                        )
                         : context.t('common.continue', fallback: 'Continuar'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -551,18 +574,23 @@ class _OnboardingInicialMobileScreenState
   }
 
   void _next(OnboardingInicialModel estado) {
+    if (_step == 0) {
+      setState(() {
+        _step = 1;
+        _errorKey = null;
+      });
+      return;
+    }
     if (!_validateIdentity(estado)) return;
     setState(() {
-      _step = 1;
+      _step = 2;
       _errorKey = null;
     });
   }
 
   Future<void> _finish(OnboardingInicialModel estado) async {
     if (!_validateIdentity(estado)) return;
-    if (estado.podeConfigurarEmpresa &&
-        !_realizaVendas &&
-        !_prestaServicos) {
+    if (estado.podeConfigurarEmpresa && !_realizaVendas && !_prestaServicos) {
       setState(() => _errorKey = 'initialOnboarding.activityRequired');
       return;
     }
@@ -571,6 +599,7 @@ class _OnboardingInicialMobileScreenState
         ConcluirOnboardingInicialRequest(
           idiomaPreferencial: _idioma,
           nomeUsuario: _nomeController.text.trim(),
+          nomeDeGuerra: _nomeController.text.trim(),
           nomeEmpresa: _empresaController.text.trim(),
           realizaVendas: _realizaVendas,
           prestaServicosTecnicos: _prestaServicos,
@@ -607,6 +636,10 @@ class _OnboardingInicialMobileScreenState
       _idioma = value;
       _errorKey = null;
     });
+    await _applyLocale(value);
+  }
+
+  Future<void> _applyLocale(String value) async {
     final Locale locale = switch (value) {
       'en-US' => const Locale('en', 'US'),
       'es-ES' => const Locale('es', 'ES'),
@@ -615,16 +648,12 @@ class _OnboardingInicialMobileScreenState
     await context.read<LocaleSettingsProvider>().setUserLocale(locale);
   }
 
-  String _normalizarIdioma(String value, Locale fallback) {
+  String _normalizarIdioma(String value) {
     final String normalized = value.trim().toLowerCase();
     if (normalized.startsWith('en')) return 'en-US';
     if (normalized.startsWith('es')) return 'es-ES';
     if (normalized.startsWith('pt')) return 'pt-BR';
-    return fallback.languageCode == 'en'
-        ? 'en-US'
-        : fallback.languageCode == 'es'
-        ? 'es-ES'
-        : 'pt-BR';
+    return 'pt-BR';
   }
 }
 
@@ -652,7 +681,7 @@ class _MobileLanguageTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 11),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             color: selected ? colors.softAccentSurface : colors.softSurface,
             borderRadius: BorderRadius.circular(14),
@@ -661,7 +690,7 @@ class _MobileLanguageTile extends StatelessWidget {
               width: selected ? 1.5 : 1,
             ),
           ),
-          child: Column(
+          child: Row(
             children: <Widget>[
               Container(
                 width: 33,
@@ -680,17 +709,25 @@ class _MobileLanguageTile extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 7),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: colors.titleText,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.titleText,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
+              if (selected)
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: colors.accent,
+                  size: 20,
+                ),
             ],
           ),
         ),
@@ -729,9 +766,8 @@ class _MobileActivityTile extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: selected
-                ? accent.withValues(alpha: 0.08)
-                : colors.softSurface,
+            color:
+                selected ? accent.withValues(alpha: 0.08) : colors.softSurface,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected ? accent : colors.border,
@@ -776,9 +812,7 @@ class _MobileActivityTile extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Icon(
-                selected
-                    ? Icons.check_circle_rounded
-                    : Icons.circle_outlined,
+                selected ? Icons.check_circle_rounded : Icons.circle_outlined,
                 color: selected ? accent : colors.mutedText,
                 size: 26,
               ),
