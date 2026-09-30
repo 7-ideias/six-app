@@ -6,7 +6,12 @@ import {
 } from './public-locale.mjs';
 import {
   COLLABORATOR_INVITE_DICTIONARY,
+  collaboratorInviteAndroidIntentUrl,
+  collaboratorInviteDeepLink,
   collaboratorInviteErrorKeyFromError,
+  collaboratorInviteIsMobile,
+  collaboratorInvitePlatform,
+  collaboratorInviteStoreUrls,
   collaboratorInviteStatusKey,
   confirmCollaboratorInviteEmail,
   extractCollaboratorInviteCode,
@@ -45,7 +50,52 @@ import {
     submitLabel: document.querySelector('[data-invite-submit-label]'),
     success: document.querySelector('[data-invite-success]'),
     successTitle: document.querySelector('#invite-success-title'),
+    mobileHandoff: document.querySelector('[data-invite-mobile-handoff]'),
+    openApp: document.querySelector('[data-invite-open-app]'),
+    androidStore: document.querySelector('[data-invite-android-store]'),
+    iosStore: document.querySelector('[data-invite-ios-store]'),
   };
+
+  function isMobileInviteFlow() {
+    return collaboratorInviteIsMobile(window);
+  }
+
+  function storeUrls() {
+    return collaboratorInviteStoreUrls(window.SIXAPP_PUBLIC_CONFIG || {});
+  }
+
+  function preferredStoreUrl() {
+    const urls = storeUrls();
+    return collaboratorInvitePlatform(navigator) === 'ios' ? urls.ios : urls.android;
+  }
+
+  function appOpenUrl() {
+    const platform = collaboratorInvitePlatform(navigator);
+    if (platform === 'android') {
+      return collaboratorInviteAndroidIntentUrl({
+        code: state.code,
+        storeUrl: preferredStoreUrl(),
+      });
+    }
+    return collaboratorInviteDeepLink(state.code);
+  }
+
+  function openAppOrStore() {
+    if (!state.code) return;
+    window.location.href = appOpenUrl();
+    window.setTimeout(() => {
+      if (!document.hidden) {
+        window.location.href = preferredStoreUrl();
+      }
+    }, 1600);
+  }
+
+  function configureMobileHandoff() {
+    const urls = storeUrls();
+    elements.androidStore.href = urls.android;
+    elements.iosStore.href = urls.ios;
+    elements.mobileHandoff.hidden = !isMobileInviteFlow();
+  }
 
   function copy(key) {
     return COLLABORATOR_INVITE_DICTIONARY[state.language]?.[key] ||
@@ -114,6 +164,7 @@ import {
     elements.expires.textContent = formatExpiration(state.invite.expiraEm);
     elements.form.hidden = state.confirmed;
     elements.success.hidden = !state.confirmed;
+    configureMobileHandoff();
     hidePrimaryStates();
     elements.card.hidden = false;
   }
@@ -182,6 +233,9 @@ import {
       elements.email.value = '';
       renderInvite();
       elements.successTitle.focus({ preventScroll: false });
+      if (isMobileInviteFlow()) {
+        window.setTimeout(openAppOrStore, 350);
+      }
     } catch (error) {
       setFeedback(collaboratorInviteErrorKeyFromError(error), true);
       if (error && ['emailRequired', 'emailInvalid'].includes(error.code)) {
@@ -209,6 +263,13 @@ import {
     elements.form.addEventListener('submit', submitConfirmation);
     elements.retry.addEventListener('click', loadInvite);
     elements.email.addEventListener('input', clearFeedback);
+    elements.openApp.addEventListener('click', openAppOrStore);
+    elements.androidStore.addEventListener('click', () => {
+      elements.androidStore.href = storeUrls().android;
+    });
+    elements.iosStore.addEventListener('click', () => {
+      elements.iosStore.href = storeUrls().ios;
+    });
 
     try {
       state.apiConfig = resolvePublicApiConfig(window.SIXAPP_PUBLIC_CONFIG);

@@ -1,8 +1,12 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/utils/browser_location.dart';
 import '../../core/services/colaborador_convite_web_service.dart';
 import '../../data/models/colaborador_convite_model.dart';
+import '../../core/platform_detector.dart';
 
 class ColaboradorConvitePublicoWebPage extends StatefulWidget {
   const ColaboradorConvitePublicoWebPage({
@@ -15,16 +19,24 @@ class ColaboradorConvitePublicoWebPage extends StatefulWidget {
   final Uri initialUri;
 
   @override
-  State<ColaboradorConvitePublicoWebPage> createState() => _ColaboradorConvitePublicoWebPageState();
+  State<ColaboradorConvitePublicoWebPage> createState() =>
+      _ColaboradorConvitePublicoWebPageState();
 }
 
-class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePublicoWebPage> {
+class _ColaboradorConvitePublicoWebPageState
+    extends State<ColaboradorConvitePublicoWebPage> {
+  static const String _androidStoreUrl =
+      'https://play.google.com/store/apps/details?id=br.com.seteideias.appplanilha';
+  static const String _iosStoreUrl =
+      'https://apps.apple.com/br/search?term=SixoApp';
+
   final ColaboradorConviteWebService _service = ColaboradorConviteWebService();
   final TextEditingController _emailController = TextEditingController();
   ColaboradorConvitePublicoResponse? _convite;
   bool _loading = true;
   bool _confirmando = false;
   bool _emailConfirmado = false;
+  bool _handoffTentado = false;
   String? _erro;
 
   @override
@@ -46,7 +58,8 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
     });
 
     try {
-      final ColaboradorConvitePublicoResponse convite = await _service.validarConvitePublico(widget.codigo);
+      final ColaboradorConvitePublicoResponse convite = await _service
+          .validarConvitePublico(widget.codigo);
       if (!mounted) return;
       setState(() {
         _convite = convite;
@@ -81,6 +94,7 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
         _confirmando = false;
         _emailConfirmado = true;
       });
+      _tentarAbrirAppNoCelular();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('E-mail confirmado com sucesso.'),
@@ -117,6 +131,25 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
     Navigator.of(context).pushNamed('/login/flutter');
   }
 
+  bool get _isIosWeb => defaultTargetPlatform == TargetPlatform.iOS;
+
+  String get _storeUrl => _isIosWeb ? _iosStoreUrl : _androidStoreUrl;
+
+  String get _appDeepLink =>
+      'com.sixoapp.app://colaborador/convites/${Uri.encodeComponent(widget.codigo)}';
+
+  void _tentarAbrirAppNoCelular() {
+    if (_handoffTentado || !PlatformDetector.isMobileWebOf(context)) {
+      return;
+    }
+    _handoffTentado = true;
+    assignBrowserLocation(_appDeepLink);
+    Timer(const Duration(milliseconds: 1600), () {
+      if (!mounted) return;
+      assignBrowserLocation(_storeUrl);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -143,7 +176,11 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
       child: const Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          SizedBox(width: 34, height: 34, child: CircularProgressIndicator(strokeWidth: 3)),
+          SizedBox(
+            width: 34,
+            height: 34,
+            child: CircularProgressIndicator(strokeWidth: 3),
+          ),
           SizedBox(height: 18),
           Text('Validando convite de colaborador...'),
         ],
@@ -159,13 +196,30 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(Icons.link_off_rounded, size: 48, color: theme.colorScheme.error),
+            Icon(
+              Icons.link_off_rounded,
+              size: 48,
+              color: theme.colorScheme.error,
+            ),
             const SizedBox(height: 14),
-            Text('Não foi possível carregar o convite', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+            Text(
+              'Não foi possível carregar o convite',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text(_erro!, textAlign: TextAlign.center, style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+            Text(
+              _erro!,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            ),
             const SizedBox(height: 18),
-            FilledButton.icon(onPressed: _validar, icon: const Icon(Icons.refresh_rounded), label: const Text('Tentar novamente')),
+            FilledButton.icon(
+              onPressed: _validar,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Tentar novamente'),
+            ),
           ],
         ),
       );
@@ -183,37 +237,69 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.10),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: Icon(Icons.group_add_outlined, color: theme.colorScheme.primary, size: 30),
+                child: Icon(
+                  Icons.group_add_outlined,
+                  color: theme.colorScheme.primary,
+                  size: 30,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text('Convite de colaborador', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+                    Text(
+                      'Convite de colaborador',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text('Confirme o e-mail que recebeu este link para continuar.', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+                    Text(
+                      'Confirme o e-mail que recebeu este link para continuar.',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 24),
-          _info(theme, Icons.storefront_outlined, 'Comércio', convite?.nomeFantasia ?? '-'),
-          _info(theme, Icons.verified_user_outlined, 'Status', _emailConfirmado ? 'E-mail confirmado' : convite?.status ?? '-'),
-          _info(theme, Icons.schedule_outlined, 'Validade', _formatDate(convite?.expiraEm)),
+          _info(
+            theme,
+            Icons.storefront_outlined,
+            'Comércio',
+            convite?.nomeFantasia ?? '-',
+          ),
+          _info(
+            theme,
+            Icons.verified_user_outlined,
+            'Status',
+            _emailConfirmado ? 'E-mail confirmado' : convite?.status ?? '-',
+          ),
+          _info(
+            theme,
+            Icons.schedule_outlined,
+            'Validade',
+            _formatDate(convite?.expiraEm),
+          ),
           const SizedBox(height: 18),
-          if (_emailConfirmado) _successState(theme) else _emailConfirmationForm(theme),
+          if (_emailConfirmado)
+            _successState(theme)
+          else
+            _emailConfirmationForm(theme),
           if (_erro != null) ...<Widget>[
             const SizedBox(height: 16),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: theme.colorScheme.errorContainer.withOpacity(0.55),
+                color: theme.colorScheme.errorContainer.withValues(alpha: 0.55),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(_erro!),
@@ -244,9 +330,14 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
         const SizedBox(height: 16),
         FilledButton.icon(
           onPressed: _confirmando ? null : _confirmarEmail,
-          icon: _confirmando
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.check_circle_outline),
+          icon:
+              _confirmando
+                  ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                  : const Icon(Icons.check_circle_outline),
           label: Text(_confirmando ? 'Confirmando...' : 'Confirmar e-mail'),
         ),
       ],
@@ -254,13 +345,14 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
   }
 
   Widget _successState(ThemeData theme) {
+    final bool mobileWeb = PlatformDetector.isMobileWebOf(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.08),
+        color: Colors.green.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.green.withOpacity(0.25)),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,7 +364,9 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
               Expanded(
                 child: Text(
                   'E-mail confirmado',
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ],
@@ -280,8 +374,51 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
           const SizedBox(height: 8),
           Text(
             'O convite foi confirmado para testes. A ativação completa do acesso com login e senha poderá ser finalizada em uma próxima etapa do fluxo.',
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
+          if (mobileWeb) ...<Widget>[
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withValues(
+                  alpha: 0.28,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text(
+                    'No celular, abra o app SixoApp para continuar. Se ele ainda não estiver instalado, baixe pela loja.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: () => assignBrowserLocation(_appDeepLink),
+                    icon: const Icon(Icons.open_in_new_rounded),
+                    label: const Text('Abrir app SixoApp'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => assignBrowserLocation(_storeUrl),
+                    icon: const Icon(Icons.download_rounded),
+                    label: Text(
+                      _isIosWeb
+                          ? 'Baixar na App Store'
+                          : 'Baixar na Play Store',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
           OutlinedButton.icon(
             onPressed: _irParaLogin,
@@ -295,7 +432,9 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
 
   Widget _shell({required ThemeData theme, required Widget child}) {
     return Container(
-      key: ValueKey<Object?>(_loading ? 'loading' : _erro ?? _convite?.emailConvidado),
+      key: ValueKey<Object?>(
+        _loading ? 'loading' : _erro ?? _convite?.emailConvidado,
+      ),
       width: double.infinity,
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
@@ -304,7 +443,7 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
         border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -321,7 +460,7 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
         width: double.infinity,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: theme.colorScheme.primary.withOpacity(0.045),
+          color: theme.colorScheme.primary.withValues(alpha: 0.045),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
@@ -329,8 +468,16 @@ class _ColaboradorConvitePublicoWebPageState extends State<ColaboradorConvitePub
           children: <Widget>[
             Icon(icon, color: theme.colorScheme.primary, size: 20),
             const SizedBox(width: 12),
-            SizedBox(width: 140, child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800))),
-            Expanded(child: Text(value, maxLines: 1, overflow: TextOverflow.ellipsis)),
+            SizedBox(
+              width: 140,
+              child: Text(
+                label,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+            Expanded(
+              child: Text(value, maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
           ],
         ),
       ),

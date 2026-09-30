@@ -1,6 +1,7 @@
 import {
   normalizeApiBaseUrl,
   resolvePublicApiConfig,
+  shouldBlockPublicLoginOnMobile,
 } from './login-core.mjs';
 
 export const COLLABORATOR_INVITE_TIMEOUT_MS = 15000;
@@ -50,6 +51,10 @@ export const COLLABORATOR_INVITE_DICTIONARY = Object.freeze({
     'success.eyebrow': 'E-mail confirmado',
     'success.title': 'Seu acesso foi preparado',
     'success.body': 'O convite foi confirmado. Agora você pode seguir para o login do SixoApp.',
+    'success.mobileBody': 'No celular, abra o app SixoApp para continuar. Se ele ainda não estiver instalado, baixe pela loja.',
+    'success.openApp': 'Abrir app SixoApp',
+    'success.androidStore': 'Baixar na Play Store',
+    'success.iosStore': 'Baixar na App Store',
     'success.login': 'Ir para o login',
     'noscript.message': 'Ative o JavaScript para validar e confirmar este convite.',
     'error.invalidLink': 'O link deste convite é inválido. Solicite um novo convite ao administrador.',
@@ -112,6 +117,10 @@ export const COLLABORATOR_INVITE_DICTIONARY = Object.freeze({
     'success.eyebrow': 'Email confirmed',
     'success.title': 'Your access is ready',
     'success.body': 'The invitation was confirmed. You can now continue to the SixoApp sign-in page.',
+    'success.mobileBody': 'On your phone, open the SixoApp app to continue. If it is not installed yet, download it from the store.',
+    'success.openApp': 'Open SixoApp',
+    'success.androidStore': 'Download on Google Play',
+    'success.iosStore': 'Download on the App Store',
     'success.login': 'Go to sign in',
     'noscript.message': 'Enable JavaScript to validate and confirm this invitation.',
     'error.invalidLink': 'This invitation link is invalid. Ask the administrator for a new invitation.',
@@ -174,6 +183,10 @@ export const COLLABORATOR_INVITE_DICTIONARY = Object.freeze({
     'success.eyebrow': 'E-mail confirmado',
     'success.title': 'Tu acceso fue preparado',
     'success.body': 'La invitación fue confirmada. Ahora puedes continuar al inicio de sesión de SixoApp.',
+    'success.mobileBody': 'En el celular, abre la app SixoApp para continuar. Si aún no está instalada, descárgala desde la tienda.',
+    'success.openApp': 'Abrir SixoApp',
+    'success.androidStore': 'Descargar en Play Store',
+    'success.iosStore': 'Descargar en App Store',
     'success.login': 'Ir al inicio de sesión',
     'noscript.message': 'Activa JavaScript para validar y confirmar esta invitación.',
     'error.invalidLink': 'El enlace de esta invitación es inválido. Solicita una nueva invitación al administrador.',
@@ -226,6 +239,55 @@ export class CollaboratorInviteNetworkError extends Error {
 }
 
 export { resolvePublicApiConfig };
+
+const ANDROID_PACKAGE_NAME = 'br.com.seteideias.appplanilha';
+const DEFAULT_ANDROID_STORE_URL =
+  `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE_NAME}`;
+const DEFAULT_IOS_STORE_URL = 'https://apps.apple.com/br/search?term=SixoApp';
+const DEEP_LINK_SCHEME = 'com.sixoapp.app';
+
+export function collaboratorInviteIsMobile(environment = globalThis) {
+  return shouldBlockPublicLoginOnMobile(environment);
+}
+
+export function collaboratorInvitePlatform(navigatorRef = globalThis.navigator) {
+  const userAgent = String(navigatorRef?.userAgent || '').toLowerCase();
+  const platform = String(navigatorRef?.platform || '').toLowerCase();
+  if (/iphone|ipad|ipod/.test(userAgent) || /iphone|ipad|ipod/.test(platform)) {
+    return 'ios';
+  }
+  if (/android/.test(userAgent)) {
+    return 'android';
+  }
+  return 'other';
+}
+
+export function collaboratorInviteDeepLink(code) {
+  return `${DEEP_LINK_SCHEME}://colaborador/convites/${encodeURIComponent(normalizeCollaboratorInviteCode(code))}`;
+}
+
+export function collaboratorInviteStoreUrls(config = {}) {
+  const androidStoreUrl = String(
+    config.androidStoreUrl ||
+    config.playStoreUrl ||
+    DEFAULT_ANDROID_STORE_URL,
+  ).trim();
+  const iosStoreUrl = String(
+    config.iosStoreUrl ||
+    config.appStoreUrl ||
+    DEFAULT_IOS_STORE_URL,
+  ).trim();
+  return Object.freeze({
+    android: androidStoreUrl || DEFAULT_ANDROID_STORE_URL,
+    ios: iosStoreUrl || DEFAULT_IOS_STORE_URL,
+  });
+}
+
+export function collaboratorInviteAndroidIntentUrl({ code, storeUrl }) {
+  const fallback = encodeURIComponent(storeUrl || DEFAULT_ANDROID_STORE_URL);
+  return `intent://colaborador/convites/${encodeURIComponent(normalizeCollaboratorInviteCode(code))}` +
+    `#Intent;scheme=${DEEP_LINK_SCHEME};package=${ANDROID_PACKAGE_NAME};S.browser_fallback_url=${fallback};end`;
+}
 
 export function normalizeCollaboratorInviteCode(value) {
   const code = String(value || '').trim();
