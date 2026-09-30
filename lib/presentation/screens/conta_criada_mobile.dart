@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sixpos/design_system/tokens/auth_tokens.dart';
+import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
+import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
+import 'package:sixpos/l10n/six_i18n.dart';
+import 'package:sixpos/presentation/components/mobile/sixoapp_auth_mobile_kit.dart';
 
 import 'login_mobile.dart';
 
@@ -15,91 +18,85 @@ class ContaCriadaMobile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color backgroundColor = SixAuthTokens.shellBackground(context);
-    final Color primary = SixAuthTokens.interactiveColor(context);
-    final Color foreground = SixAuthTokens.onInteractiveColor(context);
-    final Color labelGrey = SixAuthTokens.textMuted(context);
-    final Color textColor = SixAuthTokens.textPrimary(context);
+    final SixMobileColorScheme colors = context.sixMobileColors;
 
     return PopScope(
       canPop: false,
-      child: Scaffold(
-        backgroundColor: backgroundColor,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(28, 24, 28, 28),
-            child: Column(
-              children: [
-                const Spacer(flex: 3),
-
-                // ── Ilustração ────────────────────────────────────────
-                _SuccessIllustration(primary: primary, foreground: foreground),
-
-                const SizedBox(height: 40),
-
-                // ── Título ────────────────────────────────────────────
-                Text(
-                  'Tudo certo!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: textColor,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // ── Subtítulo ─────────────────────────────────────────
-                Text(
-                  'Sua conta foi criada com sucesso.\nFaça login para começar a usar o Six.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14.5,
-                    color: labelGrey,
-                    height: 1.5,
-                  ),
-                ),
-
-                const Spacer(flex: 4),
-
-                // ── Botão ─────────────────────────────────────────────
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    onPressed: () => _goToLogin(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primary,
-                      foregroundColor: foreground,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: const Text(
-                      'Ir para o login',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+      child: SixoAppAuthMobileScaffold(
+        title: context.t(
+          'auth.mobileAccountCreated.heroTitle',
+          fallback: 'Conta criada',
+        ),
+        subtitle: context.t(
+          'auth.mobileAccountCreated.heroSubtitle',
+          fallback: 'Seu espaço no SixoApp está pronto para começar.',
+        ),
+        compactHeader: true,
+        minimumSurfaceHeight: 430,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            const SizedBox(height: 6),
+            _SuccessIllustration(
+              primary: SixMobilePalette.brandBlue,
+              secondary: SixMobilePalette.brandCyan,
+              foreground: SixMobilePalette.onPrimary,
             ),
-          ),
+            const SizedBox(height: 28),
+            Text(
+              context.t(
+                'auth.mobileAccountCreated.title',
+                fallback: 'Tudo certo!',
+              ),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 25,
+                height: 1.12,
+                fontWeight: FontWeight.w800,
+                color: colors.titleText,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              context.t(
+                'auth.mobileAccountCreated.message',
+                fallback:
+                    'Sua conta foi criada com sucesso. Faça login para começar a usar o SixoApp.',
+              ),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14.5,
+                color: colors.mutedText,
+                height: 1.5,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 34),
+            SixoAppAuthPrimaryButton(
+              label: context.t(
+                'auth.mobileAccountCreated.loginAction',
+                fallback: 'Ir para o login',
+              ),
+              icon: Icons.login_rounded,
+              onPressed: () => _goToLogin(context),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ── Ilustração de sucesso (check com halo + sparkles) ──────────────────────
 class _SuccessIllustration extends StatefulWidget {
-  final Color primary;
-  final Color foreground;
+  const _SuccessIllustration({
+    required this.primary,
+    required this.secondary,
+    required this.foreground,
+  });
 
-  const _SuccessIllustration({required this.primary, required this.foreground});
+  final Color primary;
+  final Color secondary;
+  final Color foreground;
 
   @override
   State<_SuccessIllustration> createState() => _SuccessIllustrationState();
@@ -128,7 +125,11 @@ class _SuccessIllustrationState extends State<_SuccessIllustration>
 
   @override
   Widget build(BuildContext context) {
-    final primary = widget.primary;
+    final Color primary = widget.primary;
+    final Color secondary = widget.secondary;
+    final bool reduceMotion =
+        MediaQuery.disableAnimationsOf(context) ||
+        MediaQuery.accessibleNavigationOf(context);
 
     return SizedBox(
       width: 220,
@@ -136,11 +137,10 @@ class _SuccessIllustrationState extends State<_SuccessIllustration>
       child: AnimatedBuilder(
         animation: _pulse,
         builder: (context, _) {
-          final t = _pulse.value; // 0..1
+          final double t = reduceMotion ? 0 : _pulse.value;
           return Stack(
             alignment: Alignment.center,
             children: [
-              // Halo externo — escala maior + fade mais forte
               Transform.scale(
                 scale: 1.5 + 0.10 * t,
                 child: Container(
@@ -152,7 +152,6 @@ class _SuccessIllustrationState extends State<_SuccessIllustration>
                   ),
                 ),
               ),
-              // Halo interno
               Transform.scale(
                 scale: 1.3 + 0.06 * t,
                 child: Container(
@@ -164,14 +163,17 @@ class _SuccessIllustrationState extends State<_SuccessIllustration>
                   ),
                 ),
               ),
-              // Círculo principal — breathing sutil
               Transform.scale(
                 scale: 1.0 + 0.03 * t,
                 child: Container(
                   width: 104,
                   height: 104,
                   decoration: BoxDecoration(
-                    color: primary,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: <Color>[secondary, primary],
+                    ),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
@@ -188,7 +190,6 @@ class _SuccessIllustrationState extends State<_SuccessIllustration>
                   ),
                 ),
               ),
-              // Sparkles estáticos
               Positioned(
                 top: 16,
                 left: 24,

@@ -563,9 +563,13 @@ const Map<String, Map<String, String>> _fallbacks = {
     'initialOnboarding.eyebrow': 'Configuração inicial',
     'initialOnboarding.step': 'Etapa',
     'initialOnboarding.of': 'de',
+    'initialOnboarding.languageTitle': 'Escolha seu idioma',
+    'initialOnboarding.languageSubtitle':
+        'Português vem selecionado por padrão. Você pode trocar agora.',
     'initialOnboarding.identityTitle': 'Vamos começar pelo essencial',
     'initialOnboarding.identitySubtitle':
         'Confirme seus dados para personalizarmos sua experiência.',
+    'initialOnboarding.identitySectionTitle': 'Seus dados',
     'initialOnboarding.businessTitle': 'O que seu negócio faz?',
     'initialOnboarding.businessSubtitle':
         'Isso apenas organiza módulos e atalhos. Você poderá alterar depois.',
@@ -1571,6 +1575,13 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileCreate.passwordMismatchInline': 'As senhas não coincidem.',
     'auth.mobileCreate.passwordMismatchError':
         'As senhas informadas não são iguais. Verifique e tente novamente.',
+    'auth.mobileAccountCreated.heroTitle': 'Conta criada',
+    'auth.mobileAccountCreated.heroSubtitle':
+        'Seu espaço no SixoApp está pronto para começar.',
+    'auth.mobileAccountCreated.title': 'Tudo certo!',
+    'auth.mobileAccountCreated.message':
+        'Sua conta foi criada com sucesso. Faça login para começar a usar o SixoApp.',
+    'auth.mobileAccountCreated.loginAction': 'Ir para o login',
     'auth.entry.title': 'Bem-vindo ao SixoApp',
     'auth.entry.subtitle':
         'Antes de continuar, diga como deseja acessar o app.',
@@ -3240,9 +3251,13 @@ const Map<String, Map<String, String>> _fallbacks = {
     'initialOnboarding.eyebrow': 'Initial setup',
     'initialOnboarding.step': 'Step',
     'initialOnboarding.of': 'of',
+    'initialOnboarding.languageTitle': 'Choose your language',
+    'initialOnboarding.languageSubtitle':
+        'Portuguese is selected by default. You can change it now.',
     'initialOnboarding.identityTitle': 'Let’s start with the essentials',
     'initialOnboarding.identitySubtitle':
         'Confirm your information so we can personalize your experience.',
+    'initialOnboarding.identitySectionTitle': 'Your information',
     'initialOnboarding.businessTitle': 'What does your business do?',
     'initialOnboarding.businessSubtitle':
         'This only organizes modules and shortcuts. You can change it later.',
@@ -4448,6 +4463,13 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileCreate.passwordMismatchInline': 'Passwords do not match.',
     'auth.mobileCreate.passwordMismatchError':
         'The passwords are different. Check them and try again.',
+    'auth.mobileAccountCreated.heroTitle': 'Account created',
+    'auth.mobileAccountCreated.heroSubtitle':
+        'Your SixoApp workspace is ready to start.',
+    'auth.mobileAccountCreated.title': 'All set!',
+    'auth.mobileAccountCreated.message':
+        'Your account was created successfully. Sign in to start using SixoApp.',
+    'auth.mobileAccountCreated.loginAction': 'Go to sign in',
     'auth.entry.title': 'Welcome to SixoApp',
     'auth.entry.subtitle':
         'Before continuing, choose how you want to access the app.',
@@ -5629,9 +5651,13 @@ const Map<String, Map<String, String>> _fallbacks = {
     'initialOnboarding.eyebrow': 'Configuración inicial',
     'initialOnboarding.step': 'Paso',
     'initialOnboarding.of': 'de',
+    'initialOnboarding.languageTitle': 'Elige tu idioma',
+    'initialOnboarding.languageSubtitle':
+        'Portugués está seleccionado por defecto. Puedes cambiarlo ahora.',
     'initialOnboarding.identityTitle': 'Empecemos por lo esencial',
     'initialOnboarding.identitySubtitle':
         'Confirma tus datos para personalizar tu experiencia.',
+    'initialOnboarding.identitySectionTitle': 'Tus datos',
     'initialOnboarding.businessTitle': '¿Qué hace tu negocio?',
     'initialOnboarding.businessSubtitle':
         'Esto solo organiza módulos y accesos. Podrás cambiarlo después.',
@@ -6509,6 +6535,13 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileCreate.passwordMismatchInline': 'Las contraseñas no coinciden.',
     'auth.mobileCreate.passwordMismatchError':
         'Las contraseñas son diferentes. Verifícalas e inténtalo de nuevo.',
+    'auth.mobileAccountCreated.heroTitle': 'Cuenta creada',
+    'auth.mobileAccountCreated.heroSubtitle':
+        'Tu espacio en SixoApp está listo para comenzar.',
+    'auth.mobileAccountCreated.title': '¡Todo listo!',
+    'auth.mobileAccountCreated.message':
+        'Tu cuenta se creó correctamente. Inicia sesión para empezar a usar SixoApp.',
+    'auth.mobileAccountCreated.loginAction': 'Ir al inicio de sesión',
     'auth.entry.title': 'Bienvenido a SixoApp',
     'auth.entry.subtitle':
         'Antes de continuar, elige cómo quieres acceder a la app.',

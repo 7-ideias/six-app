@@ -34,6 +34,7 @@ class ConcluirOnboardingInicialRequest {
   const ConcluirOnboardingInicialRequest({
     required this.idiomaPreferencial,
     required this.nomeUsuario,
+    required this.nomeDeGuerra,
     required this.nomeEmpresa,
     required this.realizaVendas,
     required this.prestaServicosTecnicos,
@@ -41,6 +42,7 @@ class ConcluirOnboardingInicialRequest {
 
   final String idiomaPreferencial;
   final String nomeUsuario;
+  final String nomeDeGuerra;
   final String nomeEmpresa;
   final bool realizaVendas;
   final bool prestaServicosTecnicos;
@@ -48,6 +50,7 @@ class ConcluirOnboardingInicialRequest {
   Map<String, dynamic> toJson() => <String, dynamic>{
     'idiomaPreferencial': idiomaPreferencial,
     'nomeUsuario': nomeUsuario,
+    'nomeDeGuerra': nomeDeGuerra,
     'nomeEmpresa': nomeEmpresa,
     'realizaVendas': realizaVendas,
     'prestaServicosTecnicos': prestaServicosTecnicos,

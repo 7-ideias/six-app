@@ -38,9 +38,8 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_initialized) return;
-    final OnboardingInicialModel? estado = context
-        .read<OnboardingInicialProvider>()
-        .estado;
+    final OnboardingInicialModel? estado =
+        context.read<OnboardingInicialProvider>().estado;
     if (estado == null) return;
     _initialized = true;
     _nomeController.text = estado.nomeUsuario;
@@ -63,8 +62,8 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
   @override
   Widget build(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final OnboardingInicialProvider provider = context
-        .watch<OnboardingInicialProvider>();
+    final OnboardingInicialProvider provider =
+        context.watch<OnboardingInicialProvider>();
     final OnboardingInicialModel? estado = provider.estado;
     if (estado == null) return const SizedBox.shrink();
 
@@ -103,41 +102,42 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
                     ),
                   ],
                 ),
-                child: wide
-                    ? SizedBox(
-                        height: 650,
-                        child: Row(
-                          children: <Widget>[
-                            SizedBox(
-                              width: 370,
-                              child: _buildBrandPanel(context),
-                            ),
-                            Expanded(
-                              child: _buildForm(
-                                context,
-                                estado,
-                                totalSteps,
-                                finalStep,
-                                provider.salvando,
-                                wide: true,
+                child:
+                    wide
+                        ? SizedBox(
+                          height: 650,
+                          child: Row(
+                            children: <Widget>[
+                              SizedBox(
+                                width: 370,
+                                child: _buildBrandPanel(context),
                               ),
+                              Expanded(
+                                child: _buildForm(
+                                  context,
+                                  estado,
+                                  totalSteps,
+                                  finalStep,
+                                  provider.salvando,
+                                  wide: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                        : Column(
+                          children: <Widget>[
+                            _buildCompactHeader(context),
+                            _buildForm(
+                              context,
+                              estado,
+                              totalSteps,
+                              finalStep,
+                              provider.salvando,
+                              wide: false,
                             ),
                           ],
                         ),
-                      )
-                    : Column(
-                        children: <Widget>[
-                          _buildCompactHeader(context),
-                          _buildForm(
-                            context,
-                            estado,
-                            totalSteps,
-                            finalStep,
-                            provider.salvando,
-                            wide: false,
-                          ),
-                        ],
-                      ),
               );
 
               return SingleChildScrollView(
@@ -191,13 +191,13 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
           Text(
             _step == 0
                 ? context.t(
-                    'initialOnboarding.identityTitle',
-                    fallback: 'Vamos começar pelo essencial',
-                  )
+                  'initialOnboarding.identityTitle',
+                  fallback: 'Vamos começar pelo essencial',
+                )
                 : context.t(
-                    'initialOnboarding.businessTitle',
-                    fallback: 'O que seu negócio faz?',
-                  ),
+                  'initialOnboarding.businessTitle',
+                  fallback: 'O que seu negócio faz?',
+                ),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 29,
@@ -209,15 +209,15 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
           Text(
             _step == 0
                 ? context.t(
-                    'initialOnboarding.identitySubtitle',
-                    fallback:
-                        'Confirme seus dados para personalizarmos sua experiência.',
-                  )
+                  'initialOnboarding.identitySubtitle',
+                  fallback:
+                      'Confirme seus dados para personalizarmos sua experiência.',
+                )
                 : context.t(
-                    'initialOnboarding.businessSubtitle',
-                    fallback:
-                        'Isso organiza módulos e atalhos. Você poderá alterar depois.',
-                  ),
+                  'initialOnboarding.businessSubtitle',
+                  fallback:
+                      'Isso organiza módulos e atalhos. Você poderá alterar depois.',
+                ),
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.72),
               fontSize: 14,
@@ -310,9 +310,10 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
     required bool wide,
   }) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Widget content = _step == 0
-        ? _identityStep(context, estado)
-        : _businessStep(context, wide);
+    final Widget content =
+        _step == 0
+            ? _identityStep(context, estado)
+            : _businessStep(context, wide);
 
     return Container(
       color: tokens.surfaceElevated,
@@ -350,13 +351,13 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
           Text(
             _step == 0
                 ? context.t(
-                    'initialOnboarding.identityTitle',
-                    fallback: 'Vamos começar pelo essencial',
-                  )
+                  'initialOnboarding.identityTitle',
+                  fallback: 'Vamos começar pelo essencial',
+                )
                 : context.t(
-                    'initialOnboarding.businessTitle',
-                    fallback: 'O que seu negócio faz?',
-                  ),
+                  'initialOnboarding.businessTitle',
+                  fallback: 'O que seu negócio faz?',
+                ),
             style: TextStyle(
               color: tokens.primaryText,
               fontSize: 29,
@@ -368,15 +369,15 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
           Text(
             _step == 0
                 ? context.t(
-                    'initialOnboarding.identitySubtitle',
-                    fallback:
-                        'Confirme seus dados para personalizarmos sua experiência.',
-                  )
+                  'initialOnboarding.identitySubtitle',
+                  fallback:
+                      'Confirme seus dados para personalizarmos sua experiência.',
+                )
                 : context.t(
-                    'initialOnboarding.businessSubtitle',
-                    fallback:
-                        'Isso organiza módulos e atalhos. Você poderá alterar depois.',
-                  ),
+                  'initialOnboarding.businessSubtitle',
+                  fallback:
+                      'Isso organiza módulos e atalhos. Você poderá alterar depois.',
+                ),
             style: TextStyle(
               color: tokens.secondaryText,
               fontSize: 14,
@@ -398,10 +399,7 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
     );
   }
 
-  Widget _identityStep(
-    BuildContext context,
-    OnboardingInicialModel estado,
-  ) {
+  Widget _identityStep(BuildContext context, OnboardingInicialModel estado) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,9 +434,10 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
             fallback: 'Como podemos chamar você?',
           ),
           icon: Icons.person_outline_rounded,
-          action: estado.podeConfigurarEmpresa
-              ? TextInputAction.next
-              : TextInputAction.done,
+          action:
+              estado.podeConfigurarEmpresa
+                  ? TextInputAction.next
+                  : TextInputAction.done,
         ),
         if (estado.podeConfigurarEmpresa) ...<Widget>[
           const SizedBox(height: 14),
@@ -509,10 +508,11 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
         fallback: 'PDV, catálogo, estoque e vendas.',
       ),
       selected: _realizaVendas,
-      onTap: () => setState(() {
-        _realizaVendas = !_realizaVendas;
-        _errorKey = null;
-      }),
+      onTap:
+          () => setState(() {
+            _realizaVendas = !_realizaVendas;
+            _errorKey = null;
+          }),
     );
     final Widget services = _WebActivityTile(
       icon: Icons.home_repair_service_rounded,
@@ -526,18 +526,15 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
         fallback: 'Atendimentos, ordens de serviço e procedimentos.',
       ),
       selected: _prestaServicos,
-      onTap: () => setState(() {
-        _prestaServicos = !_prestaServicos;
-        _errorKey = null;
-      }),
+      onTap:
+          () => setState(() {
+            _prestaServicos = !_prestaServicos;
+            _errorKey = null;
+          }),
     );
     if (!wide) {
       return Column(
-        children: <Widget>[
-          sales,
-          const SizedBox(height: 12),
-          services,
-        ],
+        children: <Widget>[sales, const SizedBox(height: 12), services],
       );
     }
     return Row(
@@ -590,12 +587,13 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
       children: <Widget>[
         if (_step > 0) ...<Widget>[
           IconButton.outlined(
-            onPressed: saving
-                ? null
-                : () => setState(() {
-                    _step = 0;
-                    _errorKey = null;
-                  }),
+            onPressed:
+                saving
+                    ? null
+                    : () => setState(() {
+                      _step = 0;
+                      _errorKey = null;
+                    }),
             tooltip: context.t('common.back', fallback: 'Voltar'),
             icon: const Icon(Icons.arrow_back_rounded),
           ),
@@ -604,11 +602,12 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
           Icon(Icons.lock_outline_rounded, color: tokens.mutedText, size: 18),
         const Spacer(),
         FilledButton.icon(
-          onPressed: saving
-              ? null
-              : finalStep
-              ? () => _finish(estado)
-              : () => _next(estado),
+          onPressed:
+              saving
+                  ? null
+                  : finalStep
+                  ? () => _finish(estado)
+                  : () => _next(estado),
           style: FilledButton.styleFrom(
             backgroundColor: _navy,
             foregroundColor: Colors.white,
@@ -617,25 +616,26 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
               borderRadius: BorderRadius.circular(14),
             ),
           ),
-          icon: saving
-              ? const SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
+          icon:
+              saving
+                  ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                  : Icon(
+                    finalStep
+                        ? Icons.auto_awesome_rounded
+                        : Icons.arrow_forward_rounded,
                   ),
-                )
-              : Icon(
-                  finalStep
-                      ? Icons.auto_awesome_rounded
-                      : Icons.arrow_forward_rounded,
-                ),
           label: Text(
             finalStep
                 ? context.t(
-                    'initialOnboarding.start',
-                    fallback: 'Começar a usar o SixoApp',
-                  )
+                  'initialOnboarding.start',
+                  fallback: 'Começar a usar o SixoApp',
+                )
                 : context.t('common.continue', fallback: 'Continuar'),
           ),
         ),
@@ -653,9 +653,7 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
 
   Future<void> _finish(OnboardingInicialModel estado) async {
     if (!_validateIdentity(estado)) return;
-    if (estado.podeConfigurarEmpresa &&
-        !_realizaVendas &&
-        !_prestaServicos) {
+    if (estado.podeConfigurarEmpresa && !_realizaVendas && !_prestaServicos) {
       setState(() => _errorKey = 'initialOnboarding.activityRequired');
       return;
     }
@@ -664,6 +662,7 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
         ConcluirOnboardingInicialRequest(
           idiomaPreferencial: _idioma,
           nomeUsuario: _nomeController.text.trim(),
+          nomeDeGuerra: _nomeController.text.trim(),
           nomeEmpresa: _empresaController.text.trim(),
           realizaVendas: _realizaVendas,
           prestaServicosTecnicos: _prestaServicos,
@@ -748,9 +747,10 @@ class _WebLanguageTile extends StatelessWidget {
           width: 145,
           padding: const EdgeInsets.all(11),
           decoration: BoxDecoration(
-            color: selected
-                ? _blue.withValues(alpha: 0.08)
-                : tokens.inputBackground,
+            color:
+                selected
+                    ? _blue.withValues(alpha: 0.08)
+                    : tokens.inputBackground,
             borderRadius: BorderRadius.circular(13),
             border: Border.all(
               color: selected ? _blue : tokens.cardBorder,
@@ -829,9 +829,10 @@ class _WebActivityTile extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 180),
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: selected
-                ? accent.withValues(alpha: 0.08)
-                : tokens.inputBackground,
+            color:
+                selected
+                    ? accent.withValues(alpha: 0.08)
+                    : tokens.inputBackground,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected ? accent : tokens.cardBorder,
