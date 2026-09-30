@@ -746,6 +746,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Tente buscar por outro nome, e-mail, celular ou apelido.',
     'colaborador.invite.shareAction': 'Compartilhar convite',
     'colaborador.invite.sendAction': 'Enviar convite',
+    'colaborador.invite.generateAndEmail': 'Gerar e enviar por e-mail',
     'colaborador.invite.emailAction': 'Enviar direto pelo e-mail',
     'colaborador.invite.emailActionSubtitle':
         'O convite será enviado para o e-mail informado.',
@@ -3456,6 +3457,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Try searching by another name, email, phone, or nickname.',
     'colaborador.invite.shareAction': 'Share invite',
     'colaborador.invite.sendAction': 'Send invite',
+    'colaborador.invite.generateAndEmail': 'Generate and send by email',
     'colaborador.invite.emailAction': 'Send directly by email',
     'colaborador.invite.emailActionSubtitle':
         'The invite will be sent to the email entered.',
@@ -5881,6 +5883,7 @@ const Map<String, Map<String, String>> _fallbacks = {
         'Intenta buscar por otro nombre, correo, celular o apodo.',
     'colaborador.invite.shareAction': 'Compartir invitación',
     'colaborador.invite.sendAction': 'Enviar invitación',
+    'colaborador.invite.generateAndEmail': 'Generar y enviar por e-mail',
     'colaborador.invite.emailAction': 'Enviar directo por e-mail',
     'colaborador.invite.emailActionSubtitle':
         'La invitación se enviará al e-mail informado.',

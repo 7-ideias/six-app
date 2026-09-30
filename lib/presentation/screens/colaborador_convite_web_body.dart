@@ -10,6 +10,8 @@ import '../../providers/locale_settings_provider.dart';
 import '../components/web_dashboard_widgets.dart';
 import '../theme/web_theme_tokens.dart';
 
+enum _ConviteWebAction { generate, email }
+
 class ColaboradorConviteWebBody extends StatefulWidget {
   const ColaboradorConviteWebBody({super.key});
 
@@ -71,6 +73,7 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
   bool _geraRelatorio = false;
   bool _gerenciaPermissoes = false;
   bool _isLoading = false;
+  _ConviteWebAction? _loadingAction;
   ColaboradorConviteResponse? _ultimoConvite;
 
   bool get _cadastroCompleto =>
@@ -230,10 +233,13 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
     );
   }
 
-  Future<void> _criarConvite() async {
+  Future<void> _criarConvite({
+    _ConviteWebAction action = _ConviteWebAction.generate,
+  }) async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       _isLoading = true;
+      _loadingAction = action;
       _ultimoConvite = null;
     });
 
@@ -243,6 +249,10 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
       );
       if (!mounted) return;
       setState(() => _ultimoConvite = response);
+      if (action == _ConviteWebAction.email) {
+        await _enviarConvitePorEmail(response);
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -263,7 +273,12 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
         ),
       );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadingAction = null;
+        });
+      }
     }
   }
 
@@ -279,6 +294,56 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
       SnackBar(
         content: Text(
           _t('colaboradores.inviteLinkCopied', 'Link do convite copiado.'),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _enviarUltimoConvitePorEmail() async {
+    final ColaboradorConviteResponse? convite = _ultimoConvite;
+    if (convite == null) {
+      await _criarConvite(action: _ConviteWebAction.email);
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+      _loadingAction = _ConviteWebAction.email;
+    });
+    try {
+      await _enviarConvitePorEmail(convite);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadingAction = null;
+        });
+      }
+    }
+  }
+
+  Future<void> _enviarConvitePorEmail(
+    ColaboradorConviteResponse convite,
+  ) async {
+    await _service.enviarConvitePorEmail(
+      idConvite: convite.id,
+      linkConvite: _linkConvite(convite),
+      idioma:
+          context.read<LocaleSettingsProvider>().currentLocale.toLanguageTag(),
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _t('colaborador.invite.emailSent', 'Convite enviado por e-mail.'),
         ),
         behavior: SnackBarBehavior.floating,
       ),
@@ -1343,54 +1408,96 @@ class _ColaboradorConviteWebBodyState extends State<ColaboradorConviteWebBody> {
   Widget _actionsBar(bool compact) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     final bool last = _etapaAtual == _etapas.length - 1;
+    final bool sendingEmail = _loadingAction == _ConviteWebAction.email;
+    final Widget backButton = OutlinedButton.icon(
+      onPressed: _isLoading ? null : _voltar,
+      icon: const Icon(Icons.arrow_back_rounded),
+      label: Text(
+        _etapaAtual == 0
+            ? _t('common.cancel', 'Cancelar')
+            : _t('common.back', 'Voltar'),
+      ),
+    );
+    final List<Widget> actionButtons = <Widget>[
+      if (last)
+        FilledButton.icon(
+          onPressed: _isLoading ? null : _enviarUltimoConvitePorEmail,
+          icon:
+              sendingEmail
+                  ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                  : const Icon(Icons.alternate_email_rounded),
+          label: Text(
+            sendingEmail
+                ? _t('colaborador.invite.sendingEmail', 'Enviando...')
+                : _ultimoConvite == null
+                ? _t(
+                  'colaborador.invite.generateAndEmail',
+                  'Gerar e enviar por e-mail',
+                )
+                : _t(
+                  'colaborador.invite.emailAction',
+                  'Enviar direto pelo e-mail',
+                ),
+          ),
+        ),
+      if (_ultimoConvite != null)
+        OutlinedButton.icon(
+          onPressed: _isLoading ? null : _copiarLink,
+          icon: const Icon(Icons.copy_outlined),
+          label: Text(_t('colaborador.invite.copy', 'Copiar link')),
+        ),
+      if (!last)
+        FilledButton.icon(
+          onPressed: _isLoading ? null : _avancar,
+          icon:
+              _isLoading
+                  ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                  : const Icon(Icons.arrow_forward_rounded),
+          label: Text(
+            _isLoading
+                ? _t('colaborador.invite.generating', 'Gerando convite...')
+                : _t('common.continue', 'Continuar'),
+          ),
+        ),
+    ];
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       decoration: BoxDecoration(
         color: tokens.surfaceElevated,
         border: Border(top: BorderSide(color: tokens.cardBorder)),
       ),
-      child: Row(
-        children: <Widget>[
-          OutlinedButton.icon(
-            onPressed: _isLoading ? null : _voltar,
-            icon: const Icon(Icons.arrow_back_rounded),
-            label: Text(
-              _etapaAtual == 0
-                  ? _t('common.cancel', 'Cancelar')
-                  : _t('common.back', 'Voltar'),
-            ),
-          ),
-          const Spacer(),
-          if (_ultimoConvite != null) ...<Widget>[
-            OutlinedButton.icon(
-              onPressed: _copiarLink,
-              icon: const Icon(Icons.copy_outlined),
-              label: Text(_t('colaborador.invite.copy', 'Copiar link')),
-            ),
-            const SizedBox(width: 10),
-          ],
-          FilledButton.icon(
-            onPressed: _isLoading ? null : _avancar,
-            icon:
-                _isLoading
-                    ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                    : Icon(
-                      last ? Icons.send_outlined : Icons.arrow_forward_rounded,
-                    ),
-            label: Text(
-              _isLoading
-                  ? _t('colaborador.invite.generating', 'Gerando convite...')
-                  : last
-                  ? _t('colaborador.invite.generate', 'Gerar convite')
-                  : _t('common.continue', 'Continuar'),
-            ),
-          ),
-        ],
-      ),
+      child:
+          compact
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  backButton,
+                  const SizedBox(height: 10),
+                  for (final Widget button in actionButtons) ...<Widget>[
+                    button,
+                    if (button != actionButtons.last)
+                      const SizedBox(height: 10),
+                  ],
+                ],
+              )
+              : Row(
+                children: <Widget>[
+                  backButton,
+                  const Spacer(),
+                  for (final Widget button in actionButtons) ...<Widget>[
+                    button,
+                    if (button != actionButtons.last) const SizedBox(width: 10),
+                  ],
+                ],
+              ),
     );
   }
 
