@@ -131,7 +131,6 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1100),
                     child: Container(
-                      constraints: BoxConstraints(minHeight: wide ? 680 : 0),
                       clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
                         color: tokens.surfaceElevated,
@@ -146,24 +145,27 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
                         ],
                       ),
                       child: wide
-                          ? Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: <Widget>[
-                                SizedBox(
-                                  width: 340,
-                                  child: _brandPanel(context),
-                                ),
-                                Expanded(
-                                  child: _form(
-                                    context,
-                                    estado,
-                                    totalSteps,
-                                    finalStep,
-                                    provider.salvando,
-                                    wide: true,
+                          ? SizedBox(
+                              height: 720,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: <Widget>[
+                                  SizedBox(
+                                    width: 340,
+                                    child: _brandPanel(context),
                                   ),
-                                ),
-                              ],
+                                  Expanded(
+                                    child: _form(
+                                      context,
+                                      estado,
+                                      totalSteps,
+                                      finalStep,
+                                      provider.salvando,
+                                      wide: true,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             )
                           : Column(
                               children: <Widget>[
