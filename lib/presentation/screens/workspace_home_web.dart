@@ -163,6 +163,8 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
         context.watch<DesempenhoColaboradorHomeProvider>();
     final ColaboradorHomeOperacionalProvider operacional =
         context.watch<ColaboradorHomeOperacionalProvider>();
+    final HomeBannersProvider homeBanners =
+        context.watch<HomeBannersProvider>();
     final ThemeData webTheme = WebThemeTokens.applyTo(Theme.of(context));
     final bool reduceMotion =
         MediaQuery.disableAnimationsOf(context) ||
@@ -183,6 +185,14 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
         }
       });
     }
+    if (!homeBanners.carregando) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted && !homeBanners.carregando) {
+          unawaited(homeBanners.carregar());
+        }
+      });
+    }
+
     if (hasOperationalAccess &&
         !operacional.loading &&
         operacional.needsLoad(
