@@ -28,6 +28,12 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
+  final FocusNode _loginFocusNode = FocusNode();
+  final FocusNode _passwordFocusNode = FocusNode();
+  final FocusNode _confirmPasswordFocusNode = FocusNode();
+  final GlobalKey _passwordFieldKey = GlobalKey();
+  final GlobalKey _confirmPasswordFieldKey = GlobalKey();
+  final GlobalKey _submitButtonKey = GlobalKey();
   final NovaEmpresaService _novaEmpresaService = NovaEmpresaService();
   final AuthService _authService = AuthService();
 
@@ -39,11 +45,67 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
   String? _passwordMismatchError;
 
   @override
+  void initState() {
+    super.initState();
+    _loginFocusNode.addListener(_handleLoginFocusChange);
+    _passwordFocusNode.addListener(_handlePasswordFocusChange);
+    _confirmPasswordFocusNode.addListener(_handleConfirmPasswordFocusChange);
+  }
+
+  @override
   void dispose() {
+    _loginFocusNode
+      ..removeListener(_handleLoginFocusChange)
+      ..dispose();
+    _passwordFocusNode
+      ..removeListener(_handlePasswordFocusChange)
+      ..dispose();
+    _confirmPasswordFocusNode
+      ..removeListener(_handleConfirmPasswordFocusChange)
+      ..dispose();
     _loginController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  void _handleLoginFocusChange() {
+    if (!_loginFocusNode.hasFocus) return;
+    _ensureVisibleAfterKeyboard(_passwordFieldKey, alignment: 0.72);
+  }
+
+  void _handlePasswordFocusChange() {
+    if (!_passwordFocusNode.hasFocus) return;
+    _ensureVisibleAfterKeyboard(_confirmPasswordFieldKey, alignment: 0.72);
+  }
+
+  void _handleConfirmPasswordFocusChange() {
+    if (!_confirmPasswordFocusNode.hasFocus) return;
+    _ensureVisibleAfterKeyboard(_submitButtonKey, alignment: 0.82);
+  }
+
+  void _ensureVisibleAfterKeyboard(GlobalKey key, {required double alignment}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(
+        const Duration(milliseconds: 260),
+        () => _ensureVisible(key, alignment: alignment),
+      );
+    });
+  }
+
+  Future<void> _ensureVisible(
+    GlobalKey key, {
+    required double alignment,
+  }) async {
+    if (!mounted) return;
+    final BuildContext? targetContext = key.currentContext;
+    if (targetContext == null || !targetContext.mounted) return;
+    await Scrollable.ensureVisible(
+      targetContext,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      alignment: alignment,
+    );
   }
 
   String get _languageTag => Localizations.localeOf(context).toLanguageTag();
@@ -357,6 +419,7 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
       children: <Widget>[
         SixoAppAuthField(
           controller: _loginController,
+          focusNode: _loginFocusNode,
           label: context.t('auth.mobileCreate.loginLabel', fallback: 'Login'),
           hint: context.t(
             'auth.mobileCreate.loginHint',
@@ -364,68 +427,89 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
           ),
           icon: Icons.person_outline_rounded,
           textInputAction: TextInputAction.next,
+          onSubmitted: (_) {
+            _passwordFocusNode.requestFocus();
+            _ensureVisibleAfterKeyboard(
+              _confirmPasswordFieldKey,
+              alignment: 0.72,
+            );
+          },
           autofillHints: const <String>[AutofillHints.newUsername],
           autocorrect: false,
         ),
         const SizedBox(height: 14),
-        SixoAppAuthField(
-          controller: _passwordController,
-          label: context.t(
-            'auth.mobileCreate.passwordLabel',
-            fallback: 'Senha',
-          ),
-          hint: context.t(
-            'auth.mobileCreate.passwordHint',
-            fallback: 'Mínimo de 8 caracteres',
-          ),
-          icon: Icons.lock_outline_rounded,
-          obscure: _obscurePassword,
-          textInputAction: TextInputAction.next,
-          onChanged: (_) {
-            if (_passwordMismatchError != null) {
-              setState(() => _passwordMismatchError = null);
-            }
-          },
-          autofillHints: const <String>[AutofillHints.newPassword],
-          enableSuggestions: false,
-          autocorrect: false,
-          suffix: _PasswordVisibilityButton(
+        KeyedSubtree(
+          key: _passwordFieldKey,
+          child: SixoAppAuthField(
+            controller: _passwordController,
+            focusNode: _passwordFocusNode,
+            label: context.t(
+              'auth.mobileCreate.passwordLabel',
+              fallback: 'Senha',
+            ),
+            hint: context.t(
+              'auth.mobileCreate.passwordHint',
+              fallback: 'Mínimo de 8 caracteres',
+            ),
+            icon: Icons.lock_outline_rounded,
             obscure: _obscurePassword,
-            onPressed: () {
-              setState(() => _obscurePassword = !_obscurePassword);
+            textInputAction: TextInputAction.next,
+            onChanged: (_) {
+              if (_passwordMismatchError != null) {
+                setState(() => _passwordMismatchError = null);
+              }
+              _ensureVisible(_confirmPasswordFieldKey, alignment: 0.72);
             },
+            onSubmitted: (_) {
+              _confirmPasswordFocusNode.requestFocus();
+              _ensureVisibleAfterKeyboard(_submitButtonKey, alignment: 0.82);
+            },
+            autofillHints: const <String>[AutofillHints.newPassword],
+            enableSuggestions: false,
+            autocorrect: false,
+            suffix: _PasswordVisibilityButton(
+              obscure: _obscurePassword,
+              onPressed: () {
+                setState(() => _obscurePassword = !_obscurePassword);
+              },
+            ),
           ),
         ),
         const SizedBox(height: 14),
-        SixoAppAuthField(
-          controller: _confirmPasswordController,
-          label: context.t(
-            'auth.mobileCreate.confirmPasswordLabel',
-            fallback: 'Confirme a senha',
-          ),
-          hint: context.t(
-            'auth.mobileCreate.confirmPasswordHint',
-            fallback: 'Repita sua senha',
-          ),
-          icon: Icons.verified_user_outlined,
-          obscure: _obscureConfirmPassword,
-          textInputAction: TextInputAction.done,
-          onChanged: (_) {
-            if (_passwordMismatchError != null) {
-              setState(() => _passwordMismatchError = null);
-            }
-          },
-          onSubmitted: (_) => _signUpTraditional(),
-          autofillHints: const <String>[AutofillHints.newPassword],
-          enableSuggestions: false,
-          autocorrect: false,
-          suffix: _PasswordVisibilityButton(
+        KeyedSubtree(
+          key: _confirmPasswordFieldKey,
+          child: SixoAppAuthField(
+            controller: _confirmPasswordController,
+            focusNode: _confirmPasswordFocusNode,
+            label: context.t(
+              'auth.mobileCreate.confirmPasswordLabel',
+              fallback: 'Confirme a senha',
+            ),
+            hint: context.t(
+              'auth.mobileCreate.confirmPasswordHint',
+              fallback: 'Repita sua senha',
+            ),
+            icon: Icons.verified_user_outlined,
             obscure: _obscureConfirmPassword,
-            onPressed: () {
-              setState(
-                () => _obscureConfirmPassword = !_obscureConfirmPassword,
-              );
+            textInputAction: TextInputAction.done,
+            onChanged: (_) {
+              if (_passwordMismatchError != null) {
+                setState(() => _passwordMismatchError = null);
+              }
+              _ensureVisible(_submitButtonKey, alignment: 0.82);
             },
+            onSubmitted: (_) => _signUpTraditional(),
+            autofillHints: const <String>[AutofillHints.newPassword],
+            enableSuggestions: false,
+            autocorrect: false,
+            suffix: _PasswordVisibilityButton(
+              obscure: _obscureConfirmPassword,
+              onPressed: () {
+                setState(
+                  () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                );
+              },
+            ),
           ),
         ),
         if (_passwordMismatchError != null) ...<Widget>[
@@ -440,13 +524,16 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
           ),
         ],
         const SizedBox(height: 18),
-        SixoAppAuthPrimaryButton(
-          label: context.t(
-            'auth.mobileCreate.submit',
-            fallback: 'Criar conta com login e senha',
+        KeyedSubtree(
+          key: _submitButtonKey,
+          child: SixoAppAuthPrimaryButton(
+            label: context.t(
+              'auth.mobileCreate.submit',
+              fallback: 'Criar conta com login e senha',
+            ),
+            onPressed: _signUpTraditional,
+            isLoading: _isLoading,
           ),
-          onPressed: _signUpTraditional,
-          isLoading: _isLoading,
         ),
       ],
     );

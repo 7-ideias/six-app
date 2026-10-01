@@ -118,6 +118,8 @@ class _SixoAppAuthMobileScaffoldState extends State<SixoAppAuthMobileScaffold>
           child: SafeArea(
             child: LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
+                final MediaQueryData mediaQuery = MediaQuery.of(context);
+                final bool keyboardVisible = mediaQuery.viewInsets.bottom > 0;
                 final bool short = constraints.maxHeight < 690;
                 final double horizontalPadding = 20;
 
@@ -127,41 +129,40 @@ class _SixoAppAuthMobileScaffoldState extends State<SixoAppAuthMobileScaffold>
                   physics: const ClampingScrollPhysics(),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
+                      minHeight: keyboardVisible ? 0 : constraints.maxHeight,
                     ),
-                    child: IntrinsicHeight(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          _SixoAppAuthTopBar(
-                            onBack: widget.onBack,
-                            backSemanticLabel: widget.backSemanticLabel,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        _SixoAppAuthTopBar(
+                          onBack: widget.onBack,
+                          backSemanticLabel: widget.backSemanticLabel,
+                        ),
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            horizontalPadding,
+                            widget.compactHeader || short ? 2 : 12,
+                            horizontalPadding,
+                            widget.compactHeader ? 18 : 26,
                           ),
-                          Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              horizontalPadding,
-                              widget.compactHeader || short ? 2 : 12,
-                              horizontalPadding,
-                              widget.compactHeader ? 18 : 26,
-                            ),
-                            child: _SixoAppAuthHero(
-                              title: widget.title,
-                              subtitle: widget.subtitle,
-                              compact: widget.compactHeader || short,
-                              animation: _ambientController,
-                              reduceMotion: _reduceMotion,
-                              featureLabels: widget.featureLabels,
-                            ),
+                          child: _SixoAppAuthHero(
+                            title: widget.title,
+                            subtitle: widget.subtitle,
+                            compact: widget.compactHeader || short,
+                            animation: _ambientController,
+                            reduceMotion: _reduceMotion,
+                            featureLabels: widget.featureLabels,
                           ),
-                          const Spacer(),
-                          ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minHeight: widget.minimumSurfaceHeight,
-                            ),
-                            child: _SixoAppAuthSurface(child: widget.body),
+                        ),
+                        SizedBox(height: keyboardVisible || short ? 10 : 24),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: widget.minimumSurfaceHeight,
                           ),
-                        ],
-                      ),
+                          child: _SixoAppAuthSurface(child: widget.body),
+                        ),
+                      ],
                     ),
                   ),
                 );

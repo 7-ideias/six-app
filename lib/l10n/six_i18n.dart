@@ -1573,6 +1573,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileLogin.showPassword': 'Mostrar senha',
     'auth.mobileLogin.hidePassword': 'Ocultar senha',
     'auth.mobileLogin.submit': 'Entrar',
+    'auth.mobileLogin.invalidCredentialsError':
+        'E-mail ou senha inválidos. Verifique e tente novamente.',
+    'auth.mobileLogin.genericError':
+        'Não foi possível entrar agora. Tente novamente.',
     'auth.mobileLogin.socialDivider': 'ou continue com',
     'auth.mobileLogin.createPrompt': 'Primeira vez no SixoApp?',
     'auth.mobileCreate.title': 'Crie seu espaço',
@@ -4488,6 +4492,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileLogin.showPassword': 'Show password',
     'auth.mobileLogin.hidePassword': 'Hide password',
     'auth.mobileLogin.submit': 'Sign in',
+    'auth.mobileLogin.invalidCredentialsError':
+        'Invalid email or password. Check them and try again.',
+    'auth.mobileLogin.genericError':
+        'We could not sign you in right now. Try again.',
     'auth.mobileLogin.socialDivider': 'or continue with',
     'auth.mobileLogin.createPrompt': 'New to SixoApp?',
     'auth.mobileCreate.title': 'Create your workspace',
@@ -6585,6 +6593,10 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileLogin.showPassword': 'Mostrar contraseña',
     'auth.mobileLogin.hidePassword': 'Ocultar contraseña',
     'auth.mobileLogin.submit': 'Entrar',
+    'auth.mobileLogin.invalidCredentialsError':
+        'Correo o contraseña inválidos. Verifícalos e inténtalo de nuevo.',
+    'auth.mobileLogin.genericError':
+        'No pudimos iniciar sesión ahora. Inténtalo de nuevo.',
     'auth.mobileLogin.socialDivider': 'o continúa con',
     'auth.mobileLogin.createPrompt': '¿Primera vez en SixoApp?',
     'auth.mobileCreate.title': 'Crea tu espacio',
