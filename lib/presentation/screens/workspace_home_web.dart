@@ -13,14 +13,17 @@ import '../../providers/colaborador_autorizacoes_provider.dart';
 import '../../providers/colaborador_home_operacional_provider.dart';
 import '../../providers/desempenho_colaborador_home_provider.dart';
 import '../../providers/empresa_provider.dart';
+import '../../providers/home_banners_provider.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/usuario_provider.dart';
 import '../../providers/workspace_home_provider.dart';
 import '../admin/admin_portal_texts.dart';
 import '../components/six_backend_loading.dart';
+import '../components/web/business_context_home_carousel_web.dart';
 import '../components/web/collaborator_operational_home_dashboard.dart';
 import '../components/web/performance_home_web_dashboard.dart';
 import '../navigation/web_navigation_destination_resolver.dart';
+import 'perfil_negocio_web_dialog.dart';
 import '../navigation/web_navigation_item.dart';
 import '../navigation/web_navigation_permission_adapter.dart';
 import '../theme/web_theme_tokens.dart';
@@ -74,6 +77,13 @@ class WorkspaceHomeWeb extends StatelessWidget {
           ChangeNotifierProvider<ColaboradorHomeOperacionalProvider>(
             create: (_) => ColaboradorHomeOperacionalProvider(),
           ),
+        ChangeNotifierProvider<HomeBannersProvider>(
+          create: (_) {
+            final HomeBannersProvider provider = HomeBannersProvider();
+            unawaited(provider.carregar());
+            return provider;
+          },
+        ),
         ChangeNotifierProvider<_WorkspaceHomeInfrastructureProvider>(
           create:
               (BuildContext context) => _WorkspaceHomeInfrastructureProvider(
@@ -153,6 +163,8 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
         context.watch<DesempenhoColaboradorHomeProvider>();
     final ColaboradorHomeOperacionalProvider operacional =
         context.watch<ColaboradorHomeOperacionalProvider>();
+    final HomeBannersProvider homeBanners =
+        context.watch<HomeBannersProvider>();
     final ThemeData webTheme = WebThemeTokens.applyTo(Theme.of(context));
     final bool reduceMotion =
         MediaQuery.disableAnimationsOf(context) ||
@@ -173,6 +185,14 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
         }
       });
     }
+    if (!homeBanners.carregando) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted && !homeBanners.carregando) {
+          unawaited(homeBanners.carregar());
+        }
+      });
+    }
+
     if (hasOperationalAccess &&
         !operacional.loading &&
         operacional.needsLoad(
@@ -297,6 +317,12 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
                               } else {
                                 await provider.reload();
                               }
+                              if (context.mounted &&
+                                  (refreshedIsAdmin || refreshedIsCollaborator)) {
+                                await context
+                                    .read<HomeBannersProvider>()
+                                    .carregar(force: true);
+                              }
                               if (refreshedAutorizacoes.ehSuperUsuario &&
                                   context.mounted) {
                                 await context
@@ -309,6 +335,18 @@ class _WorkspaceHomeContentState extends State<_WorkspaceHomeContent> {
                           ),
                           const SizedBox(height: 18),
                           if (isAdminUser || isCollaborator) ...<Widget>[
+                            BusinessContextHomeCarouselWeb(
+                              onConfigure: () async {
+                                final bool updated =
+                                    await showPerfilNegocioWebDialog(context);
+                                if (updated && context.mounted) {
+                                  await context
+                                      .read<HomeBannersProvider>()
+                                      .carregar(force: true);
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 18),
                             _WorkspaceHomeViewSwitch(
                               selected: _selectedView,
                               onChanged: (_WorkspaceHomeView value) {

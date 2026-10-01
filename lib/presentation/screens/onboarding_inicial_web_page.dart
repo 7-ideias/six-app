@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/services/empresa_service.dart';
+import '../../core/services/perfil_negocio_service.dart';
 import '../../data/models/onboarding_inicial_model.dart';
+import '../../data/models/perfil_negocio_model.dart';
 import '../../domain/services/usuario/usuario_service.dart';
+import '../../l10n/perfil_negocio_texts.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/onboarding_inicial_provider.dart';
+import '../../providers/perfil_negocio_editor_controller.dart';
+import '../components/web/perfil_negocio_web_form.dart';
 import '../theme/web_theme_tokens.dart';
 
 const Color _navy = Color(0xFF061D4B);
@@ -28,11 +33,11 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
   final TextEditingController _empresaController = TextEditingController();
 
   bool _initialized = false;
+  bool _perfilBootstrapStarted = false;
   int _step = 0;
   String _idioma = 'pt-BR';
-  bool _realizaVendas = false;
-  bool _prestaServicos = false;
   String? _errorKey;
+  PerfilNegocioEditorController? _perfilController;
 
   @override
   void didChangeDependencies() {
@@ -41,6 +46,7 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
     final OnboardingInicialModel? estado =
         context.read<OnboardingInicialProvider>().estado;
     if (estado == null) return;
+
     _initialized = true;
     _nomeController.text = estado.nomeUsuario;
     _empresaController.text = estado.nomeEmpresa;
@@ -48,14 +54,45 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
       estado.idiomaPreferencial,
       context.read<LocaleSettingsProvider>().currentLocale,
     );
-    _realizaVendas = estado.realizaVendas;
-    _prestaServicos = estado.prestaServicosTecnicos;
+
+    if (estado.podeConfigurarEmpresa) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _inicializarPerfil());
+    }
+  }
+
+  Future<void> _inicializarPerfil() async {
+    if (_perfilBootstrapStarted) return;
+    _perfilBootstrapStarted = true;
+    final PerfilNegocioService service = PerfilNegocioService();
+    try {
+      final String empresaId = await service.empresaAtual();
+      if (!mounted) {
+        service.dispose();
+        return;
+      }
+      final PerfilNegocioEditorController controller =
+          PerfilNegocioEditorController(empresaId: empresaId, service: service);
+      controller.addListener(_onPerfilChanged);
+      setState(() => _perfilController = controller);
+      await controller.carregar();
+    } catch (_) {
+      service.dispose();
+      if (mounted) {
+        setState(() => _errorKey = 'initialOnboarding.saveError');
+      }
+    }
+  }
+
+  void _onPerfilChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
     _nomeController.dispose();
     _empresaController.dispose();
+    _perfilController?.removeListener(_onPerfilChanged);
+    _perfilController?.dispose();
     super.dispose();
   }
 
@@ -67,7 +104,7 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
     final OnboardingInicialModel? estado = provider.estado;
     if (estado == null) return const SizedBox.shrink();
 
-    final int totalSteps = estado.podeConfigurarEmpresa ? 2 : 1;
+    final int totalSteps = estado.podeConfigurarEmpresa ? 4 : 1;
     final bool finalStep = _step == totalSteps - 1;
 
     return Scaffold(
@@ -88,64 +125,62 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
           child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
               final bool wide = constraints.maxWidth >= 900;
-              final Widget card = Container(
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  color: tokens.surfaceElevated,
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: tokens.cardBorder),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: _navy.withValues(alpha: 0.15),
-                      blurRadius: 48,
-                      offset: const Offset(0, 22),
-                    ),
-                  ],
-                ),
-                child:
-                    wide
-                        ? SizedBox(
-                          height: 650,
-                          child: Row(
-                            children: <Widget>[
-                              SizedBox(
-                                width: 370,
-                                child: _buildBrandPanel(context),
-                              ),
-                              Expanded(
-                                child: _buildForm(
-                                  context,
-                                  estado,
-                                  totalSteps,
-                                  finalStep,
-                                  provider.salvando,
-                                  wide: true,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                        : Column(
-                          children: <Widget>[
-                            _buildCompactHeader(context),
-                            _buildForm(
-                              context,
-                              estado,
-                              totalSteps,
-                              finalStep,
-                              provider.salvando,
-                              wide: false,
-                            ),
-                          ],
-                        ),
-              );
-
               return SingleChildScrollView(
                 padding: EdgeInsets.all(wide ? 30 : 18),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1100),
-                    child: card,
+                    child: Container(
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        color: tokens.surfaceElevated,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: tokens.cardBorder),
+                        boxShadow: <BoxShadow>[
+                          BoxShadow(
+                            color: _navy.withValues(alpha: 0.15),
+                            blurRadius: 48,
+                            offset: const Offset(0, 22),
+                          ),
+                        ],
+                      ),
+                      child: wide
+                          ? SizedBox(
+                              height: 720,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: <Widget>[
+                                  SizedBox(
+                                    width: 340,
+                                    child: _brandPanel(context),
+                                  ),
+                                  Expanded(
+                                    child: _form(
+                                      context,
+                                      estado,
+                                      totalSteps,
+                                      finalStep,
+                                      provider.salvando,
+                                      wide: true,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Column(
+                              children: <Widget>[
+                                _compactHeader(context),
+                                _form(
+                                  context,
+                                  estado,
+                                  totalSteps,
+                                  finalStep,
+                                  provider.salvando,
+                                  wide: false,
+                                ),
+                              ],
+                            ),
+                    ),
                   ),
                 ),
               );
@@ -156,9 +191,36 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
     );
   }
 
-  Widget _buildBrandPanel(BuildContext context) {
+  Widget _brandPanel(BuildContext context) {
+    final String title = _step == 0
+        ? context.t(
+            'initialOnboarding.identityTitle',
+            fallback: 'Vamos começar pelo essencial',
+          )
+        : perfilNegocioText(
+            context,
+            _step == 1
+                ? 'segmentTitle'
+                : _step == 2
+                ? 'activityTitle'
+                : 'goalTitle',
+          );
+    final String subtitle = _step == 0
+        ? context.t(
+            'initialOnboarding.identitySubtitle',
+            fallback: 'Confirme seus dados para personalizarmos sua experiência.',
+          )
+        : perfilNegocioText(
+            context,
+            _step == 1
+                ? 'segmentSubtitle'
+                : _step == 2
+                ? 'activitySubtitle'
+                : 'goalSubtitle',
+          );
+
     return Container(
-      padding: const EdgeInsets.all(36),
+      padding: const EdgeInsets.all(34),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -171,83 +233,46 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
         children: <Widget>[
           _brandLockup(context),
           const Spacer(),
-          Container(
-            width: 74,
-            height: 74,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(23),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-            ),
-            child: Icon(
-              _step == 0
-                  ? Icons.auto_awesome_rounded
-                  : Icons.dashboard_customize_rounded,
-              color: _cyan,
-              size: 35,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
+          Icon(
             _step == 0
-                ? context.t(
-                  'initialOnboarding.identityTitle',
-                  fallback: 'Vamos começar pelo essencial',
-                )
-                : context.t(
-                  'initialOnboarding.businessTitle',
-                  fallback: 'O que seu negócio faz?',
-                ),
+                ? Icons.auto_awesome_rounded
+                : Icons.storefront_rounded,
+            color: _cyan,
+            size: 42,
+          ),
+          const SizedBox(height: 20),
+          Text(
+            title,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 29,
+              fontSize: 28,
               height: 1.12,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 13),
+          const SizedBox(height: 12),
           Text(
-            _step == 0
-                ? context.t(
-                  'initialOnboarding.identitySubtitle',
-                  fallback:
-                      'Confirme seus dados para personalizarmos sua experiência.',
-                )
-                : context.t(
-                  'initialOnboarding.businessSubtitle',
-                  fallback:
-                      'Isso organiza módulos e atalhos. Você poderá alterar depois.',
-                ),
+            subtitle,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.72),
-              fontSize: 14,
+              color: Colors.white.withValues(alpha: 0.74),
               height: 1.5,
             ),
           ),
           const Spacer(),
-          Row(
-            children: <Widget>[
-              const Icon(Icons.schedule_rounded, color: _cyan, size: 17),
-              const SizedBox(width: 8),
-              Text(
-                context.t(
-                  'initialOnboarding.eyebrow',
-                  fallback: 'Configuração inicial',
-                ),
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.76),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
+          Text(
+            perfilNegocioText(context, 'notice'),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.62),
+              fontSize: 11,
+              height: 1.4,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCompactHeader(BuildContext context) {
+  Widget _compactHeader(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 17),
       decoration: const BoxDecoration(
@@ -271,37 +296,21 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
           child: Image.asset('assets/images/sixoapp_splash_symbol.png'),
         ),
         const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              const Text(
-                'SixoApp',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              Text(
-                context.t(
-                  'initialOnboarding.eyebrow',
-                  fallback: 'Configuração inicial',
-                ),
-                style: const TextStyle(
-                  color: Color(0xFFA8C6EE),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
+        const Expanded(
+          child: Text(
+            'SixoApp',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildForm(
+  Widget _form(
     BuildContext context,
     OnboardingInicialModel estado,
     int totalSteps,
@@ -310,14 +319,9 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
     required bool wide,
   }) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    final Widget content =
-        _step == 0
-            ? _identityStep(context, estado)
-            : _businessStep(context, wide);
-
     return Container(
       color: tokens.surfaceElevated,
-      padding: EdgeInsets.all(wide ? 42 : 24),
+      padding: EdgeInsets.all(wide ? 38 : 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -327,7 +331,7 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
                 '${context.t('initialOnboarding.step', fallback: 'Etapa')} '
                 '${_step + 1} ${context.t('initialOnboarding.of', fallback: 'de')} '
                 '$totalSteps',
-                style: TextStyle(
+                style: const TextStyle(
                   color: _blue,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
@@ -347,50 +351,26 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
               ),
             ],
           ),
-          const SizedBox(height: 31),
-          Text(
-            _step == 0
-                ? context.t(
-                  'initialOnboarding.identityTitle',
-                  fallback: 'Vamos começar pelo essencial',
-                )
-                : context.t(
-                  'initialOnboarding.businessTitle',
-                  fallback: 'O que seu negócio faz?',
-                ),
-            style: TextStyle(
-              color: tokens.primaryText,
-              fontSize: 29,
-              height: 1.12,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _step == 0
-                ? context.t(
-                  'initialOnboarding.identitySubtitle',
-                  fallback:
-                      'Confirme seus dados para personalizarmos sua experiência.',
-                )
-                : context.t(
-                  'initialOnboarding.businessSubtitle',
-                  fallback:
-                      'Isso organiza módulos e atalhos. Você poderá alterar depois.',
-                ),
-            style: TextStyle(
-              color: tokens.secondaryText,
-              fontSize: 14,
-              height: 1.45,
-            ),
-          ),
           const SizedBox(height: 28),
-          content,
+          if (_step == 0)
+            _identityStep(context, estado)
+          else if (_perfilController == null)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else
+            PerfilNegocioWebForm(
+              controller: _perfilController!,
+              etapa: _step - 1,
+            ),
           if (_errorKey != null) ...<Widget>[
             const SizedBox(height: 16),
             _error(context),
           ],
-          if (wide) const Spacer() else const SizedBox(height: 28),
+          const SizedBox(height: 28),
           Divider(color: tokens.divider),
           const SizedBox(height: 16),
           _actions(context, estado, finalStep, saving),
@@ -406,16 +386,35 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
       children: <Widget>[
         Text(
           context.t(
+            'initialOnboarding.identityTitle',
+            fallback: 'Vamos começar pelo essencial',
+          ),
+          style: TextStyle(
+            color: tokens.primaryText,
+            fontSize: 29,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          context.t(
+            'initialOnboarding.identitySubtitle',
+            fallback: 'Confirme seus dados para personalizarmos sua experiência.',
+          ),
+          style: TextStyle(color: tokens.secondaryText, height: 1.45),
+        ),
+        const SizedBox(height: 22),
+        Text(
+          context.t(
             'initialOnboarding.languageQuestion',
             fallback: 'Em qual idioma deseja continuar?',
           ),
           style: TextStyle(
             color: tokens.primaryText,
-            fontSize: 13,
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 11),
+        const SizedBox(height: 10),
         Wrap(
           spacing: 9,
           runSpacing: 9,
@@ -425,31 +424,24 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
             _language('ES', 'Español', 'es-ES'),
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 22),
         _field(
-          context,
           controller: _nomeController,
           label: context.t(
             'initialOnboarding.userName',
             fallback: 'Como podemos chamar você?',
           ),
           icon: Icons.person_outline_rounded,
-          action:
-              estado.podeConfigurarEmpresa
-                  ? TextInputAction.next
-                  : TextInputAction.done,
         ),
         if (estado.podeConfigurarEmpresa) ...<Widget>[
-          const SizedBox(height: 14),
+          const SizedBox(height: 13),
           _field(
-            context,
             controller: _empresaController,
             label: context.t(
               'initialOnboarding.companyName',
               fallback: 'Nome do seu negócio',
             ),
             icon: Icons.storefront_outlined,
-            action: TextInputAction.done,
           ),
         ],
       ],
@@ -457,26 +449,72 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
   }
 
   Widget _language(String code, String label, String value) {
-    return _WebLanguageTile(
-      code: code,
-      label: label,
-      selected: _idioma == value,
+    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool selected = _idioma == value;
+    return InkWell(
       onTap: () => _changeLanguage(value),
+      borderRadius: BorderRadius.circular(13),
+      child: Container(
+        width: 145,
+        padding: const EdgeInsets.all(11),
+        decoration: BoxDecoration(
+          color: selected
+              ? _blue.withValues(alpha: 0.08)
+              : tokens.inputBackground,
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(
+            color: selected ? _blue : tokens.cardBorder,
+          ),
+        ),
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 29,
+              height: 29,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: selected ? _blue : tokens.surfaceMuted,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                code,
+                style: TextStyle(
+                  color: selected ? Colors.white : tokens.secondaryText,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: tokens.primaryText,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _field(
-    BuildContext context, {
+  Widget _field({
     required TextEditingController controller,
     required String label,
     required IconData icon,
-    required TextInputAction action,
   }) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
     return TextField(
       controller: controller,
-      textInputAction: action,
-      style: TextStyle(color: tokens.primaryText, fontWeight: FontWeight.w600),
+      style: TextStyle(
+        color: tokens.primaryText,
+        fontWeight: FontWeight.w600,
+      ),
       decoration: InputDecoration(
         labelText: label,
         filled: true,
@@ -495,83 +533,21 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
     );
   }
 
-  Widget _businessStep(BuildContext context, bool wide) {
-    final Widget sales = _WebActivityTile(
-      icon: Icons.point_of_sale_rounded,
-      accent: const Color(0xFF2563EB),
-      title: context.t(
-        'initialOnboarding.salesTitle',
-        fallback: 'Vende produtos',
-      ),
-      subtitle: context.t(
-        'initialOnboarding.salesSubtitle',
-        fallback: 'PDV, catálogo, estoque e vendas.',
-      ),
-      selected: _realizaVendas,
-      onTap:
-          () => setState(() {
-            _realizaVendas = !_realizaVendas;
-            _errorKey = null;
-          }),
-    );
-    final Widget services = _WebActivityTile(
-      icon: Icons.home_repair_service_rounded,
-      accent: const Color(0xFF7C3AED),
-      title: context.t(
-        'initialOnboarding.servicesTitle',
-        fallback: 'Presta serviços técnicos',
-      ),
-      subtitle: context.t(
-        'initialOnboarding.servicesSubtitle',
-        fallback: 'Atendimentos, ordens de serviço e procedimentos.',
-      ),
-      selected: _prestaServicos,
-      onTap:
-          () => setState(() {
-            _prestaServicos = !_prestaServicos;
-            _errorKey = null;
-          }),
-    );
-    if (!wide) {
-      return Column(
-        children: <Widget>[sales, const SizedBox(height: 12), services],
-      );
-    }
-    return Row(
-      children: <Widget>[
-        Expanded(child: sales),
-        const SizedBox(width: 13),
-        Expanded(child: services),
-      ],
-    );
-  }
-
   Widget _error(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Semantics(
-      liveRegion: true,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: tokens.danger.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: tokens.danger.withValues(alpha: 0.28)),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: tokens.danger.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: tokens.danger.withValues(alpha: 0.28)),
+      ),
+      child: Text(
+        context.t(
+          _errorKey!,
+          fallback: 'Revise as informações e tente novamente.',
         ),
-        child: Row(
-          children: <Widget>[
-            Icon(Icons.error_outline_rounded, color: tokens.danger, size: 19),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Text(
-                context.t(
-                  _errorKey!,
-                  fallback: 'Revise as informações e tente novamente.',
-                ),
-                style: TextStyle(color: tokens.primaryText, fontSize: 13),
-              ),
-            ),
-          ],
-        ),
+        style: TextStyle(color: tokens.primaryText, fontSize: 13),
       ),
     );
   }
@@ -582,61 +558,52 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
     bool finalStep,
     bool saving,
   ) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
+    final bool profileLoading =
+        _step > 0 &&
+        (_perfilController == null ||
+            _perfilController!.carregando ||
+            _perfilController!.catalogo == null);
+
     return Row(
       children: <Widget>[
-        if (_step > 0) ...<Widget>[
-          IconButton.outlined(
-            onPressed:
-                saving
-                    ? null
-                    : () => setState(() {
-                      _step = 0;
-                      _errorKey = null;
-                    }),
-            tooltip: context.t('common.back', fallback: 'Voltar'),
+        if (_step > 0)
+          OutlinedButton.icon(
+            onPressed: saving ? null : () => setState(() => _step--),
             icon: const Icon(Icons.arrow_back_rounded),
+            label: Text(perfilNegocioText(context, 'back')),
           ),
-          const SizedBox(width: 10),
-        ] else
-          Icon(Icons.lock_outline_rounded, color: tokens.mutedText, size: 18),
         const Spacer(),
         FilledButton.icon(
-          onPressed:
-              saving
-                  ? null
-                  : finalStep
-                  ? () => _finish(estado)
-                  : () => _next(estado),
+          onPressed: saving || profileLoading
+              ? null
+              : finalStep
+              ? () => _finish(estado)
+              : () => _next(estado),
           style: FilledButton.styleFrom(
             backgroundColor: _navy,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 21, vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
           ),
-          icon:
-              saving
-                  ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                  : Icon(
-                    finalStep
-                        ? Icons.auto_awesome_rounded
-                        : Icons.arrow_forward_rounded,
+          icon: saving
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
                   ),
+                )
+              : Icon(
+                  finalStep
+                      ? Icons.auto_awesome_rounded
+                      : Icons.arrow_forward_rounded,
+                ),
           label: Text(
             finalStep
                 ? context.t(
-                  'initialOnboarding.start',
-                  fallback: 'Começar a usar o SixoApp',
-                )
-                : context.t('common.continue', fallback: 'Continuar'),
+                    'initialOnboarding.start',
+                    fallback: 'Começar a usar o SixoApp',
+                  )
+                : perfilNegocioText(context, 'continue'),
           ),
         ),
       ],
@@ -644,19 +611,35 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
   }
 
   void _next(OnboardingInicialModel estado) {
-    if (!_validateIdentity(estado)) return;
+    if (_step == 0) {
+      if (!_validateIdentity(estado)) return;
+      setState(() {
+        _step = 1;
+        _errorKey = null;
+      });
+      return;
+    }
+    final PerfilNegocioEditorController? controller = _perfilController;
+    if (controller == null || !controller.validarEtapa(_step - 1)) return;
     setState(() {
-      _step = 1;
+      _step++;
       _errorKey = null;
     });
   }
 
   Future<void> _finish(OnboardingInicialModel estado) async {
     if (!_validateIdentity(estado)) return;
-    if (estado.podeConfigurarEmpresa && !_realizaVendas && !_prestaServicos) {
-      setState(() => _errorKey = 'initialOnboarding.activityRequired');
-      return;
+
+    AtualizarPerfilNegocioRequest? perfilRequest;
+    if (estado.podeConfigurarEmpresa) {
+      final PerfilNegocioEditorController? controller = _perfilController;
+      if (controller == null || !controller.validarEtapa(2)) return;
+      perfilRequest = controller.preparar();
+      if (perfilRequest == null) return;
     }
+
+    final Set<String> atividades =
+        perfilRequest?.perfil.atividades ?? const <String>{};
     try {
       await context.read<OnboardingInicialProvider>().concluir(
         ConcluirOnboardingInicialRequest(
@@ -664,8 +647,13 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
           nomeUsuario: _nomeController.text.trim(),
           nomeDeGuerra: _nomeController.text.trim(),
           nomeEmpresa: _empresaController.text.trim(),
-          realizaVendas: _realizaVendas,
-          prestaServicosTecnicos: _prestaServicos,
+          realizaVendas: perfilRequest == null
+              ? estado.realizaVendas
+              : atividades.contains('VENDA_PRODUTOS'),
+          prestaServicosTecnicos: perfilRequest == null
+              ? estado.prestaServicosTecnicos
+              : atividades.contains('REPAROS_MANUTENCAO'),
+          perfilNegocio: perfilRequest,
         ),
       );
       await Future.wait<void>(<Future<void>>[
@@ -717,174 +705,5 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
         : fallback.languageCode == 'es'
         ? 'es-ES'
         : 'pt-BR';
-  }
-}
-
-class _WebLanguageTile extends StatelessWidget {
-  const _WebLanguageTile({
-    required this.code,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String code;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Semantics(
-      button: true,
-      selected: selected,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(13),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          width: 145,
-          padding: const EdgeInsets.all(11),
-          decoration: BoxDecoration(
-            color:
-                selected
-                    ? _blue.withValues(alpha: 0.08)
-                    : tokens.inputBackground,
-            borderRadius: BorderRadius.circular(13),
-            border: Border.all(
-              color: selected ? _blue : tokens.cardBorder,
-              width: selected ? 1.5 : 1,
-            ),
-          ),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 29,
-                height: 29,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: selected ? _blue : tokens.surfaceMuted,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  code,
-                  style: TextStyle(
-                    color: selected ? Colors.white : tokens.secondaryText,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: tokens.primaryText,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              if (selected)
-                const Icon(Icons.check_circle_rounded, color: _blue, size: 17),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WebActivityTile extends StatelessWidget {
-  const _WebActivityTile({
-    required this.icon,
-    required this.accent,
-    required this.title,
-    required this.subtitle,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final Color accent;
-  final String title;
-  final String subtitle;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final WebThemeTokens tokens = WebThemeTokens.of(context);
-    return Semantics(
-      button: true,
-      selected: selected,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          constraints: const BoxConstraints(minHeight: 180),
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color:
-                selected
-                    ? accent.withValues(alpha: 0.08)
-                    : tokens.inputBackground,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: selected ? accent : tokens.cardBorder,
-              width: selected ? 1.5 : 1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Icon(icon, color: accent, size: 25),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    selected
-                        ? Icons.check_circle_rounded
-                        : Icons.circle_outlined,
-                    color: selected ? accent : tokens.mutedText,
-                    size: 25,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Text(
-                title,
-                style: TextStyle(
-                  color: tokens.primaryText,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: tokens.secondaryText,
-                  fontSize: 12,
-                  height: 1.4,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

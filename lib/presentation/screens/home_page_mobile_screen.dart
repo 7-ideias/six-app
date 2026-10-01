@@ -22,6 +22,7 @@ import 'package:sixpos/l10n/six_i18n.dart';
 import 'package:sixpos/pagina_principal_web.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
 import 'package:sixpos/presentation/components/ai_assistant/ai_assistant_host.dart';
+import 'package:sixpos/presentation/components/mobile/business_context_home_carousel_mobile.dart';
 import 'package:sixpos/presentation/components/mobile/collaborator_operational_home_dashboard.dart';
 import 'package:sixpos/presentation/components/mobile/performance_home_mobile_dashboard.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_account_panel_action.dart';
@@ -31,12 +32,14 @@ import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart
 import 'package:sixpos/presentation/screens/chat_suporte_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/chat_suporte_web_page.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/perfil_negocio_mobile_screen.dart';
 import 'package:sixpos/presentation/utils/profile_image_payload.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 import 'package:sixpos/providers/colaborador_home_operacional_provider.dart';
 import 'package:sixpos/providers/dashboard_inicio_provider.dart';
 import 'package:sixpos/providers/desempenho_colaborador_home_provider.dart';
 import 'package:sixpos/providers/empresa_provider.dart';
+import 'package:sixpos/providers/home_banners_provider.dart';
 import 'package:sixpos/providers/usuario_provider.dart';
 
 import '../components/nav_bar_mobile.dart';
@@ -97,6 +100,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
   final DashboardInicioProvider _dashboardProvider = DashboardInicioProvider(
     initialPeriod: DashboardPeriod.last30Days,
   );
+  final HomeBannersProvider _homeBannersProvider = HomeBannersProvider();
   late final DesempenhoColaboradorHomeProvider _desempenhoProvider;
   late final bool _ownsDesempenhoProvider;
   late final ColaboradorHomeOperacionalProvider _operacionalProvider;
@@ -163,6 +167,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
       _configurarWebSocketMobile();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _sincronizarPerfilInicial();
+        unawaited(_homeBannersProvider.carregar());
       });
     }
   }
@@ -180,6 +185,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
     _homeScrollController.dispose();
     _profileAvatarScrollProgress.dispose();
     _dashboardProvider.dispose();
+    _homeBannersProvider.dispose();
     if (_ownsDesempenhoProvider) {
       _desempenhoProvider.dispose();
     }
@@ -322,6 +328,8 @@ class _HomePageMobileState extends State<HomePageMobile> {
 
   void _onEmpresaChanged() {
     if (!mounted) return;
+    _homeBannersProvider.invalidar();
+    unawaited(_homeBannersProvider.carregar(force: true));
     setState(() {});
   }
 
@@ -446,6 +454,7 @@ class _HomePageMobileState extends State<HomePageMobile> {
     if (autorizacoes.ehSuperUsuario) {
       tasks.add(_carregarInfraestrutura());
     }
+    tasks.add(_homeBannersProvider.carregar(force: true));
     await Future.wait(tasks);
   }
 
@@ -603,6 +612,17 @@ class _HomePageMobileState extends State<HomePageMobile> {
     }
   }
 
+  Future<void> _abrirPerfilNegocio() async {
+    final bool? updated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => const PerfilNegocioMobileScreen(),
+      ),
+    );
+    if (updated == true && mounted) {
+      await _homeBannersProvider.carregar(force: true);
+    }
+  }
+
   void _abrirChatSuporte() {
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
@@ -717,6 +737,18 @@ class _HomePageMobileState extends State<HomePageMobile> {
               delay: Duration(milliseconds: 40),
               child: _buildGreetingHeader(context),
             ),
+            if (ehAdmin || ehColaborador) ...<Widget>[
+              const SizedBox(height: 14),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 65),
+                child: ChangeNotifierProvider<HomeBannersProvider>.value(
+                  value: _homeBannersProvider,
+                  child: BusinessContextHomeCarouselMobile(
+                    onConfigure: _abrirPerfilNegocio,
+                  ),
+                ),
+              ),
+            ],
             if (ehSuper) ...[
               SizedBox(height: 16),
               SixStaggeredEntry(

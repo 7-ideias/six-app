@@ -1,3 +1,5 @@
+import 'perfil_negocio_model.dart';
+
 class OnboardingInicialModel {
   const OnboardingInicialModel({
     required this.fezOnboardingInicial,
@@ -38,6 +40,7 @@ class ConcluirOnboardingInicialRequest {
     required this.nomeEmpresa,
     required this.realizaVendas,
     required this.prestaServicosTecnicos,
+    this.perfilNegocio,
   });
 
   final String idiomaPreferencial;
@@ -46,6 +49,7 @@ class ConcluirOnboardingInicialRequest {
   final String nomeEmpresa;
   final bool realizaVendas;
   final bool prestaServicosTecnicos;
+  final AtualizarPerfilNegocioRequest? perfilNegocio;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'idiomaPreferencial': idiomaPreferencial,
@@ -54,5 +58,6 @@ class ConcluirOnboardingInicialRequest {
     'nomeEmpresa': nomeEmpresa,
     'realizaVendas': realizaVendas,
     'prestaServicosTecnicos': prestaServicosTecnicos,
+    if (perfilNegocio != null) 'perfilNegocio': perfilNegocio!.toJson(),
   };
 }
