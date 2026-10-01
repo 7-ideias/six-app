@@ -1007,6 +1007,7 @@ class _FilterSelect<T> extends StatelessWidget {
               (BuildContext context) => <PopupMenuEntry<T?>>[
                 PopupMenuItem<T?>(
                   value: null,
+                  onTap: () => onChanged(null),
                   child: Row(
                     children: <Widget>[
                       Icon(
