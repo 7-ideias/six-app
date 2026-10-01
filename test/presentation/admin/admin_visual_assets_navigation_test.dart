@@ -9,6 +9,11 @@ void main() {
     WidgetTester tester, {
     required String profileType,
   }) async {
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    addTearDown(() async {
+      await tester.binding.setSurfaceSize(null);
+    });
+
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('pt', 'BR'),
