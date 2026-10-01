@@ -20,12 +20,33 @@ class PerfilNegocioWebForm extends StatelessWidget {
   Widget build(BuildContext context) {
     final WebThemeTokens tokens = WebThemeTokens.of(context);
 
-    if (controller.carregando || controller.catalogo == null) {
+    if (controller.carregando) {
       return SixBackendLoading(
         title: perfilNegocioText(context, 'loading'),
         subtitle: perfilNegocioText(context, 'description'),
         backgroundColor: tokens.surfaceElevated,
         borderColor: tokens.cardBorder,
+      );
+    }
+
+    if (controller.catalogo == null) {
+      final String errorKey = controller.erro ?? 'loadError';
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _Message(
+            text: perfilNegocioText(context, errorKey),
+            error: true,
+          ),
+          if (errorKey != 'forbidden') ...<Widget>[
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: controller.carregar,
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(perfilNegocioText(context, 'retry')),
+            ),
+          ],
+        ],
       );
     }
 
