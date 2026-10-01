@@ -36,6 +36,7 @@ class _PerfilNegocioMobileScreenState extends State<PerfilNegocioMobileScreen> {
       }
       final PerfilNegocioEditorController controller =
           PerfilNegocioEditorController(empresaId: empresaId, service: service);
+      controller.addListener(_onControllerChanged);
       setState(() => _controller = controller);
       await controller.carregar();
     } catch (_) {
@@ -44,8 +45,13 @@ class _PerfilNegocioMobileScreenState extends State<PerfilNegocioMobileScreen> {
     }
   }
 
+  void _onControllerChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    _controller?.removeListener(_onControllerChanged);
     _controller?.dispose();
     super.dispose();
   }
