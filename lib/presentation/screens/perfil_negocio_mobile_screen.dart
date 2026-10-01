@@ -79,6 +79,9 @@ class _PerfilNegocioMobileScreenState extends State<PerfilNegocioMobileScreen> {
               _BootstrapError(
                 text: perfilNegocioText(context, _bootstrapError!),
                 onRetry: () {
+                  _controller?.removeListener(_onControllerChanged);
+                  _controller?.dispose();
+                  _controller = null;
                   setState(() => _bootstrapError = null);
                   _inicializar();
                 },

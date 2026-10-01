@@ -162,6 +162,9 @@ class _PerfilNegocioWebDialogState extends State<PerfilNegocioWebDialog> {
             const SizedBox(height: 14),
             FilledButton.tonal(
               onPressed: () {
+                _controller?.removeListener(_onControllerChanged);
+                _controller?.dispose();
+                _controller = null;
                 setState(() => _bootstrapError = null);
                 _inicializar();
               },
