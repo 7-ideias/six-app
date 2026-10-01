@@ -32,6 +32,7 @@ import 'package:sixpos/presentation/screens/desempenho_colaborador_mobile_screen
 import 'package:sixpos/presentation/screens/estoque_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operational_procedures_mobile_screen.dart';
+import 'package:sixpos/presentation/screens/perfil_negocio_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/regionalizacao_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/usuarios_sixo_mobile_screen.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
@@ -1308,6 +1309,16 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             icon: Icons.storefront_outlined,
             maturity: ManagementSettingsMaturity.functional,
             onTap: () => _navigateTo(context, EmpresaConfiguracaoMobile()),
+          ),
+          ManagementSettingsItemData(
+            title: perfilNegocioText(context, 'profile'),
+            subtitle: perfilNegocioText(context, 'description'),
+            icon: Icons.auto_awesome_outlined,
+            maturity: ManagementSettingsMaturity.functional,
+            onTap: () => _navigateTo(
+              context,
+              const PerfilNegocioMobileScreen(),
+            ),
           ),
           ManagementSettingsItemData(
             title: context.t(
