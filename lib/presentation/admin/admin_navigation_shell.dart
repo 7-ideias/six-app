@@ -1,8 +1,13 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:sixpos/presentation/components/sixoapp_brand_mark.dart';
 
 import 'admin_portal_components.dart';
 import 'admin_portal_texts.dart';
+
+@visibleForTesting
+bool adminVisualAssetsVisibleForProfile(String? profileType) =>
+    (profileType ?? '').trim().toUpperCase() == 'SUPER';
 
 class AdminNavigationShell extends StatelessWidget {
   const AdminNavigationShell({
@@ -343,8 +348,9 @@ class _AdminNavigationSidebar extends StatelessWidget {
                 selected: currentRoute == '/admin/novas-ideias',
                 onTap: () => _navigate(context, '/admin/novas-ideias'),
               ),
-              if ((userInfo.profileType ?? '').trim().toUpperCase() ==
-                  'SUPER') ...<Widget>[
+              if (adminVisualAssetsVisibleForProfile(
+                userInfo.profileType,
+              )) ...<Widget>[
                 const SizedBox(height: 6),
                 AdminNavItem(
                   icon: Icons.image_search_rounded,
