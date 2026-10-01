@@ -55,6 +55,27 @@ void main() {
     );
   });
 
+  test('usa full-card apenas nos perfis com novas artes', () {
+    expect(
+      AtendimentoMobileBusinessAssets.fromPerfil(
+        perfil('AUTOMOTIVO'),
+      )!.usesFullCard,
+      isTrue,
+    );
+    expect(
+      AtendimentoMobileBusinessAssets.fromPerfil(
+        perfil('MODA', 'ROUPAS'),
+      )!.usesFullCard,
+      isTrue,
+    );
+    expect(
+      AtendimentoMobileBusinessAssets.fromPerfil(
+        perfil('ELETRONICOS', 'CELULARES'),
+      )!.usesFullCard,
+      isFalse,
+    );
+  });
+
   test('não usa imagem de carros para motos', () {
     expect(
       AtendimentoMobileBusinessAssets.fromPerfil(
