@@ -11,7 +11,12 @@ import '../admin/admin_portal_texts.dart';
 import '../admin/admin_visual_assets_catalog.dart';
 
 class AdminVisualAssetsWebPage extends StatefulWidget {
-  const AdminVisualAssetsWebPage({super.key});
+  const AdminVisualAssetsWebPage({
+    super.key,
+    this.embeddedInMainShell = false,
+  });
+
+  final bool embeddedInMainShell;
 
   @override
   State<AdminVisualAssetsWebPage> createState() =>
@@ -134,33 +139,40 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
     final _VisualAssetsTexts texts = _VisualAssetsTexts.of(context);
 
     if (_verificandoAcesso) {
-      return Scaffold(
-        backgroundColor: AdminPalette.background,
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: AdminSurfaceCard(
-              child: Padding(
-                padding: const EdgeInsets.all(26),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 18),
-                    Text(
-                      texts.checkingAccess,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: AdminPalette.bodyText,
-                        fontWeight: FontWeight.w700,
-                      ),
+      final Widget loading = Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: AdminSurfaceCard(
+            child: Padding(
+              padding: const EdgeInsets.all(26),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 18),
+                  Text(
+                    texts.checkingAccess,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AdminPalette.bodyText,
+                      fontWeight: FontWeight.w700,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
         ),
+      );
+      if (widget.embeddedInMainShell) {
+        return ColoredBox(
+          color: AdminPalette.background,
+          child: loading,
+        );
+      }
+      return Scaffold(
+        backgroundColor: AdminPalette.background,
+        body: loading,
       );
     }
 
@@ -172,6 +184,17 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
 
     final AdminPortalTexts portalTexts = AdminPortalTexts.of(context);
     final List<AdminVisualAssetRecord> records = _filtrados;
+    final Widget content = _buildPanel(texts, records);
+
+    if (widget.embeddedInMainShell) {
+      return ColoredBox(
+        color: AdminPalette.background,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AdminSpacing.xl),
+          child: content,
+        ),
+      );
+    }
 
     return AdminNavigationShell(
       texts: portalTexts,
@@ -186,21 +209,28 @@ class _AdminVisualAssetsWebPageState extends State<AdminVisualAssetsWebPage> {
       onRefresh: () => setState(() {}),
       refreshing: false,
       loggingOut: _saindo,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _buildHeader(texts, records),
-          const SizedBox(height: AdminSpacing.lg),
-          _buildFilters(texts),
-          const SizedBox(height: AdminSpacing.lg),
-          _buildLegend(texts),
-          const SizedBox(height: AdminSpacing.lg),
-          if (records.isEmpty)
-            _buildEmpty(texts)
-          else
-            _buildGrid(texts, records),
-        ],
-      ),
+      child: content,
+    );
+  }
+
+  Widget _buildPanel(
+    _VisualAssetsTexts texts,
+    List<AdminVisualAssetRecord> records,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _buildHeader(texts, records),
+        const SizedBox(height: AdminSpacing.lg),
+        _buildFilters(texts),
+        const SizedBox(height: AdminSpacing.lg),
+        _buildLegend(texts),
+        const SizedBox(height: AdminSpacing.lg),
+        if (records.isEmpty)
+          _buildEmpty(texts)
+        else
+          _buildGrid(texts, records),
+      ],
     );
   }
 
