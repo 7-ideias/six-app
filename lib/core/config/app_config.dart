@@ -4,6 +4,11 @@ class AppConfig {
     defaultValue: 'https://api.sixappback.com',
   );
 
+  static const String assetsBaseUrl = String.fromEnvironment(
+    'ASSETS_BASE_URL',
+    defaultValue: 'https://assets.sixappback.com',
+  );
+
   static const String autoCustomerBaseUrl = String.fromEnvironment(
     'PUBLIC_FRONTEND_URL',
     defaultValue: 'https://sixoapp.com/cliente/auto-cadastro',
