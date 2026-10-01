@@ -650,16 +650,28 @@ class _AssetCard extends StatelessWidget {
             aspectRatio: 4 / 5,
             child:
                 available && record.imageUrl != null
-                    ? Image.network(
-                      record.imageUrl!,
-                      fit: BoxFit.cover,
-                      filterQuality: FilterQuality.high,
-                      errorBuilder:
-                          (_, __, ___) => _AssetPlaceholder(
-                            icon: Icons.broken_image_outlined,
-                            label: texts.imageError,
-                            available: false,
-                          ),
+                    ? ColoredBox(
+                      color: AdminPalette.softSurface,
+                      child: Padding(
+                        padding:
+                            record.fullCard
+                                ? EdgeInsets.zero
+                                : const EdgeInsets.all(28),
+                        child: Image.network(
+                          record.imageUrl!,
+                          fit:
+                              record.fullCard
+                                  ? BoxFit.cover
+                                  : BoxFit.contain,
+                          filterQuality: FilterQuality.high,
+                          errorBuilder:
+                              (_, __, ___) => _AssetPlaceholder(
+                                icon: Icons.broken_image_outlined,
+                                label: texts.imageError,
+                                available: false,
+                              ),
+                        ),
+                      ),
                     )
                     : _AssetPlaceholder(
                       icon: Icons.add_photo_alternate_outlined,
