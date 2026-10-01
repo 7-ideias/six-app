@@ -59,6 +59,21 @@ void main() {
       expect(actions.calls, isEmpty);
     });
 
+    test('reserva Imagens para o shell Web', () {
+      final _FakeWebNavigationActions actions = _FakeWebNavigationActions();
+      final WebNavigationDestinationResolver resolver =
+          WebNavigationDestinationResolver(actions: actions);
+
+      final WebNavigationResolutionResult result = resolver.resolve(
+        WebNavigationDestination.visualAssets,
+      );
+
+      expect(result.reserved, isTrue);
+      expect(result.destination, WebNavigationDestination.visualAssets);
+      expect(result.reason, isNotEmpty);
+      expect(actions.calls, isEmpty);
+    });
+
     test('reserva Usuarios do Sixo para o shell Web', () {
       final _FakeWebNavigationActions actions = _FakeWebNavigationActions();
       final WebNavigationDestinationResolver resolver =
