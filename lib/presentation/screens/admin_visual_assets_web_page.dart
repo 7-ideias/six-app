@@ -752,7 +752,7 @@ class _AssetCard extends StatelessWidget {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: AdminPalette.softSurface,
-                      borderRadius: BorderRadius.circular(AdminRadius.sm),
+                      borderRadius: BorderRadius.circular(AdminRadius.md),
                     ),
                     child: SelectableText(
                       record.imageUrl!,
@@ -912,22 +912,21 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color background;
-    final Color foreground;
-    switch (tone) {
-      case _ChipTone.success:
-        background = AdminPalette.activeGreen;
-        foreground = AdminPalette.dark;
-      case _ChipTone.info:
-        background = const Color(0xFFE8F1FF);
-        foreground = const Color(0xFF145BFF);
-      case _ChipTone.warning:
-        background = const Color(0xFFFFF2D9);
-        foreground = const Color(0xFF8A5A00);
-      case _ChipTone.neutral:
-        background = AdminPalette.softSurface;
-        foreground = AdminPalette.bodyText;
-    }
+    final (Color background, Color foreground) = switch (tone) {
+      _ChipTone.success => (AdminPalette.activeGreen, AdminPalette.dark),
+      _ChipTone.info => (
+        const Color(0xFFE8F1FF),
+        const Color(0xFF145BFF),
+      ),
+      _ChipTone.warning => (
+        const Color(0xFFFFF2D9),
+        const Color(0xFF8A5A00),
+      ),
+      _ChipTone.neutral => (
+        AdminPalette.softSurface,
+        AdminPalette.bodyText,
+      ),
+    };
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
