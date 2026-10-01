@@ -36,6 +36,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
   bool _obscurePassword = true;
   bool _biometricEnabled = false;
   bool _hasProtectedSession = false;
+  String? _loginErrorMessage;
   MobileBiometricAvailability _biometricAvailability =
       const MobileBiometricAvailability.unavailable();
 
@@ -161,16 +162,53 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
     }
 
     FocusScope.of(context).unfocus();
-    setState(() => _isLoading = true);
+    setState(() {
+      _loginErrorMessage = null;
+      _isLoading = true;
+    });
     try {
       await _authService.login(login, senha);
       if (!mounted) return;
       await _afterInteractiveLogin();
     } catch (error) {
-      _showSnack(error.toString().replaceAll('Exception: ', ''));
+      if (!mounted) return;
+      setState(() {
+        _loginErrorMessage = _loginErrorText(error);
+      });
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String _loginErrorText(Object error) {
+    final String raw = error.toString().replaceAll('Exception: ', '').trim();
+    if (RegExp(r'\(401\)|\b401\b').hasMatch(raw)) {
+      return context.t(
+        'auth.mobileLogin.invalidCredentialsError',
+        fallback: 'E-mail ou senha inválidos. Verifique e tente novamente.',
+      );
+    }
+
+    final String withoutStatusCode =
+        raw
+            .replaceAll(RegExp(r'\s*\(\d{3}\)'), '')
+            .replaceAll(RegExp(r'\s+\d{3}\b'), '')
+            .trim();
+    final String withoutTrailingColon =
+        withoutStatusCode.replaceFirst(RegExp(r':\s*$'), '').trim();
+
+    if (withoutTrailingColon.isEmpty) {
+      return context.t(
+        'auth.mobileLogin.genericError',
+        fallback: 'Não foi possível entrar agora. Tente novamente.',
+      );
+    }
+    return withoutTrailingColon;
+  }
+
+  void _clearLoginError() {
+    if (_loginErrorMessage == null) return;
+    setState(() => _loginErrorMessage = null);
   }
 
   Future<void> _loginWithGoogle() async {
@@ -601,6 +639,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                     AutofillHints.email,
                   ],
                   autocorrect: false,
+                  onChanged: (_) => _clearLoginError(),
                 ),
               ),
               const SizedBox(height: 14),
@@ -620,6 +659,7 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                   autofillHints: const <String>[AutofillHints.password],
                   enableSuggestions: false,
                   autocorrect: false,
+                  onChanged: (_) => _clearLoginError(),
                   onSubmitted: (_) => _login(),
                   suffix: IconButton(
                     tooltip: context.t(
@@ -641,6 +681,31 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
                     },
                   ),
                 ),
+              ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SizeTransition(
+                      sizeFactor: animation,
+                      axisAlignment: -1,
+                      child: child,
+                    ),
+                  );
+                },
+                child:
+                    _loginErrorMessage == null
+                        ? const SizedBox.shrink(key: ValueKey<String>('empty'))
+                        : Padding(
+                          key: const ValueKey<String>('login-error'),
+                          padding: const EdgeInsets.only(top: 10),
+                          child: _LoginErrorBanner(
+                            message: _loginErrorMessage!,
+                          ),
+                        ),
               ),
               const SizedBox(height: 8),
               Align(
@@ -722,6 +787,51 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LoginErrorBanner extends StatelessWidget {
+  const _LoginErrorBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: message,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        decoration: BoxDecoration(
+          color: colors.error.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: colors.errorBorder),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Icon(Icons.error_outline_rounded, color: colors.error, size: 19),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                message,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colors.error,
+                  fontSize: 12.5,
+                  height: 1.35,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
