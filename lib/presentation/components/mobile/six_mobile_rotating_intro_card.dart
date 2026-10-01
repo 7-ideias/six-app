@@ -11,11 +11,13 @@ class SixMobileRotatingIntroCard extends StatefulWidget {
     required this.title,
     required this.subtitles,
     required this.markChild,
+    this.backgroundImageUrl,
   });
 
   final String title;
   final List<String> subtitles;
   final Widget markChild;
+  final String? backgroundImageUrl;
 
   @override
   State<SixMobileRotatingIntroCard> createState() =>
@@ -141,8 +143,13 @@ class _SixMobileRotatingIntroCardState
                     widget.subtitles[_phraseIndex].length,
                   ),
                 ));
+    final bool hasContextualImage =
+        widget.backgroundImageUrl?.isNotEmpty ?? false;
     final TextStyle terminalStyle = TextStyle(
-      color: colors.mutedText,
+      color:
+          hasContextualImage
+              ? SixMobilePalette.onPrimary.withAlpha(214)
+              : colors.mutedText,
       fontSize: 12.2,
       height: 1.28,
       fontWeight: FontWeight.w600,
@@ -157,7 +164,7 @@ class _SixMobileRotatingIntroCardState
       label: '${widget.title}. $semanticSubtitle',
       child: Container(
         height: 124,
-        padding: const EdgeInsets.fromLTRB(18, 17, 14, 17),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -185,66 +192,124 @@ class _SixMobileRotatingIntroCardState
             ),
           ],
         ),
-        child: Row(
+        child: Stack(
+          fit: StackFit.expand,
           children: <Widget>[
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    widget.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: colors.titleText,
-                      fontSize: 20,
-                      height: 1.08,
-                      fontWeight: FontWeight.w900,
-                    ),
+            if (hasContextualImage) ...<Widget>[
+              Image.network(
+                widget.backgroundImageUrl!,
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                filterQuality: FilterQuality.high,
+                errorBuilder:
+                    (
+                      BuildContext context,
+                      Object error,
+                      StackTrace? stackTrace,
+                    ) => const SizedBox.shrink(),
+                loadingBuilder:
+                    (
+                      BuildContext context,
+                      Widget child,
+                      ImageChunkEvent? loadingProgress,
+                    ) =>
+                        loadingProgress == null
+                            ? child
+                            : const SizedBox.shrink(),
+              ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    stops: const <double>[0, 0.54, 0.82, 1],
+                    colors: <Color>[
+                      SixMobilePalette.brandNavyDeep,
+                      Color(0xE600163A),
+                      Color(0x6600163A),
+                      Color(0x2600163A),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text.rich(
-                    TextSpan(
-                      children: <InlineSpan>[
-                        TextSpan(text: displayedText, style: terminalStyle),
-                        TextSpan(
-                          text: '|',
-                          style: terminalStyle.copyWith(color: cursorColor),
+                ),
+              ),
+            ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 17, 14, 17),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          widget.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color:
+                                hasContextualImage
+                                    ? SixMobilePalette.onPrimary
+                                    : colors.titleText,
+                            fontSize: 20,
+                            height: 1.08,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text.rich(
+                          TextSpan(
+                            children: <InlineSpan>[
+                              TextSpan(
+                                text: displayedText,
+                                style: terminalStyle,
+                              ),
+                              TextSpan(
+                                text: '|',
+                                style: terminalStyle.copyWith(
+                                  color: cursorColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 14),
-            ExcludeSemantics(
-              child: Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: colors.softAccentSurface,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: SixMobilePalette.brandBlue.withAlpha(
-                      isDark ? 86 : 48,
+                  if (!hasContextualImage) ...<Widget>[
+                    const SizedBox(width: 14),
+                    ExcludeSemantics(
+                      child: Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          color: colors.softAccentSurface,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: SixMobilePalette.brandBlue.withAlpha(
+                              isDark ? 86 : 48,
+                            ),
+                          ),
+                        ),
+                        child: Center(
+                          child: AnimatedRotation(
+                            turns: disableAnimations ? 0 : _rotationTurns,
+                            duration:
+                                disableAnimations
+                                    ? Duration.zero
+                                    : (_isDeleting
+                                        ? _deletingStep
+                                        : _typingStep),
+                            curve: Curves.linear,
+                            child: widget.markChild,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                child: Center(
-                  child: AnimatedRotation(
-                    turns: disableAnimations ? 0 : _rotationTurns,
-                    duration:
-                        disableAnimations
-                            ? Duration.zero
-                            : (_isDeleting ? _deletingStep : _typingStep),
-                    curve: Curves.linear,
-                    child: widget.markChild,
-                  ),
-                ),
+                  ],
+                ],
               ),
             ),
           ],
