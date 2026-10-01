@@ -20,16 +20,22 @@ class HomeBannersProvider extends ChangeNotifier {
   String? get erro => _erro;
 
   Future<void> carregar({bool force = false}) async {
-    final String empresaId = await _service.empresaAtual();
-    if (!force && _empresaId == empresaId && _dados != null) return;
-
     final int geracao = ++_geracao;
     _carregando = true;
     _erro = null;
     _notify();
+
     try {
+      final String empresaId = await _service.empresaAtual();
+      if (_disposed || geracao != _geracao) return;
+
+      if (!force && _empresaId == empresaId && _dados != null) {
+        return;
+      }
+
       final HomeBannersModel dados = await _service.banners(empresaId);
       if (_disposed || geracao != _geracao) return;
+
       _empresaId = empresaId;
       _dados = dados;
     } catch (error) {
