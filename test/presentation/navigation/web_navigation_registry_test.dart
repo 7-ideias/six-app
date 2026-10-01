@@ -10,6 +10,7 @@ void main() {
         WebNavigationIds.operations,
         WebNavigationIds.catalog,
         WebNavigationIds.people,
+        WebNavigationIds.visualAssets,
         WebNavigationIds.financial,
         WebNavigationIds.settings,
       ]);
@@ -118,6 +119,7 @@ void main() {
           'people.collaborators',
           'people.sixo_users',
           'people.performance',
+          'visual.assets',
           'cash',
           'financial',
           'financial.agenda',

@@ -13,6 +13,9 @@ abstract final class WebNavigationPermissionAdapter {
           WebNavigationPermission.values.toSet();
       if (!provider.ehSuperUsuario) {
         permissions.remove(WebNavigationPermission.podeAcessarUsuariosSixo);
+        permissions.remove(
+          WebNavigationPermission.podeAcessarImagensContextuais,
+        );
       }
       return permissions;
     }
@@ -38,8 +41,10 @@ abstract final class WebNavigationPermissionAdapter {
         WebNavigationPermission.podeGerarRelatorio,
       if (!provider.ehColaborador && provider.ehSuperUsuario)
         WebNavigationPermission.podeGerenciarDesempenho,
-      if (provider.ehSuperUsuario)
+      if (provider.ehSuperUsuario) ...<WebNavigationPermission>[
         WebNavigationPermission.podeAcessarUsuariosSixo,
+        WebNavigationPermission.podeAcessarImagensContextuais,
+      ],
       if (provider.podeVerQuantoVendeu)
         WebNavigationPermission.podeAcessarFinanceiro,
       if (provider.podeReceberNoCaixa)

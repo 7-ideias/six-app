@@ -140,6 +140,24 @@ void main() {
       );
     });
 
+    test('somente SUPER enxerga o painel de Imagens', () {
+      final List<WebNavigationItem> superVisible = _visibleItemsFor(
+        _FakeAutorizacoesProvider(superUser: true),
+      );
+      final List<WebNavigationItem> adminVisible = _visibleItemsFor(
+        _FakeAutorizacoesProvider(admin: true),
+      );
+
+      expect(
+        _topLevelIds(superVisible),
+        contains(WebNavigationIds.visualAssets),
+      );
+      expect(
+        _findItem(adminVisible, WebNavigationIds.visualAssets),
+        isNull,
+      );
+    });
+
     test('somente SUPER enxerga Usuarios do Sixo', () {
       final List<WebNavigationItem> superVisible = _visibleItemsFor(
         _FakeAutorizacoesProvider(superUser: true),

@@ -22,11 +22,19 @@ void main() {
       expect(mainSource, contains("routeUri.path == '/admin/planos'"));
       expect(
         mainSource,
+        contains("routeUri.path == '/admin/imagens-contextuais'"),
+      );
+      expect(
+        mainSource,
         contains('builder: (_) => const AdminPortalWebPage()'),
       );
       expect(
         mainSource,
         contains('builder: (_) => const AdminPlanosWebPage()'),
+      );
+      expect(
+        mainSource,
+        contains('builder: (_) => const AdminVisualAssetsWebPage()'),
       );
       expect(loginSource, contains("if (uri.path == '/admin')"));
       expect(loginSource, contains("return '/admin/dashboard';"));

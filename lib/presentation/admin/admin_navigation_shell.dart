@@ -1,8 +1,13 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:sixpos/presentation/components/sixoapp_brand_mark.dart';
 
 import 'admin_portal_components.dart';
 import 'admin_portal_texts.dart';
+
+@visibleForTesting
+bool adminVisualAssetsVisibleForProfile(String? profileType) =>
+    (profileType ?? '').trim().toUpperCase() == 'SUPER';
 
 class AdminNavigationShell extends StatelessWidget {
   const AdminNavigationShell({
@@ -343,6 +348,18 @@ class _AdminNavigationSidebar extends StatelessWidget {
                 selected: currentRoute == '/admin/novas-ideias',
                 onTap: () => _navigate(context, '/admin/novas-ideias'),
               ),
+              if (adminVisualAssetsVisibleForProfile(
+                userInfo.profileType,
+              )) ...<Widget>[
+                const SizedBox(height: 6),
+                AdminNavItem(
+                  icon: Icons.image_search_rounded,
+                  label: navigationTexts.visualAssets,
+                  selected: currentRoute == '/admin/imagens-contextuais',
+                  onTap:
+                      () => _navigate(context, '/admin/imagens-contextuais'),
+                ),
+              ],
               const Spacer(),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -447,10 +464,12 @@ class _AdminNavigationTexts {
   const _AdminNavigationTexts({
     required this.newIdeas,
     required this.plans,
+    required this.visualAssets,
   });
 
   final String newIdeas;
   final String plans;
+  final String visualAssets;
 
   factory _AdminNavigationTexts.of(BuildContext context) {
     final String language = Localizations.localeOf(context).languageCode;
@@ -458,17 +477,20 @@ class _AdminNavigationTexts {
       return const _AdminNavigationTexts(
         newIdeas: 'New ideas',
         plans: 'Plans',
+        visualAssets: 'Visual assets',
       );
     }
     if (language == 'es') {
       return const _AdminNavigationTexts(
         newIdeas: 'Nuevas ideas',
         plans: 'Planes',
+        visualAssets: 'Imágenes',
       );
     }
     return const _AdminNavigationTexts(
       newIdeas: 'Novas ideias',
       plans: 'Planos',
+      visualAssets: 'Imagens',
     );
   }
 }

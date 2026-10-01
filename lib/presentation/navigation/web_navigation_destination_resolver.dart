@@ -119,6 +119,11 @@ class WebNavigationDestinationResolver {
         );
       case WebNavigationDestination.peoplePerformance:
         return actions.openPeoplePerformance();
+      case WebNavigationDestination.visualAssets:
+        return WebNavigationResolutionResult.reserved(
+          destination,
+          reason: 'Destino SUPER gerenciado pelo shell Web.',
+        );
       case WebNavigationDestination.cash:
         return actions.openCash();
       case WebNavigationDestination.financialAgenda:

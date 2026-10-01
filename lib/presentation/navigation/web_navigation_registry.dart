@@ -24,6 +24,7 @@ abstract final class WebNavigationIds {
   static const String peopleCollaborators = 'people.collaborators';
   static const String peopleSixoUsers = 'people.sixo_users';
   static const String peoplePerformance = 'people.performance';
+  static const String visualAssets = 'visual.assets';
   static const String cash = 'cash';
   static const String financial = 'financial';
   static const String financialAgenda = 'financial.agenda';
@@ -205,6 +206,18 @@ abstract final class WebNavigationRegistry {
           destination: WebNavigationDestination.peoplePerformance,
         ),
       ],
+    ),
+    WebNavigationItem(
+      id: WebNavigationIds.visualAssets,
+      labelKey: 'web.navigation.visualAssets',
+      labelFallback: 'Imagens',
+      icon: Icons.image_search_outlined,
+      visibility: WebNavigationVisibilityRule.anyOf(
+        <WebNavigationPermission>[
+          WebNavigationPermission.podeAcessarImagensContextuais,
+        ],
+      ),
+      destination: WebNavigationDestination.visualAssets,
     ),
     WebNavigationItem(
       id: WebNavigationIds.financial,

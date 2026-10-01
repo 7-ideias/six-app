@@ -8,6 +8,7 @@ import 'package:sixpos/presentation/screens/admin_portal_web_page.dart';
 import 'package:sixpos/presentation/screens/admin_novas_ideias_web_page.dart';
 import 'package:sixpos/presentation/screens/admin_planos_web_page.dart';
 import 'package:sixpos/presentation/screens/admin_usuarios_ativos_web_page.dart';
+import 'package:sixpos/presentation/screens/admin_visual_assets_web_page.dart';
 import 'package:sixpos/presentation/screens/login_page_web.dart';
 import 'package:sixpos/presentation/screens/register_page_web.dart';
 import 'package:sixpos/presentation/screens/esqueceu_senha_web.dart';
@@ -171,6 +172,12 @@ class MyApp extends StatelessWidget {
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => const AdminPlanosWebPage(),
+      );
+    }
+    if (routeUri.path == '/admin/imagens-contextuais') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const AdminVisualAssetsWebPage(),
       );
     }
     if (routeUri.path == '/register') {
