@@ -1,4 +1,5 @@
 name: Temporary Visual Assets Validation
+# branch-only validation; remove before merge
 
 on:
   pull_request:
