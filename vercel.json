@@ -355,6 +355,15 @@
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         { "key": "X-Frame-Options", "value": "DENY" }
       ]
+    },
+    {
+      "source": "/termos-de-servico",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "X-Frame-Options", "value": "DENY" }
+      ]
     }
   ],
   "rewrites": [
@@ -376,6 +385,10 @@
     },
     {
       "source": "/terms",
+      "destination": "/terms.html"
+    },
+    {
+      "source": "/termos-de-servico",
       "destination": "/terms.html"
     },
     {

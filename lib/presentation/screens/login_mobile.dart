@@ -523,198 +523,205 @@ class _LoginPageMobileState extends State<LoginPageMobile> {
       onBack: canNavigateBack ? () => navigator.maybePop() : null,
       backSemanticLabel:
           canNavigateBack ? context.t('common.back', fallback: 'Voltar') : null,
-      body: AutofillGroup(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            SixStaggeredEntry(
-              child: Text(
-                context.t(
-                  'auth.mobileLogin.formTitle',
-                  fallback: 'Acesse seu espaço',
-                ),
-                style: TextStyle(
-                  color: colors.titleText,
-                  fontSize: 20,
-                  height: 1.2,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.2,
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
-            if (showBiometricLogin) ...<Widget>[
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        child: AutofillGroup(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
               SixStaggeredEntry(
-                delay: const Duration(milliseconds: 35),
-                child: SixoAppAuthSecondaryButton(
-                  label: _localized(
-                    pt: 'Entrar com ${_biometricName()}',
-                    en: 'Sign in with ${_biometricName()}',
-                    es: 'Entrar con ${_biometricName()}',
-                  ),
-                  onPressed: _isLoading ? null : _loginWithBiometrics,
-                  leading: Icon(
-                    _biometricIcon(),
-                    color: colors.titleText,
-                    size: 21,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 50),
-              child: SixoAppAuthSecondaryButton(
-                label: context.t(
-                  'auth.signInWithGoogle',
-                  fallback: 'Entrar com Google',
-                ),
-                onPressed: _isLoading ? null : _loginWithGoogle,
-                leading: const _GoogleGlyph(),
-              ),
-            ),
-            const SizedBox(height: 18),
-            SixoAppAuthDivider(
-              label: context.t(
-                'auth.mobileLogin.socialDivider',
-                fallback: 'ou entre com e-mail e senha',
-              ),
-            ),
-            const SizedBox(height: 18),
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 80),
-              child: SixoAppAuthField(
-                controller: _loginController,
-                hint: context.t(
-                  'auth.mobileLogin.emailHint',
-                  fallback: 'voce@empresa.com',
-                ),
-                label: context.t('auth.email', fallback: 'E-mail'),
-                icon: Icons.alternate_email_rounded,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-                autofillHints: const <String>[
-                  AutofillHints.username,
-                  AutofillHints.email,
-                ],
-                autocorrect: false,
-              ),
-            ),
-            const SizedBox(height: 14),
-            SixStaggeredEntry(
-              delay: const Duration(milliseconds: 110),
-              child: SixoAppAuthField(
-                controller: _passwordController,
-                focusNode: _passwordFocusNode,
-                hint: context.t(
-                  'auth.mobileLogin.passwordHint',
-                  fallback: 'Digite sua senha',
-                ),
-                label: context.t('auth.password', fallback: 'Senha'),
-                icon: Icons.lock_outline_rounded,
-                obscure: _obscurePassword,
-                textInputAction: TextInputAction.done,
-                autofillHints: const <String>[AutofillHints.password],
-                enableSuggestions: false,
-                autocorrect: false,
-                onSubmitted: (_) => _login(),
-                suffix: IconButton(
-                  tooltip: context.t(
-                    _obscurePassword
-                        ? 'auth.mobileLogin.showPassword'
-                        : 'auth.mobileLogin.hidePassword',
-                    fallback:
-                        _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
-                  ),
-                  icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    color: colors.mutedText,
-                    size: 20,
-                  ),
-                  onPressed: () {
-                    setState(() => _obscurePassword = !_obscurePassword);
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: _forgotPassword,
-                style: TextButton.styleFrom(
-                  foregroundColor: SixMobilePalette.brandBlue,
-                  minimumSize: const Size(44, 44),
-                ),
                 child: Text(
                   context.t(
-                    'auth.forgotPassword',
-                    fallback: 'Esqueceu a senha?',
-                  ),
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            KeyedSubtree(
-              key: _submitButtonKey,
-              child: SixoAppAuthPrimaryButton(
-                label: context.t('auth.mobileLogin.submit', fallback: 'Entrar'),
-                onPressed: _login,
-                isLoading: _isLoading,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Wrap(
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: <Widget>[
-                Text(
-                  context.t(
-                    'auth.mobileLogin.createPrompt',
-                    fallback: 'Primeira vez no SixoApp?',
+                    'auth.mobileLogin.formTitle',
+                    fallback: 'Acesse seu espaço',
                   ),
                   style: TextStyle(
-                    color: colors.mutedText,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w500,
+                    color: colors.titleText,
+                    fontSize: 20,
+                    height: 1.2,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
                   ),
-                ),
-                TextButton(
-                  onPressed: _openCreateAccount,
-                  child: Text(
-                    context.t(
-                      'auth.mobileEntry.createAction',
-                      fallback: 'Criar minha conta',
-                    ),
-                    style: const TextStyle(
-                      color: SixMobilePalette.brandBlue,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                context.t(
-                  'auth.mobileLogin.googleNote',
-                  fallback:
-                      'O Google não altera sua senha existente. Se o e-mail já estiver cadastrado, o vínculo será confirmado uma única vez.',
-                ),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: colors.mutedText,
-                  fontSize: 11.5,
-                  height: 1.45,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 18),
+              if (showBiometricLogin) ...<Widget>[
+                SixStaggeredEntry(
+                  delay: const Duration(milliseconds: 35),
+                  child: SixoAppAuthSecondaryButton(
+                    label: _localized(
+                      pt: 'Entrar com ${_biometricName()}',
+                      en: 'Sign in with ${_biometricName()}',
+                      es: 'Entrar con ${_biometricName()}',
+                    ),
+                    onPressed: _isLoading ? null : _loginWithBiometrics,
+                    leading: Icon(
+                      _biometricIcon(),
+                      color: colors.titleText,
+                      size: 21,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 50),
+                child: SixoAppAuthSecondaryButton(
+                  label: context.t(
+                    'auth.signInWithGoogle',
+                    fallback: 'Entrar com Google',
+                  ),
+                  onPressed: _isLoading ? null : _loginWithGoogle,
+                  leading: const _GoogleGlyph(),
+                ),
+              ),
+              const SizedBox(height: 18),
+              SixoAppAuthDivider(
+                label: context.t(
+                  'auth.mobileLogin.socialDivider',
+                  fallback: 'ou entre com e-mail e senha',
+                ),
+              ),
+              const SizedBox(height: 18),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 80),
+                child: SixoAppAuthField(
+                  controller: _loginController,
+                  hint: context.t(
+                    'auth.mobileLogin.emailHint',
+                    fallback: 'voce@empresa.com',
+                  ),
+                  label: context.t('auth.email', fallback: 'E-mail'),
+                  icon: Icons.alternate_email_rounded,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const <String>[
+                    AutofillHints.username,
+                    AutofillHints.email,
+                  ],
+                  autocorrect: false,
+                ),
+              ),
+              const SizedBox(height: 14),
+              SixStaggeredEntry(
+                delay: const Duration(milliseconds: 110),
+                child: SixoAppAuthField(
+                  controller: _passwordController,
+                  focusNode: _passwordFocusNode,
+                  hint: context.t(
+                    'auth.mobileLogin.passwordHint',
+                    fallback: 'Digite sua senha',
+                  ),
+                  label: context.t('auth.password', fallback: 'Senha'),
+                  icon: Icons.lock_outline_rounded,
+                  obscure: _obscurePassword,
+                  textInputAction: TextInputAction.done,
+                  autofillHints: const <String>[AutofillHints.password],
+                  enableSuggestions: false,
+                  autocorrect: false,
+                  onSubmitted: (_) => _login(),
+                  suffix: IconButton(
+                    tooltip: context.t(
+                      _obscurePassword
+                          ? 'auth.mobileLogin.showPassword'
+                          : 'auth.mobileLogin.hidePassword',
+                      fallback:
+                          _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
+                    ),
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: colors.mutedText,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      setState(() => _obscurePassword = !_obscurePassword);
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _forgotPassword,
+                  style: TextButton.styleFrom(
+                    foregroundColor: SixMobilePalette.brandBlue,
+                    minimumSize: const Size(44, 44),
+                  ),
+                  child: Text(
+                    context.t(
+                      'auth.forgotPassword',
+                      fallback: 'Esqueceu a senha?',
+                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              KeyedSubtree(
+                key: _submitButtonKey,
+                child: SixoAppAuthPrimaryButton(
+                  label: context.t(
+                    'auth.mobileLogin.submit',
+                    fallback: 'Entrar',
+                  ),
+                  onPressed: _login,
+                  isLoading: _isLoading,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  Text(
+                    context.t(
+                      'auth.mobileLogin.createPrompt',
+                      fallback: 'Primeira vez no SixoApp?',
+                    ),
+                    style: TextStyle(
+                      color: colors.mutedText,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _openCreateAccount,
+                    child: Text(
+                      context.t(
+                        'auth.mobileEntry.createAction',
+                        fallback: 'Criar minha conta',
+                      ),
+                      style: const TextStyle(
+                        color: SixMobilePalette.brandBlue,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  context.t(
+                    'auth.mobileLogin.googleNote',
+                    fallback:
+                        'O Google não altera sua senha existente. Se o e-mail já estiver cadastrado, o vínculo será confirmado uma única vez.',
+                  ),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: colors.mutedText,
+                    fontSize: 11.5,
+                    height: 1.45,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
