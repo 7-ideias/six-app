@@ -91,6 +91,7 @@ enum WebNavigationDestination {
   peopleCollaborators,
   peopleSixoUsers,
   peoplePerformance,
+  visualAssets,
   cash,
   financialAgenda,
   settings,
@@ -111,6 +112,7 @@ enum WebNavigationPermission {
   podeGerarRelatorio,
   podeGerenciarDesempenho,
   podeAcessarUsuariosSixo,
+  podeAcessarImagensContextuais,
   podeAcessarFinanceiro,
   podeReceberNoCaixa,
 }
