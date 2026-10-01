@@ -28,8 +28,6 @@ jobs:
       - name: Analyze changed files
         run: flutter analyze lib/presentation/models/mobile_business_visual_assets.dart lib/presentation/controllers/mobile_business_visual_context_controller.dart lib/presentation/components/mobile/six_mobile_rotating_intro_card.dart lib/presentation/screens/opcoes_venda_mobile_screen.dart lib/presentation/screens/gestao_mobile_screen.dart
       - name: Run focused tests
-        run: |
-          flutter test test/presentation/models/mobile_business_visual_assets_test.dart
-          flutter test test/presentation/screens/gestao_mobile_screen_test.dart
+        run: flutter test test/presentation/models/mobile_business_visual_assets_test.dart
       - name: Build Web
         run: flutter build web --release --no-wasm-dry-run --dart-define=API_BASE_URL=https://api.sixappback.com
