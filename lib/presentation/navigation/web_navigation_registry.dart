@@ -24,7 +24,7 @@ abstract final class WebNavigationIds {
   static const String peopleCollaborators = 'people.collaborators';
   static const String peopleSixoUsers = 'people.sixo_users';
   static const String peoplePerformance = 'people.performance';
-  static const String visualAssets = 'visual_assets';
+  static const String visualAssets = 'visual.assets';
   static const String cash = 'cash';
   static const String financial = 'financial';
   static const String financialAgenda = 'financial.agenda';
