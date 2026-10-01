@@ -1025,7 +1025,13 @@ class _ActionIllustration extends StatelessWidget {
       height: imageSize,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.high,
-      errorBuilder: (_, __, ___) => fallback,
+      errorBuilder: (BuildContext context, Object error, StackTrace? stack) {
+        debugPrint(
+          '[AtendimentoMobile] Falha ao carregar imagem contextual '
+          'url=$url error=$error',
+        );
+        return fallback;
+      },
       loadingBuilder: (
         BuildContext context,
         Widget child,
