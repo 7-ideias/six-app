@@ -21,7 +21,7 @@ void main() {
     expect(assets!.profileFolder, 'automotivo');
     expect(
       assets.url(AtendimentoMobileBusinessAsset.servicos),
-      'https://assets.sixappback.com/atendimento/mobile/automotivo/servicos-v1.webp',
+      'https://assets.sixappback.com/atendimento/mobile/automotivo/servicos-v1.webp?rev=20261001-fullcard',
     );
   });
 
