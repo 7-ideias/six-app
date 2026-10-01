@@ -149,7 +149,7 @@ for (const source of sensitiveSources) {
   requireHeader(source, 'X-Frame-Options', 'DENY');
 }
 
-const legalSources = ['/privacy', '/terms'];
+const legalSources = ['/privacy', '/terms', '/termos-de-servico'];
 for (const source of legalSources) {
   requireHeader(source, 'Cache-Control', 'public, max-age=300, must-revalidate');
   requireHeader(source, 'X-Content-Type-Options', 'nosniff');
