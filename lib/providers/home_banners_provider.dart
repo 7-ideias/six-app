@@ -21,9 +21,7 @@ class HomeBannersProvider extends ChangeNotifier {
 
   Future<void> carregar({bool force = false}) async {
     final int geracao = ++_geracao;
-    _carregando = true;
-    _erro = null;
-    _notify();
+    bool iniciouLoading = false;
 
     try {
       final String empresaId = await _service.empresaAtual();
@@ -32,6 +30,11 @@ class HomeBannersProvider extends ChangeNotifier {
       if (!force && _empresaId == empresaId && _dados != null) {
         return;
       }
+
+      _carregando = true;
+      _erro = null;
+      iniciouLoading = true;
+      _notify();
 
       final HomeBannersModel dados = await _service.banners(empresaId);
       if (_disposed || geracao != _geracao) return;
@@ -42,8 +45,9 @@ class HomeBannersProvider extends ChangeNotifier {
       if (_disposed || geracao != _geracao) return;
       _erro = _erroKey(error);
       if (force) _dados = null;
+      _notify();
     } finally {
-      if (!_disposed && geracao == _geracao) {
+      if (!_disposed && geracao == _geracao && iniciouLoading) {
         _carregando = false;
         _notify();
       }
