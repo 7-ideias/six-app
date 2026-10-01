@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/services/empresa_service.dart';
+import '../../core/services/perfil_negocio_service.dart';
 import '../../data/models/onboarding_inicial_model.dart';
+import '../../data/models/perfil_negocio_model.dart';
 import '../../design_system/themes/six_mobile_color_scheme.dart';
 import '../../design_system/themes/six_mobile_palette.dart';
 import '../../domain/services/usuario/usuario_service.dart';
+import '../../l10n/perfil_negocio_texts.dart';
 import '../../l10n/six_i18n.dart';
 import '../../providers/locale_settings_provider.dart';
 import '../../providers/onboarding_inicial_provider.dart';
+import '../../providers/perfil_negocio_editor_controller.dart';
+import '../components/mobile/perfil_negocio_mobile_form.dart';
 
 class OnboardingInicialMobileScreen extends StatefulWidget {
   const OnboardingInicialMobileScreen({super.key, required this.onCompleted});
@@ -26,11 +31,11 @@ class _OnboardingInicialMobileScreenState
   final TextEditingController _empresaController = TextEditingController();
 
   bool _initialized = false;
+  bool _perfilBootstrapStarted = false;
   int _step = 0;
   String _idioma = 'pt-BR';
-  bool _realizaVendas = false;
-  bool _prestaServicos = false;
   String? _errorKey;
+  PerfilNegocioEditorController? _perfilController;
 
   @override
   void didChangeDependencies() {
@@ -39,22 +44,52 @@ class _OnboardingInicialMobileScreenState
     final OnboardingInicialModel? estado =
         context.read<OnboardingInicialProvider>().estado;
     if (estado == null) return;
+
     _initialized = true;
     _nomeController.text = estado.nomeUsuario;
     _empresaController.text = estado.nomeEmpresa;
     _idioma = _normalizarIdioma(estado.idiomaPreferencial);
-    _realizaVendas = estado.realizaVendas;
-    _prestaServicos = estado.prestaServicosTecnicos;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _applyLocale(_idioma);
+      if (estado.podeConfigurarEmpresa) _inicializarPerfil();
     });
+  }
+
+  Future<void> _inicializarPerfil() async {
+    if (_perfilBootstrapStarted) return;
+    _perfilBootstrapStarted = true;
+    final PerfilNegocioService service = PerfilNegocioService();
+    try {
+      final String empresaId = await service.empresaAtual();
+      if (!mounted) {
+        service.dispose();
+        return;
+      }
+      final PerfilNegocioEditorController controller =
+          PerfilNegocioEditorController(empresaId: empresaId, service: service);
+      controller.addListener(_onPerfilChanged);
+      setState(() => _perfilController = controller);
+      await controller.carregar();
+    } catch (_) {
+      service.dispose();
+      if (mounted) {
+        setState(() => _errorKey = 'initialOnboarding.saveError');
+      }
+    }
+  }
+
+  void _onPerfilChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
     _nomeController.dispose();
     _empresaController.dispose();
+    _perfilController?.removeListener(_onPerfilChanged);
+    _perfilController?.dispose();
     super.dispose();
   }
 
@@ -66,7 +101,7 @@ class _OnboardingInicialMobileScreenState
     final OnboardingInicialModel? estado = provider.estado;
     if (estado == null) return const SizedBox.shrink();
 
-    final int totalSteps = estado.podeConfigurarEmpresa ? 3 : 2;
+    final int totalSteps = estado.podeConfigurarEmpresa ? 5 : 2;
     final bool finalStep = _step == totalSteps - 1;
 
     return PopScope(
@@ -106,13 +141,7 @@ class _OnboardingInicialMobileScreenState
                                 ScrollViewKeyboardDismissBehavior.onDrag,
                             padding: const EdgeInsets.fromLTRB(20, 25, 20, 28),
                             children: <Widget>[
-                              _heading(context),
-                              const SizedBox(height: 25),
-                              switch (_step) {
-                                0 => _languageStep(context),
-                                1 => _identityStep(context, estado),
-                                _ => _businessStep(context),
-                              },
+                              _content(context, estado),
                               if (_errorKey != null) ...<Widget>[
                                 const SizedBox(height: 16),
                                 _error(context),
@@ -120,7 +149,12 @@ class _OnboardingInicialMobileScreenState
                             ],
                           ),
                         ),
-                        _actions(context, estado, finalStep, provider.salvando),
+                        _actions(
+                          context,
+                          estado,
+                          finalStep,
+                          provider.salvando,
+                        ),
                       ],
                     ),
                   ),
@@ -151,37 +185,19 @@ class _OnboardingInicialMobileScreenState
                 child: Image.asset('assets/images/sixoapp_splash_symbol.png'),
               ),
               const SizedBox(width: 11),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    const Text(
-                      'SixoApp',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    Text(
-                      context.t(
-                        'initialOnboarding.eyebrow',
-                        fallback: 'Configuração inicial',
-                      ),
-                      style: const TextStyle(
-                        color: SixMobilePalette.brandSupportingText,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+              const Expanded(
+                child: Text(
+                  'SixoApp',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(99),
@@ -197,95 +213,41 @@ class _OnboardingInicialMobileScreenState
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: List<Widget>.generate(totalSteps, (int index) {
-              return Expanded(
-                child: Container(
-                  height: 5,
-                  margin: EdgeInsets.only(
-                    right: index < totalSteps - 1 ? 7 : 0,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        index <= _step
-                            ? SixMobilePalette.brandCyan
-                            : Colors.white.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-              );
-            }),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(99),
+            child: LinearProgressIndicator(
+              minHeight: 4,
+              value: (_step + 1) / totalSteps,
+              backgroundColor: Colors.white.withValues(alpha: 0.12),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                SixMobilePalette.brandCyan,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _heading(BuildContext context) {
-    final SixMobileColorScheme colors = context.sixMobileColors;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            color: colors.accent.withValues(alpha: 0.10),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            switch (_step) {
-              0 => Icons.language_rounded,
-              1 => Icons.person_outline_rounded,
-              _ => Icons.dashboard_customize_outlined,
-            },
-            color: colors.accent,
-            size: 19,
+  Widget _content(BuildContext context, OnboardingInicialModel estado) {
+    if (_step == 0) return _languageStep(context);
+    if (_step == 1) return _identityStep(context, estado);
+
+    final PerfilNegocioEditorController? controller = _perfilController;
+    if (controller == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 36),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: context.sixMobileColors.accent,
           ),
         ),
-        const SizedBox(height: 14),
-        Text(
-          switch (_step) {
-            0 => context.t(
-              'initialOnboarding.languageTitle',
-              fallback: 'Escolha seu idioma',
-            ),
-            1 => context.t(
-              'initialOnboarding.identityTitle',
-              fallback: 'Vamos começar pelo essencial',
-            ),
-            _ => context.t(
-              'initialOnboarding.businessTitle',
-              fallback: 'O que seu negócio faz?',
-            ),
-          },
-          style: TextStyle(
-            color: colors.titleText,
-            fontSize: 27,
-            height: 1.1,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(switch (_step) {
-          0 => context.t(
-            'initialOnboarding.languageSubtitle',
-            fallback:
-                'Português vem selecionado por padrão. Você pode trocar agora.',
-          ),
-          1 => context.t(
-            'initialOnboarding.identitySubtitle',
-            fallback:
-                'Confirme seus dados para personalizarmos sua experiência.',
-          ),
-          _ => context.t(
-            'initialOnboarding.businessSubtitle',
-            fallback:
-                'Isso organiza módulos e atalhos. Você poderá alterar depois.',
-          ),
-        }, style: TextStyle(color: colors.mutedText, fontSize: 14, height: 1.45)),
-      ],
+      );
+    }
+    return PerfilNegocioMobileForm(
+      controller: controller,
+      etapa: _step - 2,
     );
   }
 
@@ -301,175 +263,184 @@ class _OnboardingInicialMobileScreenState
           ),
           style: TextStyle(
             color: colors.titleText,
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
           ),
         ),
-        const SizedBox(height: 11),
-        _language('PT', 'Português', 'pt-BR'),
+        const SizedBox(height: 18),
+        _languageTile('PT', 'Português', 'pt-BR'),
         const SizedBox(height: 10),
-        _language('EN', 'English', 'en-US'),
+        _languageTile('EN', 'English', 'en-US'),
         const SizedBox(height: 10),
-        _language('ES', 'Español', 'es-ES'),
+        _languageTile('ES', 'Español', 'es-ES'),
       ],
     );
   }
 
+  Widget _languageTile(String code, String label, String value) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool selected = _idioma == value;
+    return Material(
+      color: selected ? colors.softAccentSurface : colors.surfaceElevated,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => _changeLanguage(value),
+        child: Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected ? colors.accent : colors.border,
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected ? colors.accent : colors.iconSurface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  code,
+                  style: TextStyle(
+                    color: selected ? colors.onAccent : colors.mutedText,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: colors.titleText,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Icon(
+                selected
+                    ? Icons.check_circle_rounded
+                    : Icons.circle_outlined,
+                color: selected ? colors.accent : colors.mutedText,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _identityStep(BuildContext context, OnboardingInicialModel estado) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
           context.t(
-            'initialOnboarding.identitySectionTitle',
-            fallback: 'Seus dados',
+            'initialOnboarding.identityTitle',
+            fallback: 'Vamos começar pelo essencial',
           ),
           style: TextStyle(
-            color: context.sixMobileColors.titleText,
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
+            color: colors.titleText,
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
           ),
         ),
-        const SizedBox(height: 11),
+        const SizedBox(height: 8),
+        Text(
+          context.t(
+            'initialOnboarding.identitySubtitle',
+            fallback: 'Confirme seus dados para personalizarmos sua experiência.',
+          ),
+          style: TextStyle(
+            color: colors.mutedText,
+            fontSize: 14,
+            height: 1.45,
+          ),
+        ),
+        const SizedBox(height: 22),
         _field(
-          context,
           controller: _nomeController,
           label: context.t(
             'initialOnboarding.userName',
             fallback: 'Como podemos chamar você?',
           ),
           icon: Icons.person_outline_rounded,
-          action:
-              estado.podeConfigurarEmpresa
-                  ? TextInputAction.next
-                  : TextInputAction.done,
         ),
         if (estado.podeConfigurarEmpresa) ...<Widget>[
-          const SizedBox(height: 14),
+          const SizedBox(height: 13),
           _field(
-            context,
             controller: _empresaController,
             label: context.t(
               'initialOnboarding.companyName',
               fallback: 'Nome do seu negócio',
             ),
             icon: Icons.storefront_outlined,
-            action: TextInputAction.done,
           ),
         ],
       ],
     );
   }
 
-  Widget _language(String code, String label, String value) {
-    return _MobileLanguageTile(
-      code: code,
-      label: label,
-      selected: _idioma == value,
-      onTap: () => _changeLanguage(value),
-    );
-  }
-
-  Widget _field(
-    BuildContext context, {
+  Widget _field({
     required TextEditingController controller,
     required String label,
     required IconData icon,
-    required TextInputAction action,
   }) {
     final SixMobileColorScheme colors = context.sixMobileColors;
     return TextField(
       controller: controller,
-      textInputAction: action,
-      style: TextStyle(color: colors.titleText, fontWeight: FontWeight.w600),
+      style: TextStyle(
+        color: colors.titleText,
+        fontWeight: FontWeight.w700,
+      ),
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: TextStyle(color: colors.mutedText),
         filled: true,
         fillColor: colors.softSurface,
         prefixIcon: Icon(icon, color: colors.accent),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: colors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide(color: colors.accent, width: 1.6),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: colors.accent, width: 1.5),
         ),
       ),
     );
   }
 
-  Widget _businessStep(BuildContext context) {
-    return Column(
-      children: <Widget>[
-        _MobileActivityTile(
-          icon: Icons.point_of_sale_rounded,
-          accent: const Color(0xFF2563EB),
-          title: context.t(
-            'initialOnboarding.salesTitle',
-            fallback: 'Vende produtos',
-          ),
-          subtitle: context.t(
-            'initialOnboarding.salesSubtitle',
-            fallback: 'PDV, catálogo, estoque e vendas.',
-          ),
-          selected: _realizaVendas,
-          onTap:
-              () => setState(() {
-                _realizaVendas = !_realizaVendas;
-                _errorKey = null;
-              }),
-        ),
-        const SizedBox(height: 12),
-        _MobileActivityTile(
-          icon: Icons.home_repair_service_rounded,
-          accent: const Color(0xFF7C3AED),
-          title: context.t(
-            'initialOnboarding.servicesTitle',
-            fallback: 'Presta serviços técnicos',
-          ),
-          subtitle: context.t(
-            'initialOnboarding.servicesSubtitle',
-            fallback: 'Atendimentos, ordens de serviço e procedimentos.',
-          ),
-          selected: _prestaServicos,
-          onTap:
-              () => setState(() {
-                _prestaServicos = !_prestaServicos;
-                _errorKey = null;
-              }),
-        ),
-      ],
-    );
-  }
-
   Widget _error(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
-    return Semantics(
-      liveRegion: true,
-      child: Container(
-        padding: const EdgeInsets.all(13),
-        decoration: BoxDecoration(
-          color: colors.error.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: colors.errorBorder),
-        ),
-        child: Row(
-          children: <Widget>[
-            Icon(Icons.error_outline_rounded, color: colors.error, size: 20),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Text(
-                context.t(
-                  _errorKey!,
-                  fallback: 'Revise as informações e tente novamente.',
-                ),
-                style: TextStyle(color: colors.titleText, fontSize: 13),
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: colors.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.errorBorder),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.error_outline_rounded, color: colors.error, size: 19),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              context.t(
+                _errorKey!,
+                fallback: 'Revise as informações e tente novamente.',
               ),
+              style: TextStyle(color: colors.titleText, fontSize: 13),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -481,94 +452,62 @@ class _OnboardingInicialMobileScreenState
     bool saving,
   ) {
     final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool profileLoading =
+        _step >= 2 &&
+        (_perfilController == null ||
+            _perfilController!.carregando ||
+            _perfilController!.catalogo == null);
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
       decoration: BoxDecoration(
         color: colors.surface,
         border: Border(top: BorderSide(color: colors.border)),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: colors.navigationShadow,
-            blurRadius: 16,
-            offset: const Offset(0, -6),
-          ),
-        ],
       ),
-      child: SafeArea(
-        top: false,
-        minimum: const EdgeInsets.only(bottom: 12),
-        child: Row(
-          children: <Widget>[
-            if (_step > 0) ...<Widget>[
-              SizedBox(
-                width: 51,
-                height: 51,
-                child: OutlinedButton(
-                  onPressed:
-                      saving
-                          ? null
-                          : () => setState(() {
-                            _step -= 1;
-                            _errorKey = null;
-                          }),
-                  style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    side: BorderSide(color: colors.border),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  child: const Icon(Icons.arrow_back_rounded),
-                ),
+      child: Row(
+        children: <Widget>[
+          if (_step > 0) ...<Widget>[
+            OutlinedButton(
+              onPressed: saving ? null : () => setState(() => _step--),
+              child: const Icon(Icons.arrow_back_rounded),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: FilledButton.icon(
+              onPressed: saving || profileLoading
+                  ? null
+                  : finalStep
+                  ? () => _finish(estado)
+                  : () => _next(estado),
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.accent,
+                foregroundColor: colors.onAccent,
+                padding: const EdgeInsets.symmetric(vertical: 15),
               ),
-              const SizedBox(width: 10),
-            ],
-            Expanded(
-              child: SizedBox(
-                height: 51,
-                child: FilledButton.icon(
-                  onPressed:
-                      saving
-                          ? null
-                          : finalStep
-                          ? () => _finish(estado)
-                          : () => _next(estado),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: SixMobilePalette.brandNavyBright,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
+              icon: saving
+                  ? SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colors.onAccent,
+                      ),
+                    )
+                  : Icon(
+                      finalStep
+                          ? Icons.auto_awesome_rounded
+                          : Icons.arrow_forward_rounded,
                     ),
-                  ),
-                  icon:
-                      saving
-                          ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                          : Icon(
-                            finalStep
-                                ? Icons.auto_awesome_rounded
-                                : Icons.arrow_forward_rounded,
-                          ),
-                  label: Text(
-                    finalStep
-                        ? context.t(
-                          'initialOnboarding.start',
-                          fallback: 'Começar a usar o SixoApp',
-                        )
-                        : context.t('common.continue', fallback: 'Continuar'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
+              label: Text(
+                finalStep
+                    ? context.t(
+                        'initialOnboarding.start',
+                        fallback: 'Começar a usar o SixoApp',
+                      )
+                    : perfilNegocioText(context, 'continue'),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -581,19 +520,36 @@ class _OnboardingInicialMobileScreenState
       });
       return;
     }
-    if (!_validateIdentity(estado)) return;
+    if (_step == 1) {
+      if (!_validateIdentity(estado)) return;
+      setState(() {
+        _step = 2;
+        _errorKey = null;
+      });
+      return;
+    }
+
+    final PerfilNegocioEditorController? controller = _perfilController;
+    if (controller == null || !controller.validarEtapa(_step - 2)) return;
     setState(() {
-      _step = 2;
+      _step++;
       _errorKey = null;
     });
   }
 
   Future<void> _finish(OnboardingInicialModel estado) async {
     if (!_validateIdentity(estado)) return;
-    if (estado.podeConfigurarEmpresa && !_realizaVendas && !_prestaServicos) {
-      setState(() => _errorKey = 'initialOnboarding.activityRequired');
-      return;
+
+    AtualizarPerfilNegocioRequest? perfilRequest;
+    if (estado.podeConfigurarEmpresa) {
+      final PerfilNegocioEditorController? controller = _perfilController;
+      if (controller == null || !controller.validarEtapa(2)) return;
+      perfilRequest = controller.preparar();
+      if (perfilRequest == null) return;
     }
+
+    final Set<String> atividades =
+        perfilRequest?.perfil.atividades ?? const <String>{};
     try {
       await context.read<OnboardingInicialProvider>().concluir(
         ConcluirOnboardingInicialRequest(
@@ -601,8 +557,13 @@ class _OnboardingInicialMobileScreenState
           nomeUsuario: _nomeController.text.trim(),
           nomeDeGuerra: _nomeController.text.trim(),
           nomeEmpresa: _empresaController.text.trim(),
-          realizaVendas: _realizaVendas,
-          prestaServicosTecnicos: _prestaServicos,
+          realizaVendas: perfilRequest == null
+              ? estado.realizaVendas
+              : atividades.contains('VENDA_PRODUTOS'),
+          prestaServicosTecnicos: perfilRequest == null
+              ? estado.prestaServicosTecnicos
+              : atividades.contains('PRESTACAO_SERVICOS'),
+          perfilNegocio: perfilRequest,
         ),
       );
       await Future.wait<void>(<Future<void>>[
@@ -652,174 +613,6 @@ class _OnboardingInicialMobileScreenState
     final String normalized = value.trim().toLowerCase();
     if (normalized.startsWith('en')) return 'en-US';
     if (normalized.startsWith('es')) return 'es-ES';
-    if (normalized.startsWith('pt')) return 'pt-BR';
     return 'pt-BR';
-  }
-}
-
-class _MobileLanguageTile extends StatelessWidget {
-  const _MobileLanguageTile({
-    required this.code,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String code;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final SixMobileColorScheme colors = context.sixMobileColors;
-    return Semantics(
-      button: true,
-      selected: selected,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            color: selected ? colors.softAccentSurface : colors.softSurface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: selected ? colors.accent : colors.border,
-              width: selected ? 1.5 : 1,
-            ),
-          ),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 33,
-                height: 33,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: selected ? colors.accent : colors.iconSurface,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  code,
-                  style: TextStyle(
-                    color: selected ? colors.onAccent : colors.mutedText,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: colors.titleText,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              if (selected)
-                Icon(
-                  Icons.check_circle_rounded,
-                  color: colors.accent,
-                  size: 20,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MobileActivityTile extends StatelessWidget {
-  const _MobileActivityTile({
-    required this.icon,
-    required this.accent,
-    required this.title,
-    required this.subtitle,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final Color accent;
-  final String title;
-  final String subtitle;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final SixMobileColorScheme colors = context.sixMobileColors;
-    return Semantics(
-      button: true,
-      selected: selected,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color:
-                selected ? accent.withValues(alpha: 0.08) : colors.softSurface,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: selected ? accent : colors.border,
-              width: selected ? 1.5 : 1,
-            ),
-          ),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 49,
-                height: 49,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Icon(icon, color: accent, size: 25),
-              ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: colors.titleText,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: colors.mutedText,
-                        fontSize: 12,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                selected ? Icons.check_circle_rounded : Icons.circle_outlined,
-                color: selected ? accent : colors.mutedText,
-                size: 26,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

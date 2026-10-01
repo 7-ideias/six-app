@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sixpos/design_system/components/web/sub_painel_web_general.dart';
+import 'package:sixpos/l10n/perfil_negocio_texts.dart';
 import 'package:sixpos/presentation/screens/cores_fontes_web_page.dart';
+import 'package:sixpos/presentation/screens/perfil_negocio_web_dialog.dart';
 import 'package:sixpos/providers/theme_provider.dart';
 
 class SubPainelConfiguracoes extends SubPainelWebGeneral {
@@ -80,6 +82,16 @@ class _ConfiguracoesRapidasWeb extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 22),
+          _ConfigTile(
+            icon: Icons.storefront_outlined,
+            title: perfilNegocioText(context, 'profile'),
+            subtitle: perfilNegocioText(context, 'description'),
+            badge: 'Empresa',
+            onTap: () async {
+              await showPerfilNegocioWebDialog(context);
+            },
+          ),
+          const SizedBox(height: 12),
           _ConfigTile(
             icon: Icons.format_paint_rounded,
             title: 'Cores e Fontes',
