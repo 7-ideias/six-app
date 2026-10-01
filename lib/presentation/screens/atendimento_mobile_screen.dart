@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:sixpos/core/services/notificacao_service.dart';
+import 'package:sixpos/core/services/perfil_negocio_service.dart';
 import 'package:sixpos/data/models/usuario_model.dart';
 import 'package:sixpos/data/models/operational_procedure_flow_models.dart';
 import 'package:sixpos/data/models/operational_procedure_models.dart';
@@ -17,6 +18,7 @@ import 'package:sixpos/presentation/components/mobile/six_mobile_rotating_intro_
 import 'package:sixpos/presentation/components/sixoapp_brand_mark.dart';
 import 'package:sixpos/presentation/controllers/mobile_card_order_preference_controller.dart';
 import 'package:sixpos/presentation/coordinators/operational_procedure_flow_coordinator.dart';
+import 'package:sixpos/presentation/models/atendimento_mobile_business_assets.dart';
 import 'package:sixpos/presentation/screens/devolucoes_produtos_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/notificacoes_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/opcoes_venda_mobile_screen.dart';
@@ -74,6 +76,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   >
   _ordemCardsController;
   final NotificacaoService _notificacoes = NotificacaoService();
+  final PerfilNegocioService _perfilNegocioService = PerfilNegocioService();
+  AtendimentoMobileBusinessAssets? _businessAssets;
+  int _businessAssetsLoadGeneration = 0;
 
   SixMobileColorScheme get _colors => context.sixMobileColors;
   Color get _bg => _colors.background;
@@ -102,11 +107,16 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
           ..addListener(_aoAlterarOrdemDosCards)
           ..inicializar();
     _notificacoes.addListener(_onNotificacoesChanged);
+    if (!kIsWeb) {
+      _carregarImagensDoPerfil();
+    }
   }
 
   @override
   void dispose() {
     _notificacoes.removeListener(_onNotificacoesChanged);
+    ++_businessAssetsLoadGeneration;
+    _perfilNegocioService.dispose();
     _ordemCardsController
       ..removeListener(_aoAlterarOrdemDosCards)
       ..dispose();
@@ -115,6 +125,35 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
 
   void _aoAlterarOrdemDosCards() {
     if (mounted) setState(() {});
+  }
+
+  Future<void> _carregarImagensDoPerfil() async {
+    final int generation = ++_businessAssetsLoadGeneration;
+    try {
+      final String empresaId = await _perfilNegocioService.empresaAtual();
+      final perfilEmpresa = await _perfilNegocioService.buscar(empresaId);
+      if (!mounted || generation != _businessAssetsLoadGeneration) return;
+
+      final AtendimentoMobileBusinessAssets? resolved =
+          perfilEmpresa.configurado
+              ? AtendimentoMobileBusinessAssets.fromPerfil(
+                perfilEmpresa.perfil,
+              )
+              : null;
+
+      if (_businessAssets?.profileFolder == resolved?.profileFolder) return;
+      setState(() => _businessAssets = resolved);
+    } catch (_) {
+      if (!mounted || generation != _businessAssetsLoadGeneration) return;
+      if (_businessAssets != null) {
+        setState(() => _businessAssets = null);
+      }
+    }
+  }
+
+  String? _businessImageUrl(AtendimentoMobileBusinessAsset asset) {
+    if (kIsWeb) return null;
+    return _businessAssets?.url(asset);
   }
 
   String _txt(String key, String fallback) =>
@@ -281,6 +320,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             title: _txt('atendimento.mobile.newSaleTitle', 'Vendas'),
             assetContorno: _saleAssetContorno,
             assetAcento: _saleAssetAcento,
+            contextualImageUrl: _businessImageUrl(
+              AtendimentoMobileBusinessAsset.vendas,
+            ),
             accentColor: visual.saleAccent,
             brandStart: SixMobilePalette.brandCyan,
             brandEnd: SixMobilePalette.brandBlue,
@@ -294,6 +336,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             title: _txt('atendimento.mobile.newServiceTitle', 'Serviços'),
             assetContorno: _serviceAssetContorno,
             assetAcento: _serviceAssetAcento,
+            contextualImageUrl: _businessImageUrl(
+              AtendimentoMobileBusinessAsset.servicos,
+            ),
             accentColor: visual.serviceAccent,
             brandStart: SixMobilePalette.brandBlue,
             brandEnd: SixMobilePalette.brandViolet,
@@ -307,6 +352,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             title: _txt('atendimento.mobile.receiveTitle', 'Receber'),
             assetContorno: _receiveAssetContorno,
             assetAcento: _receiveAssetAcento,
+            contextualImageUrl: _businessImageUrl(
+              AtendimentoMobileBusinessAsset.receber,
+            ),
             accentColor: visual.receiveAccent,
             brandStart: SixMobilePalette.brandCyan,
             brandEnd: SixMobilePalette.brandBlue,
@@ -320,6 +368,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             title: _txt('atendimento.mobile.cashOperationsTitle', 'Caixa'),
             assetContorno: _cashAssetContorno,
             assetAcento: _cashAssetAcento,
+            contextualImageUrl: _businessImageUrl(
+              AtendimentoMobileBusinessAsset.operacoesCaixa,
+            ),
             accentColor: visual.cashAccent,
             brandStart: SixMobilePalette.brandBlue,
             brandEnd: visual.cashGradientEnd,
@@ -333,6 +384,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             title: _txt('operacao.mobile.returnTitle', 'Devoluções e Trocas'),
             assetContorno: _returnAssetContorno,
             assetAcento: _returnAssetAcento,
+            contextualImageUrl: _businessImageUrl(
+              AtendimentoMobileBusinessAsset.devolucao,
+            ),
             accentColor: visual.returnAccent,
             brandStart: visual.returnAccent,
             brandEnd: visual.returnGradientEnd,
@@ -815,36 +869,16 @@ class _ActionCardContent extends StatelessWidget {
                           : const <BoxShadow>[],
                 ),
                 child: Center(
-                  child: SixImagemCanetinha(
-                    assetContorno: data.assetContorno,
-                    assetAcento: data.assetAcento,
-                    largura: imageSize,
-                    altura: imageSize,
-                    fit: BoxFit.contain,
-                    corContorno: colors.titleText,
-                    corAcento: data.accentColor,
-                    gradienteContorno: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: <Color>[illustrationStart, illustrationEnd],
-                    ),
-                    gradienteAcento: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: <Color>[illustrationAccent, illustrationEnd],
-                    ),
-                    opacidadeContorno: enabled ? 1 : 0.46,
-                    opacidadeAcento: enabled ? 1 : 0.48,
-                    reforcoContorno: _isPrimary ? 0.62 : 0.82,
-                    reforcoAcento: _isPrimary ? 0.72 : 0.92,
-                    opacidadeReforco: isDark ? 0.52 : 0.44,
-                    opacidadeBrilho:
-                        enabled
-                            ? isDark
-                                ? 0.62
-                                : 0.24
-                            : 0,
-                    desfoqueBrilho: _isPrimary ? 4.8 : 3.4,
+                  child: _ActionIllustration(
+                    data: data,
+                    imageSize: imageSize,
+                    enabled: enabled,
+                    isDark: isDark,
+                    colors: colors,
+                    illustrationStart: illustrationStart,
+                    illustrationEnd: illustrationEnd,
+                    illustrationAccent: illustrationAccent,
+                    isPrimary: _isPrimary,
                   ),
                 ),
               ),
@@ -878,6 +912,85 @@ class _ActionCardContent extends StatelessWidget {
           compact: !_isPrimary,
         ),
       ],
+    );
+  }
+}
+
+class _ActionIllustration extends StatelessWidget {
+  const _ActionIllustration({
+    required this.data,
+    required this.imageSize,
+    required this.enabled,
+    required this.isDark,
+    required this.colors,
+    required this.illustrationStart,
+    required this.illustrationEnd,
+    required this.illustrationAccent,
+    required this.isPrimary,
+  });
+
+  final _PrimaryActionData data;
+  final double imageSize;
+  final bool enabled;
+  final bool isDark;
+  final SixMobileColorScheme colors;
+  final Color illustrationStart;
+  final Color illustrationEnd;
+  final Color illustrationAccent;
+  final bool isPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget fallback = SixImagemCanetinha(
+      assetContorno: data.assetContorno,
+      assetAcento: data.assetAcento,
+      largura: imageSize,
+      altura: imageSize,
+      fit: BoxFit.contain,
+      corContorno: colors.titleText,
+      corAcento: data.accentColor,
+      gradienteContorno: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: <Color>[illustrationStart, illustrationEnd],
+      ),
+      gradienteAcento: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: <Color>[illustrationAccent, illustrationEnd],
+      ),
+      opacidadeContorno: enabled ? 1 : 0.46,
+      opacidadeAcento: enabled ? 1 : 0.48,
+      reforcoContorno: isPrimary ? 0.62 : 0.82,
+      reforcoAcento: isPrimary ? 0.72 : 0.92,
+      opacidadeReforco: isDark ? 0.52 : 0.44,
+      opacidadeBrilho:
+          enabled
+              ? isDark
+                  ? 0.62
+                  : 0.24
+              : 0,
+      desfoqueBrilho: isPrimary ? 4.8 : 3.4,
+    );
+
+    final String? url = data.contextualImageUrl;
+    if (url == null || url.isEmpty || kIsWeb) return fallback;
+
+    return Image.network(
+      url,
+      key: ValueKey<String>('atendimento-contextual-image-${data.id}'),
+      width: imageSize,
+      height: imageSize,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+      errorBuilder: (_, __, ___) => fallback,
+      loadingBuilder: (
+        BuildContext context,
+        Widget child,
+        ImageChunkEvent? loadingProgress,
+      ) {
+        return loadingProgress == null ? child : fallback;
+      },
     );
   }
 }
@@ -978,6 +1091,7 @@ class _PrimaryActionData {
     required this.title,
     required this.assetContorno,
     required this.assetAcento,
+    this.contextualImageUrl,
     required this.accentColor,
     required this.brandStart,
     required this.brandEnd,
@@ -991,6 +1105,7 @@ class _PrimaryActionData {
   final String title;
   final String assetContorno;
   final String assetAcento;
+  final String? contextualImageUrl;
   final Color accentColor;
   final Color brandStart;
   final Color brandEnd;
