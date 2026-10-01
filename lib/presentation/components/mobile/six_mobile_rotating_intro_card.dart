@@ -158,6 +158,109 @@ class _SixMobileRotatingIntroCardState
     final Color cursorColor =
         _showCursor ? SixMobilePalette.brandBlue : Colors.transparent;
 
+    if (!hasContextualImage) {
+      return Semantics(
+        container: true,
+        header: true,
+        label: '${widget.title}. $semanticSubtitle',
+        child: Container(
+          height: 124,
+          padding: const EdgeInsets.fromLTRB(18, 17, 14, 17),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: <Color>[
+                Color.alphaBlend(
+                  SixMobilePalette.brandBlue.withAlpha(isDark ? 28 : 12),
+                  colors.surface,
+                ),
+                Color.alphaBlend(
+                  SixMobilePalette.brandViolet.withAlpha(isDark ? 20 : 8),
+                  colors.surface,
+                ),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: SixMobilePalette.brandBlue.withAlpha(isDark ? 74 : 36),
+            ),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: colors.navigationShadow.withAlpha(isDark ? 38 : 22),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      widget.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: colors.titleText,
+                        fontSize: 20,
+                        height: 1.08,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text.rich(
+                      TextSpan(
+                        children: <InlineSpan>[
+                          TextSpan(text: displayedText, style: terminalStyle),
+                          TextSpan(
+                            text: '|',
+                            style: terminalStyle.copyWith(color: cursorColor),
+                          ),
+                        ],
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              ExcludeSemantics(
+                child: Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: colors.softAccentSurface,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: SixMobilePalette.brandBlue.withAlpha(
+                        isDark ? 86 : 48,
+                      ),
+                    ),
+                  ),
+                  child: Center(
+                    child: AnimatedRotation(
+                      turns: disableAnimations ? 0 : _rotationTurns,
+                      duration:
+                          disableAnimations
+                              ? Duration.zero
+                              : (_isDeleting ? _deletingStep : _typingStep),
+                      curve: Curves.linear,
+                      child: widget.markChild,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Semantics(
       container: true,
       header: true,
