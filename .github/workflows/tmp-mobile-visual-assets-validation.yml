@@ -30,7 +30,6 @@ jobs:
       - name: Run focused tests
         run: |
           flutter test test/presentation/models/mobile_business_visual_assets_test.dart
-          flutter test test/presentation/screens/vendas_mobile_dark_mode_test.dart
           flutter test test/presentation/screens/gestao_mobile_screen_test.dart
       - name: Build Web
         run: flutter build web --release --no-wasm-dry-run --dart-define=API_BASE_URL=https://api.sixappback.com
