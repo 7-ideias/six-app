@@ -43,6 +43,7 @@ class _PerfilNegocioWebDialogState extends State<PerfilNegocioWebDialog> {
       }
       final PerfilNegocioEditorController controller =
           PerfilNegocioEditorController(empresaId: empresaId, service: service);
+      controller.addListener(_onControllerChanged);
       setState(() => _controller = controller);
       await controller.carregar();
     } catch (_) {
@@ -51,8 +52,13 @@ class _PerfilNegocioWebDialogState extends State<PerfilNegocioWebDialog> {
     }
   }
 
+  void _onControllerChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    _controller?.removeListener(_onControllerChanged);
     _controller?.dispose();
     super.dispose();
   }
@@ -156,6 +162,9 @@ class _PerfilNegocioWebDialogState extends State<PerfilNegocioWebDialog> {
             const SizedBox(height: 14),
             FilledButton.tonal(
               onPressed: () {
+                _controller?.removeListener(_onControllerChanged);
+                _controller?.dispose();
+                _controller = null;
                 setState(() => _bootstrapError = null);
                 _inicializar();
               },
