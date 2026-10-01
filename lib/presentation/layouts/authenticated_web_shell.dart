@@ -10,6 +10,7 @@ import 'package:sixpos/presentation/screens/consulta_vendas_web_page.dart';
 import 'package:sixpos/presentation/screens/devolucoes_produtos_web_page.dart';
 import 'package:sixpos/presentation/screens/etiquetas_web_page.dart';
 import 'package:sixpos/presentation/screens/usuarios_sixo_web_page.dart';
+import 'package:sixpos/presentation/screens/admin_visual_assets_web_page.dart';
 import 'package:sixpos/presentation/theme/web_theme_tokens.dart';
 import 'package:sixpos/providers/colaborador_autorizacoes_provider.dart';
 
@@ -89,6 +90,8 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
         const DevolucoesProdutosWebPage(),
       WebNavigationDestination.peopleSixoUsers =>
         const UsuariosSixoWebPage(),
+      WebNavigationDestination.visualAssets =>
+        const AdminVisualAssetsWebPage(embeddedInMainShell: true),
       _ => widget.child,
     };
 
@@ -179,6 +182,8 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
               WebNavigationIds.catalog,
             WebNavigationDestination.peopleSixoUsers =>
               WebNavigationIds.people,
+            WebNavigationDestination.visualAssets =>
+              WebNavigationIds.visualAssets,
             _ => WebNavigationIds.operations,
           },
         );
@@ -216,7 +221,8 @@ class _AuthenticatedWebShellState extends State<AuthenticatedWebShell> {
     return destination == WebNavigationDestination.catalogLabels ||
         destination == WebNavigationDestination.operationsSales ||
         destination == WebNavigationDestination.operationsReturns ||
-        destination == WebNavigationDestination.peopleSixoUsers;
+        destination == WebNavigationDestination.peopleSixoUsers ||
+        destination == WebNavigationDestination.visualAssets;
   }
 
   Future<void> _abrirDevolucoesDaVenda(String identificador) async {
