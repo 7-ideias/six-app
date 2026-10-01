@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  flutter-build:
+  full-web-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,9 +18,5 @@ jobs:
           flutter-version: '3.41.4'
           channel: stable
           cache: true
-      - name: Install dependencies
-        run: flutter pub get
-      - name: Generate localizations
-        run: flutter gen-l10n
-      - name: Build Flutter Web
-        run: flutter build web --release --no-wasm-dry-run --dart-define=API_BASE_URL=https://api.sixappback.com
+      - name: Run production web build script
+        run: bash scripts/build_web_with_public_home.sh
