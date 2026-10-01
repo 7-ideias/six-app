@@ -21,7 +21,7 @@ void main() {
     expect(assets!.profileFolder, 'automotivo');
     expect(
       assets.url(AtendimentoMobileBusinessAsset.servicos),
-      'https://assets.sixappback.com/atendimento/mobile/automotivo/servicos-v1.webp',
+      'https://assets.sixappback.com/atendimento/mobile/automotivo/servicos-v1.webp?rev=20261001-fullcard',
     );
   });
 
@@ -52,6 +52,27 @@ void main() {
         perfil('ELETRONICOS', 'TV_AUDIO'),
       ),
       isNull,
+    );
+  });
+
+  test('usa full-card apenas nos perfis com novas artes', () {
+    expect(
+      AtendimentoMobileBusinessAssets.fromPerfil(
+        perfil('AUTOMOTIVO'),
+      )!.usesFullCard,
+      isTrue,
+    );
+    expect(
+      AtendimentoMobileBusinessAssets.fromPerfil(
+        perfil('MODA', 'ROUPAS'),
+      )!.usesFullCard,
+      isTrue,
+    );
+    expect(
+      AtendimentoMobileBusinessAssets.fromPerfil(
+        perfil('ELETRONICOS', 'CELULARES'),
+      )!.usesFullCard,
+      isFalse,
     );
   });
 
