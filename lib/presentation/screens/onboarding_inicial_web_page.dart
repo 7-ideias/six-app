@@ -650,7 +650,7 @@ class _OnboardingInicialWebPageState extends State<OnboardingInicialWebPage> {
               : atividades.contains('VENDA_PRODUTOS'),
           prestaServicosTecnicos: perfilRequest == null
               ? estado.prestaServicosTecnicos
-              : atividades.contains('PRESTACAO_SERVICOS'),
+              : atividades.contains('REPAROS_MANUTENCAO'),
           perfilNegocio: perfilRequest,
         ),
       );
