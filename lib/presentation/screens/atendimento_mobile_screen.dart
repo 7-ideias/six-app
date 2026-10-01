@@ -25,6 +25,7 @@ import 'package:sixpos/presentation/screens/opcoes_venda_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/operacoes_caixa_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/receber_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/opcoes_servicos_atendimento_mobile_screen.dart';
+import 'package:sixpos/providers/empresa_provider.dart';
 
 import '../components/nav_bar_mobile.dart';
 
@@ -77,8 +78,10 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
   _ordemCardsController;
   final NotificacaoService _notificacoes = NotificacaoService();
   final PerfilNegocioService _perfilNegocioService = PerfilNegocioService();
+  final EmpresaProvider _empresaProvider = EmpresaProvider();
   AtendimentoMobileBusinessAssets? _businessAssets;
   int _businessAssetsLoadGeneration = 0;
+  String? _businessAssetsEmpresaId;
 
   SixMobileColorScheme get _colors => context.sixMobileColors;
   Color get _bg => _colors.background;
@@ -108,13 +111,21 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
           ..inicializar();
     _notificacoes.addListener(_onNotificacoesChanged);
     if (!kIsWeb) {
-      _carregarImagensDoPerfil();
+      _empresaProvider.addListener(_onEmpresaChanged);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _carregarImagensDoPerfil();
+        }
+      });
     }
   }
 
   @override
   void dispose() {
     _notificacoes.removeListener(_onNotificacoesChanged);
+    if (!kIsWeb) {
+      _empresaProvider.removeListener(_onEmpresaChanged);
+    }
     ++_businessAssetsLoadGeneration;
     _perfilNegocioService.dispose();
     _ordemCardsController
@@ -141,14 +152,45 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
               )
               : null;
 
-      if (_businessAssets?.profileFolder == resolved?.profileFolder) return;
-      setState(() => _businessAssets = resolved);
-    } catch (_) {
+      debugPrint(
+        '[AtendimentoMobile] Perfil empresa=$empresaId '
+        'segmento=${perfilEmpresa.perfil.segmentoPrincipal} '
+        'subsegmento=${perfilEmpresa.perfil.subsegmento} '
+        'assets=${resolved?.profileFolder ?? 'fallback-local'}',
+      );
+
+      final bool mesmaEmpresa = _businessAssetsEmpresaId == empresaId;
+      final bool mesmoPerfil =
+          _businessAssets?.profileFolder == resolved?.profileFolder;
+
+      if (mesmaEmpresa && mesmoPerfil) return;
+
+      setState(() {
+        _businessAssetsEmpresaId = empresaId;
+        _businessAssets = resolved;
+      });
+    } catch (error) {
       if (!mounted || generation != _businessAssetsLoadGeneration) return;
-      if (_businessAssets != null) {
-        setState(() => _businessAssets = null);
+      debugPrint(
+        '[AtendimentoMobile] Falha ao carregar perfil contextual: $error',
+      );
+      if (_businessAssets != null || _businessAssetsEmpresaId != null) {
+        setState(() {
+          _businessAssets = null;
+          _businessAssetsEmpresaId = null;
+        });
       }
     }
+  }
+
+  void _onEmpresaChanged() {
+    if (!mounted || kIsWeb) return;
+    _businessAssetsEmpresaId = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _carregarImagensDoPerfil();
+      }
+    });
   }
 
   String? _businessImageUrl(AtendimentoMobileBusinessAsset asset) {
