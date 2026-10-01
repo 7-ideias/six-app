@@ -11,8 +11,10 @@ import '../components/mobile/six_imagem_canetinha.dart';
 import '../components/mobile/six_mobile_page_shell.dart';
 import '../components/mobile/six_mobile_reorderable_card.dart';
 import '../components/mobile_motion.dart';
+import '../controllers/mobile_business_visual_context_controller.dart';
 import '../controllers/mobile_card_order_preference_controller.dart';
 import '../coordinators/operational_procedure_flow_coordinator.dart';
+import '../models/mobile_business_visual_assets.dart';
 import 'consulta_vendas_mobile_screen.dart';
 import 'pdv_mobile_screen.dart';
 import 'vendas_nao_liquidadas_mobile_screen.dart';
@@ -60,6 +62,7 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
   late final OperationalProcedureFlowCoordinator _procedureCoordinator;
   late final MobileCardOrderPreferenceController<VendasMobileCardPreferencia>
   _ordemCardsController;
+  late final MobileBusinessVisualContextController _businessVisuals;
   bool _openingNewSale = false;
 
   @override
@@ -82,6 +85,10 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
           )
           ..addListener(_aoAlterarOrdemDosCards)
           ..inicializar();
+    _businessVisuals =
+        MobileBusinessVisualContextController(debugLabel: 'VendasMobile')
+          ..addListener(_aoAlterarVisualDoNegocio)
+          ..initialize();
   }
 
   @override
@@ -89,12 +96,22 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
     _ordemCardsController
       ..removeListener(_aoAlterarOrdemDosCards)
       ..dispose();
+    _businessVisuals
+      ..removeListener(_aoAlterarVisualDoNegocio)
+      ..dispose();
     super.dispose();
   }
 
   void _aoAlterarOrdemDosCards() {
     if (mounted) setState(() {});
   }
+
+  void _aoAlterarVisualDoNegocio() {
+    if (mounted) setState(() {});
+  }
+
+  String? _businessImageUrl(VendasMobileBusinessAsset asset) =>
+      _businessVisuals.assets?.vendasUrl(asset);
 
   String _t(BuildContext context, String key, String fallback) =>
       context.t(key, fallback: fallback);
@@ -113,6 +130,9 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
             ),
             assetContorno: _saleAssetContorno,
             assetAcento: _saleAssetAcento,
+            backgroundImageUrl: _businessImageUrl(
+              VendasMobileBusinessAsset.vendas,
+            ),
             accentColor: _accentColor,
             loading: _openingNewSale,
             onTap: _startNewSale,
@@ -132,6 +152,9 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
             ),
             assetContorno: _receiveAssetContorno,
             assetAcento: _receiveAssetAcento,
+            backgroundImageUrl: _businessImageUrl(
+              VendasMobileBusinessAsset.vendasAReceber,
+            ),
             accentColor: _receiveAccentColor,
             onTap: () => _go(VendasNaoLiquidadasMobileScreen()),
           ),
@@ -150,6 +173,9 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
             ),
             assetContorno: _consultAssetContorno,
             assetAcento: _consultAssetAcento,
+            backgroundImageUrl: _businessImageUrl(
+              VendasMobileBusinessAsset.consultarVendas,
+            ),
             accentColor: _accentColor,
             compact: true,
             onTap: () => _go(ConsultaVendasMobileScreen()),
@@ -242,6 +268,8 @@ class _OpcoesVendaMobileScreenState extends State<OpcoesVendaMobileScreen> {
                                   title: actions[index].title,
                                   subtitle: actions[index].subtitle,
                                   accentColor: actions[index].accentColor,
+                                  backgroundImageUrl:
+                                      actions[index].backgroundImageUrl,
                                   illustration: _OperationCanetinhaIllustration(
                                     assetContorno: actions[index].assetContorno,
                                     assetAcento: actions[index].assetAcento,
@@ -298,6 +326,7 @@ class _OperationActionCard extends StatelessWidget {
     required this.accentColor,
     required this.illustration,
     required this.onTap,
+    this.backgroundImageUrl,
     this.loading = false,
     this.height,
     this.compact = false,
@@ -308,6 +337,7 @@ class _OperationActionCard extends StatelessWidget {
   final Color accentColor;
   final Widget illustration;
   final VoidCallback? onTap;
+  final String? backgroundImageUrl;
   final bool loading;
   final double? height;
   final bool compact;
@@ -316,8 +346,13 @@ class _OperationActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool available = !loading && onTap != null;
     final VoidCallback? effectiveTap = available ? onTap : null;
-    final Color titleColor = accentColor;
-    final Color subtitleColor = SixMobilePalette.mutedText;
+    final bool contextual = backgroundImageUrl?.isNotEmpty ?? false;
+    final Color titleColor =
+        contextual ? SixMobilePalette.onPrimary : accentColor;
+    final Color subtitleColor =
+        contextual
+            ? SixMobilePalette.onPrimary.withAlpha(214)
+            : SixMobilePalette.mutedText;
     final Color borderColor = accentColor.withAlpha(58);
     final Color surfaceColor = SixMobilePalette.surface;
 
@@ -360,7 +395,51 @@ class _OperationActionCard extends StatelessWidget {
                 border: Border.all(color: borderColor),
               ),
               child: Stack(
+                fit: StackFit.expand,
                 children: <Widget>[
+                  if (contextual) ...<Widget>[
+                    Image.network(
+                      backgroundImageUrl!,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.center,
+                      filterQuality: FilterQuality.high,
+                      errorBuilder: (
+                        BuildContext context,
+                        Object error,
+                        StackTrace? stackTrace,
+                      ) {
+                        debugPrint(
+                          '[VendasMobile] Falha ao carregar imagem contextual '
+                          'url=$backgroundImageUrl error=$error',
+                        );
+                        return const SizedBox.shrink();
+                      },
+                      loadingBuilder:
+                          (
+                            BuildContext context,
+                            Widget child,
+                            ImageChunkEvent? loadingProgress,
+                          ) =>
+                              loadingProgress == null
+                                  ? child
+                                  : const SizedBox.shrink(),
+                    ),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          stops: const <double>[0, 0.48, 0.78, 1],
+                          colors: <Color>[
+                            const Color(0xF20A1320),
+                            const Color(0xD90A1320),
+                            const Color(0x660A1320),
+                            const Color(0x260A1320),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   Positioned(
                     left: 0,
                     top: 0,
@@ -411,6 +490,15 @@ class _OperationActionCard extends StatelessWidget {
                                               : (tight ? 17 : 18.5),
                                       height: 1.08,
                                       fontWeight: FontWeight.w900,
+                                      shadows:
+                                          contextual
+                                              ? const <Shadow>[
+                                                Shadow(
+                                                  color: Color(0xB3000000),
+                                                  blurRadius: 8,
+                                                ),
+                                              ]
+                                              : const <Shadow>[],
                                     ),
                                   ),
                                   SizedBox(height: compact ? 5 : 6),
@@ -431,15 +519,17 @@ class _OperationActionCard extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            SizedBox(width: tight ? 8 : 10),
-                            SizedBox.square(
-                              dimension: illustrationSize,
-                              child: _OperationIllustrationPane(
-                                accentColor: accentColor,
-                                enabled: available,
-                                child: illustration,
+                            if (!contextual) ...<Widget>[
+                              SizedBox(width: tight ? 8 : 10),
+                              SizedBox.square(
+                                dimension: illustrationSize,
+                                child: _OperationIllustrationPane(
+                                  accentColor: accentColor,
+                                  enabled: available,
+                                  child: illustration,
+                                ),
                               ),
-                            ),
+                            ],
                             SizedBox(width: tight ? 8 : 10),
                             _OperationActionTrailing(
                               accentColor: accentColor,
@@ -597,6 +687,7 @@ class _SaleActionData {
     required this.subtitle,
     required this.assetContorno,
     required this.assetAcento,
+    this.backgroundImageUrl,
     required this.accentColor,
     required this.onTap,
     this.loading = false,
@@ -609,6 +700,7 @@ class _SaleActionData {
   final String subtitle;
   final String assetContorno;
   final String assetAcento;
+  final String? backgroundImageUrl;
   final Color accentColor;
   final VoidCallback onTap;
   final bool loading;

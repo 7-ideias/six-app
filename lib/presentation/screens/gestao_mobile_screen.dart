@@ -18,10 +18,12 @@ import 'package:sixpos/presentation/components/mobile/management/management_sett
 import 'package:sixpos/presentation/components/mobile/management/management_settings_item_data.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_rotating_intro_card.dart';
 import 'package:sixpos/presentation/components/mobile_motion.dart';
+import 'package:sixpos/presentation/controllers/mobile_business_visual_context_controller.dart';
 import 'package:sixpos/presentation/components/mobile/six_imagem_canetinha.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_app_bar_profile_action.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_page_shell.dart';
 import 'package:sixpos/presentation/components/mobile/six_mobile_reorderable_card.dart';
+import 'package:sixpos/presentation/models/mobile_business_visual_assets.dart';
 import 'package:sixpos/presentation/navigation/mobile_navigation_controller.dart';
 import 'package:sixpos/presentation/screens/agenda_financeira_mobile_screen.dart';
 import 'package:sixpos/presentation/screens/catalog_health_mobile_screen.dart';
@@ -93,6 +95,7 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   final NotificacaoService _notificacaoService = NotificacaoService();
   final UsuarioService _usuarioService = UsuarioService();
   final UsuarioProvider _usuarioProvider = UsuarioProvider();
+  late final MobileBusinessVisualContextController _businessVisuals;
   List<GestaoMobileCardPreferencia> _ordemCardsGestaoMobile =
       List<GestaoMobileCardPreferencia>.of(GestaoMobileCardPreferencia.values);
   bool _ordemAlteradaNestaSessao = false;
@@ -109,6 +112,10 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
     }
     _notificacaoService.addListener(_onNotificacoesChanged);
     _usuarioProvider.addListener(_onUsuarioChanged);
+    _businessVisuals =
+        MobileBusinessVisualContextController(debugLabel: 'GestaoMobile')
+          ..addListener(_onBusinessVisualsChanged)
+          ..initialize();
     unawaited(_restaurarOrdemCardsGestaoMobile());
     _garantirWebSocketMobile();
   }
@@ -117,8 +124,18 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
   void dispose() {
     _notificacaoService.removeListener(_onNotificacoesChanged);
     _usuarioProvider.removeListener(_onUsuarioChanged);
+    _businessVisuals
+      ..removeListener(_onBusinessVisualsChanged)
+      ..dispose();
     super.dispose();
   }
+
+  void _onBusinessVisualsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  String? _gestaoImageUrl(GestaoMobileBusinessAsset asset) =>
+      _businessVisuals.assets?.gestaoUrl(asset);
 
   Future<void> _restaurarOrdemCardsGestaoMobile() async {
     final PreferenciasIndividuaisDoUsuarioModel? preferenciasCache =
@@ -355,6 +372,9 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             key: const ValueKey<String>('gestao-hub-intro'),
             delay: Duration(milliseconds: 40),
             child: _GestaoHubIntroCard(
+              backgroundImageUrl: _gestaoImageUrl(
+                GestaoMobileBusinessAsset.hero,
+              ),
               title: context.t(
                 'gestao.hub.title',
                 fallback: 'O que você quer gerenciar?',
@@ -445,69 +465,77 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             )!;
     final Color settingsAccent = isDark ? colors.accent : colors.primary;
 
-    final Map<GestaoMobileCardPreferencia, _GestaoHubActionData> actions =
-        <GestaoMobileCardPreferencia, _GestaoHubActionData>{
-          GestaoMobileCardPreferencia.catalogo: _GestaoHubActionData(
-            preferencia: GestaoMobileCardPreferencia.catalogo,
-            id: 'catalog',
-            title: _areaTitle(context, GestaoMobileArea.catalogo),
-            subtitle: context.t(
-              'gestao.catalog.subtitle',
-              fallback: 'Produtos, categorias e estoque',
-            ),
-            assetContorno: _catalogAssetContorno,
-            assetAcento: _catalogAssetAcento,
-            accentColor: catalogAccent,
-            brandStart: SixMobilePalette.brandCyan,
-            brandEnd: SixMobilePalette.brandBlue,
-            onTap: () => _openArea(GestaoMobileArea.catalogo),
-          ),
-          GestaoMobileCardPreferencia.pessoas: _GestaoHubActionData(
-            preferencia: GestaoMobileCardPreferencia.pessoas,
-            id: 'people',
-            title: _areaTitle(context, GestaoMobileArea.pessoas),
-            subtitle: context.t(
-              'gestao.people.subtitle',
-              fallback: 'Clientes, equipe e parceiros',
-            ),
-            assetContorno: _peopleAssetContorno,
-            assetAcento: _peopleAssetAcento,
-            accentColor: peopleAccent,
-            brandStart: SixMobilePalette.brandBlue,
-            brandEnd: SixMobilePalette.brandViolet,
-            onTap: () => _openArea(GestaoMobileArea.pessoas),
-          ),
-          GestaoMobileCardPreferencia.financeiro: _GestaoHubActionData(
-            preferencia: GestaoMobileCardPreferencia.financeiro,
-            id: 'finance',
-            title: _areaTitle(context, GestaoMobileArea.financeiro),
-            subtitle: context.t(
-              'gestao.finance.subtitle',
-              fallback: 'Contas, agenda e recebimentos',
-            ),
-            assetContorno: _financeAssetContorno,
-            assetAcento: _financeAssetAcento,
-            accentColor: financeAccent,
-            brandStart: SixMobilePalette.brandCyan,
-            brandEnd: SixMobilePalette.brandBlue,
-            onTap: () => _openArea(GestaoMobileArea.financeiro),
-          ),
-          GestaoMobileCardPreferencia.configuracoes: _GestaoHubActionData(
-            preferencia: GestaoMobileCardPreferencia.configuracoes,
-            id: 'settings',
-            title: _areaTitle(context, GestaoMobileArea.configuracoes),
-            subtitle: context.t(
-              'gestao.settings.subtitle',
-              fallback: 'Empresa, idioma e integrações',
-            ),
-            assetContorno: _settingsAssetContorno,
-            assetAcento: _settingsAssetAcento,
-            accentColor: settingsAccent,
-            brandStart: SixMobilePalette.brandBlue,
-            brandEnd: SixMobilePalette.brandViolet,
-            onTap: () => _openArea(GestaoMobileArea.configuracoes),
-          ),
-        };
+    final Map<GestaoMobileCardPreferencia, _GestaoHubActionData>
+    actions = <GestaoMobileCardPreferencia, _GestaoHubActionData>{
+      GestaoMobileCardPreferencia.catalogo: _GestaoHubActionData(
+        preferencia: GestaoMobileCardPreferencia.catalogo,
+        id: 'catalog',
+        title: _areaTitle(context, GestaoMobileArea.catalogo),
+        subtitle: context.t(
+          'gestao.catalog.subtitle',
+          fallback: 'Produtos, categorias e estoque',
+        ),
+        assetContorno: _catalogAssetContorno,
+        assetAcento: _catalogAssetAcento,
+        backgroundImageUrl: _gestaoImageUrl(GestaoMobileBusinessAsset.catalogo),
+        accentColor: catalogAccent,
+        brandStart: SixMobilePalette.brandCyan,
+        brandEnd: SixMobilePalette.brandBlue,
+        onTap: () => _openArea(GestaoMobileArea.catalogo),
+      ),
+      GestaoMobileCardPreferencia.pessoas: _GestaoHubActionData(
+        preferencia: GestaoMobileCardPreferencia.pessoas,
+        id: 'people',
+        title: _areaTitle(context, GestaoMobileArea.pessoas),
+        subtitle: context.t(
+          'gestao.people.subtitle',
+          fallback: 'Clientes, equipe e parceiros',
+        ),
+        assetContorno: _peopleAssetContorno,
+        assetAcento: _peopleAssetAcento,
+        backgroundImageUrl: _gestaoImageUrl(GestaoMobileBusinessAsset.pessoas),
+        accentColor: peopleAccent,
+        brandStart: SixMobilePalette.brandBlue,
+        brandEnd: SixMobilePalette.brandViolet,
+        onTap: () => _openArea(GestaoMobileArea.pessoas),
+      ),
+      GestaoMobileCardPreferencia.financeiro: _GestaoHubActionData(
+        preferencia: GestaoMobileCardPreferencia.financeiro,
+        id: 'finance',
+        title: _areaTitle(context, GestaoMobileArea.financeiro),
+        subtitle: context.t(
+          'gestao.finance.subtitle',
+          fallback: 'Contas, agenda e recebimentos',
+        ),
+        assetContorno: _financeAssetContorno,
+        assetAcento: _financeAssetAcento,
+        backgroundImageUrl: _gestaoImageUrl(
+          GestaoMobileBusinessAsset.financeiro,
+        ),
+        accentColor: financeAccent,
+        brandStart: SixMobilePalette.brandCyan,
+        brandEnd: SixMobilePalette.brandBlue,
+        onTap: () => _openArea(GestaoMobileArea.financeiro),
+      ),
+      GestaoMobileCardPreferencia.configuracoes: _GestaoHubActionData(
+        preferencia: GestaoMobileCardPreferencia.configuracoes,
+        id: 'settings',
+        title: _areaTitle(context, GestaoMobileArea.configuracoes),
+        subtitle: context.t(
+          'gestao.settings.subtitle',
+          fallback: 'Empresa, idioma e integrações',
+        ),
+        assetContorno: _settingsAssetContorno,
+        assetAcento: _settingsAssetAcento,
+        backgroundImageUrl: _gestaoImageUrl(
+          GestaoMobileBusinessAsset.configuracoes,
+        ),
+        accentColor: settingsAccent,
+        brandStart: SixMobilePalette.brandBlue,
+        brandEnd: SixMobilePalette.brandViolet,
+        onTap: () => _openArea(GestaoMobileArea.configuracoes),
+      ),
+    };
     return _ordemCardsGestaoMobile
         .map((GestaoMobileCardPreferencia item) => actions[item]!)
         .toList(growable: false);
@@ -1315,10 +1343,8 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
             subtitle: perfilNegocioText(context, 'description'),
             icon: Icons.auto_awesome_outlined,
             maturity: ManagementSettingsMaturity.functional,
-            onTap: () => _navigateTo(
-              context,
-              const PerfilNegocioMobileScreen(),
-            ),
+            onTap:
+                () => _navigateTo(context, const PerfilNegocioMobileScreen()),
           ),
           ManagementSettingsItemData(
             title: context.t(
@@ -1476,16 +1502,22 @@ class _GestaoMobileScreenState extends State<GestaoMobileScreen> {
 }
 
 class _GestaoHubIntroCard extends StatelessWidget {
-  const _GestaoHubIntroCard({required this.title, required this.subtitles});
+  const _GestaoHubIntroCard({
+    required this.title,
+    required this.subtitles,
+    this.backgroundImageUrl,
+  });
 
   final String title;
   final List<String> subtitles;
+  final String? backgroundImageUrl;
 
   @override
   Widget build(BuildContext context) {
     return SixMobileRotatingIntroCard(
       title: title,
       subtitles: subtitles,
+      backgroundImageUrl: backgroundImageUrl,
       markChild: const _GestaoHubMark(),
     );
   }
@@ -1530,6 +1562,7 @@ class _GestaoHubActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool contextual = data.backgroundImageUrl?.isNotEmpty ?? false;
 
     return Semantics(
       container: true,
@@ -1544,7 +1577,7 @@ class _GestaoHubActionCard extends StatelessWidget {
             BoxShadow(
               color: data.brandEnd.withAlpha(isDark ? 30 : 17),
               blurRadius: 16,
-              offset: Offset(0, 8),
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -1576,133 +1609,263 @@ class _GestaoHubActionCard extends StatelessWidget {
             child: InkWell(
               borderRadius: BorderRadius.circular(22),
               onTap: data.onTap,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(10, 11, 10, 10),
-                child: Column(
-                  children: <Widget>[
-                    Expanded(
-                      child: Center(
-                        child: Container(
-                          width: 104,
-                          height: 104,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: <Color>[
-                                data.brandStart.withAlpha(isDark ? 92 : 54),
-                                data.brandEnd.withAlpha(isDark ? 58 : 34),
-                              ],
-                            ),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: data.accentColor.withAlpha(
-                                isDark ? 108 : 82,
-                              ),
-                            ),
-                            boxShadow:
-                                isDark
-                                    ? <BoxShadow>[
-                                      BoxShadow(
-                                        color: data.brandStart.withAlpha(64),
-                                        blurRadius: 20,
-                                      ),
-                                    ]
-                                    : const <BoxShadow>[],
-                          ),
-                          child: Center(
-                            child: SixImagemCanetinha(
-                              assetContorno: data.assetContorno,
-                              assetAcento: data.assetAcento,
-                              largura: 88,
-                              altura: 88,
-                              fit: BoxFit.contain,
-                              corContorno: colors.titleText,
-                              corAcento: data.accentColor,
-                              gradienteContorno: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: <Color>[
-                                  Color.lerp(
-                                    data.brandStart,
-                                    colors.titleText,
-                                    isDark ? 0.28 : 0.08,
-                                  )!,
-                                  Color.lerp(
-                                    data.brandEnd,
-                                    colors.titleText,
-                                    isDark ? 0.48 : 0.20,
-                                  )!,
-                                ],
-                              ),
-                              gradienteAcento: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: <Color>[
-                                  data.accentColor,
-                                  data.brandEnd,
-                                ],
-                              ),
-                              reforcoContorno: 0.58,
-                              reforcoAcento: 0.72,
-                              opacidadeReforco: isDark ? 0.52 : 0.42,
-                              opacidadeBrilho: isDark ? 0.48 : 0.16,
-                              desfoqueBrilho: 4,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Text(
-                      data.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: data.accentColor,
-                        fontSize: 14.5,
-                        height: 1.08,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    Text(
-                      data.subtitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: colors.mutedText,
-                        fontSize: 10.7,
-                        height: 1.16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    ExcludeSemantics(
-                      child: Container(
-                        width: 27,
-                        height: 27,
+              child:
+                  contextual
+                      ? _buildContextualContent(context)
+                      : _buildLegacyContent(context),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContextualContent(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final String url = data.backgroundImageUrl!;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        Image.network(
+          url,
+          fit: BoxFit.cover,
+          alignment: Alignment.topCenter,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (
+            BuildContext context,
+            Object error,
+            StackTrace? stackTrace,
+          ) {
+            debugPrint(
+              '[GestaoMobile] Falha ao carregar imagem contextual '
+              'url=$url error=$error',
+            );
+            return DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: <Color>[data.brandStart, data.brandEnd],
+                ),
+              ),
+            );
+          },
+          loadingBuilder:
+              (
+                BuildContext context,
+                Widget child,
+                ImageChunkEvent? loadingProgress,
+              ) =>
+                  loadingProgress == null
+                      ? child
+                      : DecoratedBox(
                         decoration: BoxDecoration(
-                          color: data.accentColor.withAlpha(isDark ? 34 : 20),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: data.accentColor.withAlpha(isDark ? 74 : 48),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: <Color>[data.brandStart, data.brandEnd],
                           ),
                         ),
-                        child: Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 15,
-                          color: data.accentColor,
-                        ),
                       ),
-                    ),
+        ),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: const <double>[0, 0.42, 0.68, 1],
+              colors: <Color>[
+                Color(0x1200163A),
+                Color(0x4200163A),
+                Color(0xC900163A),
+                SixMobilePalette.brandNavyDeep,
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          left: 10,
+          right: 10,
+          bottom: 10,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                data.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: SixMobilePalette.onPrimary,
+                  fontSize: 14.5,
+                  height: 1.08,
+                  fontWeight: FontWeight.w900,
+                  shadows: <Shadow>[
+                    Shadow(color: Color(0x99000000), blurRadius: 8),
                   ],
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                data.subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: SixMobilePalette.onPrimary.withAlpha(218),
+                  fontSize: 10.7,
+                  height: 1.16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ExcludeSemantics(
+                child: Container(
+                  width: 27,
+                  height: 27,
+                  decoration: BoxDecoration(
+                    color: data.accentColor.withAlpha(isDark ? 56 : 46),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: data.accentColor.withAlpha(isDark ? 120 : 96),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 15,
+                    color: SixMobilePalette.onPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLegacyContent(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 11, 10, 10),
+      child: Column(
+        children: <Widget>[
+          Expanded(
+            child: Center(
+              child: Container(
+                width: 104,
+                height: 104,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: <Color>[
+                      data.brandStart.withAlpha(isDark ? 92 : 54),
+                      data.brandEnd.withAlpha(isDark ? 58 : 34),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: data.accentColor.withAlpha(isDark ? 108 : 82),
+                  ),
+                  boxShadow:
+                      isDark
+                          ? <BoxShadow>[
+                            BoxShadow(
+                              color: data.brandStart.withAlpha(64),
+                              blurRadius: 20,
+                            ),
+                          ]
+                          : const <BoxShadow>[],
+                ),
+                child: Center(
+                  child: SixImagemCanetinha(
+                    assetContorno: data.assetContorno,
+                    assetAcento: data.assetAcento,
+                    largura: 88,
+                    altura: 88,
+                    fit: BoxFit.contain,
+                    corContorno: colors.titleText,
+                    corAcento: data.accentColor,
+                    gradienteContorno: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: <Color>[
+                        Color.lerp(
+                          data.brandStart,
+                          colors.titleText,
+                          isDark ? 0.28 : 0.08,
+                        )!,
+                        Color.lerp(
+                          data.brandEnd,
+                          colors.titleText,
+                          isDark ? 0.48 : 0.20,
+                        )!,
+                      ],
+                    ),
+                    gradienteAcento: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: <Color>[data.accentColor, data.brandEnd],
+                    ),
+                    reforcoContorno: 0.58,
+                    reforcoAcento: 0.72,
+                    opacidadeReforco: isDark ? 0.52 : 0.42,
+                    opacidadeBrilho: isDark ? 0.48 : 0.16,
+                    desfoqueBrilho: 4,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+          Text(
+            data.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: data.accentColor,
+              fontSize: 14.5,
+              height: 1.08,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            data.subtitle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colors.mutedText,
+              fontSize: 10.7,
+              height: 1.16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ExcludeSemantics(
+            child: Container(
+              width: 27,
+              height: 27,
+              decoration: BoxDecoration(
+                color: data.accentColor.withAlpha(isDark ? 34 : 20),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: data.accentColor.withAlpha(isDark ? 74 : 48),
+                ),
+              ),
+              child: Icon(
+                Icons.arrow_forward_rounded,
+                size: 15,
+                color: data.accentColor,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1716,6 +1879,7 @@ class _GestaoHubActionData {
     required this.subtitle,
     required this.assetContorno,
     required this.assetAcento,
+    this.backgroundImageUrl,
     required this.accentColor,
     required this.brandStart,
     required this.brandEnd,
@@ -1728,6 +1892,7 @@ class _GestaoHubActionData {
   final String subtitle;
   final String assetContorno;
   final String assetAcento;
+  final String? backgroundImageUrl;
   final Color accentColor;
   final Color brandStart;
   final Color brandEnd;
