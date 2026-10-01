@@ -20,6 +20,9 @@ class AtendimentoMobileBusinessAssets {
 
   final String profileFolder;
 
+  bool get usesFullCard =>
+      profileFolder == 'automotivo' || profileFolder == 'moda';
+
   static AtendimentoMobileBusinessAssets? fromPerfil(
     PerfilNegocioModel perfil,
   ) {
