@@ -16,6 +16,8 @@ enum AtendimentoMobileBusinessAsset {
 class AtendimentoMobileBusinessAssets {
   const AtendimentoMobileBusinessAssets._(this.profileFolder);
 
+  static const String assetRevision = '20261001-fullcard';
+
   final String profileFolder;
 
   static AtendimentoMobileBusinessAssets? fromPerfil(
@@ -53,6 +55,11 @@ class AtendimentoMobileBusinessAssets {
       RegExp(r'/+$'),
       '',
     );
-    return '$base/atendimento/mobile/$profileFolder/${asset.fileName}';
+    final Uri uri = Uri.parse(
+      '$base/atendimento/mobile/$profileFolder/${asset.fileName}',
+    );
+    return uri.replace(
+      queryParameters: <String, String>{'rev': assetRevision},
+    ).toString();
   }
 }
