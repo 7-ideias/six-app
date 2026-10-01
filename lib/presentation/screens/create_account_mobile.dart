@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:sixpos/core/utils/legal_links.dart';
 import 'package:sixpos/design_system/themes/six_mobile_color_scheme.dart';
 import 'package:sixpos/design_system/themes/six_mobile_palette.dart';
 import 'package:sixpos/l10n/six_i18n.dart';
@@ -47,7 +49,9 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
   String get _languageTag => Localizations.localeOf(context).toLanguageTag();
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   bool _validateTerms() {
@@ -55,7 +59,8 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
     _showSnack(
       context.t(
         'auth.mobileCreate.acceptTermsError',
-        fallback: 'Aceite os Termos e a Política de Privacidade para continuar.',
+        fallback:
+            'Aceite os Termos e a Política de Privacidade para continuar.',
       ),
     );
     return false;
@@ -120,21 +125,22 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
   String _googleMessage(GoogleAuthException error) {
     return switch (error.code) {
       GoogleAuthErrorCode.invalidExistingPassword => context.t(
-          'auth.googleLink.invalidPassword',
-          fallback: 'A senha atual informada não foi aceita.',
-        ),
+        'auth.googleLink.invalidPassword',
+        fallback: 'A senha atual informada não foi aceita.',
+      ),
       GoogleAuthErrorCode.termsRequired => context.t(
-          'auth.mobileCreate.acceptTermsError',
-          fallback: 'Aceite os Termos e a Política de Privacidade para continuar.',
-        ),
+        'auth.mobileCreate.acceptTermsError',
+        fallback:
+            'Aceite os Termos e a Política de Privacidade para continuar.',
+      ),
       GoogleAuthErrorCode.unavailable => context.t(
-          'auth.googleUnavailable',
-          fallback: 'O cadastro com Google está temporariamente indisponível.',
-        ),
+        'auth.googleUnavailable',
+        fallback: 'O cadastro com Google está temporariamente indisponível.',
+      ),
       GoogleAuthErrorCode.network => context.t(
-          'auth.googleNetworkError',
-          fallback: 'Falha de conexão. Verifique sua internet e tente novamente.',
-        ),
+        'auth.googleNetworkError',
+        fallback: 'Falha de conexão. Verifique sua internet e tente novamente.',
+      ),
       _ => error.message,
     };
   }
@@ -254,9 +260,10 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
           const SizedBox(height: 16),
           _TermsAgreement(
             value: _agreeTerms,
-            onChanged: _isLoading
-                ? null
-                : (bool value) => setState(() => _agreeTerms = value),
+            onChanged:
+                _isLoading
+                    ? null
+                    : (bool value) => setState(() => _agreeTerms = value),
           ),
           const SizedBox(height: 18),
           SixoAppAuthSecondaryButton(
@@ -294,13 +301,16 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
               _showTraditional
                   ? 'auth.mobileCreate.hideTraditional'
                   : 'auth.mobileCreate.showTraditional',
-              fallback: _showTraditional
-                  ? 'Ocultar cadastro com login e senha'
-                  : 'Criar com login e senha',
+              fallback:
+                  _showTraditional
+                      ? 'Ocultar cadastro com login e senha'
+                      : 'Criar com login e senha',
             ),
-            onPressed: _isLoading
-                ? null
-                : () => setState(() => _showTraditional = !_showTraditional),
+            onPressed:
+                _isLoading
+                    ? null
+                    : () =>
+                        setState(() => _showTraditional = !_showTraditional),
             leading: Icon(
               _showTraditional
                   ? Icons.expand_less_rounded
@@ -310,9 +320,10 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
           ),
           AnimatedCrossFade(
             duration: const Duration(milliseconds: 220),
-            crossFadeState: _showTraditional
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
+            crossFadeState:
+                _showTraditional
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
             firstChild: const SizedBox.shrink(),
             secondChild: Padding(
               padding: const EdgeInsets.only(top: 18),
@@ -359,7 +370,10 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
         const SizedBox(height: 14),
         SixoAppAuthField(
           controller: _passwordController,
-          label: context.t('auth.mobileCreate.passwordLabel', fallback: 'Senha'),
+          label: context.t(
+            'auth.mobileCreate.passwordLabel',
+            fallback: 'Senha',
+          ),
           hint: context.t(
             'auth.mobileCreate.passwordHint',
             fallback: 'Mínimo de 8 caracteres',
@@ -439,20 +453,56 @@ class _CreateAccountMobileState extends State<CreateAccountMobile> {
   }
 }
 
-class _TermsAgreement extends StatelessWidget {
+class _TermsAgreement extends StatefulWidget {
   const _TermsAgreement({required this.value, required this.onChanged});
 
   final bool value;
   final ValueChanged<bool>? onChanged;
 
   @override
+  State<_TermsAgreement> createState() => _TermsAgreementState();
+}
+
+class _TermsAgreementState extends State<_TermsAgreement> {
+  late final TapGestureRecognizer _termsRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _termsRecognizer =
+        TapGestureRecognizer()..onTap = LegalLinks.openTermsOfService;
+  }
+
+  @override
+  void dispose() {
+    _termsRecognizer.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
+    final String prefix = context.t(
+      'auth.termsAgreement.prefix',
+      fallback: 'Concordo com os ',
+    );
+    final String terms = context.t(
+      'auth.termsOfService',
+      fallback: 'Termos de Serviço',
+    );
+    final String suffix = context.t(
+      'auth.termsAgreement.suffix',
+      fallback: ' e a Política de Privacidade.',
+    );
+
     return Semantics(
-      checked: value,
+      checked: widget.value,
       button: true,
       child: InkWell(
-        onTap: onChanged == null ? null : () => onChanged!(!value),
+        onTap:
+            widget.onChanged == null
+                ? null
+                : () => widget.onChanged!(!widget.value),
         borderRadius: BorderRadius.circular(14),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -462,10 +512,12 @@ class _TermsAgreement extends StatelessWidget {
               SizedBox.square(
                 dimension: 32,
                 child: Checkbox(
-                  value: value,
-                  onChanged: onChanged == null
-                      ? null
-                      : (bool? checked) => onChanged!(checked ?? false),
+                  value: widget.value,
+                  onChanged:
+                      widget.onChanged == null
+                          ? null
+                          : (bool? checked) =>
+                              widget.onChanged!(checked ?? false),
                   activeColor: SixMobilePalette.brandBlue,
                   checkColor: SixMobilePalette.onPrimary,
                   shape: RoundedRectangleBorder(
@@ -475,17 +527,27 @@ class _TermsAgreement extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  context.t(
-                    'auth.mobileCreate.acceptTerms',
-                    fallback:
-                        'Concordo com os Termos de Serviço e a Política de Privacidade.',
-                  ),
-                  style: TextStyle(
-                    color: colors.titleText,
-                    fontSize: 13,
-                    height: 1.4,
-                    fontWeight: FontWeight.w500,
+                child: Text.rich(
+                  TextSpan(
+                    style: TextStyle(
+                      color: colors.titleText,
+                      fontSize: 13,
+                      height: 1.4,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    children: <InlineSpan>[
+                      TextSpan(text: prefix),
+                      TextSpan(
+                        text: terms,
+                        recognizer: _termsRecognizer,
+                        style: const TextStyle(
+                          color: SixMobilePalette.brandBlue,
+                          fontWeight: FontWeight.w800,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                      TextSpan(text: suffix),
+                    ],
                   ),
                 ),
               ),

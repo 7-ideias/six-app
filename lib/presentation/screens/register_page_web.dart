@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:sixpos/core/utils/browser_location.dart';
+import 'package:sixpos/core/utils/legal_links.dart';
 import 'package:sixpos/l10n/web_root_l10n.dart';
 
 import '../../core/services/nova_empresa_service.dart';
@@ -28,10 +30,13 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
   String? _passwordMismatchError;
 
   late WebRootL10n _l10n;
+  late final TapGestureRecognizer _termsRecognizer;
 
   @override
   void initState() {
     super.initState();
+    _termsRecognizer =
+        TapGestureRecognizer()..onTap = LegalLinks.openTermsOfService;
     _passwordCtrl.addListener(_validatePasswordsMatch);
     _confirmPasswordCtrl.addListener(_validatePasswordsMatch);
   }
@@ -41,6 +46,7 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
     _loginCtrl.dispose();
     _passwordCtrl.dispose();
     _confirmPasswordCtrl.dispose();
+    _termsRecognizer.dispose();
     super.dispose();
   }
 
@@ -134,7 +140,10 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
           onBack: _goToLogin,
           child: WebAuthStaggeredColumn(
             children: <Widget>[
-              WebAuthTitle(title: _l10n.authRegisterTitle, subtitle: _l10n.authRegisterSubtitle),
+              WebAuthTitle(
+                title: _l10n.authRegisterTitle,
+                subtitle: _l10n.authRegisterSubtitle,
+              ),
               const SizedBox(height: 28),
               WebAuthTextField(
                 controller: _loginCtrl,
@@ -152,11 +161,15 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                 textInputAction: TextInputAction.next,
                 suffix: IconButton(
                   icon: Icon(
-                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    _obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     color: WebAuthShell.labelGrey(),
                     size: 20,
                   ),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  onPressed:
+                      () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
               const SizedBox(height: 14),
@@ -169,11 +182,17 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                 onSubmitted: (_) => _signUp(),
                 suffix: IconButton(
                   icon: Icon(
-                    _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    _obscureConfirmPassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     color: WebAuthShell.labelGrey(),
                     size: 20,
                   ),
-                  onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                  onPressed:
+                      () => setState(
+                        () =>
+                            _obscureConfirmPassword = !_obscureConfirmPassword,
+                      ),
                 ),
               ),
               if (_passwordMismatchError != null) ...<Widget>[
@@ -182,7 +201,10 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                   padding: const EdgeInsets.only(left: 4),
                   child: Text(
                     _passwordMismatchError!,
-                    style: const TextStyle(color: Color(0xFFD32F2F), fontSize: 12),
+                    style: const TextStyle(
+                      color: Color(0xFFD32F2F),
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
@@ -199,10 +221,15 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                         height: 22,
                         child: Checkbox(
                           value: _agreeTerms,
-                          onChanged: (bool? v) => setState(() => _agreeTerms = v ?? false),
+                          onChanged:
+                              (bool? v) =>
+                                  setState(() => _agreeTerms = v ?? false),
                           activeColor: primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
                           visualDensity: VisualDensity.compact,
                         ),
                       ),
@@ -210,12 +237,21 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                       Expanded(
                         child: RichText(
                           text: TextSpan(
-                            style: TextStyle(fontSize: 13.5, color: WebAuthShell.textDark(), height: 1.4),
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              color: WebAuthShell.textDark(),
+                              height: 1.4,
+                            ),
                             children: <InlineSpan>[
                               TextSpan(text: _l10n.authAgreeWith),
                               TextSpan(
                                 text: _l10n.authTermsAndConditions,
-                                style: TextStyle(color: primary, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
+                                recognizer: _termsRecognizer,
+                                style: TextStyle(
+                                  color: primary,
+                                  fontWeight: FontWeight.w600,
+                                  decoration: TextDecoration.underline,
+                                ),
                               ),
                             ],
                           ),
@@ -226,7 +262,11 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                 ),
               ),
               const SizedBox(height: 20),
-              WebAuthPrimaryButton(label: _l10n.authCreateAccountButton, onPressed: _signUp, isLoading: _isLoading),
+              WebAuthPrimaryButton(
+                label: _l10n.authCreateAccountButton,
+                onPressed: _signUp,
+                isLoading: _isLoading,
+              ),
               const SizedBox(height: 24),
               Center(
                 child: MouseRegion(
@@ -236,10 +276,19 @@ class _RegisterPageWebState extends State<RegisterPageWeb> {
                     behavior: HitTestBehavior.opaque,
                     child: RichText(
                       text: TextSpan(
-                        style: TextStyle(fontSize: 14, color: WebAuthShell.labelGrey()),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: WebAuthShell.labelGrey(),
+                        ),
                         children: <InlineSpan>[
                           TextSpan(text: _l10n.authAlreadyHaveAccount),
-                          TextSpan(text: _l10n.authSignInLink, style: TextStyle(color: primary, fontWeight: FontWeight.w700)),
+                          TextSpan(
+                            text: _l10n.authSignInLink,
+                            style: TextStyle(
+                              color: primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ],
                       ),
                     ),

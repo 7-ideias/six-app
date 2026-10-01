@@ -23,7 +23,6 @@ Future<bool> showSixMobileLogoutSheet(BuildContext context) async {
           'account.settings.logout.confirmSubtitle',
           fallback: 'Deslize para encerrar sua sessão neste aparelho.',
         ),
-        cancelLabel: context.t('common.cancel', fallback: 'Cancelar'),
         swipeLabel: context.t(
           'account.settings.logout.swipeHint',
           fallback: 'Deslize para sair',
@@ -33,7 +32,6 @@ Future<bool> showSixMobileLogoutSheet(BuildContext context) async {
           fallback: 'Deslize para confirmar a saída da conta',
         ),
         onConfirmed: () => Navigator.of(popupContext).pop(true),
-        onCancel: () => Navigator.of(popupContext).pop(false),
       );
     },
   );
@@ -41,24 +39,55 @@ Future<bool> showSixMobileLogoutSheet(BuildContext context) async {
   return confirmed ?? false;
 }
 
-class _SixMobileLogoutSheet extends StatelessWidget {
+class _SixMobileLogoutSheet extends StatefulWidget {
   const _SixMobileLogoutSheet({
     required this.title,
     required this.subtitle,
-    required this.cancelLabel,
     required this.swipeLabel,
     required this.swipeSemantics,
     required this.onConfirmed,
-    required this.onCancel,
   });
 
   final String title;
   final String subtitle;
-  final String cancelLabel;
   final String swipeLabel;
   final String swipeSemantics;
   final VoidCallback onConfirmed;
-  final VoidCallback onCancel;
+
+  @override
+  State<_SixMobileLogoutSheet> createState() => _SixMobileLogoutSheetState();
+}
+
+class _SixMobileLogoutSheetState extends State<_SixMobileLogoutSheet> {
+  double _dragDistance = 0;
+  bool _dismissed = false;
+
+  void _updateDismissDrag(DragUpdateDetails details) {
+    if (_dismissed) return;
+    _dragDistance = (_dragDistance + (details.primaryDelta ?? 0)).clamp(
+      0,
+      double.infinity,
+    );
+    if (_dragDistance >= 56) {
+      _dismiss();
+    }
+  }
+
+  void _finishDismissDrag(DragEndDetails details) {
+    if (_dismissed) return;
+    final double velocity = details.primaryVelocity ?? 0;
+    if (velocity > 360 || _dragDistance >= 40) {
+      _dismiss();
+      return;
+    }
+    _dragDistance = 0;
+  }
+
+  void _dismiss() {
+    if (_dismissed) return;
+    _dismissed = true;
+    Navigator.of(context).pop(false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,147 +95,134 @@ class _SixMobileLogoutSheet extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      child: SafeArea(
-        top: false,
-        minimum: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30),
-                    boxShadow: <BoxShadow>[
-                      BoxShadow(
-                        color: colors.navigationShadow.withValues(alpha: 0.72),
-                        blurRadius: 34,
-                        offset: const Offset(0, 14),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: colors.surface.withValues(alpha: 0.96),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(
-                            color: colors.strongBorder.withValues(alpha: 0.58),
-                            width: 0.7,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(18, 10, 18, 20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Container(
-                                width: 36,
-                                height: 5,
-                                decoration: BoxDecoration(
-                                  color: colors.strongBorder.withValues(
-                                    alpha: 0.72,
-                                  ),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: colors.error.withValues(alpha: 0.10),
-                                  border: Border.all(
-                                    color: colors.error.withValues(alpha: 0.24),
-                                  ),
-                                ),
-                                child: Icon(
-                                  CupertinoIcons.power,
-                                  color: colors.error,
-                                  size: 23,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: colors.titleText,
-                                  fontSize: 20,
-                                  height: 1.15,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                subtitle,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: colors.mutedText,
-                                  fontSize: 13,
-                                  height: 1.38,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              _SixMobileLogoutSlider(
-                                label: swipeLabel,
-                                semanticsLabel: swipeSemantics,
-                                onConfirmed: onConfirmed,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                CupertinoButton(
-                  key: const ValueKey<String>('six-mobile-logout-cancel'),
-                  minSize: 0,
-                  padding: EdgeInsets.zero,
-                  pressedOpacity: 0.68,
-                  onPressed: onCancel,
-                  child: Container(
-                    width: double.infinity,
-                    height: 54,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: colors.surface.withValues(alpha: 0.96),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: colors.strongBorder.withValues(alpha: 0.52),
-                        width: 0.7,
-                      ),
-                    ),
-                    child: Text(
-                      cancelLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: colors.accent,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+      child: Stack(
+        children: <Widget>[
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _dismiss,
             ),
           ),
-        ),
+          SafeArea(
+            top: false,
+            minimum: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {},
+                onVerticalDragUpdate: _updateDismissDrag,
+                onVerticalDragEnd: _finishDismissDrag,
+                onVerticalDragCancel: () => _dragDistance = 0,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: <BoxShadow>[
+                        BoxShadow(
+                          color: colors.navigationShadow.withValues(
+                            alpha: 0.72,
+                          ),
+                          blurRadius: 34,
+                          offset: const Offset(0, 14),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(30),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: colors.surface.withValues(alpha: 0.96),
+                            borderRadius: BorderRadius.circular(30),
+                            border: Border.all(
+                              color: colors.strongBorder.withValues(
+                                alpha: 0.58,
+                              ),
+                              width: 0.7,
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(18, 10, 18, 20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Container(
+                                  width: 36,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    color: colors.strongBorder.withValues(
+                                      alpha: 0.72,
+                                    ),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: colors.error.withValues(alpha: 0.10),
+                                    border: Border.all(
+                                      color: colors.error.withValues(
+                                        alpha: 0.24,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    CupertinoIcons.power,
+                                    color: colors.error,
+                                    size: 23,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  widget.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: colors.titleText,
+                                    fontSize: 20,
+                                    height: 1.15,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  widget.subtitle,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: colors.mutedText,
+                                    fontSize: 13,
+                                    height: 1.38,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                _SixMobileLogoutSlider(
+                                  label: widget.swipeLabel,
+                                  semanticsLabel: widget.swipeSemantics,
+                                  onConfirmed: widget.onConfirmed,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -368,6 +384,22 @@ class _SixMobileLogoutSliderState extends State<_SixMobileLogoutSlider>
                 animation: _progressController,
                 builder: (BuildContext context, Widget? child) {
                   final double progress = _progressController.value;
+                  final double visualProgress = Curves.easeOutCubic.transform(
+                    progress,
+                  );
+                  final double labelOpacity = (1 - (progress * 1.05)).clamp(
+                    0.18,
+                    1.0,
+                  );
+                  final Color thumbColor =
+                      Color.lerp(
+                        colors.surfaceElevated,
+                        colors.error.withValues(alpha: 0.92),
+                        visualProgress,
+                      )!;
+                  final Color iconColor =
+                      progress > 0.58 ? colors.surface : colors.error;
+
                   return SizedBox(
                     height: _height,
                     child: DecoratedBox(
@@ -398,19 +430,48 @@ class _SixMobileLogoutSliderState extends State<_SixMobileLogoutSlider>
                         child: Stack(
                           alignment: Alignment.center,
                           children: <Widget>[
-                            Positioned.fill(
-                              child: FractionallySizedBox(
-                                alignment: Alignment.centerLeft,
-                                widthFactor: progress,
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: <Color>[
-                                        colors.error.withValues(alpha: 0.06),
-                                        colors.error.withValues(alpha: 0.18),
-                                      ],
-                                    ),
+                            Positioned(
+                              left: _inset,
+                              top: _inset,
+                              bottom: _inset,
+                              width: _thumbSize + (visualProgress * maxTravel),
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(999),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                    colors: <Color>[
+                                      colors.error.withValues(alpha: 0.08),
+                                      colors.error.withValues(
+                                        alpha: 0.12 + (visualProgress * 0.12),
+                                      ),
+                                    ],
                                   ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              right: 20 - (visualProgress * 8),
+                              child: Opacity(
+                                opacity: (0.30 - (visualProgress * 0.24)).clamp(
+                                  0.0,
+                                  0.30,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    Icon(
+                                      CupertinoIcons.chevron_right,
+                                      color: colors.mutedText,
+                                      size: 13,
+                                    ),
+                                    Icon(
+                                      CupertinoIcons.chevron_right,
+                                      color: colors.mutedText,
+                                      size: 13,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -418,37 +479,41 @@ class _SixMobileLogoutSliderState extends State<_SixMobileLogoutSlider>
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 64,
                               ),
-                              child: Opacity(
-                                opacity: (1 - (progress * 1.45)).clamp(
-                                  0.0,
-                                  1.0,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    Flexible(
-                                      child: Text(
-                                        widget.label,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: colors.mutedText,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          letterSpacing: -0.1,
+                              child: Transform.translate(
+                                offset: Offset(visualProgress * 8, 0),
+                                child: Opacity(
+                                  opacity: labelOpacity,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      Flexible(
+                                        child: Text(
+                                          widget.label,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Color.lerp(
+                                              colors.mutedText,
+                                              colors.titleText,
+                                              visualProgress * 0.45,
+                                            ),
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 0,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Icon(
-                                      CupertinoIcons.chevron_right,
-                                      color: colors.mutedText.withValues(
-                                        alpha: 0.74,
+                                      const SizedBox(width: 6),
+                                      Icon(
+                                        CupertinoIcons.chevron_right,
+                                        color: colors.mutedText.withValues(
+                                          alpha: 0.74,
+                                        ),
+                                        size: 15,
                                       ),
-                                      size: 15,
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -464,23 +529,26 @@ class _SixMobileLogoutSliderState extends State<_SixMobileLogoutSlider>
                                   height: _thumbSize,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: Color.lerp(
-                                      colors.surfaceElevated,
-                                      colors.error,
-                                      progress,
-                                    ),
+                                    color: thumbColor,
                                     border: Border.all(
                                       color: colors.error.withValues(
-                                        alpha: 0.28 + (progress * 0.32),
+                                        alpha: 0.24 + (visualProgress * 0.34),
                                       ),
                                       width: 0.9,
                                     ),
                                     boxShadow: <BoxShadow>[
                                       BoxShadow(
                                         color: colors.navigationShadow
-                                            .withValues(alpha: 0.58),
-                                        blurRadius: _dragging ? 16 : 11,
-                                        offset: const Offset(0, 4),
+                                            .withValues(alpha: 0.42),
+                                        blurRadius: _dragging ? 18 : 12,
+                                        offset: Offset(0, _dragging ? 7 : 4),
+                                      ),
+                                      BoxShadow(
+                                        color: colors.error.withValues(
+                                          alpha: visualProgress * 0.20,
+                                        ),
+                                        blurRadius: 18,
+                                        spreadRadius: 1,
                                       ),
                                     ],
                                   ),
@@ -488,10 +556,7 @@ class _SixMobileLogoutSliderState extends State<_SixMobileLogoutSlider>
                                     _confirmed
                                         ? CupertinoIcons.check_mark
                                         : CupertinoIcons.power,
-                                    color:
-                                        progress > 0.62
-                                            ? colors.surface
-                                            : colors.error,
+                                    color: iconColor,
                                     size: _confirmed ? 22 : 23,
                                   ),
                                 ),

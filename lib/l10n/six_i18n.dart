@@ -1588,6 +1588,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileCreate.confirmPasswordHint': 'Repita sua senha',
     'auth.mobileCreate.acceptTerms':
         'Concordo com os Termos e a Política de Privacidade.',
+    'auth.termsAgreement.prefix': 'Concordo com os ',
+    'auth.termsOfService': 'Termos de Serviço',
+    'auth.termsAgreement.suffix': ' e a Política de Privacidade.',
     'auth.mobileCreate.submit': 'Criar conta',
     'auth.mobileCreate.loginPrompt': 'Já tem uma conta? Entrar',
     'auth.mobileCreate.acceptTermsError':
@@ -4499,6 +4502,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileCreate.confirmPasswordLabel': 'Confirm password',
     'auth.mobileCreate.confirmPasswordHint': 'Repeat your password',
     'auth.mobileCreate.acceptTerms': 'I agree to the Terms and Privacy Policy.',
+    'auth.termsAgreement.prefix': 'I agree to the ',
+    'auth.termsOfService': 'Terms of Service',
+    'auth.termsAgreement.suffix': ' and the Privacy Policy.',
     'auth.mobileCreate.submit': 'Create account',
     'auth.mobileCreate.loginPrompt': 'Already have an account? Sign in',
     'auth.mobileCreate.acceptTermsError':
@@ -6594,6 +6600,9 @@ const Map<String, Map<String, String>> _fallbacks = {
     'auth.mobileCreate.confirmPasswordHint': 'Repite tu contraseña',
     'auth.mobileCreate.acceptTerms':
         'Acepto los Términos y la Política de Privacidad.',
+    'auth.termsAgreement.prefix': 'Acepto los ',
+    'auth.termsOfService': 'Términos de Servicio',
+    'auth.termsAgreement.suffix': ' y la Política de Privacidad.',
     'auth.mobileCreate.submit': 'Crear cuenta',
     'auth.mobileCreate.loginPrompt': '¿Ya tienes una cuenta? Entrar',
     'auth.mobileCreate.acceptTermsError':
