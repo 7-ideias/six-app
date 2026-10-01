@@ -198,6 +198,9 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
     return _businessAssets?.url(asset);
   }
 
+  bool get _useContextualFullCard =>
+      !kIsWeb && (_businessAssets?.usesFullCard ?? false);
+
   String _txt(String key, String fallback) =>
       context.t(key, fallback: fallback);
 
@@ -365,6 +368,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             contextualImageUrl: _businessImageUrl(
               AtendimentoMobileBusinessAsset.vendas,
             ),
+            contextualImageFullCard: _useContextualFullCard,
             accentColor: visual.saleAccent,
             brandStart: SixMobilePalette.brandCyan,
             brandEnd: SixMobilePalette.brandBlue,
@@ -381,6 +385,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             contextualImageUrl: _businessImageUrl(
               AtendimentoMobileBusinessAsset.servicos,
             ),
+            contextualImageFullCard: _useContextualFullCard,
             accentColor: visual.serviceAccent,
             brandStart: SixMobilePalette.brandBlue,
             brandEnd: SixMobilePalette.brandViolet,
@@ -397,6 +402,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             contextualImageUrl: _businessImageUrl(
               AtendimentoMobileBusinessAsset.receber,
             ),
+            contextualImageFullCard: _useContextualFullCard,
             accentColor: visual.receiveAccent,
             brandStart: SixMobilePalette.brandCyan,
             brandEnd: SixMobilePalette.brandBlue,
@@ -413,6 +419,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             contextualImageUrl: _businessImageUrl(
               AtendimentoMobileBusinessAsset.operacoesCaixa,
             ),
+            contextualImageFullCard: _useContextualFullCard,
             accentColor: visual.cashAccent,
             brandStart: SixMobilePalette.brandBlue,
             brandEnd: visual.cashGradientEnd,
@@ -429,6 +436,7 @@ class _AtendimentoMobileScreenState extends State<AtendimentoMobileScreen> {
             contextualImageUrl: _businessImageUrl(
               AtendimentoMobileBusinessAsset.devolucao,
             ),
+            contextualImageFullCard: _useContextualFullCard,
             accentColor: visual.returnAccent,
             brandStart: visual.returnAccent,
             brandEnd: visual.returnGradientEnd,
@@ -737,22 +745,36 @@ class _PrimaryActionCard extends StatelessWidget {
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: <Widget>[
-                    Padding(
-                      padding:
-                          _isPrimary
-                              ? EdgeInsets.fromLTRB(10, 11, 10, 10)
-                              : EdgeInsets.fromLTRB(7, 8, 7, 8),
+                    Positioned.fill(
                       child: LayoutBuilder(
                         builder: (
                           BuildContext context,
                           BoxConstraints constraints,
                         ) {
-                          return _ActionCardContent(
-                            data: data,
-                            enabled: enabled,
-                            prominence: prominence,
-                            constraints: constraints,
-                            rowWidth: availableRowWidth,
+                          if (data.contextualImageFullCard &&
+                              data.contextualImageUrl != null &&
+                              !kIsWeb) {
+                            return _ContextualFullCardContent(
+                              data: data,
+                              enabled: enabled,
+                              prominence: prominence,
+                              constraints: constraints,
+                              rowWidth: availableRowWidth,
+                            );
+                          }
+
+                          return Padding(
+                            padding:
+                                _isPrimary
+                                    ? EdgeInsets.fromLTRB(10, 11, 10, 10)
+                                    : EdgeInsets.fromLTRB(7, 8, 7, 8),
+                            child: _ActionCardContent(
+                              data: data,
+                              enabled: enabled,
+                              prominence: prominence,
+                              constraints: constraints,
+                              rowWidth: availableRowWidth,
+                            ),
                           );
                         },
                       ),
@@ -785,6 +807,161 @@ class _PrimaryActionCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ContextualFullCardContent extends StatelessWidget {
+  const _ContextualFullCardContent({
+    required this.data,
+    required this.enabled,
+    required this.prominence,
+    required this.constraints,
+    required this.rowWidth,
+  });
+
+  final _PrimaryActionData data;
+  final bool enabled;
+  final _AtendimentoActionProminence prominence;
+  final BoxConstraints constraints;
+  final double rowWidth;
+
+  bool get _isPrimary => prominence == _AtendimentoActionProminence.primary;
+
+  @override
+  Widget build(BuildContext context) {
+    final SixMobileColorScheme colors = context.sixMobileColors;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final double textScale = MediaQuery.textScalerOf(context).scale(1);
+    final bool compactWidth =
+        constraints.maxWidth < (_isPrimary ? 150 : 102) || rowWidth < 340;
+    final bool compact = compactWidth || textScale >= 1.22;
+    final double titleSize =
+        _isPrimary
+            ? (compact ? 13.4 : 15.4)
+            : (compact ? 10.2 : 11.2);
+    final String url = data.contextualImageUrl!;
+
+    final Widget localFallback = DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            Color.alphaBlend(
+              data.brandStart.withAlpha(isDark ? 38 : 22),
+              colors.surface,
+            ),
+            Color.alphaBlend(
+              data.brandEnd.withAlpha(isDark ? 28 : 14),
+              colors.surface,
+            ),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Opacity(
+          opacity: enabled ? 0.9 : 0.5,
+          child: SixImagemCanetinha(
+            assetContorno: data.assetContorno,
+            assetAcento: data.assetAcento,
+            largura: _isPrimary ? 92 : 58,
+            altura: _isPrimary ? 92 : 58,
+            fit: BoxFit.contain,
+            corContorno: colors.titleText,
+            corAcento: data.accentColor,
+            opacidadeContorno: enabled ? 1 : 0.46,
+            opacidadeAcento: enabled ? 1 : 0.48,
+            reforcoContorno: _isPrimary ? 0.62 : 0.82,
+            reforcoAcento: _isPrimary ? 0.72 : 0.92,
+            opacidadeReforco: isDark ? 0.52 : 0.44,
+            opacidadeBrilho: 0,
+          ),
+        ),
+      ),
+    );
+
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        Image.network(
+          url,
+          key: ValueKey<String>(
+            'atendimento-contextual-fullcard-${data.id}',
+          ),
+          fit: BoxFit.cover,
+          alignment: Alignment.center,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (
+            BuildContext context,
+            Object error,
+            StackTrace? stack,
+          ) {
+            debugPrint(
+              '[AtendimentoMobile] Falha ao carregar full-card '
+              'url=$url error=$error',
+            );
+            return localFallback;
+          },
+          loadingBuilder: (
+            BuildContext context,
+            Widget child,
+            ImageChunkEvent? loadingProgress,
+          ) {
+            return loadingProgress == null ? child : localFallback;
+          },
+        ),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: const <double>[0, 0.5, 0.76, 1],
+              colors: <Color>[
+                Colors.transparent,
+                colors.surface.withAlpha(isDark ? 18 : 10),
+                colors.surface.withAlpha(isDark ? 150 : 175),
+                colors.surface.withAlpha(isDark ? 246 : 250),
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          left: _isPrimary ? 10 : 6,
+          right: _isPrimary ? 10 : 6,
+          bottom: _isPrimary ? 10 : 7,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                data.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: enabled ? data.accentColor : colors.mutedText,
+                  fontSize: titleSize,
+                  height: 1.05,
+                  fontWeight: FontWeight.w900,
+                  shadows: <Shadow>[
+                    Shadow(
+                      color: colors.surface.withAlpha(isDark ? 210 : 245),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: _isPrimary ? 8 : 5),
+              _ActionIndicator(
+                accentColor: data.accentColor,
+                enabled: enabled,
+                statusLabel: data.statusLabel,
+                compact: !_isPrimary,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1140,6 +1317,7 @@ class _PrimaryActionData {
     required this.assetContorno,
     required this.assetAcento,
     this.contextualImageUrl,
+    this.contextualImageFullCard = false,
     required this.accentColor,
     required this.brandStart,
     required this.brandEnd,
@@ -1154,6 +1332,7 @@ class _PrimaryActionData {
   final String assetContorno;
   final String assetAcento;
   final String? contextualImageUrl;
+  final bool contextualImageFullCard;
   final Color accentColor;
   final Color brandStart;
   final Color brandEnd;
