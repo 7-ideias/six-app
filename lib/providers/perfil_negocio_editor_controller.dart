@@ -43,15 +43,23 @@ class PerfilNegocioEditorController extends ChangeNotifier {
     carregando = true;
     erro = null;
     _notify();
+
     try {
-      final List<Object> values = await Future.wait<Object>(<Future<Object>>[
-        _service.buscar(empresaId),
-        _service.catalogo(empresaId),
-      ]);
+      final PerfilNegocioEmpresaModel estadoCarregado =
+          await _service.buscar(empresaId);
       if (_disposed || geracao != _geracao) return;
 
-      estado = values[0] as PerfilNegocioEmpresaModel;
-      catalogo = values[1] as CatalogoPerfilNegocioModel;
+      CatalogoPerfilNegocioModel catalogoCarregado;
+      try {
+        catalogoCarregado = await _service.catalogo(empresaId);
+      } catch (error) {
+        if (!_podeUsarCatalogoLocal(error)) rethrow;
+        catalogoCarregado = CatalogoPerfilNegocioModel.fallbackV1();
+      }
+      if (_disposed || geracao != _geracao) return;
+
+      estado = estadoCarregado;
+      catalogo = catalogoCarregado;
 
       final PerfilNegocioModel perfil = estado!.perfil;
       segmento = estado!.configurado ? perfil.segmentoPrincipal : null;
@@ -71,6 +79,13 @@ class PerfilNegocioEditorController extends ChangeNotifier {
         _notify();
       }
     }
+  }
+
+  bool _podeUsarCatalogoLocal(Object error) {
+    if (error is! PerfilNegocioException) return true;
+    if (error.code == 'CONTEXTO_EMPRESA_ALTERADO') return false;
+    if (error.statusCode == 401 || error.statusCode == 403) return false;
+    return true;
   }
 
   void selecionarSegmento(String value) {

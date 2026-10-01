@@ -20,13 +20,38 @@ class PerfilNegocioMobileForm extends StatelessWidget {
   Widget build(BuildContext context) {
     final SixMobileColorScheme colors = context.sixMobileColors;
 
-    if (controller.carregando || controller.catalogo == null) {
+    if (controller.carregando) {
       return SixBackendLoading(
         title: perfilNegocioText(context, 'loading'),
         subtitle: perfilNegocioText(context, 'description'),
         compact: true,
         backgroundColor: colors.surfaceElevated,
         borderColor: colors.border,
+      );
+    }
+
+    if (controller.catalogo == null) {
+      final String errorKey = controller.erro ?? 'loadError';
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _MessageCard(
+            icon: errorKey == 'forbidden'
+                ? Icons.lock_outline_rounded
+                : Icons.cloud_off_outlined,
+            text: perfilNegocioText(context, errorKey),
+            colors: colors,
+            error: true,
+          ),
+          if (errorKey != 'forbidden') ...<Widget>[
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              onPressed: controller.carregar,
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(perfilNegocioText(context, 'retry')),
+            ),
+          ],
+        ],
       );
     }
 

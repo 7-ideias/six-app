@@ -69,6 +69,90 @@ class CatalogoPerfilNegocioModel {
   final List<SegmentoNegocioModel> segmentos;
   final List<String> atividades;
   final List<String> objetivos;
+  factory CatalogoPerfilNegocioModel.fallbackV1() =>
+      const CatalogoPerfilNegocioModel(
+        segmentos: <SegmentoNegocioModel>[
+          SegmentoNegocioModel(
+            codigo: 'ELETRONICOS',
+            subsegmentos: <String>[
+              'CELULARES',
+              'TV_AUDIO',
+              'ELETRODOMESTICOS',
+              'ACESSORIOS',
+            ],
+          ),
+          SegmentoNegocioModel(
+            codigo: 'INFORMATICA',
+            subsegmentos: <String>[
+              'COMPUTADORES',
+              'IMPRESSORAS',
+              'REDES',
+            ],
+          ),
+          SegmentoNegocioModel(
+            codigo: 'MODA',
+            subsegmentos: <String>[
+              'ROUPAS',
+              'CALCADOS',
+              'ACESSORIOS',
+              'COSTURA_AJUSTES',
+            ],
+          ),
+          SegmentoNegocioModel(
+            codigo: 'AUTOMOTIVO',
+            subsegmentos: <String>['CARROS', 'MOTOS', 'PECAS'],
+          ),
+          SegmentoNegocioModel(
+            codigo: 'CASA_CONSTRUCAO',
+            subsegmentos: <String>[
+              'MATERIAIS',
+              'MOVEIS',
+              'MANUTENCAO_PREDIAL',
+            ],
+          ),
+          SegmentoNegocioModel(
+            codigo: 'BELEZA_ESTETICA',
+            subsegmentos: <String>['SALAO', 'ESTETICA', 'COSMETICOS'],
+          ),
+          SegmentoNegocioModel(
+            codigo: 'LIMPEZA',
+            subsegmentos: <String>[
+              'PRODUTOS_LIMPEZA',
+              'SERVICOS_LIMPEZA',
+            ],
+          ),
+          SegmentoNegocioModel(
+            codigo: 'ALIMENTACAO',
+            subsegmentos: <String>[],
+          ),
+          SegmentoNegocioModel(
+            codigo: 'SERVICOS_PROFISSIONAIS',
+            subsegmentos: <String>[],
+          ),
+          SegmentoNegocioModel(
+            codigo: 'OUTRO',
+            subsegmentos: <String>[],
+          ),
+        ],
+        atividades: <String>[
+          'VENDA_PRODUTOS',
+          'PRESTACAO_SERVICOS',
+          'REPAROS_MANUTENCAO',
+          'ORCAMENTOS',
+          'ORDEM_SERVICO',
+          'AGENDAMENTO',
+          'ESTOQUE',
+        ],
+        objetivos: <String>[
+          'VENDAS',
+          'SERVICOS',
+          'FINANCEIRO',
+          'ESTOQUE',
+          'CLIENTES',
+          'GERAL',
+        ],
+      );
+
   factory CatalogoPerfilNegocioModel.fromJson(Map<String, dynamic> json) => CatalogoPerfilNegocioModel(
     segmentos: List<SegmentoNegocioModel>.unmodifiable(
       (json['segmentos'] as List<dynamic>).map((dynamic item) {
