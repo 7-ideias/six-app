@@ -1,4 +1,5 @@
 name: Temporary Atendimento Fallback Flutter Validation
+# branch-only validation
 
 on:
   push:
